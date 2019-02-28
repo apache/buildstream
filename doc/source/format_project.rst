@@ -255,8 +255,7 @@ optional for remote execution to work.
 
 The storage service may be the same endpoint used for artifact
 caching. Remote execution cannot work without push access to the
-storage endpoint, so you must specify a client certificate and key,
-and a server certificate.
+storage endpoint though.
 
 Instance name is optional. Instance names separate different shards on
 the same endpoint (url).  You can supply a different instance name for

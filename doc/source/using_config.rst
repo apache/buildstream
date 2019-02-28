@@ -142,10 +142,7 @@ configuration will be used as fallback.
           url: http://execution.some_project.example.com:50051
           instance-name: main
         storage-service:
-          url: https://storage.some_project.example.com:11002
-          server-cert: /some_project_keys/server.crt
-          client-cert: /some_project_keys/client.crt
-          client-key: /some_project_keys/client.key
+          url: http://storage.some_project.example.com:11002
           instance-name: main
         action-cache-service:
           url: http://cache.some_project.example.com:50052

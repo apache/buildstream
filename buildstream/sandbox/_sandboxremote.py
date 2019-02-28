@@ -95,9 +95,9 @@ class SandboxRemote(Sandbox):
         self.storage_instance = config.storage_service.get('instance-name', None)
 
         self.storage_remote_spec = CASRemoteSpec(self.storage_url, push=True,
-                                                 server_cert=config.storage_service['server-cert'],
-                                                 client_key=config.storage_service['client-key'],
-                                                 client_cert=config.storage_service['client-cert'],
+                                                 server_cert=config.storage_service.get('server-cert'),
+                                                 client_key=config.storage_service.get('client-key'),
+                                                 client_cert=config.storage_service.get('client-cert'),
                                                  instance_name=self.storage_instance)
         self.operation_name = None
 
@@ -121,28 +121,26 @@ class SandboxRemote(Sandbox):
         if remote_config is None:
             return None
 
-        # Maintain some backwards compatibility with older configs, in which 'url' was the only valid key for
-        # remote-execution.
+        service_keys = ['execution-service', 'storage-service', 'action-cache-service']
+
+        _yaml.node_validate(remote_config, ['url'] + service_keys)
+
+        exec_config = require_node(remote_config, 'execution-service')
+        storage_config = require_node(remote_config, 'storage-service')
+        action_config = remote_config.get('action-cache-service', {})
 
         tls_keys = ['client-key', 'client-cert', 'server-cert']
 
-        _yaml.node_validate(
-            remote_config,
-            ['execution-service', 'storage-service', 'url', 'action-cache-service'])
-        remote_exec_service_config = require_node(remote_config, 'execution-service')
-        remote_exec_storage_config = require_node(remote_config, 'storage-service')
-        remote_exec_action_config = remote_config.get('action-cache-service', {})
+        _yaml.node_validate(exec_config, ['url', 'instance-name'] + tls_keys)
+        _yaml.node_validate(storage_config, ['url', 'instance-name'] + tls_keys)
+        if action_config:
+            _yaml.node_validate(action_config, ['url', 'instance-name'] + tls_keys)
 
-        _yaml.node_validate(remote_exec_service_config, ['url', 'instance-name'] + tls_keys)
-        _yaml.node_validate(remote_exec_storage_config, ['url', 'instance-name'] + tls_keys)
-        if remote_exec_action_config:
-            _yaml.node_validate(remote_exec_action_config, ['url', 'instance-name'] + tls_keys)
-        else:
-            remote_config['action-service'] = None
-
+        # Maintain some backwards compatibility with older configs, in which
+        # 'url' was the only valid key for remote-execution:
         if 'url' in remote_config:
             if 'execution-service' not in remote_config:
-                remote_config['execution-service'] = {'url': remote_config['url']}
+                exec_config = {'url': remote_config['url']}
             else:
                 provenance = _yaml.node_get_provenance(remote_config, key='url')
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
@@ -151,13 +149,7 @@ class SandboxRemote(Sandbox):
                                       "You can only specify one of these."
                                       .format(str(provenance)))
 
-        for key in tls_keys:
-            if key not in remote_exec_storage_config:
-                provenance = _yaml.node_get_provenance(remote_config, key='storage-service')
-                raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
-                                      "{}: The keys {} are necessary for the storage-service section of "
-                                      "remote-execution configuration. Your config is missing '{}'."
-                                      .format(str(provenance), tls_keys, key))
+        service_configs = [exec_config, storage_config, action_config]
 
         def resolve_path(path):
             if basedir and path:
@@ -165,17 +157,21 @@ class SandboxRemote(Sandbox):
             else:
                 return path
 
-        for key in tls_keys:
-            for d in (remote_config['execution-service'],
-                      remote_config['storage-service'],
-                      remote_exec_action_config):
-                if key in d:
-                    d[key] = resolve_path(d[key])
+        for config_key, config in zip(service_keys, service_configs):
+            # Either both or none of the TLS client key/cert pair must be specified:
+            if ('client-key' in config) != ('client-cert' in config):
+                provenance = _yaml.node_get_provenance(remote_config, key=config_key)
+                raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
+                                      "{}: TLS client key/cert pair is incomplete. "
+                                      "You must specify both 'client-key' and 'client-cert' "
+                                      "for authenticated HTTPS connections."
+                                      .format(str(provenance)))
 
-        spec = RemoteExecutionSpec(remote_config['execution-service'],
-                                   remote_config['storage-service'],
-                                   remote_exec_action_config)
-        return spec
+            for tls_key in tls_keys:
+                if tls_key in config:
+                    config[tls_key] = resolve_path(config[tls_key])
+
+        return RemoteExecutionSpec(*service_configs)
 
     def run_remote_command(self, channel, action_digest):
         # Sends an execution request to the remote execution server.
