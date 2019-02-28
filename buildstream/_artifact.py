@@ -28,7 +28,13 @@ artifact composite interaction away from Element class
 
 """
 
+import os
+import shutil
+
+from . import _yaml
+from . import Scope
 from .types import _KeyStrength
+from .storage._casbaseddirectory import CasBasedDirectory
 
 
 # An Artifact class to abtract artifact operations
@@ -98,6 +104,101 @@ class Artifact():
             key = element._get_cache_key(strength=_KeyStrength.WEAK)
 
         return key
+
+    # cache():
+    #
+    # Create the artifact and commit to cache
+    #
+    # Args:
+    #    rootdir (str): An absolute path to the temp rootdir for artifact construct
+    #    sandbox_build_dir (Directory): Virtual Directory object for the sandbox build-root
+    #    collectvdir (Directory): Virtual Directoy object from within the sandbox for collection
+    #    buildresult (tuple): bool, short desc and detailed desc of result
+    #    keys (list): list of keys for the artifact commit metadata
+    #    publicdata (dict): dict of public data to commit to artifact metadata
+    #
+    # Returns:
+    #    (int): The size of the newly cached artifact
+    #
+    def cache(self, rootdir, sandbox_build_dir, collectvdir, buildresult, keys, publicdata):
+
+        context = self._context
+        element = self._element
+
+        assemblevdir = CasBasedDirectory(cas_cache=self._artifacts.cas)
+        logsvdir = assemblevdir.descend("logs", create=True)
+        metavdir = assemblevdir.descend("meta", create=True)
+        buildtreevdir = assemblevdir.descend("buildtree", create=True)
+
+        # Create artifact directory structure
+        assembledir = os.path.join(rootdir, 'artifact')
+        logsdir = os.path.join(assembledir, 'logs')
+        metadir = os.path.join(assembledir, 'meta')
+        os.mkdir(assembledir)
+        os.mkdir(logsdir)
+        os.mkdir(metadir)
+
+        if collectvdir is not None:
+            filesvdir = assemblevdir.descend("files", create=True)
+            filesvdir.import_files(collectvdir)
+
+        # cache_buildtrees defaults to 'always', as such the
+        # default behaviour is to attempt to cache them. If only
+        # caching failed artifact buildtrees, then query the build
+        # result. Element types without a build-root dir will be cached
+        # with an empty buildtreedir regardless of this configuration as
+        # there will not be an applicable sandbox_build_dir.
+
+        if sandbox_build_dir:
+            buildtreevdir.import_files(sandbox_build_dir)
+
+        # Write some logs out to normal directories: logsdir and metadir
+        # Copy build log
+        log_filename = context.get_log_filename()
+        element._build_log_path = os.path.join(logsdir, 'build.log')
+        if log_filename:
+            shutil.copyfile(log_filename, element._build_log_path)
+
+        # Store public data
+        _yaml.dump(_yaml.node_sanitize(publicdata), os.path.join(metadir, 'public.yaml'))
+
+        # Store result
+        build_result_dict = {"success": buildresult[0], "description": buildresult[1]}
+        if buildresult[2] is not None:
+            build_result_dict["detail"] = buildresult[2]
+        _yaml.dump(build_result_dict, os.path.join(metadir, 'build-result.yaml'))
+
+        # Store keys.yaml
+        _yaml.dump(_yaml.node_sanitize({
+            'strong': element._get_cache_key(),
+            'weak': element._get_cache_key(_KeyStrength.WEAK),
+        }), os.path.join(metadir, 'keys.yaml'))
+
+        # Store dependencies.yaml
+        _yaml.dump(_yaml.node_sanitize({
+            e.name: e._get_cache_key() for e in element.dependencies(Scope.BUILD)
+        }), os.path.join(metadir, 'dependencies.yaml'))
+
+        # Store workspaced.yaml
+        _yaml.dump(_yaml.node_sanitize({
+            'workspaced': bool(element._get_workspace())
+        }), os.path.join(metadir, 'workspaced.yaml'))
+
+        # Store workspaced-dependencies.yaml
+        _yaml.dump(_yaml.node_sanitize({
+            'workspaced-dependencies': [
+                e.name for e in element.dependencies(Scope.BUILD)
+                if e._get_workspace()
+            ]
+        }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
+
+        metavdir.import_files(metadir)
+        logsvdir.import_files(logsdir)
+
+        artifact_size = assemblevdir.get_size()
+        self._artifacts.commit(element, assemblevdir, keys)
+
+        return artifact_size
 
     # _get_directory():
     #
