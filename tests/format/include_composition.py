@@ -129,3 +129,27 @@ def test_main_keeps_keys(tmpdir):
 
     assert main['test'] == ['a']
     assert main['something'] == 'else'
+
+
+def test_overwrite_directive_on_later_composite(tmpdir):
+    includes = make_includes(str(tmpdir))
+
+    _yaml.dump({'(@)': ['a.yml', 'b.yml'],
+                'test': {'(=)': ['Overwritten']}},
+               str(tmpdir.join('main.yml')))
+
+    main = _yaml.load(str(tmpdir.join('main.yml')))
+
+    # a.yml
+    _yaml.dump({'test': ['some useless', 'list', 'to be overwritten'],
+                'foo': 'should not be present'},
+               str(tmpdir.join('a.yml')))
+
+    # b.yaml isn't going to have a 'test' node to overwrite
+    _yaml.dump({'foo': 'should be present'},
+               str(tmpdir.join('b.yml')))
+
+    includes.process(main)
+
+    assert main['test'] == ['Overwritten']
+    assert main['foo'] == 'should be present'
