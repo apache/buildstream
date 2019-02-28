@@ -17,7 +17,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_builddir_socket_ignored(cli, tmpdir, datafiles):
+def test_builddir_socket_ignored(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'sockets/make-builddir-socket.bst'
 
@@ -27,7 +27,7 @@ def test_builddir_socket_ignored(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_install_root_socket_ignored(cli, tmpdir, datafiles):
+def test_install_root_socket_ignored(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'sockets/make-install-root-socket.bst'
 

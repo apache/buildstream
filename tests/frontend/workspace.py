@@ -805,7 +805,7 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
     # Test loading a future version
     {"format-version": BST_WORKSPACE_FORMAT_VERSION + 1}
 ])
-def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
+def test_list_unsupported_workspace(cli, datafiles, workspace_cfg):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     os.makedirs(os.path.join(project, '.bst'))
     workspace_config_path = os.path.join(project, '.bst', 'workspaces.yml')

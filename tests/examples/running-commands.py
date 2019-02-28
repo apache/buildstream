@@ -16,7 +16,7 @@ DATA_DIR = os.path.join(
                     reason='Examples are writtent for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
-def test_running_commands_build(cli, tmpdir, datafiles):
+def test_running_commands_build(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     result = cli.run(project=project, args=['build', 'hello.bst'])
@@ -28,7 +28,7 @@ def test_running_commands_build(cli, tmpdir, datafiles):
                     reason='Examples are writtent for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
-def test_running_commands_run(cli, tmpdir, datafiles):
+def test_running_commands_run(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     result = cli.run(project=project, args=['build', 'hello.bst'])

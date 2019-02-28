@@ -307,7 +307,7 @@ def test_read_only_dir(cli, tmpdir, datafiles):
     finally:
 
         # Make tmpdir deletable no matter what happens
-        def make_dir_writable(fn, path, excinfo):
+        def make_dir_writable(_fn, path, _excinfo):
             os.chmod(os.path.dirname(path), 0o777)
             if os.path.isdir(path):
                 os.rmdir(path)

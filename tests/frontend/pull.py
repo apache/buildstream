@@ -464,7 +464,7 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_pull_access_rights(caplog, cli, tmpdir, datafiles):
+def test_pull_access_rights(cli, tmpdir, datafiles):
     project = str(datafiles)
     checkout = os.path.join(str(tmpdir), 'checkout')
 

@@ -9,7 +9,7 @@ class MockDist():
         self.datafiles = datafiles
         self.module_name = module_name
 
-    def get_resource_filename(self, *args, **kwargs):
+    def get_resource_filename(self, *_args, **_kwargs):
         return os.path.join(self.datafiles.dirname,
                             self.datafiles.basename,
                             self.module_name)

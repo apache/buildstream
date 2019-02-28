@@ -12,24 +12,24 @@ DATA_DIR = os.path.join(
 )
 
 
-def generate_project(project_dir, tmpdir):
+def generate_project(project_dir):
     project_file = os.path.join(project_dir, "project.conf")
     _yaml.dump({'name': 'foo'}, project_file)
 
 
 # Test that without ref, consistency is set appropriately.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-ref'))
-def test_no_ref(cli, tmpdir, datafiles):
+def test_no_ref(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    generate_project(project, tmpdir)
+    generate_project(project)
     assert cli.get_element_state(project, 'target.bst') == 'no reference'
 
 
 # Test that pip is not allowed to be the first source
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'first-source-pip'))
-def test_first_source(cli, tmpdir, datafiles):
+def test_first_source(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    generate_project(project, tmpdir)
+    generate_project(project)
     result = cli.run(project=project, args=[
         'show', 'target.bst'
     ])
@@ -39,9 +39,9 @@ def test_first_source(cli, tmpdir, datafiles):
 # Test that error is raised when neither packges nor requirements files
 # have been specified
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-packages'))
-def test_no_packages(cli, tmpdir, datafiles):
+def test_no_packages(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    generate_project(project, tmpdir)
+    generate_project(project)
     result = cli.run(project=project, args=[
         'show', 'target.bst'
     ])

@@ -385,7 +385,7 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))
-def test_track_consistency_error(cli, tmpdir, datafiles):
+def test_track_consistency_error(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Track the element causing a consistency error
@@ -395,7 +395,7 @@ def test_track_consistency_error(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))
-def test_track_consistency_bug(cli, tmpdir, datafiles):
+def test_track_consistency_bug(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Track the element causing an unhandled exception

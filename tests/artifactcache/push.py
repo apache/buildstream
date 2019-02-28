@@ -245,7 +245,7 @@ def _test_push_directory(user_config_file, project_dir, artifact_digest, queue):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_push_message(cli, tmpdir, datafiles):
+def test_push_message(tmpdir, datafiles):
     project_dir = str(datafiles)
 
     # Set up an artifact cache.

@@ -190,7 +190,7 @@ def test_plugin_no_load_ref(cli, datafiles, ref_storage):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_plugin_preflight_error(cli, datafiles, tmpdir):
+def test_plugin_preflight_error(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, 'plugin-preflight-error')
     result = cli.run(project=project, args=['source', 'fetch', 'error.bst'])
     result.assert_main_error(ErrorDomain.SOURCE, "the-preflight-error")

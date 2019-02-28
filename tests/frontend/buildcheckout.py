@@ -453,7 +453,7 @@ def test_fetch_build_checkout(cli, tmpdir, datafiles, strict, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_install_to_build(cli, tmpdir, datafiles):
+def test_install_to_build(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element = 'installed-to-build.bst'
 

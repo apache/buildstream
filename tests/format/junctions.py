@@ -49,7 +49,7 @@ def test_simple_build(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_build_of_same_junction_used_twice(cli, tmpdir, datafiles):
+def test_build_of_same_junction_used_twice(cli, datafiles):
     project = os.path.join(str(datafiles), 'inconsistent-names')
 
     # Check we can build a project that contains the same junction
@@ -271,7 +271,7 @@ def test_git_build(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_cross_junction_names(cli, tmpdir, datafiles):
+def test_cross_junction_names(cli, datafiles):
     project = os.path.join(str(datafiles), 'foo')
     copy_subprojects(project, datafiles, ['base'])
 

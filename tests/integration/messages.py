@@ -39,7 +39,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_disable_message_lines(cli, tmpdir, datafiles):
+def test_disable_message_lines(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements')
     element_name = 'message.bst'
@@ -75,7 +75,7 @@ def test_disable_message_lines(cli, tmpdir, datafiles):
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_disable_error_lines(cli, tmpdir, datafiles):
+def test_disable_error_lines(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements')
     element_name = 'message.bst'

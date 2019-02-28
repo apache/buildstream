@@ -178,7 +178,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
     ("1", False)
 ])
 @pytest.mark.datafiles(DATA_DIR)
-def test_invalid_cache_pullbuildtrees(cli, datafiles, tmpdir, value, success):
+def test_invalid_cache_pullbuildtrees(cli, datafiles, value, success):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     cli.configure({

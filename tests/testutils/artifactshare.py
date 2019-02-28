@@ -168,7 +168,7 @@ class ArtifactShare():
 
         shutil.rmtree(self.directory)
 
-    def _mock_statvfs(self, path):
+    def _mock_statvfs(self, _path):
         repo_size = 0
         for root, _, files in os.walk(self.repodir):
             for filename in files:

@@ -37,7 +37,7 @@ def print_warning(msg):
     ('qmake.bst', 'make-install', "make -j1 INSTALL_ROOT=\"/buildstream-install\" install"),
 ])
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'defaults'))
-def test_defaults(cli, datafiles, tmpdir, target, varname, expected):
+def test_defaults(cli, datafiles, target, varname, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(project=project, silent=True, args=[
         'show', '--deps', 'none', '--format', '%{vars}', target
@@ -63,7 +63,7 @@ def test_defaults(cli, datafiles, tmpdir, target, varname, expected):
     ('qmake.bst', 'make-install', "make -j1 INSTALL_ROOT=\"/custom/install/root\" install"),
 ])
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'overrides'))
-def test_overrides(cli, datafiles, tmpdir, target, varname, expected):
+def test_overrides(cli, datafiles, target, varname, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(project=project, silent=True, args=[
         'show', '--deps', 'none', '--format', '%{vars}', target
@@ -74,7 +74,7 @@ def test_overrides(cli, datafiles, tmpdir, target, varname, expected):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'missing_variables'))
-def test_missing_variable(cli, datafiles, tmpdir):
+def test_missing_variable(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(project=project, silent=True, args=[
         'show', '--deps', 'none', '--format', '%{config}', 'manual.bst'
@@ -97,7 +97,7 @@ def test_cyclic_variables(cli, datafiles):
 
 @pytest.mark.parametrize('protected_var', PROTECTED_VARIABLES)
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'protected-vars'))
-def test_use_of_protected_var_project_conf(cli, tmpdir, datafiles, protected_var):
+def test_use_of_protected_var_project_conf(cli, datafiles, protected_var):
     project = str(datafiles)
     conf = {
         'name': 'test',
@@ -125,7 +125,7 @@ def test_use_of_protected_var_project_conf(cli, tmpdir, datafiles, protected_var
 
 @pytest.mark.parametrize('protected_var', PROTECTED_VARIABLES)
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'protected-vars'))
-def test_use_of_protected_var_element_overrides(cli, tmpdir, datafiles, protected_var):
+def test_use_of_protected_var_element_overrides(cli, datafiles, protected_var):
     project = str(datafiles)
     conf = {
         'name': 'test',
@@ -157,7 +157,7 @@ def test_use_of_protected_var_element_overrides(cli, tmpdir, datafiles, protecte
 
 @pytest.mark.parametrize('protected_var', PROTECTED_VARIABLES)
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'protected-vars'))
-def test_use_of_protected_var_in_element(cli, tmpdir, datafiles, protected_var):
+def test_use_of_protected_var_in_element(cli, datafiles, protected_var):
     project = str(datafiles)
     element = {
         'kind': 'import',

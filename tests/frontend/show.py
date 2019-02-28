@@ -174,7 +174,7 @@ def test_show_except(cli, datafiles, targets, exceptions, expected):
 #                   Testing multiple targets                  #
 ###############################################################
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
-def test_parallel_order(cli, tmpdir, datafiles):
+def test_parallel_order(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     elements = ['multiple_targets/order/0.bst',
                 'multiple_targets/order/1.bst']
@@ -203,7 +203,7 @@ def test_parallel_order(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
-def test_target_is_dependency(cli, tmpdir, datafiles):
+def test_target_is_dependency(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     elements = ['multiple_targets/dependency/zebry.bst',
                 'multiple_targets/dependency/horsey.bst']

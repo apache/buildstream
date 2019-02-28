@@ -18,7 +18,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
-def test_build_uid_overridden(cli, tmpdir, datafiles):
+def test_build_uid_overridden(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-uid/build-uid.bst'
 
@@ -36,7 +36,7 @@ def test_build_uid_overridden(cli, tmpdir, datafiles):
 
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubbelwrap')
 @pytest.mark.datafiles(DATA_DIR)
-def test_build_uid_in_project(cli, tmpdir, datafiles):
+def test_build_uid_in_project(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-uid/build-uid-1023.bst'
 
@@ -54,7 +54,7 @@ def test_build_uid_in_project(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_build_uid_default(cli, tmpdir, datafiles):
+def test_build_uid_default(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-uid/build-uid-default.bst'
 

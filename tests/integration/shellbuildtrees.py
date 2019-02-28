@@ -19,7 +19,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_buildtree_staged(cli_integration, tmpdir, datafiles):
+def test_buildtree_staged(cli_integration, datafiles):
     # We can only test the non interacitve case
     # The non interactive case defaults to not using buildtrees
     # for `bst shell --build`
@@ -37,7 +37,7 @@ def test_buildtree_staged(cli_integration, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_buildtree_staged_forced_true(cli_integration, tmpdir, datafiles):
+def test_buildtree_staged_forced_true(cli_integration, datafiles):
     # Test that if we ask for a build tree it is there.
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-shell/buildtree.bst'
@@ -77,7 +77,7 @@ def test_buildtree_staged_warn_empty_cached(cli_integration, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_buildtree_staged_if_available(cli_integration, tmpdir, datafiles):
+def test_buildtree_staged_if_available(cli_integration, datafiles):
     # Test that a build tree can be correctly detected.
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-shell/buildtree.bst'
@@ -94,7 +94,7 @@ def test_buildtree_staged_if_available(cli_integration, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_buildtree_staged_forced_false(cli_integration, tmpdir, datafiles):
+def test_buildtree_staged_forced_false(cli_integration, datafiles):
     # Test that if we ask not to have a build tree it is not there
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-shell/buildtree.bst'
@@ -112,7 +112,7 @@ def test_buildtree_staged_forced_false(cli_integration, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_buildtree_from_failure(cli_integration, tmpdir, datafiles):
+def test_buildtree_from_failure(cli_integration, datafiles):
     # Test that we can use a build tree after a failure
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-shell/buildtree-fail.bst'

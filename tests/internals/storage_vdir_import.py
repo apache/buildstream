@@ -221,13 +221,13 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
 # but this leads to more tests being listed in the output than are
 # comfortable.
 @pytest.mark.parametrize("original", range(1, len(root_filesets) + 1))
-def test_fixed_cas_import(cli, tmpdir, original):
+def test_fixed_cas_import(tmpdir, original):
     for overlay in range(1, len(root_filesets) + 1):
         _import_test(str(tmpdir), original, overlay, generate_import_roots, verify_contents=True)
 
 
 @pytest.mark.parametrize("original", range(1, NUM_RANDOM_TESTS + 1))
-def test_random_cas_import(cli, tmpdir, original):
+def test_random_cas_import(tmpdir, original):
     for overlay in range(1, NUM_RANDOM_TESTS + 1):
         _import_test(str(tmpdir), original, overlay, generate_random_root, verify_contents=False)
 
@@ -247,10 +247,10 @@ def _listing_test(tmpdir, root, generator_function):
 
 
 @pytest.mark.parametrize("root", range(1, 11))
-def test_random_directory_listing(cli, tmpdir, root):
+def test_random_directory_listing(tmpdir, root):
     _listing_test(str(tmpdir), root, generate_random_root)
 
 
 @pytest.mark.parametrize("root", [1, 2, 3, 4, 5])
-def test_fixed_directory_listing(cli, tmpdir, root):
+def test_fixed_directory_listing(tmpdir, root):
     _listing_test(str(tmpdir), root, generate_import_roots)

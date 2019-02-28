@@ -118,7 +118,7 @@ def test_filter_workspace_open(datafiles, cli, tmpdir):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
-def test_filter_workspace_open_multi(datafiles, cli, tmpdir):
+def test_filter_workspace_open_multi(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(cwd=project, project=project, args=['workspace', 'open', 'deps-permitted.bst',
                                                          'output-orphans.bst'])
@@ -488,7 +488,7 @@ def test_filter_include_with_indirect_deps(datafiles, cli, tmpdir):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
-def test_filter_fails_for_nonexisting_domain(datafiles, cli, tmpdir):
+def test_filter_fails_for_nonexisting_domain(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(project=project, args=['build', 'output-include-nonexistent-domain.bst'])
     result.assert_main_error(ErrorDomain.STREAM, None)

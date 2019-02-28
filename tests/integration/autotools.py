@@ -20,7 +20,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_autotools_build(cli, tmpdir, datafiles):
+def test_autotools_build(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'autotools/amhello.bst'
@@ -43,7 +43,7 @@ def test_autotools_build(cli, tmpdir, datafiles):
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_autotools_confroot_build(cli, tmpdir, datafiles):
+def test_autotools_confroot_build(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'autotools/amhelloconfroot.bst'
@@ -64,7 +64,7 @@ def test_autotools_confroot_build(cli, tmpdir, datafiles):
 # Test running an executable built with autotools
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_autotools_run(cli, tmpdir, datafiles):
+def test_autotools_run(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'autotools/amhello.bst'
 

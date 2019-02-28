@@ -271,7 +271,8 @@ def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_mirror_fetch_multi(cli, tmpdir, datafiles):
+@pytest.mark.usefixtures("datafiles")
+def test_mirror_fetch_multi(cli, tmpdir):
     output_file = os.path.join(str(tmpdir), "output.txt")
     project_dir = str(tmpdir)
     element_dir = os.path.join(project_dir, 'elements')
@@ -294,7 +295,8 @@ def test_mirror_fetch_multi(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_mirror_fetch_default_cmdline(cli, tmpdir, datafiles):
+@pytest.mark.usefixtures("datafiles")
+def test_mirror_fetch_default_cmdline(cli, tmpdir):
     output_file = os.path.join(str(tmpdir), "output.txt")
     project_dir = str(tmpdir)
     element_dir = os.path.join(project_dir, 'elements')
@@ -324,7 +326,8 @@ def test_mirror_fetch_default_cmdline(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_mirror_fetch_default_userconfig(cli, tmpdir, datafiles):
+@pytest.mark.usefixtures("datafiles")
+def test_mirror_fetch_default_userconfig(cli, tmpdir):
     output_file = os.path.join(str(tmpdir), "output.txt")
     project_dir = str(tmpdir)
     element_dir = os.path.join(project_dir, 'elements')
@@ -363,7 +366,8 @@ def test_mirror_fetch_default_userconfig(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_mirror_fetch_default_cmdline_overrides_config(cli, tmpdir, datafiles):
+@pytest.mark.usefixtures("datafiles")
+def test_mirror_fetch_default_cmdline_overrides_config(cli, tmpdir):
     output_file = os.path.join(str(tmpdir), "output.txt")
     project_dir = str(tmpdir)
     element_dir = os.path.join(project_dir, 'elements')

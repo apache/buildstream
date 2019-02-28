@@ -85,7 +85,7 @@ def test_custom_logging(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_failed_build_listing(cli, tmpdir, datafiles):
+def test_failed_build_listing(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_names = []
     for i in range(3):
