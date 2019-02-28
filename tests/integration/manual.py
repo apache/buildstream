@@ -134,7 +134,6 @@ def test_manual_element_noparallel(cli, tmpdir, datafiles):
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_manual_element_logging(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
     element_path = os.path.join(project, 'elements')
     element_name = 'import/import.bst'
 

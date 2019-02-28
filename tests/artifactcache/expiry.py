@@ -42,8 +42,6 @@ DATA_DIR = os.path.join(
 def test_artifact_expires(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = 'elements'
-    cache_location = os.path.join(project, 'cache', 'artifacts', 'ostree')
-    checkout = os.path.join(project, 'checkout')
 
     cli.configure({
         'cache': {
@@ -104,7 +102,6 @@ def test_artifact_too_large(cli, datafiles, tmpdir, size):
 def test_expiry_order(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = 'elements'
-    cache_location = os.path.join(project, 'cache', 'artifacts', 'ostree')
     checkout = os.path.join(project, 'workspace')
 
     cli.configure({
@@ -162,7 +159,6 @@ def test_expiry_order(cli, datafiles, tmpdir):
 def test_keep_dependencies(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = 'elements'
-    cache_location = os.path.join(project, 'cache', 'artifacts', 'ostree')
 
     cli.configure({
         'cache': {
@@ -402,8 +398,6 @@ def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, err_domain, err_reas
 def test_cleanup_first(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = 'elements'
-    cache_location = os.path.join(project, 'cache', 'artifacts', 'ostree')
-    checkout = os.path.join(project, 'checkout')
 
     cli.configure({
         'cache': {

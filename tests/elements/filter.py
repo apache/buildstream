@@ -240,7 +240,7 @@ def test_filter_track(datafiles, cli, tmpdir):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_track_excepted(datafiles, cli, tmpdir):
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(str(datafiles), "files"))
+    repo.create(os.path.join(str(datafiles), "files"))
     elements_dir = os.path.join(str(tmpdir), "elements")
     project = str(tmpdir)
     input_name = "input.bst"

@@ -30,7 +30,7 @@ def test_non_regular_file_patch(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     patch_path = os.path.join(project, 'irregular_file.patch')
-    for file_type in filetypegenerator.generate_file_types(patch_path):
+    for _file_type in filetypegenerator.generate_file_types(patch_path):
         result = cli.run(project=project, args=[
             'show', 'irregular.bst'
         ])
@@ -87,7 +87,6 @@ def test_stage_and_patch(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_stage_file_nonexistent_dir(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Fails at build time because it tries to patch into a non-existing directory
     result = cli.run(project=project, args=['build', 'failure-nonexistent-dir.bst'])
@@ -98,7 +97,6 @@ def test_stage_file_nonexistent_dir(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_stage_file_empty_dir(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Fails at build time because it tries to patch with nothing else staged
     result = cli.run(project=project, args=['build', 'failure-empty-dir.bst'])

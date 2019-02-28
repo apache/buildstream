@@ -47,7 +47,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
+    repo.create(os.path.join(project, 'repofiles'))
 
     # Write out our test target with a bad ref
     element = {
@@ -74,11 +74,11 @@ def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
 
     # Create the submodule first from the 'subrepofiles' subdir
     subrepo = create_repo('git', str(tmpdir), 'subrepo')
-    subref = subrepo.create(os.path.join(project, 'subrepofiles'))
+    subrepo.create(os.path.join(project, 'subrepofiles'))
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
+    repo.create(os.path.join(project, 'repofiles'))
 
     # Add a submodule pointing to the one we created
     ref = repo.add_submodule('subdir', 'file://' + subrepo.repo)
@@ -117,7 +117,7 @@ def test_submodule_fetch_source_enable_explicit(cli, tmpdir, datafiles):
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
+    repo.create(os.path.join(project, 'repofiles'))
 
     # Add a submodule pointing to the one we created
     ref = repo.add_submodule('subdir', 'file://' + subrepo.repo)
@@ -156,7 +156,7 @@ def test_submodule_fetch_source_disable(cli, tmpdir, datafiles):
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
+    repo.create(os.path.join(project, 'repofiles'))
 
     # Add a submodule pointing to the one we created
     ref = repo.add_submodule('subdir', 'file://' + subrepo.repo)
@@ -195,7 +195,7 @@ def test_submodule_fetch_submodule_does_override(cli, tmpdir, datafiles):
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
+    repo.create(os.path.join(project, 'repofiles'))
 
     # Add a submodule pointing to the one we created
     ref = repo.add_submodule('subdir', 'file://' + subrepo.repo, checkout=True)
@@ -238,10 +238,10 @@ def test_submodule_fetch_submodule_individual_checkout(cli, tmpdir, datafiles):
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
+    repo.create(os.path.join(project, 'repofiles'))
 
     # Add a submodule pointing to the one we created
-    ref = repo.add_submodule('subdir', 'file://' + subrepo.repo, checkout=False)
+    repo.add_submodule('subdir', 'file://' + subrepo.repo, checkout=False)
     ref = repo.add_submodule('othersubdir', 'file://' + other_subrepo.repo)
 
     # Write out our test target
@@ -283,10 +283,10 @@ def test_submodule_fetch_submodule_individual_checkout_explicit(cli, tmpdir, dat
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
+    repo.create(os.path.join(project, 'repofiles'))
 
     # Add a submodule pointing to the one we created
-    ref = repo.add_submodule('subdir', 'file://' + subrepo.repo, checkout=False)
+    repo.add_submodule('subdir', 'file://' + subrepo.repo, checkout=False)
     ref = repo.add_submodule('othersubdir', 'file://' + other_subrepo.repo, checkout=True)
 
     # Write out our test target
@@ -324,7 +324,7 @@ def test_submodule_fetch_project_override(cli, tmpdir, datafiles):
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
+    repo.create(os.path.join(project, 'repofiles'))
 
     # Add a submodule pointing to the one we created
     ref = repo.add_submodule('subdir', 'file://' + subrepo.repo)
@@ -395,7 +395,7 @@ def test_submodule_track_no_ref_or_track(cli, tmpdir, datafiles):
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
+    repo.create(os.path.join(project, 'repofiles'))
 
     # Write out our test target
     gitsource = repo.source_config(ref=None)
@@ -478,7 +478,7 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
+    repo.create(os.path.join(project, 'repofiles'))
 
     # Add a submodule pointing to the one we created
     ref = repo.add_submodule('subdir', 'file://' + subrepo.repo)
@@ -686,7 +686,7 @@ def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
+    repo.create(os.path.join(project, 'repofiles'))
 
     # Add a submodule pointing to the one we created
     ref = repo.add_submodule('subdir', 'file://' + subrepo.repo)
@@ -736,7 +736,7 @@ def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
+    repo.create(os.path.join(project, 'repofiles'))
     if tag:
         repo.add_tag('tag')
     if extra_commit:
@@ -800,7 +800,7 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
         else:
             repo.add_tag(name)
 
-    ref = repo.create(repofiles)
+    repo.create(repofiles)
     tag('uselesstag')
 
     file1 = os.path.join(str(tmpdir), 'file1')
@@ -912,7 +912,7 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
         else:
             repo.add_tag(name)
 
-    ref = repo.create(repofiles)
+    repo.create(repofiles)
     tag('uselesstag')
 
     file1 = os.path.join(str(tmpdir), 'file1')
@@ -1093,7 +1093,7 @@ def test_default_do_not_track_tags(cli, tmpdir, datafiles):
 
     repo = create_repo('git', str(tmpdir))
 
-    ref = repo.create(repofiles)
+    repo.create(repofiles)
     repo.add_tag('tag')
 
     config = repo.source_config()
@@ -1191,7 +1191,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
     otherpath = os.path.join(str(tmpdir), 'other_path')
     shutil.copytree(repo.repo,
                     os.path.join(otherpath, 'repo'))
-    new_repo = create_repo('git', otherpath)
+    create_repo('git', otherpath)
 
     repodir, reponame = os.path.split(repo.repo)
 

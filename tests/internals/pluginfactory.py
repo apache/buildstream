@@ -79,8 +79,8 @@ def test_missing_source(plugin_fixture):
     assert(isinstance(factory, SourceFactory))
 
     # Test fails if PluginError is not raised
-    with pytest.raises(PluginError) as exc:
-        foo_type = factory.lookup('foo')
+    with pytest.raises(PluginError):
+        factory.lookup('foo')
 
 
 def test_missing_element(plugin_fixture):
@@ -88,8 +88,8 @@ def test_missing_element(plugin_fixture):
     assert(isinstance(factory, ElementFactory))
 
     # Test fails if PluginError is not raised
-    with pytest.raises(PluginError) as exc:
-        foo_type = factory.lookup('foo')
+    with pytest.raises(PluginError):
+        factory.lookup('foo')
 
 
 # Load a factory with a plugin that returns a value instead of Source subclass
@@ -102,8 +102,8 @@ def test_source_notatype(plugin_fixture, datafiles):
         'plugins': {'foo': 0}
     }]
     factory = SourceFactory(plugin_fixture['base'], plugin_origins=plugins)
-    with pytest.raises(PluginError) as exc:
-        foo_type = factory.lookup('foo')
+    with pytest.raises(PluginError):
+        factory.lookup('foo')
 
 
 # Load a factory with a plugin that returns a value instead of Element subclass
@@ -116,8 +116,8 @@ def test_element_notatype(plugin_fixture, datafiles):
         'plugins': {'foo': 0}
     }]
     factory = ElementFactory(plugin_fixture['base'], plugin_origins=plugins)
-    with pytest.raises(PluginError) as exc:
-        foo_type = factory.lookup('foo')
+    with pytest.raises(PluginError):
+        factory.lookup('foo')
 
 
 # Load a factory with a plugin that returns a type
@@ -131,8 +131,8 @@ def test_source_wrongtype(plugin_fixture, datafiles):
         'plugins': {'foo': 0}
     }]
     factory = SourceFactory(plugin_fixture['base'], plugin_origins=plugins)
-    with pytest.raises(PluginError) as exc:
-        foo_type = factory.lookup('foo')
+    with pytest.raises(PluginError):
+        factory.lookup('foo')
 
 
 # Load a factory with a plugin that returns a type
@@ -146,8 +146,8 @@ def test_element_wrongtype(plugin_fixture, datafiles):
         'plugins': {'foo': 0}
     }]
     factory = ElementFactory(plugin_fixture['base'], plugin_origins=plugins)
-    with pytest.raises(PluginError) as exc:
-        foo_type = factory.lookup('foo')
+    with pytest.raises(PluginError):
+        factory.lookup('foo')
 
 
 # Load a factory with a plugin which fails to provide a setup() function
@@ -160,8 +160,8 @@ def test_source_missing_setup(plugin_fixture, datafiles):
         'plugins': {'foo': 0}
     }]
     factory = SourceFactory(plugin_fixture['base'], plugin_origins=plugins)
-    with pytest.raises(PluginError) as exc:
-        foo_type = factory.lookup('foo')
+    with pytest.raises(PluginError):
+        factory.lookup('foo')
 
 
 # Load a factory with a plugin which fails to provide a setup() function
@@ -174,8 +174,8 @@ def test_element_missing_setup(plugin_fixture, datafiles):
         'plugins': {'foo': 0}
     }]
     factory = ElementFactory(plugin_fixture['base'], plugin_origins=plugins)
-    with pytest.raises(PluginError) as exc:
-        foo_type = factory.lookup('foo')
+    with pytest.raises(PluginError):
+        factory.lookup('foo')
 
 
 # Load a factory with a plugin which provides a setup symbol
@@ -189,8 +189,8 @@ def test_source_bad_setup(plugin_fixture, datafiles):
         'plugins': {'foo': 0}
     }]
     factory = SourceFactory(plugin_fixture['base'], plugin_origins=plugins)
-    with pytest.raises(PluginError) as exc:
-        foo_type = factory.lookup('foo')
+    with pytest.raises(PluginError):
+        factory.lookup('foo')
 
 
 # Load a factory with a plugin which provides a setup symbol
@@ -204,8 +204,8 @@ def test_element_bad_setup(plugin_fixture, datafiles):
         'plugins': {'foo': 0}
     }]
     factory = ElementFactory(plugin_fixture['base'], plugin_origins=plugins)
-    with pytest.raises(PluginError) as exc:
-        foo_type = factory.lookup('foo')
+    with pytest.raises(PluginError):
+        factory.lookup('foo')
 
 
 # Load a factory with a plugin which requires an absurdly
@@ -219,8 +219,8 @@ def test_source_badversion(plugin_fixture, datafiles):
         'plugins': {'foo': 0}
     }]
     factory = SourceFactory(plugin_fixture['base'], plugin_origins=plugins)
-    with pytest.raises(PluginError) as exc:
-        foo_type = factory.lookup('foo')
+    with pytest.raises(PluginError):
+        factory.lookup('foo')
 
 
 # Load a factory with a plugin which requires an absurdly
@@ -234,8 +234,8 @@ def test_element_badversion(plugin_fixture, datafiles):
         'plugins': {'foo': 0}
     }]
     factory = ElementFactory(plugin_fixture['base'], plugin_origins=plugins)
-    with pytest.raises(PluginError) as exc:
-        foo_type = factory.lookup('foo')
+    with pytest.raises(PluginError):
+        factory.lookup('foo')
 
 
 ##############################################################

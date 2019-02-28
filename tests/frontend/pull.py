@@ -230,8 +230,6 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
-        workspace = os.path.join(str(tmpdir), 'workspace')
-
         # First build the target element and push to the remote.
         cli.configure({
             'artifacts': {'url': share.repo, 'push': True},

@@ -38,7 +38,7 @@ def test_submodule_track_no_ref_or_track(cli, tmpdir, datafiles):
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('ostree', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'repofiles'))
+    repo.create(os.path.join(project, 'repofiles'))
 
     # Write out our test target
     ostreesource = repo.source_config(ref=None)

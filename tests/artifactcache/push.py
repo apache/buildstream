@@ -251,7 +251,6 @@ def test_push_message(cli, tmpdir, datafiles):
     # Set up an artifact cache.
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
         # Configure artifact share
-        artifact_dir = os.path.join(str(tmpdir), 'cache', 'artifacts')
         rootcache_dir = os.path.join(str(tmpdir), 'cache')
         user_config_file = str(tmpdir.join('buildstream.conf'))
         user_config = {

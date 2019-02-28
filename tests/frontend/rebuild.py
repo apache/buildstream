@@ -19,7 +19,6 @@ def strict_args(args, strict):
 @pytest.mark.parametrize("strict", ["strict", "non-strict"])
 def test_rebuild(datafiles, cli, strict):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
 
     # First build intermediate target.bst
     result = cli.run(project=project, args=strict_args(['build', 'target.bst'], strict))

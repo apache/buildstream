@@ -91,7 +91,7 @@ class ArtifactShare():
             # Send port to parent
             q.put(port)
 
-        except Exception as e:
+        except Exception:
             q.put(None)
             raise
 

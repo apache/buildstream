@@ -365,7 +365,6 @@ def test_netrc_already_specified_user(cli, datafiles, server_type, tmpdir):
     os.makedirs(file_server_files, exist_ok=True)
     os.makedirs(fake_home, exist_ok=True)
     project = str(datafiles)
-    checkoutdir = os.path.join(str(tmpdir), 'checkout')
 
     os.environ['HOME'] = fake_home
     with open(os.path.join(fake_home, '.netrc'), 'wb') as f:

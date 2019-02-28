@@ -807,9 +807,6 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
 ])
 def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    bin_files_path = os.path.join(project, 'files', 'bin-files')
-    element_path = os.path.join(project, 'elements')
-    element_name = 'workspace-version.bst'
     os.makedirs(os.path.join(project, '.bst'))
     workspace_config_path = os.path.join(project, '.bst', 'workspaces.yml')
 

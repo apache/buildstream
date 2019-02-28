@@ -320,7 +320,7 @@ def test_argument_artifact(cli, tmpdir, datafiles):
             'COMP_WORDS': cmd,
             'COMP_CWORD': str(word_idx)
         })
-        words = []
+
         if result.output:
             words = result.output.splitlines()  # This leaves an extra space on each e.g. ['foo.bst ']
             words = [word.strip() for word in words]

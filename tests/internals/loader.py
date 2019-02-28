@@ -46,7 +46,7 @@ def test_missing_file(datafiles):
     loader = make_loader(basedir)
 
     with pytest.raises(LoadError) as exc:
-        element = loader.load(['elements/missing.bst'])[0]
+        loader.load(['elements/missing.bst'])[0]
 
     assert (exc.value.reason == LoadErrorReason.MISSING_FILE)
 
@@ -58,7 +58,7 @@ def test_invalid_reference(datafiles):
     loader = make_loader(basedir)
 
     with pytest.raises(LoadError) as exc:
-        element = loader.load(['elements/badreference.bst'])[0]
+        loader.load(['elements/badreference.bst'])[0]
 
     assert (exc.value.reason == LoadErrorReason.INVALID_YAML)
 
@@ -70,7 +70,7 @@ def test_invalid_yaml(datafiles):
     loader = make_loader(basedir)
 
     with pytest.raises(LoadError) as exc:
-        element = loader.load(['elements/badfile.bst'])[0]
+        loader.load(['elements/badfile.bst'])[0]
 
     assert (exc.value.reason == LoadErrorReason.INVALID_YAML)
 
@@ -95,7 +95,7 @@ def test_invalid_key(datafiles):
     loader = make_loader(basedir)
 
     with pytest.raises(LoadError) as exc:
-        element = loader.load(['elements/invalidkey.bst'])[0]
+        loader.load(['elements/invalidkey.bst'])[0]
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
 
@@ -107,6 +107,6 @@ def test_invalid_directory_load(datafiles):
     loader = make_loader(basedir)
 
     with pytest.raises(LoadError) as exc:
-        element = loader.load(['elements/'])[0]
+        loader.load(['elements/'])[0]
 
     assert (exc.value.reason == LoadErrorReason.LOADING_DIRECTORY)

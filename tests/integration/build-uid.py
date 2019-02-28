@@ -20,7 +20,6 @@ DATA_DIR = os.path.join(
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_uid_overridden(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'build-uid/build-uid.bst'
 
     project_config = {
@@ -39,7 +38,6 @@ def test_build_uid_overridden(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_uid_in_project(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'build-uid/build-uid-1023.bst'
 
     project_config = {
@@ -58,7 +56,6 @@ def test_build_uid_in_project(cli, tmpdir, datafiles):
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_build_uid_default(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'build-uid/build-uid-default.bst'
 
     result = cli.run(project=project, args=['build', element_name])

@@ -93,9 +93,8 @@ def test_mirror_fetch(cli, tmpdir, datafiles, kind):
 
     # Create repo objects of the upstream and mirror
     upstream_repo = create_repo(kind, upstream_repodir)
-    upstream_ref = upstream_repo.create(bin_files_path)
+    upstream_repo.create(bin_files_path)
     mirror_repo = upstream_repo.copy(mirror_repodir)
-    mirror_ref = upstream_ref
     upstream_ref = upstream_repo.create(dev_files_path)
 
     element = {
@@ -154,9 +153,8 @@ def test_mirror_fetch_ref_storage(cli, tmpdir, datafiles, ref_storage, mirror):
 
     # Create repo objects of the upstream and mirror
     upstream_repo = create_repo('tar', upstream_repodir)
-    upstream_ref = upstream_repo.create(bin_files_path)
+    upstream_repo.create(bin_files_path)
     mirror_repo = upstream_repo.copy(mirror_repodir)
-    mirror_ref = upstream_ref
     upstream_ref = upstream_repo.create(dev_files_path)
 
     element = {
@@ -219,7 +217,6 @@ def test_mirror_fetch_ref_storage(cli, tmpdir, datafiles, ref_storage, mirror):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
-    bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
     dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')
     upstream_repodir = os.path.join(str(tmpdir), 'upstream')
     mirror_repodir = os.path.join(str(tmpdir), 'mirror')
@@ -417,9 +414,8 @@ def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
 
     # Create repo objects of the upstream and mirror
     upstream_repo = create_repo(kind, upstream_repodir)
-    upstream_ref = upstream_repo.create(bin_files_path)
+    upstream_repo.create(bin_files_path)
     mirror_repo = upstream_repo.copy(mirror_repodir)
-    mirror_ref = upstream_ref
     upstream_ref = upstream_repo.create(dev_files_path)
 
     element = {
@@ -613,7 +609,6 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
 @pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
     bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
-    dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')
     upstream_repodir = os.path.join(str(tmpdir), 'upstream')
     mirror_repodir = os.path.join(str(tmpdir), 'mirror')
     project_dir = os.path.join(str(tmpdir), 'project')
@@ -698,19 +693,19 @@ def test_mirror_git_submodule_fetch(cli, tmpdir, datafiles):
     mirror_dir = os.path.join(str(datafiles), 'mirror')
 
     defined_subrepo = create_repo('git', str(tmpdir), 'defined_subrepo')
-    defined_mirror_ref = defined_subrepo.create(bin_files_path)
-    defined_mirror = defined_subrepo.copy(mirror_dir)
-    defined_subref = defined_subrepo.add_file(foo_file)
+    defined_subrepo.create(bin_files_path)
+    defined_subrepo.copy(mirror_dir)
+    defined_subrepo.add_file(foo_file)
 
     found_subrepo = create_repo('git', str(tmpdir), 'found_subrepo')
-    found_subref = found_subrepo.create(dev_files_path)
+    found_subrepo.create(dev_files_path)
 
     main_repo = create_repo('git', str(tmpdir))
     main_mirror_ref = main_repo.create(bin_files_path)
     main_repo.add_submodule('defined', 'file://' + defined_subrepo.repo)
     main_repo.add_submodule('found', 'file://' + found_subrepo.repo)
     main_mirror = main_repo.copy(mirror_dir)
-    main_ref = main_repo.add_file(bar_file)
+    main_repo.add_file(bar_file)
 
     project_dir = os.path.join(str(tmpdir), 'project')
     os.makedirs(project_dir)

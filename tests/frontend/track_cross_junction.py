@@ -28,10 +28,8 @@ def generate_import_element(tmpdir, kind, project, name):
     with open(os.path.join(files, '{}.txt'.format(name)), 'w') as f:
         f.write(name)
 
-    subproject_path = os.path.join(str(tmpdir.join('sub-project-{}'.format(name))))
-
     repo = create_repo(kind, str(tmpdir.join('element_{}_repo'.format(name))))
-    ref = repo.create(files)
+    repo.create(files)
 
     generate_element(repo, repo_element_path)
 

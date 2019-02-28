@@ -42,9 +42,7 @@ def test_show(cli, datafiles, target, format, expected):
 ))
 def test_show_invalid_element_path(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    result = cli.run(project=project, silent=True, args=[
-        'show',
-        "foo.bst"])
+    cli.run(project=project, silent=True, args=['show', "foo.bst"])
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project_default'))

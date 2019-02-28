@@ -18,7 +18,6 @@ DATA_DIR = os.path.join(
 @pytest.mark.datafiles(DATA_DIR)
 def test_running_commands_build(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
 
     result = cli.run(project=project, args=['build', 'hello.bst'])
     assert result.exit_code == 0

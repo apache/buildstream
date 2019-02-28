@@ -24,7 +24,6 @@ DATA_DIR = os.path.join(
 def test_build_checkout_cached_fail(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements', 'element.bst')
-    workspace = os.path.join(cli.directory, 'workspace')
     checkout = os.path.join(cli.directory, 'checkout')
 
     # Write out our test target
@@ -69,8 +68,6 @@ def test_build_depend_on_cached_fail(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dep_path = os.path.join(project, 'elements', 'dep.bst')
     target_path = os.path.join(project, 'elements', 'target.bst')
-    workspace = os.path.join(cli.directory, 'workspace')
-    checkout = os.path.join(cli.directory, 'checkout')
 
     dep = {
         'kind': 'script',

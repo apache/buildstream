@@ -30,7 +30,7 @@ def test_custom_transform_source(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Ensure we get correct output from foo_transform
-    result = cli.run(project=project, args=[
+    cli.run(project=project, args=[
         'build', 'target.bst'
     ])
     destpath = os.path.join(cli.directory, 'checkout')

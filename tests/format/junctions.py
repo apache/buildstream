@@ -213,7 +213,6 @@ def test_options_inherit(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_git_show(cli, tmpdir, datafiles):
     project = os.path.join(str(datafiles), 'foo')
-    checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the repo from 'base' subdir
     repo = create_repo('git', str(tmpdir))

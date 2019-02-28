@@ -111,7 +111,7 @@ def test_missing_element_path_directory(cli, datafiles):
 def test_element_path_not_a_directory(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     path = os.path.join(project, 'elements')
-    for file_type in filetypegenerator.generate_file_types(path):
+    for _file_type in filetypegenerator.generate_file_types(path):
         result = cli.run(project=project, args=['workspace', 'list'])
         if not os.path.isdir(path):
             result.assert_main_error(ErrorDomain.LOAD,
@@ -132,7 +132,7 @@ def test_missing_local_plugin_directory(cli, datafiles):
 def test_local_plugin_not_directory(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     path = os.path.join(project, 'plugins')
-    for file_type in filetypegenerator.generate_file_types(path):
+    for _file_type in filetypegenerator.generate_file_types(path):
         result = cli.run(project=project, args=['workspace', 'list'])
         if not os.path.isdir(path):
             result.assert_main_error(ErrorDomain.LOAD,

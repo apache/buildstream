@@ -100,7 +100,7 @@ def test_push(cli, tmpdir, datafiles):
                     {'url': share2.repo, 'push': True},
                 ]
             })
-            result = cli.run(project=project, args=['artifact', 'push', 'target.bst'])
+            cli.run(project=project, args=['artifact', 'push', 'target.bst'])
 
             assert_not_shared(cli, share1, project, 'target.bst')
             assert_shared(cli, share2, project, 'target.bst')
@@ -114,7 +114,7 @@ def test_push(cli, tmpdir, datafiles):
                     {'url': share2.repo, 'push': True},
                 ]
             })
-            result = cli.run(project=project, args=['artifact', 'push', 'target.bst'])
+            cli.run(project=project, args=['artifact', 'push', 'target.bst'])
 
             assert_shared(cli, share1, project, 'target.bst')
             assert_shared(cli, share2, project, 'target.bst')
@@ -389,7 +389,7 @@ def test_push_cross_junction(cli, tmpdir, datafiles):
         cli.configure({
             'artifacts': {'url': share.repo, 'push': True},
         })
-        result = cli.run(project=project, args=['artifact', 'push', 'junction.bst:import-etc.bst'])
+        cli.run(project=project, args=['artifact', 'push', 'junction.bst:import-etc.bst'])
 
         cache_key = cli.get_element_key(project, 'junction.bst:import-etc.bst')
         assert share.has_artifact('subtest', 'import-etc.bst', cache_key)

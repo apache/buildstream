@@ -119,7 +119,7 @@ def test_node_get(datafiles):
 
     extra = _yaml.node_get(base, Mapping, 'extra')
     with pytest.raises(LoadError) as exc:
-        wrong = _yaml.node_get(extra, Mapping, 'old')
+        _yaml.node_get(extra, Mapping, 'old')
 
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
 
@@ -409,5 +409,5 @@ def test_value_doesnt_match_expected(datafiles):
     test_dict = _yaml.load(conf_file)
 
     with pytest.raises(LoadError) as exc:
-        user_config = _yaml.node_get(test_dict, int, "Test4")
+        _yaml.node_get(test_dict, int, "Test4")
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
