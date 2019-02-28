@@ -227,6 +227,52 @@ class Artifact():
 
         return True
 
+    # load_public_data():
+    #
+    # Loads the public data from the cached artifact
+    #
+    # Returns:
+    #    (dict): The artifacts cached public data
+    #
+    def load_public_data(self):
+
+        element = self._element
+        assert element._cached()
+
+        # Load the public data from the artifact
+        artifact_vdir, _ = self._get_directory()
+        meta_file = artifact_vdir._objpath(['meta', 'public.yaml'])
+        data = _yaml.load(meta_file, shortname='meta/public.yaml')
+
+        return data
+
+    # load_build_result():
+    #
+    # Load the build result from the cached artifact
+    #
+    # Args:
+    #    key (str): The key for the artifact to extract
+    #
+    # Returns:
+    #    (bool): Whether the artifact of this element present in the artifact cache is of a success
+    #    (str): Short description of the result
+    #    (str): Detailed description of the result
+    #
+    def load_build_result(self, key):
+
+        assert key is not None
+        artifact_vdir, _ = self._get_directory(key)
+
+        meta_file = artifact_vdir._objpath(['meta', 'build-result.yaml'])
+        if not os.path.exists(meta_file):
+            build_result = (True, "succeeded", None)
+            return build_result
+
+        data = _yaml.load(meta_file, shortname='meta/build-result.yaml')
+        build_result = (data["success"], data.get("description"), data.get("detail"))
+
+        return build_result
+
     # _get_directory():
     #
     # Get a virtual directory for the artifact contents

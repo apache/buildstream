@@ -2766,32 +2766,20 @@ class Element(Plugin):
     # Loads the public data from the cached artifact
     #
     def __load_public_data(self):
-        self.__assert_cached()
         assert self.__dynamic_public is None
 
-        # Load the public data from the artifact
-        artifact_vdir, _ = self.__get_artifact_directory()
-        meta_file = artifact_vdir._objpath(['meta', 'public.yaml'])
-        self.__dynamic_public = _yaml.load(meta_file, shortname='meta/public.yaml')
+        self.__dynamic_public = self.__artifact.load_public_data()
 
     def __load_build_result(self, keystrength):
         self.__assert_cached(keystrength=keystrength)
         assert self.__build_result is None
 
-        if keystrength is _KeyStrength.WEAK:
-            key = self.__weak_cache_key
-        else:
-            key = self.__strict_cache_key
+        # _get_cache_key with _KeyStrength.STRONG returns self.__cache_key, which can be `None`
+        # leading to a failed assertion from get_artifact_directory() using get_artifact_name(),
+        # so explicility pass self.__strict_cache_key
+        key = self.__weak_cache_key if keystrength is _KeyStrength.WEAK else self.__strict_cache_key
 
-        artifact_vdir, _ = self.__get_artifact_directory(key)
-
-        if not artifact_vdir._exists(['meta', 'build-result.yaml']):
-            self.__build_result = (True, "succeeded", None)
-            return
-
-        result_path = artifact_vdir._objpath(['meta', 'build-result.yaml'])
-        data = _yaml.load(result_path)
-        self.__build_result = (data["success"], data.get("description"), data.get("detail"))
+        self.__build_result = self.__artifact.load_build_result(key)
 
     def __get_build_result(self, keystrength):
         if keystrength is None:
