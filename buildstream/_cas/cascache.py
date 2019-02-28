@@ -135,53 +135,6 @@ class CASCache():
         # True if subdir content is cached or if empty as expected
         return os.path.exists(objpath)
 
-    # extract():
-    #
-    # Extract cached directory for the specified ref if it hasn't
-    # already been extracted.
-    #
-    # Args:
-    #     ref (str): The ref whose directory to extract
-    #     path (str): The destination path
-    #     subdir (str): Optional specific dir to extract
-    #
-    # Raises:
-    #     CASCacheError: In cases there was an OSError, or if the ref did not exist.
-    #
-    # Returns: path to extracted directory
-    #
-    def extract(self, ref, path, subdir=None):
-        tree = self.resolve_ref(ref, update_mtime=True)
-
-        originaldest = dest = os.path.join(path, tree.hash)
-
-        # If artifact is already extracted, check if the optional subdir
-        # has also been extracted. If the artifact has not been extracted
-        # a full extraction would include the optional subdir
-        if os.path.isdir(dest):
-            if subdir:
-                if not os.path.isdir(os.path.join(dest, subdir)):
-                    dest = os.path.join(dest, subdir)
-                    tree = self._get_subdir(tree, subdir)
-                else:
-                    return dest
-            else:
-                return dest
-
-        with utils._tempdir(prefix='tmp', dir=self.tmpdir) as tmpdir:
-            checkoutdir = os.path.join(tmpdir, ref)
-            self.checkout(checkoutdir, tree, can_link=True)
-
-            try:
-                utils.move_atomic(checkoutdir, dest)
-            except utils.DirectoryExistsError:
-                # Another process beat us to rename
-                pass
-            except OSError as e:
-                raise CASCacheError("Failed to extract directory for ref '{}': {}".format(ref, e)) from e
-
-        return originaldest
-
     # checkout():
     #
     # Checkout the specified directory digest.

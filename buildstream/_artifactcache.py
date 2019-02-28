@@ -54,7 +54,6 @@ class ArtifactCacheSpec(CASRemoteSpec):
 class ArtifactCache():
     def __init__(self, context):
         self.context = context
-        self.extractdir = context.extractdir
 
         self.cas = context.get_cascache()
         self.casquota = context.get_casquota()
@@ -72,8 +71,6 @@ class ArtifactCache():
 
         self._has_fetch_remotes = False
         self._has_push_remotes = False
-
-        os.makedirs(self.extractdir, exist_ok=True)
 
     # setup_remotes():
     #
@@ -423,51 +420,28 @@ class ArtifactCache():
     #    (int): The amount of space recovered in the cache, in bytes
     #
     def remove(self, ref):
-
-        # Remove extract if not used by other ref
-        tree = self.cas.resolve_ref(ref)
-        ref_name, ref_hash = os.path.split(ref)
-        extract = os.path.join(self.extractdir, ref_name, tree.hash)
-        keys_file = os.path.join(extract, 'meta', 'keys.yaml')
-        if os.path.exists(keys_file):
-            keys_meta = _yaml.load(keys_file)
-            keys = [keys_meta['strong'], keys_meta['weak']]
-            remove_extract = True
-            for other_hash in keys:
-                if other_hash == ref_hash:
-                    continue
-                remove_extract = False
-                break
-
-            if remove_extract:
-                utils._force_rmtree(extract)
-
         return self.cas.remove(ref)
 
-    # extract():
+    # get_artifact_directory():
     #
-    # Extract cached artifact for the specified Element if it hasn't
-    # already been extracted.
+    # Get virtual directory for cached artifact of the specified Element.
     #
     # Assumes artifact has previously been fetched or committed.
     #
     # Args:
     #     element (Element): The Element to extract
     #     key (str): The cache key to use
-    #     subdir (str): Optional specific subdir to extract
     #
     # Raises:
     #     ArtifactError: In cases there was an OSError, or if the artifact
     #                    did not exist.
     #
-    # Returns: path to extracted artifact
+    # Returns: virtual directory object
     #
-    def extract(self, element, key, subdir=None):
+    def get_artifact_directory(self, element, key):
         ref = element.get_artifact_name(key)
-
-        path = os.path.join(self.extractdir, element._get_project().name, element.normal_name)
-
-        return self.cas.extract(ref, path, subdir=subdir)
+        digest = self.cas.resolve_ref(ref, update_mtime=True)
+        return CasBasedDirectory(self.cas, digest)
 
     # commit():
     #
@@ -609,11 +583,6 @@ class ArtifactCache():
 
                 if self.cas.pull(ref, remote, progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs):
                     element.info("Pulled artifact {} <- {}".format(display_key, remote.spec.url))
-                    if subdir:
-                        # Attempt to extract subdir into artifact extract dir if it already exists
-                        # without containing the subdir. If the respective artifact extract dir does not
-                        # exist a complete extraction will complete.
-                        self.extract(element, key, subdir)
                     # no need to pull from additional remotes
                     return True
                 else:

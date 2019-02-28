@@ -18,6 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
+import shutil
 import datetime
 from collections import deque
 from collections.abc import Mapping
@@ -69,9 +70,6 @@ class Context():
 
         # The directory for CAS
         self.casdir = None
-
-        # Extract directory
-        self.extractdir = None
 
         # The directory for temporary files
         self.tmpdir = None
@@ -218,7 +216,6 @@ class Context():
             setattr(self, directory, path)
 
         # add directories not set by users
-        self.extractdir = os.path.join(self.cachedir, 'extract')
         self.tmpdir = os.path.join(self.cachedir, 'tmp')
         self.casdir = os.path.join(self.cachedir, 'cas')
         self.builddir = os.path.join(self.cachedir, 'build')
@@ -229,6 +226,13 @@ class Context():
                 not os.path.exists(self.casdir)):
             os.rename(old_casdir, self.casdir)
             os.symlink(self.casdir, old_casdir)
+
+        # Cleanup old extract directories
+        old_extractdirs = [os.path.join(self.cachedir, 'artifacts', 'extract'),
+                           os.path.join(self.cachedir, 'extract')]
+        for old_extractdir in old_extractdirs:
+            if os.path.isdir(old_extractdir):
+                shutil.rmtree(old_extractdir, ignore_errors=True)
 
         # Load quota configuration
         # We need to find the first existing directory in the path of our

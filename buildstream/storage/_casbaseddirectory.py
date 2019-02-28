@@ -591,3 +591,15 @@ class CasBasedDirectory(Directory):
         if not self.ref:
             self.ref = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
         return self.ref
+
+    def _objpath(self, path):
+        subdir = self.descend(path[:-1])
+        entry = subdir.index[path[-1]]
+        return self.cas_cache.objpath(entry.pb_object.digest)
+
+    def _exists(self, path):
+        try:
+            subdir = self.descend(path[:-1])
+            return path[-1] in subdir.index
+        except VirtualDirectoryError:
+            return False
