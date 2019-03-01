@@ -346,7 +346,7 @@ class Cli():
             except ValueError:
                 sys.__stdout__ = open('/dev/stdout', 'w')
 
-            result = self.invoke(bst_cli, bst_args, binary_capture=binary_capture)
+            result = self._invoke(bst_cli, bst_args, binary_capture=binary_capture)
 
         # Some informative stdout we can observe when anything fails
         if self.verbose:
@@ -363,7 +363,7 @@ class Cli():
 
         return result
 
-    def invoke(self, cli_object, args=None, color=False, binary_capture=False, **extra):
+    def _invoke(self, cli_object, args=None, binary_capture=False):
         exc_info = None
         exception = None
         exit_code = 0
@@ -378,7 +378,7 @@ class Cli():
             capture.start_capturing()
 
             try:
-                cli_object.main(args=args or (), prog_name=cli_object.name, **extra)
+                cli_object.main(args=args or (), prog_name=cli_object.name)
             except SystemExit as e:
                 if e.code != 0:
                     exception = e
