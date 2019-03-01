@@ -986,6 +986,13 @@ class Source(Plugin):
             self.get_kind(),
             self._key)
 
+    def _get_brief_display_key(self):
+        context = self._get_context()
+        key = self._key
+
+        length = min(len(key), context.log_key_length)
+        return key[:length]
+
     #############################################################
     #                   Local Private Methods                   #
     #############################################################
