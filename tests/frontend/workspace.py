@@ -657,14 +657,14 @@ def test_build(cli, tmpdir_factory, datafiles, kind, strict, from_workspace, gue
     # Build modified workspace
     assert cli.get_element_state(project, element_name) == 'buildable'
     assert cli.get_element_key(project, element_name) == "{:?<64}".format('')
-    result = cli.run(project=project, args=args_dir + ['build'] + args_elm)
+    result = cli.run(project=project, args=args_dir + ['build', *args_elm])
     result.assert_success()
     assert cli.get_element_state(project, element_name) == 'cached'
     assert cli.get_element_key(project, element_name) != "{:?<64}".format('')
 
     # Checkout the result
     result = cli.run(project=project,
-                     args=args_dir + ['artifact', 'checkout', '--directory', checkout] + args_elm)
+                     args=args_dir + ['artifact', 'checkout', '--directory', checkout, *args_elm])
     result.assert_success()
 
     # Check that the pony.conf from the modified workspace exists
@@ -1101,7 +1101,7 @@ def test_external_fetch(cli, datafiles, tmpdir_factory, subdir, guess_element):
     assert cli.get_element_state(str(datafiles), depend_element) == 'fetch needed'
 
     # Fetch the workspaced element
-    result = cli.run(project=project, args=['-C', call_dir, 'source', 'fetch'] + arg_elm)
+    result = cli.run(project=project, args=['-C', call_dir, 'source', 'fetch', *arg_elm])
     result.assert_success()
 
     # Assert that the depended element has now been fetched
@@ -1124,10 +1124,10 @@ def test_external_push_pull(cli, datafiles, tmpdir_factory, guess_element):
             'artifacts': {'url': share.repo, 'push': True}
         })
 
-        result = cli.run(project=project, args=['-C', workspace, 'artifact', 'push'] + arg_elm)
+        result = cli.run(project=project, args=['-C', workspace, 'artifact', 'push', *arg_elm])
         result.assert_success()
 
-        result = cli.run(project=project, args=['-C', workspace, 'artifact', 'pull', '--deps', 'all'] + arg_elm)
+        result = cli.run(project=project, args=['-C', workspace, 'artifact', 'pull', '--deps', 'all', *arg_elm])
         result.assert_success()
 
 
@@ -1145,7 +1145,7 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
     del element_contents['sources'][0]['ref']
     _yaml.dump(_yaml.node_sanitize(element_contents), element_file)
 
-    result = cli.run(project=project, args=['-C', workspace, 'source', 'track'] + arg_elm)
+    result = cli.run(project=project, args=['-C', workspace, 'source', 'track', *arg_elm])
     result.assert_success()
 
     # Element is tracked now
@@ -1198,7 +1198,7 @@ def test_external_close_self(cli, datafiles, tmpdir_factory, guess_element):
     beta_element, _, beta_workspace = open_workspace(cli, tmpdir2, datafiles, "git", False, suffix="-beta")
     arg_elm = [alpha_element] if not guess_element else []
 
-    result = cli.run(project=project, args=['-C', alpha_workspace, 'workspace', 'close'] + arg_elm)
+    result = cli.run(project=project, args=['-C', alpha_workspace, 'workspace', 'close', *arg_elm])
     result.assert_success()
     assert 'you can no longer run BuildStream' in result.stderr
 
@@ -1222,7 +1222,7 @@ def test_external_reset_self(cli, datafiles, tmpdir, guess_element):
     arg_elm = [element] if not guess_element else []
 
     # Command succeeds
-    result = cli.run(project=project, args=['-C', workspace, 'workspace', 'reset'] + arg_elm)
+    result = cli.run(project=project, args=['-C', workspace, 'workspace', 'reset', *arg_elm])
     result.assert_success()
 
     # Successive commands still work (i.e. .bstproject.yaml hasn't been deleted)

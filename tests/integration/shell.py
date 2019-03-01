@@ -40,7 +40,7 @@ def execute_shell(cli, project, command, *, config=None, mount=None, element='ba
     if mount is not None:
         host_path, target_path = mount
         args += ['--mount', host_path, target_path]
-    args += [element, '--'] + command
+    args += [element, '--', *command]
 
     return cli.run(project=project, project_config=config, args=args)
 

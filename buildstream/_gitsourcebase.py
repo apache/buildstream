@@ -171,7 +171,7 @@ class GitMirror(SourceFetcher):
         tags = set()
         for options in [[], ['--first-parent'], ['--tags'], ['--tags', '--first-parent']]:
             exit_code, output = self.source.check_output(
-                [self.source.host_git, 'describe', '--abbrev=0', ref] + options,
+                [self.source.host_git, 'describe', '--abbrev=0', ref, *options],
                 cwd=self.mirror)
             if exit_code == 0:
                 tag = output.strip()
