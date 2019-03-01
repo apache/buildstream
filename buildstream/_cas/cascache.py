@@ -1226,8 +1226,9 @@ class CASQuota:
         # Also check that cache_quota is at least as large as our headroom.
         #
         cache_quota = self._config_cache_quota
-        if cache_quota is None:  # Infinity, set to max system storage
-            cache_quota = cache_size + available_space
+        if cache_quota is None:
+            # The user has set no limit, so we may take all the space.
+            cache_quota = min(cache_size + available_space, total_size)
         if cache_quota < self._cache_quota_headroom:  # Check minimum
             raise LoadError(
                 LoadErrorReason.INVALID_DATA,
