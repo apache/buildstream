@@ -29,7 +29,7 @@ def create_test_directory(*path, mode=0o644):
 
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS] + ['local'])
+@pytest.mark.parametrize("kind", ['local', *ALL_REPO_KINDS])
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
     project = str(datafiles)

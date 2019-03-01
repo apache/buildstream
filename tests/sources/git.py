@@ -869,11 +869,11 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
         options = []
     else:
         options = ['--tags']
-    describe = subprocess.check_output(['git', 'describe'] + options,
+    describe = subprocess.check_output(['git', 'describe', *options],
                                        cwd=checkout).decode('ascii')
     assert describe.startswith('tag2-2-')
 
-    describe_fp = subprocess.check_output(['git', 'describe', '--first-parent'] + options,
+    describe_fp = subprocess.check_output(['git', 'describe', '--first-parent', *options],
                                           cwd=checkout).decode('ascii')
     assert describe_fp.startswith('tag1-2-')
 
@@ -979,7 +979,7 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
         options = []
     else:
         options = ['--tags']
-    describe = subprocess.check_output(['git', 'describe'] + options,
+    describe = subprocess.check_output(['git', 'describe', *options],
                                        cwd=checkout).decode('ascii')
     assert describe.startswith('tag')
 

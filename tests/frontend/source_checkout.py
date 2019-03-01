@@ -50,7 +50,7 @@ def test_source_checkout(datafiles, cli, tmpdir_factory, with_workspace, guess_e
     else:
         ws_cmd = []
 
-    args = ws_cmd + ['source', 'checkout', '--deps', 'none'] + elm_cmd + [checkout]
+    args = ws_cmd + ['source', 'checkout', '--deps', 'none', *elm_cmd, checkout]
     result = cli.run(project=project, args=args)
     result.assert_success()
 

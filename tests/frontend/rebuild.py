@@ -11,7 +11,7 @@ DATA_DIR = os.path.join(
 
 def strict_args(args, strict):
     if strict != "strict":
-        return ['--no-strict'] + args
+        return ['--no-strict', *args]
     return args
 
 

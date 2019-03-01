@@ -181,7 +181,7 @@ def test_parallel_order(cli, tmpdir, datafiles):
     elements = ['multiple_targets/order/0.bst',
                 'multiple_targets/order/1.bst']
 
-    args = ['show', '-d', 'plan', '-f', '%{name}'] + elements
+    args = ['show', '-d', 'plan', '-f', '%{name}', *elements]
     result = cli.run(project=project, args=args)
 
     result.assert_success()
@@ -210,7 +210,7 @@ def test_target_is_dependency(cli, tmpdir, datafiles):
     elements = ['multiple_targets/dependency/zebry.bst',
                 'multiple_targets/dependency/horsey.bst']
 
-    args = ['show', '-d', 'plan', '-f', '%{name}'] + elements
+    args = ['show', '-d', 'plan', '-f', '%{name}', *elements]
     result = cli.run(project=project, args=args)
 
     result.assert_success()

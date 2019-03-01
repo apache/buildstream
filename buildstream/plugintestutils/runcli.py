@@ -433,7 +433,8 @@ class Cli():
             'show',
             '--deps', deps,
             '--format', '%{name}||%{state}',
-        ] + targets)
+            *targets
+        ])
         result.assert_success()
         lines = result.output.splitlines()
         states = {}

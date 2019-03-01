@@ -182,10 +182,12 @@ class PipSource(Source):
             packages = self.ref.strip().split('\n')
             package_dir = os.path.join(tmpdir, 'packages')
             os.makedirs(package_dir)
-            self.call(self.host_pip + ['download',
-                                       '--no-binary', ':all:',
-                                       '--index-url', self.index_url,
-                                       '--dest', package_dir] + packages,
+            self.call([*self.host_pip,
+                       'download',
+                       '--no-binary', ':all:',
+                       '--index-url', self.index_url,
+                       '--dest', package_dir,
+                       *packages],
                       fail="Failed to install python packages: {}".format(packages))
 
             # If the mirror directory already exists, assume that some other
