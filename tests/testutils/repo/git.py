@@ -98,8 +98,11 @@ class Git(Repo):
         return config
 
     def latest_commit(self):
-        output = self._run_git('rev-parse', 'HEAD', stdout=subprocess.PIPE).stdout
-        return output.decode('UTF-8').strip()
+        return self._run_git(
+            'rev-parse', 'HEAD',
+            stdout=subprocess.PIPE,
+            universal_newlines=True,
+        ).stdout.strip()
 
     def branch(self, branch_name):
         self._run_git('checkout', '-b', branch_name)
@@ -115,5 +118,8 @@ class Git(Repo):
         return self.latest_commit()
 
     def rev_parse(self, rev):
-        output = self._run_git('rev-parse', rev, stdout=subprocess.PIPE).stdout
-        return output.decode('UTF-8').strip()
+        return self._run_git(
+            'rev-parse', rev,
+            stdout=subprocess.PIPE,
+            universal_newlines=True,
+        ).stdout.strip()

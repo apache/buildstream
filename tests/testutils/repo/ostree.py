@@ -40,9 +40,8 @@ class OSTree(Repo):
         return config
 
     def latest_commit(self):
-        output = subprocess.check_output([
+        return subprocess.check_output([
             self.ostree, 'rev-parse',
             '--repo', self.repo,
             'master'
-        ])
-        return output.decode('UTF-8').strip()
+        ], universal_newlines=True).strip()

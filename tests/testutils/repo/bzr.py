@@ -43,9 +43,8 @@ class Bzr(Repo):
         return config
 
     def latest_commit(self):
-        output = subprocess.check_output([
+        return subprocess.check_output([
             self.bzr, 'version-info',
             '--custom', '--template={revno}',
             os.path.join(self.repo, 'trunk')
-        ], env=BZR_ENV)
-        return output.decode('UTF-8').strip()
+        ], env=BZR_ENV, universal_newlines=True).strip()
