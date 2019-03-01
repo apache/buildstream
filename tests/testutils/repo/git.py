@@ -4,7 +4,8 @@ import shutil
 import subprocess
 
 from .repo import Repo
-from ..site import HAVE_GIT
+from .. import site
+
 
 GIT_ENV = {
     'GIT_AUTHOR_DATE': '1320966000 +0200',
@@ -19,7 +20,7 @@ GIT_ENV = {
 class Git(Repo):
 
     def __init__(self, directory, subdir):
-        if not HAVE_GIT:
+        if not site.HAVE_GIT:
             pytest.skip("git is not available")
 
         self.submodules = {}
@@ -27,7 +28,7 @@ class Git(Repo):
         super(Git, self).__init__(directory, subdir)
 
     def _run_git(self, *args, **kwargs):
-        argv = ['git']
+        argv = [site.GIT]
         argv.extend(args)
         if 'env' not in kwargs:
             kwargs['env'] = dict(GIT_ENV, PWD=self.repo)
@@ -60,9 +61,7 @@ class Git(Repo):
 
     def modify_file(self, new_file, path):
         shutil.copy(new_file, os.path.join(self.repo, path))
-        subprocess.call([
-            'git', 'commit', path, '-m', 'Modified {}'.format(os.path.basename(path))
-        ], env=GIT_ENV, cwd=self.repo)
+        self._run_git('commit', path, '-m', 'Modified {}'.format(os.path.basename(path)))
         return self.latest_commit()
 
     def add_submodule(self, subdir, url=None, checkout=None):

@@ -2,9 +2,9 @@ import os
 import subprocess
 import pytest
 
-from buildstream import utils
 from .repo import Repo
-from ..site import HAVE_BZR
+from .. import site
+
 
 BZR_ENV = {
     "BZR_EMAIL": "Testy McTesterson <testy.mctesterson@example.com>"
@@ -14,10 +14,10 @@ BZR_ENV = {
 class Bzr(Repo):
 
     def __init__(self, directory, subdir):
-        if not HAVE_BZR:
+        if not site.HAVE_BZR:
             pytest.skip("bzr is not available")
         super(Bzr, self).__init__(directory, subdir)
-        self.bzr = utils.get_host_tool('bzr')
+        self.bzr = site.BZR
 
     def create(self, directory):
         branch_dir = os.path.join(self.repo, 'trunk')
