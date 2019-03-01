@@ -8,9 +8,6 @@ from buildstream.plugintestutils import cli, cli_integration
 from buildstream._exceptions import ErrorDomain
 
 
-pytestmark = pytest.mark.integration
-
-
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "project"

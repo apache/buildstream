@@ -6,9 +6,6 @@ from buildstream.plugintestutils import cli_integration as cli
 from tests.testutils.site import HAVE_SANDBOX
 
 
-pytestmark = pytest.mark.integration
-
-
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "project"

@@ -6,9 +6,6 @@ from buildstream.plugintestutils.integration import assert_contains
 from tests.testutils.site import HAVE_OSTREE, IS_LINUX, MACHINE_ARCH
 
 
-pytestmark = pytest.mark.integration
-
-
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..', '..', 'doc', 'examples', 'flatpak-autotools'
 )

@@ -31,8 +31,6 @@ from tests.testutils.site import HAVE_SANDBOX
 from buildstream._cas import CASCache
 from buildstream._exceptions import ErrorDomain
 
-pytestmark = pytest.mark.integration
-
 
 # Project directory
 DATA_DIR = os.path.join(

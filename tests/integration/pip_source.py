@@ -9,9 +9,6 @@ from tests.testutils.python_repo import setup_pypi_repo
 from tests.testutils.site import HAVE_SANDBOX
 
 
-pytestmark = pytest.mark.integration
-
-
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "project"
