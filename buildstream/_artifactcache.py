@@ -330,7 +330,7 @@ class ArtifactCache(BaseCache):
                     # no need to pull from additional remotes
                     return True
                 else:
-                    element.info("Remote ({}) does not have {} cached".format(
+                    element.info("Remote ({}) does not have artifact {} cached".format(
                         remote.spec.url, element._get_brief_display_key()
                     ))
 
