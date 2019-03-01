@@ -10,13 +10,13 @@ from buildstream import _site, utils, ProgramNotFoundError
 from buildstream._platform import Platform
 
 try:
-    utils.get_host_tool('bzr')
+    BZR = utils.get_host_tool('bzr')
     HAVE_BZR = True
 except ProgramNotFoundError:
     HAVE_BZR = False
 
 try:
-    utils.get_host_tool('git')
+    GIT = utils.get_host_tool('git')
     HAVE_GIT = True
     out = str(subprocess.check_output(['git', '--version']), "utf-8")
     version = tuple(int(x) for x in out.split(' ')[2].split('.'))
@@ -26,7 +26,7 @@ except ProgramNotFoundError:
     HAVE_OLD_GIT = False
 
 try:
-    utils.get_host_tool('ostree')
+    OSTREE_CLI = utils.get_host_tool('ostree')
     HAVE_OSTREE_CLI = True
 except ProgramNotFoundError:
     HAVE_OSTREE_CLI = False

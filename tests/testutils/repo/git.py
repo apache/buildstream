@@ -4,7 +4,8 @@ import shutil
 import subprocess
 
 from .repo import Repo
-from ..site import HAVE_GIT
+from .. import site
+
 
 GIT_ENV = {
     'GIT_AUTHOR_DATE': '1320966000 +0200',
@@ -19,7 +20,7 @@ GIT_ENV = {
 class Git(Repo):
 
     def __init__(self, directory, subdir):
-        if not HAVE_GIT:
+        if not site.HAVE_GIT:
             pytest.skip("git is not available")
 
         self.submodules = {}
@@ -27,7 +28,7 @@ class Git(Repo):
         super(Git, self).__init__(directory, subdir)
 
     def _run_git(self, *args, **kwargs):
-        argv = ['git']
+        argv = [site.GIT]
         argv.extend(args)
         if 'env' not in kwargs:
             kwargs['env'] = dict(GIT_ENV, PWD=self.repo)

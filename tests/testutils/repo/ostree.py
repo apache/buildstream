@@ -2,22 +2,23 @@ import pytest
 import subprocess
 from .repo import Repo
 
-from ..site import HAVE_OSTREE_CLI, HAVE_OSTREE
+from .. import site
 
 
 class OSTree(Repo):
 
     def __init__(self, directory, subdir):
-        if not HAVE_OSTREE_CLI or not HAVE_OSTREE:
+        if not site.HAVE_OSTREE_CLI or not site.HAVE_OSTREE:
             pytest.skip("ostree cli is not available")
 
         super(OSTree, self).__init__(directory, subdir)
+        self.ostree = site.OSTREE_CLI
 
     def create(self, directory):
-        subprocess.call(['ostree', 'init',
+        subprocess.call([self.ostree, 'init',
                          '--repo', self.repo,
                          '--mode', 'archive-z2'])
-        subprocess.call(['ostree', 'commit',
+        subprocess.call([self.ostree, 'commit',
                          '--repo', self.repo,
                          '--branch', 'master',
                          '--subject', 'Initial commit',
@@ -40,7 +41,7 @@ class OSTree(Repo):
 
     def latest_commit(self):
         output = subprocess.check_output([
-            'ostree', 'rev-parse',
+            self.ostree, 'rev-parse',
             '--repo', self.repo,
             'master'
         ])
