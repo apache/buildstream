@@ -2112,15 +2112,20 @@ class Element(Plugin):
     #
     def _fetch(self, fetch_original=False):
         previous_sources = []
-        source = None
+        sources = self.__sources
+        if sources and not fetch_original:
+            source = sources[-1]
+            if self.__sourcecache.contains(source):
+                return
 
-        # check whether the final source is cached
-        for source in self.sources():
-            pass
+            # try and fetch from source cache
+            if source._get_consistency() < Consistency.CACHED and \
+                    self.__sourcecache.has_fetch_remotes() and \
+                    not self.__sourcecache.contains(source):
+                if self.__sourcecache.pull(source):
+                    return
 
-        if source and not fetch_original and self.__sourcecache.contains(source):
-            return
-
+        # We need to fetch original sources
         for source in self.sources():
             source_consistency = source._get_consistency()
             if source_consistency != Consistency.CACHED:
