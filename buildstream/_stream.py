@@ -986,7 +986,7 @@ class Stream():
     #    track_cross_junctions (bool): Whether tracking should cross junction boundaries
     #    ignore_junction_targets (bool): Whether junction targets should be filtered out
     #    use_artifact_config (bool): Whether to initialize artifacts with the config
-    #    artifact_remote_url (bool): A remote url for initializing the artifacts
+    #    artifact_remote_url (str): A remote url for initializing the artifacts
     #    fetch_subprojects (bool): Whether to fetch subprojects while loading
     #
     # Returns:
