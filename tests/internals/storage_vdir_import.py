@@ -113,7 +113,8 @@ def file_contents_are(path, contents):
 def create_new_casdir(root_number, cas_cache, tmpdir):
     d = CasBasedDirectory(cas_cache)
     d.import_files(os.path.join(tmpdir, "content", "root{}".format(root_number)))
-    assert d.ref.hash != empty_hash_ref
+    digest = d._get_digest()
+    assert digest.hash != empty_hash_ref
     return d
 
 
@@ -175,7 +176,7 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
 
     duplicate_cas = create_new_casdir(original, cas_cache, tmpdir)
 
-    assert duplicate_cas.ref.hash == d.ref.hash
+    assert duplicate_cas._get_digest().hash == d._get_digest().hash
 
     d2 = create_new_casdir(overlay, cas_cache, tmpdir)
     d.import_files(d2)
@@ -213,7 +214,7 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
 
     duplicate_cas.import_files(roundtrip_dir)
 
-    assert duplicate_cas.ref.hash == d.ref.hash
+    assert duplicate_cas._get_digest().hash == d._get_digest().hash
 
 
 # It's possible to parameterize on both original and overlay values,

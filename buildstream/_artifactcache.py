@@ -441,7 +441,7 @@ class ArtifactCache():
     def get_artifact_directory(self, element, key):
         ref = element.get_artifact_name(key)
         digest = self.cas.resolve_ref(ref, update_mtime=True)
-        return CasBasedDirectory(self.cas, digest)
+        return CasBasedDirectory(self.cas, digest=digest)
 
     # commit():
     #
@@ -636,9 +636,6 @@ class ArtifactCache():
             raise ArtifactError("push_directory was called, but no remote artifact " +
                                 "servers are configured as push remotes.")
 
-        if directory.ref is None:
-            return
-
         for remote in push_remotes:
             self.cas.push_directory(remote, directory)
 
@@ -697,7 +694,7 @@ class ArtifactCache():
     def get_artifact_logs(self, ref):
         descend = ["logs"]
         cache_id = self.cas.resolve_ref(ref, update_mtime=True)
-        vdir = CasBasedDirectory(self.cas, cache_id).descend(descend)
+        vdir = CasBasedDirectory(self.cas, digest=cache_id).descend(descend)
         return vdir
 
     ################################################

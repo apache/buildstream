@@ -299,7 +299,7 @@ class SandboxRemote(Sandbox):
         # to replace the sandbox's virtual directory with that. Creating a new virtual directory object
         # from another hash will be interesting, though...
 
-        new_dir = CasBasedDirectory(context.artifactcache.cas, ref=dir_digest)
+        new_dir = CasBasedDirectory(context.artifactcache.cas, digest=dir_digest)
         self._set_virtual_directory(new_dir)
 
     def _run(self, command, flags, *, cwd, env):
@@ -308,13 +308,11 @@ class SandboxRemote(Sandbox):
         cascache = self._get_context().get_cascache()
         if isinstance(upload_vdir, FileBasedDirectory):
             # Make a new temporary directory to put source in
-            upload_vdir = CasBasedDirectory(cascache, ref=None)
+            upload_vdir = CasBasedDirectory(cascache)
             upload_vdir.import_files(self.get_virtual_directory()._get_underlying_directory())
 
-        upload_vdir.recalculate_hash()
-
         # Generate action_digest first
-        input_root_digest = upload_vdir.ref
+        input_root_digest = upload_vdir._get_digest()
         command_proto = self._create_command(command, cwd, env)
         command_digest = utils._message_digest(command_proto.SerializeToString())
         action = remote_execution_pb2.Action(command_digest=command_digest,
@@ -346,7 +344,7 @@ class SandboxRemote(Sandbox):
             except grpc.RpcError as e:
                 raise SandboxError("Failed to push source directory to remote: {}".format(e)) from e
 
-            if not casremote.verify_digest_on_remote(upload_vdir.ref):
+            if not casremote.verify_digest_on_remote(upload_vdir._get_digest()):
                 raise SandboxError("Failed to verify that source has been pushed to the remote artifact cache.")
 
             # Push command and action
