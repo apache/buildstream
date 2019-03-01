@@ -1,5 +1,5 @@
 import os
-import sys
+
 import pytest
 
 from buildstream import _yaml

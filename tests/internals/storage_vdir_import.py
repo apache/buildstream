@@ -2,14 +2,11 @@ from hashlib import sha256
 import os
 import pytest
 import random
-import tempfile
 from buildstream.plugintestutils import cli
 
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
-from buildstream._artifactcache import ArtifactCache
 from buildstream._cas import CASCache
-from buildstream import utils
 
 
 # These are comparitive tests that check that FileBasedDirectory and

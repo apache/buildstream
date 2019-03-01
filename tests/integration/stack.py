@@ -1,7 +1,6 @@
 import os
 import pytest
 
-from buildstream import _yaml
 from buildstream.plugintestutils import cli_integration as cli
 from tests.testutils.site import HAVE_SANDBOX
 

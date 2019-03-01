@@ -1,9 +1,6 @@
 import pytest
-import tempfile
 import os
 from buildstream.plugintestutils import cli
-from buildstream import _yaml
-import buildstream.plugins.elements.manual
 
 
 DATA_DIR = os.path.join(

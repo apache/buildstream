@@ -1,7 +1,6 @@
 import os
-import pytest
 
-from buildstream._exceptions import ErrorDomain
+import pytest
 
 from buildstream._cas import CASCache
 from buildstream.storage._casbaseddirectory import CasBasedDirectory

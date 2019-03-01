@@ -2,7 +2,7 @@ import os
 import pytest
 import shutil
 
-from buildstream import _yaml, ElementError
+from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream.plugintestutils import cli
 from tests.testutils import create_repo

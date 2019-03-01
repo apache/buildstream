@@ -1,7 +1,7 @@
 import os
 import pytest
 import re
-from tests.testutils import create_repo, ALL_REPO_KINDS
+from tests.testutils import create_repo
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain

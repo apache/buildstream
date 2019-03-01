@@ -1,7 +1,7 @@
 import os
 import pytest
 import shutil
-from tests.testutils import create_repo, ALL_REPO_KINDS
+from tests.testutils import create_repo
 from buildstream.plugintestutils import cli
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml

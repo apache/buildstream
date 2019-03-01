@@ -29,7 +29,6 @@ from buildstream.plugintestutils import cli_integration as cli
 from tests.testutils import create_artifact_share
 from tests.testutils.site import HAVE_SANDBOX
 from buildstream._cas import CASCache
-from buildstream._exceptions import ErrorDomain
 
 pytestmark = pytest.mark.integration
 

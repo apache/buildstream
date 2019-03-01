@@ -29,13 +29,12 @@ import stat
 import pytest
 import shutil
 import subprocess
-from ruamel.yaml.comments import CommentedSet
 from tests.testutils import create_repo, ALL_REPO_KINDS, wait_for_cache_granularity
 from tests.testutils import create_artifact_share, create_element_size
 
 from buildstream.plugintestutils import cli
 from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain, LoadError, LoadErrorReason
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream._workspaces import BST_WORKSPACE_FORMAT_VERSION
 
 repo_kinds = [(kind) for kind in ALL_REPO_KINDS]

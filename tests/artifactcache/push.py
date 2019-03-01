@@ -4,7 +4,6 @@ import signal
 
 import pytest
 
-from pluginbase import PluginBase
 from buildstream import _yaml, _signals, utils
 from buildstream._context import Context
 from buildstream._project import Project

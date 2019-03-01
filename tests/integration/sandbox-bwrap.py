@@ -4,7 +4,6 @@ import pytest
 from buildstream._exceptions import ErrorDomain
 
 from buildstream.plugintestutils import cli_integration as cli
-from buildstream.plugintestutils.integration import assert_contains
 from tests.testutils.site import HAVE_BWRAP, HAVE_BWRAP_JSON_STATUS
 
 

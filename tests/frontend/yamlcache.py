@@ -1,10 +1,9 @@
 import os
 import pytest
-import hashlib
 import tempfile
 from ruamel import yaml
 
-from tests.testutils import generate_junction, create_element_size, create_repo
+from tests.testutils import generate_junction, create_element_size
 from buildstream.plugintestutils import cli
 from buildstream import _yaml
 from buildstream._yamlcache import YamlCache

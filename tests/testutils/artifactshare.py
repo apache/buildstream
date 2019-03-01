@@ -1,6 +1,4 @@
 import string
-import pytest
-import subprocess
 import os
 import shutil
 import signal
@@ -10,7 +8,6 @@ from contextlib import contextmanager
 from multiprocessing import Process, Queue
 import pytest_cov
 
-from buildstream import _yaml
 from buildstream._cas import CASCache
 from buildstream._cas.casserver import create_server
 from buildstream._exceptions import CASError

@@ -1,12 +1,7 @@
-import io
 import os
-import sys
 import pytest
 
-from buildstream import _yaml
-
 from buildstream.plugintestutils import cli_integration as cli
-from buildstream.plugintestutils.integration import walk_dir
 
 
 pytestmark = pytest.mark.integration
