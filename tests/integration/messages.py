@@ -36,7 +36,6 @@ DATA_DIR = os.path.join(
 )
 
 
-@pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_disable_message_lines(cli, datafiles):
@@ -72,7 +71,6 @@ def test_disable_message_lines(cli, datafiles):
     assert "Message contains " not in result.stderr
 
 
-@pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_disable_error_lines(cli, datafiles):

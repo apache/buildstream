@@ -17,7 +17,6 @@ DATA_DIR = os.path.join(
 
 # Test that a make build 'works' - we use the make sample
 # makehello project for this.
-@pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_make_build(cli, datafiles):

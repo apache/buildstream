@@ -15,7 +15,6 @@ DATA_DIR = os.path.join(
 )
 
 
-@pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_workspace_mount(cli, datafiles):
@@ -32,7 +31,6 @@ def test_workspace_mount(cli, datafiles):
     assert os.path.exists(os.path.join(cli.directory, 'workspace'))
 
 
-@pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_workspace_commanddir(cli, datafiles):
@@ -50,7 +48,6 @@ def test_workspace_commanddir(cli, datafiles):
     assert os.path.exists(os.path.join(cli.directory, 'workspace', 'build'))
 
 
-@pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_workspace_updated_dependency(cli, datafiles):
@@ -105,7 +102,6 @@ def test_workspace_updated_dependency(cli, datafiles):
     assert res.output == 'Hello china!\n\n'
 
 
-@pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_workspace_update_dependency_failed(cli, datafiles):
@@ -181,7 +177,6 @@ def test_workspace_update_dependency_failed(cli, datafiles):
     assert res.output == 'Hello world!\nHello spain!\n\n'
 
 
-@pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_updated_dependency_nested(cli, datafiles):
@@ -235,7 +230,6 @@ def test_updated_dependency_nested(cli, datafiles):
     assert res.output == 'Hello world!\nHello test!\n\n'
 
 
-@pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_incremental_configure_commands_run_only_once(cli, datafiles):
