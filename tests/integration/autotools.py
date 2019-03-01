@@ -17,7 +17,6 @@ DATA_DIR = os.path.join(
 
 # Test that an autotools build 'works' - we use the autotools sample
 # amhello project for this.
-@pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_autotools_build(cli, datafiles):
@@ -40,7 +39,6 @@ def test_autotools_build(cli, datafiles):
 
 # Test that an autotools build 'works' - we use the autotools sample
 # amhello project for this.
-@pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_autotools_confroot_build(cli, datafiles):
