@@ -1122,13 +1122,9 @@ def _call(*popenargs, terminate=False, **kwargs):
 
     with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
         process = subprocess.Popen(  # pylint: disable=subprocess-popen-preexec-fn
-            *popenargs, preexec_fn=preexec_fn, **kwargs)
+            *popenargs, preexec_fn=preexec_fn, universal_newlines=True, **kwargs)
         output, _ = process.communicate()
         exit_code = process.poll()
-
-    # Program output is returned as bytes, we want utf8 strings
-    if output is not None:
-        output = output.decode('UTF-8')
 
     return (exit_code, output)
 

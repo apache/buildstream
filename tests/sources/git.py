@@ -869,15 +869,15 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
     else:
         options = ['--tags']
     describe = subprocess.check_output(['git', 'describe', *options],
-                                       cwd=checkout).decode('ascii')
+                                       cwd=checkout, universal_newlines=True)
     assert describe.startswith('tag2-2-')
 
     describe_fp = subprocess.check_output(['git', 'describe', '--first-parent', *options],
-                                          cwd=checkout).decode('ascii')
+                                          cwd=checkout, universal_newlines=True)
     assert describe_fp.startswith('tag1-2-')
 
     tags = subprocess.check_output(['git', 'tag'],
-                                   cwd=checkout).decode('ascii')
+                                   cwd=checkout, universal_newlines=True)
     tags = set(tags.splitlines())
     assert tags == set(['tag1', 'tag2'])
 
@@ -979,16 +979,18 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
     else:
         options = ['--tags']
     describe = subprocess.check_output(['git', 'describe', *options],
-                                       cwd=checkout).decode('ascii')
+                                       cwd=checkout, universal_newlines=True)
     assert describe.startswith('tag')
 
     tags = subprocess.check_output(['git', 'tag'],
-                                   cwd=checkout).decode('ascii')
+                                   cwd=checkout,
+                                   universal_newlines=True)
     tags = set(tags.splitlines())
     assert tags == set(['tag'])
 
     rev_list = subprocess.check_output(['git', 'rev-list', '--all'],
-                                       cwd=checkout).decode('ascii')
+                                       cwd=checkout,
+                                       universal_newlines=True)
 
     assert set(rev_list.splitlines()) == set([tagged_ref])
 
@@ -1066,11 +1068,13 @@ def test_git_describe_relevant_history(cli, tmpdir, datafiles):
     result.assert_success()
 
     describe = subprocess.check_output(['git', 'describe'],
-                                       cwd=checkout).decode('ascii')
+                                       cwd=checkout,
+                                       universal_newlines=True)
     assert describe.startswith('tag1-2-')
 
     rev_list = subprocess.check_output(['git', 'rev-list', '--all'],
-                                       cwd=checkout).decode('ascii')
+                                       cwd=checkout,
+                                       universal_newlines=True)
 
     assert set(rev_list.splitlines()) == set([head, tagged_ref, branch_boundary])
 

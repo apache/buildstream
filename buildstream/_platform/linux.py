@@ -143,8 +143,7 @@ class Linux(Platform):
                 '--unshare-user',
                 '--uid', '0', '--gid', '0',
                 whoami,
-            ])
-            output = output.decode('UTF-8').strip()
+            ], universal_newlines=True).strip()
         except subprocess.CalledProcessError:
             output = ''
 
