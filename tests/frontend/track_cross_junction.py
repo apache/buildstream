@@ -28,10 +28,8 @@ def generate_import_element(tmpdir, kind, project, name):
     with open(os.path.join(files, '{}.txt'.format(name)), 'w') as f:
         f.write(name)
 
-    subproject_path = os.path.join(str(tmpdir.join('sub-project-{}'.format(name))))
-
     repo = create_repo(kind, str(tmpdir.join('element_{}_repo'.format(name))))
-    ref = repo.create(files)
+    repo.create(files)
 
     generate_element(repo, repo_element_path)
 
@@ -75,7 +73,7 @@ def generate_cross_element(project, subproject_name, import_name):
 
 
 @pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
-def test_cross_junction_multiple_projects(cli, tmpdir, datafiles, kind):
+def test_cross_junction_multiple_projects(cli, tmpdir, kind):
     tmpdir = tmpdir.join(kind)
 
     # Generate 3 projects: main, a, b
@@ -126,7 +124,7 @@ def test_cross_junction_multiple_projects(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
-def test_track_exceptions(cli, tmpdir, datafiles, kind):
+def test_track_exceptions(cli, tmpdir, kind):
     tmpdir = tmpdir.join(kind)
 
     _, project = generate_project(tmpdir, 'main', {'ref-storage': 'project.refs'})

@@ -26,7 +26,7 @@ def test_bind_mount():
 
         # Ensure the files from src are gone from target
         with pytest.raises(FileNotFoundError):
-            with open(os.path.join(target, 'test'), 'r') as test:
+            with open(os.path.join(target, 'test'), 'r'):
                 # Actual contents don't matter
                 pass
 

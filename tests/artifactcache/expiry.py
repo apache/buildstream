@@ -23,7 +23,6 @@ from unittest import mock
 
 import pytest
 
-from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream.plugintestutils import cli
 
@@ -39,11 +38,9 @@ DATA_DIR = os.path.join(
 # Ensure that the cache successfully removes an old artifact if we do
 # not have enough space left.
 @pytest.mark.datafiles(DATA_DIR)
-def test_artifact_expires(cli, datafiles, tmpdir):
+def test_artifact_expires(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = 'elements'
-    cache_location = os.path.join(project, 'cache', 'artifacts', 'ostree')
-    checkout = os.path.join(project, 'checkout')
 
     cli.configure({
         'cache': {
@@ -83,7 +80,7 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     (399999)
 ])
 @pytest.mark.datafiles(DATA_DIR)
-def test_artifact_too_large(cli, datafiles, tmpdir, size):
+def test_artifact_too_large(cli, datafiles, size):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = 'elements'
 
@@ -101,10 +98,9 @@ def test_artifact_too_large(cli, datafiles, tmpdir, size):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_expiry_order(cli, datafiles, tmpdir):
+def test_expiry_order(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = 'elements'
-    cache_location = os.path.join(project, 'cache', 'artifacts', 'ostree')
     checkout = os.path.join(project, 'workspace')
 
     cli.configure({
@@ -159,10 +155,9 @@ def test_expiry_order(cli, datafiles, tmpdir):
 # in the current build pipeline, because that would be embarassing,
 # wouldn't it?
 @pytest.mark.datafiles(DATA_DIR)
-def test_keep_dependencies(cli, datafiles, tmpdir):
+def test_keep_dependencies(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = 'elements'
-    cache_location = os.path.join(project, 'cache', 'artifacts', 'ostree')
 
     cli.configure({
         'cache': {
@@ -206,7 +201,7 @@ def test_keep_dependencies(cli, datafiles, tmpdir):
 
 # Assert that we never delete a dependency required for a build tree
 @pytest.mark.datafiles(DATA_DIR)
-def test_never_delete_required(cli, datafiles, tmpdir):
+def test_never_delete_required(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = 'elements'
 
@@ -258,7 +253,7 @@ def test_never_delete_required(cli, datafiles, tmpdir):
 # artifacts we do not require, and the new build is run with dynamic tracking.
 #
 @pytest.mark.datafiles(DATA_DIR)
-def test_never_delete_required_track(cli, datafiles, tmpdir):
+def test_never_delete_required_track(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = 'elements'
 
@@ -348,7 +343,7 @@ def test_never_delete_required_track(cli, datafiles, tmpdir):
     ("70%", 'warning', 'Your system does not have enough available')
 ])
 @pytest.mark.datafiles(DATA_DIR)
-def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, err_domain, err_reason):
+def test_invalid_cache_quota(cli, datafiles, quota, err_domain, err_reason):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     os.makedirs(os.path.join(project, 'elements'))
 
@@ -399,11 +394,9 @@ def test_invalid_cache_quota(cli, datafiles, tmpdir, quota, err_domain, err_reas
 # the cache size and cleanup jobs are run before any other jobs.
 #
 @pytest.mark.datafiles(DATA_DIR)
-def test_cleanup_first(cli, datafiles, tmpdir):
+def test_cleanup_first(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = 'elements'
-    cache_location = os.path.join(project, 'cache', 'artifacts', 'ostree')
-    checkout = os.path.join(project, 'checkout')
 
     cli.configure({
         'cache': {

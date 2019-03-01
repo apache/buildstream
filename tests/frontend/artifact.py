@@ -32,7 +32,7 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_artifact_log(cli, tmpdir, datafiles):
+def test_artifact_log(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Get the cache key of our test element

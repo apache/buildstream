@@ -230,8 +230,6 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
-        workspace = os.path.join(str(tmpdir), 'workspace')
-
         # First build the target element and push to the remote.
         cli.configure({
             'artifacts': {'url': share.repo, 'push': True},
@@ -466,7 +464,7 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_pull_access_rights(caplog, cli, tmpdir, datafiles):
+def test_pull_access_rights(cli, tmpdir, datafiles):
     project = str(datafiles)
     checkout = os.path.join(str(tmpdir), 'checkout')
 

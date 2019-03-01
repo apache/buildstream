@@ -1,5 +1,4 @@
 import os
-import sys
 
 from buildstream import Source, Consistency, SourceError, SourceFetcher
 

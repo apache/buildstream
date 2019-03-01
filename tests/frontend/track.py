@@ -44,7 +44,7 @@ def test_track(cli, tmpdir, datafiles, ref_storage, kind):
     # the dev files, and then collect the initial ref.
     #
     repo = create_repo(kind, str(tmpdir))
-    ref = repo.create(dev_files_path)
+    repo.create(dev_files_path)
 
     # Generate the element
     generate_element(repo, os.path.join(element_path, element_name))
@@ -109,7 +109,7 @@ def test_track_recurse(cli, tmpdir, datafiles, kind, amount):
     # the dev files, and then collect the initial ref.
     #
     repo = create_repo(kind, str(tmpdir))
-    ref = repo.create(dev_files_path)
+    repo.create(dev_files_path)
 
     # Write out our test targets
     element_names = []
@@ -164,7 +164,7 @@ def test_track_single(cli, tmpdir, datafiles):
     # the dev files, and then collect the initial ref.
     #
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(dev_files_path)
+    repo.create(dev_files_path)
 
     # Write out our test targets
     generate_element(repo, os.path.join(element_path, element_dep_name))
@@ -207,7 +207,7 @@ def test_track_recurse_except(cli, tmpdir, datafiles, kind):
     # the dev files, and then collect the initial ref.
     #
     repo = create_repo(kind, str(tmpdir))
-    ref = repo.create(dev_files_path)
+    repo.create(dev_files_path)
 
     # Write out our test targets
     generate_element(repo, os.path.join(element_path, element_dep_name))
@@ -251,7 +251,7 @@ def test_track_optional(cli, tmpdir, datafiles, ref_storage):
     # the dev files, and then collect the initial ref.
     #
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(dev_files_path)
+    repo.create(dev_files_path)
 
     # Now create an optional test branch and add a commit to that,
     # so two branches with different heads now exist.
@@ -307,7 +307,7 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
     # the dev files, and then collect the initial ref.
     #
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(dev_files_path)
+    repo.create(dev_files_path)
 
     # Generate two elements using the git source, one in
     # the main project and one in the subproject.
@@ -385,7 +385,7 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))
-def test_track_consistency_error(cli, tmpdir, datafiles):
+def test_track_consistency_error(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Track the element causing a consistency error
@@ -395,7 +395,7 @@ def test_track_consistency_error(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))
-def test_track_consistency_bug(cli, tmpdir, datafiles):
+def test_track_consistency_bug(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Track the element causing an unhandled exception
@@ -495,7 +495,7 @@ def test_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
     })
 
     repo = create_repo(kind, str(tmpdir.join('element_repo')))
-    ref = repo.create(etc_files)
+    repo.create(etc_files)
 
     generate_element(repo, repo_element_path)
 
@@ -605,7 +605,7 @@ def test_track_include_junction(cli, tmpdir, datafiles, ref_storage, kind):
     # the dev files, and then collect the initial ref.
     #
     repo = create_repo(kind, str(tmpdir.join('element_repo')))
-    ref = repo.create(dev_files_path)
+    repo.create(dev_files_path)
 
     # Generate the element
     element = {
@@ -661,7 +661,6 @@ def test_track_junction_included(cli, tmpdir, datafiles, ref_storage, kind):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements')
     subproject_path = os.path.join(project, 'files', 'sub-project')
-    sub_element_path = os.path.join(subproject_path, 'elements')
     junction_path = os.path.join(element_path, 'junction.bst')
 
     configure_project(project, {
@@ -691,7 +690,7 @@ def test_track_error_cannot_write_file(cli, tmpdir, datafiles):
     })
 
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(dev_files_path)
+    repo.create(dev_files_path)
 
     element_full_path = os.path.join(element_path, element_name)
     generate_element(repo, element_full_path)

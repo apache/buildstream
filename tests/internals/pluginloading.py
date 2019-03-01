@@ -50,7 +50,7 @@ def test_badversionsource(datafiles, tmpdir):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
 
     with pytest.raises(LoadError) as exc:
-        targets = create_pipeline(tmpdir, basedir, 'simple.bst')
+        create_pipeline(tmpdir, basedir, 'simple.bst')
 
     assert exc.value.reason == LoadErrorReason.UNSUPPORTED_PLUGIN
 
@@ -60,6 +60,6 @@ def test_badversionelement(datafiles, tmpdir):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
 
     with pytest.raises(LoadError) as exc:
-        targets = create_pipeline(tmpdir, basedir, 'simple.bst')
+        create_pipeline(tmpdir, basedir, 'simple.bst')
 
     assert exc.value.reason == LoadErrorReason.UNSUPPORTED_PLUGIN

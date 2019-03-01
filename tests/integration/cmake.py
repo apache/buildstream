@@ -17,7 +17,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_cmake_build(cli, tmpdir, datafiles):
+def test_cmake_build(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'cmake/cmakehello.bst'
@@ -33,7 +33,7 @@ def test_cmake_build(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_cmake_confroot_build(cli, tmpdir, datafiles):
+def test_cmake_confroot_build(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'cmake/cmakeconfroothello.bst'
@@ -49,7 +49,7 @@ def test_cmake_confroot_build(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_cmake_run(cli, tmpdir, datafiles):
+def test_cmake_run(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'cmake/cmakehello.bst'
 

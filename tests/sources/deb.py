@@ -1,13 +1,9 @@
 import os
 import pytest
-import tarfile
-import tempfile
-import subprocess
 import shutil
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
-from tempfile import TemporaryFile
 from buildstream.plugintestutils import cli
 from tests.testutils.site import HAVE_ARPY
 from . import list_dir_contents

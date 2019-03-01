@@ -1,6 +1,4 @@
 from collections import OrderedDict
-import pytest
-from ..site import HAVE_OSTREE
 
 from .git import Git
 from .bzr import Bzr

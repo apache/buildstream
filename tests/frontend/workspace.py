@@ -29,13 +29,12 @@ import stat
 import pytest
 import shutil
 import subprocess
-from ruamel.yaml.comments import CommentedSet
 from tests.testutils import create_repo, ALL_REPO_KINDS, wait_for_cache_granularity
 from tests.testutils import create_artifact_share, create_element_size
 
 from buildstream.plugintestutils import cli
 from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain, LoadError, LoadErrorReason
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream._workspaces import BST_WORKSPACE_FORMAT_VERSION
 
 repo_kinds = [(kind) for kind in ALL_REPO_KINDS]
@@ -805,11 +804,8 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
     # Test loading a future version
     {"format-version": BST_WORKSPACE_FORMAT_VERSION + 1}
 ])
-def test_list_unsupported_workspace(cli, tmpdir, datafiles, workspace_cfg):
+def test_list_unsupported_workspace(cli, datafiles, workspace_cfg):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    bin_files_path = os.path.join(project, 'files', 'bin-files')
-    element_path = os.path.join(project, 'elements')
-    element_name = 'workspace-version.bst'
     os.makedirs(os.path.join(project, '.bst'))
     workspace_config_path = os.path.join(project, '.bst', 'workspaces.yml')
 

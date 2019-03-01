@@ -1,12 +1,7 @@
-import io
 import os
-import sys
 import pytest
 
-from buildstream import _yaml
-
 from buildstream.plugintestutils import cli_integration as cli
-from buildstream.plugintestutils.integration import walk_dir
 
 
 pytestmark = pytest.mark.integration
@@ -21,11 +16,10 @@ DATA_DIR = os.path.join(
 # Test that staging a file inside a directory symlink fails.
 #
 # Regression test for https://gitlab.com/BuildStream/buildstream/issues/270
+# noinspection PyUnusedLocal
 @pytest.mark.datafiles(DATA_DIR)
 def test_compose_symlinks(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
-    element_path = os.path.join(project, 'elements')
 
     # Symlinks do not survive being placed in a source distribution
     # ('setup.py sdist'), so we have to create the one we need here.

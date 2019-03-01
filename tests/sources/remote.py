@@ -144,7 +144,7 @@ def test_unique_key(cli, tmpdir, datafiles):
     assert states['target-custom-executable.bst'] == "fetch needed"
 
     # Try to fetch it
-    result = cli.run(project=project, args=[
+    cli.run(project=project, args=[
         'source', 'fetch', 'target.bst'
     ])
 
@@ -171,11 +171,11 @@ def test_executable(cli, tmpdir, datafiles):
     checkoutdir = os.path.join(str(tmpdir), "checkout")
     assert cli.get_element_state(project, 'target-custom-executable.bst') == "fetch needed"
     # Try to fetch it
-    result = cli.run(project=project, args=[
+    cli.run(project=project, args=[
         'build', 'target-custom-executable.bst'
     ])
 
-    result = cli.run(project=project, args=[
+    cli.run(project=project, args=[
         'artifact', 'checkout', 'target-custom-executable.bst', '--directory', checkoutdir
     ])
     mode = os.stat(os.path.join(checkoutdir, 'some-custom-file')).st_mode

@@ -1,4 +1,3 @@
-import os
 from tests.testutils import create_repo
 from buildstream import _yaml
 

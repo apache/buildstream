@@ -87,7 +87,7 @@ def test_fetch_default_targets(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))
-def test_fetch_consistency_error(cli, tmpdir, datafiles):
+def test_fetch_consistency_error(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # When the error occurs outside of the scheduler at load time,
@@ -97,7 +97,7 @@ def test_fetch_consistency_error(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))
-def test_fetch_consistency_bug(cli, tmpdir, datafiles):
+def test_fetch_consistency_bug(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # FIXME:

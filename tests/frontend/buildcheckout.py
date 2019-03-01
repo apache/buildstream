@@ -98,7 +98,6 @@ def test_build_default(cli, datafiles):
 ])
 def test_build_invalid_suffix(datafiles, cli, strict, hardlinks):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
 
     result = cli.run(project=project, args=strict_args(['build', 'target.foo'], strict))
     result.assert_main_error(ErrorDomain.LOAD, "bad-element-suffix")
@@ -110,7 +109,6 @@ def test_build_invalid_suffix(datafiles, cli, strict, hardlinks):
 ])
 def test_build_invalid_suffix_dep(datafiles, cli, strict, hardlinks):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
 
     # target2.bst depends on an element called target.foo
     result = cli.run(project=project, args=strict_args(['build', 'target2.bst'], strict))
@@ -455,7 +453,7 @@ def test_fetch_build_checkout(cli, tmpdir, datafiles, strict, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_install_to_build(cli, tmpdir, datafiles):
+def test_install_to_build(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element = 'installed-to-build.bst'
 
@@ -564,7 +562,7 @@ def test_build_checkout_junction(cli, tmpdir, datafiles):
     checkout = os.path.join(cli.directory, 'checkout')
 
     # Create a repo to hold the subproject and generate a junction element for it
-    ref = generate_junction(tmpdir, subproject_path, junction_path)
+    generate_junction(tmpdir, subproject_path, junction_path)
 
     # Create a stack element to depend on a cross junction element
     #
@@ -611,7 +609,7 @@ def test_build_checkout_junction_default_targets(cli, tmpdir, datafiles):
     checkout = os.path.join(cli.directory, 'checkout')
 
     # Create a repo to hold the subproject and generate a junction element for it
-    ref = generate_junction(tmpdir, subproject_path, junction_path)
+    generate_junction(tmpdir, subproject_path, junction_path)
 
     # Create a stack element to depend on a cross junction element
     #
@@ -658,7 +656,7 @@ def test_build_checkout_workspaced_junction(cli, tmpdir, datafiles):
     checkout = os.path.join(cli.directory, 'checkout')
 
     # Create a repo to hold the subproject and generate a junction element for it
-    ref = generate_junction(tmpdir, subproject_path, junction_path)
+    generate_junction(tmpdir, subproject_path, junction_path)
 
     # Create a stack element to depend on a cross junction element
     #
@@ -737,11 +735,10 @@ def test_build_junction_short_notation(cli, tmpdir, datafiles):
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
-    workspace = os.path.join(cli.directory, 'workspace')
     checkout = os.path.join(cli.directory, 'checkout')
 
     # Create a repo to hold the subproject and generate a junction element for it
-    ref = generate_junction(tmpdir, subproject_path, junction_path)
+    generate_junction(tmpdir, subproject_path, junction_path)
 
     # Create a stack element to depend on a cross junction element, using
     # colon (:) as the separator
@@ -782,7 +779,7 @@ def test_build_junction_short_notation_filename(cli, tmpdir, datafiles):
     checkout = os.path.join(cli.directory, 'checkout')
 
     # Create a repo to hold the subproject and generate a junction element for it
-    ref = generate_junction(tmpdir, subproject_path, junction_path)
+    generate_junction(tmpdir, subproject_path, junction_path)
 
     # Create a stack element to depend on a cross junction element, using
     # colon (:) as the separator
@@ -820,10 +817,9 @@ def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
-    checkout = os.path.join(cli.directory, 'checkout')
 
     # Create a repo to hold the subproject and generate a junction element for it
-    ref = generate_junction(tmpdir, subproject_path, junction_path)
+    generate_junction(tmpdir, subproject_path, junction_path)
 
     # Create a stack element to depend on a cross junction element, using
     # colon (:) as the separator
@@ -848,10 +844,9 @@ def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
-    checkout = os.path.join(cli.directory, 'checkout')
 
     # Create a repo to hold the subproject and generate a junction element for it
-    ref = generate_junction(tmpdir, subproject_path, junction_path)
+    generate_junction(tmpdir, subproject_path, junction_path)
 
     # Create a stack element to depend on a cross junction element, using
     # colon (:) as the separator

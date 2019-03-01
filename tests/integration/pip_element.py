@@ -1,5 +1,5 @@
 import os
-import sys
+
 import pytest
 
 from buildstream import _yaml
@@ -20,7 +20,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_pip_build(cli, tmpdir, datafiles):
+def test_pip_build(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')
     element_path = os.path.join(project, 'elements')
@@ -57,9 +57,9 @@ def test_pip_build(cli, tmpdir, datafiles):
 # Test running an executable built with pip
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_pip_run(cli, tmpdir, datafiles):
+def test_pip_run(cli, datafiles):
     # Create and build our test element
-    test_pip_build(cli, tmpdir, datafiles)
+    test_pip_build(cli, datafiles)
 
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'pip/hello.bst'

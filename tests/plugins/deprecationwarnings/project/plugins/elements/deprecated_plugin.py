@@ -1,4 +1,4 @@
-from buildstream import BuildElement, SandboxFlags
+from buildstream import BuildElement
 
 
 class DeprecatedPlugin(BuildElement):

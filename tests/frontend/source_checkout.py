@@ -1,12 +1,11 @@
 import os
 import pytest
 import tarfile
-from pathlib import Path
 
 from buildstream.plugintestutils import cli
 
 from buildstream import utils, _yaml
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
+from buildstream._exceptions import ErrorDomain
 
 # Project directory
 DATA_DIR = os.path.join(

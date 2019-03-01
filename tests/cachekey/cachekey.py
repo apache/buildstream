@@ -92,7 +92,7 @@ def load_expected_keys(project_dir, actual_keys, raise_error=True):
             with open(expected, 'r') as f:
                 expected_key = f.read()
                 expected_key = expected_key.strip()
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             expected_key = None
             if raise_error:
                 raise Exception("Cache key test needs update, " +

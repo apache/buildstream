@@ -12,7 +12,7 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
-def test_missing_path(cli, tmpdir, datafiles):
+def test_missing_path(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Removing the local file causes preflight to fail
@@ -26,11 +26,11 @@ def test_missing_path(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
-def test_non_regular_file_or_directory(cli, tmpdir, datafiles):
+def test_non_regular_file_or_directory(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     localfile = os.path.join(project, 'file.txt')
 
-    for file_type in filetypegenerator.generate_file_types(localfile):
+    for _file_type in filetypegenerator.generate_file_types(localfile):
         result = cli.run(project=project, args=[
             'show', 'target.bst'
         ])
@@ -44,7 +44,7 @@ def test_non_regular_file_or_directory(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
-def test_invalid_absolute_path(cli, tmpdir, datafiles):
+def test_invalid_absolute_path(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     with open(os.path.join(project, "target.bst"), 'r') as f:
@@ -62,7 +62,7 @@ def test_invalid_absolute_path(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'invalid-relative-path'))
-def test_invalid_relative_path(cli, tmpdir, datafiles):
+def test_invalid_relative_path(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     result = cli.run(project=project, args=['show', 'target.bst'])
@@ -128,9 +128,8 @@ def test_stage_symlink(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'file-exists'))
-def test_stage_file_exists(cli, tmpdir, datafiles):
+def test_stage_file_exists(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])

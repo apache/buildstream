@@ -1,6 +1,4 @@
 import string
-import pytest
-import subprocess
 import os
 import shutil
 import signal
@@ -10,7 +8,6 @@ from contextlib import contextmanager
 from multiprocessing import Process, Queue
 import pytest_cov
 
-from buildstream import _yaml
 from buildstream._cas import CASCache
 from buildstream._cas.casserver import create_server
 from buildstream._exceptions import CASError
@@ -91,7 +88,7 @@ class ArtifactShare():
             # Send port to parent
             q.put(port)
 
-        except Exception as e:
+        except Exception:
             q.put(None)
             raise
 
@@ -168,7 +165,7 @@ class ArtifactShare():
 
         shutil.rmtree(self.directory)
 
-    def _mock_statvfs(self, path):
+    def _mock_statvfs(self, _path):
         repo_size = 0
         for root, _, files in os.walk(self.repodir):
             for filename in files:

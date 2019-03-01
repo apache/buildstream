@@ -1,6 +1,4 @@
-import io
 import os
-import sys
 import pytest
 
 from buildstream import _yaml
@@ -76,7 +74,7 @@ def create_compose_element(name, path, config={}):
                     '/usr/share/doc/amhello/README'])
 ])
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_compose_include(cli, tmpdir, datafiles, include_domains,
+def test_compose_include(cli, datafiles, include_domains,
                          exclude_domains, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkout = os.path.join(cli.directory, 'checkout')

@@ -295,7 +295,7 @@ def test_help_commands(cli, cmd, word_idx, expected):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
-def test_argument_artifact(cli, tmpdir, datafiles):
+def test_argument_artifact(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Build an import element with no dependencies (as there will only be ONE cache key)
@@ -320,7 +320,7 @@ def test_argument_artifact(cli, tmpdir, datafiles):
             'COMP_WORDS': cmd,
             'COMP_CWORD': str(word_idx)
         })
-        words = []
+
         if result.output:
             words = result.output.splitlines()  # This leaves an extra space on each e.g. ['foo.bst ']
             words = [word.strip() for word in words]

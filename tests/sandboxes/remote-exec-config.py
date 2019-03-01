@@ -1,6 +1,5 @@
 import pytest
 
-import itertools
 import os
 
 from buildstream import _yaml

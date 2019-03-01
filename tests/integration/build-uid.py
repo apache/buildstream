@@ -1,10 +1,7 @@
 import os
 import pytest
 
-from buildstream import _yaml
-
 from buildstream.plugintestutils import cli_integration as cli
-from buildstream.plugintestutils.integration import assert_contains
 from tests.testutils.site import HAVE_BWRAP, IS_LINUX, HAVE_SANDBOX
 
 
@@ -18,9 +15,8 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
-def test_build_uid_overridden(cli, tmpdir, datafiles):
+def test_build_uid_overridden(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'build-uid/build-uid.bst'
 
     project_config = {
@@ -37,9 +33,8 @@ def test_build_uid_overridden(cli, tmpdir, datafiles):
 
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubbelwrap')
 @pytest.mark.datafiles(DATA_DIR)
-def test_build_uid_in_project(cli, tmpdir, datafiles):
+def test_build_uid_in_project(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'build-uid/build-uid-1023.bst'
 
     project_config = {
@@ -56,9 +51,8 @@ def test_build_uid_in_project(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_build_uid_default(cli, tmpdir, datafiles):
+def test_build_uid_default(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'build-uid/build-uid-default.bst'
 
     result = cli.run(project=project, args=['build', element_name])

@@ -2,7 +2,6 @@ import os
 import pytest
 
 from buildstream.plugintestutils import cli_integration as cli
-from buildstream.plugintestutils.integration import assert_contains
 from tests.testutils.site import HAVE_BWRAP, IS_LINUX, MACHINE_ARCH
 
 
@@ -16,9 +15,8 @@ DATA_DIR = os.path.join(
                     reason='Examples are writtent for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
-def test_integration_commands_build(cli, tmpdir, datafiles):
+def test_integration_commands_build(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
-    checkout = os.path.join(cli.directory, 'checkout')
 
     result = cli.run(project=project, args=['build', 'hello.bst'])
     assert result.exit_code == 0
@@ -29,7 +27,7 @@ def test_integration_commands_build(cli, tmpdir, datafiles):
                     reason='Examples are writtent for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
-def test_integration_commands_run(cli, tmpdir, datafiles):
+def test_integration_commands_run(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     result = cli.run(project=project, args=['build', 'hello.bst'])

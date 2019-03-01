@@ -13,7 +13,7 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_missing_command(cli, tmpdir, datafiles):
+def test_missing_command(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(project=project, args=['build', 'no-runtime.bst'])
     result.assert_task_error(ErrorDomain.SANDBOX, 'missing-command')

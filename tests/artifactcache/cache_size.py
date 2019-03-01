@@ -1,5 +1,4 @@
 import os
-import pytest
 from unittest import mock
 
 from buildstream import _yaml
@@ -60,9 +59,6 @@ def test_cache_size_write(cli, tmpdir):
     # Inspect the artifact cache
     sizefile = os.path.join(casdir, CACHE_SIZE_FILE)
     assert os.path.isfile(sizefile)
-    with open(sizefile, "r") as f:
-        size_data = f.read()
-    size = int(size_data)
 
 
 def test_quota_over_1024T(cli, tmpdir):

@@ -14,7 +14,7 @@ DATA_DIR = os.path.join(
 ##################################################################
 # Test that plugins can access data from previous sources
 @pytest.mark.datafiles(DATA_DIR)
-def test_custom_transform_source(cli, tmpdir, datafiles):
+def test_custom_transform_source(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
 
     # Ensure we can track
@@ -30,7 +30,7 @@ def test_custom_transform_source(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Ensure we get correct output from foo_transform
-    result = cli.run(project=project, args=[
+    cli.run(project=project, args=[
         'build', 'target.bst'
     ])
     destpath = os.path.join(cli.directory, 'checkout')

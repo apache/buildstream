@@ -1,7 +1,7 @@
 import os
 import pytest
 import shutil
-from tests.testutils import create_repo, ALL_REPO_KINDS
+from tests.testutils import create_repo
 from buildstream.plugintestutils import cli
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
@@ -118,7 +118,7 @@ def test_filter_workspace_open(datafiles, cli, tmpdir):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
-def test_filter_workspace_open_multi(datafiles, cli, tmpdir):
+def test_filter_workspace_open_multi(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(cwd=project, project=project, args=['workspace', 'open', 'deps-permitted.bst',
                                                          'output-orphans.bst'])
@@ -240,7 +240,7 @@ def test_filter_track(datafiles, cli, tmpdir):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_track_excepted(datafiles, cli, tmpdir):
     repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(str(datafiles), "files"))
+    repo.create(os.path.join(str(datafiles), "files"))
     elements_dir = os.path.join(str(tmpdir), "elements")
     project = str(tmpdir)
     input_name = "input.bst"
@@ -488,7 +488,7 @@ def test_filter_include_with_indirect_deps(datafiles, cli, tmpdir):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
-def test_filter_fails_for_nonexisting_domain(datafiles, cli, tmpdir):
+def test_filter_fails_for_nonexisting_domain(datafiles, cli):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(project=project, args=['build', 'output-include-nonexistent-domain.bst'])
     result.assert_main_error(ErrorDomain.STREAM, None)

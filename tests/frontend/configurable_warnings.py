@@ -2,7 +2,7 @@ import pytest
 import os
 
 from buildstream.plugin import CoreWarnings
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
+from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream.plugintestutils.runcli import cli
 

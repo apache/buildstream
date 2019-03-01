@@ -21,10 +21,9 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_build_checkout_cached_fail(cli, tmpdir, datafiles):
+def test_build_checkout_cached_fail(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements', 'element.bst')
-    workspace = os.path.join(cli.directory, 'workspace')
     checkout = os.path.join(cli.directory, 'checkout')
 
     # Write out our test target
@@ -65,12 +64,10 @@ def test_build_checkout_cached_fail(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_build_depend_on_cached_fail(cli, tmpdir, datafiles):
+def test_build_depend_on_cached_fail(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dep_path = os.path.join(project, 'elements', 'dep.bst')
     target_path = os.path.join(project, 'elements', 'target.bst')
-    workspace = os.path.join(cli.directory, 'workspace')
-    checkout = os.path.join(cli.directory, 'checkout')
 
     dep = {
         'kind': 'script',
@@ -169,7 +166,7 @@ def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
 
 @pytest.mark.skipif(not (IS_LINUX and HAVE_BWRAP), reason='Only available with bubblewrap on Linux')
 @pytest.mark.datafiles(DATA_DIR)
-def test_host_tools_errors_are_not_cached(cli, tmpdir, datafiles):
+def test_host_tools_errors_are_not_cached(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_path = os.path.join(project, 'elements', 'element.bst')
 
