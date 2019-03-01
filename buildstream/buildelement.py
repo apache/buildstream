@@ -239,7 +239,7 @@ class BuildElement(Element):
 
             with sandbox.batch(SandboxFlags.ROOT_READ_ONLY, label="Running {}".format(command_name)):
                 for cmd in commands:
-                    self.__run_command(sandbox, cmd, command_name)
+                    self.__run_command(sandbox, cmd)
 
         # %{install-root}/%{build-root} should normally not be written
         # to - if an element later attempts to stage to a location
@@ -263,7 +263,7 @@ class BuildElement(Element):
         if commands:
             with sandbox.batch(SandboxFlags.ROOT_READ_ONLY, label="Running configure-commands"):
                 for cmd in commands:
-                    self.__run_command(sandbox, cmd, 'configure-commands')
+                    self.__run_command(sandbox, cmd)
 
     def generate_script(self):
         script = ""
@@ -288,7 +288,7 @@ class BuildElement(Element):
 
         return commands
 
-    def __run_command(self, sandbox, cmd, cmd_name):
+    def __run_command(self, sandbox, cmd):
         # Note the -e switch to 'sh' means to exit with an error
         # if any untested command fails.
         #
