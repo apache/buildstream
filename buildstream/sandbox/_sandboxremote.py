@@ -354,15 +354,15 @@ class SandboxRemote(Sandbox):
             operation = self.run_remote_command(channel, action_digest)
             action_result = self._extract_action_result(operation)
 
+        # Get output of build
+        self.process_job_output(action_result.output_directories, action_result.output_files)
+
         if action_result.exit_code != 0:
             # A normal error during the build: the remote execution system
             # has worked correctly but the command failed.
             # action_result.stdout and action_result.stderr also contains
             # build command outputs which we ignore at the moment.
             return action_result.exit_code
-
-        # Get output of build
-        self.process_job_output(action_result.output_directories, action_result.output_files)
 
         return 0
 
