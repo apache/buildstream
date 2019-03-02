@@ -1630,6 +1630,13 @@ class Element(Plugin):
             with _signals.terminator(cleanup_rootdir), \
                 self.__sandbox(rootdir, output_file, output_file, self.__sandbox_config) as sandbox:  # noqa
 
+                if not self.BST_RUN_COMMANDS:
+                    # Element doesn't need to run any commands in the sandbox.
+                    #
+                    # Disable Sandbox.run() to allow CasBasedDirectory for all
+                    # sandboxes.
+                    sandbox._disable_run()
+
                 # By default, the dynamic public data is the same as the static public data.
                 # The plugin's assemble() method may modify this, though.
                 self.__dynamic_public = _yaml.node_copy(self.__public)
