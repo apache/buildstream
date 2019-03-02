@@ -190,8 +190,9 @@ class Sandbox():
 
         """
         if self._vdir is None or self._never_cache_vdirs:
-            if 'BST_CAS_DIRECTORIES' in os.environ:
-                self._vdir = CasBasedDirectory(self.__context.artifactcache.cas)
+            if self._use_cas_based_directory():
+                cascache = self.__context.get_cascache()
+                self._vdir = CasBasedDirectory(cascache)
             else:
                 self._vdir = FileBasedDirectory(self._root)
         return self._vdir
@@ -385,6 +386,17 @@ class Sandbox():
     #
     def _create_batch(self, main_group, flags, *, collect=None):
         return _SandboxBatch(self, main_group, flags, collect=collect)
+
+    # _use_cas_based_directory()
+    #
+    # Whether to use CasBasedDirectory as sandbox root. If this returns `False`,
+    # FileBasedDirectory will be used.
+    #
+    # Returns:
+    #    (bool): Whether to use CasBasedDirectory
+    #
+    def _use_cas_based_directory(self):
+        return 'BST_CAS_DIRECTORIES' in os.environ
 
     ################################################
     #               Private methods                #
