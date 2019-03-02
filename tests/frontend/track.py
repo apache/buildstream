@@ -22,7 +22,7 @@ def generate_element(repo, element_path, dep_name=None):
         ]
     }
     if dep_name:
-        element['depends'] = [dep_name]
+        element['runtime-depends'] = [dep_name]
 
     _yaml.dump(element, element_path)
 

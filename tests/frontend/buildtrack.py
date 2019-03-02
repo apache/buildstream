@@ -26,7 +26,7 @@ def create_element(repo, name, path, dependencies, ref=None):
         'sources': [
             repo.source_config(ref=ref)
         ],
-        'depends': dependencies
+        'runtime-depends': dependencies
     }
     _yaml.dump(element, os.path.join(path, name))
 

@@ -58,7 +58,7 @@ def create_element_size(name, project_dir, elements_path, dependencies, size):
             # Extract only the data directory
             'source': 'data'
         },
-        'depends': dependencies
+        'runtime-depends': dependencies
     }
     _yaml.dump(element, os.path.join(project_dir, elements_path, name))
 

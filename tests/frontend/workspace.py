@@ -1083,7 +1083,7 @@ def test_external_fetch(cli, datafiles, tmpdir_factory, subdir, guess_element):
 
     element_name, project, workspace = open_workspace(
         cli, tmpdir, datafiles, "git", False, no_checkout=True,
-        element_attrs={'depends': [depend_element]}
+        element_attrs={'runtime-depends': [depend_element]}
     )
     arg_elm = [element_name] if not guess_element else []
 
