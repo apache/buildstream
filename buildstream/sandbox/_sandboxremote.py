@@ -311,6 +311,14 @@ class SandboxRemote(Sandbox):
             upload_vdir = CasBasedDirectory(cascache)
             upload_vdir.import_files(self.get_virtual_directory()._get_underlying_directory())
 
+        # Create directories for all marked directories. This emulates
+        # some of the behaviour of other sandboxes, which create these
+        # to use as mount points.
+        for mark in self._get_marked_directories():
+            directory = mark['directory']
+            # Create each marked directory
+            upload_vdir.descend(directory.split(os.path.sep), create=True)
+
         # Generate action_digest first
         input_root_digest = upload_vdir._get_digest()
         command_proto = self._create_command(command, cwd, env)
