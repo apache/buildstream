@@ -452,6 +452,10 @@ class SandboxRemote(Sandbox):
     def _create_batch(self, main_group, flags, *, collect=None):
         return _SandboxRemoteBatch(self, main_group, flags, collect=collect)
 
+    def _use_cas_based_directory(self):
+        # Always use CasBasedDirectory for remote execution
+        return True
+
 
 # _SandboxRemoteBatch()
 #
