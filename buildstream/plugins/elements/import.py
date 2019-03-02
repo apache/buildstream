@@ -41,6 +41,9 @@ class ImportElement(Element):
     # This plugin has been modified to avoid the use of Sandbox.get_directory
     BST_VIRTUAL_DIRECTORY = True
 
+    # Import elements do not run any commands
+    BST_RUN_COMMANDS = False
+
     def configure(self, node):
         self.node_validate(node, [
             'source', 'target'
