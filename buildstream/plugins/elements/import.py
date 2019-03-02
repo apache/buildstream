@@ -38,6 +38,9 @@ from buildstream import Element, ElementError
 class ImportElement(Element):
     # pylint: disable=attribute-defined-outside-init
 
+    # Import elements do not require build dependencies
+    BST_FORBID_BDEPENDS = True
+
     # This plugin has been modified to avoid the use of Sandbox.get_directory
     BST_VIRTUAL_DIRECTORY = True
 
