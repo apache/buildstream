@@ -117,6 +117,7 @@ class Sandbox():
         self.__env = None
         self.__mount_sources = {}
         self.__allow_real_directory = kwargs['allow_real_directory']
+        self.__allow_run = True
 
         # Plugin ID for logging
         plugin = kwargs.get('plugin', None)
@@ -279,6 +280,9 @@ class Sandbox():
            not exist yet, even if a workspace is being used.
         """
 
+        if not self.__allow_run:
+            raise SandboxError("Sandbox.run() has been disabled")
+
         # Fallback to the sandbox default settings for
         # the cwd and env.
         #
@@ -396,6 +400,11 @@ class Sandbox():
     #    (bool): Whether to use CasBasedDirectory
     #
     def _use_cas_based_directory(self):
+        # Use CasBasedDirectory as sandbox root if neither Sandbox.get_directory()
+        # nor Sandbox.run() are required. This allows faster staging.
+        if not self.__allow_real_directory and not self.__allow_run:
+            return True
+
         return 'BST_CAS_DIRECTORIES' in os.environ
 
     ################################################
@@ -573,6 +582,15 @@ class Sandbox():
             current_group.append(batch_call)
         else:
             callback()
+
+    # _disable_run()
+    #
+    # Raise exception if `Sandbox.run()` is called. This enables use of
+    # CasBasedDirectory for faster staging when command execution is not
+    # required.
+    #
+    def _disable_run(self):
+        self.__allow_run = False
 
 
 # _SandboxBatch()
