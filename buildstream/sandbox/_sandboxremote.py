@@ -283,17 +283,6 @@ class SandboxRemote(Sandbox):
         if dir_digest is None or not dir_digest.hash or not dir_digest.size_bytes:
             raise SandboxError("Output directory structure pulling from remote failed.")
 
-        path_components = os.path.split(self._output_directory)
-
-        # Now what we have is a digest for the output. Once we return, the calling process will
-        # attempt to descend into our directory and find that directory, so we need to overwrite
-        # that.
-
-        if not path_components:
-            # The artifact wants the whole directory; we could just return the returned hash in its
-            # place, but we don't have a means to do that yet.
-            raise SandboxError("Unimplemented: Output directory is empty or equal to the sandbox root.")
-
         # At the moment, we will get the whole directory back in the first directory argument and we need
         # to replace the sandbox's virtual directory with that. Creating a new virtual directory object
         # from another hash will be interesting, though...
@@ -413,11 +402,15 @@ class SandboxRemote(Sandbox):
         environment_variables = [remote_execution_pb2.Command.
                                  EnvironmentVariable(name=k, value=v)
                                  for (k, v) in environment.items()]
+
+        # Request the whole directory tree as output
+        output_directory = os.path.relpath(os.path.sep, start=working_directory)
+
         return remote_execution_pb2.Command(arguments=command,
                                             working_directory=working_directory,
                                             environment_variables=environment_variables,
                                             output_files=[],
-                                            output_directories=[self._output_directory],
+                                            output_directories=[output_directory],
                                             platform=None)
 
     @staticmethod
