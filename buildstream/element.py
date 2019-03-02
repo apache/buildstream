@@ -178,6 +178,12 @@ class Element(Plugin):
     *Since: 1.4*
     """
 
+    BST_RUN_COMMANDS = True
+    """Whether the element may run commands using Sandbox.run.
+
+    *Since: 1.4*
+    """
+
     def __init__(self, context, project, meta, plugin_conf):
 
         self.__cache_key_dict = None            # Dict for cache key calculation
