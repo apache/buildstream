@@ -170,6 +170,7 @@ from . import _yaml, utils
 from ._exceptions import BstError, ImplError, ErrorDomain
 from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage
+from ._cachekey import generate_key
 
 
 class SourceError(BstError):
@@ -294,6 +295,8 @@ class Source(Plugin):
         self.__element_kind = meta.element_kind         # The kind of the element owning this source
         self.__directory = meta.directory               # Staging relative directory
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
+
+        self.__key = None                               # Cache key for source
 
         # The alias_override is only set on a re-instantiated Source
         self.__alias_override = alias_override          # Tuple of alias and its override to use instead
@@ -955,6 +958,26 @@ class Source(Plugin):
             return alias
         else:
             return None
+
+    def _generate_key(self, previous_sources):
+        keys = [self._get_unique_key(True)]
+
+        for previous_source in previous_sources:
+            keys.append(previous_source._get_unique_key(True))
+
+        self.__key = generate_key(keys)
+
+    @property
+    def _key(self):
+        return self.__key
+
+    # Gives a ref path that points to where sources are kept in the CAS
+    def _get_source_name(self):
+        # @ is used to prevent conflicts with project names
+        return "{}/{}/{}".format(
+            '@sources',
+            self.get_kind(),
+            self._key)
 
     #############################################################
     #                   Local Private Methods                   #
