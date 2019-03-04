@@ -1,8 +1,6 @@
-coverage == 4.4.0
 pep8
-pylint == 2.1.1
+pylint
 pytest >= 3.7
-pytest-cov >= 2.5.0
 pytest-datafiles
 pytest-env
 pytest-pep8
