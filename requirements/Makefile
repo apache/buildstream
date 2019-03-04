@@ -9,13 +9,15 @@ VENV := $(PYTHON) -m venv
 VENV_PIP = $(VENVDIR)/bin/pip
 
 
-.PHONY: all
+.PHONY: all FORCE
 
 all: $(REQUIREMENTS_TXT)
 
-%.txt: %.in
+%.txt: %.in FORCE
 	$(eval VENVDIR := $(shell mktemp -d $(CURDIR)/.bst-venv.XXXXXX))
 	$(VENV) $(VENVDIR)
 	$(VENV_PIP) install -r $^
 	$(VENV_PIP) freeze -r $^ | grep -v pkg-resources > $@
 	rm -rf $(VENVDIR)
+
+FORCE:
