@@ -29,6 +29,7 @@ variables:
   # Diagnostics
   - mount
   - df -h
+  - tox --version
 
   script:
   - mkdir -p "${INTEGRATION_CACHE}"
@@ -157,9 +158,10 @@ tests-wsl:
   before_script:
   - mount
   - df -h
+  - PATH=/root/.local/bin:$PATH tox --version
 
   script:
-  - "${TEST_COMMAND}"
+  - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
   allow_failure: true
 
 # Automatically build documentation for every commit, we want to know
