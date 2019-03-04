@@ -82,12 +82,7 @@ class Includes:
                 finally:
                     included.remove(file_path)
 
-                _yaml.composite(include_node, node)
-                to_delete = [key for key, _ in _yaml.node_items(node) if key not in include_node]
-                for key, value in include_node.items():
-                    node[key] = value
-                for key in to_delete:
-                    del node[key]
+                _yaml.composite_and_move(node, include_node)
 
         for _, value in _yaml.node_items(node):
             self._process_value(value,
