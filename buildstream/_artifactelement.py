@@ -59,6 +59,10 @@ class ArtifactElement(Element):
     def _calculate_cache_key(self, dependencies=None):
         return self._key
 
+    # Override Element._get_cache_key()
+    def _get_cache_key(self, strength=None):
+        return self._key
+
 
 # verify_artifact_ref()
 #
