@@ -8,7 +8,6 @@ from collections import namedtuple
 
 from contextlib import contextmanager
 from multiprocessing import Process, Queue
-import pytest_cov
 
 from buildstream import _yaml
 from buildstream._artifactcache.cascache import CASCache
@@ -75,7 +74,13 @@ class ArtifactShare():
     # Run the artifact server.
     #
     def run(self, q):
-        pytest_cov.embed.cleanup_on_sigterm()
+
+        try:
+            import pytest_cov
+        except ImportError:
+            pass
+        else:
+            pytest_cov.embed.cleanup_on_sigterm()
 
         # Optionally mock statvfs
         if self.total_space:
