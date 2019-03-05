@@ -1106,6 +1106,20 @@ def artifact_log(app, artifacts):
                         click.echo_via_pager(data)
 
 
+###################################################################
+#                     Artifact Delete Command                     #
+###################################################################
+@artifact.command(name='delete', short_help="Remove artifacts from the local cache")
+@click.option('--no-prune', 'no_prune', default=False, is_flag=True,
+              help="Do not prune the local cache of unreachable refs")
+@click.argument('artifacts', type=click.Path(), nargs=-1)
+@click.pass_obj
+def artifact_delete(app, artifacts, no_prune):
+    """Remove artifacts from the local cache"""
+    with app.initialized():
+        app.stream.artifact_delete(artifacts, no_prune)
+
+
 ##################################################################
 #                      DEPRECATED Commands                       #
 ##################################################################
