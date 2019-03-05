@@ -2608,37 +2608,6 @@ class Element(Plugin):
             self.__whitelist_regex = re.compile(expression)
         return self.__whitelist_regex.match(os.path.join(os.sep, path))
 
-    # __get_extract_key():
-    #
-    # Get the key used to extract the artifact
-    #
-    # Returns:
-    #    (str): The key
-    #
-    def __get_extract_key(self):
-
-        key = self.__artifact.get_extract_key()
-
-        return key
-
-    # __get_artifact_directory():
-    #
-    # Get a virtual directory for the artifact contents
-    #
-    # Args:
-    #    key (str): The key for the artifact to extract,
-    #               or None for the default key
-    #
-    # Returns:
-    #    (Directory): The virtual directory object
-    #    (str): The chosen key
-    #
-    def __get_artifact_directory(self, key=None):
-
-        artifact_vdir, key = self.__artifact._get_directory(key)
-
-        return (artifact_vdir, key)
-
     # __get_artifact_metadata_keys():
     #
     # Retrieve the strong and weak keys from the given artifact.
