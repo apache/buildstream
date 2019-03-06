@@ -109,3 +109,62 @@ def test_source_fetch(cli, tmpdir, datafiles):
         # check that we have the source in the cas now and it's not fetched
         assert element._source_cached()
         assert os.listdir(os.path.join(str(tmpdir), 'cache', 'sources', 'git')) == []
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_fetch_fallback(cli, tmpdir, datafiles):
+    project_dir = str(datafiles)
+
+    # use artifact cache for sources for now, they should work the same
+    with create_artifact_share(os.path.join(str(tmpdir), 'sourceshare')) as share:
+        # configure using this share
+        cache_dir = os.path.join(str(tmpdir), 'cache')
+        user_config_file = str(tmpdir.join('buildstream.conf'))
+        user_config = {
+            'scheduler': {
+                'pushers': 1
+            },
+            'source-caches': {
+                'url': share.repo,
+            },
+            'cachedir': cache_dir,
+        }
+        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        cli.configure(user_config)
+
+        repo = create_repo('git', str(tmpdir))
+        ref = repo.create(os.path.join(project_dir, 'files'))
+        element_path = os.path.join(project_dir, 'elements')
+        element_name = 'fetch.bst'
+        element = {
+            'kind': 'import',
+            'sources': [repo.source_config(ref=ref)]
+        }
+        _yaml.dump(element, os.path.join(element_path, element_name))
+
+        context = Context()
+        context.load(config=user_config_file)
+        context.set_message_handler(message_handler)
+
+        project = Project(project_dir, context)
+        project.ensure_fully_loaded()
+
+        element = project.load_elements(['fetch.bst'])[0]
+        assert not element._source_cached()
+        source = list(element.sources())[0]
+
+        cas = context.get_cascache()
+        assert not cas.contains(source._get_source_name())
+        assert not os.path.exists(os.path.join(cache_dir, 'sources'))
+
+        # Now check if it falls back to the source fetch method.
+        res = cli.run(project=project_dir, args=['source', 'fetch', 'fetch.bst'])
+        res.assert_success()
+        brief_key = source._get_brief_display_key()
+        assert ("Remote ({}) does not have source {} cached"
+                .format(share.repo, brief_key)) in res.stderr
+        assert ("SUCCESS Fetching from {}"
+                .format(repo.source_config(ref=ref)['url'])) in res.stderr
+
+        # Check that the source in both in the source dir and the local CAS
+        assert element._source_cached()
