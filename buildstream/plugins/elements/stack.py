@@ -63,7 +63,7 @@ class StackElement(Element):
         # the actual artifact data in a subdirectory, then we
         # will be able to store some additional state in the
         # artifact cache, and we can also remove this hack.
-        vrootdir.descend(['output', 'bst'], create=True)
+        vrootdir.descend('output', 'bst', create=True)
 
         # And we're done
         return '/output'

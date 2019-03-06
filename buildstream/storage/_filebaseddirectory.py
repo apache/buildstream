@@ -46,35 +46,32 @@ class FileBasedDirectory(Directory):
     def __init__(self, external_directory=None):
         self.external_directory = external_directory
 
-    def descend(self, subdirectory_spec, create=False):
+    def descend(self, *paths, create=False):
         """ See superclass Directory for arguments """
-        # It's very common to send a directory name instead of a list and this causes
-        # bizarre errors, so check for it here
-        if not isinstance(subdirectory_spec, list):
-            subdirectory_spec = [subdirectory_spec]
 
-        # Because of the way split works, it's common to get a list which begins with
-        # an empty string. Detect these and remove them.
-        while subdirectory_spec and subdirectory_spec[0] == "":
-            subdirectory_spec.pop(0)
+        current_dir = self
 
-        if not subdirectory_spec:
-            return self
+        for path in paths:
+            # Skip empty path segments
+            if not path:
+                continue
 
-        new_path = os.path.join(self.external_directory, subdirectory_spec[0])
-        try:
-            st = os.lstat(new_path)
-            if not stat.S_ISDIR(st.st_mode):
-                raise VirtualDirectoryError("Cannot descend into '{}': '{}' is not a directory"
-                                            .format(subdirectory_spec[0], new_path))
-        except FileNotFoundError:
-            if create:
-                os.mkdir(new_path)
-            else:
-                raise VirtualDirectoryError("Cannot descend into '{}': '{}' does not exist"
-                                            .format(subdirectory_spec[0], new_path))
+            new_path = os.path.join(current_dir.external_directory, path)
+            try:
+                st = os.lstat(new_path)
+                if not stat.S_ISDIR(st.st_mode):
+                    raise VirtualDirectoryError("Cannot descend into '{}': '{}' is not a directory"
+                                                .format(path, new_path))
+            except FileNotFoundError:
+                if create:
+                    os.mkdir(new_path)
+                else:
+                    raise VirtualDirectoryError("Cannot descend into '{}': '{}' does not exist"
+                                                .format(path, new_path))
 
-        return FileBasedDirectory(new_path).descend(subdirectory_spec[1:], create)
+            current_dir = FileBasedDirectory(new_path)
+
+        return current_dir
 
     def import_files(self, external_pathspec, *,
                      filter_callback=None,
@@ -160,7 +157,7 @@ class FileBasedDirectory(Directory):
                     tf.addfile(tarinfo, f)
             elif tarinfo.isdir():
                 tf.addfile(tarinfo)
-                self.descend(filename.split(os.path.sep)).export_to_tar(tf, arcname, mtime)
+                self.descend(*filename.split(os.path.sep)).export_to_tar(tf, arcname, mtime)
             else:
                 tf.addfile(tarinfo)
 

@@ -317,7 +317,7 @@ class SandboxRemote(Sandbox):
         for mark in self._get_marked_directories():
             directory = mark['directory']
             # Create each marked directory
-            upload_vdir.descend(directory.split(os.path.sep), create=True)
+            upload_vdir.descend(*directory.split(os.path.sep), create=True)
 
         # Generate action_digest first
         input_root_digest = upload_vdir._get_digest()

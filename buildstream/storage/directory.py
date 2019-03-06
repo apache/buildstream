@@ -52,13 +52,12 @@ class Directory():
     def __init__(self, external_directory=None):
         raise NotImplementedError()
 
-    def descend(self, subdirectory_spec, create=False):
+    def descend(self, *paths, create=False):
         """Descend one or more levels of directory hierarchy and return a new
         Directory object for that directory.
 
         Args:
-          subdirectory_spec (list of str): A list of strings which are all directory
-            names.
+          *paths (str): A list of strings which are all directory names.
           create (boolean): If this is true, the directories will be created if
             they don't already exist.
 

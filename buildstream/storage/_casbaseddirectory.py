@@ -55,6 +55,12 @@ class IndexEntry():
 
         return self.buildstream_object
 
+    def get_digest(self):
+        if self.digest:
+            return self.digest
+        else:
+            return self.buildstream_object._get_digest()
+
 
 class ResolutionException(VirtualDirectoryError):
     """ Superclass of all exceptions that can be raised by
@@ -155,8 +161,9 @@ class CasBasedDirectory(Directory):
     def _add_file(self, basename, filename, modified=False):
         entry = IndexEntry(filename, _FileType.REGULAR_FILE,
                            modified=modified or filename in self.index)
-        entry.digest = self.cas_cache.add_object(path=os.path.join(basename, filename))
-        entry.is_executable = os.access(os.path.join(basename, filename), os.X_OK)
+        path = os.path.join(basename, filename)
+        entry.digest = self.cas_cache.add_object(path=path)
+        entry.is_executable = os.access(path, os.X_OK)
         self.index[filename] = entry
 
         self.__invalidate_digest()
@@ -175,13 +182,12 @@ class CasBasedDirectory(Directory):
 
         self.__invalidate_digest()
 
-    def descend(self, subdirectory_spec, create=False):
+    def descend(self, *paths, create=False):
         """Descend one or more levels of directory hierarchy and return a new
         Directory object for that directory.
 
         Arguments:
-        * subdirectory_spec (list of strings): A list of strings which are all directory
-          names.
+        * *paths (str): A list of strings which are all directory names.
         * create (boolean): If this is true, the directories will be created if
           they don't already exist.
 
@@ -193,47 +199,38 @@ class CasBasedDirectory(Directory):
 
         """
 
-        # It's very common to send a directory name instead of a list and this causes
-        # bizarre errors, so check for it here
-        if not isinstance(subdirectory_spec, list):
-            subdirectory_spec = [subdirectory_spec]
+        current_dir = self
 
-        # Because of the way split works, it's common to get a list which begins with
-        # an empty string. Detect these and remove them.
-        while subdirectory_spec and subdirectory_spec[0] == "":
-            subdirectory_spec.pop(0)
+        for path in paths:
+            # Skip empty path segments
+            if not path:
+                continue
 
-        # Descending into [] returns the same directory.
-        if not subdirectory_spec:
-            return self
-
-        if subdirectory_spec[0] in self.index:
-            entry = self.index[subdirectory_spec[0]]
-            if entry.type == _FileType.DIRECTORY:
-                subdir = entry.get_directory(self)
-                return subdir.descend(subdirectory_spec[1:], create)
+            entry = current_dir.index.get(path)
+            if entry:
+                if entry.type == _FileType.DIRECTORY:
+                    current_dir = entry.get_directory(current_dir)
+                else:
+                    error = "Cannot descend into {}, which is a '{}' in the directory {}"
+                    raise VirtualDirectoryError(error.format(path,
+                                                             current_dir.index[path].type,
+                                                             current_dir))
             else:
-                error = "Cannot descend into {}, which is a '{}' in the directory {}"
-                raise VirtualDirectoryError(error.format(subdirectory_spec[0],
-                                                         self.index[subdirectory_spec[0]].type,
-                                                         self))
-        else:
-            if create:
-                newdir = self._add_directory(subdirectory_spec[0])
-                return newdir.descend(subdirectory_spec[1:], create)
-            else:
-                error = "'{}' not found in {}"
-                raise VirtualDirectoryError(error.format(subdirectory_spec[0], str(self)))
-        return None
+                if create:
+                    current_dir = current_dir._add_directory(path)
+                else:
+                    error = "'{}' not found in {}"
+                    raise VirtualDirectoryError(error.format(path, str(current_dir)))
 
-    def _check_replacement(self, name, path_prefix, fileListResult):
+        return current_dir
+
+    def _check_replacement(self, name, relative_pathname, fileListResult):
         """ Checks whether 'name' exists, and if so, whether we can overwrite it.
         If we can, add the name to 'overwritten_files' and delete the existing entry.
         Returns 'True' if the import should go ahead.
         fileListResult.overwritten and fileListResult.ignore are updated depending
         on the result. """
         existing_entry = self.index.get(name)
-        relative_pathname = os.path.join(path_prefix, name)
         if existing_entry is None:
             return True
         elif existing_entry.type == _FileType.DIRECTORY:
@@ -285,11 +282,11 @@ class CasBasedDirectory(Directory):
                 continue
 
             if direntry.is_file(follow_symlinks=False):
-                if self._check_replacement(direntry.name, path_prefix, result):
+                if self._check_replacement(direntry.name, relative_pathname, result):
                     self._add_file(source_directory, direntry.name, modified=relative_pathname in result.overwritten)
                     result.files_written.append(relative_pathname)
             elif direntry.is_symlink():
-                if self._check_replacement(direntry.name, path_prefix, result):
+                if self._check_replacement(direntry.name, relative_pathname, result):
                     self._copy_link_from_filesystem(source_directory, direntry.name)
                     result.files_written.append(relative_pathname)
 
@@ -303,18 +300,43 @@ class CasBasedDirectory(Directory):
             is_dir = entry.type == _FileType.DIRECTORY
 
             if is_dir:
-                src_subdir = source_directory.descend(name)
+                create_subdir = name not in self.index
 
-                try:
-                    create_subdir = name not in self.index
-                    dest_subdir = self.descend(name, create=create_subdir)
-                except VirtualDirectoryError:
-                    filetype = self.index[name].type
-                    raise VirtualDirectoryError('Destination is a {}, not a directory: /{}'
-                                                .format(filetype, relative_pathname))
+                if create_subdir and not filter_callback:
+                    # If subdirectory does not exist yet and there is no filter,
+                    # we can import the whole source directory by digest instead
+                    # of importing each directory entry individually.
+                    subdir_digest = entry.get_digest()
+                    dest_entry = IndexEntry(name, _FileType.DIRECTORY, digest=subdir_digest)
+                    self.index[name] = dest_entry
+                    self.__invalidate_digest()
 
-                dest_subdir._partial_import_cas_into_cas(src_subdir, filter_callback,
-                                                         path_prefix=relative_pathname, result=result)
+                    # However, we still need to iterate over the directory entries
+                    # to fill in `result.files_written`.
+
+                    # Use source subdirectory object if it already exists,
+                    # otherwise create object for destination subdirectory.
+                    # This is based on the assumption that the destination
+                    # subdirectory is more likely to be modified later on
+                    # (e.g., by further import_files() calls).
+                    if entry.buildstream_object:
+                        subdir = entry.buildstream_object
+                    else:
+                        subdir = dest_entry.get_directory(self)
+
+                    subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
+                else:
+                    src_subdir = source_directory.descend(name)
+
+                    try:
+                        dest_subdir = self.descend(name, create=create_subdir)
+                    except VirtualDirectoryError:
+                        filetype = self.index[name].type
+                        raise VirtualDirectoryError('Destination is a {}, not a directory: /{}'
+                                                    .format(filetype, relative_pathname))
+
+                    dest_subdir._partial_import_cas_into_cas(src_subdir, filter_callback,
+                                                             path_prefix=relative_pathname, result=result)
 
             if filter_callback and not filter_callback(relative_pathname):
                 if is_dir and create_subdir and dest_subdir.is_empty():
@@ -325,7 +347,7 @@ class CasBasedDirectory(Directory):
                 continue
 
             if not is_dir:
-                if self._check_replacement(name, path_prefix, result):
+                if self._check_replacement(name, relative_pathname, result):
                     if entry.type == _FileType.REGULAR_FILE:
                         self.index[name] = IndexEntry(name, _FileType.REGULAR_FILE,
                                                       digest=entry.digest,
@@ -556,13 +578,13 @@ class CasBasedDirectory(Directory):
         return self.__digest
 
     def _objpath(self, path):
-        subdir = self.descend(path[:-1])
+        subdir = self.descend(*path[:-1])
         entry = subdir.index[path[-1]]
         return self.cas_cache.objpath(entry.digest)
 
     def _exists(self, path):
         try:
-            subdir = self.descend(path[:-1])
+            subdir = self.descend(*path[:-1])
             return path[-1] in subdir.index
         except VirtualDirectoryError:
             return False
@@ -572,3 +594,14 @@ class CasBasedDirectory(Directory):
             self.__digest = None
             if self.parent:
                 self.parent.__invalidate_digest()
+
+    def __add_files_to_result(self, *, path_prefix="", result):
+        for name, entry in self.index.items():
+            # The destination filename, relative to the root where the import started
+            relative_pathname = os.path.join(path_prefix, name)
+
+            if entry.type == _FileType.DIRECTORY:
+                subdir = self.descend(name)
+                subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
+            else:
+                result.files_written.append(relative_pathname)

@@ -160,6 +160,12 @@ class FilterElement(Element):
     # added, to reduce the potential for confusion
     BST_FORBID_SOURCES = True
 
+    # This plugin has been modified to avoid the use of Sandbox.get_directory
+    BST_VIRTUAL_DIRECTORY = True
+
+    # Filter elements do not run any commands
+    BST_RUN_COMMANDS = False
+
     def configure(self, node):
         self.node_validate(node, [
             'include', 'exclude', 'include-orphans'
