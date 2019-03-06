@@ -48,6 +48,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         cli2.configure({
             'artifacts': {'url': share1.repo, 'push': True},
             'cachedir': str(tmpdir),
+            'cache': {'cache-buildtrees': 'always'},
         })
 
         @contextmanager

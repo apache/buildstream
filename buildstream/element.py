@@ -1724,6 +1724,12 @@ class Element(Plugin):
         cache_buildtrees = context.cache_buildtrees
         build_success = buildresult[0]
 
+        # cache_buildtrees defaults to 'auto', only caching buildtrees
+        # when necessary, which includes failed builds.
+        # If only caching failed artifact buildtrees, then query the build
+        # result. Element types without a build-root dir will be cached
+        # with an empty buildtreedir regardless of this configuration.
+
         if cache_buildtrees == 'always' or (cache_buildtrees == 'auto' and not build_success):
             try:
                 sandbox_build_dir = sandbox_vroot.descend(

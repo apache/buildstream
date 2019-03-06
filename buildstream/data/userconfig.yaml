@@ -47,7 +47,7 @@ cache:
   #            debugging failed builds and may break additional functionality
   #            in future versions.
   #
-  cache-buildtrees: always
+  cache-buildtrees: auto
 
 
 #

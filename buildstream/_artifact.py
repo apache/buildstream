@@ -141,13 +141,6 @@ class Artifact():
             filesvdir = assemblevdir.descend("files", create=True)
             filesvdir.import_files(collectvdir)
 
-        # cache_buildtrees defaults to 'always', as such the
-        # default behaviour is to attempt to cache them. If only
-        # caching failed artifact buildtrees, then query the build
-        # result. Element types without a build-root dir will be cached
-        # with an empty buildtreedir regardless of this configuration as
-        # there will not be an applicable sandbox_build_dir.
-
         if sandbox_build_dir:
             buildtreevdir = assemblevdir.descend("buildtree", create=True)
             buildtreevdir.import_files(sandbox_build_dir)
