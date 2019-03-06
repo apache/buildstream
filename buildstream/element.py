@@ -2371,11 +2371,11 @@ class Element(Plugin):
         element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
 
         if self.__is_junction:
-            splits = _yaml.node_chain_copy(element_splits)
+            splits = _yaml.node_copy(element_splits)
         else:
             assert project._splits is not None
 
-            splits = _yaml.node_chain_copy(project._splits)
+            splits = _yaml.node_copy(project._splits)
             # Extend project wide split rules with any split rules defined by the element
             _yaml.composite(splits, element_splits)
 
@@ -2428,7 +2428,7 @@ class Element(Plugin):
             environment = {}
         else:
             project = self._get_project()
-            environment = _yaml.node_chain_copy(project.base_environment)
+            environment = _yaml.node_copy(project.base_environment)
 
         _yaml.composite(environment, default_env)
         _yaml.composite(environment, meta.environment)
@@ -2468,10 +2468,10 @@ class Element(Plugin):
 
         project = self._get_project()
         if self.__is_junction:
-            variables = _yaml.node_chain_copy(project.first_pass_config.base_variables)
+            variables = _yaml.node_copy(project.first_pass_config.base_variables)
         else:
             project.ensure_fully_loaded()
-            variables = _yaml.node_chain_copy(project.base_variables)
+            variables = _yaml.node_copy(project.base_variables)
 
         _yaml.composite(variables, default_vars)
         _yaml.composite(variables, meta.variables)
@@ -2493,7 +2493,7 @@ class Element(Plugin):
 
         # The default config is already composited with the project overrides
         config = _yaml.node_get(self.__defaults, Mapping, 'config', default_value={})
-        config = _yaml.node_chain_copy(config)
+        config = _yaml.node_copy(config)
 
         _yaml.composite(config, meta.config)
         _yaml.node_final_assertions(config)
@@ -2509,7 +2509,7 @@ class Element(Plugin):
         else:
             project = self._get_project()
             project.ensure_fully_loaded()
-            sandbox_config = _yaml.node_chain_copy(project._sandbox)
+            sandbox_config = _yaml.node_copy(project._sandbox)
 
         # Get the platform to ask for host architecture
         platform = Platform.get_platform()
@@ -2518,7 +2518,7 @@ class Element(Plugin):
 
         # The default config is already composited with the project overrides
         sandbox_defaults = _yaml.node_get(self.__defaults, Mapping, 'sandbox', default_value={})
-        sandbox_defaults = _yaml.node_chain_copy(sandbox_defaults)
+        sandbox_defaults = _yaml.node_copy(sandbox_defaults)
 
         _yaml.composite(sandbox_config, sandbox_defaults)
         _yaml.composite(sandbox_config, meta.sandbox)
@@ -2544,12 +2544,12 @@ class Element(Plugin):
     #
     def __extract_public(self, meta):
         base_public = _yaml.node_get(self.__defaults, Mapping, 'public', default_value={})
-        base_public = _yaml.node_chain_copy(base_public)
+        base_public = _yaml.node_copy(base_public)
 
         base_bst = _yaml.node_get(base_public, Mapping, 'bst', default_value={})
         base_splits = _yaml.node_get(base_bst, Mapping, 'split-rules', default_value={})
 
-        element_public = _yaml.node_chain_copy(meta.public)
+        element_public = _yaml.node_copy(meta.public)
         element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
         element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
 

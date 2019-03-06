@@ -623,7 +623,7 @@ def composite_list_prepend(target_node, target_key, source_node, source_key):
     if target_node.get(target_key) is None:
         target_node[target_key] = []
 
-    source_list = list_chain_copy(source_list)
+    source_list = list_copy(source_list)
     target_list = target_node[target_key]
 
     for element in reversed(source_list):
@@ -663,7 +663,7 @@ def composite_list_append(target_node, target_key, source_node, source_key):
     if target_node.get(target_key) is None:
         target_node[target_key] = []
 
-    source_list = list_chain_copy(source_list)
+    source_list = list_copy(source_list)
     target_list = target_node[target_key]
 
     target_list.extend(source_list)
@@ -702,7 +702,7 @@ def composite_list_overwrite(target_node, target_key, source_node, source_key):
     target_provenance = node_get_provenance(target_node)
     source_provenance = node_get_provenance(source_node)
 
-    target_node[target_key] = list_chain_copy(source_list)
+    target_node[target_key] = list_copy(source_list)
     target_provenance.members[target_key] = source_provenance.members[source_key].clone()
 
     return True
@@ -763,7 +763,7 @@ def composite_list(target_node, source_node, key):
             source_provenance = node_get_provenance(source_node)
             target_provenance = node_get_provenance(target_node)
 
-            target_node[key] = node_chain_copy(source_value)
+            target_node[key] = node_copy(source_value)
             target_provenance.members[key] = source_provenance.members[key].clone()
 
         # If the target is a literal list, then composition
@@ -951,8 +951,8 @@ def node_sanitize(node):
     elif node_type is list:
         return [node_sanitize(elt) for elt in node]
 
-    # Finally ChainMap and dict, and other Mappings need special handling
-    if node_type in (dict, ChainMap) or isinstance(node, collections.abc.Mapping):
+    # Finally dict, and other Mappings need special handling
+    if node_type is dict or isinstance(node, collections.abc.Mapping):
         result = SanitizedDict()
 
         key_list = [key for key, _ in node_items(node)]
@@ -996,123 +996,24 @@ def node_validate(node, valid_keys):
                         "{}: Unexpected key: {}".format(provenance, invalid))
 
 
-# ChainMap
-#
-# This is a derivative of collections.ChainMap(), but supports
-# explicit deletions of keys.
-#
-# The purpose of this is to create a virtual copy-on-write
-# copy of a dictionary, so that mutating it in any way does
-# not affect the underlying dictionaries.
-#
-# collections.ChainMap covers this already mostly, but fails
-# to record internal state so as to hide keys which have been
-# explicitly deleted.
-#
-class ChainMap(collections.ChainMap):
-
-    def __init__(self, *maps):
-        super().__init__(*maps)
-        self.__deletions = set()
-
-    def __getitem__(self, key):
-
-        # Honor deletion state of 'key'
-        if key in self.__deletions:
-            return self.__missing__(key)
-
-        return super().__getitem__(key)
-
-    def __len__(self):
-        return len(set().union(*self.maps) - self.__deletions)
-
-    def __iter__(self):
-        return iter(set().union(*self.maps) - self.__deletions)
-
-    def __contains__(self, key):
-        if key in self.__deletions:
-            return False
-        return any(key in m for m in self.maps)
-
-    def __bool__(self):
-        # Attempt to preserve 'any' optimization
-        any_keys = any(self.maps)
-
-        # Something existed, try again with deletions subtracted
-        if any_keys:
-            return any(set().union(*self.maps) - self.__deletions)
-
-        return False
-
-    def __setitem__(self, key, value):
-        self.__deletions.discard(key)
-        super().__setitem__(key, value)
-
-    def __delitem__(self, key):
-        if key in self.__deletions:
-            raise KeyError('Key was already deleted from this mapping: {!r}'.format(key))
-
-        # Ignore KeyError if it's not in the first map, just save the deletion state
-        try:
-            super().__delitem__(key)
-        except KeyError:
-            pass
-
-        # Store deleted state
-        self.__deletions.add(key)
-
-    def popitem(self):
-        poppable = set().union(*self.maps) - self.__deletions
-        for key in poppable:
-            return self.pop(key)
-
-        raise KeyError('No keys found.')
-
-    __marker = object()
-
-    def pop(self, key, default=__marker):
-        # Reimplement MutableMapping's behavior here
-        try:
-            value = self[key]
-        except KeyError:
-            if default is self.__marker:
-                raise
-            return default
-        else:
-            del self[key]
-            return value
-
-    def clear(self):
-        clearable = set().union(*self.maps) - self.__deletions
-        for key in clearable:
-            del self[key]
-
-    def get(self, key, default=None):
-        try:
-            return self[key]
-        except KeyError:
-            return default
-
-
 # Node copying
 #
 # Unfortunately we copy nodes a *lot* and `isinstance()` is super-slow when
 # things from collections.abc get involved.  The result is the following
 # intricate but substantially faster group of tuples and the use of `in`.
 #
-# If any of the {node,list}_{chain_,}_copy routines raise a ValueError
+# If any of the {node,list}_copy routines raise a ValueError
 # then it's likely additional types need adding to these tuples.
 
-# When chaining a copy, these types are skipped since the ChainMap will
-# retrieve them from the source node when needed.  Other copiers might copy
-# them, so we call them __QUICK_TYPES.
+
+# These types just have their value copied
 __QUICK_TYPES = (str, bool,
                  yaml.scalarstring.PreservedScalarString,
                  yaml.scalarstring.SingleQuotedScalarString,
                  yaml.scalarstring.DoubleQuotedScalarString)
 
 # These types have to be iterated like a dictionary
-__DICT_TYPES = (dict, ChainMap, yaml.comments.CommentedMap)
+__DICT_TYPES = (dict, yaml.comments.CommentedMap)
 
 # These types have to be iterated like a list
 __LIST_TYPES = (list, yaml.comments.CommentedSeq)
@@ -1124,42 +1025,6 @@ __PROVENANCE_TYPES = (Provenance, DictProvenance, MemberProvenance, ElementProve
 # These are the directives used to compose lists, we need this because it's
 # slightly faster during the node_final_assertions checks
 __NODE_ASSERT_COMPOSITION_DIRECTIVES = ('(>)', '(<)', '(=)')
-
-
-def node_chain_copy(source):
-    copy = ChainMap({}, source)
-    for key, value in source.items():
-        value_type = type(value)
-        if value_type in __DICT_TYPES:
-            copy[key] = node_chain_copy(value)
-        elif value_type in __LIST_TYPES:
-            copy[key] = list_chain_copy(value)
-        elif value_type in __PROVENANCE_TYPES:
-            copy[key] = value.clone()
-        elif value_type in __QUICK_TYPES:
-            pass  # No need to copy these, the chainmap deals with it
-        else:
-            raise ValueError("Unable to be quick about node_chain_copy of {}".format(value_type))
-
-    return copy
-
-
-def list_chain_copy(source):
-    copy = []
-    for item in source:
-        item_type = type(item)
-        if item_type in __DICT_TYPES:
-            copy.append(node_chain_copy(item))
-        elif item_type in __LIST_TYPES:
-            copy.append(list_chain_copy(item))
-        elif item_type in __PROVENANCE_TYPES:
-            copy.append(item.clone())
-        elif item_type in __QUICK_TYPES:
-            copy.append(item)
-        else:  # Fallback
-            raise ValueError("Unable to be quick about list_chain_copy of {}".format(item_type))
-
-    return copy
 
 
 def node_copy(source):

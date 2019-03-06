@@ -72,7 +72,7 @@ class Includes:
                 # Because the included node will be modified, we need
                 # to copy it so that we do not modify the toplevel
                 # node of the provenance.
-                include_node = _yaml.node_chain_copy(include_node)
+                include_node = _yaml.node_copy(include_node)
 
                 try:
                     included.add(file_path)
