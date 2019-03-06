@@ -903,6 +903,18 @@ def composite(target, source):
                                 e.actual_type.__name__)) from e
 
 
+# Like composite(target, source), but where target overrides source instead.
+#
+def composite_and_move(target, source):
+    composite(source, target)
+
+    to_delete = [key for key, _ in node_items(target) if key not in source]
+    for key, value in source.items():
+        target[key] = value
+    for key in to_delete:
+        del target[key]
+
+
 # SanitizedDict is an OrderedDict that is dumped as unordered mapping.
 # This provides deterministic output for unordered mappings.
 #
