@@ -370,6 +370,11 @@ class _GitMirror(SourceFetcher):
 class _GitSourceBase(Source):
     # pylint: disable=attribute-defined-outside-init
 
+    # The GitMirror class which this plugin uses. This may be
+    # overridden in derived plugins as long as the replacement class
+    # follows the same interface used by the _GitMirror class
+    BST_MIRROR_CLASS = _GitMirror
+
     def configure(self, node):
         ref = self.node_get_member(node, str, 'ref', None)
 
@@ -386,7 +391,7 @@ class _GitSourceBase(Source):
         self.track_tags = self.node_get_member(node, bool, 'track-tags', False)
 
         self.original_url = self.node_get_member(node, str, 'url')
-        self.mirror = _GitMirror(self, '', self.original_url, ref, tags=tags, primary=True)
+        self.mirror = self.BST_MIRROR_CLASS(self, '', self.original_url, ref, tags=tags, primary=True)
         self.tracking = self.node_get_member(node, str, 'track', None)
 
         self.ref_format = self.node_get_member(node, str, 'ref-format', 'sha1')
@@ -629,7 +634,7 @@ class _GitSourceBase(Source):
 
         return True
 
-    # Refreshes the _GitMirror objects for submodules
+    # Refreshes the BST_MIRROR_CLASS objects for submodules
     #
     # Assumes that we have our mirror and we have the ref which we point to
     #
@@ -651,7 +656,7 @@ class _GitSourceBase(Source):
 
             ref = self.mirror.submodule_ref(path)
             if ref is not None:
-                mirror = _GitMirror(self, path, url, ref)
+                mirror = self.BST_MIRROR_CLASS(self, path, url, ref)
                 submodules.append(mirror)
 
         self.submodules = submodules
