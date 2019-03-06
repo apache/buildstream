@@ -41,7 +41,7 @@ cache:
   # Whether to cache build trees on artifact creation:
   #
   #  always  - Always cache artifact build tree content
-  #  failure - Only cache build trees of failed builds
+  #  auto    - Only cache build trees when necessary, e.g., for failed builds
   #  never   - Never cache artifact build tree content. This is not recommended
   #            for normal users as this breaks core functionality such as
   #            debugging failed builds and may break additional functionality

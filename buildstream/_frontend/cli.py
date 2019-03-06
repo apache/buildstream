@@ -255,7 +255,7 @@ def print_version(ctx, param, value):
 @click.option('--pull-buildtrees', is_flag=True, default=None,
               help="Include an element's build tree when pulling remote element artifacts")
 @click.option('--cache-buildtrees', default=None,
-              type=click.Choice(['always', 'failure', 'never']),
+              type=click.Choice(['always', 'auto', 'never']),
               help="Cache artifact build tree content on creation")
 @click.pass_context
 def cli(context, **kwargs):

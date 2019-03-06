@@ -1724,7 +1724,7 @@ class Element(Plugin):
         cache_buildtrees = context.cache_buildtrees
         build_success = buildresult[0]
 
-        if cache_buildtrees == 'always' or (cache_buildtrees == 'failure' and not build_success):
+        if cache_buildtrees == 'always' or (cache_buildtrees == 'auto' and not build_success):
             try:
                 sandbox_build_dir = sandbox_vroot.descend(
                     *self.get_variable('build-root').lstrip(os.sep).split(os.sep))

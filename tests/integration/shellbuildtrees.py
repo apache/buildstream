@@ -154,19 +154,19 @@ def test_buildtree_from_failure_option_never(cli_integration, tmpdir, datafiles)
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_buildtree_from_failure_option_failure(cli_integration, tmpdir, datafiles):
+def test_buildtree_from_failure_option_auto(cli_integration, tmpdir, datafiles):
 
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-shell/buildtree-fail.bst'
 
-    # build with  --cache-buildtrees set to 'failure', behaviour should match
+    # build with  --cache-buildtrees set to 'auto', behaviour should match
     # default behaviour (which is always) as the buildtree will explicitly have been
     # cached with content.
     cli_integration.configure({
         'cachedir': str(tmpdir)
     })
 
-    res = cli_integration.run(project=project, args=['--cache-buildtrees', 'failure', 'build', element_name])
+    res = cli_integration.run(project=project, args=['--cache-buildtrees', 'auto', 'build', element_name])
     res.assert_main_error(ErrorDomain.STREAM, None)
 
     res = cli_integration.run(project=project, args=[
