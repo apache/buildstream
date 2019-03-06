@@ -69,7 +69,7 @@ class FetchQueue(Queue):
         if not success:
             return
 
-        element._update_state()
+        element._fetch_done()
 
         # Successful fetch, we must be CACHED now
         assert element._get_consistency() == Consistency.CACHED

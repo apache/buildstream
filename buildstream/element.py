@@ -1602,6 +1602,15 @@ class Element(Plugin):
 
         return artifact_size
 
+    # _fetch_done()
+    #
+    # Indicates that fetching the sources for this element has been done.
+    #
+    def _fetch_done(self):
+        # We are not updating the state recursively here since fetching can
+        # never end up in updating them.
+        self._update_state()
+
     # _pull_pending()
     #
     # Check whether the artifact will be pulled.
