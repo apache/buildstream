@@ -245,8 +245,7 @@ class Element(Plugin):
         self.__variables = Variables(variables)
 
         # Collect the composited environment now that we have variables
-        env = self.__extract_environment(meta)
-        self.__environment = env
+        self.__environment = self.__extract_environment(meta)
 
         # Collect the environment nocache blacklist list
         nocache = self.__extract_env_nocache(meta)
