@@ -22,7 +22,6 @@ import collections
 import string
 from copy import deepcopy
 from contextlib import ExitStack
-from pathlib import Path
 
 from ruamel import yaml
 from ruamel.yaml.representer import SafeRepresenter, RoundTripRepresenter
@@ -412,102 +411,6 @@ def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel,
         value = value.strip()
 
     return value
-
-
-# node_get_project_path()
-#
-# Fetches a project path from a dictionary node and validates it
-#
-# Paths are asserted to never lead to a directory outside of the project
-# directory. In addition, paths can not point to symbolic links, fifos,
-# sockets and block/character devices.
-#
-# The `check_is_file` and `check_is_dir` parameters can be used to
-# perform additional validations on the path. Note that an exception
-# will always be raised if both parameters are set to ``True``.
-#
-# Args:
-#    node (dict): A dictionary loaded from YAML
-#    key (str): The key whose value contains a path to validate
-#    project_dir (str): The project directory
-#    check_is_file (bool): If ``True`` an error will also be raised
-#                          if path does not point to a regular file.
-#                          Defaults to ``False``
-#    check_is_dir (bool): If ``True`` an error will be also raised
-#                         if path does not point to a directory.
-#                         Defaults to ``False``
-# Returns:
-#    (str): The project path
-#
-# Raises:
-#    (LoadError): In case that the project path is not valid or does not
-#                 exist
-#
-def node_get_project_path(node, key, project_dir, *,
-                          check_is_file=False, check_is_dir=False):
-    path_str = node_get(node, str, key)
-    path = Path(path_str)
-    project_dir_path = Path(project_dir)
-
-    provenance = node_get_provenance(node, key=key)
-
-    if (project_dir_path / path).is_symlink():
-        raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
-                        "{}: Specified path '{}' must not point to "
-                        "symbolic links "
-                        .format(provenance, path_str))
-
-    if path.parts and path.parts[0] == '..':
-        raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
-                        "{}: Specified path '{}' first component must "
-                        "not be '..'"
-                        .format(provenance, path_str))
-
-    try:
-        full_path = (project_dir_path / path)
-        if sys.version_info[0] == 3 and sys.version_info[1] < 6:
-            full_resolved_path = full_path.resolve()
-        else:
-            full_resolved_path = full_path.resolve(strict=True)  # pylint: disable=unexpected-keyword-arg
-    except FileNotFoundError:
-        raise LoadError(LoadErrorReason.MISSING_FILE,
-                        "{}: Specified path '{}' does not exist"
-                        .format(provenance, path_str))
-
-    is_inside = project_dir_path.resolve() in full_resolved_path.parents or (
-        full_resolved_path == project_dir_path)
-
-    if not is_inside:
-        raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
-                        "{}: Specified path '{}' must not lead outside of the "
-                        "project directory"
-                        .format(provenance, path_str))
-
-    if path.is_absolute():
-        raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
-                        "{}: Absolute path: '{}' invalid.\n"
-                        "Please specify a path relative to the project's root."
-                        .format(provenance, path))
-
-    if full_resolved_path.is_socket() or (
-            full_resolved_path.is_fifo() or
-            full_resolved_path.is_block_device()):
-        raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
-                        "{}: Specified path '{}' points to an unsupported "
-                        "file kind"
-                        .format(provenance, path_str))
-
-    if check_is_file and not full_resolved_path.is_file():
-        raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
-                        "{}: Specified path '{}' is not a regular file"
-                        .format(provenance, path_str))
-
-    if check_is_dir and not full_resolved_path.is_dir():
-        raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
-                        "{}: Specified path '{}' is not a directory"
-                        .format(provenance, path_str))
-
-    return path_str
 
 
 # node_items()

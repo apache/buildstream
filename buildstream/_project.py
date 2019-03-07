@@ -20,8 +20,10 @@
 
 import gc
 import os
+import sys
 from collections import OrderedDict
 from collections.abc import Mapping
+from pathlib import Path
 from pluginbase import PluginBase
 from . import utils
 from . import _cachekey
@@ -226,6 +228,100 @@ class Project():
             self._cache_key = _cachekey.generate_key({})
 
         return self._cache_key
+
+    # get_path_from_node()
+    #
+    # Fetches the project path from a dictionary node and validates it
+    #
+    # Paths are asserted to never lead to a directory outside of the project
+    # directory. In addition, paths can not point to symbolic links, fifos,
+    # sockets and block/character devices.
+    #
+    # The `check_is_file` and `check_is_dir` parameters can be used to
+    # perform additional validations on the path. Note that an exception
+    # will always be raised if both parameters are set to ``True``.
+    #
+    # Args:
+    #    node (dict): A dictionary loaded from YAML
+    #    key (str): The key whose value contains a path to validate
+    #    check_is_file (bool): If ``True`` an error will also be raised
+    #                          if path does not point to a regular file.
+    #                          Defaults to ``False``
+    #    check_is_dir (bool): If ``True`` an error will be also raised
+    #                         if path does not point to a directory.
+    #                         Defaults to ``False``
+    # Returns:
+    #    (str): The project path
+    #
+    # Raises:
+    #    (LoadError): In case that the project path is not valid or does not
+    #                 exist
+    #
+    def get_path_from_node(self, node, key, *,
+                           check_is_file=False, check_is_dir=False):
+        path_str = _yaml.node_get(node, str, key)
+        path = Path(path_str)
+        project_dir_path = Path(self.directory)
+
+        provenance = _yaml.node_get_provenance(node, key=key)
+
+        if (project_dir_path / path).is_symlink():
+            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
+                            "{}: Specified path '{}' must not point to "
+                            "symbolic links "
+                            .format(provenance, path_str))
+
+        if path.parts and path.parts[0] == '..':
+            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
+                            "{}: Specified path '{}' first component must "
+                            "not be '..'"
+                            .format(provenance, path_str))
+
+        try:
+            full_path = (project_dir_path / path)
+            if sys.version_info[0] == 3 and sys.version_info[1] < 6:
+                full_resolved_path = full_path.resolve()
+            else:
+                full_resolved_path = full_path.resolve(strict=True)  # pylint: disable=unexpected-keyword-arg
+        except FileNotFoundError:
+            raise LoadError(LoadErrorReason.MISSING_FILE,
+                            "{}: Specified path '{}' does not exist"
+                            .format(provenance, path_str))
+
+        is_inside = project_dir_path.resolve() in full_resolved_path.parents or (
+            full_resolved_path == project_dir_path)
+
+        if not is_inside:
+            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
+                            "{}: Specified path '{}' must not lead outside of the "
+                            "project directory"
+                            .format(provenance, path_str))
+
+        if path.is_absolute():
+            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
+                            "{}: Absolute path: '{}' invalid.\n"
+                            "Please specify a path relative to the project's root."
+                            .format(provenance, path))
+
+        if full_resolved_path.is_socket() or (
+                full_resolved_path.is_fifo() or
+                full_resolved_path.is_block_device()):
+            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
+                            "{}: Specified path '{}' points to an unsupported "
+                            "file kind"
+                            .format(provenance, path_str))
+
+        if check_is_file and not full_resolved_path.is_file():
+            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
+                            "{}: Specified path '{}' is not a regular file"
+                            .format(provenance, path_str))
+
+        if check_is_dir and not full_resolved_path.is_dir():
+            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
+                            "{}: Specified path '{}' is not a directory"
+                            .format(provenance, path_str))
+
+        return path_str
 
     def _validate_node(self, node):
         _yaml.node_validate(node, [
@@ -508,8 +604,8 @@ class Project():
 
         self.element_path = os.path.join(
             self.directory,
-            _yaml.node_get_project_path(pre_config_node, 'element-path', self.directory,
-                                        check_is_dir=True)
+            self.get_path_from_node(pre_config_node, 'element-path',
+                                    check_is_dir=True)
         )
 
         self.config.options = OptionPool(self.element_path)
@@ -857,9 +953,8 @@ class Project():
                 if group in origin_dict:
                     del origin_dict[group]
             if origin_dict['origin'] == 'local':
-                path = _yaml.node_get_project_path(origin, 'path',
-                                                   self.directory,
-                                                   check_is_dir=True)
+                path = self.get_path_from_node(origin, 'path',
+                                               check_is_dir=True)
                 # paths are passed in relative to the project, but must be absolute
                 origin_dict['path'] = os.path.join(self.directory, path)
             destination.append(origin_dict)
