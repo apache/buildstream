@@ -35,7 +35,7 @@ from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 from ._pipeline import Pipeline, PipelineSelection
 from ._profile import Topics, profile_start, profile_end
-from . import utils, _yaml, _site
+from . import utils, _yaml, _site, _yaml_roundtrip
 from . import Scope, Consistency
 
 
@@ -812,7 +812,8 @@ class Stream():
             }
             workspaces.append(workspace_detail)
 
-        _yaml.dump({
+        # NOTE: Not sure about this one
+        _yaml_roundtrip.dump({
             'workspaces': workspaces
         })
 

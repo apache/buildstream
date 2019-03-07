@@ -52,6 +52,8 @@ from _pytest.capture import MultiCapture, FDCapture, FDCaptureBinary
 # Import the main cli entrypoint
 from buildstream._frontend import cli as bst_cli
 from buildstream import _yaml
+from buildstream import _yaml_roundtrip
+
 
 # Special private exception accessor, for test case purposes
 from buildstream._exceptions import BstError, get_last_exception, get_last_task_error
@@ -542,7 +544,7 @@ class CliIntegration(Cli):
             _yaml.composite_dict(base_config, project_config)
 
             base_config = _yaml.node_sanitize(base_config)
-            _yaml.dump(base_config, project_filename)
+            _yaml_roundtrip.dump(base_config, project_filename)
 
         else:
 
@@ -645,6 +647,6 @@ def configured(directory, config=None):
     # Dump it and yield the filename for test scripts to feed it
     # to buildstream as an artument
     filename = os.path.join(directory, "buildstream.conf")
-    _yaml.dump(config, filename)
+    _yaml_roundtrip.dump(config, filename)
 
     yield filename

@@ -19,6 +19,7 @@
 import os
 
 from . import _yaml
+from . import _yaml_roundtrip
 from ._exceptions import LoadError, LoadErrorReason
 
 
@@ -64,7 +65,7 @@ class ProjectRefs():
 
         try:
             self._toplevel_node = _yaml.load(self._fullpath, shortname=self._base_name, copy_tree=True)
-            provenance = _yaml.node_get_provenance(self._toplevel_node)
+            provenance = _yaml_roundtrip.node_get_provenance(self._toplevel_node)
             self._toplevel_save = provenance.toplevel
 
             # Process any project options immediately
@@ -72,7 +73,7 @@ class ProjectRefs():
 
             # Run any final assertions on the project.refs, just incase there
             # are list composition directives or anything left unprocessed.
-            _yaml.node_final_assertions(self._toplevel_node)
+            _yaml_roundtrip.node_final_assertions(self._toplevel_node)
 
         except LoadError as e:
             if e.reason != LoadErrorReason.MISSING_FILE:
@@ -83,7 +84,7 @@ class ProjectRefs():
             self._toplevel_node = {}
             self._toplevel_save = self._toplevel_node
 
-        _yaml.node_validate(self._toplevel_node, ['projects'])
+        _yaml_roundtrip.node_validate(self._toplevel_node, ['projects'])
 
         # Ensure we create our toplevel entry point on the fly here
         for node in [self._toplevel_node, self._toplevel_save]:
@@ -95,7 +96,7 @@ class ProjectRefs():
     # Save the project.refs file with any local changes
     #
     def save(self):
-        _yaml.dump(self._toplevel_save, self._fullpath)
+        _yaml_roundtrip.dump(self._toplevel_save, self._fullpath)
 
     # lookup_ref()
     #

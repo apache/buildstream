@@ -20,6 +20,7 @@
 import os
 from . import utils
 from . import _yaml
+from . import _yaml_roundtrip
 
 from ._exceptions import LoadError, LoadErrorReason
 
@@ -114,6 +115,7 @@ class WorkspaceProject():
     def load(cls, directory):
         workspace_file = os.path.join(directory, WORKSPACE_PROJECT_FILE)
         if os.path.exists(workspace_file):
+            # NOTE: This probably doesn't need to be loaded with provenance either
             data_dict = _yaml.load(workspace_file)
             return cls.from_dict(directory, data_dict)
         else:
@@ -125,7 +127,9 @@ class WorkspaceProject():
     #
     def write(self):
         os.makedirs(self._directory, exist_ok=True)
-        _yaml.dump(self.to_dict(), self.get_filename())
+        # This isn't even a roundtrip, it's just dumping a dict created in
+        # to_dict() to the file
+        _yaml_roundtrip.dump(self.to_dict(), self.get_filename())
 
     # get_filename()
     #
@@ -530,8 +534,11 @@ class Workspaces():
             }
         }
         os.makedirs(self._bst_directory, exist_ok=True)
-        _yaml.dump(_yaml.node_sanitize(config),
-                   self._get_filename())
+        # NOTE: We're just dumping to the workspaces.yml file here, potentially we could
+        # just use ruamel.yaml.dump() here? I don't think this file is required for cache,
+        # key calc
+        _yaml_roundtrip.dump(_yaml.node_sanitize(config),
+                             self._get_filename())
 
     # _load_config()
     #
@@ -545,6 +552,8 @@ class Workspaces():
     def _load_config(self):
         workspace_file = self._get_filename()
         try:
+            # NOTE: Again, we're not expecting the user to be tweaking this file, and it doesn't
+            # make a difference to cache keys, surely we just load without provenance?
             node = _yaml.load(workspace_file)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_FILE:
@@ -570,6 +579,7 @@ class Workspaces():
     # Raises: LoadError if there was a problem with the workspace config
     #
     def _parse_workspace_config(self, workspaces):
+        # NOTE: As we're providing this with a default value, it won't fail.
         version = _yaml.node_get(workspaces, int, "format-version", default_value=0)
 
         if version == 0:
@@ -624,6 +634,7 @@ class Workspaces():
     def _load_workspace(self, node):
         dictionary = {
             'prepared': _yaml.node_get(node, bool, 'prepared', default_value=False),
+            ## NOTE: WE MIGHT NEED PROVENANCE HERE....
             'path': _yaml.node_get(node, str, 'path'),
             'last_successful': _yaml.node_get(node, str, 'last_successful', default_value=None),
             'running_files': _yaml.node_get(node, dict, 'running_files', default_value=None),

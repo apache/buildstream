@@ -86,6 +86,7 @@ import shutil
 import string
 
 from . import _yaml
+from . import _yaml_roundtrip
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, \
@@ -1750,35 +1751,35 @@ class Element(Plugin):
                 shutil.copyfile(log_filename, self._build_log_path)
 
             # Store public data
-            _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
+            _yaml_roundtrip.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
 
             # Store result
             build_result_dict = {"success": self.__build_result[0], "description": self.__build_result[1]}
             if self.__build_result[2] is not None:
                 build_result_dict["detail"] = self.__build_result[2]
-            _yaml.dump(build_result_dict, os.path.join(metadir, 'build-result.yaml'))
+            _yaml_roundtrip.dump(build_result_dict, os.path.join(metadir, 'build-result.yaml'))
 
             # ensure we have cache keys
             self._assemble_done()
 
             # Store keys.yaml
-            _yaml.dump(_yaml.node_sanitize({
+            _yaml_roundtrip.dump(_yaml.node_sanitize({
                 'strong': self._get_cache_key(),
                 'weak': self._get_cache_key(_KeyStrength.WEAK),
             }), os.path.join(metadir, 'keys.yaml'))
 
             # Store dependencies.yaml
-            _yaml.dump(_yaml.node_sanitize({
+            _yaml_roundtrip.dump(_yaml.node_sanitize({
                 e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
             }), os.path.join(metadir, 'dependencies.yaml'))
 
             # Store workspaced.yaml
-            _yaml.dump(_yaml.node_sanitize({
+            _yaml_roundtrip.dump(_yaml.node_sanitize({
                 'workspaced': bool(self._get_workspace())
             }), os.path.join(metadir, 'workspaced.yaml'))
 
             # Store workspaced-dependencies.yaml
-            _yaml.dump(_yaml.node_sanitize({
+            _yaml_roundtrip.dump(_yaml.node_sanitize({
                 'workspaced-dependencies': [
                     e.name for e in self.dependencies(Scope.BUILD)
                     if e._get_workspace()

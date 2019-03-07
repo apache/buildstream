@@ -166,7 +166,7 @@ from collections.abc import Mapping
 from contextlib import contextmanager
 
 from . import Plugin, Consistency
-from . import _yaml, utils
+from . import _yaml, utils, _yaml_roundtrip
 from ._exceptions import BstError, ImplError, ErrorDomain
 from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage
@@ -889,7 +889,8 @@ class Source(Plugin):
                 # Save the ref in the originating file
                 #
                 try:
-                    _yaml.dump(provenance.toplevel, provenance.filename.name)
+                    # This is our roundtrip dump from the track
+                    _yaml_roundtrip.dump(provenance.toplevel, provenance.filename.name)
                 except OSError as e:
                     raise SourceError("{}: Error saving source reference to '{}': {}"
                                       .format(self, provenance.filename.name, e),
