@@ -2745,6 +2745,7 @@ class Element(Plugin):
 
         # Parse the expensive yaml now and cache the result
         meta_file = artifact_vdir._objpath(['meta', 'keys.yaml'])
+        ## NOTE: Doesn't need to use _yaml.load() here, we don't need prov...?
         meta = _yaml.load(meta_file, shortname='meta/keys.yaml')
         strong_key = meta['strong']
         weak_key = meta['weak']
@@ -2776,6 +2777,7 @@ class Element(Plugin):
 
         # Parse the expensive yaml now and cache the result
         meta_file = artifact_vdir._objpath(['meta', 'dependencies.yaml'])
+        ## NOTE: Doesn't look like this needs to be carrying around provenance either
         meta = _yaml.load(meta_file, shortname='meta/dependencies.yaml')
 
         # Cache it under both strong and weak keys
@@ -2805,6 +2807,7 @@ class Element(Plugin):
 
         # Parse the expensive yaml now and cache the result
         meta_file = artifact_vdir._objpath(['meta', 'workspaced.yaml'])
+        ## NOTE: Doesn't look like this needs prov either
         meta = _yaml.load(meta_file, shortname='meta/workspaced.yaml')
         workspaced = meta['workspaced']
 
@@ -2835,6 +2838,7 @@ class Element(Plugin):
 
         # Parse the expensive yaml now and cache the result
         meta_file = artifact_vdir._objpath(['meta', 'workspaced-dependencies.yaml'])
+        ## NOTE: Doesn't look like this needs provenance either
         meta = _yaml.load(meta_file, shortname='meta/workspaced-dependencies.yaml')
         workspaced = meta['workspaced-dependencies']
 
