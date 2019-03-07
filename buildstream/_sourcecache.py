@@ -176,3 +176,38 @@ class SourceCache(BaseCache):
                 raise SourceCacheError("Failed to pull source {}: {}".format(
                     display_key, e)) from e
         return False
+
+    # push()
+    #
+    # Push a source to configured remote source caches
+    #
+    # Args:
+    #    source (Source): source to push
+    #
+    # Returns:
+    #    (Bool): whether it pushed to a remote source cache
+    #
+    def push(self, source):
+        ref = source._get_source_name()
+        project = source._get_project()
+
+        # find configured push remotes for this source
+        if self._has_push_remotes:
+            push_remotes = [r for r in self._remotes[project] if r.spec.push]
+        else:
+            push_remotes = []
+
+        pushed = False
+
+        display_key = source._get_brief_display_key()
+        for remote in push_remotes:
+            remote.init()
+            source.status("Pushing source {} -> {}".format(display_key, remote.spec.url))
+            if self.cas.push([ref], remote):
+                source.info("Pushed source {} -> {}".format(display_key, remote.spec.url))
+                pushed = True
+            else:
+                source.info("Remote ({}) already has source {} cached"
+                            .format(remote.spec.url, display_key))
+
+        return pushed

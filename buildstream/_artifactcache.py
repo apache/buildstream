@@ -295,7 +295,7 @@ class ArtifactCache(BaseCache):
                 element.info("Pushed artifact {} -> {}".format(display_key, remote.spec.url))
                 pushed = True
             else:
-                element.info("Remote ({}) already has {} cached".format(
+                element.info("Remote ({}) already has artifact {} cached".format(
                     remote.spec.url, element._get_brief_display_key()
                 ))
 
