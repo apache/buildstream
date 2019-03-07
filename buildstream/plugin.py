@@ -420,10 +420,9 @@ class Plugin():
 
         """
 
-        return _yaml.node_get_project_path(node, key,
-                                           self.__project.directory,
-                                           check_is_file=check_is_file,
-                                           check_is_dir=check_is_dir)
+        return self.__project.get_path_from_node(node, key,
+                                                 check_is_file=check_is_file,
+                                                 check_is_dir=check_is_dir)
 
     def node_validate(self, node, valid_keys):
         """This should be used in :func:`~buildstream.plugin.Plugin.configure`
