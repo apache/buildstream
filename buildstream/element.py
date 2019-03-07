@@ -213,6 +213,7 @@ class Element(Plugin):
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
         self.__artifacts = context.artifactcache  # Artifact cache
+        self.__sourcecache = context.sourcecache  # Source cache
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
         self.__strong_cached = None             # Whether we have a cached artifact
         self.__weak_cached = None               # Whether we have a cached artifact
@@ -2112,13 +2113,12 @@ class Element(Plugin):
     def _fetch(self, fetch_original=False):
         previous_sources = []
         source = None
-        sourcecache = self._get_context().sourcecache
 
         # check whether the final source is cached
         for source in self.sources():
             pass
 
-        if source and not fetch_original and sourcecache.contains(source):
+        if source and not fetch_original and self.__sourcecache.contains(source):
             return
 
         for source in self.sources():
