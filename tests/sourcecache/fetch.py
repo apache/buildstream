@@ -23,6 +23,7 @@ import os
 import shutil
 import pytest
 
+from buildstream._exceptions import ErrorDomain
 from buildstream._context import Context
 from buildstream._project import Project
 from buildstream import _yaml
@@ -168,3 +169,54 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
 
         # Check that the source in both in the source dir and the local CAS
         assert element._source_cached()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_pull_fail(cli, tmpdir, datafiles):
+    project_dir = str(datafiles)
+    cache_dir = os.path.join(str(tmpdir), 'cache')
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'sourceshare')) as share:
+        user_config_file = str(tmpdir.join('buildstream.conf'))
+        user_config = {
+            'scheduler': {
+                'pushers': 1
+            },
+            'source-caches': {
+                'url': share.repo,
+            },
+            'cachedir': cache_dir,
+        }
+        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        cli.configure(user_config)
+
+        repo = create_repo('git', str(tmpdir))
+        ref = repo.create(os.path.join(project_dir, 'files'))
+        element_path = os.path.join(project_dir, 'elements')
+        element_name = 'push.bst'
+        element = {
+            'kind': 'import',
+            'sources': [repo.source_config(ref=ref)]
+        }
+        _yaml.dump(element, os.path.join(element_path, element_name))
+
+        # get the source object
+        context = Context()
+        context.load(config=user_config_file)
+        context.set_message_handler(message_handler)
+        project = Project(project_dir, context)
+        project.ensure_fully_loaded()
+
+        element = project.load_elements(['push.bst'])[0]
+        assert not element._source_cached()
+        source = list(element.sources())[0]
+
+        # remove files and check that it doesn't build
+        shutil.rmtree(repo.repo)
+
+        # Should fail in stream, with a plugin tasks causing the error
+        res = cli.run(project=project_dir, args=['build', 'push.bst'])
+        res.assert_main_error(ErrorDomain.STREAM, None)
+        res.assert_task_error(ErrorDomain.PLUGIN, None)
+        assert "Remote ({}) does not have source {} cached".format(
+            share.repo, source._get_brief_display_key()) in res.stderr
