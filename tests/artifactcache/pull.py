@@ -150,7 +150,7 @@ def _test_pull(user_config_file, project_dir, cache_dir,
     # Manually setup the CAS remote
     cas.setup_remotes(use_config=True)
 
-    if cas.has_push_remotes(element=element):
+    if cas.has_push_remotes(plugin=element):
         # Push the element's artifact
         if not cas.pull(element, element_key):
             queue.put("Pull operation failed")

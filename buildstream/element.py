@@ -1810,7 +1810,7 @@ class Element(Plugin):
 
         # Pull is pending if artifact remote server available
         # and pull has not been attempted yet
-        return self.__artifacts.has_fetch_remotes(element=self) and not self.__pull_done
+        return self.__artifacts.has_fetch_remotes(plugin=self) and not self.__pull_done
 
     # _pull_done()
     #
@@ -1863,7 +1863,7 @@ class Element(Plugin):
     #   (bool): True if this element does not need a push job to be created
     #
     def _skip_push(self):
-        if not self.__artifacts.has_push_remotes(element=self):
+        if not self.__artifacts.has_push_remotes(plugin=self):
             # No push remotes for this element's project
             return True
 

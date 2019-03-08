@@ -263,48 +263,6 @@ class ArtifactCache(BaseCache):
 
         return self.cas.diff(ref_a, ref_b, subdir=subdir)
 
-    # has_fetch_remotes():
-    #
-    # Check whether any remote repositories are available for fetching.
-    #
-    # Args:
-    #     element (Element): The Element to check
-    #
-    # Returns: True if any remote repositories are configured, False otherwise
-    #
-    def has_fetch_remotes(self, *, element=None):
-        if not self._has_fetch_remotes:
-            # No project has fetch remotes
-            return False
-        elif element is None:
-            # At least one (sub)project has fetch remotes
-            return True
-        else:
-            # Check whether the specified element's project has fetch remotes
-            remotes_for_project = self._remotes[element._get_project()]
-            return bool(remotes_for_project)
-
-    # has_push_remotes():
-    #
-    # Check whether any remote repositories are available for pushing.
-    #
-    # Args:
-    #     element (Element): The Element to check
-    #
-    # Returns: True if any remote repository is configured, False otherwise
-    #
-    def has_push_remotes(self, *, element=None):
-        if not self._has_push_remotes:
-            # No project has push remotes
-            return False
-        elif element is None:
-            # At least one (sub)project has push remotes
-            return True
-        else:
-            # Check whether the specified element's project has push remotes
-            remotes_for_project = self._remotes[element._get_project()]
-            return any(remote.spec.push for remote in remotes_for_project)
-
     # push():
     #
     # Push committed artifact to remote repository.
