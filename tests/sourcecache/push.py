@@ -20,6 +20,7 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 import os
+import shutil
 import pytest
 
 from buildstream._context import Context
@@ -94,3 +95,47 @@ def test_source_push(cli, tmpdir, datafiles):
         # check that's the remote CAS now has it
         digest = share.cas.resolve_ref(source._get_source_name())
         assert share.has_object(digest)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_pull(cli, datafiles, tmpdir):
+    project_dir = str(datafiles)
+    cache_dir = os.path.join(str(tmpdir), 'cache')
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'sourceshare')) as share:
+        user_config_file = str(tmpdir.join('buildstream.conf'))
+        user_config = {
+            'scheduler': {
+                'pushers': 1
+            },
+            'source-caches': {
+                'url': share.repo,
+                'push': True,
+            },
+            'cachedir': cache_dir,
+        }
+        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        cli.configure(user_config)
+
+        # create repo to pull from
+        repo = create_repo('git', str(tmpdir))
+        ref = repo.create(os.path.join(project_dir, 'files'))
+        element_path = os.path.join(project_dir, 'elements')
+        element_name = 'push.bst'
+        element = {
+            'kind': 'import',
+            'sources': [repo.source_config(ref=ref)]
+        }
+        _yaml.dump(element, os.path.join(element_path, element_name))
+
+        res = cli.run(project=project_dir, args=['build', 'push.bst'])
+        res.assert_success()
+
+        # remove local cache dir, and repo files and check it all works
+        shutil.rmtree(cache_dir)
+        os.makedirs(cache_dir)
+        shutil.rmtree(repo.repo)
+
+        # check it's pulls from the share
+        res = cli.run(project=project_dir, args=['build', 'push.bst'])
+        res.assert_success()
