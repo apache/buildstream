@@ -46,7 +46,7 @@ DATA_DIR = os.path.join(
 )
 
 
-class WorkspaceCreater():
+class WorkspaceCreator():
     def __init__(self, cli, tmpdir, datafiles, project_path=None):
         self.cli = cli
         self.tmpdir = tmpdir
@@ -161,7 +161,7 @@ class WorkspaceCreater():
 
 def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir=None,
                    project_path=None, element_attrs=None, no_checkout=False):
-    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles, project_path)
+    workspace_object = WorkspaceCreator(cli, tmpdir, datafiles, project_path)
     workspaces = workspace_object.open_workspaces((kind, ), track, (suffix, ), workspace_dir,
                                                   element_attrs, no_checkout)
     assert len(workspaces) == 1
@@ -196,7 +196,7 @@ def test_open_bzr_customize(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_multi(cli, tmpdir, datafiles):
 
-    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
+    workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
     workspaces = workspace_object.open_workspaces(repo_kinds, False)
 
     for (elname, workspace), kind in zip(workspaces, repo_kinds):
@@ -214,7 +214,7 @@ def test_open_multi(cli, tmpdir, datafiles):
 @pytest.mark.skipif(os.geteuid() == 0, reason="root may have CAP_DAC_OVERRIDE and ignore permissions")
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_multi_unwritable(cli, tmpdir, datafiles):
-    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
+    workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
 
     element_tuples = workspace_object.create_workspace_elements(repo_kinds, False, repo_kinds)
     os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
@@ -241,7 +241,7 @@ def test_open_multi_unwritable(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_multi_with_directory(cli, tmpdir, datafiles):
-    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
+    workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
 
     element_tuples = workspace_object.create_workspace_elements(repo_kinds, False, repo_kinds)
     os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
@@ -260,7 +260,7 @@ def test_open_multi_with_directory(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_defaultlocation(cli, tmpdir, datafiles):
-    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
+    workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
 
     ((element_name, workspace_dir), ) = workspace_object.create_workspace_elements(['git'], False, ['git'])
     os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
@@ -292,7 +292,7 @@ def test_open_defaultlocation(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_defaultlocation_exists(cli, tmpdir, datafiles):
-    workspace_object = WorkspaceCreater(cli, tmpdir, datafiles)
+    workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
 
     ((element_name, workspace_dir), ) = workspace_object.create_workspace_elements(['git'], False, ['git'])
     os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
