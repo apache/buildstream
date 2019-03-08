@@ -67,3 +67,4 @@ External plugins need to be installed separately, here is
 a list of BuildStream plugin projects known to us at this time:
 
 * `bst-external <http://buildstream.gitlab.io/bst-external/>`_
+* `bst-plugins-container <https://pypi.org/project/bst-plugins-container/>`_
