@@ -170,12 +170,6 @@ def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", repo_kinds)
-def test_open(cli, tmpdir, datafiles, kind):
-    open_workspace(cli, tmpdir, datafiles, kind, False)
-
-
-@pytest.mark.datafiles(DATA_DIR)
 def test_open_bzr_customize(cli, tmpdir, datafiles):
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "bzr", False)
 
