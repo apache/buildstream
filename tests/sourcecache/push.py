@@ -139,3 +139,45 @@ def test_push_pull(cli, datafiles, tmpdir):
         # check it's pulls from the share
         res = cli.run(project=project_dir, args=['build', 'push.bst'])
         res.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_fail(cli, tmpdir, datafiles):
+    project_dir = str(datafiles)
+    cache_dir = os.path.join(str(tmpdir), 'cache')
+
+    # set up config with remote that we'll take down
+    with create_artifact_share(os.path.join(str(tmpdir), 'sourceshare')) as share:
+        remote = share.repo
+        user_config_file = str(tmpdir.join('buildstream.conf'))
+        user_config = {
+            'scheduler': {
+                'pushers': 1
+            },
+            'source-caches': {
+                'url': share.repo,
+                'push': True,
+            },
+            'cachedir': cache_dir,
+        }
+        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        cli.configure(user_config)
+
+    # create repo to pull from
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(os.path.join(project_dir, 'files'))
+    element_path = os.path.join(project_dir, 'elements')
+    element_name = 'push.bst'
+    element = {
+        'kind': 'import',
+        'sources': [repo.source_config(ref=ref)]
+    }
+    _yaml.dump(element, os.path.join(element_path, element_name))
+
+    # build and check that it fails to set up the remote
+    res = cli.run(project=project_dir, args=['build', 'push.bst'])
+    res.assert_success()
+    assert ("Failed to initialize remote {}: Connect Failed"
+            .format(remote)) in res.stderr
+    assert "Pushing" not in res.stderr
+    assert "Pushed" not in res.stderr
