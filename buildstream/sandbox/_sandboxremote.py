@@ -30,7 +30,6 @@ from .. import utils
 from .._message import Message, MessageType
 from . import Sandbox, SandboxCommandError
 from .sandbox import _SandboxBatch
-from ..storage._filebaseddirectory import FileBasedDirectory
 from ..storage._casbaseddirectory import CasBasedDirectory
 from .. import _signals
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
@@ -284,17 +283,6 @@ class SandboxRemote(Sandbox):
         if dir_digest is None or not dir_digest.hash or not dir_digest.size_bytes:
             raise SandboxError("Output directory structure pulling from remote failed.")
 
-        path_components = os.path.split(self._output_directory)
-
-        # Now what we have is a digest for the output. Once we return, the calling process will
-        # attempt to descend into our directory and find that directory, so we need to overwrite
-        # that.
-
-        if not path_components:
-            # The artifact wants the whole directory; we could just return the returned hash in its
-            # place, but we don't have a means to do that yet.
-            raise SandboxError("Unimplemented: Output directory is empty or equal to the sandbox root.")
-
         # At the moment, we will get the whole directory back in the first directory argument and we need
         # to replace the sandbox's virtual directory with that. Creating a new virtual directory object
         # from another hash will be interesting, though...
@@ -303,13 +291,11 @@ class SandboxRemote(Sandbox):
         self._set_virtual_directory(new_dir)
 
     def _run(self, command, flags, *, cwd, env):
+        stdout, stderr = self._get_output()
+
         # set up virtual dircetory
         upload_vdir = self.get_virtual_directory()
         cascache = self._get_context().get_cascache()
-        if isinstance(upload_vdir, FileBasedDirectory):
-            # Make a new temporary directory to put source in
-            upload_vdir = CasBasedDirectory(cascache)
-            upload_vdir.import_files(self.get_virtual_directory()._get_underlying_directory())
 
         # Create directories for all marked directories. This emulates
         # some of the behaviour of other sandboxes, which create these
@@ -370,15 +356,20 @@ class SandboxRemote(Sandbox):
             operation = self.run_remote_command(channel, action_digest)
             action_result = self._extract_action_result(operation)
 
+        # Get output of build
+        self.process_job_output(action_result.output_directories, action_result.output_files)
+
+        if stdout:
+            if action_result.stdout_raw:
+                stdout.write(str(action_result.stdout_raw, 'utf-8', errors='ignore'))
+        if stderr:
+            if action_result.stderr_raw:
+                stderr.write(str(action_result.stderr_raw, 'utf-8', errors='ignore'))
+
         if action_result.exit_code != 0:
             # A normal error during the build: the remote execution system
             # has worked correctly but the command failed.
-            # action_result.stdout and action_result.stderr also contains
-            # build command outputs which we ignore at the moment.
             return action_result.exit_code
-
-        # Get output of build
-        self.process_job_output(action_result.output_directories, action_result.output_files)
 
         return 0
 
@@ -418,11 +409,15 @@ class SandboxRemote(Sandbox):
         environment_variables = [remote_execution_pb2.Command.
                                  EnvironmentVariable(name=k, value=v)
                                  for (k, v) in environment.items()]
+
+        # Request the whole directory tree as output
+        output_directory = os.path.relpath(os.path.sep, start=working_directory)
+
         return remote_execution_pb2.Command(arguments=command,
                                             working_directory=working_directory,
                                             environment_variables=environment_variables,
                                             output_files=[],
-                                            output_directories=[self._output_directory],
+                                            output_directories=[output_directory],
                                             platform=None)
 
     @staticmethod
@@ -451,6 +446,10 @@ class SandboxRemote(Sandbox):
 
     def _create_batch(self, main_group, flags, *, collect=None):
         return _SandboxRemoteBatch(self, main_group, flags, collect=collect)
+
+    def _use_cas_based_directory(self):
+        # Always use CasBasedDirectory for remote execution
+        return True
 
 
 # _SandboxRemoteBatch()
