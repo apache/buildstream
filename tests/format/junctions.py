@@ -45,8 +45,8 @@ def test_simple_build(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected files from both projects
-    assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'foo.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'base.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'foo.txt'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -157,8 +157,8 @@ def test_nested_simple(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected files from all subprojects
-    assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'foo.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'base.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'foo.txt'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -181,9 +181,9 @@ def test_nested_double(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected files from all subprojects
-    assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'foo.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'bar.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'base.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'foo.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'bar.txt'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -253,8 +253,8 @@ def test_options_default(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
-    assert(os.path.exists(os.path.join(checkoutdir, 'pony.txt')))
-    assert(not os.path.exists(os.path.join(checkoutdir, 'horsy.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'pony.txt'))
+    assert not os.path.exists(os.path.join(checkoutdir, 'horsy.txt'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -270,8 +270,8 @@ def test_options(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
-    assert(not os.path.exists(os.path.join(checkoutdir, 'pony.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'horsy.txt')))
+    assert not os.path.exists(os.path.join(checkoutdir, 'pony.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'horsy.txt'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -287,8 +287,8 @@ def test_options_inherit(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
-    assert(not os.path.exists(os.path.join(checkoutdir, 'pony.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'horsy.txt')))
+    assert not os.path.exists(os.path.join(checkoutdir, 'pony.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'horsy.txt'))
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -348,8 +348,8 @@ def test_git_build(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected files from both projects
-    assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'foo.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'base.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'foo.txt'))
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -415,4 +415,4 @@ def test_build_git_cross_junction_names(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected files from both projects
-    assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'base.txt'))

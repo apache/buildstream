@@ -69,7 +69,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
         path = path.split('?', 1)[0]
         path = path.split('#', 1)[0]
         path = posixpath.normpath(path)
-        assert(posixpath.isabs(path))
+        assert posixpath.isabs(path)
         path = posixpath.relpath(path, '/')
         return os.path.join(self.get_root_dir(), path)
 

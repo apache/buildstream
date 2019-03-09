@@ -144,15 +144,15 @@ def test_scope_all(cli, datafiles):
 
     element_list = cli.get_pipeline(project, elements, scope='all')
 
-    assert(len(element_list) == 7)
+    assert len(element_list) == 7
 
-    assert(element_list[0] == "build-build.bst")
-    assert(element_list[1] == "run-build.bst")
-    assert(element_list[2] == "build.bst")
-    assert(element_list[3] == "dep-one.bst")
-    assert(element_list[4] == "run.bst")
-    assert(element_list[5] == "dep-two.bst")
-    assert(element_list[6] == "target.bst")
+    assert element_list[0] == "build-build.bst"
+    assert element_list[1] == "run-build.bst"
+    assert element_list[2] == "build.bst"
+    assert element_list[3] == "dep-one.bst"
+    assert element_list[4] == "run.bst"
+    assert element_list[5] == "dep-two.bst"
+    assert element_list[6] == "target.bst"
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -162,12 +162,12 @@ def test_scope_run(cli, datafiles):
 
     element_list = cli.get_pipeline(project, elements, scope='run')
 
-    assert(len(element_list) == 4)
+    assert len(element_list) == 4
 
-    assert(element_list[0] == "dep-one.bst")
-    assert(element_list[1] == "run.bst")
-    assert(element_list[2] == "dep-two.bst")
-    assert(element_list[3] == "target.bst")
+    assert element_list[0] == "dep-one.bst"
+    assert element_list[1] == "run.bst"
+    assert element_list[2] == "dep-two.bst"
+    assert element_list[3] == "target.bst"
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -177,11 +177,11 @@ def test_scope_build(cli, datafiles):
 
     element_list = cli.get_pipeline(project, elements, scope='build')
 
-    assert(len(element_list) == 3)
+    assert len(element_list) == 3
 
-    assert(element_list[0] == "dep-one.bst")
-    assert(element_list[1] == "run.bst")
-    assert(element_list[2] == "dep-two.bst")
+    assert element_list[0] == "dep-one.bst"
+    assert element_list[1] == "run.bst"
+    assert element_list[2] == "dep-two.bst"
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -197,10 +197,10 @@ def test_scope_build_of_child(cli, datafiles):
     # Pass two, let's look at these
     element_list = cli.get_pipeline(project, [element], scope='build')
 
-    assert(len(element_list) == 2)
+    assert len(element_list) == 2
 
-    assert(element_list[0] == "run-build.bst")
-    assert(element_list[1] == "build.bst")
+    assert element_list[0] == "run-build.bst"
+    assert element_list[1] == "build.bst"
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -213,12 +213,12 @@ def test_no_recurse(cli, datafiles):
     # show` option does this directly.
     element_list = cli.get_pipeline(project, elements, scope='plan')
 
-    assert(len(element_list) == 7)
+    assert len(element_list) == 7
 
-    assert(element_list[0] == 'build-build.bst')
-    assert(element_list[1] in ['build.bst', 'run-build.bst'])
-    assert(element_list[2] in ['build.bst', 'run-build.bst'])
-    assert(element_list[3] in ['dep-one.bst', 'run.bst', 'dep-two.bst'])
-    assert(element_list[4] in ['dep-one.bst', 'run.bst', 'dep-two.bst'])
-    assert(element_list[5] in ['dep-one.bst', 'run.bst', 'dep-two.bst'])
-    assert(element_list[6] == 'target.bst')
+    assert element_list[0] == 'build-build.bst'
+    assert element_list[1] in ['build.bst', 'run-build.bst']
+    assert element_list[2] in ['build.bst', 'run-build.bst']
+    assert element_list[3] in ['dep-one.bst', 'run.bst', 'dep-two.bst']
+    assert element_list[4] in ['dep-one.bst', 'run.bst', 'dep-two.bst']
+    assert element_list[5] in ['dep-one.bst', 'run.bst', 'dep-two.bst']
+    assert element_list[6] == 'target.bst'

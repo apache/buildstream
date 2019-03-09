@@ -81,7 +81,7 @@ def test_stage_and_patch(cli, tmpdir, datafiles):
 
     # Test the file.txt was patched and changed
     with open(os.path.join(checkoutdir, 'file.txt')) as f:
-        assert(f.read() == 'This is text file with superpowers\n')
+        assert f.read() == 'This is text file with superpowers\n'
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
@@ -117,7 +117,7 @@ def test_stage_separate_patch_dir(cli, tmpdir, datafiles):
 
     # Test the file.txt was patched and changed
     with open(os.path.join(checkoutdir, 'test-dir', 'file.txt')) as f:
-        assert(f.read() == 'This is text file in a directory with superpowers\n')
+        assert f.read() == 'This is text file in a directory with superpowers\n'
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'multiple-patches'))
@@ -133,7 +133,7 @@ def test_stage_multiple_patches(cli, tmpdir, datafiles):
 
     # Test the file.txt was patched and changed
     with open(os.path.join(checkoutdir, 'file.txt')) as f:
-        assert(f.read() == 'This is text file with more superpowers\n')
+        assert f.read() == 'This is text file with more superpowers\n'
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'different-strip-level'))
@@ -149,4 +149,4 @@ def test_patch_strip_level(cli, tmpdir, datafiles):
 
     # Test the file.txt was patched and changed
     with open(os.path.join(checkoutdir, 'file.txt')) as f:
-        assert(f.read() == 'This is text file with superpowers\n')
+        assert f.read() == 'This is text file with superpowers\n'

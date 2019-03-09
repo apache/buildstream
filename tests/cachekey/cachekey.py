@@ -58,7 +58,7 @@ def element_filename(project_dir, element_name, alt_suffix=None):
     if alt_suffix:
 
         # Just in case...
-        assert(element_name.endswith('.bst'))
+        assert element_name.endswith('.bst')
 
         # Chop off the 'bst' in '.bst' and add the new suffix
         element_name = element_name[:-3]

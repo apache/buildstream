@@ -36,8 +36,8 @@ def test_one_file(datafiles):
 
     element = loader.load(['elements/onefile.bst'])[0]
 
-    assert(isinstance(element, MetaElement))
-    assert(element.kind == 'pony')
+    assert isinstance(element, MetaElement)
+    assert element.kind == 'pony'
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
@@ -49,7 +49,7 @@ def test_missing_file(datafiles):
     with pytest.raises(LoadError) as exc:
         loader.load(['elements/missing.bst'])
 
-    assert (exc.value.reason == LoadErrorReason.MISSING_FILE)
+    assert exc.value.reason == LoadErrorReason.MISSING_FILE
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
@@ -61,7 +61,7 @@ def test_invalid_reference(datafiles):
     with pytest.raises(LoadError) as exc:
         loader.load(['elements/badreference.bst'])
 
-    assert (exc.value.reason == LoadErrorReason.INVALID_YAML)
+    assert exc.value.reason == LoadErrorReason.INVALID_YAML
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
@@ -73,7 +73,7 @@ def test_invalid_yaml(datafiles):
     with pytest.raises(LoadError) as exc:
         loader.load(['elements/badfile.bst'])
 
-    assert (exc.value.reason == LoadErrorReason.INVALID_YAML)
+    assert exc.value.reason == LoadErrorReason.INVALID_YAML
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
@@ -86,7 +86,7 @@ def test_fail_fullpath_target(datafiles):
         loader = make_loader(basedir)
         loader.load([fullpath])
 
-    assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
+    assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
@@ -98,7 +98,7 @@ def test_invalid_key(datafiles):
     with pytest.raises(LoadError) as exc:
         loader.load(['elements/invalidkey.bst'])
 
-    assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
+    assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
@@ -110,4 +110,4 @@ def test_invalid_directory_load(datafiles):
     with pytest.raises(LoadError) as exc:
         loader.load(['elements/'])
 
-    assert (exc.value.reason == LoadErrorReason.LOADING_DIRECTORY)
+    assert exc.value.reason == LoadErrorReason.LOADING_DIRECTORY

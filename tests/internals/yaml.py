@@ -23,7 +23,7 @@ def test_load_yaml(datafiles):
                             'basics.yaml')
 
     loaded = _yaml.load(filename)
-    assert(loaded.get('kind') == 'pony')
+    assert loaded.get('kind') == 'pony'
 
 
 def assert_provenance(filename, line, col, node, key=None, indices=[]):
@@ -31,15 +31,15 @@ def assert_provenance(filename, line, col, node, key=None, indices=[]):
 
     if key:
         if indices:
-            assert(isinstance(provenance, _yaml.ElementProvenance))
+            assert isinstance(provenance, _yaml.ElementProvenance)
         else:
-            assert(isinstance(provenance, _yaml.MemberProvenance))
+            assert isinstance(provenance, _yaml.MemberProvenance)
     else:
-        assert(isinstance(provenance, _yaml.DictProvenance))
+        assert isinstance(provenance, _yaml.DictProvenance)
 
-    assert(provenance.filename.shortname == filename)
-    assert(provenance.line == line)
-    assert(provenance.col == col)
+    assert provenance.filename.shortname == filename
+    assert provenance.line == line
+    assert provenance.col == col
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -50,7 +50,7 @@ def test_basic_provenance(datafiles):
                             'basics.yaml')
 
     loaded = _yaml.load(filename)
-    assert(loaded.get('kind') == 'pony')
+    assert loaded.get('kind') == 'pony'
 
     assert_provenance(filename, 1, 0, loaded)
 
@@ -63,7 +63,7 @@ def test_member_provenance(datafiles):
                             'basics.yaml')
 
     loaded = _yaml.load(filename)
-    assert(loaded.get('kind') == 'pony')
+    assert loaded.get('kind') == 'pony'
     assert_provenance(filename, 2, 13, loaded, 'description')
 
 
@@ -75,7 +75,7 @@ def test_element_provenance(datafiles):
                             'basics.yaml')
 
     loaded = _yaml.load(filename)
-    assert(loaded.get('kind') == 'pony')
+    assert loaded.get('kind') == 'pony'
     assert_provenance(filename, 5, 2, loaded, 'moods', [1])
 
 
@@ -98,7 +98,7 @@ def test_node_validate(datafiles):
     with pytest.raises(LoadError) as exc:
         _yaml.node_validate(base, ['kind', 'description', 'moods', 'children', 'extra'])
 
-    assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
+    assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -109,11 +109,11 @@ def test_node_get(datafiles):
                             'basics.yaml')
 
     base = _yaml.load(filename)
-    assert(base.get('kind') == 'pony')
+    assert base.get('kind') == 'pony'
 
     children = _yaml.node_get(base, list, 'children')
-    assert(isinstance(children, list))
-    assert(len(children) == 7)
+    assert isinstance(children, list)
+    assert len(children) == 7
 
     child = _yaml.node_get(base, Mapping, 'children', indices=[6])
     assert_provenance(filename, 20, 8, child, 'mood')
@@ -122,7 +122,7 @@ def test_node_get(datafiles):
     with pytest.raises(LoadError) as exc:
         _yaml.node_get(extra, Mapping, 'old')
 
-    assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
+    assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
 
 # Really this is testing _yaml.node_copy(), we want to
@@ -148,10 +148,10 @@ def test_composite_preserve_originals(datafiles):
     orig_extra = _yaml.node_get(base, Mapping, 'extra')
 
     # Test that the node copy has the overridden value...
-    assert(_yaml.node_get(copy_extra, str, 'old') == 'override')
+    assert _yaml.node_get(copy_extra, str, 'old') == 'override'
 
     # But the original node is not effected by the override.
-    assert(_yaml.node_get(orig_extra, str, 'old') == 'new')
+    assert _yaml.node_get(orig_extra, str, 'old') == 'new'
 
 
 def load_yaml_file(filename, *, cache_path, shortname=None, from_cache='raw'):

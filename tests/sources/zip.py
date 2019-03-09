@@ -131,7 +131,7 @@ def test_stage_default_basedir(cli, tmpdir, datafiles):
     original_dir = os.path.join(str(datafiles), "content", "a")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 # Test that a staged checkout matches what was tarred up, with an empty base-dir
@@ -159,7 +159,7 @@ def test_stage_no_basedir(cli, tmpdir, datafiles):
     original_dir = os.path.join(str(datafiles), "content")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 # Test that a staged checkout matches what was tarred up, with an explicit basedir
@@ -187,7 +187,7 @@ def test_stage_explicit_basedir(cli, tmpdir, datafiles):
     original_dir = os.path.join(str(datafiles), "content", "a")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 @pytest.mark.parametrize('server_type', ('FTP', 'HTTP'))
@@ -228,4 +228,4 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
         original_dir = os.path.join(str(datafiles), 'content', 'a')
         original_contents = list_dir_contents(original_dir)
         checkout_contents = list_dir_contents(checkoutdir)
-        assert(checkout_contents == original_contents)
+        assert checkout_contents == original_contents

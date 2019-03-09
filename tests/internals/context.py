@@ -29,7 +29,7 @@ def context_fixture():
 #######################################
 def test_context_create(context_fixture):
     context = context_fixture['context']
-    assert(isinstance(context, Context))
+    assert isinstance(context, Context)
 
 
 #######################################
@@ -38,13 +38,13 @@ def test_context_create(context_fixture):
 def test_context_load(context_fixture):
     context = context_fixture['context']
     cache_home = context_fixture['xdg-cache']
-    assert(isinstance(context, Context))
+    assert isinstance(context, Context)
 
     context.load(config=os.devnull)
-    assert(context.sourcedir == os.path.join(cache_home, 'buildstream', 'sources'))
-    assert(context.builddir == os.path.join(cache_home, 'buildstream', 'build'))
-    assert(context.cachedir == os.path.join(cache_home, 'buildstream'))
-    assert(context.logdir == os.path.join(cache_home, 'buildstream', 'logs'))
+    assert context.sourcedir == os.path.join(cache_home, 'buildstream', 'sources')
+    assert context.builddir == os.path.join(cache_home, 'buildstream', 'build')
+    assert context.cachedir == os.path.join(cache_home, 'buildstream')
+    assert context.logdir == os.path.join(cache_home, 'buildstream', 'logs')
 
 
 # Assert that a changed XDG_CACHE_HOME doesn't cause issues
@@ -52,13 +52,13 @@ def test_context_load_envvar(context_fixture):
     os.environ['XDG_CACHE_HOME'] = '/some/path/'
 
     context = context_fixture['context']
-    assert(isinstance(context, Context))
+    assert isinstance(context, Context)
 
     context.load(config=os.devnull)
-    assert(context.sourcedir == os.path.join('/', 'some', 'path', 'buildstream', 'sources'))
-    assert(context.builddir == os.path.join('/', 'some', 'path', 'buildstream', 'build'))
-    assert(context.cachedir == os.path.join('/', 'some', 'path', 'buildstream'))
-    assert(context.logdir == os.path.join('/', 'some', 'path', 'buildstream', 'logs'))
+    assert context.sourcedir == os.path.join('/', 'some', 'path', 'buildstream', 'sources')
+    assert context.builddir == os.path.join('/', 'some', 'path', 'buildstream', 'build')
+    assert context.cachedir == os.path.join('/', 'some', 'path', 'buildstream')
+    assert context.logdir == os.path.join('/', 'some', 'path', 'buildstream', 'logs')
 
     # Reset the environment variable
     del os.environ['XDG_CACHE_HOME']
@@ -70,17 +70,17 @@ def test_context_load_envvar(context_fixture):
 def test_context_load_user_config(context_fixture, datafiles):
     context = context_fixture['context']
     cache_home = context_fixture['xdg-cache']
-    assert(isinstance(context, Context))
+    assert isinstance(context, Context)
 
     conf_file = os.path.join(datafiles.dirname,
                              datafiles.basename,
                              'userconf.yaml')
     context.load(conf_file)
 
-    assert(context.sourcedir == os.path.expanduser('~/pony'))
-    assert(context.builddir == os.path.join(cache_home, 'buildstream', 'build'))
-    assert(context.cachedir == os.path.join(cache_home, 'buildstream'))
-    assert(context.logdir == os.path.join(cache_home, 'buildstream', 'logs'))
+    assert context.sourcedir == os.path.expanduser('~/pony')
+    assert context.builddir == os.path.join(cache_home, 'buildstream', 'build')
+    assert context.cachedir == os.path.join(cache_home, 'buildstream')
+    assert context.logdir == os.path.join(cache_home, 'buildstream', 'logs')
 
 
 #######################################
@@ -89,7 +89,7 @@ def test_context_load_user_config(context_fixture, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_context_load_missing_config(context_fixture, datafiles):
     context = context_fixture['context']
-    assert(isinstance(context, Context))
+    assert isinstance(context, Context)
 
     conf_file = os.path.join(datafiles.dirname,
                              datafiles.basename,
@@ -98,13 +98,13 @@ def test_context_load_missing_config(context_fixture, datafiles):
     with pytest.raises(LoadError) as exc:
         context.load(conf_file)
 
-    assert (exc.value.reason == LoadErrorReason.MISSING_FILE)
+    assert exc.value.reason == LoadErrorReason.MISSING_FILE
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_context_load_malformed_config(context_fixture, datafiles):
     context = context_fixture['context']
-    assert(isinstance(context, Context))
+    assert isinstance(context, Context)
 
     conf_file = os.path.join(datafiles.dirname,
                              datafiles.basename,
@@ -113,13 +113,13 @@ def test_context_load_malformed_config(context_fixture, datafiles):
     with pytest.raises(LoadError) as exc:
         context.load(conf_file)
 
-    assert (exc.value.reason == LoadErrorReason.INVALID_YAML)
+    assert exc.value.reason == LoadErrorReason.INVALID_YAML
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_context_load_notdict_config(context_fixture, datafiles):
     context = context_fixture['context']
-    assert(isinstance(context, Context))
+    assert isinstance(context, Context)
 
     conf_file = os.path.join(datafiles.dirname,
                              datafiles.basename,
@@ -129,4 +129,4 @@ def test_context_load_notdict_config(context_fixture, datafiles):
         context.load(conf_file)
 
     # XXX Should this be a different LoadErrorReason ?
-    assert (exc.value.reason == LoadErrorReason.INVALID_YAML)
+    assert exc.value.reason == LoadErrorReason.INVALID_YAML

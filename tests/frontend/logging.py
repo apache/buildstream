@@ -45,7 +45,7 @@ def test_default_logging(cli, tmpdir, datafiles):
     result.assert_success()
 
     m = re.search(r"\[\d\d:\d\d:\d\d\]\[\s*\]\[.*\] SUCCESS Checking sources", result.stderr)
-    assert(m is not None)
+    assert m is not None
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -83,7 +83,7 @@ def test_custom_logging(cli, tmpdir, datafiles):
 
     m = re.search(r"\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6},\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6}\s*,.*"
                   r",SUCCESS,Checking sources", result.stderr)
-    assert(m is not None)
+    assert m is not None
 
 
 @pytest.mark.datafiles(DATA_DIR)

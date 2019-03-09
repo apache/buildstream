@@ -147,7 +147,7 @@ def test_stage_default_basedir(cli, tmpdir, datafiles, srcdir):
     original_dir = os.path.join(str(datafiles), "content", "a")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 # Test that a staged checkout matches what was tarred up, with an empty base-dir
@@ -176,7 +176,7 @@ def test_stage_no_basedir(cli, tmpdir, datafiles, srcdir):
     original_dir = os.path.join(str(datafiles), "content")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 # Test that a staged checkout matches what was tarred up, with an explicit basedir
@@ -205,7 +205,7 @@ def test_stage_explicit_basedir(cli, tmpdir, datafiles, srcdir):
     original_dir = os.path.join(str(datafiles), "content", "a")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 # Test that we succeed to extract tarballs with hardlinks when stripping the
@@ -241,7 +241,7 @@ def test_stage_contains_links(cli, tmpdir, datafiles):
     original_dir = os.path.join(str(datafiles), "content", "base-directory")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 @pytest.mark.skipif(not HAVE_LZIP, reason='lzip is not available')
@@ -270,7 +270,7 @@ def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
     original_dir = os.path.join(str(datafiles), "content", "a")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 # Test that a tarball that contains a read only dir works
@@ -355,7 +355,7 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
         original_dir = os.path.join(str(datafiles), 'content', 'a')
         original_contents = list_dir_contents(original_dir)
         checkout_contents = list_dir_contents(checkoutdir)
-        assert(checkout_contents == original_contents)
+        assert checkout_contents == original_contents
 
 
 @pytest.mark.parametrize('server_type', ('FTP', 'HTTP'))

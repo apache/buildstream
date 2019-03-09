@@ -34,7 +34,7 @@ def test_customsource(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     targets = create_pipeline(tmpdir, basedir, 'simple.bst')
-    assert(targets[0].get_kind() == "autotools")
+    assert targets[0].get_kind() == "autotools"
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'customelement'))
@@ -42,7 +42,7 @@ def test_customelement(datafiles, tmpdir):
 
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     targets = create_pipeline(tmpdir, basedir, 'simple.bst')
-    assert(targets[0].get_kind() == "foo")
+    assert targets[0].get_kind() == "foo"
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'badversionsource'))

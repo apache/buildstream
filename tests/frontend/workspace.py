@@ -177,7 +177,7 @@ def test_open_bzr_customize(cli, tmpdir, datafiles):
 
     # Check that the .bzr dir exists
     bzrdir = os.path.join(workspace, ".bzr")
-    assert(os.path.isdir(bzrdir))
+    assert os.path.isdir(bzrdir)
 
     # Check that the correct origin branch is set
     element_config = _yaml.load(os.path.join(project, "elements", element_name))
@@ -186,7 +186,7 @@ def test_open_bzr_customize(cli, tmpdir, datafiles):
     stripped_url = source_config['url'].lstrip("file:///")
     expected_output_str = ("checkout of branch: /{}/{}"
                            .format(stripped_url, source_config['track']))
-    assert(expected_output_str in str(output))
+    assert expected_output_str in str(output)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -199,12 +199,12 @@ def test_open_multi(cli, tmpdir, datafiles):
         assert kind in elname
         workspace_lsdir = os.listdir(workspace)
         if kind == 'git':
-            assert('.git' in workspace_lsdir)
+            assert '.git' in workspace_lsdir
         elif kind == 'bzr':
-            assert('.bzr' in workspace_lsdir)
+            assert '.bzr' in workspace_lsdir
         else:
-            assert not ('.git' in workspace_lsdir)
-            assert not ('.bzr' in workspace_lsdir)
+            assert not '.git' in workspace_lsdir
+            assert not '.bzr' in workspace_lsdir
 
 
 @pytest.mark.skipif(os.geteuid() == 0, reason="root may have CAP_DAC_OVERRIDE and ignore permissions")
@@ -232,7 +232,7 @@ def test_open_multi_unwritable(cli, tmpdir, datafiles):
     result.assert_main_error(ErrorDomain.STREAM, None)
     # Normally we avoid checking stderr in favour of using the mechine readable result.assert_main_error
     # But Tristan was very keen that the names of the elements left needing workspaces were present in the out put
-    assert (" ".join([element_name for element_name, workspace_dir_suffix in element_tuples[1:]]) in result.stderr)
+    assert " ".join([element_name for element_name, workspace_dir_suffix in element_tuples[1:]]) in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
