@@ -223,19 +223,28 @@ class Loader():
             node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable, project=self.project)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_FILE:
+
+                if self.project.junction:
+                    message = "Could not find element '{}' in project referred to by junction element '{}'" \
+                              .format(filename, self.project.junction.name)
+                else:
+                    message = "Could not find element '{}' in elements directory '{}'".format(filename, self._basedir)
+
+                if provenance:
+                    message = "{}: {}".format(provenance, message)
+
                 # If we can't find the file, try to suggest plausible
                 # alternatives by stripping the element-path from the given
                 # filename, and verifying that it exists.
-                message = "Could not find element '{}' in elements directory '{}'".format(filename, self._basedir)
-                if provenance:
-                    message = "{}: {}".format(provenance, message)
                 detail = None
                 elements_dir = os.path.relpath(self._basedir, self.project.directory)
                 element_relpath = os.path.relpath(filename, elements_dir)
                 if filename.startswith(elements_dir) and os.path.exists(os.path.join(self._basedir, element_relpath)):
                     detail = "Did you mean '{}'?".format(element_relpath)
+
                 raise LoadError(LoadErrorReason.MISSING_FILE,
                                 message, detail=detail) from e
+
             elif e.reason == LoadErrorReason.LOADING_DIRECTORY:
                 # If a <directory>.bst file exists in the element path,
                 # let's suggest this as a plausible alternative.
