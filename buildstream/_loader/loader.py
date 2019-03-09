@@ -202,11 +202,12 @@ class Loader():
     #    rewritable (bool): Whether we should load in round trippable mode
     #    ticker (callable): A callback to report loaded filenames to the frontend
     #    fetch_subprojects (bool): Whether to fetch subprojects while loading
+    #    provenance (Provenance): The location from where the file was referred to, or None
     #
     # Returns:
     #    (LoadElement): A loaded LoadElement
     #
-    def _load_file(self, filename, rewritable, ticker, fetch_subprojects):
+    def _load_file(self, filename, rewritable, ticker, fetch_subprojects, provenance=None):
 
         # Silently ignore already loaded files
         if filename in self._elements:
@@ -226,6 +227,8 @@ class Loader():
                 # alternatives by stripping the element-path from the given
                 # filename, and verifying that it exists.
                 message = "Could not find element '{}' in elements directory '{}'".format(filename, self._basedir)
+                if provenance:
+                    message = "{}: {}".format(provenance, message)
                 detail = None
                 elements_dir = os.path.relpath(self._basedir, self.project.directory)
                 element_relpath = os.path.relpath(filename, elements_dir)
@@ -237,6 +240,8 @@ class Loader():
                 # If a <directory>.bst file exists in the element path,
                 # let's suggest this as a plausible alternative.
                 message = str(e)
+                if provenance:
+                    message = "{}: {}".format(provenance, message)
                 detail = None
                 if os.path.exists(os.path.join(self._basedir, filename + '.bst')):
                     element_name = filename + '.bst'
@@ -262,13 +267,14 @@ class Loader():
         # Load all dependency files for the new LoadElement
         for dep in element.deps:
             if dep.junction:
-                self._load_file(dep.junction, rewritable, ticker, fetch_subprojects)
+                self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, dep.provenance)
                 loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
                                           fetch_subprojects=fetch_subprojects)
             else:
                 loader = self
 
-            dep_element = loader._load_file(dep.name, rewritable, ticker, fetch_subprojects)
+            dep_element = loader._load_file(dep.name, rewritable, ticker,
+                                            fetch_subprojects, dep.provenance)
 
             if _yaml.node_get(dep_element.node, str, Symbol.KIND) == 'junction':
                 raise LoadError(LoadErrorReason.INVALID_DATA,
