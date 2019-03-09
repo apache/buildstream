@@ -27,6 +27,26 @@ def test_missing_project_name(cli, datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_missing_element(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, "missing-element")
+    result = cli.run(project=project, args=['show', 'manual.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+
+    # Assert that we have the expected provenance encoded into the error
+    assert "manual.bst [line 4 column 2]" in result.stderr
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_missing_junction(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, "missing-junction")
+    result = cli.run(project=project, args=['show', 'manual.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+
+    # Assert that we have the expected provenance encoded into the error
+    assert "manual.bst [line 4 column 2]" in result.stderr
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_empty_project_name(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, "emptyname")
     result = cli.run(project=project, args=['workspace', 'list'])
