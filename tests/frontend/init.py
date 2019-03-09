@@ -93,14 +93,6 @@ def test_bad_element_path(cli, tmpdir, element_path):
     result.assert_main_error(ErrorDomain.APP, 'invalid-element-path')
 
 
-@pytest.mark.parametrize("element_path", [('/absolute/path'), ('../outside/of/project')])
-def test_bad_element_path(cli, tmpdir, element_path):
-    result = cli.run(project=str(tmpdir), args=[
-        'init', '--project-name', 'foo', '--element-path', element_path
-    ])
-    result.assert_main_error(ErrorDomain.APP, 'invalid-element-path')
-
-
 @pytest.mark.parametrize("element_path", [('foo'), ('foo/bar')])
 def test_element_path_interactive(cli, tmp_path, monkeypatch, element_path):
     project = tmp_path

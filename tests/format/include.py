@@ -309,16 +309,3 @@ def test_local_to_junction(cli, tmpdir, datafiles):
     result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert loaded['included'] == 'True'
-
-
-@pytest.mark.datafiles(DATA_DIR)
-def test_include_project_file(cli, datafiles):
-    project = os.path.join(str(datafiles), 'string')
-    result = cli.run(project=project, args=[
-        'show',
-        '--deps', 'none',
-        '--format', '%{vars}',
-        'element.bst'])
-    result.assert_success()
-    loaded = _yaml.load_data(result.output)
-    assert loaded['included'] == 'True'
