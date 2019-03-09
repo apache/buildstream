@@ -35,7 +35,7 @@ def test_element_error(cli, datafiles, target):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_project_error(cli, datafiles):
+def test_project_composite_error(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, 'list-directive-type-error')
     result = cli.run(project=project, silent=True, args=[
         'show',

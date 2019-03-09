@@ -792,7 +792,7 @@ def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
+def test_build_junction_transitive_short_notation_with_junction(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
