@@ -3,7 +3,7 @@ import pytest
 import shutil
 
 from buildstream import _yaml, ElementError
-from buildstream._exceptions import LoadError, LoadErrorReason
+from buildstream._exceptions import ErrorDomain, LoadError, LoadErrorReason
 from tests.testutils import cli, create_repo
 from tests.testutils.site import HAVE_GIT
 
@@ -45,6 +45,36 @@ def test_simple_build(cli, tmpdir, datafiles):
     # Check that the checkout contains the expected files from both projects
     assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
     assert(os.path.exists(os.path.join(checkoutdir, 'foo.txt')))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_missing_file_in_subproject(cli, datafiles):
+    project = os.path.join(str(datafiles), 'missing-element')
+    result = cli.run(project=project, args=['show', 'target.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+
+    # Assert that we have the expected provenance encoded into the error
+    assert "target.bst [line 4 column 2]" in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_missing_file_in_subsubproject(cli, datafiles):
+    project = os.path.join(str(datafiles), 'missing-element')
+    result = cli.run(project=project, args=['show', 'sub-target.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+
+    # Assert that we have the expected provenance encoded into the error
+    assert "junction-A.bst:target.bst [line 4 column 2]" in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_missing_junction_in_subproject(cli, datafiles):
+    project = os.path.join(str(datafiles), 'missing-element')
+    result = cli.run(project=project, args=['show', 'sub-target-bad-junction.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+
+    # Assert that we have the expected provenance encoded into the error
+    assert "junction-A.bst:bad-junction-target.bst [line 4 column 2]" in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
