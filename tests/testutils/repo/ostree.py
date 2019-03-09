@@ -1,7 +1,8 @@
-import pytest
 import subprocess
-from .repo import Repo
 
+import pytest
+
+from .repo import Repo
 from .. import site
 
 

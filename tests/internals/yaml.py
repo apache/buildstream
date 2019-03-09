@@ -1,7 +1,8 @@
-import os
-import pytest
-import tempfile
 from collections.abc import Mapping
+import os
+import tempfile
+
+import pytest
 
 from buildstream import _yaml
 from buildstream._exceptions import LoadError, LoadErrorReason

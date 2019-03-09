@@ -35,13 +35,15 @@
 # run over to the corresponding .expected source files and commit
 # the result.
 #
+from collections import OrderedDict
+import os
+
+import pytest
+
 from buildstream.plugintestutils.runcli import cli
-from tests.testutils.site import HAVE_BZR, HAVE_GIT, HAVE_OSTREE, IS_LINUX, MACHINE_ARCH
 from buildstream.plugin import CoreWarnings
 from buildstream import _yaml
-import os
-from collections import OrderedDict
-import pytest
+from tests.testutils.site import HAVE_BZR, HAVE_GIT, HAVE_OSTREE, IS_LINUX, MACHINE_ARCH
 
 
 ##############################################

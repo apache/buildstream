@@ -1,6 +1,8 @@
 import os
-import pytest
 import shutil
+
+import pytest
+
 from tests.testutils import create_repo
 from buildstream.plugintestutils import cli
 from buildstream._exceptions import ErrorDomain

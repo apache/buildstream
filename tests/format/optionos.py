@@ -1,6 +1,7 @@
-import os
-import pytest
 from contextlib import contextmanager
+import os
+
+import pytest
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason

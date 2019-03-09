@@ -1,6 +1,7 @@
 import os
-import pytest
 import zipfile
+
+import pytest
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml

@@ -1,5 +1,6 @@
-import pytest
 import os
+
+import pytest
 
 from buildstream.plugin import CoreWarnings
 from buildstream._exceptions import ErrorDomain

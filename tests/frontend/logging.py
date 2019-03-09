@@ -1,6 +1,8 @@
 import os
-import pytest
 import re
+
+import pytest
+
 from tests.testutils import create_repo
 
 from buildstream import _yaml

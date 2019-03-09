@@ -26,9 +26,11 @@
 
 import os
 import stat
-import pytest
 import shutil
 import subprocess
+
+import pytest
+
 from tests.testutils import create_repo, ALL_REPO_KINDS, wait_for_cache_granularity
 from tests.testutils import create_artifact_share, create_element_size
 

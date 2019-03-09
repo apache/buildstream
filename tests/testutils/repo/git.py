@@ -1,7 +1,8 @@
 import os
-import pytest
 import shutil
 import subprocess
+
+import pytest
 
 from .repo import Repo
 from .. import site

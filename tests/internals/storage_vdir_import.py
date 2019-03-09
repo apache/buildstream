@@ -1,9 +1,10 @@
 from hashlib import sha256
 import os
-import pytest
 import random
-from buildstream.plugintestutils import cli
 
+import pytest
+
+from buildstream.plugintestutils import cli
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
 from buildstream._cas import CASCache

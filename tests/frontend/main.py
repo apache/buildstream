@@ -1,7 +1,7 @@
-from buildstream._frontend.app import _prefix_choice_value_proc
-
-import pytest
 import click
+import pytest
+
+from buildstream._frontend.app import _prefix_choice_value_proc
 
 
 def test_prefix_choice_value_proc_full_match():

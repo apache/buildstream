@@ -1,6 +1,8 @@
+from contextlib import contextmanager
 import os
-import pytest
 import tempfile
+
+import pytest
 from ruamel import yaml
 
 from tests.testutils import generate_junction, create_element_size
@@ -9,7 +11,6 @@ from buildstream import _yaml
 from buildstream._yamlcache import YamlCache
 from buildstream._project import Project
 from buildstream._context import Context
-from contextlib import contextmanager
 
 
 def generate_project(tmpdir, ref_storage, with_junction, name="test"):

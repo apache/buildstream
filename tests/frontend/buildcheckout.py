@@ -1,8 +1,10 @@
 import os
 import tarfile
 import hashlib
-import pytest
 import subprocess
+
+import pytest
+
 from tests.testutils.site import IS_WINDOWS
 from tests.testutils import create_repo, generate_junction
 

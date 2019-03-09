@@ -1,10 +1,11 @@
 import os
-import pytest
+from shutil import copyfile, rmtree
+import subprocess
 import tarfile
 import tempfile
-import subprocess
 import urllib.parse
-from shutil import copyfile, rmtree
+
+import pytest
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml

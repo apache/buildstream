@@ -18,8 +18,9 @@
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 #
 import os
-import pytest
 import shutil
+
+import pytest
 
 from buildstream._exceptions import ErrorDomain
 from buildstream.plugintestutils.runcli import cli

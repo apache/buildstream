@@ -1,10 +1,11 @@
 import glob
 import os
-import pytest
 import shutil
 import subprocess
 import sys
 import time
+
+import pytest
 
 
 # An ExternalPluginRepo represents a git repository containing a plugin

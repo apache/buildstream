@@ -1,6 +1,7 @@
 import os
-import pytest
 import tarfile
+
+import pytest
 
 from buildstream.plugintestutils import cli
 
