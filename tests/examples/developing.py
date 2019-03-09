@@ -1,9 +1,9 @@
 import os
 import pytest
 
-import tests.testutils.patch as patch
 from buildstream.plugintestutils import cli_integration as cli
 from buildstream.plugintestutils.integration import assert_contains
+import tests.testutils.patch as patch
 from tests.testutils.site import HAVE_BWRAP, IS_LINUX, MACHINE_ARCH
 
 pytestmark = pytest.mark.integration

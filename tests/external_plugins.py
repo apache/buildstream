@@ -70,14 +70,12 @@ def run_repo_tests(repo, tmpdir, pytest_args):
 
 
 if __name__ == "__main__":
-    from sys import argv
-
     # Args:
     #    tmpdir: The directory in which this script will clone external
     #            repositories and use pytest's tmpdir.
     #    pytest_args: any remaining arguments to this script will be passed
     #                 directly to it's pytest invocations
-    _, tmpdir, *pytest_args = argv
+    _, tmpdir, *pytest_args = sys.argv
 
     ALL_EXTERNAL_PLUGINS = [
         ExternalPluginRepo(
