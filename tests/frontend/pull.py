@@ -387,7 +387,7 @@ def test_pull_missing_blob(cli, tmpdir, datafiles):
         result.assert_success()
 
         # Assert that no artifacts were pulled
-        assert len(result.get_pulled_elements()) == 0
+        assert not result.get_pulled_elements()
 
 
 @pytest.mark.datafiles(DATA_DIR)

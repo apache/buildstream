@@ -97,7 +97,7 @@ def test_close_cross_junction(cli, tmpdir):
     loaded = _yaml.load_data(result.output)
     assert isinstance(loaded.get('workspaces'), list)
     workspaces = loaded['workspaces']
-    assert len(workspaces) == 0
+    assert not workspaces
 
 
 def test_close_all_cross_junction(cli, tmpdir):
@@ -116,7 +116,7 @@ def test_close_all_cross_junction(cli, tmpdir):
     loaded = _yaml.load_data(result.output)
     assert isinstance(loaded.get('workspaces'), list)
     workspaces = loaded['workspaces']
-    assert len(workspaces) == 0
+    assert not workspaces
 
 
 def test_subdir_command_cross_junction(cli, tmpdir):

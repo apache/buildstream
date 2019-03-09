@@ -245,7 +245,7 @@ def test_list_deletion(datafiles):
     _yaml.composite_dict(base, overlay)
 
     children = _yaml.node_get(base, list, 'children')
-    assert len(children) == 0
+    assert not children
 
 
 # Tests for deep list composition

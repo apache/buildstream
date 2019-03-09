@@ -203,8 +203,8 @@ def test_open_multi(cli, tmpdir, datafiles):
         elif kind == 'bzr':
             assert '.bzr' in workspace_lsdir
         else:
-            assert not '.git' in workspace_lsdir
-            assert not '.bzr' in workspace_lsdir
+            assert '.git' not in workspace_lsdir
+            assert '.bzr' not in workspace_lsdir
 
 
 @pytest.mark.skipif(os.geteuid() == 0, reason="root may have CAP_DAC_OVERRIDE and ignore permissions")
