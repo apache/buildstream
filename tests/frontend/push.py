@@ -299,11 +299,11 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
 
         # Ensure that the small artifact is still in the share
         states = cli.get_element_states(project, ['small_element.bst', 'large_element.bst'])
-        states['small_element.bst'] == 'cached'
+        assert states['small_element.bst'] == 'cached'
         assert_shared(cli, share, project, 'small_element.bst')
 
         # Ensure that the artifact is cached locally but NOT remotely
-        states['large_element.bst'] == 'cached'
+        assert states['large_element.bst'] == 'cached'
         assert_not_shared(cli, share, project, 'large_element.bst')
 
 
