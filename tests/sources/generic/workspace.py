@@ -88,7 +88,7 @@ class WorkspaceCreator():
                 raise "terable error"
 
         for suffix, kind in zip(suffixs, kinds):
-            element_name, element_path, workspace_dir = \
+            element_name, _, workspace_dir = \
                 self.create_workspace_element(kind, track, suffix, workspace_dir_usr,
                                               element_attrs)
             element_tuples.append((element_name, workspace_dir))
@@ -136,7 +136,7 @@ class WorkspaceCreator():
             assert not any(states[e] != 'buildable' for e, _ in element_tuples)
 
             # Check that the executable hello file is found in each workspace
-            for element_name, workspace_dir in element_tuples:
+            for _, workspace_dir in element_tuples:
                 filename = os.path.join(workspace_dir, 'usr', 'bin', 'hello')
                 assert os.path.exists(filename)
 

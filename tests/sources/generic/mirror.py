@@ -114,7 +114,7 @@ def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
     element_name = 'test.bst'
     element_path = os.path.join(element_dir, element_name)
     full_repo = element['sources'][0]['url']
-    upstream_map, repo_name = os.path.split(full_repo)
+    _, repo_name = os.path.split(full_repo)
     alias = 'foo-' + kind
     aliased_repo = alias + ':' + repo_name
     element['sources'][0]['url'] = aliased_repo
@@ -389,7 +389,7 @@ def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
     element_name = 'test.bst'
     element_path = os.path.join(element_dir, element_name)
     full_repo = element['sources'][0]['url']
-    upstream_map, repo_name = os.path.split(full_repo)
+    _, repo_name = os.path.split(full_repo)
     alias = 'foo-' + kind
     aliased_repo = alias + ':' + repo_name
     element['sources'][0]['url'] = aliased_repo

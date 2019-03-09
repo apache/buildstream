@@ -64,7 +64,7 @@ def test_open_cross_junction(cli, tmpdir):
 
 
 def test_list_cross_junction(cli, tmpdir):
-    project, workspace = open_cross_junction(cli, tmpdir)
+    project, _ = open_cross_junction(cli, tmpdir)
 
     element = 'sub.bst:data.bst'
 

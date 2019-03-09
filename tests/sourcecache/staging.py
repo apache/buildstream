@@ -147,7 +147,6 @@ def test_staged_source_build(tmpdir, datafiles, cli):
     context.set_message_handler(dummy_message_handler)
 
     element = project.load_elements(["import-dev.bst"])[0]
-    source = list(element.sources())[0]
 
     # check consistency of the source
     assert not element._source_cached()
