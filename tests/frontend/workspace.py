@@ -258,6 +258,7 @@ def test_open_multi_with_directory(cli, tmpdir, datafiles):
 def test_open_defaultlocation(cli, tmpdir, datafiles):
     workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
 
+    # pylint: disable=unbalanced-tuple-unpacking
     ((element_name, workspace_dir), ) = workspace_object.create_workspace_elements(['git'], False, ['git'])
     os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
 
@@ -290,6 +291,7 @@ def test_open_defaultlocation(cli, tmpdir, datafiles):
 def test_open_defaultlocation_exists(cli, tmpdir, datafiles):
     workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
 
+    # pylint: disable=unbalanced-tuple-unpacking
     ((element_name, workspace_dir), ) = workspace_object.create_workspace_elements(['git'], False, ['git'])
     os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
 
