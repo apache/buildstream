@@ -181,7 +181,7 @@ def test_cache_key(datafiles, cli):
     [[CoreWarnings.REF_NOT_IN_TRACK], [], False],
     [[CoreWarnings.REF_NOT_IN_TRACK], [CoreWarnings.REF_NOT_IN_TRACK], True],
     [[CoreWarnings.REF_NOT_IN_TRACK, CoreWarnings.OVERLAPS],
-        [CoreWarnings.OVERLAPS, CoreWarnings.REF_NOT_IN_TRACK], True],
+     [CoreWarnings.OVERLAPS, CoreWarnings.REF_NOT_IN_TRACK], True],
 ])
 def test_cache_key_fatal_warnings(cli, tmpdir, first_warnings, second_warnings, identical_keys):
 
