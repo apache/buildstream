@@ -166,7 +166,9 @@ def load_yaml_file(filename, *, cache_path, shortname=None, from_cache='raw'):
             _yaml.load(filename, shortname, yaml_cache=yc)
             return _yaml.load(filename, shortname, yaml_cache=yc)
         else:
-            assert False
+            raise Exception(
+                "Invalid value for parameter 'from_cache', Expected 'raw' or 'cached'"
+            )
 
 
 # Tests for list composition
