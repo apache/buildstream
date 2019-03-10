@@ -17,17 +17,17 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
-@pytest.mark.parametrize("target,format,expected", [
+@pytest.mark.parametrize("target,fmt,expected", [
     ('import-bin.bst', '%{name}', 'import-bin.bst'),
     ('import-bin.bst', '%{state}', 'buildable'),
     ('compose-all.bst', '%{state}', 'waiting')
 ])
-def test_show(cli, datafiles, target, format, expected):
+def test_show(cli, datafiles, target, fmt, expected):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     result = cli.run(project=project, silent=True, args=[
         'show',
         '--deps', 'none',
-        '--format', format,
+        '--format', fmt,
         target])
     result.assert_success()
 

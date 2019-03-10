@@ -154,8 +154,8 @@ class WorkspaceCreator():
             assert not any(states[e] != 'buildable' for e, _ in element_tuples)
 
             # Check that the executable hello file is found in each workspace
-            for _, workspace_dir in element_tuples:
-                filename = os.path.join(workspace_dir, 'usr', 'bin', 'hello')
+            for _, workspace in element_tuples:
+                filename = os.path.join(workspace, 'usr', 'bin', 'hello')
                 assert os.path.exists(filename)
 
         return element_tuples

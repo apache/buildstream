@@ -13,13 +13,13 @@ class Zip(Repo):
 
         old_dir = os.getcwd()
         os.chdir(directory)
-        with zipfile.ZipFile(archive, "w") as zip:
+        with zipfile.ZipFile(archive, "w") as zipfp:
             for root, dirs, files in os.walk('.'):
                 names = dirs + files
                 names = [os.path.join(root, name) for name in names]
 
                 for name in names:
-                    zip.write(name)
+                    zipfp.write(name)
 
         os.chdir(old_dir)
 
