@@ -855,8 +855,8 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
             assert 'annotated' in tag
             assert tag['annotated'] == (tag_type == 'annotated')
 
-        assert set([(tag['tag'], tag['commit']) for tag in tags]) == set([('tag1', repo.rev_parse('tag1^{commit}')),
-                                                                          ('tag2', repo.rev_parse('tag2^{commit}'))])
+        assert {(tag['tag'], tag['commit']) for tag in tags} == {('tag1', repo.rev_parse('tag1^{commit}')),
+                                                                 ('tag2', repo.rev_parse('tag2^{commit}'))}
 
     checkout = os.path.join(str(tmpdir), 'checkout')
 
@@ -966,7 +966,7 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
             assert 'annotated' in tag
             assert tag['annotated'] == (tag_type == 'annotated')
 
-        assert set([(tag['tag'], tag['commit']) for tag in tags]) == set([('tag', repo.rev_parse('tag^{commit}'))])
+        assert {(tag['tag'], tag['commit']) for tag in tags} == {('tag', repo.rev_parse('tag^{commit}'))}
 
     checkout = os.path.join(str(tmpdir), 'checkout')
 
