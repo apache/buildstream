@@ -19,10 +19,13 @@ import pytest
 #          used to specify a subset of test files from the repository to run.
 #          These must be specified relative to the root of the repository.
 class ExternalPluginRepo():
-    def __init__(self, name, url, ref, test_match_patterns=["tests"]):
+    def __init__(self, name, url, ref, test_match_patterns=None):
         self.name = name
         self.url = url
         self.ref = ref
+
+        if test_match_patterns is None:
+            test_match_patterns = ["tests"]
 
         self._test_match_patterns = test_match_patterns
         self._clone_location = None

@@ -59,7 +59,10 @@ def generate_import_element(tmpdir, kind, project, name):
     return element_name
 
 
-def generate_project(tmpdir, name, config={}):
+def generate_project(tmpdir, name, config=None):
+    if config is None:
+        config = {}
+
     project_name = 'project-{}'.format(name)
     subproject_path = os.path.join(str(tmpdir.join(project_name)))
     os.makedirs(os.path.join(subproject_path, 'elements'))

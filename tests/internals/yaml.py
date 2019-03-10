@@ -26,7 +26,7 @@ def test_load_yaml(datafiles):
     assert loaded.get('kind') == 'pony'
 
 
-def assert_provenance(filename, line, col, node, key=None, indices=[]):
+def assert_provenance(filename, line, col, node, key=None, indices=None):
     provenance = _yaml.node_get_provenance(node, key=key, indices=indices)
 
     if key:
