@@ -142,8 +142,8 @@ def test_missing_junction_in_subproject(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_nested_simple(cli, tmpdir, datafiles):
-    foo = os.path.join(str(datafiles), 'foo')
-    copy_subprojects(foo, datafiles, ['base'])
+    project = os.path.join(str(datafiles), 'foo')
+    copy_subprojects(project, datafiles, ['base'])
 
     project = os.path.join(str(datafiles), 'nested')
     copy_subprojects(project, datafiles, ['foo'])
@@ -163,11 +163,11 @@ def test_nested_simple(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_nested_double(cli, tmpdir, datafiles):
-    foo = os.path.join(str(datafiles), 'foo')
-    copy_subprojects(foo, datafiles, ['base'])
+    project_foo = os.path.join(str(datafiles), 'foo')
+    copy_subprojects(project_foo, datafiles, ['base'])
 
-    bar = os.path.join(str(datafiles), 'bar')
-    copy_subprojects(bar, datafiles, ['base'])
+    project_bar = os.path.join(str(datafiles), 'bar')
+    copy_subprojects(project_bar, datafiles, ['base'])
 
     project = os.path.join(str(datafiles), 'toplevel')
     copy_subprojects(project, datafiles, ['base', 'foo', 'bar'])
@@ -188,11 +188,11 @@ def test_nested_double(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_nested_conflict(cli, datafiles):
-    foo = os.path.join(str(datafiles), 'foo')
-    copy_subprojects(foo, datafiles, ['base'])
+    project_foo = os.path.join(str(datafiles), 'foo')
+    copy_subprojects(project_foo, datafiles, ['base'])
 
-    bar = os.path.join(str(datafiles), 'bar')
-    copy_subprojects(bar, datafiles, ['base'])
+    project_bar = os.path.join(str(datafiles), 'bar')
+    copy_subprojects(project_bar, datafiles, ['base'])
 
     project = os.path.join(str(datafiles), 'conflict')
     copy_subprojects(project, datafiles, ['foo', 'bar'])
