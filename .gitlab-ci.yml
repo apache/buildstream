@@ -119,7 +119,6 @@ overnight-tests:
 overnight-tests-no-cache:
   <<: *overnight-tests-template
   script:
-  - sed -i '/artifacts:/,+1 d' freedesktop-sdk/bootstrap/project.conf
   - sed -i '/artifacts:/,+1 d' freedesktop-sdk/project.conf
   - make -C freedesktop-sdk
   tags:
