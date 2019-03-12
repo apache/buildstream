@@ -122,19 +122,18 @@ class CASCache():
     # Args:
     #     ref (str): The ref to check
     #     subdir (str): The subdir to check
+    #     with_files (bool): Whether to check files as well
     #
     # Returns: True if the subdir exists & is populated in the cache, False otherwise
     #
-    def contains_subdir_artifact(self, ref, subdir):
+    def contains_subdir_artifact(self, ref, subdir, *, with_files=True):
         tree = self.resolve_ref(ref)
 
         try:
             subdirdigest = self._get_subdir(tree, subdir)
-            objpath = self.objpath(subdirdigest)
 
-            # True if subdir content is cached or if empty as expected
-            return os.path.exists(objpath)
-        except CASCacheError:
+            return self.contains_directory(subdirdigest, with_files=with_files)
+        except (CASCacheError, FileNotFoundError):
             return False
 
     # contains_directory():
