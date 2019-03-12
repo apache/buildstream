@@ -59,6 +59,36 @@ def test_build_of_same_junction_used_twice(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_missing_file_in_subproject(cli, datafiles):
+    project = os.path.join(str(datafiles), 'missing-element')
+    result = cli.run(project=project, args=['show', 'target.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+
+    # Assert that we have the expected provenance encoded into the error
+    assert "target.bst [line 4 column 2]" in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_missing_file_in_subsubproject(cli, datafiles):
+    project = os.path.join(str(datafiles), 'missing-element')
+    result = cli.run(project=project, args=['show', 'sub-target.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+
+    # Assert that we have the expected provenance encoded into the error
+    assert "junction-A.bst:target.bst [line 4 column 2]" in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_missing_junction_in_subproject(cli, datafiles):
+    project = os.path.join(str(datafiles), 'missing-element')
+    result = cli.run(project=project, args=['show', 'sub-target-bad-junction.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+
+    # Assert that we have the expected provenance encoded into the error
+    assert "junction-A.bst:bad-junction-target.bst [line 4 column 2]" in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_nested_simple(cli, tmpdir, datafiles):
     foo = os.path.join(str(datafiles), 'foo')
     copy_subprojects(foo, datafiles, ['base'])

@@ -187,11 +187,12 @@ class Loader():
     #    ticker (callable): A callback to report loaded filenames to the frontend
     #    fetch_subprojects (bool): Whether to fetch subprojects while loading
     #    yaml_cache (YamlCache): A yaml cache
+    #    provenance (Provenance): The location from where the file was referred to, or None
     #
     # Returns:
     #    (LoadElement): A loaded LoadElement
     #
-    def _load_file(self, filename, rewritable, ticker, fetch_subprojects, yaml_cache=None):
+    def _load_file(self, filename, rewritable, ticker, fetch_subprojects, yaml_cache=None, provenance=None):
 
         # Silently ignore already loaded files
         if filename in self._elements:
@@ -208,21 +209,34 @@ class Loader():
                               project=self.project, yaml_cache=yaml_cache)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_FILE:
+
+                if self.project.junction:
+                    message = "Could not find element '{}' in project referred to by junction element '{}'" \
+                              .format(filename, self.project.junction.name)
+                else:
+                    message = "Could not find element '{}' in elements directory '{}'".format(filename, self._basedir)
+
+                if provenance:
+                    message = "{}: {}".format(provenance, message)
+
                 # If we can't find the file, try to suggest plausible
                 # alternatives by stripping the element-path from the given
                 # filename, and verifying that it exists.
-                message = "Could not find element '{}' in elements directory '{}'".format(filename, self._basedir)
                 detail = None
                 elements_dir = os.path.relpath(self._basedir, self.project.directory)
                 element_relpath = os.path.relpath(filename, elements_dir)
                 if filename.startswith(elements_dir) and os.path.exists(os.path.join(self._basedir, element_relpath)):
                     detail = "Did you mean '{}'?".format(element_relpath)
+
                 raise LoadError(LoadErrorReason.MISSING_FILE,
                                 message, detail=detail) from e
+
             elif e.reason == LoadErrorReason.LOADING_DIRECTORY:
                 # If a <directory>.bst file exists in the element path,
                 # let's suggest this as a plausible alternative.
                 message = str(e)
+                if provenance:
+                    message = "{}: {}".format(provenance, message)
                 detail = None
                 if os.path.exists(os.path.join(self._basedir, filename + '.bst')):
                     element_name = filename + '.bst'
@@ -250,13 +264,14 @@ class Loader():
         # Load all dependency files for the new LoadElement
         for dep in dependencies:
             if dep.junction:
-                self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, yaml_cache)
+                self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, yaml_cache, dep.provenance)
                 loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
                                           fetch_subprojects=fetch_subprojects)
             else:
                 loader = self
 
-            dep_element = loader._load_file(dep.name, rewritable, ticker, fetch_subprojects, yaml_cache)
+            dep_element = loader._load_file(dep.name, rewritable, ticker,
+                                            fetch_subprojects, yaml_cache, dep.provenance)
 
             if _yaml.node_get(dep_element.node, str, Symbol.KIND) == 'junction':
                 raise LoadError(LoadErrorReason.INVALID_DATA,
