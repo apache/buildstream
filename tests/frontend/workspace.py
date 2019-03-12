@@ -317,15 +317,13 @@ def test_open_defaultlocation_exists(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", repo_kinds)
-def test_open_track(cli, tmpdir, datafiles, kind):
-    open_workspace(cli, tmpdir, datafiles, kind, True)
+def test_open_track(cli, tmpdir, datafiles):
+    open_workspace(cli, tmpdir, datafiles, 'git', True)
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", repo_kinds)
-def test_open_force(cli, tmpdir, datafiles, kind):
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
+def test_open_force(cli, tmpdir, datafiles):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
 
     # Close the workspace
     result = cli.run(project=project, args=[
@@ -344,9 +342,8 @@ def test_open_force(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", repo_kinds)
-def test_open_force_open(cli, tmpdir, datafiles, kind):
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
+def test_open_force_open(cli, tmpdir, datafiles):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
 
     # Assert the workspace dir exists
     assert os.path.exists(workspace)
@@ -359,9 +356,8 @@ def test_open_force_open(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", repo_kinds)
-def test_open_force_different_workspace(cli, tmpdir, datafiles, kind):
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False, "-alpha")
+def test_open_force_different_workspace(cli, tmpdir, datafiles):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False, "-alpha")
 
     # Assert the workspace dir exists
     assert os.path.exists(workspace)
@@ -371,7 +367,7 @@ def test_open_force_different_workspace(cli, tmpdir, datafiles, kind):
 
     tmpdir = os.path.join(str(tmpdir), "-beta")
     shutil.move(hello_path, hello1_path)
-    element_name2, project2, workspace2 = open_workspace(cli, tmpdir, datafiles, kind, False, "-beta")
+    element_name2, project2, workspace2 = open_workspace(cli, tmpdir, datafiles, 'git', False, "-beta")
 
     # Assert the workspace dir exists
     assert os.path.exists(workspace2)
@@ -396,9 +392,8 @@ def test_open_force_different_workspace(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", repo_kinds)
-def test_close(cli, tmpdir, datafiles, kind):
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
+def test_close(cli, tmpdir, datafiles):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
 
     # Close the workspace
     result = cli.run(project=project, args=[
@@ -968,9 +963,8 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", repo_kinds)
-def test_inconsitent_pipeline_message(cli, tmpdir, datafiles, kind):
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
+def test_inconsitent_pipeline_message(cli, tmpdir, datafiles):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
 
     shutil.rmtree(workspace)
 
