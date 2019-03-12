@@ -199,6 +199,23 @@ def test_include_element_overrides_composition(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_list_overide_does_not_fail_upon_first_composition(cli, datafiles):
+    project = os.path.join(str(datafiles), 'eventual_overrides')
+
+    result = cli.run(project=project, args=[
+        'show',
+        '--deps', 'none',
+        '--format', '%{public}',
+        'element.bst'])
+    result.assert_success()
+    loaded = _yaml.load_data(result.output)
+
+    # Assert that the explicitly overwritten public data is present
+    assert 'foo-commands' in loaded['bst']
+    assert loaded['bst']['foo-commands'] == ['need', 'this']
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_include_element_overrides_sub_include(cli, datafiles):
     project = os.path.join(str(datafiles), 'sub-include')
 

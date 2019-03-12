@@ -1,0 +1,8 @@
+public:
+  bst:
+    foo-commands:
+    - wrong
+    - commands
+
+variables:
+  included: 'True'
