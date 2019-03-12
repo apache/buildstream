@@ -124,9 +124,12 @@ class CasBasedDirectory(Directory):
             self._populate_index(digest)
 
     def _populate_index(self, digest):
-        pb2_directory = remote_execution_pb2.Directory()
-        with open(self.cas_cache.objpath(digest), 'rb') as f:
-            pb2_directory.ParseFromString(f.read())
+        try:
+            pb2_directory = remote_execution_pb2.Directory()
+            with open(self.cas_cache.objpath(digest), 'rb') as f:
+                pb2_directory.ParseFromString(f.read())
+        except FileNotFoundError as e:
+            raise VirtualDirectoryError("Directory not found in local cache: {}".format(e)) from e
 
         for entry in pb2_directory.directories:
             self.index[entry.name] = IndexEntry(entry.name, _FileType.DIRECTORY,
