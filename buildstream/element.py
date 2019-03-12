@@ -1199,8 +1199,7 @@ class Element(Plugin):
                 # Weak cache key could not be calculated yet
                 return
 
-            if not self.__weak_cached:
-                self.__weak_cached = self.__artifacts.contains(self, self.__weak_cache_key)
+            self.__weak_cached = self.__artifacts.contains(self, self.__weak_cache_key)
 
         if not context.get_strict():
             # Full cache query in non-strict mode requires both the weak and
