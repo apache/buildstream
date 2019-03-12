@@ -137,6 +137,38 @@ class CASCache():
         except CASCacheError:
             return False
 
+    # contains_directory():
+    #
+    # Check whether the specified directory and subdirecotires are in the cache,
+    # i.e non dangling.
+    #
+    # Args:
+    #     digest (Digest): The directory digest to check
+    #     with_files (bool): Whether to check files as well
+    #
+    # Returns: True if the directory is available in the local cache
+    #
+    def contains_directory(self, digest, *, with_files):
+        try:
+            directory = remote_execution_pb2.Directory()
+            with open(self.objpath(digest), 'rb') as f:
+                directory.ParseFromString(f.read())
+
+            # Optionally check presence of files
+            if with_files:
+                for filenode in directory.files:
+                    if not os.path.exists(self.objpath(filenode.digest)):
+                        return False
+
+            # Check subdirectories
+            for dirnode in directory.directories:
+                if not self.contains_directory(dirnode.digest, with_files=with_files):
+                    return False
+
+            return True
+        except FileNotFoundError:
+            return False
+
     # checkout():
     #
     # Checkout the specified directory digest.
