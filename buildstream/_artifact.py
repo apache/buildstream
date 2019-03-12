@@ -431,6 +431,25 @@ class Artifact():
         metadata_workspaced_dependencies[weak_key] = workspaced
         return (workspaced, metadata_workspaced_dependencies, metadata_keys)
 
+    # cached():
+    #
+    # Check whether the artifact corresponding to the specified cache key is
+    # available. This also checks whether all required parts of the artifact
+    # are available, which may depend on command and configuration.
+    #
+    # This is used by _update_state() to set __strong_cached and __weak_cached.
+    #
+    # Args:
+    #     key (str): The artifact key
+    #
+    # Returns:
+    #     (bool): Whether artifact is in local cache
+    #
+    def cached(self, key):
+        element = self._element
+
+        return self._artifacts.contains(element, key)
+
     # _get_directory():
     #
     # Get a virtual directory for the artifact contents

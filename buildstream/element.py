@@ -1200,7 +1200,7 @@ class Element(Plugin):
                 return
 
             if not context.get_strict():
-                self.__weak_cached = self.__artifacts.contains(self, self.__weak_cache_key)
+                self.__weak_cached = self.__artifact.cached(self.__weak_cache_key)
 
         if not context.get_strict():
             # Full cache query in non-strict mode requires both the weak and
@@ -1230,10 +1230,10 @@ class Element(Plugin):
         # Query caches now that the weak and strict cache keys are available
         key_for_cache_lookup = self.__strict_cache_key if context.get_strict() else self.__weak_cache_key
         if not self.__strong_cached:
-            self.__strong_cached = self.__artifacts.contains(self, self.__strict_cache_key)
+            self.__strong_cached = self.__artifact.cached(self.__strict_cache_key)
         if key_for_cache_lookup == self.__weak_cache_key:
             if not self.__weak_cached:
-                self.__weak_cached = self.__artifacts.contains(self, self.__weak_cache_key)
+                self.__weak_cached = self.__artifact.cached(self.__weak_cache_key)
 
         if (not self.__assemble_scheduled and not self.__assemble_done and
                 not self._cached_success() and not self._pull_pending()):
