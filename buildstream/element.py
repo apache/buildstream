@@ -2369,20 +2369,18 @@ class Element(Plugin):
         defaults['public'] = element_public
 
     def __init_defaults(self, plugin_conf):
-        if plugin_conf is None:
-            return
-
         # Defaults are loaded once per class and then reused
         #
         if not self.__defaults_set:
-
-            # Load the plugin's accompanying .yaml file if one was provided
             defaults = {}
-            try:
-                defaults = _yaml.load(plugin_conf, os.path.basename(plugin_conf))
-            except LoadError as e:
-                if e.reason != LoadErrorReason.MISSING_FILE:
-                    raise e
+
+            if plugin_conf is not None:
+                # Load the plugin's accompanying .yaml file if one was provided
+                try:
+                    defaults = _yaml.load(plugin_conf, os.path.basename(plugin_conf))
+                except LoadError as e:
+                    if e.reason != LoadErrorReason.MISSING_FILE:
+                        raise e
 
             # Special case; compose any element-wide split-rules declarations
             self.__compose_default_splits(defaults)
