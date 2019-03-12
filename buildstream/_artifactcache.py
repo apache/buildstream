@@ -158,12 +158,13 @@ class ArtifactCache(BaseCache):
     #     element (Element): The Element to check
     #     key (str): The cache key to use
     #     subdir (str): The subdir to check
+    #     with_files (bool): Whether to check files as well
     #
     # Returns: True if the subdir exists & is populated in the cache, False otherwise
     #
-    def contains_subdir_artifact(self, element, key, subdir):
+    def contains_subdir_artifact(self, element, key, subdir, *, with_files=True):
         ref = element.get_artifact_name(key)
-        return self.cas.contains_subdir_artifact(ref, subdir)
+        return self.cas.contains_subdir_artifact(ref, subdir, with_files=with_files)
 
     # list_artifacts():
     #
