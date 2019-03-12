@@ -33,6 +33,7 @@ import shutil
 
 from . import _yaml
 from . import Scope
+from ._exceptions import ArtifactError
 from .types import _KeyStrength
 from .storage._casbaseddirectory import CasBasedDirectory
 
@@ -446,9 +447,34 @@ class Artifact():
     #     (bool): Whether artifact is in local cache
     #
     def cached(self, key):
-        element = self._element
+        context = self._context
 
-        return self._artifacts.contains(element, key)
+        try:
+            vdir, _ = self._get_directory(key)
+        except ArtifactError:
+            # Either ref or top-level artifact directory missing
+            return False
+
+        # Check whether all metadata is available
+        metadigest = vdir._get_child_digest('meta')
+        if not self._artifacts.cas.contains_directory(metadigest, with_files=True):
+            return False
+
+        # Additional checks only relevant if artifact was created with 'files' subdirectory
+        if vdir._exists('files'):
+            # Determine whether directories are required
+            require_directories = context.require_artifact_directories
+            # Determine whether file contents are required as well
+            require_files = context.require_artifact_files
+
+            filesdigest = vdir._get_child_digest('files')
+
+            # Check whether 'files' subdirectory is available, with or without file contents
+            if (require_directories and
+                    not self._artifacts.cas.contains_directory(filesdigest, with_files=require_files)):
+                return False
+
+        return True
 
     # _get_directory():
     #
