@@ -19,10 +19,11 @@
 
 from ._basecache import BaseCache
 from .types import _KeyStrength
-from ._exceptions import ArtifactError, CASError
+from ._exceptions import ArtifactError, CASCacheError, CASError
 
 from ._cas import CASRemoteSpec
 from .storage._casbaseddirectory import CasBasedDirectory
+from .storage.directory import VirtualDirectoryError
 
 
 # An ArtifactCacheSpec holds the user configuration for a single remote
@@ -221,8 +222,11 @@ class ArtifactCache(BaseCache):
     #
     def get_artifact_directory(self, element, key):
         ref = element.get_artifact_name(key)
-        digest = self.cas.resolve_ref(ref, update_mtime=True)
-        return CasBasedDirectory(self.cas, digest=digest)
+        try:
+            digest = self.cas.resolve_ref(ref, update_mtime=True)
+            return CasBasedDirectory(self.cas, digest=digest)
+        except (CASCacheError, VirtualDirectoryError) as e:
+            raise ArtifactError('Directory not in local cache: {}'.format(e)) from e
 
     # commit():
     #
