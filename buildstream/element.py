@@ -82,7 +82,6 @@ import contextlib
 from contextlib import contextmanager
 from functools import partial
 import tempfile
-import shutil
 import string
 
 from . import _yaml
@@ -101,10 +100,10 @@ from ._platform import Platform
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
 from .types import _KeyStrength, CoreWarnings
+from ._artifact import Artifact
 
 from .storage.directory import Directory
 from .storage._filebaseddirectory import FileBasedDirectory
-from .storage._casbaseddirectory import CasBasedDirectory
 from .storage.directory import VirtualDirectoryError
 
 
@@ -225,6 +224,7 @@ class Element(Plugin):
         self.__required = False                 # Whether the artifact is required in the current session
         self.__build_result = None              # The result of assembling this Element (success, description, detail)
         self._build_log_path = None            # The path of the build log for this Element
+        self.__artifact = Artifact(self, context)  # Artifact class for direct artifact composite interaction
 
         self.__batch_prepare_assemble = False         # Whether batching across prepare()/assemble() is configured
         self.__batch_prepare_assemble_flags = 0       # Sandbox flags for batching across prepare()/assemble()
@@ -668,8 +668,7 @@ class Element(Plugin):
         self.__assert_cached()
 
         with self.timed_activity("Staging {}/{}".format(self.name, self._get_brief_display_key())):
-            artifact_vdir, _ = self.__get_artifact_directory()
-            files_vdir = artifact_vdir.descend('files')
+            files_vdir, _ = self.__artifact.get_files()
 
             # Hard link it into the staging area
             #
@@ -1479,19 +1478,18 @@ class Element(Plugin):
                 if not (mount_workspaces and self.__can_build_incrementally()):
                     with self.timed_activity("Staging local files at {}"
                                              .format(workspace.get_absolute_path())):
-                        workspace.stage(temp_staging_directory)
+                        workspace.stage(import_dir)
 
             # Check if we have a cached buildtree to use
             elif usebuildtree:
-                artifact_vdir, _ = self.__get_artifact_directory()
-                import_dir = artifact_vdir.descend('buildtree')
+                import_dir, _ = self.__artifact.get_buildtree()
                 if import_dir.is_empty():
                     detail = "Element type either does not expect a buildtree or it was explictily cached without one."
                     self.warn("WARNING: {} Artifact contains an empty buildtree".format(self.name), detail=detail)
             else:
                 # No workspace or cached buildtree, stage source directly
                 for source in self.sources():
-                    source._stage(temp_staging_directory)
+                    source._stage(import_dir)
 
             vdirectory.import_files(import_dir)
 
@@ -1693,109 +1691,46 @@ class Element(Plugin):
                     cleanup_rootdir()
 
     def _cache_artifact(self, rootdir, sandbox, collect):
+
+        context = self._get_context()
+        buildresult = self.__build_result
+        publicdata = self.__dynamic_public
+        sandbox_vroot = sandbox.get_virtual_directory()
+        collectvdir = None
+        sandbox_build_dir = None
+
+        cache_buildtrees = context.cache_buildtrees
+        build_success = buildresult[0]
+
+        if cache_buildtrees == 'always' or (cache_buildtrees == 'failure' and not build_success):
+            try:
+                sandbox_build_dir = sandbox_vroot.descend(
+                    *self.get_variable('build-root').lstrip(os.sep).split(os.sep))
+            except VirtualDirectoryError:
+                # Directory could not be found. Pre-virtual
+                # directory behaviour was to continue silently
+                # if the directory could not be found.
+                pass
+
+        if collect is not None:
+            try:
+                collectvdir = sandbox_vroot.descend(*collect.lstrip(os.sep).split(os.sep))
+            except VirtualDirectoryError:
+                pass
+
+        # ensure we have cache keys
+        self._assemble_done()
+        keys = self.__get_cache_keys_for_commit()
+
         with self.timed_activity("Caching artifact"):
-            if collect is not None:
-                try:
-                    sandbox_vroot = sandbox.get_virtual_directory()
-                    collectvdir = sandbox_vroot.descend(*collect.lstrip(os.sep).split(os.sep))
-                except VirtualDirectoryError:
-                    # No collect directory existed
-                    collectvdir = None
+            artifact_size = self.__artifact.cache(rootdir, sandbox_build_dir, collectvdir,
+                                                  buildresult, keys, publicdata)
 
-            context = self._get_context()
-
-            assemblevdir = CasBasedDirectory(cas_cache=context.artifactcache.cas)
-            logsvdir = assemblevdir.descend("logs", create=True)
-            metavdir = assemblevdir.descend("meta", create=True)
-            buildtreevdir = assemblevdir.descend("buildtree", create=True)
-
-            # Create artifact directory structure
-            assembledir = os.path.join(rootdir, 'artifact')
-            logsdir = os.path.join(assembledir, 'logs')
-            metadir = os.path.join(assembledir, 'meta')
-            os.mkdir(assembledir)
-            os.mkdir(logsdir)
-            os.mkdir(metadir)
-
-            if collect is not None and collectvdir is not None:
-                filesvdir = assemblevdir.descend("files", create=True)
-                filesvdir.import_files(collectvdir)
-
-            cache_buildtrees = context.cache_buildtrees
-            build_success = self.__build_result[0]
-
-            # cache_buildtrees defaults to 'always', as such the
-            # default behaviour is to attempt to cache them. If only
-            # caching failed artifact buildtrees, then query the build
-            # result. Element types without a build-root dir will be cached
-            # with an empty buildtreedir regardless of this configuration.
-
-            if cache_buildtrees == 'always' or (cache_buildtrees == 'failure' and not build_success):
-                sandbox_vroot = sandbox.get_virtual_directory()
-                try:
-                    sandbox_build_dir = sandbox_vroot.descend(
-                        *self.get_variable('build-root').lstrip(os.sep).split(os.sep))
-                    buildtreevdir.import_files(sandbox_build_dir)
-                except VirtualDirectoryError:
-                    # Directory could not be found. Pre-virtual
-                    # directory behaviour was to continue silently
-                    # if the directory could not be found.
-                    pass
-
-            # Write some logs out to normal directories: logsdir and metadir
-            # Copy build log
-            log_filename = context.get_log_filename()
-            self._build_log_path = os.path.join(logsdir, 'build.log')
-            if log_filename:
-                shutil.copyfile(log_filename, self._build_log_path)
-
-            # Store public data
-            _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
-
-            # Store result
-            build_result_dict = {"success": self.__build_result[0], "description": self.__build_result[1]}
-            if self.__build_result[2] is not None:
-                build_result_dict["detail"] = self.__build_result[2]
-            _yaml.dump(build_result_dict, os.path.join(metadir, 'build-result.yaml'))
-
-            # ensure we have cache keys
-            self._assemble_done()
-
-            # Store keys.yaml
-            _yaml.dump(_yaml.node_sanitize({
-                'strong': self._get_cache_key(),
-                'weak': self._get_cache_key(_KeyStrength.WEAK),
-            }), os.path.join(metadir, 'keys.yaml'))
-
-            # Store dependencies.yaml
-            _yaml.dump(_yaml.node_sanitize({
-                e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
-            }), os.path.join(metadir, 'dependencies.yaml'))
-
-            # Store workspaced.yaml
-            _yaml.dump(_yaml.node_sanitize({
-                'workspaced': bool(self._get_workspace())
-            }), os.path.join(metadir, 'workspaced.yaml'))
-
-            # Store workspaced-dependencies.yaml
-            _yaml.dump(_yaml.node_sanitize({
-                'workspaced-dependencies': [
-                    e.name for e in self.dependencies(Scope.BUILD)
-                    if e._get_workspace()
-                ]
-            }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
-
-            metavdir.import_files(metadir)
-            logsvdir.import_files(logsdir)
-
-            artifact_size = assemblevdir.get_size()
-            self.__artifacts.commit(self, assemblevdir, self.__get_cache_keys_for_commit())
-
-            if collect is not None and collectvdir is None:
-                raise ElementError(
-                    "Directory '{}' was not found inside the sandbox, "
-                    "unable to collect artifact contents"
-                    .format(collect))
+        if collect is not None and collectvdir is None:
+            raise ElementError(
+                "Directory '{}' was not found inside the sandbox, "
+                "unable to collect artifact contents"
+                .format(collect))
 
         return artifact_size
 
@@ -2093,17 +2028,7 @@ class Element(Plugin):
     #             not its contents.
     #
     def _cached_buildtree(self):
-        context = self._get_context()
-
-        if not self._cached():
-            return False
-
-        key_strength = _KeyStrength.STRONG if context.get_strict() else _KeyStrength.WEAK
-        if not self.__artifacts.contains_subdir_artifact(self, self._get_cache_key(strength=key_strength),
-                                                         'buildtree'):
-            return False
-
-        return True
+        return self.__artifact.cached_buildtree()
 
     # _fetch()
     #
@@ -2657,8 +2582,7 @@ class Element(Plugin):
     def __compute_splits(self, include=None, exclude=None, orphans=True):
         filter_func = self.__split_filter_func(include=include, exclude=exclude, orphans=orphans)
 
-        artifact_vdir, _ = self.__get_artifact_directory()
-        files_vdir = artifact_vdir.descend('files')
+        files_vdir, _ = self.__artifact.get_files()
 
         element_files = files_vdir.list_relative_paths()
 
@@ -2684,44 +2608,6 @@ class Element(Plugin):
             self.__whitelist_regex = re.compile(expression)
         return self.__whitelist_regex.match(os.path.join(os.sep, path))
 
-    # __get_extract_key():
-    #
-    # Get the key used to extract the artifact
-    #
-    # Returns:
-    #    (str): The key
-    #
-    def __get_extract_key(self):
-
-        context = self._get_context()
-        key = self.__strict_cache_key
-
-        # Use weak cache key, if artifact is missing for strong cache key
-        # and the context allows use of weak cache keys
-        if not context.get_strict() and not self.__artifacts.contains(self, key):
-            key = self._get_cache_key(strength=_KeyStrength.WEAK)
-
-        return key
-
-    # __get_artifact_directory():
-    #
-    # Get a virtual directory for the artifact contents
-    #
-    # Args:
-    #    key (str): The key for the artifact to extract,
-    #               or None for the default key
-    #
-    # Returns:
-    #    (Directory): The virtual directory object
-    #    (str): The chosen key
-    #
-    def __get_artifact_directory(self, key=None):
-
-        if key is None:
-            key = self.__get_extract_key()
-
-        return (self.__artifacts.get_artifact_directory(self, key), key)
-
     # __get_artifact_metadata_keys():
     #
     # Retrieve the strong and weak keys from the given artifact.
@@ -2735,24 +2621,14 @@ class Element(Plugin):
     #
     def __get_artifact_metadata_keys(self, key=None):
 
-        # Now extract it and possibly derive the key
-        artifact_vdir, key = self.__get_artifact_directory(key)
+        metadata_keys = self.__metadata_keys
 
-        # Now try the cache, once we're sure about the key
-        if key in self.__metadata_keys:
-            return (self.__metadata_keys[key]['strong'],
-                    self.__metadata_keys[key]['weak'])
+        strong_key, weak_key, metadata_keys = self.__artifact.get_metadata_keys(key, metadata_keys)
 
-        # Parse the expensive yaml now and cache the result
-        meta_file = artifact_vdir._objpath(['meta', 'keys.yaml'])
-        meta = _yaml.load(meta_file, shortname='meta/keys.yaml')
-        strong_key = meta['strong']
-        weak_key = meta['weak']
+        # Update keys if needed
+        if metadata_keys:
+            self.__metadata_keys = metadata_keys
 
-        assert key in (strong_key, weak_key)
-
-        self.__metadata_keys[strong_key] = meta
-        self.__metadata_keys[weak_key] = meta
         return (strong_key, weak_key)
 
     # __get_artifact_metadata_dependencies():
@@ -2767,21 +2643,16 @@ class Element(Plugin):
     #
     def __get_artifact_metadata_dependencies(self, key=None):
 
-        # Extract it and possibly derive the key
-        artifact_vdir, key = self.__get_artifact_directory(key)
+        metadata = [self.__metadata_dependencies, self.__metadata_keys]
+        meta, meta_deps, meta_keys = self.__artifact.get_metadata_dependencies(key, *metadata)
 
-        # Now try the cache, once we're sure about the key
-        if key in self.__metadata_dependencies:
-            return self.__metadata_dependencies[key]
+        # Update deps if needed
+        if meta_deps:
+            self.__metadata_dependencies = meta_deps
+            # Update keys if needed, no need to check if deps not updated
+            if meta_keys:
+                self.__metadata_keys = meta_keys
 
-        # Parse the expensive yaml now and cache the result
-        meta_file = artifact_vdir._objpath(['meta', 'dependencies.yaml'])
-        meta = _yaml.load(meta_file, shortname='meta/dependencies.yaml')
-
-        # Cache it under both strong and weak keys
-        strong_key, weak_key = self.__get_artifact_metadata_keys(key)
-        self.__metadata_dependencies[strong_key] = meta
-        self.__metadata_dependencies[weak_key] = meta
         return meta
 
     # __get_artifact_metadata_workspaced():
@@ -2794,24 +2665,19 @@ class Element(Plugin):
     # Returns:
     #     (bool): Whether the given artifact was workspaced
     #
+
     def __get_artifact_metadata_workspaced(self, key=None):
 
-        # Extract it and possibly derive the key
-        artifact_vdir, key = self.__get_artifact_directory(key)
+        metadata = [self.__metadata_workspaced, self.__metadata_keys]
+        workspaced, meta_workspaced, meta_keys = self.__artifact.get_metadata_workspaced(key, *metadata)
 
-        # Now try the cache, once we're sure about the key
-        if key in self.__metadata_workspaced:
-            return self.__metadata_workspaced[key]
+        # Update workspaced if needed
+        if meta_workspaced:
+            self.__metadata_workspaced = meta_workspaced
+            # Update keys if needed, no need to check if workspaced not updated
+            if meta_keys:
+                self.__metadata_keys = meta_keys
 
-        # Parse the expensive yaml now and cache the result
-        meta_file = artifact_vdir._objpath(['meta', 'workspaced.yaml'])
-        meta = _yaml.load(meta_file, shortname='meta/workspaced.yaml')
-        workspaced = meta['workspaced']
-
-        # Cache it under both strong and weak keys
-        strong_key, weak_key = self.__get_artifact_metadata_keys(key)
-        self.__metadata_workspaced[strong_key] = workspaced
-        self.__metadata_workspaced[weak_key] = workspaced
         return workspaced
 
     # __get_artifact_metadata_workspaced_dependencies():
@@ -2826,22 +2692,17 @@ class Element(Plugin):
     #
     def __get_artifact_metadata_workspaced_dependencies(self, key=None):
 
-        # Extract it and possibly derive the key
-        artifact_vdir, key = self.__get_artifact_directory(key)
+        metadata = [self.__metadata_workspaced_dependencies, self.__metadata_keys]
+        workspaced, meta_workspaced_deps,\
+            meta_keys = self.__artifact.get_metadata_workspaced_dependencies(key, *metadata)
 
-        # Now try the cache, once we're sure about the key
-        if key in self.__metadata_workspaced_dependencies:
-            return self.__metadata_workspaced_dependencies[key]
+        # Update workspaced if needed
+        if meta_workspaced_deps:
+            self.__metadata_workspaced_dependencies = meta_workspaced_deps
+            # Update keys if needed, no need to check if workspaced not updated
+            if meta_keys:
+                self.__metadata_keys = meta_keys
 
-        # Parse the expensive yaml now and cache the result
-        meta_file = artifact_vdir._objpath(['meta', 'workspaced-dependencies.yaml'])
-        meta = _yaml.load(meta_file, shortname='meta/workspaced-dependencies.yaml')
-        workspaced = meta['workspaced-dependencies']
-
-        # Cache it under both strong and weak keys
-        strong_key, weak_key = self.__get_artifact_metadata_keys(key)
-        self.__metadata_workspaced_dependencies[strong_key] = workspaced
-        self.__metadata_workspaced_dependencies[weak_key] = workspaced
         return workspaced
 
     # __load_public_data():
@@ -2849,32 +2710,20 @@ class Element(Plugin):
     # Loads the public data from the cached artifact
     #
     def __load_public_data(self):
-        self.__assert_cached()
         assert self.__dynamic_public is None
 
-        # Load the public data from the artifact
-        artifact_vdir, _ = self.__get_artifact_directory()
-        meta_file = artifact_vdir._objpath(['meta', 'public.yaml'])
-        self.__dynamic_public = _yaml.load(meta_file, shortname='meta/public.yaml')
+        self.__dynamic_public = self.__artifact.load_public_data()
 
     def __load_build_result(self, keystrength):
         self.__assert_cached(keystrength=keystrength)
         assert self.__build_result is None
 
-        if keystrength is _KeyStrength.WEAK:
-            key = self.__weak_cache_key
-        else:
-            key = self.__strict_cache_key
+        # _get_cache_key with _KeyStrength.STRONG returns self.__cache_key, which can be `None`
+        # leading to a failed assertion from get_artifact_directory() using get_artifact_name(),
+        # so explicility pass self.__strict_cache_key
+        key = self.__weak_cache_key if keystrength is _KeyStrength.WEAK else self.__strict_cache_key
 
-        artifact_vdir, _ = self.__get_artifact_directory(key)
-
-        if not artifact_vdir._exists(['meta', 'build-result.yaml']):
-            self.__build_result = (True, "succeeded", None)
-            return
-
-        result_path = artifact_vdir._objpath(['meta', 'build-result.yaml'])
-        data = _yaml.load(result_path)
-        self.__build_result = (data["success"], data.get("description"), data.get("detail"))
+        self.__build_result = self.__artifact.load_build_result(key)
 
     def __get_build_result(self, keystrength):
         if keystrength is None:
