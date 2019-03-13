@@ -1106,13 +1106,15 @@ class CASQuota:
     #
     # Args:
     #     cache_size (int): The size to set.
+    #     write_to_disk (bool): Whether to write the value to disk.
     #
-    def set_cache_size(self, cache_size):
+    def set_cache_size(self, cache_size, *, write_to_disk=True):
 
         assert cache_size is not None
 
         self._cache_size = cache_size
-        self._write_cache_size(self._cache_size)
+        if write_to_disk:
+            self._write_cache_size(self._cache_size)
 
     # full()
     #

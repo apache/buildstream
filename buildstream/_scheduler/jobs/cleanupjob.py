@@ -38,14 +38,14 @@ class CleanupJob(Job):
         # Update the cache size in the main process as we go,
         # this provides better feedback in the UI.
         if message_type == 'update-cache-size':
-            self._casquota.set_cache_size(message)
+            self._casquota.set_cache_size(message, write_to_disk=False)
             return True
 
         return False
 
     def parent_complete(self, status, result):
         if status == JobStatus.OK:
-            self._casquota.set_cache_size(result)
+            self._casquota.set_cache_size(result, write_to_disk=False)
 
         if self._complete_cb:
             self._complete_cb(status, result)
