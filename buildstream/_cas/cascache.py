@@ -1093,7 +1093,7 @@ class CASQuota:
             if stored_size is not None:
                 self._cache_size = stored_size
             else:
-                self._cache_size = self.compute_cache_size()
+                self.compute_cache_size()
 
         return self._cache_size
 
