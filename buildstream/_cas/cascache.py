@@ -948,8 +948,8 @@ class CASCache():
 
         return objpath
 
-    def _batch_download_complete(self, batch):
-        for digest, data in batch.send():
+    def _batch_download_complete(self, batch, *, missing_blobs=None):
+        for digest, data in batch.send(missing_blobs=missing_blobs):
             with self._temporary_object() as f:
                 f.write(data)
                 f.flush()
@@ -1063,6 +1063,46 @@ class CASCache():
                 assert dirdigest.size_bytes == len(dirbuffer)
 
         return dirdigest
+
+    # fetch_blobs():
+    #
+    # Fetch blobs from remote CAS. Returns missing blobs that could not be fetched.
+    #
+    # Args:
+    #    remote (CASRemote): The remote repository to fetch from
+    #    digests (list): The Digests of blobs to fetch
+    #
+    # Returns: The Digests of the blobs that were not available on the remote CAS
+    #
+    def fetch_blobs(self, remote, digests):
+        missing_blobs = []
+
+        batch = _CASBatchRead(remote)
+
+        for digest in digests:
+            if (digest.size_bytes >= remote.max_batch_total_size_bytes or
+                    not remote.batch_read_supported):
+                # Too large for batch request, download in independent request.
+                try:
+                    self._ensure_blob(remote, digest)
+                except grpc.RpcError as e:
+                    if e.code() == grpc.StatusCode.NOT_FOUND:
+                        missing_blobs.append(digest)
+                    else:
+                        raise CASCacheError("Failed to fetch blob: {}".format(e)) from e
+            else:
+                if not batch.add(digest):
+                    # Not enough space left in batch request.
+                    # Complete pending batch first.
+                    self._batch_download_complete(batch, missing_blobs=missing_blobs)
+
+                    batch = _CASBatchRead(remote)
+                    batch.add(digest)
+
+        # Complete last pending batch
+        self._batch_download_complete(batch, missing_blobs=missing_blobs)
+
+        return missing_blobs
 
     def _send_directory(self, remote, digest, u_uid=uuid.uuid4()):
         missing_blobs = self.remote_missing_blobs_for_directory(remote, digest)
