@@ -648,6 +648,37 @@ class CASCache():
         reachable = set()
         self._reachable_refs_dir(reachable, tree, update_mtime=True)
 
+    # remote_missing_blobs_for_directory():
+    #
+    # Determine which blobs of a directory tree are missing on the remote.
+    #
+    # Args:
+    #     digest (Digest): The directory digest
+    #
+    # Returns: List of missing Digest objects
+    #
+    def remote_missing_blobs_for_directory(self, remote, digest):
+        required_blobs = self._required_blobs(digest)
+
+        missing_blobs = dict()
+        # Limit size of FindMissingBlobs request
+        for required_blobs_group in _grouper(required_blobs, 512):
+            request = remote_execution_pb2.FindMissingBlobsRequest(instance_name=remote.spec.instance_name)
+
+            for required_digest in required_blobs_group:
+                d = request.blob_digests.add()
+                d.hash = required_digest.hash
+                d.size_bytes = required_digest.size_bytes
+
+            response = remote.cas.FindMissingBlobs(request)
+            for missing_digest in response.missing_blob_digests:
+                d = remote_execution_pb2.Digest()
+                d.hash = missing_digest.hash
+                d.size_bytes = missing_digest.size_bytes
+                missing_blobs[d.hash] = d
+
+        return missing_blobs.values()
+
     ################################################
     #             Local Private Methods            #
     ################################################
@@ -1017,27 +1048,10 @@ class CASCache():
         return dirdigest
 
     def _send_directory(self, remote, digest, u_uid=uuid.uuid4()):
-        required_blobs = self._required_blobs(digest)
-
-        missing_blobs = dict()
-        # Limit size of FindMissingBlobs request
-        for required_blobs_group in _grouper(required_blobs, 512):
-            request = remote_execution_pb2.FindMissingBlobsRequest(instance_name=remote.spec.instance_name)
-
-            for required_digest in required_blobs_group:
-                d = request.blob_digests.add()
-                d.hash = required_digest.hash
-                d.size_bytes = required_digest.size_bytes
-
-            response = remote.cas.FindMissingBlobs(request)
-            for missing_digest in response.missing_blob_digests:
-                d = remote_execution_pb2.Digest()
-                d.hash = missing_digest.hash
-                d.size_bytes = missing_digest.size_bytes
-                missing_blobs[d.hash] = d
+        missing_blobs = self.remote_missing_blobs_for_directory(remote, digest)
 
         # Upload any blobs missing on the server
-        self._send_blobs(remote, missing_blobs.values(), u_uid)
+        self._send_blobs(remote, missing_blobs, u_uid)
 
     def _send_blobs(self, remote, digests, u_uid=uuid.uuid4()):
         batch = _CASBatchUpdate(remote)
