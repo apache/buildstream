@@ -679,6 +679,23 @@ class CASCache():
 
         return missing_blobs.values()
 
+    # local_missing_blobs():
+    #
+    # Check local cache for missing blobs.
+    #
+    # Args:
+    #    digests (list): The Digests of blobs to check
+    #
+    # Returns: Missing Digest objects
+    #
+    def local_missing_blobs(self, digests):
+        missing_blobs = []
+        for digest in digests:
+            objpath = self.objpath(digest)
+            if not os.path.exists(objpath):
+                missing_blobs.append(digest)
+        return missing_blobs
+
     ################################################
     #             Local Private Methods            #
     ################################################
