@@ -1383,7 +1383,6 @@ class CASQuota:
                         utils._pretty_size(size, dec_places=2),
                         to_remove)))
 
-                # Remove the size from the removed size
                 self.set_cache_size(self._cache_size - size)
 
                 # User callback
