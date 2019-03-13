@@ -2,6 +2,10 @@
 buildstream 1.3.1
 =================
 
+  o Added `bst artifact delete` subcommand. This command removes artifacts from
+    the local cache. Mulitple element names and artifact refs can be specified
+    as arguments.
+
   o BREAKING CHANGE: The top level commands `checkout`, `push` and `pull` have
     been moved to the `bst artifact` subcommand group and are now obsolete.
     For example, you must now use `bst artifact pull hello.bst`.
