@@ -424,6 +424,13 @@ class ArtifactCache():
     def remove(self, ref, *, defer_prune=False):
         return self.cas.remove(ref, defer_prune=defer_prune)
 
+    # prune():
+    #
+    # Prune the artifact cache of unreachable refs
+    #
+    def prune(self):
+        return self.cas.prune()
+
     # get_artifact_directory():
     #
     # Get virtual directory for cached artifact of the specified Element.
