@@ -1187,7 +1187,7 @@ class CASQuota:
     def _write_cache_size(self, size):
         assert isinstance(size, int)
         size_file_path = os.path.join(self.casdir, CACHE_SIZE_FILE)
-        with utils.save_file_atomic(size_file_path, "w") as f:
+        with utils.save_file_atomic(size_file_path, "w", tempdir=self.cas.tmpdir) as f:
             f.write(str(size))
 
     # _get_cache_volume_size()
