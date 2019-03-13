@@ -359,30 +359,6 @@ class ArtifactCache(BaseCache):
 
         return None
 
-    # push_directory():
-    #
-    # Push the given virtual directory to all remotes.
-    #
-    # Args:
-    #     project (Project): The current project
-    #     directory (Directory): A virtual directory object to push.
-    #
-    # Raises:
-    #     (ArtifactError): if there was an error
-    #
-    def push_directory(self, project, directory):
-        if self._has_push_remotes:
-            push_remotes = [r for r in self._remotes[project] if r.spec.push]
-        else:
-            push_remotes = []
-
-        if not push_remotes:
-            raise ArtifactError("push_directory was called, but no remote artifact " +
-                                "servers are configured as push remotes.")
-
-        for remote in push_remotes:
-            self.cas.push_directory(remote, directory)
-
     # push_message():
     #
     # Push the given protobuf message to all remotes.
