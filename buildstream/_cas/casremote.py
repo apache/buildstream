@@ -221,28 +221,6 @@ class CASRemote():
 
         return error
 
-    # verify_digest_on_remote():
-    #
-    # Check whether the object is already on the server in which case
-    # there is no need to upload it.
-    #
-    # Args:
-    #     digest (Digest): The object digest.
-    #
-    def verify_digest_on_remote(self, digest):
-        self.init()
-
-        request = remote_execution_pb2.FindMissingBlobsRequest()
-        if self.instance_name:
-            request.instance_name = self.instance_name
-        request.blob_digests.extend([digest])
-
-        response = self.cas.FindMissingBlobs(request)
-        if digest in response.missing_blob_digests:
-            return False
-
-        return True
-
     # push_message():
     #
     # Push the given protobuf message to a remote.
