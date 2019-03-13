@@ -322,7 +322,7 @@ class _CASBatchRead():
         self._size = new_batch_size
         return True
 
-    def send(self):
+    def send(self, *, missing_blobs=None):
         assert not self._sent
         self._sent = True
 
@@ -333,8 +333,12 @@ class _CASBatchRead():
 
         for response in batch_response.responses:
             if response.status.code == code_pb2.NOT_FOUND:
-                raise BlobNotFound(response.digest.hash, "Failed to download blob {}: {}".format(
-                    response.digest.hash, response.status.code))
+                if missing_blobs is None:
+                    raise BlobNotFound(response.digest.hash, "Failed to download blob {}: {}".format(
+                        response.digest.hash, response.status.code))
+                else:
+                    missing_blobs.append(response.digest)
+
             if response.status.code != code_pb2.OK:
                 raise CASRemoteError("Failed to download blob {}: {}".format(
                     response.digest.hash, response.status.code))
