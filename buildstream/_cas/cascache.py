@@ -1064,30 +1064,14 @@ class CASQuota:
 
     # compute_cache_size()
     #
-    # Computes the real artifact cache size by calling
-    # the abstract calculate_cache_size() method.
+    # Computes the real artifact cache size.
     #
     # Returns:
     #    (int): The size of the artifact cache.
     #
     def compute_cache_size(self):
-        old_cache_size = self._cache_size
-        new_cache_size = self.calculate_cache_size()
-
-        if old_cache_size != new_cache_size:
-            self._cache_size = new_cache_size
-
+        self._cache_size = utils._get_dir_size(self.casdir)
         return self._cache_size
-
-    # calculate_cache_size()
-    #
-    # Return the real disk usage of the CAS cache.
-    #
-    # Returns:
-    #    (int): The size of the cache.
-    #
-    def calculate_cache_size(self):
-        return utils._get_dir_size(self.casdir)
 
     # get_cache_size()
     #
