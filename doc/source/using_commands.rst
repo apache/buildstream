@@ -101,6 +101,13 @@ Artifact subcommands
 .. click:: buildstream._frontend.cli:artifact_push
    :prog: bst artifact push
 
+----
+
+.. _invoking_artifact_delete:
+
+.. click:: buildstream._frontend.cli:artifact_delete
+   :prog: bst artifact delete
+
 
 Source subcommands
 ------------------
