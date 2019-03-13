@@ -57,6 +57,7 @@ SOURCE_COMMANDS = [
 
 ARTIFACT_COMMANDS = [
     'checkout ',
+    'delete ',
     'push ',
     'pull ',
     'log ',
