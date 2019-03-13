@@ -439,3 +439,24 @@ class ArtifactCache(BaseCache):
         cache_id = self.cas.resolve_ref(ref, update_mtime=True)
         vdir = CasBasedDirectory(self.cas, digest=cache_id).descend('logs')
         return vdir
+
+    # fetch_missing_blobs():
+    #
+    # Fetch missing blobs from configured remote repositories.
+    #
+    # Args:
+    #     project (Project): The current project
+    #     missing_blobs (list): The Digests of the blobs to fetch
+    #
+    def fetch_missing_blobs(self, project, missing_blobs):
+        for remote in self._remotes[project]:
+            if not missing_blobs:
+                break
+
+            remote.init()
+
+            # fetch_blobs() will return the blobs that are still missing
+            missing_blobs = self.cas.fetch_blobs(remote, missing_blobs)
+
+        if missing_blobs:
+            raise ArtifactError("Blobs not found on configured artifact servers")
