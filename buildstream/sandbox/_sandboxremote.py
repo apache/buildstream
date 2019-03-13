@@ -338,9 +338,6 @@ class SandboxRemote(Sandbox):
             except grpc.RpcError as e:
                 raise SandboxError("Failed to push source directory to remote: {}".format(e)) from e
 
-            if not casremote.verify_digest_on_remote(upload_vdir._get_digest()):
-                raise SandboxError("Failed to verify that source has been pushed to the remote artifact cache.")
-
             # Push command and action
             try:
                 casremote.push_message(command_proto)
