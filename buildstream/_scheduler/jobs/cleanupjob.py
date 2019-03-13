@@ -32,20 +32,34 @@ class CleanupJob(Job):
         def progress():
             self.send_message('update-cache-size',
                               self._casquota.get_cache_size())
-        return self._casquota.clean(progress)
+
+        from ..._cas.cascache import allow_cache_size_write_context
+        from ..._cas.cascache import allow_cache_size_write_context_pid
+        from ..._cas.cascache import disallow_cache_size_write_context_pid
+        allow_cache_size_write_context_pid()
+        with allow_cache_size_write_context():
+            result = self._casquota.clean(progress)
+        disallow_cache_size_write_context_pid()
+        return result
 
     def handle_message(self, message_type, message):
         # Update the cache size in the main process as we go,
         # this provides better feedback in the UI.
         if message_type == 'update-cache-size':
             self._casquota.set_cache_size(message)
+            self._casquota.set_cache_size(message, write_to_disk=False)
+            from ..._cas.cascache import allow_cache_size_write_context
+            with allow_cache_size_write_context():
+                self._casquota.set_cache_size(message)
             return True
 
         return False
 
     def parent_complete(self, status, result):
         if status == JobStatus.OK:
-            self._casquota.set_cache_size(result)
+            from ..._cas.cascache import allow_cache_size_write_context
+            with allow_cache_size_write_context():
+                self._casquota.set_cache_size(result)
 
         if self._complete_cb:
             self._complete_cb(status, result)

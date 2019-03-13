@@ -42,6 +42,32 @@ _BUFFER_SIZE = 65536
 
 CACHE_SIZE_FILE = "cache_size"
 
+# Note that we will only allow writing in the main process, keep track of the
+# allowed pid.
+_CACHE_SIZE_WRITE_ALLOWED_PID = os.getpid()
+_CACHE_SIZE_WRITE_ALLOWED = False
+
+
+def disallow_cache_size_write_context_pid():
+    global _CACHE_SIZE_WRITE_ALLOWED_PID  # pylint: disable=global-statement
+    _CACHE_SIZE_WRITE_ALLOWED_PID = None
+
+
+def allow_cache_size_write_context_pid():
+    global _CACHE_SIZE_WRITE_ALLOWED_PID  # pylint: disable=global-statement
+    _CACHE_SIZE_WRITE_ALLOWED_PID = os.getpid()
+
+
+@contextlib.contextmanager
+def allow_cache_size_write_context(reset_pid=False):
+    global _CACHE_SIZE_WRITE_ALLOWED  # pylint: disable=global-statement
+    assert _CACHE_SIZE_WRITE_ALLOWED is not None
+    _CACHE_SIZE_WRITE_ALLOWED = True
+    try:
+        yield
+    finally:
+        _CACHE_SIZE_WRITE_ALLOWED = False
+
 
 # CASCacheUsage
 #
@@ -1186,6 +1212,8 @@ class CASQuota:
     #
     def _write_cache_size(self, size):
         assert isinstance(size, int)
+        assert _CACHE_SIZE_WRITE_ALLOWED_PID == os.getpid()
+        assert _CACHE_SIZE_WRITE_ALLOWED
         size_file_path = os.path.join(self.casdir, CACHE_SIZE_FILE)
         with utils.save_file_atomic(size_file_path, "w") as f:
             f.write(str(size))

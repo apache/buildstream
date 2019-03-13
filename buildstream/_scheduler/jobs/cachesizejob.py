@@ -32,7 +32,9 @@ class CacheSizeJob(Job):
 
     def parent_complete(self, status, result):
         if status == JobStatus.OK:
-            self._casquota.set_cache_size(result)
+            from ..._cas.cascache import allow_cache_size_write_context
+            with allow_cache_size_write_context():
+                self._casquota.set_cache_size(result)
 
         if self._complete_cb:
             self._complete_cb(status, result)

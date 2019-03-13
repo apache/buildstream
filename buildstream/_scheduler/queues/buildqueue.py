@@ -117,4 +117,6 @@ class BuildQueue(Queue):
         #        failed build also grows the artifact cache size.
         #
         if status == JobStatus.OK:
-            self._check_cache_size(job, element, result)
+            from ..._cas.cascache import allow_cache_size_write_context
+            with allow_cache_size_write_context():
+                self._check_cache_size(job, element, result)
