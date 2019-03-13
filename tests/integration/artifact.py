@@ -121,7 +121,7 @@ def test_cache_buildtrees(cli, tmpdir, datafiles):
         elementdigest = share2.has_artifact('test', element_name, cache_key)
         with cas_extract_buildtree(elementdigest) as buildtreedir:
             assert os.path.isdir(buildtreedir)
-            assert os.listdir(buildtreedir) is not None
+            assert os.listdir(buildtreedir)
 
         # Delete the local cached artifacts, and assert that when pulled with --pull-buildtrees
         # that it was cached in share2 as expected with a populated buildtree dir
@@ -131,7 +131,7 @@ def test_cache_buildtrees(cli, tmpdir, datafiles):
         assert element_name in result.get_pulled_elements()
         with cas_extract_buildtree(elementdigest) as buildtreedir:
             assert os.path.isdir(buildtreedir)
-            assert os.listdir(buildtreedir) is not None
+            assert os.listdir(buildtreedir)
         shutil.rmtree(os.path.join(str(tmpdir), 'cas'))
 
         # Clarify that the user config option for cache-buildtrees works as the cli
