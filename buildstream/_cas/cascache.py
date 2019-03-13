@@ -1107,13 +1107,15 @@ class CASCache():
 
         return missing_blobs
 
-    def _send_directory(self, remote, digest, u_uid=uuid.uuid4()):
-        missing_blobs = self.remote_missing_blobs_for_directory(remote, digest)
-
-        # Upload any blobs missing on the server
-        self._send_blobs(remote, missing_blobs, u_uid)
-
-    def _send_blobs(self, remote, digests, u_uid=uuid.uuid4()):
+    # send_blobs():
+    #
+    # Upload blobs to remote CAS.
+    #
+    # Args:
+    #    remote (CASRemote): The remote repository to upload to
+    #    digests (list): The Digests of Blobs to upload
+    #
+    def send_blobs(self, remote, digests, u_uid=uuid.uuid4()):
         batch = _CASBatchUpdate(remote)
 
         for digest in digests:
@@ -1134,6 +1136,12 @@ class CASCache():
 
         # Send final batch
         batch.send()
+
+    def _send_directory(self, remote, digest, u_uid=uuid.uuid4()):
+        missing_blobs = self.remote_missing_blobs_for_directory(remote, digest)
+
+        # Upload any blobs missing on the server
+        self.send_blobs(remote, missing_blobs, u_uid)
 
 
 class CASQuota:
