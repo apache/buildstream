@@ -25,9 +25,6 @@ from ._cas import CASRemoteSpec
 from .storage._casbaseddirectory import CasBasedDirectory
 
 
-CACHE_SIZE_FILE = "cache_size"
-
-
 # An ArtifactCacheSpec holds the user configuration for a single remote
 # artifact cache.
 #
