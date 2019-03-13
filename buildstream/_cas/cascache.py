@@ -379,23 +379,6 @@ class CASCache():
 
         return not skipped_remote
 
-    # push_directory():
-    #
-    # Push the given virtual directory to a remote.
-    #
-    # Args:
-    #     remote (CASRemote): The remote to push to
-    #     directory (Directory): A virtual directory object to push.
-    #
-    # Raises:
-    #     (CASCacheError): if there was an error
-    #
-    def push_directory(self, remote, directory):
-        remote.init()
-
-        digest = directory._get_digest()
-        self._send_directory(remote, digest)
-
     # objpath():
     #
     # Return the path of an object based on its digest.
