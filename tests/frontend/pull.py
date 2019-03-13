@@ -5,6 +5,7 @@ import os
 import shutil
 import stat
 import pytest
+from buildstream import utils
 from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from tests.testutils import create_artifact_share, generate_junction
 
@@ -391,6 +392,36 @@ def test_pull_missing_blob(cli, tmpdir, datafiles):
 
         # Assert that no artifacts were pulled
         assert not result.get_pulled_elements()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_pull_missing_local_blob(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+
+        # First build the import-bin element and push to the remote.
+        cli.configure({
+            'artifacts': {'url': share.repo, 'push': True}
+        })
+        result = cli.run(project=project, args=['build', 'import-bin.bst'])
+        result.assert_success()
+        assert cli.get_element_state(project, 'import-bin.bst') == 'cached'
+
+        # Delete a file blob from the local cache.
+        # This is a placeholder to test partial CAS handling until we support
+        # partial artifact pulling (or blob-based CAS expiry).
+        #
+        digest = utils.sha256sum(os.path.join(project, 'files', 'bin-files', 'usr', 'bin', 'hello'))
+        objpath = os.path.join(cli.directory, 'cas', 'objects', digest[:2], digest[2:])
+        os.unlink(objpath)
+
+        # Now try bst build
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
+
+        # Assert that the import-bin artifact was pulled (completing the partial artifact)
+        assert result.get_pulled_elements() == ['import-bin.bst']
 
 
 @pytest.mark.datafiles(DATA_DIR)
