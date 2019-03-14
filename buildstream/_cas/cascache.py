@@ -198,10 +198,8 @@ class CASCache():
                          stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 
         for dirnode in directory.directories:
-            # Don't try to checkout a dangling ref
-            if os.path.exists(self.objpath(dirnode.digest)):
-                fullpath = os.path.join(dest, dirnode.name)
-                self.checkout(fullpath, dirnode.digest, can_link=can_link)
+            fullpath = os.path.join(dest, dirnode.name)
+            self.checkout(fullpath, dirnode.digest, can_link=can_link)
 
         for symlinknode in directory.symlinks:
             # symlink
