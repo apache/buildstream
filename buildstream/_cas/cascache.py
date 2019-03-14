@@ -243,12 +243,8 @@ class CASCache():
             tree.hash = response.digest.hash
             tree.size_bytes = response.digest.size_bytes
 
-            # Check if the element artifact is present, if so just fetch the subdir.
-            if subdir and os.path.exists(self.objpath(tree)):
-                self._fetch_subdir(remote, tree, subdir)
-            else:
-                # Fetch artifact, excluded_subdirs determined in pullqueue
-                self._fetch_directory(remote, tree, excluded_subdirs=excluded_subdirs)
+            # Fetch artifact, excluded_subdirs determined in pullqueue
+            self._fetch_directory(remote, tree, excluded_subdirs=excluded_subdirs)
 
             self.set_ref(ref, tree)
 
@@ -967,10 +963,6 @@ class CASCache():
 
         # Fetch final batch
         self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
-
-    def _fetch_subdir(self, remote, tree, subdir):
-        subdirdigest = self._get_subdir(tree, subdir)
-        self._fetch_directory(remote, subdirdigest)
 
     def _fetch_tree(self, remote, digest):
         # download but do not store the Tree object
