@@ -272,8 +272,14 @@ class CASCache():
             tree.hash = response.digest.hash
             tree.size_bytes = response.digest.size_bytes
 
-            # Fetch artifact, excluded_subdirs determined in pullqueue
-            self._fetch_directory(remote, tree, excluded_subdirs=excluded_subdirs)
+            # Fetch Directory objects
+            self._fetch_directory(remote, tree)
+
+            # Fetch files, excluded_subdirs determined in pullqueue
+            required_blobs = self._required_blobs(tree, excluded_subdirs=excluded_subdirs)
+            missing_blobs = self.local_missing_blobs(required_blobs)
+            if missing_blobs:
+                self.fetch_blobs(remote, missing_blobs)
 
             self.set_ref(ref, tree)
 
@@ -889,7 +895,10 @@ class CASCache():
         for dirnode in directory.directories:
             self._reachable_refs_dir(reachable, dirnode.digest, update_mtime=update_mtime)
 
-    def _required_blobs(self, directory_digest):
+    def _required_blobs(self, directory_digest, *, excluded_subdirs=None):
+        if not excluded_subdirs:
+            excluded_subdirs = []
+
         # parse directory, and recursively add blobs
         d = remote_execution_pb2.Digest()
         d.hash = directory_digest.hash
@@ -908,7 +917,8 @@ class CASCache():
             yield d
 
         for dirnode in directory.directories:
-            yield from self._required_blobs(dirnode.digest)
+            if dirnode.name not in excluded_subdirs:
+                yield from self._required_blobs(dirnode.digest)
 
     # _temporary_object():
     #
@@ -1001,21 +1011,19 @@ class CASCache():
     #
     # Fetches remote directory and adds it to content addressable store.
     #
-    # Fetches files, symbolic links and recursively other directories in
-    # the remote directory and adds them to the content addressable
-    # store.
+    # This recursively fetches directory objects but doesn't fetch any
+    # files.
     #
     # Args:
     #     remote (Remote): The remote to use.
     #     dir_digest (Digest): Digest object for the directory to fetch.
-    #     excluded_subdirs (list): The optional list of subdirs to not fetch
     #
-    def _fetch_directory(self, remote, dir_digest, *, excluded_subdirs=None):
+    def _fetch_directory(self, remote, dir_digest):
+        # TODO Use GetTree() if the server supports it
+
         fetch_queue = [dir_digest]
         fetch_next_queue = []
         batch = _CASBatchRead(remote)
-        if not excluded_subdirs:
-            excluded_subdirs = []
 
         while len(fetch_queue) + len(fetch_next_queue) > 0:
             if not fetch_queue:
@@ -1030,13 +1038,8 @@ class CASCache():
                 directory.ParseFromString(f.read())
 
             for dirnode in directory.directories:
-                if dirnode.name not in excluded_subdirs:
-                    batch = self._fetch_directory_node(remote, dirnode.digest, batch,
-                                                       fetch_queue, fetch_next_queue, recursive=True)
-
-            for filenode in directory.files:
-                batch = self._fetch_directory_node(remote, filenode.digest, batch,
-                                                   fetch_queue, fetch_next_queue)
+                batch = self._fetch_directory_node(remote, dirnode.digest, batch,
+                                                   fetch_queue, fetch_next_queue, recursive=True)
 
         # Fetch final batch
         self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
