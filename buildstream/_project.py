@@ -96,15 +96,19 @@ class ProjectConfig:
 class Project():
 
     def __init__(self, directory, context, *, junction=None, cli_options=None,
-                 default_mirror=None, parent_loader=None):
+                 default_mirror=None, parent_loader=None,
+                 search_for_project=True):
 
         # The project name
         self.name = None
 
         self._context = context  # The invocation Context, a private member
 
-        # The project directory, and whether the element whose workspace it was invoked from
-        self.directory, self._invoked_from_workspace_element = self._find_project_dir(directory)
+        if search_for_project:
+            self.directory, self._invoked_from_workspace_element = self._find_project_dir(directory)
+        else:
+            self.directory = directory
+            self._invoked_from_workspace_element = None
 
         # Absolute path to where elements are loaded from within the project
         self.element_path = None

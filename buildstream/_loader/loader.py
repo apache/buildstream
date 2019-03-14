@@ -567,7 +567,7 @@ class Loader():
         try:
             from .._project import Project
             project = Project(project_dir, self._context, junction=element,
-                              parent_loader=self)
+                              parent_loader=self, search_for_project=False)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
                 message = (
