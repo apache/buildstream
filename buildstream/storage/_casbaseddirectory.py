@@ -513,9 +513,7 @@ class CasBasedDirectory(Directory):
                 subdir = i.get_directory(self)
                 total += subdir.get_size()
             elif i.type == _FileType.REGULAR_FILE:
-                src_name = self.cas_cache.objpath(i.digest)
-                filesize = os.stat(src_name).st_size
-                total += filesize
+                total += i.digest.size_bytes
             # Symlink nodes are encoded as part of the directory serialization.
         return total
 
