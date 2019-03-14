@@ -319,7 +319,6 @@ def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
         ]
     }
 
-    element['sources'][0]
     element_name = 'test.bst'
     element_path = os.path.join(element_dir, element_name)
     full_repo = element['sources'][0]['url']
@@ -385,7 +384,6 @@ def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
         ]
     }
 
-    element['sources'][0]
     element_name = 'test.bst'
     element_path = os.path.join(element_dir, element_name)
     full_repo = element['sources'][0]['url']
