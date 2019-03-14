@@ -124,9 +124,9 @@ def test_node_get(datafiles):
     assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
 
 
-# Really this is testing _yaml.node_chain_copy(), we want to
-# be sure that when using a ChainMap copy, compositing values
-# still preserves the original values in the copied dict.
+# Really this is testing _yaml.node_copy(), we want to
+# be sure that compositing values still preserves the original
+# values in the copied dict.
 #
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_composite_preserve_originals(datafiles):
@@ -140,7 +140,7 @@ def test_composite_preserve_originals(datafiles):
 
     base = _yaml.load(filename)
     overlay = _yaml.load(overlayfile)
-    base_copy = _yaml.node_chain_copy(base)
+    base_copy = _yaml.node_copy(base)
     _yaml.composite_dict(base_copy, overlay)
 
     copy_extra = _yaml.node_get(base_copy, Mapping, 'extra')

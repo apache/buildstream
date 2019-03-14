@@ -1165,7 +1165,7 @@ class Source(Plugin):
     #
     def __extract_config(self, meta):
         config = _yaml.node_get(self.__defaults, Mapping, 'config', default_value={})
-        config = _yaml.node_chain_copy(config)
+        config = _yaml.node_copy(config)
 
         _yaml.composite(config, meta.config)
         _yaml.node_final_assertions(config)
