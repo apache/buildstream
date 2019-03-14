@@ -184,8 +184,8 @@ class Stream():
                     if usebuildtree == "always":
                         raise StreamError("Buildtree is not cached locally or in available remotes")
                     else:
-                        self._message(MessageType.INFO, """Buildtree is not cached locally or in available remotes,
-                                                        shell will be loaded without it""")
+                        self._message(MessageType.INFO, "Buildtree is not cached locally or in available remotes, " +
+                                                        "shell will be loaded without it")
             else:
                 buildtree = True
 
