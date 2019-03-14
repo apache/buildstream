@@ -34,7 +34,8 @@ from fnmatch import fnmatch
 from ._artifactelement import verify_artifact_ref
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, CASCacheError
 from ._message import Message, MessageType
-from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
+from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, \
+    SourcePushQueue, BuildQueue, PullQueue, PushQueue
 from ._pipeline import Pipeline, PipelineSelection
 from ._profile import Topics, profile_start, profile_end
 from .types import _KeyStrength
@@ -261,10 +262,14 @@ class Stream():
             self._add_queue(PullQueue(self._scheduler))
 
         self._add_queue(FetchQueue(self._scheduler, skip_cached=True))
+
         self._add_queue(BuildQueue(self._scheduler))
 
         if self._artifacts.has_push_remotes():
             self._add_queue(PushQueue(self._scheduler))
+
+        if self._sourcecache.has_push_remotes():
+            self._add_queue(SourcePushQueue(self._scheduler))
 
         # Enqueue elements
         #
@@ -1232,6 +1237,7 @@ class Stream():
 
         if track_elements:
             self._enqueue_plan(track_elements, queue=track_queue)
+
         self._enqueue_plan(fetch_plan)
         self._run()
 
