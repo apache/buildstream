@@ -4,7 +4,7 @@ import hashlib
 import pytest
 import subprocess
 from tests.testutils.site import IS_WINDOWS
-from tests.testutils import create_repo, ALL_REPO_KINDS, generate_junction
+from tests.testutils import create_repo, generate_junction
 
 from buildstream.plugintestutils import cli
 from buildstream import _yaml
@@ -403,53 +403,6 @@ def test_build_checkout_force_tarball(datafiles, cli):
     tar = tarfile.TarFile(tarball)
     assert os.path.join('.', 'usr', 'bin', 'hello') in tar.getnames()
     assert os.path.join('.', 'usr', 'include', 'pony.h') in tar.getnames()
-
-
-fetch_build_checkout_combos = \
-    [("strict", kind) for kind in ALL_REPO_KINDS] + \
-    [("non-strict", kind) for kind in ALL_REPO_KINDS]
-
-
-@pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("strict,kind", fetch_build_checkout_combos)
-def test_fetch_build_checkout(cli, tmpdir, datafiles, strict, kind):
-    checkout = os.path.join(cli.directory, 'checkout')
-    project = os.path.join(datafiles.dirname, datafiles.basename)
-    dev_files_path = os.path.join(project, 'files', 'dev-files')
-    element_path = os.path.join(project, 'elements')
-    element_name = 'build-test-{}.bst'.format(kind)
-
-    # Create our repo object of the given source type with
-    # the dev files, and then collect the initial ref.
-    #
-    repo = create_repo(kind, str(tmpdir))
-    ref = repo.create(dev_files_path)
-
-    # Write out our test target
-    element = {
-        'kind': 'import',
-        'sources': [
-            repo.source_config(ref=ref)
-        ]
-    }
-    _yaml.dump(element,
-               os.path.join(element_path,
-                            element_name))
-
-    assert cli.get_element_state(project, element_name) == 'fetch needed'
-    result = cli.run(project=project, args=strict_args(['build', element_name], strict))
-    result.assert_success()
-    assert cli.get_element_state(project, element_name) == 'cached'
-
-    # Now check it out
-    result = cli.run(project=project, args=strict_args([
-        'artifact', 'checkout', element_name, '--directory', checkout
-    ], strict))
-    result.assert_success()
-
-    # Check that the pony.h include from files/dev-files exists
-    filename = os.path.join(checkout, 'usr', 'include', 'pony.h')
-    assert os.path.exists(filename)
 
 
 @pytest.mark.datafiles(DATA_DIR)
