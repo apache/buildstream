@@ -17,17 +17,11 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
-import multiprocessing
-import os
-from collections.abc import Mapping
-
+from ._basecache import BaseCache
 from .types import _KeyStrength
 from ._exceptions import ArtifactError, CASError
-from ._message import Message, MessageType
-from . import utils
-from . import _yaml
 
-from ._cas import CASRemote, CASRemoteSpec, CASCacheUsage
+from ._cas import CASRemoteSpec
 from .storage._casbaseddirectory import CasBasedDirectory
 
 
@@ -51,89 +45,20 @@ class ArtifactCacheSpec(CASRemoteSpec):
 # Args:
 #     context (Context): The BuildStream context
 #
-class ArtifactCache():
+class ArtifactCache(BaseCache):
+
+    spec_class = ArtifactCacheSpec
+    spec_name = "artifact_cache_specs"
+    spec_error = ArtifactError
+    config_node_name = "artifacts"
+
     def __init__(self, context):
-        self.context = context
-
-        self.cas = context.get_cascache()
-        self.casquota = context.get_casquota()
-        self.casquota._calculate_cache_quota()
-
-        self.global_remote_specs = []
-        self.project_remote_specs = {}
+        super().__init__(context)
 
         self._required_elements = set()       # The elements required for this session
 
-        self._remotes_setup = False           # Check to prevent double-setup of remotes
-
-        # Per-project list of _CASRemote instances.
-        self._remotes = {}
-
-        self._has_fetch_remotes = False
-        self._has_push_remotes = False
-
-    # setup_remotes():
-    #
-    # Sets up which remotes to use
-    #
-    # Args:
-    #    use_config (bool): Whether to use project configuration
-    #    remote_url (str): Remote artifact cache URL
-    #
-    # This requires that all of the projects which are to be processed in the session
-    # have already been loaded and are observable in the Context.
-    #
-    def setup_remotes(self, *, use_config=False, remote_url=None):
-
-        # Ensure we do not double-initialise since this can be expensive
-        assert not self._remotes_setup
-        self._remotes_setup = True
-
-        # Initialize remote artifact caches. We allow the commandline to override
-        # the user config in some cases (for example `bst artifact push --remote=...`).
-        has_remote_caches = False
-        if remote_url:
-            self._set_remotes([ArtifactCacheSpec(remote_url, push=True)])
-            has_remote_caches = True
-        if use_config:
-            for project in self.context.get_projects():
-                artifact_caches = _configured_remote_artifact_cache_specs(self.context, project)
-                if artifact_caches:  # artifact_caches is a list of ArtifactCacheSpec instances
-                    self._set_remotes(artifact_caches, project=project)
-                    has_remote_caches = True
-        if has_remote_caches:
-            self._initialize_remotes()
-
-    # specs_from_config_node()
-    #
-    # Parses the configuration of remote artifact caches from a config block.
-    #
-    # Args:
-    #   config_node (dict): The config block, which may contain the 'artifacts' key
-    #   basedir (str): The base directory for relative paths
-    #
-    # Returns:
-    #   A list of ArtifactCacheSpec instances.
-    #
-    # Raises:
-    #   LoadError, if the config block contains invalid keys.
-    #
-    @staticmethod
-    def specs_from_config_node(config_node, basedir=None):
-        cache_specs = []
-
-        artifacts = config_node.get('artifacts', [])
-        if isinstance(artifacts, Mapping):
-            cache_specs.append(ArtifactCacheSpec._new_from_config_node(artifacts, basedir))
-        elif isinstance(artifacts, list):
-            for spec_node in artifacts:
-                cache_specs.append(ArtifactCacheSpec._new_from_config_node(spec_node, basedir))
-        else:
-            provenance = _yaml.node_get_provenance(config_node, key='artifacts')
-            raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
-                                  "%s: 'artifacts' must be a single 'url:' mapping, or a list of mappings" %
-                                  (str(provenance)))
-        return cache_specs
+        self.casquota.add_ref_callbacks(self.required_artifacts())
+        self.casquota.add_remove_callbacks((lambda x: not x.startswith('@'), self.remove))
 
     # mark_required_elements():
     #
@@ -176,117 +101,15 @@ class ArtifactCache():
                     except CASError:
                         pass
 
-    # clean():
-    #
-    # Clean the artifact cache as much as possible.
-    #
-    # Args:
-    #    progress (callable): A callback to call when a ref is removed
-    #
-    # Returns:
-    #    (int): The size of the cache after having cleaned up
-    #
-    def clean(self, progress=None):
-        artifacts = self.list_artifacts()
-        context = self.context
-
-        # Some accumulative statistics
-        removed_ref_count = 0
-        space_saved = 0
-
-        # Start off with an announcement with as much info as possible
-        volume_size, volume_avail = self.casquota._get_cache_volume_size()
-        self._message(MessageType.STATUS, "Starting cache cleanup",
-                      detail=("Elements required by the current build plan: {}\n" +
-                              "User specified quota: {} ({})\n" +
-                              "Cache usage: {}\n" +
-                              "Cache volume: {} total, {} available")
-                      .format(len(self._required_elements),
-                              context.config_cache_quota,
-                              utils._pretty_size(self.casquota._cache_quota, dec_places=2),
-                              utils._pretty_size(self.casquota.get_cache_size(), dec_places=2),
-                              utils._pretty_size(volume_size, dec_places=2),
-                              utils._pretty_size(volume_avail, dec_places=2)))
-
+    def required_artifacts(self):
         # Build a set of the cache keys which are required
         # based on the required elements at cleanup time
         #
         # We lock both strong and weak keys - deleting one but not the
         # other won't save space, but would be a user inconvenience.
-        required_artifacts = set()
         for element in self._required_elements:
-            required_artifacts.update([
-                element._get_cache_key(strength=_KeyStrength.STRONG),
-                element._get_cache_key(strength=_KeyStrength.WEAK)
-            ])
-
-        # Do a real computation of the cache size once, just in case
-        self.casquota.compute_cache_size()
-        usage = CASCacheUsage(self.casquota)
-        self._message(MessageType.STATUS, "Cache usage recomputed: {}".format(usage))
-
-        while self.casquota.get_cache_size() >= self.casquota._cache_lower_threshold:
-            try:
-                to_remove = artifacts.pop(0)
-            except IndexError:
-                # If too many artifacts are required, and we therefore
-                # can't remove them, we have to abort the build.
-                #
-                # FIXME: Asking the user what to do may be neater
-                #
-                default_conf = os.path.join(os.environ['XDG_CONFIG_HOME'],
-                                            'buildstream.conf')
-                detail = ("Aborted after removing {} refs and saving {} disk space.\n"
-                          "The remaining {} in the cache is required by the {} elements in your build plan\n\n"
-                          "There is not enough space to complete the build.\n"
-                          "Please increase the cache-quota in {} and/or make more disk space."
-                          .format(removed_ref_count,
-                                  utils._pretty_size(space_saved, dec_places=2),
-                                  utils._pretty_size(self.casquota.get_cache_size(), dec_places=2),
-                                  len(self._required_elements),
-                                  (context.config_origin or default_conf)))
-
-                if self.full():
-                    raise ArtifactError("Cache too full. Aborting.",
-                                        detail=detail,
-                                        reason="cache-too-full")
-                else:
-                    break
-
-            key = to_remove.rpartition('/')[2]
-            if key not in required_artifacts:
-
-                # Remove the actual artifact, if it's not required.
-                size = self.remove(to_remove)
-
-                removed_ref_count += 1
-                space_saved += size
-
-                self._message(MessageType.STATUS,
-                              "Freed {: <7} {}".format(
-                                  utils._pretty_size(size, dec_places=2),
-                                  to_remove))
-
-                # Remove the size from the removed size
-                self.casquota.set_cache_size(self.casquota._cache_size - size)
-
-                # User callback
-                #
-                # Currently this process is fairly slow, but we should
-                # think about throttling this progress() callback if this
-                # becomes too intense.
-                if progress:
-                    progress()
-
-        # Informational message about the side effects of the cleanup
-        self._message(MessageType.INFO, "Cleanup completed",
-                      detail=("Removed {} refs and saving {} disk space.\n" +
-                              "Cache usage is now: {}")
-                      .format(removed_ref_count,
-                              utils._pretty_size(space_saved, dec_places=2),
-                              utils._pretty_size(self.casquota.get_cache_size(), dec_places=2)))
-
-        return self.casquota.get_cache_size()
+            yield element._get_cache_key(strength=_KeyStrength.STRONG)
+            yield element._get_cache_key(strength=_KeyStrength.WEAK)
 
     def full(self):
         return self.casquota.full()
@@ -311,56 +134,6 @@ class ArtifactCache():
     #
     def preflight(self):
         self.cas.preflight()
-
-    # initialize_remotes():
-    #
-    # This will contact each remote cache.
-    #
-    # Args:
-    #     on_failure (callable): Called if we fail to contact one of the caches.
-    #
-    def initialize_remotes(self, *, on_failure=None):
-        remote_specs = list(self.global_remote_specs)
-
-        for project in self.project_remote_specs:
-            remote_specs += self.project_remote_specs[project]
-
-        remote_specs = list(utils._deduplicate(remote_specs))
-
-        remotes = {}
-        q = multiprocessing.Queue()
-        for remote_spec in remote_specs:
-
-            error = CASRemote.check_remote(remote_spec, q)
-
-            if error and on_failure:
-                on_failure(remote_spec.url, error)
-            elif error:
-                raise ArtifactError(error)
-            else:
-                self._has_fetch_remotes = True
-                if remote_spec.push:
-                    self._has_push_remotes = True
-
-                remotes[remote_spec.url] = CASRemote(remote_spec)
-
-        for project in self.context.get_projects():
-            remote_specs = self.global_remote_specs
-            if project in self.project_remote_specs:
-                remote_specs = list(utils._deduplicate(remote_specs + self.project_remote_specs[project]))
-
-            project_remotes = []
-
-            for remote_spec in remote_specs:
-                # Errors are already handled in the loop above,
-                # skip unreachable remotes here.
-                if remote_spec.url not in remotes:
-                    continue
-
-                remote = remotes[remote_spec.url]
-                project_remotes.append(remote)
-
-            self._remotes[project] = project_remotes
 
     # contains():
     #
@@ -405,7 +178,9 @@ class ArtifactCache():
     #     ([str]) - A list of artifact names as generated in LRU order
     #
     def list_artifacts(self, *, glob=None):
-        return self.cas.list_refs(glob=glob)
+        return list(filter(
+            lambda x: not x.startswith('@'),
+            self.cas.list_refs(glob=glob)))
 
     # remove():
     #
@@ -704,61 +479,3 @@ class ArtifactCache():
         cache_id = self.cas.resolve_ref(ref, update_mtime=True)
         vdir = CasBasedDirectory(self.cas, digest=cache_id).descend('logs')
         return vdir
-
-    ################################################
-    #               Local Private Methods          #
-    ################################################
-
-    # _message()
-    #
-    # Local message propagator
-    #
-    def _message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        self.context.message(
-            Message(None, message_type, message, **args))
-
-    # _set_remotes():
-    #
-    # Set the list of remote caches. If project is None, the global list of
-    # remote caches will be set, which is used by all projects. If a project is
-    # specified, the per-project list of remote caches will be set.
-    #
-    # Args:
-    #     remote_specs (list): List of ArtifactCacheSpec instances, in priority order.
-    #     project (Project): The Project instance for project-specific remotes
-    def _set_remotes(self, remote_specs, *, project=None):
-        if project is None:
-            # global remotes
-            self.global_remote_specs = remote_specs
-        else:
-            self.project_remote_specs[project] = remote_specs
-
-    # _initialize_remotes()
-    #
-    # An internal wrapper which calls the abstract method and
-    # reports takes care of messaging
-    #
-    def _initialize_remotes(self):
-        def remote_failed(url, error):
-            self._message(MessageType.WARN, "Failed to initialize remote {}: {}".format(url, error))
-
-        with self.context.timed_activity("Initializing remote caches", silent_nested=True):
-            self.initialize_remotes(on_failure=remote_failed)
-
-
-# _configured_remote_artifact_cache_specs():
-#
-# Return the list of configured artifact remotes for a given project, in priority
-# order. This takes into account the user and project configuration.
-#
-# Args:
-#     context (Context): The BuildStream context
-#     project (Project): The BuildStream project
-#
-# Returns:
-#   A list of ArtifactCacheSpec instances describing the remote artifact caches.
-#
-def _configured_remote_artifact_cache_specs(context, project):
-    return list(utils._deduplicate(
-        project.artifact_cache_specs + context.artifact_cache_specs))

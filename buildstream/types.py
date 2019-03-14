@@ -76,8 +76,7 @@ class Consistency():
     CACHED = 2
     """Cached
 
-    Cached sources have a reference which is present in the local
-    source cache. Only cached sources can be staged.
+    Sources have a cached unstaged copy in the source directory.
     """
 
 

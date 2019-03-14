@@ -32,7 +32,7 @@ class CleanupJob(Job):
         def progress():
             self.send_message('update-cache-size',
                               self._casquota.get_cache_size())
-        return self._artifacts.clean(progress)
+        return self._casquota.clean(progress)
 
     def handle_message(self, message_type, message):
         # Update the cache size in the main process as we go,

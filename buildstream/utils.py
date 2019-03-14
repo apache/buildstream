@@ -1307,3 +1307,18 @@ def _with_gc_disabled(func):
             # used by other objects during the course of running BuildStream.
             gc.collect()
     return _gc_disabled
+
+
+# _deterministic_umask()
+#
+# Context managed to apply a umask to a section that may be affected by a users
+# umask. Restores old mask afterwards.
+#
+@contextmanager
+def _deterministic_umask():
+    old_umask = os.umask(0o022)
+
+    try:
+        yield
+    finally:
+        os.umask(old_umask)

@@ -395,7 +395,8 @@ class Pipeline():
         uncached = []
         with self._context.timed_activity("Checking sources"):
             for element in elements:
-                if element._get_consistency() != Consistency.CACHED:
+                if element._get_consistency() < Consistency.CACHED and \
+                        not element._source_cached():
                     uncached.append(element)
 
         if uncached:
@@ -403,7 +404,7 @@ class Pipeline():
             for element in uncached:
                 detail += "  Following sources for element: {} are not cached:\n".format(element._get_full_name())
                 for source in element.sources():
-                    if source._get_consistency() != Consistency.CACHED:
+                    if source._get_consistency() < Consistency.CACHED:
                         detail += "    {}\n".format(source)
                 detail += '\n'
             detail += "Try fetching these elements first with `bst source fetch`,\n" + \

@@ -32,6 +32,7 @@ from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 from ._artifactcache import ArtifactCache
+from ._sourcecache import SourceCache
 from ._cas import CASCache, CASQuota, CASCacheUsage
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .plugin import _plugin_lookup
@@ -64,6 +65,9 @@ class Context():
 
         # The directory where various sources are stored
         self.sourcedir = None
+
+        # specs for source cache remotes
+        self.source_cache_specs = None
 
         # The directory where build sandboxes will be created
         self.builddir = None
@@ -145,6 +149,7 @@ class Context():
         self._message_handler = None
         self._message_depth = deque()
         self._artifactcache = None
+        self._sourcecache = None
         self._projects = []
         self._project_overrides = {}
         self._workspaces = None
@@ -162,6 +167,7 @@ class Context():
     # Args:
     #    config (filename): The user specified configuration file, if any
     #
+
     # Raises:
     #   LoadError
     #
@@ -201,7 +207,7 @@ class Context():
 
         _yaml.node_validate(defaults, [
             'cachedir', 'sourcedir', 'builddir', 'logdir', 'scheduler',
-            'artifacts', 'logging', 'projects', 'cache', 'prompt',
+            'artifacts', 'source-caches', 'logging', 'projects', 'cache', 'prompt',
             'workspacedir', 'remote-execution',
         ])
 
@@ -253,6 +259,9 @@ class Context():
         # Load artifact share configuration
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(defaults)
 
+        # Load source cache config
+        self.source_cache_specs = SourceCache.specs_from_config_node(defaults)
+
         self.remote_execution_specs = SandboxRemote.specs_from_config_node(defaults)
 
         # Load pull build trees configuration
@@ -296,8 +305,10 @@ class Context():
         # Shallow validation of overrides, parts of buildstream which rely
         # on the overrides are expected to validate elsewhere.
         for _, overrides in _yaml.node_items(self._project_overrides):
-            _yaml.node_validate(overrides, ['artifacts', 'options', 'strict', 'default-mirror',
-                                            'remote-execution'])
+            _yaml.node_validate(overrides,
+                                ['artifacts', 'source-caches', 'options',
+                                 'strict', 'default-mirror',
+                                 'remote-execution'])
 
         profile_end(Topics.LOAD_CONTEXT, 'load')
 
@@ -317,6 +328,13 @@ class Context():
     #
     def get_cache_usage(self):
         return CASCacheUsage(self.get_casquota())
+
+    @property
+    def sourcecache(self):
+        if not self._sourcecache:
+            self._sourcecache = SourceCache(self)
+
+        return self._sourcecache
 
     # add_project():
     #

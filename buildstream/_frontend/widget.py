@@ -382,7 +382,7 @@ class LogLine(Widget):
                     line = p.fmt_subst(line, 'state', "failed", fg='red')
                 elif element._cached_success():
                     line = p.fmt_subst(line, 'state', "cached", fg='magenta')
-                elif consistency == Consistency.RESOLVED:
+                elif consistency == Consistency.RESOLVED and not element._source_cached():
                     line = p.fmt_subst(line, 'state', "fetch needed", fg='red')
                 elif element._buildable():
                     line = p.fmt_subst(line, 'state', "buildable", fg='green')

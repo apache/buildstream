@@ -170,6 +170,7 @@ from . import _yaml, utils
 from ._exceptions import BstError, ImplError, ErrorDomain
 from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage
+from ._cachekey import generate_key
 
 
 class SourceError(BstError):
@@ -289,11 +290,15 @@ class Source(Plugin):
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
                          context, project, provenance, "source")
 
+        self.__source_cache = context.sourcecache
+
         self.__element_name = meta.element_name         # The name of the element owning this source
         self.__element_index = meta.element_index       # The index of the source in the owning element's source list
         self.__element_kind = meta.element_kind         # The kind of the element owning this source
         self.__directory = meta.directory               # Staging relative directory
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
+
+        self.__key = None                               # Cache key for source
 
         # The alias_override is only set on a re-instantiated Source
         self.__alias_override = alias_override          # Tuple of alias and its override to use instead
@@ -688,6 +693,7 @@ class Source(Plugin):
     #
     # Args:
     #   previous_sources (list): List of Sources listed prior to this source
+    #   fetch_original (bool): whether to fetch full source, or use local CAS
     #
     def _fetch(self, previous_sources):
 
@@ -699,6 +705,10 @@ class Source(Plugin):
                 self.__do_fetch(previous_sources_dir=self.__ensure_directory(staging_directory))
         else:
             self.__do_fetch()
+
+    def _cache(self, previous_sources):
+        # stage the source into the source cache
+        self.__source_cache.commit(self, previous_sources)
 
     # Wrapper for stage() api which gives the source
     # plugin a fully constructed path considering the
@@ -955,6 +965,26 @@ class Source(Plugin):
             return alias
         else:
             return None
+
+    def _generate_key(self, previous_sources):
+        keys = [self._get_unique_key(True)]
+
+        for previous_source in previous_sources:
+            keys.append(previous_source._get_unique_key(True))
+
+        self.__key = generate_key(keys)
+
+    @property
+    def _key(self):
+        return self.__key
+
+    # Gives a ref path that points to where sources are kept in the CAS
+    def _get_source_name(self):
+        # @ is used to prevent conflicts with project names
+        return "{}/{}/{}".format(
+            '@sources',
+            self.get_kind(),
+            self._key)
 
     #############################################################
     #                   Local Private Methods                   #

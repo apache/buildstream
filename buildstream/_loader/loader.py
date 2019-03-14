@@ -523,27 +523,28 @@ class Loader():
         element._preflight()
 
         sources = list(element.sources())
-        for idx, source in enumerate(sources):
-            # Handle the case where a subproject needs to be fetched
-            #
-            if source.get_consistency() == Consistency.RESOLVED:
-                if fetch_subprojects:
-                    if ticker:
-                        ticker(filename, 'Fetching subproject from {} source'.format(source.get_kind()))
-                    source._fetch(sources[0:idx])
-                else:
-                    detail = "Try fetching the project with `bst source fetch {}`".format(filename)
-                    raise LoadError(LoadErrorReason.SUBPROJECT_FETCH_NEEDED,
-                                    "Subproject fetch needed for junction: {}".format(filename),
-                                    detail=detail)
+        if not element._source_cached():
+            for idx, source in enumerate(sources):
+                # Handle the case where a subproject needs to be fetched
+                #
+                if source.get_consistency() == Consistency.RESOLVED:
+                    if fetch_subprojects:
+                        if ticker:
+                            ticker(filename, 'Fetching subproject from {} source'.format(source.get_kind()))
+                        source._fetch(sources[0:idx])
+                    else:
+                        detail = "Try fetching the project with `bst source fetch {}`".format(filename)
+                        raise LoadError(LoadErrorReason.SUBPROJECT_FETCH_NEEDED,
+                                        "Subproject fetch needed for junction: {}".format(filename),
+                                        detail=detail)
 
-            # Handle the case where a subproject has no ref
-            #
-            elif source.get_consistency() == Consistency.INCONSISTENT:
-                detail = "Try tracking the junction element with `bst source track {}`".format(filename)
-                raise LoadError(LoadErrorReason.SUBPROJECT_INCONSISTENT,
-                                "Subproject has no ref for junction: {}".format(filename),
-                                detail=detail)
+                # Handle the case where a subproject has no ref
+                #
+                elif source.get_consistency() == Consistency.INCONSISTENT:
+                    detail = "Try tracking the junction element with `bst source track {}`".format(filename)
+                    raise LoadError(LoadErrorReason.SUBPROJECT_INCONSISTENT,
+                                    "Subproject has no ref for junction: {}".format(filename),
+                                    detail=detail)
 
         workspace = element._get_workspace()
         if workspace:
