@@ -201,7 +201,7 @@ class ElementName(Widget):
         if not action_name:
             action_name = "Main"
 
-        return self.content_profile.fmt("{: >5}".format(action_name.lower())) + \
+        return self.content_profile.fmt("{: >8}".format(action_name.lower())) + \
             self.format_profile.fmt(':') + self.content_profile.fmt(name)
 
 

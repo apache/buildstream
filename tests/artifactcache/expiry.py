@@ -435,10 +435,10 @@ def test_cleanup_first(cli, datafiles):
     res = cli.run(project=project, args=['build', 'target2.bst'])
     res.assert_success()
 
-    # Find all of the activity (like push, pull, fetch) lines
+    # Find all of the activity (like push, pull, src-pull) lines
     results = re.findall(r'\[.*\]\[.*\]\[\s*(\S+):.*\]\s*START\s*.*\.log', res.stderr)
 
-    # Don't bother checking the order of 'fetch', it is allowed to start
+    # Don't bother checking the order of 'src-pull', it is allowed to start
     # before or after the initial cache size job, runs in parallel, and does
     # not require ResourceType.CACHE.
     results.remove('fetch')
