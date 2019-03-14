@@ -1856,6 +1856,25 @@ class Element(Plugin):
         # Notify successfull download
         return True
 
+    def _skip_source_push(self):
+        if not self.__sources or self._get_workspace():
+            return True
+        return not (self.__sourcecache.has_push_remotes(plugin=self) and
+                    self._source_cached())
+
+    def _source_push(self):
+        # try and push sources if we've got them
+        if self.__sourcecache.has_push_remotes(plugin=self) and self._source_cached():
+            sources = list(self.sources())
+            if sources:
+                source_pushed = self.__sourcecache.push(sources[-1])
+
+                if not source_pushed:
+                    return False
+
+        # Notify successful upload
+        return True
+
     # _skip_push():
     #
     # Determine whether we should create a push job for this element.
