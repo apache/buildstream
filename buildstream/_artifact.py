@@ -241,7 +241,7 @@ class Artifact():
 
         # Load the public data from the artifact
         artifact_vdir, _ = self._get_directory()
-        meta_file = artifact_vdir._objpath(['meta', 'public.yaml'])
+        meta_file = artifact_vdir._objpath('meta', 'public.yaml')
         data = _yaml.load(meta_file, shortname='meta/public.yaml')
 
         return data
@@ -263,7 +263,7 @@ class Artifact():
         assert key is not None
         artifact_vdir, _ = self._get_directory(key)
 
-        meta_file = artifact_vdir._objpath(['meta', 'build-result.yaml'])
+        meta_file = artifact_vdir._objpath('meta', 'build-result.yaml')
         if not os.path.exists(meta_file):
             build_result = (True, "succeeded", None)
             return build_result
@@ -298,7 +298,7 @@ class Artifact():
                     metadata_keys[key]['weak'], None)
 
         # Parse the expensive yaml now and cache the result
-        meta_file = artifact_vdir._objpath(['meta', 'keys.yaml'])
+        meta_file = artifact_vdir._objpath('meta', 'keys.yaml')
         meta = _yaml.load(meta_file, shortname='meta/keys.yaml')
         strong_key = meta['strong']
         weak_key = meta['weak']
@@ -336,7 +336,7 @@ class Artifact():
             return (metadata_dependencies[key], None, None)
 
         # Parse the expensive yaml now and cache the result
-        meta_file = artifact_vdir._objpath(['meta', 'dependencies.yaml'])
+        meta_file = artifact_vdir._objpath('meta', 'dependencies.yaml')
         meta = _yaml.load(meta_file, shortname='meta/dependencies.yaml')
 
         # Cache it under both strong and weak keys
@@ -373,7 +373,7 @@ class Artifact():
             return (metadata_workspaced[key], None, None)
 
         # Parse the expensive yaml now and cache the result
-        meta_file = artifact_vdir._objpath(['meta', 'workspaced.yaml'])
+        meta_file = artifact_vdir._objpath('meta', 'workspaced.yaml')
         meta = _yaml.load(meta_file, shortname='meta/workspaced.yaml')
         workspaced = meta['workspaced']
 
@@ -412,7 +412,7 @@ class Artifact():
             return (metadata_workspaced_dependencies[key], None, None)
 
         # Parse the expensive yaml now and cache the result
-        meta_file = artifact_vdir._objpath(['meta', 'workspaced-dependencies.yaml'])
+        meta_file = artifact_vdir._objpath('meta', 'workspaced-dependencies.yaml')
         meta = _yaml.load(meta_file, shortname='meta/workspaced-dependencies.yaml')
         workspaced = meta['workspaced-dependencies']
 

@@ -577,12 +577,12 @@ class CasBasedDirectory(Directory):
 
         return self.__digest
 
-    def _objpath(self, path):
+    def _objpath(self, *path):
         subdir = self.descend(*path[:-1])
         entry = subdir.index[path[-1]]
         return self.cas_cache.objpath(entry.digest)
 
-    def _exists(self, path):
+    def _exists(self, *path):
         try:
             subdir = self.descend(*path[:-1])
             return path[-1] in subdir.index
