@@ -310,6 +310,10 @@ class Cli():
         if options is None:
             options = []
 
+        # We may have been passed e.g. pathlib.Path or py.path
+        args = [str(x) for x in args]
+        project = str(project)
+
         options = self.default_options + options
 
         with ExitStack() as stack:
