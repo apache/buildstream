@@ -132,8 +132,7 @@ class Element(Plugin):
     All elements derive from this class, this interface defines how
     the core will be interacting with Elements.
     """
-    __defaults = {}               # The defaults from the yaml file and project
-    __defaults_set = False        # Flag, in case there are no defaults at all
+    __defaults = None             # The defaults from the yaml file and project
     __instantiated_elements = {}  # A hash of Element by MetaElement
     __redundant_source_refs = []  # A list of (source, ref) tuples which were redundantly specified
 
@@ -245,8 +244,7 @@ class Element(Plugin):
         self.__variables = Variables(variables)
 
         # Collect the composited environment now that we have variables
-        env = self.__extract_environment(meta)
-        self.__environment = env
+        self.__environment = self.__extract_environment(meta)
 
         # Collect the environment nocache blacklist list
         nocache = self.__extract_env_nocache(meta)
@@ -2370,20 +2368,18 @@ class Element(Plugin):
         defaults['public'] = element_public
 
     def __init_defaults(self, plugin_conf):
-        if plugin_conf is None:
-            return
-
         # Defaults are loaded once per class and then reused
         #
-        if not self.__defaults_set:
-
-            # Load the plugin's accompanying .yaml file if one was provided
+        if self.__defaults is None:
             defaults = {}
-            try:
-                defaults = _yaml.load(plugin_conf, os.path.basename(plugin_conf))
-            except LoadError as e:
-                if e.reason != LoadErrorReason.MISSING_FILE:
-                    raise e
+
+            if plugin_conf is not None:
+                # Load the plugin's accompanying .yaml file if one was provided
+                try:
+                    defaults = _yaml.load(plugin_conf, os.path.basename(plugin_conf))
+                except LoadError as e:
+                    if e.reason != LoadErrorReason.MISSING_FILE:
+                        raise e
 
             # Special case; compose any element-wide split-rules declarations
             self.__compose_default_splits(defaults)
@@ -2402,7 +2398,6 @@ class Element(Plugin):
 
             # Set the data class wide
             type(self).__defaults = defaults
-            type(self).__defaults_set = True
 
     # This will resolve the final environment to be used when
     # creating sandboxes for this element
