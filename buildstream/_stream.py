@@ -180,12 +180,17 @@ class Stream():
                     # Now check if the buildtree was successfully fetched
                     if element._cached_buildtree():
                         buildtree = True
+
                 if not buildtree:
-                    if usebuildtree == "always":
-                        raise StreamError("Buildtree is not cached locally or in available remotes")
+                    if element._buildtree_exists():
+                        message = "Buildtree is not cached locally or in available remotes"
                     else:
-                        self._message(MessageType.INFO, "Buildtree is not cached locally or in available remotes, " +
-                                                        "shell will be loaded without it")
+                        message = "Artifact was created without buildtree"
+
+                    if usebuildtree == "always":
+                        raise StreamError(message)
+                    else:
+                        self._message(MessageType.INFO, message + ", shell will be loaded without it")
             else:
                 buildtree = True
 
@@ -1420,7 +1425,7 @@ class Stream():
         for element in elements:
             # Check if element is partially cached without its buildtree, as the element
             # artifact may not be cached at all
-            if element._cached() and not element._cached_buildtree():
+            if element._cached() and not element._cached_buildtree() and element._buildtree_exists():
                 required_list.append(element)
 
         return required_list

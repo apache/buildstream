@@ -555,9 +555,10 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
         ]
 
         cached = element._cached_buildtree()
+        buildtree_exists = element._buildtree_exists()
         if cli_buildtree in ("always", "try"):
             use_buildtree = cli_buildtree
-            if not cached and use_buildtree == "always":
+            if not cached and buildtree_exists and use_buildtree == "always":
                 click.echo("WARNING: buildtree is not cached locally, will attempt to pull from available remotes",
                            err=True)
         else:
@@ -566,7 +567,7 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
             if app.interactive and cli_buildtree == "ask":
                 if cached and bool(click.confirm('Do you want to use the cached buildtree?')):
                     use_buildtree = "always"
-                elif not cached:
+                elif buildtree_exists:
                     try:
                         choice = click.prompt("Do you want to pull & use a cached buildtree?",
                                               type=click.Choice(['try', 'always', 'never']),

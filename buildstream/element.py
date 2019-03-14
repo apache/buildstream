@@ -1845,7 +1845,7 @@ class Element(Plugin):
 
         # Do not push elements that aren't cached, or that are cached with a dangling buildtree
         # ref unless element type is expected to have an an empty buildtree directory
-        if not self._cached_buildtree():
+        if not self._cached_buildtree() and self._buildtree_exists():
             return True
 
         # Do not push tainted artifact
@@ -2055,6 +2055,17 @@ class Element(Plugin):
     #
     def _cached_buildtree(self):
         return self.__artifact.cached_buildtree()
+
+    # _buildtree_exists()
+    #
+    # Check if artifact was created with a buildtree. This does not check
+    # whether the buildtree is present in the local cache.
+    #
+    # Returns:
+    #     (bool): True if artifact was created with buildtree
+    #
+    def _buildtree_exists(self):
+        return self.__artifact.buildtree_exists()
 
     # _fetch()
     #

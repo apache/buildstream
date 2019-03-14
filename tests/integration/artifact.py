@@ -77,23 +77,20 @@ def test_cache_buildtrees(cli, tmpdir, datafiles):
         assert cli.get_element_state(project, element_name) == 'cached'
         assert share1.has_artifact('test', element_name, cli.get_element_key(project, element_name))
 
-        # The extracted buildtree dir should be empty, as we set the config
-        # to not cache buildtrees
+        # The buildtree dir should not exist, as we set the config to not cache buildtrees.
         cache_key = cli.get_element_key(project, element_name)
         elementdigest = share1.has_artifact('test', element_name, cache_key)
         with cas_extract_buildtree(elementdigest) as buildtreedir:
-            assert os.path.isdir(buildtreedir)
-            assert not os.listdir(buildtreedir)
+            assert not os.path.isdir(buildtreedir)
 
         # Delete the local cached artifacts, and assert the when pulled with --pull-buildtrees
-        # that is was cached in share1 as expected with an empty buildtree dir
+        # that is was cached in share1 as expected without a buildtree dir
         shutil.rmtree(os.path.join(str(tmpdir), 'cas'))
         assert cli.get_element_state(project, element_name) != 'cached'
         result = cli.run(project=project, args=['--pull-buildtrees', 'artifact', 'pull', element_name])
         assert element_name in result.get_pulled_elements()
         with cas_extract_buildtree(elementdigest) as buildtreedir:
-            assert os.path.isdir(buildtreedir)
-            assert not os.listdir(buildtreedir)
+            assert not os.path.isdir(buildtreedir)
         shutil.rmtree(os.path.join(str(tmpdir), 'cas'))
 
         # Assert that the default behaviour of pull to not include buildtrees on the artifact
@@ -148,5 +145,4 @@ def test_cache_buildtrees(cli, tmpdir, datafiles):
         cache_key = cli.get_element_key(project, element_name)
         elementdigest = share3.has_artifact('test', element_name, cache_key)
         with cas_extract_buildtree(elementdigest) as buildtreedir:
-            assert os.path.isdir(buildtreedir)
-            assert not os.listdir(buildtreedir)
+            assert not os.path.isdir(buildtreedir)

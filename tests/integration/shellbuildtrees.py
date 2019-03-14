@@ -71,8 +71,8 @@ def test_buildtree_staged_warn_empty_cached(cli_integration, tmpdir, datafiles):
     res = cli_integration.run(project=project, args=[
         'shell', '--build', '--use-buildtree', 'always', element_name, '--', 'cat', 'test'
     ])
-    res.assert_shell_error()
-    assert "Artifact contains an empty buildtree" in res.stderr
+    res.assert_main_error(ErrorDomain.APP, None)
+    assert "Artifact was created without buildtree" in res.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -148,8 +148,8 @@ def test_buildtree_from_failure_option_never(cli_integration, tmpdir, datafiles)
     res = cli_integration.run(project=project, args=[
         'shell', '--build', element_name, '--use-buildtree', 'always', '--', 'cat', 'test'
     ])
-    res.assert_shell_error()
-    assert "Artifact contains an empty buildtree" in res.stderr
+    res.assert_main_error(ErrorDomain.APP, None)
+    assert "Artifact was created without buildtree" in res.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
