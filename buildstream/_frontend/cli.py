@@ -86,15 +86,18 @@ def complete_target(args, incomplete):
         # contain a project config file
         base_directory, _ = utils._search_upward_for_files(base_directory, [project_conf])
 
-    # Now parse the project.conf just to find the element path,
-    # this is unfortunately a bit heavy.
-    project_file = os.path.join(base_directory, project_conf)
-    try:
-        project = _yaml.load(project_file)
-    except LoadError:
-        # If there is no project directory in context, just dont
-        # even bother trying to complete anything.
+    if base_directory is None:
+        # No project_conf was found in base_directory or its parents, no need
+        # to try loading any project conf and avoid os.path NoneType TypeError.
         return []
+    else:
+        project_file = os.path.join(base_directory, project_conf)
+        try:
+            project = _yaml.load(project_file)
+        except LoadError:
+            # If there is no project conf in context, just dont
+            # even bother trying to complete anything.
+            return []
 
     # The project is not required to have an element-path
     element_directory = project.get('element-path')
