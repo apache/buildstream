@@ -22,7 +22,7 @@ from collections.abc import Mapping
 import jinja2
 
 from .. import _yaml
-from .._exceptions import LoadError, LoadErrorReason
+from .._exceptions import LoadError, LoadErrorReason, context_for_bsterror
 from .optionbool import OptionBool
 from .optionenum import OptionEnum
 from .optionflags import OptionFlags
@@ -277,11 +277,8 @@ class OptionPool():
                                     "{}: Conditional statement has more than one key".format(p))
 
                 expression, value = tuples[0]
-                try:
+                with context_for_bsterror(p):
                     apply_fragment = self._evaluate(expression)
-                except LoadError as e:
-                    # Prepend the provenance of the error
-                    raise LoadError(e.reason, "{}: {}".format(p, e)) from e
 
                 if not hasattr(value, 'get'):
                     raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
