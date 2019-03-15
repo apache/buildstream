@@ -49,6 +49,57 @@ def test_simple_build(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_junction_missing_project_conf(cli, datafiles):
+    project = datafiles / 'foo'
+    copy_subprojects(project, datafiles, ['base'])
+
+    # TODO: see if datafiles can tidy this concat up
+
+    # py3.5 requires this str conversion.
+    os.remove(str(project / 'base' / 'project.conf'))
+
+    # Note that both 'foo' and 'base' projects have a 'target.bst'. The
+    # 'app.bst' in 'foo' depends on the 'target.bst' in 'base', i.e.:
+    #
+    #   foo/base/target.bst
+    #   foo/app.bst -> foo/base/target.bst
+    #   foo/target.bst -> foo/app.bst, foor/base/target.bst
+    #
+    # In a previous bug (issue #960) if the 'project.conf' was not found in the
+    # junction's dir then we were continuing the search in the parent dirs.
+    #
+    # This would mean that the dep on 'target.bst' would resolve to
+    # 'foo/target.bst' instead of 'foo/base/target.bst'.
+    #
+    # That would lead to a 'circular dependency error' in this setup, when we
+    # expect an 'invalid junction'.
+    #
+    result = cli.run(project=project, args=['build', 'app.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_JUNCTION)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_workspaced_junction_missing_project_conf(cli, datafiles):
+    # See test_junction_missing_project_conf for some more background.
+
+    project = datafiles / 'foo'
+    workspace_dir = project / 'base_workspace'
+    copy_subprojects(project, datafiles, ['base'])
+
+    result = cli.run(
+        project=project,
+        args=['workspace', 'open', 'base.bst', '--directory', workspace_dir])
+    print(result)
+    result.assert_success()
+
+    # py3.5 requires this str conversion.
+    os.remove(str(workspace_dir / 'project.conf'))
+
+    result = cli.run(project=project, args=['build', 'app.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_JUNCTION)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_build_of_same_junction_used_twice(cli, datafiles):
     project = os.path.join(str(datafiles), 'inconsistent-names')
 
@@ -298,6 +349,32 @@ def test_git_build(cli, tmpdir, datafiles):
     # Check that the checkout contains the expected files from both projects
     assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
     assert(os.path.exists(os.path.join(checkoutdir, 'foo.txt')))
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(DATA_DIR)
+def test_git_missing_project_conf(cli, tmpdir, datafiles):
+    project = datafiles / 'foo'
+
+    # See test_junction_missing_project_conf for some more background.
+    # py3.5 requires this str conversion.
+    os.remove(str(datafiles / 'base' / 'project.conf'))
+
+    # Create the repo from 'base' subdir
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(os.path.join(str(datafiles), 'base'))
+
+    # Write out junction element with git source
+    element = {
+        'kind': 'junction',
+        'sources': [
+            repo.source_config(ref=ref)
+        ]
+    }
+    _yaml.dump(element, str(project / 'base.bst'))
+
+    result = cli.run(project=project, args=['build', 'app.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_JUNCTION)
 
 
 @pytest.mark.datafiles(DATA_DIR)

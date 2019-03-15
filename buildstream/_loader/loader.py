@@ -567,13 +567,17 @@ class Loader():
         try:
             from .._project import Project
             project = Project(project_dir, self._context, junction=element,
-                              parent_loader=self)
+                              parent_loader=self, search_for_project=False)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
+                message = (
+                    "Could not find the project.conf file in the project "
+                    "referred to by junction element '{}'.".format(element.name)
+                )
+                if element.path:
+                    message += " Was expecting it at path '{}' in the junction's source.".format(element.path)
                 raise LoadError(reason=LoadErrorReason.INVALID_JUNCTION,
-                                message="Could not find the project.conf file for {}. "
-                                        "Expecting a project at path '{}'"
-                                .format(element, element.path or '.')) from e
+                                message=message) from e
             else:
                 raise
 
