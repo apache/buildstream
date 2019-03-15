@@ -138,6 +138,29 @@ tests-fedora-update-deps:
 
     - su buildstream -c "${TEST_COMMAND}"
 
+tests-remote-execution:
+  allow_failure: true
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
+  <<: *tests
+  before_script:
+    - dnf install -y docker docker-compose
+    - docker-compose --file ${COMPOSE_MANIFEST} up --detach
+  after_script:
+    - docker-compose --file ${COMPOSE_MANIFEST} stop
+    - docker-compose --file ${COMPOSE_MANIFEST} logs
+    - docker-compose --file ${COMPOSE_MANIFEST} down
+  services:
+    - docker:stable-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_DRIVER: overlay2
+    COMPOSE_MANIFEST: .gitlab-ci/buildgrid-compose.yml
+    ARTIFACT_CACHE_SERVICE: http://docker:50052
+    REMOTE_EXECUTION_SERVICE: http://docker:50051
+    SOURCE_CACHE_SERVICE: http://docker:50052
+    PYTEST_ARGS: "--color=yes --remote-execution"
+
+
 # Lint separately from testing
 lint:
   stage: test
@@ -308,6 +331,7 @@ coverage:
   - tests-fedora-29
   - tests-fedora-missing-deps
   - tests-fedora-update-deps
+  - tests-remote-execution
   - tests-ubuntu-18.04
   - tests-unix
   except:
