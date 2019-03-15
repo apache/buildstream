@@ -88,7 +88,7 @@ from . import _yaml
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, \
-    ErrorDomain, SourceCacheError
+    ErrorDomain, SourceCacheError, context_for_bsterror
 from .utils import UtilError
 from . import Plugin, Consistency, Scope
 from . import SandboxFlags, SandboxCommandError
@@ -490,11 +490,8 @@ class Element(Plugin):
           name = self.node_subst_member(node, 'name')
         """
         value = self.node_get_member(node, str, member_name, default)
-        try:
+        with context_for_bsterror(_yaml.node_get_provenance(node, key=member_name)):
             return self.__variables.subst(value)
-        except LoadError as e:
-            provenance = _yaml.node_get_provenance(node, key=member_name)
-            raise LoadError(e.reason, '{}: {}'.format(provenance, str(e))) from e
 
     def node_subst_list(self, node, member_name):
         """Fetch a list from a node member, substituting any variables in the list
@@ -516,11 +513,8 @@ class Element(Plugin):
         value = self.node_get_member(node, list, member_name)
         ret = []
         for index, x in enumerate(value):
-            try:
+            with context_for_bsterror(_yaml.node_get_provenance(node, key=member_name, indices=[index])):
                 ret.append(self.__variables.subst(x))
-            except LoadError as e:
-                provenance = _yaml.node_get_provenance(node, key=member_name, indices=[index])
-                raise LoadError(e.reason, '{}: {}'.format(provenance, str(e))) from e
         return ret
 
     def node_subst_list_element(self, node, member_name, indices):
@@ -558,11 +552,8 @@ class Element(Plugin):
                   node, 'strings', [ i ])
         """
         value = self.node_get_list_element(node, str, member_name, indices)
-        try:
+        with context_for_bsterror(_yaml.node_get_provenance(node, key=member_name, indices=indices)):
             return self.__variables.subst(value)
-        except LoadError as e:
-            provenance = _yaml.node_get_provenance(node, key=member_name, indices=indices)
-            raise LoadError(e.reason, '{}: {}'.format(provenance, str(e))) from e
 
     def compute_manifest(self, *, include=None, exclude=None, orphans=True):
         """Compute and return this element's selective manifest
