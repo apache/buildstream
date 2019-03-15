@@ -18,7 +18,9 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
+import contextlib
 from enum import Enum
+import itertools
 import os
 
 # Disable pylint warnings for whole file here:
@@ -130,9 +132,45 @@ class BstError(Exception):
         self.domain = domain
         self.reason = reason
 
+        # When BstErrors are raised through functions, they may append
+        # additional context to the errors, for the user's aid.
+        self._context_strings = []
+
         # Hold on to the last raised exception for testing purposes
         if 'BST_TEST_SUITE' in os.environ:
             _last_exception = self
+
+    def add_context(self, stringifyable):
+        self._context_strings.append(str(stringifyable))
+
+    def __str__(self):
+        basestr = super().__str__()
+        strings = itertools.chain(
+            reversed(self._context_strings),
+            (basestr,)
+        )
+        return ': '.join(strings)
+
+
+# Optionally add extra context to exceptions as they rise up through the
+# callstack, such that BuildStream can present a more complete account of
+# what happened to the user.
+#
+# Another way of doing this would be to 'raise BstError() from e', however
+# this would prevent BuildStream from displaying the original cause, as
+# BaseException.__cause__ seems to be an implementation detail of Python.
+# It would also add an additional traceback and dummy explanation to the
+# chain, which may make debugging harder. It may also be incorrect
+# semantically, as we don't always want to re-interpret the error,
+# sometimes we simply want to add context.
+#
+@contextlib.contextmanager
+def context_for_bsterror(stringifyable):
+    try:
+        yield
+    except BstError as e:
+        e.add_context(stringifyable)
+        raise
 
 
 # PluginError
