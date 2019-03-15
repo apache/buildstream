@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from .. import _yaml
-from .._exceptions import LoadError, LoadErrorReason
+from .._exceptions import LoadError, LoadErrorReason, context_for_bsterror
 from .option import Option, OPTION_SYMBOLS
 
 
@@ -52,7 +52,9 @@ class OptionEnum(Option):
         self.value = _yaml.node_get(node, str, self.name)
         if transform:
             self.value = transform(self.value)
-        self.validate(self.value, _yaml.node_get_provenance(node, self.name))
+
+        with context_for_bsterror(_yaml.node_get_provenance(node, self.name)):
+            self.validate(self.value)
 
     def set_value(self, value):
         self.validate(value)
@@ -61,17 +63,15 @@ class OptionEnum(Option):
     def get_value(self):
         return self.value
 
-    def validate(self, value, provenance=None):
+    def validate(self, value):
         if value not in self.values:
-            prefix = ""
-            if provenance:
-                prefix = "{}: ".format(provenance)
             raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}Invalid value for {} option '{}': {}\n"
-                            .format(prefix, self.OPTION_TYPE, self.name, value) +
+                            "Invalid value for {} option '{}': {}\n"
+                            .format(self.OPTION_TYPE, self.name, value) +
                             "Valid values: {}".format(", ".join(self.values)))
 
     def load_default_value(self, node):
         value = _yaml.node_get(node, str, 'default')
-        self.validate(value, _yaml.node_get_provenance(node, 'default'))
+        with context_for_bsterror(_yaml.node_get_provenance(node, 'default')):
+            self.validate(value)
         return value

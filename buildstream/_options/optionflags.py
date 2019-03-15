@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from .. import _yaml
-from .._exceptions import LoadError, LoadErrorReason
+from .._exceptions import LoadError, LoadErrorReason, context_for_bsterror
 from .option import Option, OPTION_SYMBOLS
 
 
@@ -47,14 +47,16 @@ class OptionFlags(Option):
                             .format(_yaml.node_get_provenance(node), self.OPTION_TYPE, self.name))
 
         self.value = _yaml.node_get(node, list, 'default', default_value=[])
-        self.validate(self.value, _yaml.node_get_provenance(node, 'default'))
+        with context_for_bsterror(_yaml.node_get_provenance(node, 'default')):
+            self.validate(self.value)
 
     def load_value(self, node, *, transform=None):
         self.value = _yaml.node_get(node, list, self.name)
         if transform:
             self.value = [transform(x) for x in self.value]
         self.value = sorted(self.value)
-        self.validate(self.value, _yaml.node_get_provenance(node, self.name))
+        with context_for_bsterror(_yaml.node_get_provenance(node, self.name)):
+            self.validate(self.value)
 
     def set_value(self, value):
         # Strip out all whitespace, allowing: "value1, value2 , value3"
@@ -69,15 +71,12 @@ class OptionFlags(Option):
     def get_value(self):
         return ",".join(self.value)
 
-    def validate(self, value, provenance=None):
+    def validate(self, value):
         for flag in value:
             if flag not in self.values:
-                prefix = ""
-                if provenance:
-                    prefix = "{}: ".format(provenance)
                 raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}Invalid value for flags option '{}': {}\n"
-                                .format(prefix, self.name, value) +
+                                "Invalid value for flags option '{}': {}\n"
+                                .format(self.name, value) +
                                 "Valid values: {}".format(", ".join(self.values)))
 
     def load_valid_values(self, node):
