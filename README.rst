@@ -104,5 +104,12 @@ If you have any questions please ask on our `#buildstream <irc://irc.gnome.org/b
 
 Availability in distros
 =======================
+* BuildStream:
+
 .. image:: https://repology.org/badge/vertical-allrepos/buildstream.svg
    :target: https://repology.org/metapackage/buildstream/versions
+
+* BuildStream external plugins (bst-external)
+
+.. image:: https://repology.org/badge/vertical-allrepos/bst-external.svg
+   :target: https://repology.org/metapackage/bst-external/versions
