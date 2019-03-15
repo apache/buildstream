@@ -188,7 +188,7 @@ class SandboxChroot(Sandbox):
             # Exceptions in preexec_fn are simply reported as
             # 'Exception occurred in preexec_fn', turn these into
             # a more readable message.
-            if '{}'.format(e) == 'Exception occurred in preexec_fn.':
+            if str(e) == 'Exception occurred in preexec_fn.':
                 raise SandboxError('Could not chroot into {} or chdir into {}. '
                                    'Ensure you are root and that the relevant directory exists.'
                                    .format(rootfs, cwd)) from e

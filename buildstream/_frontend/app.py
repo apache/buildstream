@@ -272,7 +272,7 @@ class App():
                     self._message(MessageType.FAIL, session_name, elapsed=elapsed)
 
                     # Notify session failure
-                    self._notify("{} failed".format(session_name), "{}".format(e))
+                    self._notify("{} failed".format(session_name), e)
 
                 if self._started:
                     self._print_summary()
@@ -431,7 +431,7 @@ class App():
     #
     def _notify(self, title, text):
         if self.interactive:
-            self.notify(title, text)
+            self.notify(str(title), str(text))
 
     # Local message propagator
     #
@@ -658,7 +658,7 @@ class App():
     #
     def _error_exit(self, error, prefix=None):
         click.echo("", err=True)
-        main_error = "{}".format(error)
+        main_error = str(error)
         if prefix is not None:
             main_error = "{}: {}".format(prefix, main_error)
 
@@ -666,7 +666,7 @@ class App():
         if error.detail:
             indent = " " * INDENT
             detail = '\n' + indent + indent.join(error.detail.splitlines(True))
-            click.echo("{}".format(detail), err=True)
+            click.echo(detail, err=True)
 
         sys.exit(-1)
 
