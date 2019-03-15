@@ -187,12 +187,11 @@ class Loader():
     #    ticker (callable): A callback to report loaded filenames to the frontend
     #    fetch_subprojects (bool): Whether to fetch subprojects while loading
     #    yaml_cache (YamlCache): A yaml cache
-    #    provenance (Provenance): The location from where the file was referred to, or None
     #
     # Returns:
     #    (LoadElement): A loaded LoadElement
     #
-    def _load_file(self, filename, rewritable, ticker, fetch_subprojects, yaml_cache=None, provenance=None):
+    def _load_file(self, filename, rewritable, ticker, fetch_subprojects, yaml_cache=None):
 
         # Silently ignore already loaded files
         if filename in self._elements:
@@ -216,9 +215,6 @@ class Loader():
                 else:
                     message = "Could not find element '{}' in elements directory '{}'".format(filename, self._basedir)
 
-                if provenance:
-                    message = "{}: {}".format(provenance, message)
-
                 # If we can't find the file, try to suggest plausible
                 # alternatives by stripping the element-path from the given
                 # filename, and verifying that it exists.
@@ -234,15 +230,12 @@ class Loader():
             elif e.reason == LoadErrorReason.LOADING_DIRECTORY:
                 # If a <directory>.bst file exists in the element path,
                 # let's suggest this as a plausible alternative.
-                message = str(e)
-                if provenance:
-                    message = "{}: {}".format(provenance, message)
                 detail = None
                 if os.path.exists(os.path.join(self._basedir, filename + '.bst')):
                     element_name = filename + '.bst'
                     detail = "Did you mean '{}'?\n".format(element_name)
                 raise LoadError(LoadErrorReason.LOADING_DIRECTORY,
-                                message, detail=detail) from e
+                                str(e), detail=detail) from e
             else:
                 raise
         kind = _yaml.node_get(node, str, Symbol.KIND)
@@ -264,15 +257,16 @@ class Loader():
         # Load all dependency files for the new LoadElement
         for dep in dependencies:
             if dep.junction:
-                self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, yaml_cache, dep.provenance)
                 with context_for_bsterror(dep.provenance):
+                    self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, yaml_cache)
                     loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
                                               fetch_subprojects=fetch_subprojects)
             else:
                 loader = self
 
-            dep_element = loader._load_file(dep.name, rewritable, ticker,
-                                            fetch_subprojects, yaml_cache, dep.provenance)
+            with context_for_bsterror(dep.provenance):
+                dep_element = loader._load_file(dep.name, rewritable, ticker,
+                                                fetch_subprojects, yaml_cache)
 
             if _yaml.node_get(dep_element.node, str, Symbol.KIND) == 'junction':
                 raise LoadError(LoadErrorReason.INVALID_DATA,
