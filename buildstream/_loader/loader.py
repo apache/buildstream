@@ -21,7 +21,7 @@ import os
 from functools import cmp_to_key
 from collections.abc import Mapping
 
-from .._exceptions import LoadError, LoadErrorReason
+from .._exceptions import LoadError, LoadErrorReason, context_for_bsterror
 from .. import Consistency
 from .. import _yaml
 from ..element import Element
@@ -265,8 +265,9 @@ class Loader():
         for dep in dependencies:
             if dep.junction:
                 self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, yaml_cache, dep.provenance)
-                loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
-                                          fetch_subprojects=fetch_subprojects)
+                with context_for_bsterror(dep.provenance):
+                    loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
+                                              fetch_subprojects=fetch_subprojects)
             else:
                 loader = self
 
