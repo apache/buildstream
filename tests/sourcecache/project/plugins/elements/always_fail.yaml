@@ -1,0 +1,22 @@
+# always-fail build element does not provide any default
+# build commands
+config:
+
+  # Commands for configuring the software
+  #
+  configure-commands: []
+
+  # Commands for building the software
+  #
+  build-commands: []
+
+  # Commands for installing the software into a
+  # destination folder
+  #
+  install-commands: []
+
+  # Commands for stripping installed binaries
+  #
+  strip-commands:
+  - |
+    %{strip-binaries}

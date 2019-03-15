@@ -24,6 +24,7 @@ import shutil
 import pytest
 
 from buildstream._context import Context
+from buildstream._exceptions import ErrorDomain
 from buildstream._project import Project
 from buildstream import _yaml
 from buildstream.plugintestutils import cli  # pylint: disable=unused-import
@@ -181,3 +182,41 @@ def test_push_fail(cli, tmpdir, datafiles):
             .format(remote)) in res.stderr
     assert "Pushing" not in res.stderr
     assert "Pushed" not in res.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_push_build_fail(cli, tmpdir, datafiles):
+    project_dir = str(datafiles)
+    cache_dir = os.path.join(str(tmpdir), 'cache')
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'share')) as share:
+        user_config = {
+            'scheduler': {
+                'pushers': 1
+            },
+            'source-caches': {
+                'url': share.repo,
+                'push': True,
+            },
+            'cachedir': cache_dir,
+        }
+        cli.configure(user_config)
+
+        repo = create_repo('git', str(tmpdir))
+        ref = repo.create(os.path.join(project_dir, 'files'))
+        element_path = os.path.join(project_dir, 'elements')
+
+        element_name = 'always-fail.bst'
+        element = {
+            'kind': 'always_fail',
+            'sources': [repo.source_config(ref=ref)]
+        }
+        _yaml.dump(element, os.path.join(element_path, element_name))
+
+        res = cli.run(project=project_dir, args=['build', 'always-fail.bst'])
+        res.assert_main_error(ErrorDomain.STREAM, None)
+        res.assert_task_error(ErrorDomain.ELEMENT, None)
+
+        # Sources are not pushed as the build queue is before the source push
+        # queue.
+        assert "Pushed source " not in res.stderr
