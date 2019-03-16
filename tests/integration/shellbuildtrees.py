@@ -26,7 +26,7 @@ def test_buildtree_staged(cli_integration, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-shell/buildtree.bst'
 
-    res = cli_integration.run(project=project, args=['build', element_name])
+    res = cli_integration.run(project=project, args=['--cache-buildtrees', 'always', 'build', element_name])
     res.assert_success()
 
     res = cli_integration.run(project=project, args=[
@@ -42,7 +42,7 @@ def test_buildtree_staged_forced_true(cli_integration, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-shell/buildtree.bst'
 
-    res = cli_integration.run(project=project, args=['build', element_name])
+    res = cli_integration.run(project=project, args=['--cache-buildtrees', 'always', 'build', element_name])
     res.assert_success()
 
     res = cli_integration.run(project=project, args=[
@@ -65,14 +65,14 @@ def test_buildtree_staged_warn_empty_cached(cli_integration, tmpdir, datafiles):
         'cachedir': str(tmpdir)
     })
 
-    res = cli_integration.run(project=project, args=['--cache-buildtrees', 'never', 'build', element_name])
+    res = cli_integration.run(project=project, args=['build', element_name])
     res.assert_success()
 
     res = cli_integration.run(project=project, args=[
         'shell', '--build', '--use-buildtree', 'always', element_name, '--', 'cat', 'test'
     ])
-    res.assert_shell_error()
-    assert "Artifact contains an empty buildtree" in res.stderr
+    res.assert_main_error(ErrorDomain.APP, None)
+    assert "Artifact was created without buildtree" in res.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -82,7 +82,7 @@ def test_buildtree_staged_if_available(cli_integration, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-shell/buildtree.bst'
 
-    res = cli_integration.run(project=project, args=['build', element_name])
+    res = cli_integration.run(project=project, args=['--cache-buildtrees', 'always', 'build', element_name])
     res.assert_success()
 
     res = cli_integration.run(project=project, args=[
@@ -99,7 +99,7 @@ def test_buildtree_staged_forced_false(cli_integration, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-shell/buildtree.bst'
 
-    res = cli_integration.run(project=project, args=['build', element_name])
+    res = cli_integration.run(project=project, args=['--cache-buildtrees', 'always', 'build', element_name])
     res.assert_success()
 
     res = cli_integration.run(project=project, args=[
@@ -148,25 +148,25 @@ def test_buildtree_from_failure_option_never(cli_integration, tmpdir, datafiles)
     res = cli_integration.run(project=project, args=[
         'shell', '--build', element_name, '--use-buildtree', 'always', '--', 'cat', 'test'
     ])
-    res.assert_shell_error()
-    assert "Artifact contains an empty buildtree" in res.stderr
+    res.assert_main_error(ErrorDomain.APP, None)
+    assert "Artifact was created without buildtree" in res.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_buildtree_from_failure_option_failure(cli_integration, tmpdir, datafiles):
+def test_buildtree_from_failure_option_always(cli_integration, tmpdir, datafiles):
 
     project = os.path.join(datafiles.dirname, datafiles.basename)
     element_name = 'build-shell/buildtree-fail.bst'
 
-    # build with  --cache-buildtrees set to 'failure', behaviour should match
+    # build with  --cache-buildtrees set to 'always', behaviour should match
     # default behaviour (which is always) as the buildtree will explicitly have been
     # cached with content.
     cli_integration.configure({
         'cachedir': str(tmpdir)
     })
 
-    res = cli_integration.run(project=project, args=['--cache-buildtrees', 'failure', 'build', element_name])
+    res = cli_integration.run(project=project, args=['--cache-buildtrees', 'always', 'build', element_name])
     res.assert_main_error(ErrorDomain.STREAM, None)
 
     res = cli_integration.run(project=project, args=[
@@ -190,7 +190,7 @@ def test_buildtree_pulled(cli, tmpdir, datafiles):
         cli.configure({
             'artifacts': {'url': share.repo, 'push': True}
         })
-        result = cli.run(project=project, args=['build', element_name])
+        result = cli.run(project=project, args=['--cache-buildtrees', 'always', 'build', element_name])
         result.assert_success()
         assert cli.get_element_state(project, element_name) == 'cached'
 
@@ -222,7 +222,7 @@ def test_buildtree_options(cli, tmpdir, datafiles):
         cli.configure({
             'artifacts': {'url': share.repo, 'push': True}
         })
-        result = cli.run(project=project, args=['build', element_name])
+        result = cli.run(project=project, args=['--cache-buildtrees', 'always', 'build', element_name])
         result.assert_success()
         assert cli.get_element_state(project, element_name) == 'cached'
         assert share.has_artifact('test', element_name, cli.get_element_key(project, element_name))

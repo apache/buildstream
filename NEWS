@@ -137,8 +137,8 @@ buildstream 1.3.1
     Element types without a build-root were already cached with an empty build tree
     directory, this can now be extended to all or successful artifacts to save on cache
     overheads. The cli main option '--cache-buildtrees' or the user configuration cache
-    group option 'cache-buildtrees' can be set as 'always', 'failure' or 'never', with
-    the default being always. Note, as the cache-key for the artifact is independant of
+    group option 'cache-buildtrees' can be set as 'always', 'auto' or 'never', with
+    the default being 'auto'. Note, as the cache-key for the artifact is independent of
     the cached build tree input it will remain unaltered, however the availbility of the
     build tree content may differ.
 

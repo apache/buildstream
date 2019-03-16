@@ -128,12 +128,14 @@ class CASCache():
     def contains_subdir_artifact(self, ref, subdir):
         tree = self.resolve_ref(ref)
 
-        # This assumes that the subdir digest is present in the element tree
-        subdirdigest = self._get_subdir(tree, subdir)
-        objpath = self.objpath(subdirdigest)
+        try:
+            subdirdigest = self._get_subdir(tree, subdir)
+            objpath = self.objpath(subdirdigest)
 
-        # True if subdir content is cached or if empty as expected
-        return os.path.exists(objpath)
+            # True if subdir content is cached or if empty as expected
+            return os.path.exists(objpath)
+        except CASCacheError:
+            return False
 
     # checkout():
     #

@@ -269,7 +269,7 @@ class Context():
 
         # Load cache build trees configuration
         self.cache_buildtrees = _node_get_option_str(
-            cache, 'cache-buildtrees', ['always', 'failure', 'never'])
+            cache, 'cache-buildtrees', ['always', 'auto', 'never'])
 
         # Load logging config
         logging = _yaml.node_get(defaults, Mapping, 'logging')

@@ -128,7 +128,6 @@ class Artifact():
         assemblevdir = CasBasedDirectory(cas_cache=self._artifacts.cas)
         logsvdir = assemblevdir.descend("logs", create=True)
         metavdir = assemblevdir.descend("meta", create=True)
-        buildtreevdir = assemblevdir.descend("buildtree", create=True)
 
         # Create artifact directory structure
         assembledir = os.path.join(rootdir, 'artifact')
@@ -142,14 +141,8 @@ class Artifact():
             filesvdir = assemblevdir.descend("files", create=True)
             filesvdir.import_files(collectvdir)
 
-        # cache_buildtrees defaults to 'always', as such the
-        # default behaviour is to attempt to cache them. If only
-        # caching failed artifact buildtrees, then query the build
-        # result. Element types without a build-root dir will be cached
-        # with an empty buildtreedir regardless of this configuration as
-        # there will not be an applicable sandbox_build_dir.
-
         if sandbox_build_dir:
+            buildtreevdir = assemblevdir.descend("buildtree", create=True)
             buildtreevdir.import_files(sandbox_build_dir)
 
         # Write some logs out to normal directories: logsdir and metadir
@@ -226,6 +219,22 @@ class Artifact():
             return False
 
         return True
+
+    # buildtree_exists()
+    #
+    # Check if artifact was created with a buildtree. This does not check
+    # whether the buildtree is present in the local cache.
+    #
+    # Returns:
+    #     (bool): True if artifact was created with buildtree
+    #
+    def buildtree_exists(self):
+
+        if not self._element._cached():
+            return False
+
+        artifact_vdir, _ = self._get_directory()
+        return artifact_vdir._exists('buildtree')
 
     # load_public_data():
     #
