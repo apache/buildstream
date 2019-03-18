@@ -957,14 +957,10 @@ class Element(Plugin):
         cls.__instantiated_elements[meta] = element
 
         # Instantiate sources and generate their keys
-        previous_sources = []
         for meta_source in meta.sources:
             meta_source.first_pass = meta.kind == "junction"
             source = meta.project.create_source(meta_source,
                                                 first_pass=meta.first_pass)
-
-            source._generate_key(previous_sources)
-            previous_sources.append(source)
 
             redundant_ref = source._load_ref()
             element.__sources.append(source)
@@ -1375,12 +1371,6 @@ class Element(Plugin):
 
         self.__tracking_scheduled = False
         self.__tracking_done = True
-
-        # update keys
-        sources = list(self.sources())
-        if sources:
-            source = sources.pop()
-            source._generate_key(sources)
 
         self.__update_state_recursively()
 
@@ -2166,12 +2156,13 @@ class Element(Plugin):
 
         return _cachekey.generate_key(cache_key_dict)
 
+    # Check if sources are cached, generating the source key if it hasn't been
     def _source_cached(self):
-        source = None
-        for source in self.sources():
-            pass
-        if source:
-            return self._get_context().sourcecache.contains(source)
+        if self.__sources:
+            last_source = self.__sources[-1]
+            if not last_source._key:
+                last_source._generate_key(self.__sources[:-1])
+            return self._get_context().sourcecache.contains(last_source)
         else:
             return True
 
@@ -2927,11 +2918,9 @@ class Element(Plugin):
     # Caches the sources into the local CAS
     #
     def __cache_sources(self):
-        sources = list(self.sources())
-        if sources:
-            sourcecache = self._get_context().sourcecache
-            if not sourcecache.contains(sources[-1]):
-                sources[-1]._cache(sources[:-1])
+        sources = self.__sources
+        if sources and not self._source_cached():
+            sources[-1]._cache(sources[:-1])
 
     # __update_state_recursively()
     #
