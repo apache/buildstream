@@ -34,6 +34,11 @@ commands:
   output: ../source/sessions/developing-shell-after-changes.html
   command: shell hello.bst -- hello
 
+# Soft Reset
+- directory: ../examples/developing/
+  output: ../source/sessions/developing-soft-reset.html
+  command: workspace reset --soft hello.bst
+
 # Close workspace
 - directory: ../examples/developing/
   output: ../source/sessions/developing-close-workspace.html
