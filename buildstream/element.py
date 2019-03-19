@@ -494,7 +494,7 @@ class Element(Plugin):
             return self.__variables.subst(value)
         except LoadError as e:
             provenance = _yaml.node_get_provenance(node, key=member_name)
-            raise LoadError(e.reason, '{}: {}'.format(provenance, str(e))) from e
+            raise LoadError(e.reason, '{}: {}'.format(provenance, e), detail=e.detail) from e
 
     def node_subst_list(self, node, member_name):
         """Fetch a list from a node member, substituting any variables in the list
@@ -520,7 +520,7 @@ class Element(Plugin):
                 ret.append(self.__variables.subst(x))
             except LoadError as e:
                 provenance = _yaml.node_get_provenance(node, key=member_name, indices=[index])
-                raise LoadError(e.reason, '{}: {}'.format(provenance, str(e))) from e
+                raise LoadError(e.reason, '{}: {}'.format(provenance, e), detail=e.detail) from e
         return ret
 
     def node_subst_list_element(self, node, member_name, indices):
@@ -562,7 +562,7 @@ class Element(Plugin):
             return self.__variables.subst(value)
         except LoadError as e:
             provenance = _yaml.node_get_provenance(node, key=member_name, indices=indices)
-            raise LoadError(e.reason, '{}: {}'.format(provenance, str(e))) from e
+            raise LoadError(e.reason, '{}: {}'.format(provenance, e), detail=e.detail) from e
 
     def compute_manifest(self, *, include=None, exclude=None, orphans=True):
         """Compute and return this element's selective manifest
@@ -1330,7 +1330,7 @@ class Element(Plugin):
             self.preflight()
         except BstError as e:
             # Prepend provenance to the error
-            raise ElementError("{}: {}".format(self, e), reason=e.reason) from e
+            raise ElementError("{}: {}".format(self, e), reason=e.reason, detail=e.detail) from e
 
         # Ensure that the first source does not need access to previous soruces
         if self.__sources and self.__sources[0]._requires_previous_sources():
