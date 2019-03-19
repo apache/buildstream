@@ -151,7 +151,7 @@ lint:
   except:
   - schedules
 
-tests-wsl:
+tests-wsl-master:
   stage: test
   variables:
     LC_ALL: C.UTF-8
@@ -162,10 +162,27 @@ tests-wsl:
   - mount
   - df -h
   - PATH=/root/.local/bin:$PATH tox --version
-
   script:
   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
-  allow_failure: true
+  only:
+  - master
+
+tests-wsl-non-master:
+  stage: test
+  variables:
+    LC_ALL: C.UTF-8
+    LANG: C.UTF-8
+  tags:
+  - wsl
+  before_script:
+  - mount
+  - df -h
+  - PATH=/root/.local/bin:$PATH tox --version
+  script:
+  - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
+  when: manual
+  except:
+  - master
 
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
