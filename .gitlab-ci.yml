@@ -8,6 +8,7 @@ cache:
 stages:
   - test
   - post
+  - publish
 
 variables:
   PYTEST_ADDOPTS: "--color=yes"
@@ -344,17 +345,21 @@ coverage:
 # Deploy, only for merges which land on master branch.
 #
 pages:
-  stage: post
+  stage: publish
   dependencies:
+  - coverage
   - docs
   variables:
     ACME_DIR: public/.well-known/acme-challenge
+    COVERAGE_DIR: public/coverage
   script:
   - mkdir -p ${ACME_DIR}
     # Required to finish the creation of the Let's Encrypt certificate,
     # which allows using https://docs.buildstream.build/ for accessing
     # the documentation.
   - echo ${ACME_CHALLENGE} > ${ACME_DIR}/$(echo ${ACME_CHALLENGE} | cut -c1-43)
+  - mkdir -p ${COVERAGE_DIR}
+  - cp -a ./coverage-report/ ${COVERAGE_DIR}
   artifacts:
     paths:
     - public/
