@@ -6,7 +6,7 @@ import subprocess
 import pytest
 
 from tests.testutils.site import IS_WINDOWS
-from tests.testutils import create_repo, generate_junction
+from tests.testutils import generate_junction
 
 from buildstream.plugintestutils import cli
 from buildstream import _yaml
