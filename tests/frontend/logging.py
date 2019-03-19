@@ -10,7 +10,7 @@ from tests.testutils import create_repo
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 
 # Project directory
 DATA_DIR = os.path.join(

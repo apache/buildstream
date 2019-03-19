@@ -9,7 +9,7 @@ import pytest
 from ruamel import yaml
 
 from tests.testutils import generate_junction, create_element_size
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 from buildstream._yamlcache import YamlCache
 from buildstream._project import Project

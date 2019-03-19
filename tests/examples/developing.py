@@ -4,7 +4,7 @@
 import os
 import pytest
 
-from buildstream.plugintestutils import cli_integration as cli
+from buildstream.plugintestutils import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.plugintestutils.integration import assert_contains
 import tests.testutils.patch as patch
 from tests.testutils.site import HAVE_BWRAP, IS_LINUX, MACHINE_ARCH

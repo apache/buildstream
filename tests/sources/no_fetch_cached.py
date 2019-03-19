@@ -6,7 +6,7 @@ import pytest
 
 from buildstream import _yaml
 
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from tests.testutils import create_repo
 from tests.testutils.site import HAVE_GIT
 

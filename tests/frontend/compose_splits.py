@@ -3,7 +3,7 @@
 
 import os
 import pytest
-from buildstream.plugintestutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
 
 # Project directory
 DATA_DIR = os.path.join(

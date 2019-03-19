@@ -2,7 +2,7 @@
 # pylint: disable=redefined-outer-name
 
 import os
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 
 from tests.testutils import create_repo

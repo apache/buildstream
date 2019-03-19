@@ -24,7 +24,7 @@
 import os
 import pytest
 
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from tests.testutils import create_artifact_share
 
 

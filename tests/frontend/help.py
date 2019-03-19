@@ -2,7 +2,7 @@
 # pylint: disable=redefined-outer-name
 
 import pytest
-from buildstream.plugintestutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
 
 
 def assert_help(cli_output):

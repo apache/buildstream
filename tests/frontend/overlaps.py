@@ -3,7 +3,7 @@
 
 import os
 import pytest
-from buildstream.plugintestutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream.plugin import CoreWarnings

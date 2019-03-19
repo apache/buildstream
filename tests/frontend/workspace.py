@@ -37,7 +37,7 @@ import pytest
 from tests.testutils import create_repo, ALL_REPO_KINDS, wait_for_cache_granularity
 from tests.testutils import create_artifact_share, create_element_size
 
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream._workspaces import BST_WORKSPACE_FORMAT_VERSION

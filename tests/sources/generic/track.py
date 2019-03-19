@@ -25,7 +25,7 @@ import pytest
 from tests.testutils import create_repo, ALL_REPO_KINDS, generate_junction
 from tests.frontend import configure_project
 
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
 
