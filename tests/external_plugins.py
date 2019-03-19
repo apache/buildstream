@@ -42,9 +42,9 @@ class ExternalPluginRepo():
     def install(self):
         subprocess.run(['pip3', 'install', self._clone_location])
 
-    def test(self, pytest_args):
+    def test(self, args):
         test_files = self._match_test_patterns()
-        return pytest.main(pytest_args + test_files)
+        return pytest.main(args + test_files)
 
     def _match_test_patterns(self):
         match_list = []
@@ -59,15 +59,15 @@ class ExternalPluginRepo():
         return match_list
 
 
-def run_repo_tests(repo, tmpdir, pytest_args):
-    print("Cloning repo {} to {}...".format(repo.name, tmpdir))
-    repo.clone(tmpdir)
+def run_repo_tests(repo, tempdir, args):
+    print("Cloning repo {} to {}...".format(repo.name, tempdir))
+    repo.clone(tempdir)
 
     print("Installing {}...".format(repo.name))
     repo.install()
 
     print("Testing {}...".format(repo.name))
-    return repo.test(pytest_args)
+    return repo.test(args)
 
 
 if __name__ == "__main__":
