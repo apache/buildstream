@@ -266,7 +266,7 @@ class Loader():
             if dep.junction:
                 self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, yaml_cache, dep.provenance)
                 loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
-                                          fetch_subprojects=fetch_subprojects)
+                                          fetch_subprojects=fetch_subprojects, provenance=dep.provenance)
             else:
                 loader = self
 
@@ -474,7 +474,13 @@ class Loader():
     # Raises: LoadError
     #
     # Returns: A Loader or None if specified junction does not exist
-    def _get_loader(self, filename, *, rewritable=False, ticker=None, level=0, fetch_subprojects=False):
+    def _get_loader(self, filename, *, rewritable=False, ticker=None, level=0,
+                    fetch_subprojects=False, provenance=None):
+
+        provenance_str = ""
+        if provenance is not None:
+            provenance_str = "{}: ".format(provenance)
+
         # return previously determined result
         if filename in self._loaders:
             loader = self._loaders[filename]
@@ -483,8 +489,8 @@ class Loader():
                 # do not allow junctions with the same name in different
                 # subprojects
                 raise LoadError(LoadErrorReason.CONFLICTING_JUNCTION,
-                                "Conflicting junction {} in subprojects, define junction in {}"
-                                .format(filename, self.project.name))
+                                "{}Conflicting junction {} in subprojects, define junction in {}"
+                                .format(provenance_str, filename, self.project.name))
 
             return loader
 
@@ -492,7 +498,8 @@ class Loader():
             # junctions in the parent take precedence over junctions defined
             # in subprojects
             loader = self._parent._get_loader(filename, rewritable=rewritable, ticker=ticker,
-                                              level=level + 1, fetch_subprojects=fetch_subprojects)
+                                              level=level + 1, fetch_subprojects=fetch_subprojects,
+                                              provenance=provenance)
             if loader:
                 self._loaders[filename] = loader
                 return loader
@@ -517,7 +524,8 @@ class Loader():
         meta_element = self._collect_element(self._elements[filename])
         if meta_element.kind != 'junction':
             raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Expected junction but element kind is {}".format(filename, meta_element.kind))
+                            "{}{}: Expected junction but element kind is {}".format(
+                                provenance_str, filename, meta_element.kind))
 
         element = Element._new_from_meta(meta_element)
         element._preflight()
@@ -535,7 +543,7 @@ class Loader():
                     else:
                         detail = "Try fetching the project with `bst source fetch {}`".format(filename)
                         raise LoadError(LoadErrorReason.SUBPROJECT_FETCH_NEEDED,
-                                        "Subproject fetch needed for junction: {}".format(filename),
+                                        "{}Subproject fetch needed for junction: {}".format(provenance_str, filename),
                                         detail=detail)
 
                 # Handle the case where a subproject has no ref
@@ -543,7 +551,7 @@ class Loader():
                 elif source.get_consistency() == Consistency.INCONSISTENT:
                     detail = "Try tracking the junction element with `bst source track {}`".format(filename)
                     raise LoadError(LoadErrorReason.SUBPROJECT_INCONSISTENT,
-                                    "Subproject has no ref for junction: {}".format(filename),
+                                    "{}Subproject has no ref for junction: {}".format(provenance_str, filename),
                                     detail=detail)
 
         workspace = element._get_workspace()
@@ -571,7 +579,7 @@ class Loader():
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
                 message = (
-                    "Could not find the project.conf file in the project "
+                    provenance_str + "Could not find the project.conf file in the project "
                     "referred to by junction element '{}'.".format(element.name)
                 )
                 if element.path:
