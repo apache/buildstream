@@ -37,7 +37,7 @@ from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, \
     SourcePushQueue, BuildQueue, PullQueue, ArtifactPushQueue
 from ._pipeline import Pipeline, PipelineSelection
-from ._profile import Topics, profile_start, profile_end
+from ._profile import Topics, PROFILER
 from .types import _KeyStrength
 from . import utils, _yaml, _site
 from . import Scope, Consistency
@@ -117,19 +117,15 @@ class Stream():
                        except_targets=(),
                        use_artifact_config=False,
                        load_refs=False):
+        with PROFILER.profile(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, "-") for t in targets)):
+            target_objects, _ = self._load(targets, (),
+                                           selection=selection,
+                                           except_targets=except_targets,
+                                           fetch_subprojects=False,
+                                           use_artifact_config=use_artifact_config,
+                                           load_refs=load_refs)
 
-        profile_start(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, '-') for t in targets))
-
-        target_objects, _ = self._load(targets, (),
-                                       selection=selection,
-                                       except_targets=except_targets,
-                                       fetch_subprojects=False,
-                                       use_artifact_config=use_artifact_config,
-                                       load_refs=load_refs)
-
-        profile_end(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, '-') for t in targets))
-
-        return target_objects
+            return target_objects
 
     # shell()
     #

@@ -28,7 +28,7 @@ from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
 from ._exceptions import PipelineError
 from ._message import Message, MessageType
-from ._profile import Topics, profile_start, profile_end
+from ._profile import Topics, PROFILER
 from . import Scope, Consistency
 from ._project import ProjectRefStorage
 
@@ -107,22 +107,19 @@ class Pipeline():
         # First concatenate all the lists for the loader's sake
         targets = list(itertools.chain(*target_groups))
 
-        profile_start(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in targets))
+        with PROFILER.profile(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, "-") for t in targets)):
+            elements = self._project.load_elements(targets,
+                                                   rewritable=rewritable,
+                                                   fetch_subprojects=fetch_subprojects)
 
-        elements = self._project.load_elements(targets,
-                                               rewritable=rewritable,
-                                               fetch_subprojects=fetch_subprojects)
+            # Now create element groups to match the input target groups
+            elt_iter = iter(elements)
+            element_groups = [
+                [next(elt_iter) for i in range(len(group))]
+                for group in target_groups
+            ]
 
-        # Now create element groups to match the input target groups
-        elt_iter = iter(elements)
-        element_groups = [
-            [next(elt_iter) for i in range(len(group))]
-            for group in target_groups
-        ]
-
-        profile_end(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, '-') for t in targets))
-
-        return tuple(element_groups)
+            return tuple(element_groups)
 
     # resolve_elements()
     #

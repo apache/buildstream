@@ -25,7 +25,7 @@ from .._exceptions import LoadError, LoadErrorReason
 from .. import Consistency
 from .. import _yaml
 from ..element import Element
-from .._profile import Topics, profile_start, profile_end
+from .._profile import Topics, PROFILER
 from .._includes import Includes
 
 from .types import Symbol
@@ -108,12 +108,11 @@ class Loader():
         target_elements = []
 
         for target in targets:
-            profile_start(Topics.LOAD_PROJECT, target)
-            _junction, name, loader = self._parse_name(target, rewritable, ticker,
-                                                       fetch_subprojects=fetch_subprojects)
-            element = loader._load_file(name, rewritable, ticker, fetch_subprojects)
-            target_elements.append(element)
-            profile_end(Topics.LOAD_PROJECT, target)
+            with PROFILER.profile(Topics.LOAD_PROJECT, target):
+                _junction, name, loader = self._parse_name(target, rewritable, ticker,
+                                                           fetch_subprojects=fetch_subprojects)
+                element = loader._load_file(name, rewritable, ticker, fetch_subprojects)
+                target_elements.append(element)
 
         #
         # Now that we've resolve the dependencies, scan them for circular dependencies
@@ -127,10 +126,8 @@ class Loader():
             for element in target_elements
         )
 
-        profile_key = "_".join(t for t in targets)
-        profile_start(Topics.CIRCULAR_CHECK, profile_key)
-        self._check_circular_deps(dummy_target)
-        profile_end(Topics.CIRCULAR_CHECK, profile_key)
+        with PROFILER.profile(Topics.CIRCULAR_CHECK, "_".join(targets)):
+            self._check_circular_deps(dummy_target)
 
         ret = []
         #
@@ -138,9 +135,9 @@ class Loader():
         #
         for element in target_elements:
             loader = element._loader
-            profile_start(Topics.SORT_DEPENDENCIES, element.name)
-            loader._sort_dependencies(element)
-            profile_end(Topics.SORT_DEPENDENCIES, element.name)
+            with PROFILER.profile(Topics.SORT_DEPENDENCIES, element.name):
+                loader._sort_dependencies(element)
+
             # Finally, wrap what we have into LoadElements and return the target
             #
             ret.append(loader._collect_element(element))
