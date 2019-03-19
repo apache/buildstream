@@ -18,6 +18,9 @@
 #  Authors: Richard Maw <richard.maw@codethink.co.uk>
 #
 
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import pytest
 
