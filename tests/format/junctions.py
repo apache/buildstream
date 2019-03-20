@@ -251,6 +251,19 @@ def test_invalid_junction_dep(cli, datafiles):
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
 
+# Test that we error correctly when we junction-depend on a non-junction
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_junctiondep_not_a_junction(cli, datafiles):
+    project = os.path.join(str(datafiles), 'invalid')
+    copy_subprojects(project, datafiles, ['base'])
+
+    result = cli.run(project=project, args=['build', 'junctiondep-not-a-junction.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+    # Assert that we have the expected provenance encoded into the error
+    assert "junctiondep-not-a-junction.bst [line 3 column 2]" in result.stderr
+
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_options_default(cli, tmpdir, datafiles):
     project = os.path.join(str(datafiles), 'options-default')
