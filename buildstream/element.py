@@ -1262,7 +1262,7 @@ class Element(Plugin):
         for source in self.__sources:
             old_ref = source.get_ref()
             new_ref = source._track()
-            refs.append((source._get_unique_id(), new_ref))
+            refs.append((source._unique_id, new_ref))
 
             # Complimentary warning that the new ref will be unused.
             if old_ref != new_ref and self._get_workspace():
