@@ -32,7 +32,7 @@ except ProgramNotFoundError:
     HAVE_OSTREE_CLI = False
 
 try:
-    from buildstream import _ostree
+    from buildstream import _ostree  # pylint: disable=unused-import
     HAVE_OSTREE = True
 except (ImportError, ValueError):
     HAVE_OSTREE = False
@@ -52,7 +52,7 @@ except ProgramNotFoundError:
     HAVE_LZIP = False
 
 try:
-    import arpy
+    import arpy  # pylint: disable=unused-import
     HAVE_ARPY = True
 except ImportError:
     HAVE_ARPY = False

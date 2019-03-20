@@ -17,6 +17,10 @@
 #  Authors:
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 #
+
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import shutil
 import pytest
@@ -24,7 +28,7 @@ import pytest
 from buildstream._context import Context
 from buildstream._project import Project
 
-from buildstream.plugintestutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
 from tests.testutils.element_generators import create_element_size
 
 
@@ -147,7 +151,6 @@ def test_staged_source_build(tmpdir, datafiles, cli):
     context.set_message_handler(dummy_message_handler)
 
     element = project.load_elements(["import-dev.bst"])[0]
-    source = list(element.sources())[0]
 
     # check consistency of the source
     assert not element._source_cached()

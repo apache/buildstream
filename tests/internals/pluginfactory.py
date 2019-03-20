@@ -1,3 +1,6 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import pytest
 
@@ -25,17 +28,17 @@ def plugin_fixture():
 # Basics: test the fixture, test we can create the factories #
 ##############################################################
 def test_fixture(plugin_fixture):
-    assert(isinstance(plugin_fixture['base'], PluginBase))
+    assert isinstance(plugin_fixture['base'], PluginBase)
 
 
 def test_source_factory(plugin_fixture):
     factory = SourceFactory(plugin_fixture['base'])
-    assert(isinstance(factory, SourceFactory))
+    assert isinstance(factory, SourceFactory)
 
 
 def test_element_factory(plugin_fixture):
     factory = ElementFactory(plugin_fixture['base'])
-    assert(isinstance(factory, ElementFactory))
+    assert isinstance(factory, ElementFactory)
 
 
 ##############################################################
@@ -50,10 +53,10 @@ def test_custom_source(plugin_fixture, datafiles):
         'plugins': {'foo': 0}
     }]
     factory = SourceFactory(plugin_fixture['base'], plugin_origins=plugins)
-    assert(isinstance(factory, SourceFactory))
+    assert isinstance(factory, SourceFactory)
 
     foo_type, _ = factory.lookup('foo')
-    assert(foo_type.__name__ == 'FooSource')
+    assert foo_type.__name__ == 'FooSource'
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'customelement'))
@@ -65,10 +68,10 @@ def test_custom_element(plugin_fixture, datafiles):
         'plugins': {'foo': 0}
     }]
     factory = ElementFactory(plugin_fixture['base'], plugin_origins=plugins)
-    assert(isinstance(factory, ElementFactory))
+    assert isinstance(factory, ElementFactory)
 
     foo_type, _ = factory.lookup('foo')
-    assert(foo_type.__name__ == 'FooElement')
+    assert foo_type.__name__ == 'FooElement'
 
 
 ##############################################################
@@ -76,7 +79,7 @@ def test_custom_element(plugin_fixture, datafiles):
 ##############################################################
 def test_missing_source(plugin_fixture):
     factory = SourceFactory(plugin_fixture['base'])
-    assert(isinstance(factory, SourceFactory))
+    assert isinstance(factory, SourceFactory)
 
     # Test fails if PluginError is not raised
     with pytest.raises(PluginError):
@@ -85,7 +88,7 @@ def test_missing_source(plugin_fixture):
 
 def test_missing_element(plugin_fixture):
     factory = ElementFactory(plugin_fixture['base'])
-    assert(isinstance(factory, ElementFactory))
+    assert isinstance(factory, ElementFactory)
 
     # Test fails if PluginError is not raised
     with pytest.raises(PluginError):
@@ -262,13 +265,13 @@ def test_source_multicontext(plugin_fixture, datafiles):
 
     factory1 = SourceFactory(plugin_fixture['base'], plugin_origins=[plugins1])
     factory2 = SourceFactory(plugin_fixture['base'], plugin_origins=[plugins2])
-    assert(isinstance(factory1, SourceFactory))
-    assert(isinstance(factory2, SourceFactory))
+    assert isinstance(factory1, SourceFactory)
+    assert isinstance(factory2, SourceFactory)
 
     foo_type1, _ = factory1.lookup('foo')
     foo_type2, _ = factory2.lookup('foo')
-    assert(foo_type1.__name__ == 'FooSource')
-    assert(foo_type2.__name__ == 'AnotherFooSource')
+    assert foo_type1.__name__ == 'FooSource'
+    assert foo_type2.__name__ == 'AnotherFooSource'
 
 
 # Load two factories, both of which define a different 'foo' plugin
@@ -291,10 +294,10 @@ def test_element_multicontext(plugin_fixture, datafiles):
 
     factory1 = ElementFactory(plugin_fixture['base'], plugin_origins=[plugins1])
     factory2 = ElementFactory(plugin_fixture['base'], plugin_origins=[plugins2])
-    assert(isinstance(factory1, ElementFactory))
-    assert(isinstance(factory2, ElementFactory))
+    assert isinstance(factory1, ElementFactory)
+    assert isinstance(factory2, ElementFactory)
 
     foo_type1, _ = factory1.lookup('foo')
     foo_type2, _ = factory2.lookup('foo')
-    assert(foo_type1.__name__ == 'FooElement')
-    assert(foo_type2.__name__ == 'AnotherFooElement')
+    assert foo_type1.__name__ == 'FooElement'
+    assert foo_type2.__name__ == 'AnotherFooElement'

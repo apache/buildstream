@@ -1,8 +1,11 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import pytest
 
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from tests.testutils import filetypegenerator
 
 DATA_DIR = os.path.join(
@@ -82,7 +85,7 @@ def test_stage_file(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected file
-    assert(os.path.exists(os.path.join(checkoutdir, 'file.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'file.txt'))
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'directory'))
@@ -97,8 +100,8 @@ def test_stage_directory(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected file and directory and other file
-    assert(os.path.exists(os.path.join(checkoutdir, 'file.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'subdir', 'anotherfile.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'file.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'subdir', 'anotherfile.txt'))
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'symlink'))
@@ -122,9 +125,9 @@ def test_stage_symlink(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected file and directory and other file
-    assert(os.path.exists(os.path.join(checkoutdir, 'file.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'symlink-to-file.txt')))
-    assert(os.path.islink(os.path.join(checkoutdir, 'symlink-to-file.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'file.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'symlink-to-file.txt'))
+    assert os.path.islink(os.path.join(checkoutdir, 'symlink-to-file.txt'))
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'file-exists'))
@@ -152,6 +155,6 @@ def test_stage_directory_symlink(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected directory and directory symlink
-    assert(os.path.exists(os.path.join(checkoutdir, 'subdir', 'anotherfile.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'symlink-to-subdir', 'anotherfile.txt')))
-    assert(os.path.islink(os.path.join(checkoutdir, 'symlink-to-subdir')))
+    assert os.path.exists(os.path.join(checkoutdir, 'subdir', 'anotherfile.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'symlink-to-subdir', 'anotherfile.txt'))
+    assert os.path.islink(os.path.join(checkoutdir, 'symlink-to-subdir'))

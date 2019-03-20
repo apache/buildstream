@@ -1,11 +1,14 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import pytest
 
-from tests.testutils import create_repo, generate_junction
+from tests.testutils import create_repo
 
 from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
+
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))

@@ -16,12 +16,15 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import pytest
 
 from tests.testutils import create_repo, ALL_REPO_KINDS
 
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 
 # Project directory

@@ -33,9 +33,9 @@ def entry_fixture(monkeypatch):
         dist, package = lookup_string.split(':')
 
         def mock_entry(pdist, pentry_point, ppackage):
-            assert(pdist == dist)
-            assert(pentry_point == entry_point)
-            assert(ppackage == package)
+            assert pdist == dist
+            assert pentry_point == entry_point
+            assert ppackage == package
 
             return MockEntry(datafiles, package)
         monkeypatch.setattr(pkg_resources, 'get_entry_info', mock_entry)

@@ -20,11 +20,14 @@
 #           Jürg Billeter <juerg.billeter@codethink.co.uk>
 #
 
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import pytest
 
 from buildstream._exceptions import ErrorDomain
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from tests.testutils import create_artifact_share, create_element_size, generate_junction, wait_for_cache_granularity
 
 
@@ -299,11 +302,11 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
 
         # Ensure that the small artifact is still in the share
         states = cli.get_element_states(project, ['small_element.bst', 'large_element.bst'])
-        states['small_element.bst'] == 'cached'
+        assert states['small_element.bst'] == 'cached'
         assert_shared(cli, share, project, 'small_element.bst')
 
         # Ensure that the artifact is cached locally but NOT remotely
-        states['large_element.bst'] == 'cached'
+        assert states['large_element.bst'] == 'cached'
         assert_not_shared(cli, share, project, 'large_element.bst')
 
 

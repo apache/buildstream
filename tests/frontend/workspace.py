@@ -24,15 +24,20 @@
 #           William Salmon <will.salmon@codethink.co.uk>
 #
 
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import stat
-import pytest
 import shutil
 import subprocess
+
+import pytest
+
 from tests.testutils import create_repo, ALL_REPO_KINDS, wait_for_cache_granularity
 from tests.testutils import create_artifact_share, create_element_size
 
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream._workspaces import BST_WORKSPACE_FORMAT_VERSION
@@ -104,7 +109,7 @@ class WorkspaceCreator():
                 raise "terable error"
 
         for suffix, kind in zip(suffixs, kinds):
-            element_name, element_path, workspace_dir = \
+            element_name, _, workspace_dir = \
                 self.create_workspace_element(kind, track, suffix, workspace_dir_usr,
                                               element_attrs)
             element_tuples.append((element_name, workspace_dir))
@@ -152,8 +157,8 @@ class WorkspaceCreator():
             assert not any(states[e] != 'buildable' for e, _ in element_tuples)
 
             # Check that the executable hello file is found in each workspace
-            for element_name, workspace_dir in element_tuples:
-                filename = os.path.join(workspace_dir, 'usr', 'bin', 'hello')
+            for _, workspace in element_tuples:
+                filename = os.path.join(workspace, 'usr', 'bin', 'hello')
                 assert os.path.exists(filename)
 
         return element_tuples
@@ -175,7 +180,7 @@ def test_open_bzr_customize(cli, tmpdir, datafiles):
 
     # Check that the .bzr dir exists
     bzrdir = os.path.join(workspace, ".bzr")
-    assert(os.path.isdir(bzrdir))
+    assert os.path.isdir(bzrdir)
 
     # Check that the correct origin branch is set
     element_config = _yaml.load(os.path.join(project, "elements", element_name))
@@ -184,7 +189,7 @@ def test_open_bzr_customize(cli, tmpdir, datafiles):
     stripped_url = source_config['url'].lstrip("file:///")
     expected_output_str = ("checkout of branch: /{}/{}"
                            .format(stripped_url, source_config['track']))
-    assert(expected_output_str in str(output))
+    assert expected_output_str in str(output)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -197,12 +202,12 @@ def test_open_multi(cli, tmpdir, datafiles):
         assert kind in elname
         workspace_lsdir = os.listdir(workspace)
         if kind == 'git':
-            assert('.git' in workspace_lsdir)
+            assert '.git' in workspace_lsdir
         elif kind == 'bzr':
-            assert('.bzr' in workspace_lsdir)
+            assert '.bzr' in workspace_lsdir
         else:
-            assert not ('.git' in workspace_lsdir)
-            assert not ('.bzr' in workspace_lsdir)
+            assert '.git' not in workspace_lsdir
+            assert '.bzr' not in workspace_lsdir
 
 
 @pytest.mark.skipif(os.geteuid() == 0, reason="root may have CAP_DAC_OVERRIDE and ignore permissions")
@@ -230,7 +235,7 @@ def test_open_multi_unwritable(cli, tmpdir, datafiles):
     result.assert_main_error(ErrorDomain.STREAM, None)
     # Normally we avoid checking stderr in favour of using the mechine readable result.assert_main_error
     # But Tristan was very keen that the names of the elements left needing workspaces were present in the out put
-    assert (" ".join([element_name for element_name, workspace_dir_suffix in element_tuples[1:]]) in result.stderr)
+    assert " ".join([element_name for element_name, workspace_dir_suffix in element_tuples[1:]]) in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -256,6 +261,7 @@ def test_open_multi_with_directory(cli, tmpdir, datafiles):
 def test_open_defaultlocation(cli, tmpdir, datafiles):
     workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
 
+    # pylint: disable=unbalanced-tuple-unpacking
     ((element_name, workspace_dir), ) = workspace_object.create_workspace_elements(['git'], False, ['git'])
     os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
 
@@ -288,6 +294,7 @@ def test_open_defaultlocation(cli, tmpdir, datafiles):
 def test_open_defaultlocation_exists(cli, tmpdir, datafiles):
     workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
 
+    # pylint: disable=unbalanced-tuple-unpacking
     ((element_name, workspace_dir), ) = workspace_object.create_workspace_elements(['git'], False, ['git'])
     os.makedirs(workspace_object.workspace_cmd, exist_ok=True)
 
@@ -351,7 +358,7 @@ def test_open_force_open(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_force_different_workspace(cli, tmpdir, datafiles):
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False, "-alpha")
+    _, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False, "-alpha")
 
     # Assert the workspace dir exists
     assert os.path.exists(workspace)
@@ -361,7 +368,7 @@ def test_open_force_different_workspace(cli, tmpdir, datafiles):
 
     tmpdir = os.path.join(str(tmpdir), "-beta")
     shutil.move(hello_path, hello1_path)
-    element_name2, project2, workspace2 = open_workspace(cli, tmpdir, datafiles, 'git', False, "-beta")
+    element_name2, _, workspace2 = open_workspace(cli, tmpdir, datafiles, 'git', False, "-beta")
 
     # Assert the workspace dir exists
     assert os.path.exists(workspace2)
@@ -501,9 +508,9 @@ def test_close_multiple(cli, tmpdir, datafiles):
 def test_close_all(cli, tmpdir, datafiles):
     tmpdir_alpha = os.path.join(str(tmpdir), 'alpha')
     tmpdir_beta = os.path.join(str(tmpdir), 'beta')
-    alpha, project, workspace_alpha = open_workspace(
+    _, project, workspace_alpha = open_workspace(
         cli, tmpdir_alpha, datafiles, 'git', False, suffix='-alpha')
-    beta, project, workspace_beta = open_workspace(
+    _, project, workspace_beta = open_workspace(
         cli, tmpdir_beta, datafiles, 'git', False, suffix='-beta')
 
     # Close the workspaces
@@ -569,9 +576,9 @@ def test_reset_all(cli, tmpdir, datafiles):
     # Open the workspaces
     tmpdir_alpha = os.path.join(str(tmpdir), 'alpha')
     tmpdir_beta = os.path.join(str(tmpdir), 'beta')
-    alpha, project, workspace_alpha = open_workspace(
+    _, project, workspace_alpha = open_workspace(
         cli, tmpdir_alpha, datafiles, 'git', False, suffix='-alpha')
-    beta, project, workspace_beta = open_workspace(
+    _, project, workspace_beta = open_workspace(
         cli, tmpdir_beta, datafiles, 'git', False, suffix='-beta')
 
     # Modify workspaces
@@ -1143,7 +1150,7 @@ def test_external_open_other(cli, datafiles, tmpdir_factory):
     tmpdir1 = tmpdir_factory.mktemp('')
     tmpdir2 = tmpdir_factory.mktemp('')
     # Making use of the assumption that it's the same project in both invocations of open_workspace
-    alpha_element, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", False, suffix="-alpha")
+    _, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", False, suffix="-alpha")
     beta_element, _, beta_workspace = open_workspace(cli, tmpdir2, datafiles, "git", False, suffix="-beta")
 
     # Closing the other element first, because I'm too lazy to create an
@@ -1163,8 +1170,8 @@ def test_external_close_other(cli, datafiles, tmpdir_factory):
     tmpdir1 = tmpdir_factory.mktemp('')
     tmpdir2 = tmpdir_factory.mktemp('')
     # Making use of the assumption that it's the same project in both invocations of open_workspace
-    alpha_element, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", False, suffix="-alpha")
-    beta_element, _, beta_workspace = open_workspace(cli, tmpdir2, datafiles, "git", False, suffix="-beta")
+    _, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", False, suffix="-alpha")
+    beta_element, _, _ = open_workspace(cli, tmpdir2, datafiles, "git", False, suffix="-beta")
 
     result = cli.run(project=project, args=['-C', alpha_workspace, 'workspace', 'close', beta_element])
     result.assert_success()
@@ -1179,7 +1186,7 @@ def test_external_close_self(cli, datafiles, tmpdir_factory, guess_element):
     tmpdir2 = tmpdir_factory.mktemp('')
     # Making use of the assumption that it's the same project in both invocations of open_workspace
     alpha_element, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", False, suffix="-alpha")
-    beta_element, _, beta_workspace = open_workspace(cli, tmpdir2, datafiles, "git", False, suffix="-beta")
+    _, _, _ = open_workspace(cli, tmpdir2, datafiles, "git", False, suffix="-beta")
     arg_elm = [alpha_element] if not guess_element else []
 
     result = cli.run(project=project, args=['-C', alpha_workspace, 'workspace', 'close', *arg_elm])
@@ -1192,8 +1199,8 @@ def test_external_reset_other(cli, datafiles, tmpdir_factory):
     tmpdir1 = tmpdir_factory.mktemp('')
     tmpdir2 = tmpdir_factory.mktemp('')
     # Making use of the assumption that it's the same project in both invocations of open_workspace
-    alpha_element, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", False, suffix="-alpha")
-    beta_element, _, beta_workspace = open_workspace(cli, tmpdir2, datafiles, "git", False, suffix="-beta")
+    _, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", False, suffix="-alpha")
+    beta_element, _, _ = open_workspace(cli, tmpdir2, datafiles, "git", False, suffix="-beta")
 
     result = cli.run(project=project, args=['-C', alpha_workspace, 'workspace', 'reset', beta_element])
     result.assert_success()
@@ -1218,7 +1225,7 @@ def test_external_reset_self(cli, datafiles, tmpdir, guess_element):
 def test_external_list(cli, datafiles, tmpdir_factory):
     tmpdir = tmpdir_factory.mktemp('')
     # Making use of the assumption that it's the same project in both invocations of open_workspace
-    element, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", False)
+    _, project, workspace = open_workspace(cli, tmpdir, datafiles, "git", False)
 
     result = cli.run(project=project, args=['-C', workspace, 'workspace', 'list'])
     result.assert_success()

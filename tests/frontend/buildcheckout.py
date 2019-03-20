@@ -1,12 +1,17 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import tarfile
 import hashlib
-import pytest
 import subprocess
-from tests.testutils.site import IS_WINDOWS
-from tests.testutils import create_repo, generate_junction
 
-from buildstream.plugintestutils import cli
+import pytest
+
+from tests.testutils.site import IS_WINDOWS
+from tests.testutils import generate_junction
+
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
@@ -792,7 +797,7 @@ def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
+def test_build_junction_transitive_short_notation_with_junction(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')

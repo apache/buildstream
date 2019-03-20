@@ -1,11 +1,16 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
-import pytest
 import re
+
+import pytest
+
 from tests.testutils import create_repo
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 
 # Project directory
 DATA_DIR = os.path.join(
@@ -43,7 +48,7 @@ def test_default_logging(cli, tmpdir, datafiles):
     result.assert_success()
 
     m = re.search(r"\[\d\d:\d\d:\d\d\]\[\s*\]\[.*\] SUCCESS Checking sources", result.stderr)
-    assert(m is not None)
+    assert m is not None
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -81,7 +86,7 @@ def test_custom_logging(cli, tmpdir, datafiles):
 
     m = re.search(r"\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6},\d\d:\d\d:\d\d,\d\d:\d\d:\d\d.\d{6}\s*,.*"
                   r",SUCCESS,Checking sources", result.stderr)
-    assert(m is not None)
+    assert m is not None
 
 
 @pytest.mark.datafiles(DATA_DIR)

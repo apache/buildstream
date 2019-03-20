@@ -1,9 +1,12 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import textwrap
 import pytest
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 
 from tests.testutils import generate_junction, create_repo
 
@@ -301,19 +304,6 @@ def test_local_to_junction(cli, tmpdir, datafiles):
                       os.path.join(project, 'junction.bst'),
                       store_ref=True)
 
-    result = cli.run(project=project, args=[
-        'show',
-        '--deps', 'none',
-        '--format', '%{vars}',
-        'element.bst'])
-    result.assert_success()
-    loaded = _yaml.load_data(result.output)
-    assert loaded['included'] == 'True'
-
-
-@pytest.mark.datafiles(DATA_DIR)
-def test_include_project_file(cli, datafiles):
-    project = os.path.join(str(datafiles), 'string')
     result = cli.run(project=project, args=[
         'show',
         '--deps', 'none',

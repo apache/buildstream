@@ -17,12 +17,17 @@
 #  Authors:
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 #
+
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
-import pytest
 import shutil
 
+import pytest
+
 from buildstream._exceptions import ErrorDomain
-from buildstream.plugintestutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
 
 from tests.testutils.element_generators import create_element_size
 

@@ -35,13 +35,19 @@
 # run over to the corresponding .expected source files and commit
 # the result.
 #
-from buildstream.plugintestutils.runcli import cli
-from tests.testutils.site import HAVE_BZR, HAVE_GIT, HAVE_OSTREE, IS_LINUX, MACHINE_ARCH
+
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
+from collections import OrderedDict
+import os
+
+import pytest
+
+from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
 from buildstream.plugin import CoreWarnings
 from buildstream import _yaml
-import os
-from collections import OrderedDict
-import pytest
+from tests.testutils.site import HAVE_BZR, HAVE_GIT, HAVE_OSTREE, IS_LINUX, MACHINE_ARCH
 
 
 ##############################################
@@ -56,7 +62,7 @@ def element_filename(project_dir, element_name, alt_suffix=None):
     if alt_suffix:
 
         # Just in case...
-        assert(element_name.endswith('.bst'))
+        assert element_name.endswith('.bst')
 
         # Chop off the 'bst' in '.bst' and add the new suffix
         element_name = element_name[:-3]
@@ -179,7 +185,7 @@ def test_cache_key(datafiles, cli):
     [[CoreWarnings.REF_NOT_IN_TRACK], [], False],
     [[CoreWarnings.REF_NOT_IN_TRACK], [CoreWarnings.REF_NOT_IN_TRACK], True],
     [[CoreWarnings.REF_NOT_IN_TRACK, CoreWarnings.OVERLAPS],
-        [CoreWarnings.OVERLAPS, CoreWarnings.REF_NOT_IN_TRACK], True],
+     [CoreWarnings.OVERLAPS, CoreWarnings.REF_NOT_IN_TRACK], True],
 ])
 def test_cache_key_fatal_warnings(cli, tmpdir, first_warnings, second_warnings, identical_keys):
 

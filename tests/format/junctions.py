@@ -1,10 +1,14 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
-import pytest
 import shutil
+
+import pytest
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from tests.testutils import create_repo
 from tests.testutils.site import HAVE_GIT
 
@@ -44,8 +48,8 @@ def test_simple_build(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected files from both projects
-    assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'foo.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'base.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'foo.txt'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -141,8 +145,8 @@ def test_missing_junction_in_subproject(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_nested_simple(cli, tmpdir, datafiles):
-    foo = os.path.join(str(datafiles), 'foo')
-    copy_subprojects(foo, datafiles, ['base'])
+    project = os.path.join(str(datafiles), 'foo')
+    copy_subprojects(project, datafiles, ['base'])
 
     project = os.path.join(str(datafiles), 'nested')
     copy_subprojects(project, datafiles, ['foo'])
@@ -156,17 +160,17 @@ def test_nested_simple(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected files from all subprojects
-    assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'foo.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'base.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'foo.txt'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_nested_double(cli, tmpdir, datafiles):
-    foo = os.path.join(str(datafiles), 'foo')
-    copy_subprojects(foo, datafiles, ['base'])
+    project_foo = os.path.join(str(datafiles), 'foo')
+    copy_subprojects(project_foo, datafiles, ['base'])
 
-    bar = os.path.join(str(datafiles), 'bar')
-    copy_subprojects(bar, datafiles, ['base'])
+    project_bar = os.path.join(str(datafiles), 'bar')
+    copy_subprojects(project_bar, datafiles, ['base'])
 
     project = os.path.join(str(datafiles), 'toplevel')
     copy_subprojects(project, datafiles, ['base', 'foo', 'bar'])
@@ -180,18 +184,18 @@ def test_nested_double(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected files from all subprojects
-    assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'foo.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'bar.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'base.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'foo.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'bar.txt'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_nested_conflict(cli, datafiles):
-    foo = os.path.join(str(datafiles), 'foo')
-    copy_subprojects(foo, datafiles, ['base'])
+    project_foo = os.path.join(str(datafiles), 'foo')
+    copy_subprojects(project_foo, datafiles, ['base'])
 
-    bar = os.path.join(str(datafiles), 'bar')
-    copy_subprojects(bar, datafiles, ['base'])
+    project_bar = os.path.join(str(datafiles), 'bar')
+    copy_subprojects(project_bar, datafiles, ['base'])
 
     project = os.path.join(str(datafiles), 'conflict')
     copy_subprojects(project, datafiles, ['foo', 'bar'])
@@ -252,8 +256,8 @@ def test_options_default(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
-    assert(os.path.exists(os.path.join(checkoutdir, 'pony.txt')))
-    assert(not os.path.exists(os.path.join(checkoutdir, 'horsy.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'pony.txt'))
+    assert not os.path.exists(os.path.join(checkoutdir, 'horsy.txt'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -269,8 +273,8 @@ def test_options(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
-    assert(not os.path.exists(os.path.join(checkoutdir, 'pony.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'horsy.txt')))
+    assert not os.path.exists(os.path.join(checkoutdir, 'pony.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'horsy.txt'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -286,8 +290,8 @@ def test_options_inherit(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
     result.assert_success()
 
-    assert(not os.path.exists(os.path.join(checkoutdir, 'pony.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'horsy.txt')))
+    assert not os.path.exists(os.path.join(checkoutdir, 'pony.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'horsy.txt'))
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -347,8 +351,8 @@ def test_git_build(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected files from both projects
-    assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
-    assert(os.path.exists(os.path.join(checkoutdir, 'foo.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'base.txt'))
+    assert os.path.exists(os.path.join(checkoutdir, 'foo.txt'))
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -414,4 +418,4 @@ def test_build_git_cross_junction_names(cli, tmpdir, datafiles):
     result.assert_success()
 
     # Check that the checkout contains the expected files from both projects
-    assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
+    assert os.path.exists(os.path.join(checkoutdir, 'base.txt'))

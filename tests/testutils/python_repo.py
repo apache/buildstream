@@ -1,8 +1,9 @@
 import os
-import pytest
 import re
 import shutil
 import subprocess
+
+import pytest
 
 
 SETUP_TEMPLATE = '''\

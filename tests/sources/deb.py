@@ -1,10 +1,14 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
-import pytest
 import shutil
+
+import pytest
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from tests.testutils.site import HAVE_ARPY
 from . import list_dir_contents
 
@@ -117,7 +121,7 @@ def test_stage_default_basedir(cli, tmpdir, datafiles):
     original_dir = os.path.join(str(datafiles), "content")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 # Test that a staged checkout matches what was tarred up, with an empty base-dir
@@ -145,7 +149,7 @@ def test_stage_no_basedir(cli, tmpdir, datafiles):
     original_dir = os.path.join(str(datafiles), "content")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 # Test that a staged checkout matches what was tarred up, with an explicit basedir
@@ -173,4 +177,4 @@ def test_stage_explicit_basedir(cli, tmpdir, datafiles):
     original_dir = os.path.join(str(datafiles), "content")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents

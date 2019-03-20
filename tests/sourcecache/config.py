@@ -17,13 +17,17 @@
 #  Authors:
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 #
+
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import pytest
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
-from buildstream.plugintestutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
 
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 

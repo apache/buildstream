@@ -16,13 +16,16 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import shutil
 import pytest
 
 from tests.testutils import create_repo, ALL_REPO_KINDS
 
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 
 # Project directory
@@ -88,7 +91,7 @@ class WorkspaceCreator():
                 raise "terable error"
 
         for suffix, kind in zip(suffixs, kinds):
-            element_name, element_path, workspace_dir = \
+            element_name, _, workspace_dir = \
                 self.create_workspace_element(kind, track, suffix, workspace_dir_usr,
                                               element_attrs)
             element_tuples.append((element_name, workspace_dir))
@@ -136,8 +139,8 @@ class WorkspaceCreator():
             assert not any(states[e] != 'buildable' for e, _ in element_tuples)
 
             # Check that the executable hello file is found in each workspace
-            for element_name, workspace_dir in element_tuples:
-                filename = os.path.join(workspace_dir, 'usr', 'bin', 'hello')
+            for _, workspace in element_tuples:
+                filename = os.path.join(workspace, 'usr', 'bin', 'hello')
                 assert os.path.exists(filename)
 
         return element_tuples

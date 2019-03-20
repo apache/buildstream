@@ -1,14 +1,18 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
-import pytest
+from shutil import copyfile, rmtree
+import subprocess
 import tarfile
 import tempfile
-import subprocess
 import urllib.parse
-from shutil import copyfile, rmtree
+
+import pytest
 
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from tests.testutils.file_server import create_file_server
 from tests.testutils.site import HAVE_LZIP
 from . import list_dir_contents
@@ -146,7 +150,7 @@ def test_stage_default_basedir(cli, tmpdir, datafiles, srcdir):
     original_dir = os.path.join(str(datafiles), "content", "a")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 # Test that a staged checkout matches what was tarred up, with an empty base-dir
@@ -175,7 +179,7 @@ def test_stage_no_basedir(cli, tmpdir, datafiles, srcdir):
     original_dir = os.path.join(str(datafiles), "content")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 # Test that a staged checkout matches what was tarred up, with an explicit basedir
@@ -204,7 +208,7 @@ def test_stage_explicit_basedir(cli, tmpdir, datafiles, srcdir):
     original_dir = os.path.join(str(datafiles), "content", "a")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 # Test that we succeed to extract tarballs with hardlinks when stripping the
@@ -240,7 +244,7 @@ def test_stage_contains_links(cli, tmpdir, datafiles):
     original_dir = os.path.join(str(datafiles), "content", "base-directory")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 @pytest.mark.skipif(not HAVE_LZIP, reason='lzip is not available')
@@ -269,7 +273,7 @@ def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
     original_dir = os.path.join(str(datafiles), "content", "a")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
-    assert(checkout_contents == original_contents)
+    assert checkout_contents == original_contents
 
 
 # Test that a tarball that contains a read only dir works
@@ -354,7 +358,7 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
         original_dir = os.path.join(str(datafiles), 'content', 'a')
         original_contents = list_dir_contents(original_dir)
         checkout_contents = list_dir_contents(checkoutdir)
-        assert(checkout_contents == original_contents)
+        assert checkout_contents == original_contents
 
 
 @pytest.mark.parametrize('server_type', ('FTP', 'HTTP'))

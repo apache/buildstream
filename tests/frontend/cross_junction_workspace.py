@@ -1,5 +1,8 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 
 from tests.testutils import create_repo
@@ -64,7 +67,7 @@ def test_open_cross_junction(cli, tmpdir):
 
 
 def test_list_cross_junction(cli, tmpdir):
-    project, workspace = open_cross_junction(cli, tmpdir)
+    project, _ = open_cross_junction(cli, tmpdir)
 
     element = 'sub.bst:data.bst'
 
@@ -97,7 +100,7 @@ def test_close_cross_junction(cli, tmpdir):
     loaded = _yaml.load_data(result.output)
     assert isinstance(loaded.get('workspaces'), list)
     workspaces = loaded['workspaces']
-    assert len(workspaces) == 0
+    assert not workspaces
 
 
 def test_close_all_cross_junction(cli, tmpdir):
@@ -116,7 +119,7 @@ def test_close_all_cross_junction(cli, tmpdir):
     loaded = _yaml.load_data(result.output)
     assert isinstance(loaded.get('workspaces'), list)
     workspaces = loaded['workspaces']
-    assert len(workspaces) == 0
+    assert not workspaces
 
 
 def test_subdir_command_cross_junction(cli, tmpdir):

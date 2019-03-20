@@ -1,10 +1,9 @@
 import glob
 import os
-import pytest
-import shutil
 import subprocess
 import sys
-import time
+
+import pytest
 
 
 # An ExternalPluginRepo represents a git repository containing a plugin
@@ -18,10 +17,13 @@ import time
 #          used to specify a subset of test files from the repository to run.
 #          These must be specified relative to the root of the repository.
 class ExternalPluginRepo():
-    def __init__(self, name, url, ref, test_match_patterns=["tests"]):
+    def __init__(self, name, url, ref, test_match_patterns=None):
         self.name = name
         self.url = url
         self.ref = ref
+
+        if test_match_patterns is None:
+            test_match_patterns = ["tests"]
 
         self._test_match_patterns = test_match_patterns
         self._clone_location = None
@@ -40,9 +42,9 @@ class ExternalPluginRepo():
     def install(self):
         subprocess.run(['pip3', 'install', self._clone_location])
 
-    def test(self, pytest_args):
+    def test(self, args):
         test_files = self._match_test_patterns()
-        return pytest.main(pytest_args + test_files)
+        return pytest.main(args + test_files)
 
     def _match_test_patterns(self):
         match_list = []
@@ -57,26 +59,24 @@ class ExternalPluginRepo():
         return match_list
 
 
-def run_repo_tests(repo, tmpdir, pytest_args):
-    print("Cloning repo {} to {}...".format(repo.name, tmpdir))
-    repo.clone(tmpdir)
+def run_repo_tests(repo, tempdir, args):
+    print("Cloning repo {} to {}...".format(repo.name, tempdir))
+    repo.clone(tempdir)
 
     print("Installing {}...".format(repo.name))
     repo.install()
 
     print("Testing {}...".format(repo.name))
-    return repo.test(pytest_args)
+    return repo.test(args)
 
 
 if __name__ == "__main__":
-    from sys import argv
-
     # Args:
     #    tmpdir: The directory in which this script will clone external
     #            repositories and use pytest's tmpdir.
     #    pytest_args: any remaining arguments to this script will be passed
     #                 directly to it's pytest invocations
-    _, tmpdir, *pytest_args = argv
+    _, tmpdir, *pytest_args = sys.argv
 
     ALL_EXTERNAL_PLUGINS = [
         ExternalPluginRepo(

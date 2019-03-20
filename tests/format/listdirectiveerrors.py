@@ -1,7 +1,10 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import pytest
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from buildstream.plugintestutils.runcli import cli
+from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
 
 # Project directory
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -35,7 +38,7 @@ def test_element_error(cli, datafiles, target):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_project_error(cli, datafiles):
+def test_project_composite_error(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, 'list-directive-type-error')
     result = cli.run(project=project, silent=True, args=[
         'show',

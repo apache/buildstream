@@ -1,3 +1,6 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import re
 import shutil
@@ -8,7 +11,7 @@ import pytest
 from tests.testutils import create_repo
 
 from buildstream import _yaml
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream._exceptions import ErrorDomain
 
 from . import configure_project

@@ -1,6 +1,9 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import pytest
-from buildstream.plugintestutils import cli
+from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 
 from buildstream import _yaml
 from buildstream._frontend.app import App
@@ -83,14 +86,6 @@ def test_bad_format_version(cli, tmpdir, format_version):
         'init', '--project-name', 'foo', '--format-version', format_version
     ])
     result.assert_main_error(ErrorDomain.APP, 'invalid-format-version')
-
-
-@pytest.mark.parametrize("element_path", [('/absolute/path'), ('../outside/of/project')])
-def test_bad_element_path(cli, tmpdir, element_path):
-    result = cli.run(project=str(tmpdir), args=[
-        'init', '--project-name', 'foo', '--element-path', element_path
-    ])
-    result.assert_main_error(ErrorDomain.APP, 'invalid-element-path')
 
 
 @pytest.mark.parametrize("element_path", [('/absolute/path'), ('../outside/of/project')])

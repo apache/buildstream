@@ -1,28 +1,28 @@
-from buildstream._frontend.app import _prefix_choice_value_proc
-
-import pytest
 import click
+import pytest
+
+from buildstream._frontend.app import _prefix_choice_value_proc
 
 
 def test_prefix_choice_value_proc_full_match():
     value_proc = _prefix_choice_value_proc(['foo', 'bar', 'baz'])
 
-    assert("foo" == value_proc("foo"))
-    assert("bar" == value_proc("bar"))
-    assert("baz" == value_proc("baz"))
+    assert value_proc("foo") == "foo"
+    assert value_proc("bar") == "bar"
+    assert value_proc("baz") == "baz"
 
 
 def test_prefix_choice_value_proc_prefix_match():
     value_proc = _prefix_choice_value_proc(['foo'])
 
-    assert ("foo" == value_proc("f"))
+    assert value_proc("f") == "foo"
 
 
 def test_prefix_choice_value_proc_ambigous_match():
     value_proc = _prefix_choice_value_proc(['bar', 'baz'])
 
-    assert ("bar" == value_proc("bar"))
-    assert ("baz" == value_proc("baz"))
+    assert value_proc("bar") == "bar"
+    assert value_proc("baz") == "baz"
     with pytest.raises(click.UsageError):
         value_proc("ba")
 
