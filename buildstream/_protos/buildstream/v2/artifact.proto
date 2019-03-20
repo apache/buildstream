@@ -1,0 +1,88 @@
+// Copyright 2019 Bloomberg Finance LP
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Authors
+//      Raoul Hidalgo Charman <raoul.hidalgo.charman@gmail.com>
+
+syntax = "proto3";
+
+package buildstream.v2;
+
+import "build/bazel/remote/execution/v2/remote_execution.proto";
+import "google/api/annotations.proto";
+
+service ArtifactService {
+  // Retrieves an Artifact message
+  //
+  // Errors:
+  // * `NOT_FOUND`: Artifact not found on server
+  rpc GetArtifact(GetArtifactRequest) returns (Artifact) {}
+
+  // Sets an Artifact message
+  //
+  // Errors:
+  // * `FAILED_PRECONDITION`: Files specified in upload aren't present in CAS
+  rpc UpdateArtifact(UpdateArtifactRequest) returns (Artifact) {}
+}
+
+message Artifact {
+  // This version number must always be present and can be used to
+  // further indicate presence or absence of parts of the proto at a
+  // later date.  It only needs incrementing if a change to what is
+  // *mandatory* changes.
+  int32 version = 1;
+  // Core metadata
+  bool build_success = 2;
+  string build_error = 3;  // optional
+  string build_error_details = 4;
+  string strong_key = 5;
+  string weak_key = 6;
+  bool was_workspaced = 7;
+  // digest of a Directory
+  build.bazel.remote.execution.v2.Digest files = 8;
+
+  // Information about the build dependencies
+  message Dependency {
+    string element_name = 1;
+    string cache_key = 2;
+    bool was_workspaced = 3;
+  };
+  repeated Dependency build_deps = 9;
+
+  // The public data is a yaml file which is stored into the CAS
+  // Digest is of a directory
+  build.bazel.remote.execution.v2.Digest public_data = 10;
+
+  // The logs are stored in the CAS
+  message LogFile {
+    string name = 1;
+    // digest of a file
+    build.bazel.remote.execution.v2.Digest digest = 2;
+  };
+  repeated LogFile logs = 11;  // Zero or more log files here
+
+  // digest of a directory
+  build.bazel.remote.execution.v2.Digest buildtree = 12;  // optional
+}
+
+message GetArtifactRequest {
+  string instance_name = 1;
+  string cache_key = 2;
+}
+
+message UpdateArtifactRequest {
+  string instance_name = 1;
+  string cache_key = 2;
+  Artifact artifact = 3;
+}
