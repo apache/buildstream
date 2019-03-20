@@ -531,7 +531,7 @@ class App():
                 queue = job.queue
 
                 # Get the last failure message for additional context
-                failure = self._fail_messages.get(element._get_unique_id())
+                failure = self._fail_messages.get(element._unique_id)
 
                 # XXX This is dangerous, sometimes we get the job completed *before*
                 # the failure message reaches us ??

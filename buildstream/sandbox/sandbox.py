@@ -122,7 +122,7 @@ class Sandbox():
         # Plugin ID for logging
         plugin = kwargs.get('plugin', None)
         if plugin:
-            self.__plugin_id = plugin._get_unique_id()
+            self.__plugin_id = plugin._unique_id
         else:
             self.__plugin_id = None
 

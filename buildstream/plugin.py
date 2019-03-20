@@ -216,10 +216,10 @@ class Plugin():
         # Unique ID
         #
         # This id allows to uniquely identify a plugin.
-        self.__unique_id = next(self.__id_generator)
+        self._unique_id = next(self.__id_generator)
 
         # register ourself in the table containing all existing plugins
-        self.__TABLE[self.__unique_id] = self
+        self.__TABLE[self._unique_id] = self
 
         self.__context = context        # The Context object
         self.__project = project        # The Project object
@@ -602,7 +602,7 @@ class Plugin():
               self.call(... command which takes time ...)
         """
         with self.__context.timed_activity(activity_name,
-                                           unique_id=self.__unique_id,
+                                           unique_id=self._unique_id,
                                            detail=detail,
                                            silent_nested=silent_nested):
             yield
@@ -725,13 +725,6 @@ class Plugin():
     def _get_project(self):
         return self.__project
 
-    # _get_unique_id():
-    #
-    # Fetch the plugin's unique identifier
-    #
-    def _get_unique_id(self):
-        return self.__unique_id
-
     # _get_provenance():
     #
     # Fetch bst file, line and column of the entity
@@ -816,7 +809,7 @@ class Plugin():
         return (exit_code, output)
 
     def __message(self, message_type, brief, **kwargs):
-        message = Message(self.__unique_id, message_type, brief, **kwargs)
+        message = Message(self._unique_id, message_type, brief, **kwargs)
         self.__context.message(message)
 
     def __note_command(self, output, *popenargs, **kwargs):
