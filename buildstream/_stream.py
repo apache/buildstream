@@ -553,7 +553,7 @@ class Stream():
             try:
                 self._artifacts.remove(ref, defer_prune=True)
             except CASCacheError as e:
-                self._message(MessageType.WARN, "{}".format(e))
+                self._message(MessageType.WARN, str(e))
                 continue
 
             self._message(MessageType.INFO, "Removed: {}".format(ref))
