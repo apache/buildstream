@@ -520,7 +520,7 @@ class _CacheCleaner:
             self.__cas.clean_up_refs_until(last_mtime)
 
             if removed_size > 0:
-                logging.info("Successfully removed {} bytes from the cache".format(removed_size))
+                logging.info("Successfully removed %d bytes from the cache", removed_size)
             else:
                 logging.info("No artifacts were removed from the cache.")
 
