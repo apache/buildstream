@@ -24,7 +24,7 @@ from .. import _site
 from .. import utils
 from ..sandbox import SandboxDummy
 
-from . import Platform
+from .platform import Platform
 from .._exceptions import PlatformError
 
 

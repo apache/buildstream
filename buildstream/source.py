@@ -165,8 +165,9 @@ import os
 from collections.abc import Mapping
 from contextlib import contextmanager
 
-from . import Plugin, Consistency
 from . import _yaml, utils
+from .plugin import Plugin
+from .types import Consistency
 from ._exceptions import BstError, ImplError, ErrorDomain
 from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage

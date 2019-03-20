@@ -32,9 +32,8 @@ import os
 import shutil
 
 from . import _yaml
-from . import Scope
 from ._exceptions import ArtifactError
-from .types import _KeyStrength
+from .types import Scope, _KeyStrength
 from .storage._casbaseddirectory import CasBasedDirectory
 
 

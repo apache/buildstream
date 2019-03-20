@@ -135,8 +135,10 @@ artifact collection purposes.
 """
 
 import os
-from . import Element, Scope
-from . import SandboxFlags
+
+from .element import Element
+from .sandbox import SandboxFlags
+from .types import Scope
 
 
 # This list is preserved because of an unfortunate situation, we

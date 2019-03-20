@@ -30,8 +30,8 @@ from .._includes import Includes
 
 from .types import Symbol
 from .loadelement import LoadElement, _extract_depends_from_node
-from . import MetaElement
-from . import MetaSource
+from .metaelement import MetaElement
+from .metasource import MetaSource
 from ..types import CoreWarnings
 from .._message import Message, MessageType
 
@@ -562,7 +562,7 @@ class Loader():
         # Load the project
         project_dir = os.path.join(basedir, element.path)
         try:
-            from .._project import Project
+            from .._project import Project  # pylint: disable=cyclic-import
             project = Project(project_dir, self._context, junction=element,
                               parent_loader=self, search_for_project=False)
         except LoadError as e:

@@ -21,7 +21,7 @@ import os
 
 from .._exceptions import PlatformError
 
-from . import Platform
+from .platform import Platform
 
 
 class Unix(Platform):
