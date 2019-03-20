@@ -4,7 +4,7 @@
 import os
 import pytest
 
-from tests.testutils import create_repo, generate_junction
+from tests.testutils import create_repo, generate_junction, yaml_file_get_provenance
 
 from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream import _yaml
@@ -160,3 +160,8 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
     # informing the user to track the junction first
     result = cli.run(project=project, args=['source', 'fetch', 'junction-dep.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
+
+    # Assert that we have the expected provenance encoded into the error
+    provenance = yaml_file_get_provenance(
+        element_path, 'junction-dep.bst', key='depends', indices=[0])
+    assert str(provenance) in result.stderr

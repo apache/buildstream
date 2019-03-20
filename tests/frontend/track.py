@@ -4,7 +4,7 @@
 import stat
 import os
 import pytest
-from tests.testutils import create_repo, generate_junction
+from tests.testutils import create_repo, generate_junction, yaml_file_get_provenance
 
 from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
@@ -274,6 +274,11 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
     result = cli.run(project=project, args=['source', 'track', 'junction-dep.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
 
+    # Assert that we have the expected provenance encoded into the error
+    provenance = yaml_file_get_provenance(
+        element_path, 'junction-dep.bst', key='depends', indices=[0])
+    assert str(provenance) in result.stderr
+
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
@@ -306,6 +311,11 @@ def test_junction_element(cli, tmpdir, datafiles, ref_storage):
     # First demonstrate that showing the pipeline yields an error
     result = cli.run(project=project, args=['show', 'junction-dep.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
+
+    # Assert that we have the expected provenance encoded into the error
+    provenance = yaml_file_get_provenance(
+        element_path, 'junction-dep.bst', key='depends', indices=[0])
+    assert str(provenance) in result.stderr
 
     # Now track the junction itself
     result = cli.run(project=project, args=['source', 'track', 'junction.bst'])

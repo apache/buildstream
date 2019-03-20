@@ -6,7 +6,7 @@ import sys
 import shutil
 import itertools
 import pytest
-from tests.testutils import generate_junction
+from tests.testutils import generate_junction, yaml_file_get_provenance
 from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
@@ -277,8 +277,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
-@pytest.mark.parametrize("element_name", ['junction-dep.bst', 'junction.bst:import-etc.bst'])
-def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage, element_name):
+def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
     project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
@@ -305,10 +304,20 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage, element_name
     _yaml.dump(element, element_path)
 
     # Assert the correct error when trying to show the pipeline
-    result = cli.run(project=project, silent=True, args=[
-        'show', element_name])
+    dep_result = cli.run(project=project, silent=True, args=[
+        'show', 'junction-dep.bst'])
 
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
+    # Assert the correct error when trying to show the pipeline
+    etc_result = cli.run(project=project, silent=True, args=[
+        'show', 'junction.bst:import-etc.bst'])
+
+    # Assert that we have the expected provenance encoded into the error
+    provenance = yaml_file_get_provenance(
+        element_path, 'junction-dep.bst', key='depends', indices=[0])
+    assert str(provenance) in dep_result.stderr
+
+    dep_result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
+    etc_result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
