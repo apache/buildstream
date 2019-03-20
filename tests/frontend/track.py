@@ -51,8 +51,10 @@ def test_track_single(cli, tmpdir, datafiles):
 
     # Assert that tracking is needed for both elements
     states = cli.get_element_states(project, [element_target_name])
-    assert states[element_dep_name] == 'no reference'
-    assert states[element_target_name] == 'no reference'
+    assert states == {
+        element_dep_name: "no reference",
+        element_target_name: "no reference",
+    }
 
     # Now first try to track only one element
     result = cli.run(project=project, args=[
@@ -68,8 +70,10 @@ def test_track_single(cli, tmpdir, datafiles):
 
     # Assert that the dependency is waiting and the target has still never been tracked
     states = cli.get_element_states(project, [element_target_name])
-    assert states[element_dep_name] == 'no reference'
-    assert states[element_target_name] == 'waiting'
+    assert states == {
+        element_dep_name: 'no reference',
+        element_target_name: 'waiting',
+    }
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR))

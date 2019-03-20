@@ -255,6 +255,7 @@ def test_keys_stable_over_targets(cli, datafiles):
     ordering2_result.assert_success()
     ordering2_cache_keys = parse_output_keys(ordering2_result.output)
 
-    for element in ordering1_cache_keys:
-        assert ordering1_cache_keys[element] == ordering2_cache_keys[element]
-        assert ordering1_cache_keys[element] == all_cache_keys[element]
+    elements = ordering1_cache_keys.keys()
+
+    assert {key: ordering2_cache_keys[key] for key in elements} == ordering1_cache_keys
+    assert {key: all_cache_keys[key] for key in elements} == ordering1_cache_keys
