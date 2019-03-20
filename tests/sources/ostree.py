@@ -37,7 +37,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_submodule_track_no_ref_or_track(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('ostree', str(tmpdir))

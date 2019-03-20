@@ -19,7 +19,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_missing_project_conf(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['workspace', 'list'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_PROJECT_CONF)
 
@@ -124,7 +124,7 @@ def test_project_unsupported(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'element-path'))
 def test_missing_element_path_directory(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['workspace', 'list'])
     result.assert_main_error(ErrorDomain.LOAD,
                              LoadErrorReason.MISSING_FILE)
@@ -132,7 +132,7 @@ def test_missing_element_path_directory(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'element-path'))
 def test_element_path_not_a_directory(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     path = os.path.join(project, 'elements')
     for _file_type in filetypegenerator.generate_file_types(path):
         result = cli.run(project=project, args=['workspace', 'list'])
@@ -145,7 +145,7 @@ def test_element_path_not_a_directory(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'local-plugin'))
 def test_missing_local_plugin_directory(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['workspace', 'list'])
     result.assert_main_error(ErrorDomain.LOAD,
                              LoadErrorReason.MISSING_FILE)
@@ -153,7 +153,7 @@ def test_missing_local_plugin_directory(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'local-plugin'))
 def test_local_plugin_not_directory(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     path = os.path.join(project, 'plugins')
     for _file_type in filetypegenerator.generate_file_types(path):
         result = cli.run(project=project, args=['workspace', 'list'])

@@ -39,7 +39,7 @@ def generate_project_file_server(server, project_dir):
 # Test that without ref, consistency is set appropriately.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-ref'))
 def test_no_ref(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     assert cli.get_element_state(project, 'target.bst') == 'no reference'
 
@@ -48,7 +48,7 @@ def test_no_ref(cli, tmpdir, datafiles):
 # refers to 'file' but that file is not present.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'missing-file'))
 def test_missing_file(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
 
     # Try to fetch it
@@ -62,7 +62,7 @@ def test_missing_file(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'path-in-filename'))
 def test_path_in_filename(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
 
     # Try to fetch it
@@ -76,7 +76,7 @@ def test_path_in_filename(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'single-file'))
 def test_simple_file_build(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
@@ -109,7 +109,7 @@ def test_simple_file_build(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'single-file-custom-name'))
 def test_simple_file_custom_name_build(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
@@ -137,7 +137,7 @@ def test_unique_key(cli, tmpdir, datafiles):
     '''This test confirms that the 'filename' parameter is honoured when it comes
     to generating a cache key for the source.
     '''
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     states = cli.get_element_states(project, [
         'target.bst', 'target-custom.bst', 'target-custom-executable.bst'
@@ -169,7 +169,7 @@ def test_unique_key(cli, tmpdir, datafiles):
 def test_executable(cli, tmpdir, datafiles):
     '''This test confirms that the 'ecxecutable' parameter is honoured.
     '''
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
     assert cli.get_element_state(project, 'target-custom-executable.bst') == "fetch needed"

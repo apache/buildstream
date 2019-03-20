@@ -23,7 +23,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(DATA_DIR)
 def test_no_fetch_cached(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Create the repo from 'files' subdir
     repo = create_repo('git', str(tmpdir))

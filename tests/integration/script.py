@@ -32,7 +32,7 @@ def create_script_element(name, path, config={}, variables={}):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_script(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     element_path = os.path.join(project, 'elements')
     element_name = 'script/script-layout.bst'
@@ -60,7 +60,7 @@ def test_script(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_script_root(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     element_path = os.path.join(project, 'elements')
     element_name = 'script/script-layout.bst'
@@ -92,7 +92,7 @@ def test_script_root(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_script_no_root(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = os.path.join(project, 'elements')
     element_name = 'script/script-layout.bst'
 
@@ -115,7 +115,7 @@ def test_script_no_root(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_script_cwd(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     element_path = os.path.join(project, 'elements')
     element_name = 'script/script-layout.bst'
@@ -146,7 +146,7 @@ def test_script_cwd(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_script_layout(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'script/script-layout.bst'
 

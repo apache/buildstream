@@ -38,7 +38,7 @@ def default_state(cli, tmpdir, share):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_pullbuildtrees(cli2, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_name = 'autotools/amhello.bst'
 
     # Create artifact shares for pull & push testing
@@ -178,7 +178,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
 ])
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_cache_pullbuildtrees(cli, datafiles, value, success):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     cli.configure({
         'cache': {

@@ -19,7 +19,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_integration_commands_build(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     result = cli.run(project=project, args=['build', 'hello.bst'])
     assert result.exit_code == 0
@@ -31,7 +31,7 @@ def test_integration_commands_build(cli, datafiles):
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_integration_commands_run(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     result = cli.run(project=project, args=['build', 'hello.bst'])
     assert result.exit_code == 0

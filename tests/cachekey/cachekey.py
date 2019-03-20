@@ -158,7 +158,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.skipif(HAVE_OSTREE is False, reason="ostree is not available")
 @pytest.mark.datafiles(DATA_DIR)
 def test_cache_key(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Workaround bug in recent versions of setuptools: newer
     # versions of setuptools fail to preserve symbolic links
@@ -228,7 +228,7 @@ def test_keys_stable_over_targets(cli, datafiles):
     target1 = 'elements/key-stability/t1.bst'
     target2 = 'elements/key-stability/t2.bst'
 
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     full_graph_result = cli.run(project=project, args=[
         'show',
         '--format', '%{name}::%{full-key}',

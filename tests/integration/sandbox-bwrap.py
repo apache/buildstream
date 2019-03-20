@@ -22,7 +22,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.skipif(not HAVE_BWRAP, reason='Only available with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_sandbox_bwrap_cleanup_build(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     # This element depends on a base image with non-empty `/tmp` folder.
     element_name = 'sandbox-bwrap/test-cleanup.bst'
 
@@ -35,7 +35,7 @@ def test_sandbox_bwrap_cleanup_build(cli, datafiles):
 @pytest.mark.skipif(not HAVE_BWRAP_JSON_STATUS, reason='Only available with bubblewrap supporting --json-status-fd')
 @pytest.mark.datafiles(DATA_DIR)
 def test_sandbox_bwrap_distinguish_setup_error(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_name = 'sandbox-bwrap/non-executable-shell.bst'
 
     result = cli.run(project=project, args=['build', element_name])
@@ -45,7 +45,7 @@ def test_sandbox_bwrap_distinguish_setup_error(cli, datafiles):
 @pytest.mark.skipif(not HAVE_BWRAP, reason='Only available with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_sandbox_bwrap_return_subprocess(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_name = 'sandbox-bwrap/command-exit-42.bst'
 
     cli.configure({

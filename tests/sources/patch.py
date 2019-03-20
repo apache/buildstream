@@ -16,7 +16,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_missing_patch(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Removing the local file causes preflight to fail
     localfile = os.path.join(project, 'file_1.patch')
@@ -30,7 +30,7 @@ def test_missing_patch(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_non_regular_file_patch(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     patch_path = os.path.join(project, 'irregular_file.patch')
     for _file_type in filetypegenerator.generate_file_types(patch_path):
@@ -46,7 +46,7 @@ def test_non_regular_file_patch(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_invalid_absolute_path(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     with open(os.path.join(project, "target.bst"), 'r') as f:
         old_yaml = f.read()
@@ -64,7 +64,7 @@ def test_invalid_absolute_path(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'invalid-relative-path'))
 def test_invalid_relative_path(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     result = cli.run(project=project, args=['show', 'irregular.bst'])
     result.assert_main_error(ErrorDomain.LOAD,
@@ -73,7 +73,7 @@ def test_invalid_relative_path(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_stage_and_patch(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Build, checkout
@@ -89,7 +89,7 @@ def test_stage_and_patch(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_stage_file_nonexistent_dir(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Fails at build time because it tries to patch into a non-existing directory
     result = cli.run(project=project, args=['build', 'failure-nonexistent-dir.bst'])
@@ -99,7 +99,7 @@ def test_stage_file_nonexistent_dir(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_stage_file_empty_dir(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Fails at build time because it tries to patch with nothing else staged
     result = cli.run(project=project, args=['build', 'failure-empty-dir.bst'])
@@ -109,7 +109,7 @@ def test_stage_file_empty_dir(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'separate-patch-dir'))
 def test_stage_separate_patch_dir(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Track, fetch, build, checkout
@@ -125,7 +125,7 @@ def test_stage_separate_patch_dir(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'multiple-patches'))
 def test_stage_multiple_patches(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Track, fetch, build, checkout
@@ -141,7 +141,7 @@ def test_stage_multiple_patches(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'different-strip-level'))
 def test_patch_strip_level(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Track, fetch, build, checkout

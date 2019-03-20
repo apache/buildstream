@@ -68,7 +68,7 @@ def generate_project_file_server(base_url, project_dir):
 # Test that without ref, consistency is set appropriately.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-ref'))
 def test_no_ref(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     assert cli.get_element_state(project, 'target.bst') == 'no reference'
 
@@ -76,7 +76,7 @@ def test_no_ref(cli, tmpdir, datafiles):
 # Test that when I fetch a nonexistent URL, errors are handled gracefully and a retry is performed.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_fetch_bad_url(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
 
     # Try to fetch it
@@ -91,7 +91,7 @@ def test_fetch_bad_url(cli, tmpdir, datafiles):
 # Test that when I fetch with an invalid ref, it fails.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_fetch_bad_ref(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
 
     # Create a local tar
@@ -109,7 +109,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
 # Test that when tracking with a ref set, there is a warning
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_track_warning(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
 
     # Create a local tar
@@ -128,7 +128,7 @@ def test_track_warning(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 @pytest.mark.parametrize("srcdir", ["a", "./a"])
 def test_stage_default_basedir(cli, tmpdir, datafiles, srcdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
@@ -157,7 +157,7 @@ def test_stage_default_basedir(cli, tmpdir, datafiles, srcdir):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-basedir'))
 @pytest.mark.parametrize("srcdir", ["a", "./a"])
 def test_stage_no_basedir(cli, tmpdir, datafiles, srcdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
@@ -186,7 +186,7 @@ def test_stage_no_basedir(cli, tmpdir, datafiles, srcdir):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'explicit-basedir'))
 @pytest.mark.parametrize("srcdir", ["a", "./a"])
 def test_stage_explicit_basedir(cli, tmpdir, datafiles, srcdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
@@ -215,7 +215,7 @@ def test_stage_explicit_basedir(cli, tmpdir, datafiles, srcdir):
 # leading paths
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'contains-links'))
 def test_stage_contains_links(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
@@ -251,7 +251,7 @@ def test_stage_contains_links(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 @pytest.mark.parametrize("srcdir", ["a", "./a"])
 def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
@@ -280,7 +280,7 @@ def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'read-only'))
 def test_read_only_dir(cli, tmpdir, datafiles):
     try:
-        project = os.path.join(datafiles.dirname, datafiles.basename)
+        project = str(datafiles)
         generate_project(project, tmpdir)
 
         # Get the tarball in tests/sources/tar/read-only/content
@@ -397,7 +397,7 @@ def test_netrc_already_specified_user(cli, datafiles, server_type, tmpdir):
 # the netrc module is trying to find it's ~/.netrc file.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_homeless_environment(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
 
     # Create a local tar

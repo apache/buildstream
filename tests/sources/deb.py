@@ -40,7 +40,7 @@ def _copy_deb(start_location, tmpdir):
 @pytest.mark.skipif(HAVE_ARPY is False, reason="arpy is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-ref'))
 def test_no_ref(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     assert cli.get_element_state(project, 'target.bst') == 'no reference'
 
@@ -49,7 +49,7 @@ def test_no_ref(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_ARPY is False, reason="arpy is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_fetch_bad_url(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
 
     # Try to fetch it
@@ -64,7 +64,7 @@ def test_fetch_bad_url(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_ARPY is False, reason="arpy is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_fetch_bad_ref(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
 
     # Copy test deb to tmpdir
@@ -82,7 +82,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_ARPY is False, reason="arpy is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_track_warning(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
 
     # Copy test deb to tmpdir
@@ -100,7 +100,7 @@ def test_track_warning(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_ARPY is False, reason="arpy is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_stage_default_basedir(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
@@ -128,7 +128,7 @@ def test_stage_default_basedir(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_ARPY is False, reason="arpy is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-basedir'))
 def test_stage_no_basedir(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
@@ -156,7 +156,7 @@ def test_stage_no_basedir(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_ARPY is False, reason="arpy is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'explicit-basedir'))
 def test_stage_explicit_basedir(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 

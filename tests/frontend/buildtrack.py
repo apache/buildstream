@@ -54,7 +54,7 @@ def create_element(repo, name, path, dependencies, ref=None):
 ])
 def test_build_track(cli, datafiles, tmpdir, ref_storage,
                      track_targets, exceptions, tracked):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
 
@@ -164,7 +164,7 @@ def test_build_track(cli, datafiles, tmpdir, ref_storage,
 ])
 def test_build_track_update(cli, datafiles, tmpdir, track_targets,
                             exceptions, tracked):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
 
@@ -221,7 +221,7 @@ def test_build_track_update(cli, datafiles, tmpdir, track_targets,
 ])
 def test_build_track_inconsistent(cli, datafiles, tmpdir,
                                   track_targets, exceptions):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
 
@@ -267,7 +267,7 @@ def test_build_track_inconsistent(cli, datafiles, tmpdir,
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 @pytest.mark.parametrize("strict", ['--strict', '--no-strict'])
 def test_build_track_track_first(cli, datafiles, tmpdir, strict):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
 

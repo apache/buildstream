@@ -26,7 +26,7 @@ DATA_DIR = os.path.join(
     ('compose-all.bst', '%{state}', 'waiting')
 ])
 def test_show(cli, datafiles, target, fmt, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, silent=True, args=[
         'show',
         '--deps', 'none',
@@ -44,13 +44,13 @@ def test_show(cli, datafiles, target, fmt, expected):
     "invalid_element_path",
 ))
 def test_show_invalid_element_path(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     cli.run(project=project, silent=True, args=['show', "foo.bst"])
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project_default'))
 def test_show_default(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, silent=True, args=[
         'show'])
 
@@ -64,7 +64,7 @@ def test_show_default(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project_fail'))
 def test_show_fail(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, silent=True, args=[
         'show'])
 
@@ -79,7 +79,7 @@ def test_show_fail(cli, datafiles):
     ('compose-all.bst', 'import-bin.bst', ['import-dev.bst', 'compose-all.bst'])
 ])
 def test_show_except_simple(cli, datafiles, target, except_, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, silent=True, args=[
         'show',
         '--deps', 'all',
@@ -166,7 +166,7 @@ def test_show_except_simple(cli, datafiles, target, except_, expected):
     ]),
 ])
 def test_show_except(cli, datafiles, targets, exceptions, expected):
-    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    basedir = str(datafiles)
     results = cli.get_pipeline(basedir, targets, except_=exceptions, scope='all')
     if results != expected:
         raise AssertionError("Expected elements:\n{}\nInstead received elements:\n{}"
@@ -178,7 +178,7 @@ def test_show_except(cli, datafiles, targets, exceptions, expected):
 ###############################################################
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 def test_parallel_order(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     elements = ['multiple_targets/order/0.bst',
                 'multiple_targets/order/1.bst']
 
@@ -207,7 +207,7 @@ def test_parallel_order(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 def test_target_is_dependency(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     elements = ['multiple_targets/dependency/zebry.bst',
                 'multiple_targets/dependency/horsey.bst']
 
@@ -227,7 +227,7 @@ def test_target_is_dependency(cli, datafiles):
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 @pytest.mark.parametrize("element_name", ['junction-dep.bst', 'junction.bst:import-etc.bst'])
 def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -279,7 +279,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name):
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 @pytest.mark.parametrize("element_name", ['junction-dep.bst', 'junction.bst:import-etc.bst'])
 def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage, element_name):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -314,7 +314,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage, element_name
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 @pytest.mark.parametrize("element_name", ['junction-dep.bst', 'junction.bst:import-etc.bst'])
 def test_fetched_junction(cli, tmpdir, datafiles, element_name):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -413,7 +413,7 @@ def test_exceed_max_recursion_depth(cli, tmpdir, dependency_depth):
     ('%{runtime-deps}', '[import-bin.bst]')
 ])
 def test_format_deps(cli, datafiles, dep_kind, expected_deps):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     target = 'checkout-deps.bst'
     result = cli.run(project=project, silent=True, args=[
         'show',

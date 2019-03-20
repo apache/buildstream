@@ -47,7 +47,7 @@ def assert_not_shared(cli, share, project, element_name):
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_all(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
 
@@ -90,7 +90,7 @@ def test_push_pull_all(cli, tmpdir, datafiles):
 #
 @pytest.mark.datafiles(DATA_DIR + '_world')
 def test_push_pull_default_targets(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
 
@@ -140,7 +140,7 @@ def test_push_pull_default_targets(cli, tmpdir, datafiles):
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull_secondary_cache(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1')) as share1,\
         create_artifact_share(os.path.join(str(tmpdir), 'artifactshare2')) as share2:
@@ -181,7 +181,7 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_specific_remote(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'goodartifactshare')) as good_share,\
         create_artifact_share(os.path.join(str(tmpdir), 'badartifactshare')) as bad_share:
@@ -230,7 +230,7 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_non_strict(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
         # First build the target element and push to the remote.
@@ -279,7 +279,7 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
 # Regression test for https://gitlab.com/BuildStream/buildstream/issues/202
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_track_non_strict(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
 
@@ -322,7 +322,7 @@ def test_push_pull_track_non_strict(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_cross_junction(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
         subproject_path = os.path.join(project, 'files', 'sub-project')
@@ -353,7 +353,7 @@ def test_push_pull_cross_junction(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull_missing_blob(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
 
@@ -395,7 +395,7 @@ def test_pull_missing_blob(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull_missing_notifies_user(caplog, cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     caplog.set_level(1)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
@@ -415,7 +415,7 @@ def test_pull_missing_notifies_user(caplog, cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_remote_option(caplog, cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     caplog.set_level(1)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1')) as shareuser,\

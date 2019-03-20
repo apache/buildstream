@@ -19,7 +19,7 @@ DATA_DIR = os.path.join(
 # noinspection PyUnusedLocal
 @pytest.mark.datafiles(DATA_DIR)
 def test_compose_symlinks(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Symlinks do not survive being placed in a source distribution
     # ('setup.py sdist'), so we have to create the one we need here.

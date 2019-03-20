@@ -14,7 +14,7 @@ _DEPRECATION_WARNING = "Using deprecated plugin deprecated_plugin: {}".format(_D
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_deprecation_warning_present(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['show', 'deprecated.bst'])
     result.assert_success()
     assert _DEPRECATION_WARNING in result.stderr
@@ -22,7 +22,7 @@ def test_deprecation_warning_present(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_suppress_deprecation_warning(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     cli.run(project=project, args=['show', 'manual.bst'])
 
     element_overrides = "elements:\n" \

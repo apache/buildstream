@@ -20,7 +20,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_first_project_build_checkout(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
 
     result = cli.run(project=project, args=['build', 'hello.bst'])

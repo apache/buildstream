@@ -36,7 +36,7 @@ def get_project(fatal_warnings):
 
 
 def build_project(datafiles, fatal_warnings):
-    project_path = os.path.join(datafiles.dirname, datafiles.basename)
+    project_path = str(datafiles)
 
     project = get_project(fatal_warnings)
 

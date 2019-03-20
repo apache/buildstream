@@ -32,7 +32,7 @@ def create_pipeline(tmpdir, basedir, target):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'customsource'))
 def test_customsource(datafiles, tmpdir):
 
-    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    basedir = str(datafiles)
     targets = create_pipeline(tmpdir, basedir, 'simple.bst')
     assert targets[0].get_kind() == "autotools"
 
@@ -40,14 +40,14 @@ def test_customsource(datafiles, tmpdir):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'customelement'))
 def test_customelement(datafiles, tmpdir):
 
-    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    basedir = str(datafiles)
     targets = create_pipeline(tmpdir, basedir, 'simple.bst')
     assert targets[0].get_kind() == "foo"
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'badversionsource'))
 def test_badversionsource(datafiles, tmpdir):
-    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    basedir = str(datafiles)
 
     with pytest.raises(LoadError) as exc:
         create_pipeline(tmpdir, basedir, 'simple.bst')
@@ -57,7 +57,7 @@ def test_badversionsource(datafiles, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'badversionelement'))
 def test_badversionelement(datafiles, tmpdir):
-    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    basedir = str(datafiles)
 
     with pytest.raises(LoadError) as exc:
         create_pipeline(tmpdir, basedir, 'simple.bst')

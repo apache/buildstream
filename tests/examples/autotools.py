@@ -21,7 +21,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_build(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
 
     # Check that the project can be built correctly.
@@ -44,7 +44,7 @@ def test_autotools_build(cli, datafiles):
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_run(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     result = cli.run(project=project, args=['build', 'hello.bst'])
     result.assert_success()

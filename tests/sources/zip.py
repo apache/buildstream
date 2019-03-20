@@ -53,7 +53,7 @@ def generate_project_file_server(server, project_dir):
 # Test that without ref, consistency is set appropriately.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-ref'))
 def test_no_ref(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     assert cli.get_element_state(project, 'target.bst') == 'no reference'
 
@@ -61,7 +61,7 @@ def test_no_ref(cli, tmpdir, datafiles):
 # Test that when I fetch a nonexistent URL, errors are handled gracefully and a retry is performed.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_fetch_bad_url(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
 
     # Try to fetch it
@@ -76,7 +76,7 @@ def test_fetch_bad_url(cli, tmpdir, datafiles):
 # Test that when I fetch with an invalid ref, it fails.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_fetch_bad_ref(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
 
     # Create a local tar
@@ -94,7 +94,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
 # Test that when tracking with a ref set, there is a warning
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_track_warning(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
 
     # Create a local tar
@@ -112,7 +112,7 @@ def test_track_warning(cli, tmpdir, datafiles):
 # Test that a staged checkout matches what was tarred up, with the default first subdir
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_stage_default_basedir(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
@@ -140,7 +140,7 @@ def test_stage_default_basedir(cli, tmpdir, datafiles):
 # Test that a staged checkout matches what was tarred up, with an empty base-dir
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-basedir'))
 def test_stage_no_basedir(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
@@ -168,7 +168,7 @@ def test_stage_no_basedir(cli, tmpdir, datafiles):
 # Test that a staged checkout matches what was tarred up, with an explicit basedir
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'explicit-basedir'))
 def test_stage_explicit_basedir(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project, tmpdir)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 

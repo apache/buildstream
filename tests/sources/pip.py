@@ -23,7 +23,7 @@ def generate_project(project_dir):
 # Test that without ref, consistency is set appropriately.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-ref'))
 def test_no_ref(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project)
     assert cli.get_element_state(project, 'target.bst') == 'no reference'
 
@@ -31,7 +31,7 @@ def test_no_ref(cli, datafiles):
 # Test that pip is not allowed to be the first source
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'first-source-pip'))
 def test_first_source(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project)
     result = cli.run(project=project, args=[
         'show', 'target.bst'
@@ -43,7 +43,7 @@ def test_first_source(cli, datafiles):
 # have been specified
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-packages'))
 def test_no_packages(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     generate_project(project)
     result = cli.run(project=project, args=[
         'show', 'target.bst'

@@ -19,7 +19,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.skipif(HAVE_BZR is False, reason="bzr is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_fetch_checkout(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), 'checkout')
 
     repo = create_repo('bzr', str(tmpdir))

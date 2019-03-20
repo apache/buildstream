@@ -20,7 +20,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_pip_source_import(cli, datafiles, setup_pypi_repo):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     element_path = os.path.join(project, 'elements')
     element_name = 'pip/hello.bst'
@@ -75,7 +75,7 @@ def test_pip_source_import(cli, datafiles, setup_pypi_repo):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_pip_source_build(cli, datafiles, setup_pypi_repo):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = os.path.join(project, 'elements')
     element_name = 'pip/hello.bst'
 

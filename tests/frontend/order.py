@@ -77,7 +77,7 @@ def create_element(project, name, dependencies):
 ])
 @pytest.mark.parametrize("operation", [('show'), ('fetch'), ('build')])
 def test_order(cli, datafiles, operation, target, template, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Configure to only allow one fetcher at a time, make it easy to
     # determine what is being planned in what order.

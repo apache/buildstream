@@ -40,7 +40,7 @@ def workaround_setuptools_bug(project):
 @pytest.mark.skipif(not IS_LINUX or not HAVE_OSTREE, reason='Only available on linux with ostree')
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_build(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     workaround_setuptools_bug(project)
 
@@ -63,7 +63,7 @@ def test_autotools_build(cli, datafiles):
 @pytest.mark.skipif(not IS_LINUX or not HAVE_OSTREE, reason='Only available on linux with ostree')
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_run(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     workaround_setuptools_bug(project)
 
     result = cli.run(project=project, args=['build', 'hello.bst'])

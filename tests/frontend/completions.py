@@ -300,7 +300,7 @@ def test_help_commands(cli, cmd, word_idx, expected):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 def test_argument_artifact(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Build an import element with no dependencies (as there will only be ONE cache key)
     result = cli.run(project=project, args=['build', 'import-bin.bst'])  # Has no dependencies

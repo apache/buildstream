@@ -38,7 +38,7 @@ def strict_args(args, strict):
     ("non-strict", "hardlinks"),
 ])
 def test_build_checkout(datafiles, cli, strict, hardlinks):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
 
     # First build it
@@ -70,7 +70,7 @@ def test_build_checkout(datafiles, cli, strict, hardlinks):
 
 @pytest.mark.datafiles(DATA_DIR + "_world")
 def test_build_default_all(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, silent=True, args=['build'])
 
     result.assert_success()
@@ -88,7 +88,7 @@ def test_build_default_all(datafiles, cli):
 
 @pytest.mark.datafiles(DATA_DIR + "_default")
 def test_build_default(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, silent=True, args=['build'])
 
     result.assert_success()
@@ -102,7 +102,7 @@ def test_build_default(cli, datafiles):
     ("non-strict", "hardlinks"),
 ])
 def test_build_invalid_suffix(datafiles, cli, strict, hardlinks):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     result = cli.run(project=project, args=strict_args(['build', 'target.foo'], strict))
     result.assert_main_error(ErrorDomain.LOAD, "bad-element-suffix")
@@ -113,7 +113,7 @@ def test_build_invalid_suffix(datafiles, cli, strict, hardlinks):
     ("non-strict", "hardlinks"),
 ])
 def test_build_invalid_suffix_dep(datafiles, cli, strict, hardlinks):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # target2.bst depends on an element called target.foo
     result = cli.run(project=project, args=strict_args(['build', 'target2.bst'], strict))
@@ -123,7 +123,7 @@ def test_build_invalid_suffix_dep(datafiles, cli, strict, hardlinks):
 @pytest.mark.skipif(IS_WINDOWS, reason='Not available on Windows')
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_invalid_filename_chars(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_name = 'invalid-chars|<>-in-name.bst'
 
     # The name of this file contains characters that are not allowed by
@@ -140,7 +140,7 @@ def test_build_invalid_filename_chars(datafiles, cli):
 @pytest.mark.skipif(IS_WINDOWS, reason='Not available on Windows')
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_invalid_filename_chars_dep(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_name = 'invalid-chars|<>-in-name.bst'
 
     # The name of this file contains characters that are not allowed by
@@ -158,7 +158,7 @@ def test_build_invalid_filename_chars_dep(datafiles, cli):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("deps", [("run"), ("none"), ("build")])
 def test_build_checkout_deps(datafiles, cli, deps):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     element_name = "checkout-deps.bst"
 
@@ -200,7 +200,7 @@ def test_build_checkout_deps(datafiles, cli, deps):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_unbuilt(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
 
     # Check that checking out an unbuilt element fails nicely
@@ -210,7 +210,7 @@ def test_build_checkout_unbuilt(datafiles, cli):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_tarball(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout.tar')
 
     result = cli.run(project=project, args=['build', 'target.bst'])
@@ -232,7 +232,7 @@ def test_build_checkout_tarball(datafiles, cli):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_tarball_stdout(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     tarball = os.path.join(cli.directory, 'tarball.tar')
 
     result = cli.run(project=project, args=['build', 'target.bst'])
@@ -257,7 +257,7 @@ def test_build_checkout_tarball_stdout(datafiles, cli):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_tarball_mtime_nonzero(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     tarpath = os.path.join(cli.directory, 'mtime_tar.tar')
 
     result = cli.run(project=project, args=['build', 'target.bst'])
@@ -277,7 +277,7 @@ def test_build_checkout_tarball_mtime_nonzero(datafiles, cli):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_tarball_is_deterministic(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     tarball1 = os.path.join(cli.directory, 'tarball1.tar')
     tarball2 = os.path.join(cli.directory, 'tarball2.tar')
 
@@ -312,7 +312,7 @@ def test_build_checkout_tarball_is_deterministic(datafiles, cli):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("hardlinks", [("copies"), ("hardlinks")])
 def test_build_checkout_nonempty(datafiles, cli, hardlinks):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     filename = os.path.join(checkout, "file.txt")
 
@@ -344,7 +344,7 @@ def test_build_checkout_nonempty(datafiles, cli, hardlinks):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("hardlinks", [("copies"), ("hardlinks")])
 def test_build_checkout_force(datafiles, cli, hardlinks):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     filename = os.path.join(checkout, "file.txt")
 
@@ -387,7 +387,7 @@ def test_build_checkout_force(datafiles, cli, hardlinks):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_force_tarball(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     tarball = os.path.join(cli.directory, 'tarball.tar')
 
     result = cli.run(project=project, args=['build', 'target.bst'])
@@ -412,7 +412,7 @@ def test_build_checkout_force_tarball(datafiles, cli):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_install_to_build(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element = 'installed-to-build.bst'
 
     # Attempt building the element
@@ -427,7 +427,7 @@ def test_install_to_build(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -461,7 +461,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -513,7 +513,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_junction(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -560,7 +560,7 @@ def test_build_checkout_junction(cli, tmpdir, datafiles):
 # Test that default targets work with projects with junctions
 @pytest.mark.datafiles(DATA_DIR + "_world")
 def test_build_checkout_junction_default_targets(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -606,7 +606,7 @@ def test_build_checkout_junction_default_targets(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_workspaced_junction(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -669,7 +669,7 @@ def test_build_checkout_workspaced_junction(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_cross_junction(datafiles, cli, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     checkout = os.path.join(cli.directory, 'checkout')
@@ -689,7 +689,7 @@ def test_build_checkout_cross_junction(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_junction_short_notation(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -730,7 +730,7 @@ def test_build_junction_short_notation(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_junction_short_notation_filename(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -771,7 +771,7 @@ def test_build_junction_short_notation_filename(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -798,7 +798,7 @@ def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_junction_transitive_short_notation_with_junction(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')

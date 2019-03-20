@@ -21,7 +21,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_default_logging(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     bin_files_path = os.path.join(project, 'files', 'bin-files')
     element_path = os.path.join(project, 'elements')
     element_name = 'fetch-test-git.bst'
@@ -53,7 +53,7 @@ def test_default_logging(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_custom_logging(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     bin_files_path = os.path.join(project, 'files', 'bin-files')
     element_path = os.path.join(project, 'elements')
     element_name = 'fetch-test-git.bst'
@@ -91,7 +91,7 @@ def test_custom_logging(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_failed_build_listing(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_names = []
     for i in range(3):
         element_name = 'testfail-{}.bst'.format(i)

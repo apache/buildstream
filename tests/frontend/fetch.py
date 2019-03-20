@@ -19,7 +19,7 @@ DATA_DIR = os.path.join(TOP_DIR, 'project')
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'project_world'))
 def test_fetch_default_targets(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = os.path.join(project, 'elements')
     element_name = 'fetch-test.bst'
 
@@ -54,7 +54,7 @@ def test_fetch_default_targets(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))
 def test_fetch_consistency_error(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # When the error occurs outside of the scheduler at load time,
     # then the SourceError is reported directly as the main error.
@@ -64,7 +64,7 @@ def test_fetch_consistency_error(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))
 def test_fetch_consistency_bug(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # FIXME:
     #
@@ -81,7 +81,7 @@ def test_fetch_consistency_bug(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -131,7 +131,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
