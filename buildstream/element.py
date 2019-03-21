@@ -1502,11 +1502,11 @@ class Element(Plugin):
                 # Ensure sources are cached
                 self.__cache_sources()
 
-                if list(self.sources()):
+                if self.__sources:
 
                     sourcecache = self._get_context().sourcecache
                     try:
-                        import_dir = sourcecache.export(list(self.sources())[-1])
+                        import_dir = sourcecache.export(self.__sources[-1])
                     except SourceCacheError as e:
                         raise ElementError("Error trying to export source for {}: {}"
                                            .format(self.name, e))
