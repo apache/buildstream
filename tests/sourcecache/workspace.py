@@ -28,6 +28,7 @@ import pytest
 
 from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
 
+from tests.testutils.artifactshare import create_artifact_share
 from tests.testutils.element_generators import create_element_size
 
 
@@ -62,3 +63,42 @@ def test_workspace_source_fetch(tmpdir, datafiles, cli):
     assert 'Fetching from' in res.stderr
 
     assert os.listdir(workspace) != []
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_workspace_open_no_source_push(tmpdir, datafiles, cli):
+    project_dir = os.path.join(str(tmpdir), 'project')
+    element_path = 'elements'
+    cache_dir = os.path.join(str(tmpdir), 'cache')
+    share_dir = os.path.join(str(tmpdir), 'share')
+    workspace = os.path.join(cli.directory, 'workspace')
+
+    with create_artifact_share(share_dir) as share:
+        cli.configure({
+            'cachedir': cache_dir,
+            'scheduler': {
+                'pushers': 1
+            },
+            'source-caches': {
+                'url': share.repo,
+                'push': True,
+            },
+        })
+
+        # Fetch as in previous test and check it pushes the source
+        create_element_size('target.bst', project_dir, element_path, [], 10000)
+        res = cli.run(project=project_dir, args=['build', 'target.bst'])
+        res.assert_success()
+        assert 'Fetching from' in res.stderr
+        assert 'Pushed source' in res.stderr
+
+        # clear the cas and open a workspace
+        shutil.rmtree(os.path.join(cache_dir, 'cas'))
+        res = cli.run(project=project_dir,
+                      args=['workspace', 'open', 'target.bst', '--directory', workspace])
+        res.assert_success()
+
+        # Check that this time it does not push the sources
+        res = cli.run(project=project_dir, args=['build', 'target.bst'])
+        res.assert_success()
+        assert "Pushed source" not in res.stderr
