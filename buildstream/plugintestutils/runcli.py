@@ -52,7 +52,7 @@ from _pytest.capture import MultiCapture, FDCapture, FDCaptureBinary
 # Import the main cli entrypoint
 from buildstream._frontend import cli as bst_cli
 from buildstream import _yaml
-
+from buildstream._cas import CASCache
 
 # Special private exception accessor, for test case purposes
 from buildstream._exceptions import BstError, get_last_exception, get_last_task_error
@@ -253,6 +253,7 @@ class Cli():
         self.directory = directory
         self.config = None
         self.verbose = verbose
+        self.artifact = TestArtifact()
 
         if default_options is None:
             default_options = []
@@ -274,6 +275,15 @@ class Cli():
         for key, val in config.items():
             self.config[key] = val
 
+    # remove_artifact_from_cache():
+    #
+    # Remove given element artifact from artifact cache
+    #
+    # Args:
+    #    project (str): The project path under test
+    #    element_name (str): The name of the element artifact
+    #    cache_dir (str): Specific cache dir to remove artifact from
+    #
     def remove_artifact_from_cache(self, project, element_name,
                                    *, cache_dir=None):
         # Read configuration to figure out where artifacts are stored
@@ -285,10 +295,7 @@ class Cli():
             else:
                 cache_dir = default
 
-        cache_dir = os.path.join(cache_dir, 'cas', 'refs', 'heads')
-
-        cache_dir = os.path.splitext(os.path.join(cache_dir, 'test', element_name))[0]
-        shutil.rmtree(cache_dir)
+        self.artifact.remove_artifact_from_cache(cache_dir, element_name)
 
     # run():
     #
@@ -615,6 +622,101 @@ class CliRemote(CliIntegration):
                 self.config.pop('source-caches')
 
         return configured_services
+
+
+class TestArtifact():
+
+    # remove_artifact_from_cache():
+    #
+    # Remove given element artifact from artifact cache
+    #
+    # Args:
+    #    cache_dir (str): Specific cache dir to remove artifact from
+    #    element_name (str): The name of the element artifact
+    #
+    def remove_artifact_from_cache(self, cache_dir, element_name):
+
+        cache_dir = os.path.join(cache_dir, 'cas', 'refs', 'heads')
+
+        cache_dir = os.path.splitext(os.path.join(cache_dir, 'test', element_name))[0]
+        shutil.rmtree(cache_dir)
+
+    # is_cached():
+    #
+    # Check if given element has a cached artifact
+    #
+    # Args:
+    #    cache_dir (str): Specific cache dir to check
+    #    element (Element): The element object
+    #    element_key (str): The element's cache key
+    #
+    # Returns:
+    #   (bool): If the cache contains the element's artifact
+    #
+    def is_cached(self, cache_dir, element, element_key):
+
+        cas = CASCache(str(cache_dir))
+        artifact_ref = element.get_artifact_name(element_key)
+        return cas.contains(artifact_ref)
+
+    # get_digest():
+    #
+    # Get the digest for a given element's artifact
+    #
+    # Args:
+    #    cache_dir (str): Specific cache dir to check
+    #    element (Element): The element object
+    #    element_key (str): The element's cache key
+    #
+    # Returns:
+    #   (Digest): The digest stored in the ref
+    #
+    def get_digest(self, cache_dir, element, element_key):
+
+        cas = CASCache(str(cache_dir))
+        artifact_ref = element.get_artifact_name(element_key)
+        digest = cas.resolve_ref(artifact_ref)
+        return digest
+
+    # extract_buildtree():
+    #
+    # Context manager for extracting an elements artifact buildtree for
+    # inspection.
+    #
+    # Args:
+    #    tmpdir (LocalPath): pytest fixture for the tests tmp dir
+    #    digest (Digest): The element directory digest to extract
+    #
+    # Yields:
+    #    (str): path to extracted buildtree directory, does not guarantee
+    #           existence.
+    @contextmanager
+    def extract_buildtree(self, tmpdir, digest):
+        with self._extract_subdirectory(tmpdir, digest, 'buildtree') as extract:
+            yield extract
+
+    # _extract_subdirectory():
+    #
+    # Context manager for extracting an element artifact for inspection,
+    # providing an expected path for a given subdirectory
+    #
+    # Args:
+    #    tmpdir (LocalPath): pytest fixture for the tests tmp dir
+    #    digest (Digest): The element directory digest to extract
+    #    subdir (str): Subdirectory to path
+    #
+    # Yields:
+    #    (str): path to extracted subdir directory, does not guarantee
+    #           existence.
+    @contextmanager
+    def _extract_subdirectory(self, tmpdir, digest, subdir):
+        with tempfile.TemporaryDirectory() as extractdir:
+            try:
+                cas = CASCache(str(tmpdir))
+                cas.checkout(extractdir, digest)
+                yield os.path.join(extractdir, subdir)
+            except FileNotFoundError:
+                yield None
 
 
 # Main fixture

@@ -75,13 +75,10 @@ def test_push(cli, tmpdir, datafiles):
         project = Project(project_dir, context)
         project.ensure_fully_loaded()
 
-        # Create a local CAS cache handle
-        cas = context.artifactcache
-
         # Assert that the element's artifact is cached
         element = project.load_elements(['target.bst'])[0]
         element_key = cli.get_element_key(project_dir, 'target.bst')
-        assert cas.contains(element, element_key)
+        assert cli.artifact.is_cached(rootcache_dir, element, element_key)
 
         queue = multiprocessing.Queue()
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
