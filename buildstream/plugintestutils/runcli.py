@@ -557,6 +557,65 @@ class CliIntegration(Cli):
         return super().run(*args, **kwargs)
 
 
+class CliRemote(CliIntegration):
+
+    # ensure_services():
+    #
+    # Make sure that required services are configured and that
+    # non-required ones are not.
+    #
+    # Args:
+    #    actions (bool): Whether to use the 'action-cache' service
+    #    artifacts (bool): Whether to use the 'artifact-cache' service
+    #    execution (bool): Whether to use the 'execution' service
+    #    sources (bool): Whether to use the 'source-cache' service
+    #    storage (bool): Whether to use the 'storage' service
+    #
+    # Returns a list of configured services (by names).
+    #
+    def ensure_services(self, actions=True, execution=True, storage=True,
+                        artifacts=False, sources=False):
+        # Build a list of configured services by name:
+        configured_services = []
+        if not self.config:
+            return configured_services
+
+        if 'remote-execution' in self.config:
+            rexec_config = self.config['remote-execution']
+
+            if 'action-cache-service' in rexec_config:
+                if actions:
+                    configured_services.append('action-cache')
+                else:
+                    rexec_config.pop('action-cache-service')
+
+            if 'execution-service' in rexec_config:
+                if execution:
+                    configured_services.append('execution')
+                else:
+                    rexec_config.pop('execution-service')
+
+            if 'storage-service' in rexec_config:
+                if storage:
+                    configured_services.append('storage')
+                else:
+                    rexec_config.pop('storage-service')
+
+        if 'artifacts' in self.config:
+            if artifacts:
+                configured_services.append('artifact-cache')
+            else:
+                self.config.pop('artifacts')
+
+        if 'source-caches' in self.config:
+            if sources:
+                configured_services.append('source-cache')
+            else:
+                self.config.pop('source-caches')
+
+        return configured_services
+
+
 # Main fixture
 #
 # Use result = cli.run([arg1, arg2]) to run buildstream commands
@@ -602,6 +661,47 @@ def cli_integration(tmpdir, integration_cache):
         shutil.rmtree(os.path.join(integration_cache.cachedir, 'tmp'))
     except FileNotFoundError:
         pass
+
+
+# A variant of the main fixture that is configured for remote-execution.
+#
+# It also does not use the click test runner to avoid deadlock issues
+# when running `bst shell`, but unfortunately cannot produce nice
+# stacktraces.
+@pytest.fixture()
+def cli_remote_execution(tmpdir, remote_services):
+    directory = os.path.join(str(tmpdir), 'cache')
+    os.makedirs(directory)
+
+    fixture = CliRemote(directory)
+
+    if remote_services.artifact_service:
+        fixture.configure({'artifacts': [{
+            'url': remote_services.artifact_service,
+        }]})
+
+    remote_execution = {}
+    if remote_services.action_service:
+        remote_execution['action-cache-service'] = {
+            'url': remote_services.action_service,
+        }
+    if remote_services.exec_service:
+        remote_execution['execution-service'] = {
+            'url': remote_services.exec_service,
+        }
+    if remote_services.storage_service:
+        remote_execution['storage-service'] = {
+            'url': remote_services.storage_service,
+        }
+    if remote_execution:
+        fixture.configure({'remote-execution': remote_execution})
+
+    if remote_services.source_service:
+        fixture.configure({'source-caches': [{
+            'url': remote_services.source_service,
+        }]})
+
+    return fixture
 
 
 @contextmanager

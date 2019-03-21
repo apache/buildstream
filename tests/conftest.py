@@ -84,7 +84,6 @@ class IntegrationCache():
 
 @pytest.fixture(scope='session')
 def integration_cache(request):
-
     # Set the cache dir to the INTEGRATION_CACHE variable, or the
     # default if that is not set.
     if 'INTEGRATION_CACHE' in os.environ:
@@ -106,6 +105,40 @@ def integration_cache(request):
         shutil.rmtree(os.path.join(cache.root, 'cas'))
     except FileNotFoundError:
         pass
+
+
+#################################################
+#           remote_services fixture             #
+#################################################
+#
+# This is returned by the `remote_services` fixture
+#
+class RemoteServices():
+
+    def __init__(self, **kwargs):
+        self.action_service = kwargs.get('action_service')
+        self.artifact_service = kwargs.get('artifact_service')
+        self.exec_service = kwargs.get('exec_service')
+        self.source_service = kwargs.get('source_service')
+        self.storage_service = kwargs.get('storage_service')
+
+
+@pytest.fixture(scope='session')
+def remote_services(request):
+    kwargs = {}
+    # Look for remote services configuration in environment.
+    if 'ARTIFACT_CACHE_SERVICE' in os.environ:
+        kwargs['artifact_service'] = os.environ.get('ARTIFACT_CACHE_SERVICE')
+
+    if 'REMOTE_EXECUTION_SERVICE' in os.environ:
+        kwargs['action_service'] = os.environ.get('REMOTE_EXECUTION_SERVICE')
+        kwargs['exec_service'] = os.environ.get('REMOTE_EXECUTION_SERVICE')
+        kwargs['storage_service'] = os.environ.get('REMOTE_EXECUTION_SERVICE')
+
+    if 'SOURCE_CACHE_SERVICE' in os.environ:
+        kwargs['source_service'] = os.environ.get('SOURCE_CACHE_SERVICE')
+
+    return RemoteServices(**kwargs)
 
 
 #################################################
