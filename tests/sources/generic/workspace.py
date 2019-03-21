@@ -40,9 +40,9 @@ class WorkspaceCreator():
         self.datafiles = datafiles
 
         if not project_path:
-            project_path = os.path.join(datafiles.dirname, datafiles.basename)
+            project_path = str(datafiles)
         else:
-            shutil.copytree(os.path.join(datafiles.dirname, datafiles.basename), project_path)
+            shutil.copytree(str(datafiles), project_path)
 
         self.project_path = project_path
         self.bin_files_path = os.path.join(project_path, 'files', 'bin-files')

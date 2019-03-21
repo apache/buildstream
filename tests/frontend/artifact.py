@@ -37,7 +37,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_log(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Get the cache key of our test element
     result = cli.run(project=project, silent=True, args=[
@@ -72,7 +72,7 @@ def test_artifact_log(cli, datafiles):
 # to the current project state
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_delete_element(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element = 'target.bst'
 
     # Build the element and ensure it's cached
@@ -88,7 +88,7 @@ def test_artifact_delete_element(cli, tmpdir, datafiles):
 # Test that we can delete an artifact by specifying its ref.
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_delete_artifact(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element = 'target.bst'
 
     # Configure a local cache
@@ -117,7 +117,7 @@ def test_artifact_delete_artifact(cli, tmpdir, datafiles):
 # Test the `bst artifact delete` command with multiple, different arguments.
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_delete_element_and_artifact(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element = 'target.bst'
     dep = 'compose-all.bst'
 
@@ -153,7 +153,7 @@ def test_artifact_delete_element_and_artifact(cli, tmpdir, datafiles):
 # that is not present in the cache.
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_delete_unbuilt_artifact(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element = 'target.bst'
 
     # delete it, just in case it's there
@@ -175,7 +175,7 @@ def test_artifact_delete_unbuilt_artifact(cli, tmpdir, datafiles):
 # throw an Exception when trying to prune the cache.
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_delete_pulled_artifact_without_buildtree(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element = 'target.bst'
 
     # Set up remote and local shares

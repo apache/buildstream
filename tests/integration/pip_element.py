@@ -21,7 +21,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_pip_build(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     element_path = os.path.join(project, 'elements')
     element_name = 'pip/hello.bst'
@@ -61,7 +61,7 @@ def test_pip_run(cli, datafiles):
     # Create and build our test element
     test_pip_build(cli, datafiles)
 
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_name = 'pip/hello.bst'
 
     result = cli.run(project=project, args=['shell', element_name, '/usr/bin/hello'])

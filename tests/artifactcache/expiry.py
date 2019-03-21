@@ -39,7 +39,7 @@ DATA_DIR = os.path.join(
 # not have enough space left.
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_expires(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = 'elements'
 
     cli.configure({
@@ -81,7 +81,7 @@ def test_artifact_expires(cli, datafiles):
 ])
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_too_large(cli, datafiles, size):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = 'elements'
 
     cli.configure({
@@ -99,7 +99,7 @@ def test_artifact_too_large(cli, datafiles, size):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_expiry_order(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = 'elements'
     checkout = os.path.join(project, 'workspace')
 
@@ -156,7 +156,7 @@ def test_expiry_order(cli, datafiles):
 # wouldn't it?
 @pytest.mark.datafiles(DATA_DIR)
 def test_keep_dependencies(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = 'elements'
 
     cli.configure({
@@ -202,7 +202,7 @@ def test_keep_dependencies(cli, datafiles):
 # Assert that we never delete a dependency required for a build tree
 @pytest.mark.datafiles(DATA_DIR)
 def test_never_delete_required(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = 'elements'
 
     cli.configure({
@@ -254,7 +254,7 @@ def test_never_delete_required(cli, datafiles):
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_never_delete_required_track(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = 'elements'
 
     cli.configure({
@@ -346,7 +346,7 @@ def test_never_delete_required_track(cli, datafiles):
 ])
 @pytest.mark.datafiles(DATA_DIR)
 def test_invalid_cache_quota(cli, datafiles, quota, err_domain, err_reason):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     os.makedirs(os.path.join(project, 'elements'))
 
     cli.configure({
@@ -397,7 +397,7 @@ def test_invalid_cache_quota(cli, datafiles, quota, err_domain, err_reason):
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_cleanup_first(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = 'elements'
 
     cli.configure({

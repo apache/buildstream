@@ -46,7 +46,7 @@ def strict_args(args, strict):
 @pytest.mark.parametrize("strict,kind", fetch_build_checkout_combos)
 def test_fetch_build_checkout(cli, tmpdir, datafiles, strict, kind):
     checkout = os.path.join(cli.directory, 'checkout')
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
     element_name = 'build-test-{}.bst'.format(kind)

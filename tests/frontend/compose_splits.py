@@ -18,7 +18,7 @@ DATA_DIR = os.path.join(
 ])
 @pytest.mark.datafiles(DATA_DIR)
 def test_compose_splits(datafiles, cli, target):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
 
     # First build it

@@ -19,7 +19,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_include(datafiles, cli, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['build', 'output-include.bst'])
     result.assert_success()
 
@@ -32,7 +32,7 @@ def test_filter_include(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_include_dynamic(datafiles, cli, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['build', 'output-dynamic-include.bst'])
     result.assert_success()
 
@@ -46,7 +46,7 @@ def test_filter_include_dynamic(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_exclude(datafiles, cli, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['build', 'output-exclude.bst'])
     result.assert_success()
 
@@ -59,7 +59,7 @@ def test_filter_exclude(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_orphans(datafiles, cli, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['build', 'output-orphans.bst'])
     result.assert_success()
 
@@ -71,7 +71,7 @@ def test_filter_orphans(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_deps_ok(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['build', 'deps-permitted.bst'])
     result.assert_success()
 
@@ -85,35 +85,35 @@ def test_filter_deps_ok(datafiles, cli):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_forbid_sources(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['build', 'forbidden-source.bst'])
     result.assert_main_error(ErrorDomain.ELEMENT, 'element-forbidden-sources')
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_forbid_multi_bdep(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['build', 'forbidden-multi-bdep.bst'])
     result.assert_main_error(ErrorDomain.ELEMENT, 'filter-bdepend-wrong-count')
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_forbid_no_bdep(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['build', 'forbidden-no-bdep.bst'])
     result.assert_main_error(ErrorDomain.ELEMENT, 'filter-bdepend-wrong-count')
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_forbid_also_rdep(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['build', 'forbidden-also-rdep.bst'])
     result.assert_main_error(ErrorDomain.ELEMENT, 'filter-bdepend-also-rdepend')
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_workspace_open(datafiles, cli, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     workspace_dir = os.path.join(tmpdir.dirname, tmpdir.basename, "workspace")
     result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace_dir, 'deps-permitted.bst'])
     result.assert_success()
@@ -124,7 +124,7 @@ def test_filter_workspace_open(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_workspace_open_multi(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(cwd=project, project=project, args=['workspace', 'open', 'deps-permitted.bst',
                                                          'output-orphans.bst'])
     result.assert_success()
@@ -133,7 +133,7 @@ def test_filter_workspace_open_multi(datafiles, cli):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_workspace_build(datafiles, cli, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     tempdir = os.path.join(tmpdir.dirname, tmpdir.basename)
     workspace_dir = os.path.join(tempdir, "workspace")
     result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace_dir, 'output-orphans.bst'])
@@ -151,7 +151,7 @@ def test_filter_workspace_build(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_workspace_close(datafiles, cli, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     tempdir = os.path.join(tmpdir.dirname, tmpdir.basename)
     workspace_dir = os.path.join(tempdir, "workspace")
     result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace_dir, 'output-orphans.bst'])
@@ -171,7 +171,7 @@ def test_filter_workspace_close(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_workspace_reset(datafiles, cli, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     tempdir = os.path.join(tmpdir.dirname, tmpdir.basename)
     workspace_dir = os.path.join(tempdir, "workspace")
     result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace_dir, 'output-orphans.bst'])
@@ -474,7 +474,7 @@ def test_filter_track_multi_exclude(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_include_with_indirect_deps(datafiles, cli, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=[
         'build', 'output-include-with-indirect-deps.bst'])
     result.assert_success()
@@ -494,7 +494,7 @@ def test_filter_include_with_indirect_deps(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_fails_for_nonexisting_domain(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, args=['build', 'output-include-nonexistent-domain.bst'])
     result.assert_main_error(ErrorDomain.STREAM, None)
 

@@ -46,7 +46,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_cache_buildtrees(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_name = 'autotools/amhello.bst'
 
     # Create artifact shares for pull & push testing

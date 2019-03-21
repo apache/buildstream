@@ -32,7 +32,7 @@ def generate_element(repo, element_path, dep_name=None):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_track_single(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
     element_dep_name = 'track-test-dep.bst'
@@ -130,7 +130,7 @@ def test_track_optional(cli, tmpdir, datafiles, ref_storage):
 @pytest.mark.parametrize("cross_junction", [('cross'), ('nocross')])
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storage):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     dev_files_path = os.path.join(project, 'files')
     target_path = os.path.join(project, 'target.bst')
     subtarget_path = os.path.join(project, 'subproject', 'subtarget.bst')
@@ -218,7 +218,7 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))
 def test_track_consistency_error(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Track the element causing a consistency error
     result = cli.run(project=project, args=['source', 'track', 'error.bst'])
@@ -228,7 +228,7 @@ def test_track_consistency_error(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, 'consistencyerror'))
 def test_track_consistency_bug(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Track the element causing an unhandled exception
     result = cli.run(project=project, args=['source', 'track', 'bug.bst'])
@@ -240,7 +240,7 @@ def test_track_consistency_bug(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -274,7 +274,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 def test_junction_element(cli, tmpdir, datafiles, ref_storage):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')

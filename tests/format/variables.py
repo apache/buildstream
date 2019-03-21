@@ -43,7 +43,7 @@ def print_warning(msg):
 ])
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'defaults'))
 def test_defaults(cli, datafiles, target, varname, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, silent=True, args=[
         'show', '--deps', 'none', '--format', '%{vars}', target
     ])
@@ -69,7 +69,7 @@ def test_defaults(cli, datafiles, target, varname, expected):
 ])
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'overrides'))
 def test_overrides(cli, datafiles, target, varname, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, silent=True, args=[
         'show', '--deps', 'none', '--format', '%{vars}', target
     ])
@@ -80,7 +80,7 @@ def test_overrides(cli, datafiles, target, varname, expected):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'missing_variables'))
 def test_missing_variable(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, silent=True, args=[
         'show', '--deps', 'none', '--format', '%{config}', 'manual.bst'
     ])
@@ -93,7 +93,7 @@ def test_missing_variable(cli, datafiles):
 def test_cyclic_variables(cli, datafiles):
     print_warning("Performing cyclic test, if this test times out it will " +
                   "exit the test sequence")
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, silent=True, args=[
         "build", "cyclic.bst"
     ])

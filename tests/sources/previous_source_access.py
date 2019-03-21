@@ -18,7 +18,7 @@ DATA_DIR = os.path.join(
 # Test that plugins can access data from previous sources
 @pytest.mark.datafiles(DATA_DIR)
 def test_custom_transform_source(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Ensure we can track
     result = cli.run(project=project, args=[

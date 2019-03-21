@@ -126,7 +126,7 @@ def test_push(cli, tmpdir, datafiles):
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_all(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
 
@@ -175,7 +175,7 @@ def test_push_all(cli, tmpdir, datafiles):
 # Regression test for https://gitlab.com/BuildStream/buildstream/issues/233.
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_after_pull(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Set up two artifact shares.
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1')) as share1,\
@@ -226,7 +226,7 @@ def test_push_after_pull(cli, tmpdir, datafiles):
 # the incoming artifact.
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_expires(cli, datafiles, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = 'elements'
 
     # Create an artifact share (remote artifact cache) in the tmpdir/artifactshare
@@ -277,7 +277,7 @@ def test_artifact_expires(cli, datafiles, tmpdir):
 # to the remote share
 @pytest.mark.datafiles(DATA_DIR)
 def test_artifact_too_large(cli, datafiles, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = 'elements'
 
     # Create an artifact share (remote cache) in tmpdir/artifactshare
@@ -313,7 +313,7 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
 # Test that when an element is pulled recently, it is not considered the LRU element.
 @pytest.mark.datafiles(DATA_DIR)
 def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = 'elements'
 
     # Create an artifact share (remote cache) in tmpdir/artifactshare
@@ -399,7 +399,7 @@ def test_push_cross_junction(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_already_cached(caplog, cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     caplog.set_level(1)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
@@ -422,7 +422,7 @@ def test_push_already_cached(caplog, cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_remote_option(caplog, cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     caplog.set_level(1)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare1')) as shareuser,\

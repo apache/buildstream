@@ -31,7 +31,7 @@ def make_loader(basedir):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
 def test_one_file(datafiles):
 
-    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    basedir = str(datafiles)
     loader = make_loader(basedir)
 
     element = loader.load(['elements/onefile.bst'])[0]
@@ -43,7 +43,7 @@ def test_one_file(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
 def test_missing_file(datafiles):
 
-    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    basedir = str(datafiles)
     loader = make_loader(basedir)
 
     with pytest.raises(LoadError) as exc:
@@ -55,7 +55,7 @@ def test_missing_file(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
 def test_invalid_reference(datafiles):
 
-    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    basedir = str(datafiles)
     loader = make_loader(basedir)
 
     with pytest.raises(LoadError) as exc:
@@ -67,7 +67,7 @@ def test_invalid_reference(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
 def test_invalid_yaml(datafiles):
 
-    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    basedir = str(datafiles)
     loader = make_loader(basedir)
 
     with pytest.raises(LoadError) as exc:
@@ -79,7 +79,7 @@ def test_invalid_yaml(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
 def test_fail_fullpath_target(datafiles):
 
-    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    basedir = str(datafiles)
     fullpath = os.path.join(basedir, 'elements', 'onefile.bst')
 
     with pytest.raises(LoadError) as exc:
@@ -92,7 +92,7 @@ def test_fail_fullpath_target(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
 def test_invalid_key(datafiles):
 
-    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    basedir = str(datafiles)
     loader = make_loader(basedir)
 
     with pytest.raises(LoadError) as exc:
@@ -104,7 +104,7 @@ def test_invalid_key(datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'onefile'))
 def test_invalid_directory_load(datafiles):
 
-    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    basedir = str(datafiles)
     loader = make_loader(basedir)
 
     with pytest.raises(LoadError) as exc:

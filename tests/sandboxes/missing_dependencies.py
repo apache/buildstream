@@ -17,7 +17,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on Linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_missing_brwap_has_nice_error_message(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = os.path.join(project, 'elements', 'element.bst')
 
     # Write out our test target
@@ -57,7 +57,7 @@ def test_old_brwap_has_nice_error_message(cli, datafiles, tmp_path):
 
     bwrap.chmod(0o755)
 
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = os.path.join(project, 'elements', 'element3.bst')
 
     # Write out our test target

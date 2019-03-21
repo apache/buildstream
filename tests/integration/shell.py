@@ -49,7 +49,7 @@ def execute_shell(cli, project, command, *, config=None, mount=None, element='ba
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_shell(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     result = execute_shell(cli, project, ["echo", "Ponies!"])
     assert result.exit_code == 0
@@ -60,7 +60,7 @@ def test_shell(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_executable(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     result = execute_shell(cli, project, ["/bin/echo", "Horseys!"])
     assert result.exit_code == 0
@@ -72,7 +72,7 @@ def test_executable(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_env_assign(cli, datafiles, animal):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     expected = animal + '\n'
 
     result = execute_shell(cli, project, ['/bin/sh', '-c', 'echo ${ANIMAL}'], config={
@@ -92,7 +92,7 @@ def test_env_assign(cli, datafiles, animal):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_env_assign_expand_host_environ(cli, datafiles, animal):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     expected = 'The animal is: {}\n'.format(animal)
 
     os.environ['BEAST'] = animal
@@ -115,7 +115,7 @@ def test_env_assign_expand_host_environ(cli, datafiles, animal):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_env_assign_isolated(cli, datafiles, animal):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = execute_shell(cli, project, ['/bin/sh', '-c', 'echo ${ANIMAL}'], isolate=True, config={
         'shell': {
             'environment': {
@@ -133,7 +133,7 @@ def test_env_assign_isolated(cli, datafiles, animal):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_no_shell(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_path = os.path.join(project, 'elements')
     element_name = 'shell/no-shell.bst'
 
@@ -166,7 +166,7 @@ def test_no_shell(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_host_files(cli, datafiles, path):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
     result = execute_shell(cli, project, ['cat', path], config={
         'shell': {
@@ -187,7 +187,7 @@ def test_host_files(cli, datafiles, path):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_host_files_expand_environ(cli, datafiles, path):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     hostpath = os.path.join(project, 'files', 'shell-mount')
     fullpath = os.path.join(path, 'pony.txt')
 
@@ -213,7 +213,7 @@ def test_host_files_expand_environ(cli, datafiles, path):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_isolated_no_mount(cli, datafiles, path):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
     result = execute_shell(cli, project, ['cat', path], isolate=True, config={
         'shell': {
@@ -236,7 +236,7 @@ def test_isolated_no_mount(cli, datafiles, path):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_host_files_missing(cli, datafiles, optional):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'horsy.txt')
 
     if optional == "optional":
@@ -272,7 +272,7 @@ def test_host_files_missing(cli, datafiles, optional):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_cli_mount(cli, datafiles, path):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
 
     result = execute_shell(cli, project, ['cat', path], mount=(ponyfile, path))
@@ -284,7 +284,7 @@ def test_cli_mount(cli, datafiles, path):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_workspace_visible(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')
     element_name = 'workspace/workspace-mount-fail.bst'
 
@@ -318,7 +318,7 @@ def test_workspace_visible(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_sysroot(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     base_element = "base/base-alpine.bst"
     # test element only needs to be something lightweight for this test
     test_element = "script/script.bst"
@@ -348,7 +348,7 @@ def test_sysroot(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_integration_devices(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_name = 'integration.bst'
 
     result = execute_shell(cli, project, ["true"], element=element_name)
@@ -362,7 +362,7 @@ def test_integration_devices(cli, datafiles):
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_integration_external_workspace(cli, tmpdir_factory, datafiles, build_shell, guess_element):
     tmpdir = tmpdir_factory.mktemp("")
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_name = 'autotools/amhello.bst'
     workspace_dir = os.path.join(str(tmpdir), 'workspace')
 

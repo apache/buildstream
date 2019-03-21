@@ -20,7 +20,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_build(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     result = cli.run(project=project, args=['build', 'callHello.bst'])
     result.assert_success()
@@ -32,7 +32,7 @@ def test_build(cli, datafiles):
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_shell_call_hello(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     result = cli.run(project=project, args=['build', 'callHello.bst'])
     result.assert_success()
@@ -46,7 +46,7 @@ def test_shell_call_hello(cli, datafiles):
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_cross_junction_workspace(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     workspace_dir = os.path.join(str(tmpdir), "workspace_hello_junction")
 
     result = cli.run(project=project,

@@ -16,7 +16,7 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_missing_path(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Removing the local file causes preflight to fail
     localfile = os.path.join(project, 'file.txt')
@@ -30,7 +30,7 @@ def test_missing_path(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_non_regular_file_or_directory(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     localfile = os.path.join(project, 'file.txt')
 
     for _file_type in filetypegenerator.generate_file_types(localfile):
@@ -48,7 +48,7 @@ def test_non_regular_file_or_directory(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_invalid_absolute_path(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     with open(os.path.join(project, "target.bst"), 'r') as f:
         old_yaml = f.read()
@@ -66,7 +66,7 @@ def test_invalid_absolute_path(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'invalid-relative-path'))
 def test_invalid_relative_path(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     result = cli.run(project=project, args=['show', 'target.bst'])
     result.assert_main_error(ErrorDomain.LOAD,
@@ -75,7 +75,7 @@ def test_invalid_relative_path(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_stage_file(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Build, checkout
@@ -90,7 +90,7 @@ def test_stage_file(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'directory'))
 def test_stage_directory(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Build, checkout
@@ -107,7 +107,7 @@ def test_stage_directory(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'symlink'))
 def test_stage_symlink(cli, tmpdir, datafiles):
 
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Workaround datafiles bug:
@@ -132,7 +132,7 @@ def test_stage_symlink(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'file-exists'))
 def test_stage_file_exists(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Build, checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
@@ -142,7 +142,7 @@ def test_stage_file_exists(cli, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'directory'))
 def test_stage_directory_symlink(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     symlink = os.path.join(project, 'files', 'symlink-to-subdir')

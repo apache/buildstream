@@ -43,7 +43,7 @@ def create_import_element(name, path, source, target, source_path):
                                              '/output/subdir/test.txt']),
 ])
 def test_import(cli, datafiles, source, target, path, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     element_path = os.path.join(project, 'elements')
     element_name = 'import/import.bst'

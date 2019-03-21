@@ -18,7 +18,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_workspace_mount(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')
     element_name = 'workspace/workspace-mount.bst'
 
@@ -34,7 +34,7 @@ def test_workspace_mount(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_workspace_commanddir(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')
     element_name = 'workspace/workspace-commanddir.bst'
 
@@ -51,7 +51,7 @@ def test_workspace_commanddir(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_workspace_updated_dependency(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')
     element_path = os.path.join(project, 'elements')
     element_name = 'workspace/workspace-updated-dependency.bst'
@@ -105,7 +105,7 @@ def test_workspace_updated_dependency(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_workspace_update_dependency_failed(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')
     element_path = os.path.join(project, 'elements')
     element_name = 'workspace/workspace-updated-dependency-failed.bst'
@@ -180,7 +180,7 @@ def test_workspace_update_dependency_failed(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_updated_dependency_nested(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')
     element_path = os.path.join(project, 'elements')
     element_name = 'workspace/workspace-updated-dependency-nested.bst'
@@ -233,7 +233,7 @@ def test_updated_dependency_nested(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_incremental_configure_commands_run_only_once(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')
     element_path = os.path.join(project, 'elements')
     element_name = 'workspace/incremental.bst'

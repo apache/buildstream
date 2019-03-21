@@ -37,7 +37,7 @@ DATA_DIR = os.path.join(TOP_DIR, 'project')
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_fetch(cli, tmpdir, datafiles, kind):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     bin_files_path = os.path.join(project, 'files', 'bin-files')
     element_path = os.path.join(project, 'elements')
     element_name = 'fetch-test-{}.bst'.format(kind)

@@ -46,7 +46,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_fetch_bad_ref(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
@@ -72,7 +72,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
@@ -111,7 +111,7 @@ def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_submodule_fetch_source_enable_explicit(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
@@ -150,7 +150,7 @@ def test_submodule_fetch_source_enable_explicit(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_submodule_fetch_source_disable(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
@@ -189,7 +189,7 @@ def test_submodule_fetch_source_disable(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_submodule_fetch_submodule_does_override(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
@@ -228,7 +228,7 @@ def test_submodule_fetch_submodule_does_override(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_submodule_fetch_submodule_individual_checkout(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
@@ -273,7 +273,7 @@ def test_submodule_fetch_submodule_individual_checkout(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_submodule_fetch_submodule_individual_checkout_explicit(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
@@ -318,7 +318,7 @@ def test_submodule_fetch_submodule_individual_checkout_explicit(cli, tmpdir, dat
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project-override'))
 def test_submodule_fetch_project_override(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create the submodule first from the 'subrepofiles' subdir
@@ -357,7 +357,7 @@ def test_submodule_fetch_project_override(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_submodule_track_ignore_inconsistent(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
@@ -394,7 +394,7 @@ def test_submodule_track_ignore_inconsistent(cli, tmpdir, datafiles):
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 def test_submodule_track_no_ref_or_track(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
@@ -422,7 +422,7 @@ def test_submodule_track_no_ref_or_track(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 @pytest.mark.parametrize("fail", ['warn', 'error'])
 def test_ref_not_in_track(cli, tmpdir, datafiles, fail):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Make the warning an error if we're testing errors
     if fail == 'error':
@@ -465,7 +465,7 @@ def test_ref_not_in_track(cli, tmpdir, datafiles, fail):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 @pytest.mark.parametrize("fail", ['warn', 'error'])
 def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Make the warning an error if we're testing errors
     if fail == 'error':
@@ -538,7 +538,7 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 @pytest.mark.parametrize("fail", ['warn', 'error'])
 def test_track_unlisted_submodule(cli, tmpdir, datafiles, fail):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Make the warning an error if we're testing errors
     if fail == 'error':
@@ -601,7 +601,7 @@ def test_track_unlisted_submodule(cli, tmpdir, datafiles, fail):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 @pytest.mark.parametrize("fail", ['warn', 'error'])
 def test_invalid_submodule(cli, tmpdir, datafiles, fail):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Make the warning an error if we're testing errors
     if fail == 'error':
@@ -673,7 +673,7 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 @pytest.mark.parametrize("fail", ['warn', 'error'])
 def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Make the warning an error if we're testing errors
     if fail == 'error':
@@ -735,7 +735,7 @@ def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
 @pytest.mark.parametrize("ref_format", ['sha1', 'git-describe'])
 @pytest.mark.parametrize("tag,extra_commit", [(False, False), (True, False), (True, True)])
 def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))

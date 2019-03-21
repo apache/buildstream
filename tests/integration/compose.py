@@ -76,7 +76,7 @@ def create_compose_element(name, path, config={}):
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_compose_include(cli, datafiles, include_domains,
                          exclude_domains, expected):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     element_path = os.path.join(project, 'elements')
     element_name = 'compose/compose-amhello.bst'

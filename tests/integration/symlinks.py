@@ -17,7 +17,7 @@ DATA_DIR = os.path.join(
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_absolute_symlinks(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'symlinks/dangling-symlink.bst'
 
@@ -38,7 +38,7 @@ def test_absolute_symlinks(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_disallow_overlaps_inside_symlink_with_dangling_target(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'symlinks/dangling-symlink-overlap.bst'
 
@@ -53,7 +53,7 @@ def test_disallow_overlaps_inside_symlink_with_dangling_target(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_detect_symlink_overlaps_pointing_outside_sandbox(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     element_name = 'symlinks/symlink-to-outside-sandbox-overlap.bst'
 

@@ -23,7 +23,7 @@ DATA_DIR = os.path.join(
     ('ordered-assertion.bst', 'True', 'True', "It's not horsy time yet"),
 ])
 def test_assertion_cli(cli, datafiles, target, opt_pony, opt_horsy, assertion):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     result = cli.run(project=project, silent=True, args=[
         '--option', 'pony', opt_pony,
         '--option', 'horsy', opt_horsy,

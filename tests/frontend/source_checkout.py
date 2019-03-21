@@ -40,7 +40,7 @@ def generate_remote_import_element(input_path, output_path):
 )
 def test_source_checkout(datafiles, cli, tmpdir_factory, with_workspace, guess_element):
     tmpdir = tmpdir_factory.mktemp("")
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'checkout-deps.bst'
     workspace = os.path.join(str(tmpdir), 'workspace')
@@ -63,7 +63,7 @@ def test_source_checkout(datafiles, cli, tmpdir_factory, with_workspace, guess_e
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize('force_flag', ['--force', '-f'])
 def test_source_checkout_force(datafiles, cli, force_flag):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'checkout-deps.bst'
 
@@ -78,7 +78,7 @@ def test_source_checkout_force(datafiles, cli, force_flag):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_checkout_tar(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'source-checkout.tar')
     target = 'checkout-deps.bst'
 
@@ -96,7 +96,7 @@ def test_source_checkout_tar(datafiles, cli):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize('deps', [('build'), ('none'), ('run'), ('all')])
 def test_source_checkout_deps(datafiles, cli, deps):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'checkout-deps.bst'
 
@@ -124,7 +124,7 @@ def test_source_checkout_deps(datafiles, cli, deps):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_checkout_except(datafiles, cli):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'checkout-deps.bst'
 
@@ -147,7 +147,7 @@ def test_source_checkout_except(datafiles, cli):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize('fetch', [(False), (True)])
 def test_source_checkout_fetch(datafiles, cli, fetch):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'remote-import-dev.bst'
     target_path = os.path.join(project, 'elements', target)
@@ -177,7 +177,7 @@ def test_source_checkout_fetch(datafiles, cli, fetch):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_checkout_build_scripts(cli, tmpdir, datafiles):
-    project_path = os.path.join(datafiles.dirname, datafiles.basename)
+    project_path = str(datafiles)
     element_name = 'source-bundle/source-bundle-hello.bst'
     normal_name = 'source-bundle-source-bundle-hello'
     checkout = os.path.join(str(tmpdir), 'source-checkout')
@@ -194,7 +194,7 @@ def test_source_checkout_build_scripts(cli, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_checkout_tar_buildscripts(cli, tmpdir, datafiles):
-    project_path = os.path.join(datafiles.dirname, datafiles.basename)
+    project_path = str(datafiles)
     element_name = 'source-bundle/source-bundle-hello.bst'
     normal_name = 'source-bundle-source-bundle-hello'
     tar_file = os.path.join(str(tmpdir), 'source-checkout.tar')

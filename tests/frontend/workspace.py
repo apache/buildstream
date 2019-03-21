@@ -58,9 +58,9 @@ class WorkspaceCreator():
         self.datafiles = datafiles
 
         if not project_path:
-            project_path = os.path.join(datafiles.dirname, datafiles.basename)
+            project_path = str(datafiles)
         else:
-            shutil.copytree(os.path.join(datafiles.dirname, datafiles.basename), project_path)
+            shutil.copytree(str(datafiles), project_path)
 
         self.project_path = project_path
         self.bin_files_path = os.path.join(project_path, 'files', 'bin-files')
@@ -672,7 +672,7 @@ def test_build(cli, tmpdir_factory, datafiles, kind, strict, from_workspace, gue
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_buildable_no_ref(cli, tmpdir, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     element_name = 'workspace-test-no-ref.bst'
     element_path = os.path.join(project, 'elements')
 
@@ -801,7 +801,7 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
     {"format-version": BST_WORKSPACE_FORMAT_VERSION + 1}
 ])
 def test_list_unsupported_workspace(cli, datafiles, workspace_cfg):
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     os.makedirs(os.path.join(project, '.bst'))
     workspace_config_path = os.path.join(project, '.bst', 'workspaces.yml')
 
@@ -913,7 +913,7 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
         _yaml.dump(node, tempfile)
         return _yaml.node_sanitize(_yaml.load(tempfile))
 
-    project = os.path.join(datafiles.dirname, datafiles.basename)
+    project = str(datafiles)
     os.makedirs(os.path.join(project, '.bst'))
     workspace_config_path = os.path.join(project, '.bst', 'workspaces.yml')
 
