@@ -15,7 +15,7 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
-                    reason='Examples are writtent for x86-64')
+                    reason='Examples are written for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_running_commands_build(cli, datafiles):
@@ -27,7 +27,7 @@ def test_running_commands_build(cli, datafiles):
 
 # Test running the executable
 @pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
-                    reason='Examples are writtent for x86-64')
+                    reason='Examples are written for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_running_commands_run(cli, datafiles):
