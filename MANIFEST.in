@@ -23,7 +23,6 @@ recursive-include doc/sessions *.run
 
 # Tests
 recursive-include tests *
-include conftest.py
 include tox.ini
 include .coveragerc
 include .pylintrc
