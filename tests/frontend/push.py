@@ -253,8 +253,12 @@ def test_artifact_expires(cli, datafiles, tmpdir):
 
         # check that element's 1 and 2 are cached both locally and remotely
         states = cli.get_element_states(project, ['element1.bst', 'element2.bst'])
-        assert states['element1.bst'] == 'cached'
-        assert states['element2.bst'] == 'cached'
+
+        assert states == {
+            "element1.bst": "cached",
+            "element2.bst": "cached",
+        }
+
         assert_shared(cli, share, project, 'element1.bst')
         assert_shared(cli, share, project, 'element2.bst')
 
@@ -339,8 +343,10 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
 
         # Ensure they are cached locally
         states = cli.get_element_states(project, ['element1.bst', 'element2.bst'])
-        assert states['element1.bst'] == 'cached'
-        assert states['element2.bst'] == 'cached'
+        assert states == {
+            "element1.bst": "cached",
+            "element2.bst": "cached",
+        }
 
         # Ensure that they have  been pushed to the cache
         assert_shared(cli, share, project, 'element1.bst')

@@ -128,8 +128,10 @@ def test_artifact_delete_element_and_artifact(cli, tmpdir, datafiles):
     # First build an element so that we can find its artifact
     result = cli.run(project=project, args=['build', element])
     result.assert_success()
-    assert cli.get_element_state(project, element) == 'cached'
-    assert cli.get_element_state(project, dep) == 'cached'
+    assert cli.get_element_states(project, [element, dep], deps="none") == {
+        element: "cached",
+        dep: "cached",
+    }
 
     # Obtain the artifact ref
     cache_key = cli.get_element_key(project, element)
