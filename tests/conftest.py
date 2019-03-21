@@ -38,10 +38,25 @@ def pytest_addoption(parser):
     parser.addoption('--integration', action='store_true', default=False,
                      help='Run integration tests')
 
+    parser.addoption('--remote-execution', action='store_true', default=False,
+                     help='Run remote-execution tests only')
+
 
 def pytest_runtest_setup(item):
-    if item.get_closest_marker('integration') and not item.config.getvalue('integration'):
-        pytest.skip('skipping integration test')
+    # Without --integration: skip tests not marked with 'integration'
+    if not item.config.getvalue('integration'):
+        if item.get_closest_marker('integration'):
+            pytest.skip('skipping integration test')
+
+    # With --remote-execution: only run tests marked with 'remoteexecution'
+    if item.config.getvalue('remote_execution'):
+        if not item.get_closest_marker('remoteexecution'):
+            pytest.skip('skipping non remote-execution test')
+
+    # Without --remote-execution: skip tests marked with 'remoteexecution'
+    else:
+        if item.get_closest_marker('remoteexecution'):
+            pytest.skip('skipping remote-execution test')
 
 
 #################################################
