@@ -109,8 +109,6 @@ disable=#####################################
         # Messages that report warnings which should be addressed #
         ###########################################################
 
-        logging-format-interpolation,
-
         cyclic-import,
 
 # Enable the message, report, category or checker with the given id(s). You can
