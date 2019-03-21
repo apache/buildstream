@@ -42,14 +42,11 @@ import time
 class Topics():
     CIRCULAR_CHECK = 'circ-dep-check'
     SORT_DEPENDENCIES = 'sort-deps'
-    LOAD_LOADER = 'load-loader'
     LOAD_CONTEXT = 'load-context'
     LOAD_PROJECT = 'load-project'
     LOAD_PIPELINE = 'load-pipeline'
     LOAD_SELECTION = 'load-selection'
     SCHEDULER = 'scheduler'
-    SHOW = 'show'
-    ARTIFACT_RECEIVE = 'artifact-receive'
     ALL = 'all'
 
 
