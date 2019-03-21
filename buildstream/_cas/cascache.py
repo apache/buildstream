@@ -852,7 +852,7 @@ class CASCache():
                 a += 1
                 b += 1
 
-    def _reachable_refs_dir(self, reachable, tree, update_mtime=False):
+    def _reachable_refs_dir(self, reachable, tree, update_mtime=False, check_exists=False):
         if tree.hash in reachable:
             return
         try:
@@ -873,10 +873,13 @@ class CASCache():
         for filenode in directory.files:
             if update_mtime:
                 os.utime(self.objpath(filenode.digest))
+            if check_exists:
+                if not os.path.exists(self.objpath(filenode.digest)):
+                    raise FileNotFoundError
             reachable.add(filenode.digest.hash)
 
         for dirnode in directory.directories:
-            self._reachable_refs_dir(reachable, dirnode.digest, update_mtime=update_mtime)
+            self._reachable_refs_dir(reachable, dirnode.digest, update_mtime=update_mtime, check_exists=check_exists)
 
     def _required_blobs(self, directory_digest, *, excluded_subdirs=None):
         if not excluded_subdirs:
