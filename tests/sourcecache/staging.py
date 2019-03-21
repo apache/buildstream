@@ -74,8 +74,8 @@ def test_source_staged(tmpdir, cli, datafiles):
     # seems to be the only way to get the sources?
     element = project.load_elements(["import-bin.bst"])[0]
     source = list(element.sources())[0]
-    assert sourcecache.contains(source)
     assert element._source_cached()
+    assert sourcecache.contains(source)
 
     # Extract the file and check it's the same as the one we imported
     ref = source._get_source_name()
