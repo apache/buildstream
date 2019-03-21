@@ -1064,30 +1064,14 @@ class CASQuota:
 
     # compute_cache_size()
     #
-    # Computes the real artifact cache size by calling
-    # the abstract calculate_cache_size() method.
+    # Computes the real artifact cache size.
     #
     # Returns:
     #    (int): The size of the artifact cache.
     #
     def compute_cache_size(self):
-        old_cache_size = self._cache_size
-        new_cache_size = self.calculate_cache_size()
-
-        if old_cache_size != new_cache_size:
-            self._cache_size = new_cache_size
-
+        self._cache_size = utils._get_dir_size(self.casdir)
         return self._cache_size
-
-    # calculate_cache_size()
-    #
-    # Return the real disk usage of the CAS cache.
-    #
-    # Returns:
-    #    (int): The size of the cache.
-    #
-    def calculate_cache_size(self):
-        return utils._get_dir_size(self.casdir)
 
     # get_cache_size()
     #
@@ -1109,7 +1093,7 @@ class CASQuota:
             if stored_size is not None:
                 self._cache_size = stored_size
             else:
-                self._cache_size = self.compute_cache_size()
+                self.compute_cache_size()
 
         return self._cache_size
 
@@ -1122,13 +1106,15 @@ class CASQuota:
     #
     # Args:
     #     cache_size (int): The size to set.
+    #     write_to_disk (bool): Whether to write the value to disk.
     #
-    def set_cache_size(self, cache_size):
+    def set_cache_size(self, cache_size, *, write_to_disk=True):
 
         assert cache_size is not None
 
         self._cache_size = cache_size
-        self._write_cache_size(self._cache_size)
+        if write_to_disk:
+            self._write_cache_size(self._cache_size)
 
     # full()
     #
@@ -1383,7 +1369,6 @@ class CASQuota:
                         utils._pretty_size(size, dec_places=2),
                         to_remove)))
 
-                # Remove the size from the removed size
                 self.set_cache_size(self._cache_size - size)
 
                 # User callback
