@@ -35,7 +35,7 @@ from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASQuota, CASCacheUsage
 from ._workspaces import Workspaces, WorkspaceProjectCache
-from .plugin import _plugin_lookup
+from .plugin import Plugin
 from .sandbox import SandboxRemote
 
 
@@ -651,7 +651,7 @@ class Context():
         plugin_name = ""
         if message.unique_id:
             template += " {plugin}"
-            plugin = _plugin_lookup(message.unique_id)
+            plugin = Plugin._lookup(message.unique_id)
             plugin_name = plugin.name
 
         template += ": {message}"

@@ -45,9 +45,6 @@ class FetchQueue(Queue):
         element._fetch(fetch_original=self._fetch_original)
 
     def status(self, element):
-        # state of dependencies may have changed, recalculate element state
-        element._update_state()
-
         if not element._is_required():
             # Artifact is not currently required but it may be requested later.
             # Keep it in the queue.
@@ -74,7 +71,7 @@ class FetchQueue(Queue):
         if status == JobStatus.FAIL:
             return
 
-        element._update_state()
+        element._fetch_done()
 
         # Successful fetch, we must be CACHED now
         assert element._get_consistency() == Consistency.CACHED

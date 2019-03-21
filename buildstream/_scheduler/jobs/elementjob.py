@@ -73,7 +73,7 @@ class ElementJob(Job):
         self._complete_cb = complete_cb        # The complete callable function
 
         # Set the task wide ID for logging purposes
-        self.set_task_id(element._get_unique_id())
+        self.set_task_id(element._unique_id)
 
     @property
     def element(self):
@@ -100,7 +100,7 @@ class ElementJob(Job):
         args = dict(kwargs)
         args['scheduler'] = True
         self._scheduler.context.message(
-            Message(self._element._get_unique_id(),
+            Message(self._element._unique_id,
                     message_type,
                     message,
                     **args))

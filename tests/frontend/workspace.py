@@ -1229,3 +1229,58 @@ def test_external_list(cli, datafiles, tmpdir_factory):
 
     result = cli.run(project=project, args=['-C', workspace, 'workspace', 'list'])
     result.assert_success()
+
+
+# This strange test tests against a regression raised in issue #919,
+# where opening a workspace on a runtime dependency of a build only
+# dependency causes `bst build` to not build the specified target
+# but just successfully builds the workspaced element and happily
+# exits without completing the build.
+#
+TEST_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__))
+)
+
+
+@pytest.mark.datafiles(TEST_DIR)
+@pytest.mark.parametrize(
+    ["case", "non_workspaced_elements_state"],
+    [
+        ("workspaced-build-dep", ["waiting", "waiting", "waiting", "waiting", "waiting"]),
+        ("workspaced-runtime-dep", ["buildable", "buildable", "waiting", "waiting", "waiting"])
+    ],
+)
+@pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
+def test_build_all(cli, tmpdir, datafiles, case, strict, non_workspaced_elements_state):
+    project = os.path.join(str(datafiles), case)
+    workspace = os.path.join(str(tmpdir), 'workspace')
+    non_leaf_elements = ["elem2.bst", "elem3.bst", "stack.bst", "elem4.bst", "elem5.bst"]
+    all_elements = ["elem1.bst", *non_leaf_elements]
+
+    # Configure strict mode
+    strict_mode = True
+    if strict != 'strict':
+        strict_mode = False
+    cli.configure({
+        'projects': {
+            'test': {
+                'strict': strict_mode
+            }
+        }
+    })
+
+    # First open the workspace
+    result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, 'elem1.bst'])
+    result.assert_success()
+
+    # Ensure all elements are waiting build the first
+    assert cli.get_element_states(project, all_elements) == \
+        dict(zip(all_elements, ['buildable', *non_workspaced_elements_state]))
+
+    # Now build the targets elem4.bst and elem5.bst
+    result = cli.run(project=project, args=['build', 'elem4.bst', 'elem5.bst'])
+    result.assert_success()
+
+    # Assert that the target is built
+    assert cli.get_element_states(project, all_elements) == \
+        {elem: "cached" for elem in all_elements}

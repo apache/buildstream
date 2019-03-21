@@ -316,7 +316,7 @@ class Queue():
     # a message for the element they are processing
     def _message(self, element, message_type, brief, **kwargs):
         context = element._get_context()
-        message = Message(element._get_unique_id(), message_type, brief, **kwargs)
+        message = Message(element._unique_id, message_type, brief, **kwargs)
         context.message(message)
 
     def _element_log_path(self, element):

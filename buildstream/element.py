@@ -99,7 +99,7 @@ from . import _site
 from ._platform import Platform
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import _KeyStrength, CoreWarnings
+from .types import _KeyStrength, CoreWarnings, _UniquePriorityQueue
 from ._artifact import Artifact
 
 from .storage.directory import Directory
@@ -204,6 +204,8 @@ class Element(Plugin):
 
         self.__runtime_dependencies = []        # Direct runtime dependency Elements
         self.__build_dependencies = []          # Direct build dependency Elements
+        self.__reverse_dependencies = set()     # Direct reverse dependency Elements
+        self.__ready_for_runtime = False        # Wether the element has all its dependencies ready and has a cache key
         self.__sources = []                     # List of Sources
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
@@ -975,9 +977,12 @@ class Element(Plugin):
         for meta_dep in meta.dependencies:
             dependency = Element._new_from_meta(meta_dep)
             element.__runtime_dependencies.append(dependency)
+            dependency.__reverse_dependencies.add(element)
+
         for meta_dep in meta.build_dependencies:
             dependency = Element._new_from_meta(meta_dep)
             element.__build_dependencies.append(dependency)
+            dependency.__reverse_dependencies.add(element)
 
         return element
 
@@ -1259,6 +1264,10 @@ class Element(Plugin):
                 # Strong cache key could not be calculated yet
                 return
 
+        if not self.__ready_for_runtime and self.__cache_key is not None:
+            self.__ready_for_runtime = all(
+                dep.__ready_for_runtime for dep in self.__runtime_dependencies)
+
     # _get_display_key():
     #
     # Returns cache keys for display purposes
@@ -1373,7 +1382,7 @@ class Element(Plugin):
             source = sources.pop()
             source._generate_key(sources)
 
-        self._update_state()
+        self.__update_state_recursively()
 
     # _track():
     #
@@ -1390,7 +1399,7 @@ class Element(Plugin):
         for index, source in enumerate(self.__sources):
             old_ref = source.get_ref()
             new_ref = source._track(self.__sources[0:index])
-            refs.append((source._get_unique_id(), new_ref))
+            refs.append((source._unique_id, new_ref))
 
             # Complimentary warning that the new ref will be unused.
             if old_ref != new_ref and self._get_workspace():
@@ -1580,7 +1589,7 @@ class Element(Plugin):
         self.__assemble_scheduled = False
         self.__assemble_done = True
 
-        self._update_state()
+        self.__update_state_recursively()
 
         if self._get_workspace() and self._cached_success():
             assert utils._is_main_process(), \
@@ -1765,6 +1774,15 @@ class Element(Plugin):
     def _get_build_log(self):
         return self._build_log_path
 
+    # _fetch_done()
+    #
+    # Indicates that fetching the sources for this element has been done.
+    #
+    def _fetch_done(self):
+        # We are not updating the state recursively here since fetching can
+        # never end up in updating them.
+        self._update_state()
+
     # _pull_pending()
     #
     # Check whether the artifact will be pulled. If the pull operation is to
@@ -1807,7 +1825,7 @@ class Element(Plugin):
     def _pull_done(self):
         self.__pull_done = True
 
-        self._update_state()
+        self.__update_state_recursively()
 
     # _pull():
     #
@@ -2914,6 +2932,24 @@ class Element(Plugin):
             sourcecache = self._get_context().sourcecache
             if not sourcecache.contains(sources[-1]):
                 sources[-1]._cache(sources[:-1])
+
+    # __update_state_recursively()
+    #
+    # Update the state of all reverse dependencies, recursively.
+    #
+    def __update_state_recursively(self):
+        queue = _UniquePriorityQueue()
+        queue.push(self._unique_id, self)
+
+        while queue:
+            element = queue.pop()
+
+            old_ready_for_runtime = element.__ready_for_runtime
+            element._update_state()
+
+            if element.__ready_for_runtime != old_ready_for_runtime:
+                for rdep in element.__reverse_dependencies:
+                    queue.push(rdep._unique_id, rdep)
 
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):
