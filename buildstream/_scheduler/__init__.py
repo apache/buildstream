@@ -23,7 +23,7 @@ from .queues.fetchqueue import FetchQueue
 from .queues.sourcepushqueue import SourcePushQueue
 from .queues.trackqueue import TrackQueue
 from .queues.buildqueue import BuildQueue
-from .queues.pushqueue import PushQueue
+from .queues.artifactpushqueue import ArtifactPushQueue
 from .queues.pullqueue import PullQueue
 
 from .scheduler import Scheduler, SchedStatus
