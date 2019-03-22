@@ -1742,32 +1742,16 @@ Profiling specific parts of BuildStream with BST_PROFILE
 BuildStream can also turn on cProfile for specific parts of execution
 using BST_PROFILE.
 
-BST_PROFILE can be set to a section name, or 'all' for all
-sections. There is a list of topics in `buildstream/_profile.py`. For
-example, running::
+BST_PROFILE can be set to a section name, or a list of section names separated
+by ":". You can also use "all" for getting all profiles at the same time.
+There is a list of topics in `buildstream/_profile.py`. For example, running::
 
     BST_PROFILE=load-pipeline bst build bootstrap-system-x86.bst
 
 will produce a profile in the current directory for the time take to
 call most of `initialized`, for each element. These profile files
 are in the same cProfile format as those mentioned in the previous
-section, and can be analysed with `pstats` or `pyflame`.
-
-
-Profiling the artifact cache receiver
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Since the artifact cache receiver is not normally run directly, it's
-necessary to alter the ForceCommand part of sshd_config to enable
-profiling. See the main documentation in `doc/source/artifacts.rst`
-for general information on setting up the artifact cache. It's also
-useful to change directory to a logging directory before starting
-`bst-artifact-receive` with profiling on.
-
-This is an example of a ForceCommand section of sshd_config used to
-obtain profiles::
-
-    Match user artifacts
-      ForceCommand BST_PROFILE=artifact-receive cd /tmp && bst-artifact-receive --pull-url https://example.com/ /home/artifacts/artifacts
+section, and can be analysed in the same way.
 
 
 Managing data files
