@@ -1,4 +1,4 @@
-image: buildstream/testsuite-debian:9-5da27168-32c47d1c
+image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-46405991
 
 cache:
   key: "$CI_JOB_NAME-"
@@ -44,25 +44,25 @@ variables:
     - .coverage-reports
 
 tests-debian-9:
-  image: buildstream/testsuite-debian:9-5da27168-32c47d1c
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-46405991
   <<: *tests
 
 tests-fedora-27:
-  image: buildstream/testsuite-fedora:27-5da27168-32c47d1c
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:27-master-46405991
   <<: *tests
 
 tests-fedora-28:
-  image: buildstream/testsuite-fedora:28-5da27168-32c47d1c
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:28-master-46405991
   <<: *tests
 
 tests-ubuntu-18.04:
-  image: buildstream/testsuite-ubuntu:18.04-5da27168-32c47d1c
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-master-46405991
   <<: *tests
 
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
-  image: buildstream/testsuite-fedora:27-5da27168-32c47d1c
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:27-master-46405991
   <<: *tests
   variables:
     BST_FORCE_BACKEND: "unix"
@@ -72,7 +72,7 @@ tests-unix:
     # We remove the Bubblewrap and OSTree packages here so that we catch any
     # codepaths that try to use them. Removing OSTree causes fuse-libs to
     # disappear unless we mark it as user-installed.
-    - dnf mark install fuse-libs
+    - dnf mark install fuse-libs systemd-udev
     - dnf erase -y bubblewrap ostree
 
     # Since the unix platform is required to run as root, no user change required
