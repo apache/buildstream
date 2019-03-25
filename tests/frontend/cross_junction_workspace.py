@@ -3,9 +3,8 @@
 
 import os
 from buildstream.plugintestutils import cli  # pylint: disable=unused-import
+from buildstream.plugintestutils import create_repo
 from buildstream import _yaml
-
-from tests.testutils import create_repo
 
 
 def prepare_junction_project(cli, tmpdir):

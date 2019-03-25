@@ -23,8 +23,7 @@ import os
 import shutil
 import pytest
 
-from tests.testutils import create_repo, ALL_REPO_KINDS
-
+from buildstream.plugintestutils import create_repo, ALL_REPO_KINDS
 from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 

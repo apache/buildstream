@@ -2,7 +2,7 @@ import os
 import subprocess
 import pytest
 
-from .repo import Repo
+from buildstream.plugintestutils import Repo
 from .. import site
 
 

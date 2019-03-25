@@ -1,6 +1,5 @@
 from buildstream import _yaml
-
-from .repo import create_repo
+from buildstream.plugintestutils import create_repo
 
 
 # generate_junction()
