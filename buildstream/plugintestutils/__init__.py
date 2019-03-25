@@ -16,7 +16,7 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
 
-from .runcli import cli, cli_integration
+from .runcli import cli, cli_integration, cli_remote_execution
 
 # To make use of these test utilities it is necessary to have pytest
 # available. However, we don't want to have a hard dependency on

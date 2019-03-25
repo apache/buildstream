@@ -8,6 +8,7 @@ cache:
 stages:
   - test
   - post
+  - publish
 
 variables:
   PYTEST_ADDOPTS: "--color=yes"
@@ -137,6 +138,29 @@ tests-fedora-update-deps:
     - cat requirements/*.txt
 
     - su buildstream -c "${TEST_COMMAND}"
+
+tests-remote-execution:
+  allow_failure: true
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
+  <<: *tests
+  before_script:
+    - dnf install -y docker docker-compose
+    - docker-compose --file ${COMPOSE_MANIFEST} up --detach
+  after_script:
+    - docker-compose --file ${COMPOSE_MANIFEST} stop
+    - docker-compose --file ${COMPOSE_MANIFEST} logs
+    - docker-compose --file ${COMPOSE_MANIFEST} down
+  services:
+    - docker:stable-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_DRIVER: overlay2
+    COMPOSE_MANIFEST: .gitlab-ci/buildgrid-compose.yml
+    ARTIFACT_CACHE_SERVICE: http://docker:50052
+    REMOTE_EXECUTION_SERVICE: http://docker:50051
+    SOURCE_CACHE_SERVICE: http://docker:50052
+    PYTEST_ARGS: "--color=yes --remote-execution"
+
 
 # Lint separately from testing
 lint:
@@ -308,6 +332,7 @@ coverage:
   - tests-fedora-29
   - tests-fedora-missing-deps
   - tests-fedora-update-deps
+  - tests-remote-execution
   - tests-ubuntu-18.04
   - tests-unix
   except:
@@ -320,17 +345,21 @@ coverage:
 # Deploy, only for merges which land on master branch.
 #
 pages:
-  stage: post
+  stage: publish
   dependencies:
+  - coverage
   - docs
   variables:
     ACME_DIR: public/.well-known/acme-challenge
+    COVERAGE_DIR: public/coverage
   script:
   - mkdir -p ${ACME_DIR}
     # Required to finish the creation of the Let's Encrypt certificate,
     # which allows using https://docs.buildstream.build/ for accessing
     # the documentation.
   - echo ${ACME_CHALLENGE} > ${ACME_DIR}/$(echo ${ACME_CHALLENGE} | cut -c1-43)
+  - mkdir -p ${COVERAGE_DIR}
+  - cp -a ./coverage-report/ ${COVERAGE_DIR}
   artifacts:
     paths:
     - public/

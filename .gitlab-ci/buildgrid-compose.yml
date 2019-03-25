@@ -1,0 +1,72 @@
+##
+# BuildGrid Compose manifest for BuildStream.
+#
+# Spins-up a unnamed and unauthenticated grid:
+#  - Controller + CAS + AC at http://localhost:50051
+#  - Ref. + CAS at: http://localhost:50052
+#
+# BuildStream configuration snippet:
+#
+#    artifacts:
+#      url: http://localhost:50052
+#      push: true
+#    remote-execution:
+#      execution-service:
+#        url: http://localhost:50051
+#      action-cache-service:
+#        url: http://localhost:50051
+#      storage-service:
+#        url: http://localhost:50051
+#
+# Basic usage:
+#  - docker-compose -f buildgrid-compose.yml up
+#  - docker-compose -f buildgrid-compose.yml down
+#
+version: "3.2"
+
+services:
+  controller:
+    image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid:nightly
+    command: [
+      "bgd", "server", "start", "-vvv",
+      "/etc/buildgrid/default.conf"]
+    ports:
+      - 50051:50051
+    networks:
+      - grid
+
+  bot:
+    image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid:nightly
+    command: [
+      "bgd", "bot", "--parent=", "-vvv",
+      "--remote=http://controller:50051",
+      "--remote-cas=http://controller:50051",
+      "buildbox",
+      "--local-cas", "/var/lib/buildgrid/cache",
+      "--fuse-dir", "/mnt"]
+    privileged: true
+    volumes:
+      - type: volume
+        source: cache
+        target: /var/lib/buildgrid/cache
+    depends_on:
+      - controller
+    networks:
+      - grid
+
+  storage:
+    image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid:nightly
+    command: [
+      "bgd", "server", "start", "-vvv",
+      "/etc/buildgrid/artifacts.conf"]
+    ports:
+      - 50052:50052
+    networks:
+      - grid
+
+networks:
+  grid:
+    driver: bridge
+
+volumes:
+  cache:
