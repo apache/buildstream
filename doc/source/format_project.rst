@@ -218,6 +218,33 @@ The use of ports are required to distinguish between pull only access and
 push/pull access. For information regarding the server/client certificates
 and keys, please see: :ref:`Key pair for the server <server_authentication>`.
 
+.. _project_source_cache:
+
+Source cache server
+~~~~~~~~~~~~~~~~~~~
+Exactly the same as artifact servers, source cache servers can be specified.
+
+.. code:: yaml
+
+  #
+  # Source caches
+  #
+  source-caches:
+    # A remote cache from which to download prestaged sources
+    - url: https://foo.com:11001
+      server.cert: server.crt
+    # A remote cache from which to upload/download prestaged sources
+    - url: https://foo.com:11002
+      server-cert: server.crt
+      client-cert: client.crt
+      client-key: client.key
+
+.. note::
+
+   As artifact caches work in exactly the same way, a configured artifact server
+   can also be used as a source cache server. If you want to use a server as
+   both you can put it under both artifacts and source caches configs.
+
 .. _project_remote_execution:
 
 Remote execution

@@ -190,6 +190,48 @@ class BaseCache():
 
             self._remotes[project] = project_remotes
 
+    # has_fetch_remotes():
+    #
+    # Check whether any remote repositories are available for fetching.
+    #
+    # Args:
+    #     plugin (Plugin): The Plugin to check
+    #
+    # Returns: True if any remote repositories are configured, False otherwise
+    #
+    def has_fetch_remotes(self, *, plugin=None):
+        if not self._has_fetch_remotes:
+            # No project has fetch remotes
+            return False
+        elif plugin is None:
+            # At least one (sub)project has fetch remotes
+            return True
+        else:
+            # Check whether the specified element's project has fetch remotes
+            remotes_for_project = self._remotes[plugin._get_project()]
+            return bool(remotes_for_project)
+
+    # has_push_remotes():
+    #
+    # Check whether any remote repositories are available for pushing.
+    #
+    # Args:
+    #     element (Element): The Element to check
+    #
+    # Returns: True if any remote repository is configured, False otherwise
+    #
+    def has_push_remotes(self, *, plugin=None):
+        if not self._has_push_remotes:
+            # No project has push remotes
+            return False
+        elif plugin is None:
+            # At least one (sub)project has push remotes
+            return True
+        else:
+            # Check whether the specified element's project has push remotes
+            remotes_for_project = self._remotes[plugin._get_project()]
+            return any(remote.spec.push for remote in remotes_for_project)
+
     ################################################
     #               Local Private Methods          #
     ################################################

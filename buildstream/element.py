@@ -213,6 +213,7 @@ class Element(Plugin):
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
         self.__artifacts = context.artifactcache  # Artifact cache
+        self.__sourcecache = context.sourcecache  # Source cache
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
         self.__strong_cached = None             # Whether we have a cached artifact
         self.__weak_cached = None               # Whether we have a cached artifact
@@ -1810,7 +1811,7 @@ class Element(Plugin):
 
         # Pull is pending if artifact remote server available
         # and pull has not been attempted yet
-        return self.__artifacts.has_fetch_remotes(element=self) and not self.__pull_done
+        return self.__artifacts.has_fetch_remotes(plugin=self) and not self.__pull_done
 
     # _pull_done()
     #
@@ -1855,6 +1856,25 @@ class Element(Plugin):
         # Notify successfull download
         return True
 
+    def _skip_source_push(self):
+        if not self.__sources or self._get_workspace():
+            return True
+        return not (self.__sourcecache.has_push_remotes(plugin=self) and
+                    self._source_cached())
+
+    def _source_push(self):
+        # try and push sources if we've got them
+        if self.__sourcecache.has_push_remotes(plugin=self) and self._source_cached():
+            sources = list(self.sources())
+            if sources:
+                source_pushed = self.__sourcecache.push(sources[-1])
+
+                if not source_pushed:
+                    return False
+
+        # Notify successful upload
+        return True
+
     # _skip_push():
     #
     # Determine whether we should create a push job for this element.
@@ -1863,7 +1883,7 @@ class Element(Plugin):
     #   (bool): True if this element does not need a push job to be created
     #
     def _skip_push(self):
-        if not self.__artifacts.has_push_remotes(element=self):
+        if not self.__artifacts.has_push_remotes(plugin=self):
             # No push remotes for this element's project
             return True
 
@@ -2111,16 +2131,20 @@ class Element(Plugin):
     #
     def _fetch(self, fetch_original=False):
         previous_sources = []
-        source = None
-        sourcecache = self._get_context().sourcecache
+        sources = self.__sources
+        if sources and not fetch_original:
+            source = sources[-1]
+            if self.__sourcecache.contains(source):
+                return
 
-        # check whether the final source is cached
-        for source in self.sources():
-            pass
+            # try and fetch from source cache
+            if source._get_consistency() < Consistency.CACHED and \
+                    self.__sourcecache.has_fetch_remotes() and \
+                    not self.__sourcecache.contains(source):
+                if self.__sourcecache.pull(source):
+                    return
 
-        if source and not fetch_original and sourcecache.contains(source):
-            return
-
+        # We need to fetch original sources
         for source in self.sources():
             source_consistency = source._get_consistency()
             if source_consistency != Consistency.CACHED:

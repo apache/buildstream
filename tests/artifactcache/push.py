@@ -125,7 +125,7 @@ def _test_push(user_config_file, project_dir, element_name, element_key, queue):
     cas.setup_remotes(use_config=True)
     cas.initialize_remotes()
 
-    if cas.has_push_remotes(element=element):
+    if cas.has_push_remotes(plugin=element):
         # Push the element's artifact
         if not cas.push(element, [element_key]):
             queue.put("Push operation failed")
@@ -184,7 +184,7 @@ def test_push_directory(cli, tmpdir, datafiles):
         # Manually setup the CAS remote
         artifactcache.setup_remotes(use_config=True)
         artifactcache.initialize_remotes()
-        assert artifactcache.has_push_remotes(element=element)
+        assert artifactcache.has_push_remotes(plugin=element)
 
         # Recreate the CasBasedDirectory object from the cached artifact
         artifact_ref = element.get_artifact_name(element_key)

@@ -73,5 +73,8 @@ class FetchQueue(Queue):
 
         element._fetch_done()
 
-        # Successful fetch, we must be CACHED now
-        assert element._get_consistency() == Consistency.CACHED
+        # Successful fetch, we must be CACHED or in the sourcecache
+        if self._fetch_original:
+            assert element._get_consistency() == Consistency.CACHED
+        else:
+            assert element._source_cached()

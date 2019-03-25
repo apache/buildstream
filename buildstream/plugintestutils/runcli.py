@@ -225,7 +225,7 @@ class Result():
     #    (list): A list of element names
     #
     def get_tracked_elements(self):
-        tracked = re.findall(r'\[track:(\S+)\s*]', self.stderr)
+        tracked = re.findall(r'\[\s*track:(\S+)\s*]', self.stderr)
         if tracked is None:
             return []
 

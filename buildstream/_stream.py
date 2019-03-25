@@ -34,7 +34,8 @@ from fnmatch import fnmatch
 from ._artifactelement import verify_artifact_ref
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, CASCacheError
 from ._message import Message, MessageType
-from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
+from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, \
+    SourcePushQueue, BuildQueue, PullQueue, ArtifactPushQueue
 from ._pipeline import Pipeline, PipelineSelection
 from ._profile import Topics, profile_start, profile_end
 from .types import _KeyStrength
@@ -77,6 +78,7 @@ class Stream():
         # Private members
         #
         self._artifacts = context.artifactcache
+        self._sourcecache = context.sourcecache
         self._context = context
         self._project = project
         self._pipeline = Pipeline(context, project, self._artifacts)
@@ -106,7 +108,7 @@ class Stream():
     #    targets (list of str): Targets to pull
     #    selection (PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from fetching
-    #    use_artifact_config (bool): If artifact remote config should be loaded
+    #    use_artifact_config (bool): If artifact remote configs should be loaded
     #
     # Returns:
     #    (list of Element): The selected elements
@@ -239,6 +241,7 @@ class Stream():
                        ignore_junction_targets=ignore_junction_targets,
                        use_artifact_config=use_config,
                        artifact_remote_url=remote,
+                       use_source_config=True,
                        fetch_subprojects=True,
                        dynamic_plan=True)
 
@@ -259,10 +262,14 @@ class Stream():
             self._add_queue(PullQueue(self._scheduler))
 
         self._add_queue(FetchQueue(self._scheduler, skip_cached=True))
+
         self._add_queue(BuildQueue(self._scheduler))
 
         if self._artifacts.has_push_remotes():
-            self._add_queue(PushQueue(self._scheduler))
+            self._add_queue(ArtifactPushQueue(self._scheduler))
+
+        if self._sourcecache.has_push_remotes():
+            self._add_queue(SourcePushQueue(self._scheduler))
 
         # Enqueue elements
         #
@@ -281,12 +288,14 @@ class Stream():
     #    except_targets (list of str): Specified targets to except from fetching
     #    track_targets (bool): Whether to track selected targets in addition to fetching
     #    track_cross_junctions (bool): Whether tracking should cross junction boundaries
+    #    remote (str|None): The URL of a specific remote server to pull from.
     #
     def fetch(self, targets, *,
               selection=PipelineSelection.PLAN,
               except_targets=None,
               track_targets=False,
-              track_cross_junctions=False):
+              track_cross_junctions=False,
+              remote=None):
 
         if track_targets:
             track_targets = targets
@@ -297,13 +306,19 @@ class Stream():
             track_selection = PipelineSelection.NONE
             track_except_targets = ()
 
+        use_source_config = True
+        if remote:
+            use_source_config = False
+
         elements, track_elements = \
             self._load(targets, track_targets,
                        selection=selection, track_selection=track_selection,
                        except_targets=except_targets,
                        track_except_targets=track_except_targets,
                        track_cross_junctions=track_cross_junctions,
-                       fetch_subprojects=True)
+                       fetch_subprojects=True,
+                       use_source_config=use_source_config,
+                       source_remote_url=remote)
 
         # Delegated to a shared fetch method
         self._fetch(elements, track_elements=track_elements)
@@ -424,7 +439,7 @@ class Stream():
             self._add_queue(PullQueue(self._scheduler))
             self._enqueue_plan(require_buildtrees)
 
-        push_queue = PushQueue(self._scheduler)
+        push_queue = ArtifactPushQueue(self._scheduler)
         self._add_queue(push_queue)
         self._enqueue_plan(elements, queue=push_queue)
         self._run()
@@ -986,7 +1001,9 @@ class Stream():
     #    track_cross_junctions (bool): Whether tracking should cross junction boundaries
     #    ignore_junction_targets (bool): Whether junction targets should be filtered out
     #    use_artifact_config (bool): Whether to initialize artifacts with the config
-    #    artifact_remote_url (bool): A remote url for initializing the artifacts
+    #    use_source_config (bool): Whether to initialize remote source caches with the config
+    #    artifact_remote_url (str): A remote url for initializing the artifacts
+    #    source_remote_url (str): A remote url for initializing source caches
     #    fetch_subprojects (bool): Whether to fetch subprojects while loading
     #
     # Returns:
@@ -1002,7 +1019,9 @@ class Stream():
               track_cross_junctions=False,
               ignore_junction_targets=False,
               use_artifact_config=False,
+              use_source_config=False,
               artifact_remote_url=None,
+              source_remote_url=None,
               fetch_subprojects=False,
               dynamic_plan=False,
               load_refs=False):
@@ -1087,6 +1106,7 @@ class Stream():
 
         # Connect to remote caches, this needs to be done before resolving element state
         self._artifacts.setup_remotes(use_config=use_artifact_config, remote_url=artifact_remote_url)
+        self._sourcecache.setup_remotes(use_config=use_source_config, remote_url=source_remote_url)
 
         # Now move on to loading primary selection.
         #
@@ -1106,7 +1126,7 @@ class Stream():
         required_elements = functools.partial(self._pipeline.dependencies, elements, Scope.ALL)
         self._artifacts.mark_required_elements(required_elements())
 
-        self._context.sourcecache.mark_required_sources(
+        self._sourcecache.mark_required_sources(
             itertools.chain.from_iterable(
                 [element.sources() for element in required_elements()]))
 
@@ -1217,6 +1237,7 @@ class Stream():
 
         if track_elements:
             self._enqueue_plan(track_elements, queue=track_queue)
+
         self._enqueue_plan(fetch_plan)
         self._run()
 

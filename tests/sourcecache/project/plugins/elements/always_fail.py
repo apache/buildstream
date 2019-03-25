@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2019 Bloomberg Finance L.P.
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -15,16 +15,18 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 #  Authors:
-#        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
+#
 
-from .queues import Queue, QueueStatus
+from buildstream.element import ElementError
+from buildstream.buildelement import BuildElement
 
-from .queues.fetchqueue import FetchQueue
-from .queues.sourcepushqueue import SourcePushQueue
-from .queues.trackqueue import TrackQueue
-from .queues.buildqueue import BuildQueue
-from .queues.artifactpushqueue import ArtifactPushQueue
-from .queues.pullqueue import PullQueue
 
-from .scheduler import Scheduler, SchedStatus
-from .jobs import ElementJob, JobStatus
+class AlwaysFail(BuildElement):
+
+    def assemble(self, sandbox):
+        raise ElementError("Always fails")
+
+
+def setup():
+    return AlwaysFail

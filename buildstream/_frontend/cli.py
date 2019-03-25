@@ -622,10 +622,12 @@ def source():
               help="Track new source references before fetching")
 @click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
               help="Allow tracking to cross junction boundaries")
+@click.option('--remote', '-r', default=None,
+              help="The URL of the remote source cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
 @click.pass_obj
-def source_fetch(app, elements, deps, track_, except_, track_cross_junctions):
+def source_fetch(app, elements, deps, track_, except_, track_cross_junctions, remote):
     """Fetch sources required to build the pipeline
 
     Specifying no elements will result in fetching the default targets
@@ -666,7 +668,8 @@ def source_fetch(app, elements, deps, track_, except_, track_cross_junctions):
                          selection=deps,
                          except_targets=except_,
                          track_targets=track_,
-                         track_cross_junctions=track_cross_junctions)
+                         track_cross_junctions=track_cross_junctions,
+                         remote=remote)
 
 
 ##################################################################

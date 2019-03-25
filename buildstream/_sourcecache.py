@@ -20,7 +20,7 @@
 from ._cas import CASRemoteSpec
 from .storage._casbaseddirectory import CasBasedDirectory
 from ._basecache import BaseCache
-from ._exceptions import CASCacheError, SourceCacheError
+from ._exceptions import CASError, CASCacheError, SourceCacheError
 from . import utils
 
 
@@ -143,3 +143,71 @@ class SourceCache(BaseCache):
             raise SourceCacheError("Error exporting source: {}".format(e))
 
         return CasBasedDirectory(self.cas, digest=digest)
+
+    # pull()
+    #
+    # Attempts to pull sources from configure remote source caches.
+    #
+    # Args:
+    #    source (Source): The source we want to fetch
+    #    progress (callable|None): The progress callback
+    #
+    # Returns:
+    #    (bool): True if pull successful, False if not
+    def pull(self, source, *, progress=None):
+        ref = source._get_source_name()
+
+        project = source._get_project()
+
+        display_key = source._get_brief_display_key()
+
+        for remote in self._remotes[project]:
+            try:
+                source.status("Pulling source {} <- {}".format(display_key, remote.spec.url))
+
+                if self.cas.pull(ref, remote, progress=progress):
+                    source.info("Pulled source {} <- {}".format(display_key, remote.spec.url))
+                    # no need to pull from additional remotes
+                    return True
+                else:
+                    source.info("Remote ({}) does not have source {} cached".format(
+                        remote.spec.url, display_key))
+            except CASError as e:
+                raise SourceCacheError("Failed to pull source {}: {}".format(
+                    display_key, e)) from e
+        return False
+
+    # push()
+    #
+    # Push a source to configured remote source caches
+    #
+    # Args:
+    #    source (Source): source to push
+    #
+    # Returns:
+    #    (Bool): whether it pushed to a remote source cache
+    #
+    def push(self, source):
+        ref = source._get_source_name()
+        project = source._get_project()
+
+        # find configured push remotes for this source
+        if self._has_push_remotes:
+            push_remotes = [r for r in self._remotes[project] if r.spec.push]
+        else:
+            push_remotes = []
+
+        pushed = False
+
+        display_key = source._get_brief_display_key()
+        for remote in push_remotes:
+            remote.init()
+            source.status("Pushing source {} -> {}".format(display_key, remote.spec.url))
+            if self.cas.push([ref], remote):
+                source.info("Pushed source {} -> {}".format(display_key, remote.spec.url))
+                pushed = True
+            else:
+                source.info("Remote ({}) already has source {} cached"
+                            .format(remote.spec.url, display_key))
+
+        return pushed
