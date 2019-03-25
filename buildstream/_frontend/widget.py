@@ -32,7 +32,7 @@ from .. import _yaml
 from .. import __version__ as bst_version
 from .._exceptions import ImplError
 from .._message import MessageType
-from ..plugin import _plugin_lookup
+from ..plugin import Plugin
 
 
 # These messages are printed a bit differently
@@ -187,7 +187,7 @@ class ElementName(Widget):
         if element_id is None:
             return ""
 
-        plugin = _plugin_lookup(element_id)
+        plugin = Plugin._lookup(element_id)
         name = plugin._get_full_name()
 
         # Sneak the action name in with the element name
@@ -224,7 +224,7 @@ class CacheKey(Widget):
 
         missing = False
         key = ' ' * self._key_length
-        plugin = _plugin_lookup(element_id)
+        plugin = Plugin._lookup(element_id)
         if isinstance(plugin, Element):
             _, key, missing = plugin._get_display_key()
 
@@ -586,7 +586,7 @@ class LogLine(Widget):
         # Track logfiles for later use
         element_id = message.task_id or message.unique_id
         if message.message_type in ERROR_MESSAGES and element_id is not None:
-            plugin = _plugin_lookup(element_id)
+            plugin = Plugin._lookup(element_id)
             self._failure_messages[plugin].append(message)
 
         return self._render(message)

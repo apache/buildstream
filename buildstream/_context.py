@@ -31,7 +31,7 @@ from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 from ._artifactcache import ArtifactCache
 from ._workspaces import Workspaces
-from .plugin import _plugin_lookup
+from .plugin import Plugin
 
 
 # Context()
@@ -524,7 +524,7 @@ class Context():
         plugin_name = ""
         if message.unique_id:
             template += " {plugin}"
-            plugin = _plugin_lookup(message.unique_id)
+            plugin = Plugin._lookup(message.unique_id)
             plugin_name = plugin.name
 
         template += ": {message}"

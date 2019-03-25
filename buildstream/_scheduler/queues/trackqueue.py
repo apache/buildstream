@@ -19,8 +19,7 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 # BuildStream toplevel imports
-from ...plugin import _plugin_lookup
-from ... import SourceError
+from ...plugin import Plugin
 
 # Local imports
 from . import Queue, QueueStatus
@@ -55,7 +54,7 @@ class TrackQueue(Queue):
 
         # Set the new refs in the main process one by one as they complete
         for unique_id, new_ref in result:
-            source = _plugin_lookup(unique_id)
+            source = Plugin._lookup(unique_id)
             source._save_ref(new_ref)
 
         element._tracking_done()

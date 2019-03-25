@@ -92,6 +92,7 @@ Class Reference
 ---------------
 """
 
+import itertools
 import os
 import subprocess
 from contextlib import contextmanager
@@ -145,6 +146,23 @@ class Plugin():
        core format version :ref:`core format version <project_format_version>`.
     """
 
+    # Unique id generator for Plugins
+    #
+    # Each plugin gets a unique id at creation.
+    # Ids are a monotically increasing integer
+    __id_generator = itertools.count()
+
+    # Hold on to a lookup table by counter of all instantiated plugins.
+    # We use this to send the id back from child processes so we can lookup
+    # corresponding element/source in the master process.
+    #
+    # Use WeakValueDictionary() so the map we use to lookup objects does not
+    # keep the plugins alive after pipeline destruction.
+    #
+    # Note that Plugins can only be instantiated in the main process before
+    # scheduling tasks.
+    __TABLE = WeakValueDictionary()
+
     def __init__(self, name, context, project, provenance, type_tag):
 
         self.name = name
@@ -157,11 +175,24 @@ class Plugin():
         For sources this is for display purposes only.
         """
 
+        # Unique ID
+        #
+        # This id allows to uniquely identify a plugin.
+        #
+        # /!\ the unique id must be an increasing value /!\
+        # This is because we are depending on it in buildstream.element.Element
+        # to give us a topological sort over all elements.
+        # Modifying how we handle ids here will modify the behavior of the
+        # Element's state handling.
+        self._unique_id = next(self.__id_generator)
+
+        # register ourself in the table containing all existing plugins
+        self.__TABLE[self._unique_id] = self
+
         self.__context = context        # The Context object
         self.__project = project        # The Project object
         self.__provenance = provenance  # The Provenance information
         self.__type_tag = type_tag      # The type of plugin (element or source)
-        self.__unique_id = _plugin_register(self)  # Unique ID
         self.__configuring = False      # Whether we are currently configuring
 
         # Infer the kind identifier
@@ -519,7 +550,7 @@ class Plugin():
               self.call(... command which takes time ...)
         """
         with self.__context.timed_activity(activity_name,
-                                           unique_id=self.__unique_id,
+                                           unique_id=self._unique_id,
                                            detail=detail,
                                            silent_nested=silent_nested):
             yield
@@ -611,6 +642,23 @@ class Plugin():
     #            Private Methods used in BuildStream            #
     #############################################################
 
+    # _lookup():
+    #
+    # Fetch a plugin in the current process by its
+    # unique identifier
+    #
+    # Args:
+    #    unique_id: The unique identifier as returned by
+    #               plugin._unique_id
+    #
+    # Returns:
+    #    (Plugin): The plugin for the given ID, or None
+    #
+    @classmethod
+    def _lookup(cls, unique_id):
+        assert unique_id in cls.__TABLE, "Could not find plugin with ID {}".format(unique_id)
+        return cls.__TABLE[unique_id]
+
     # _get_context()
     #
     # Fetches the invocation context
@@ -624,13 +672,6 @@ class Plugin():
     #
     def _get_project(self):
         return self.__project
-
-    # _get_unique_id():
-    #
-    # Fetch the plugin's unique identifier
-    #
-    def _get_unique_id(self):
-        return self.__unique_id
 
     # _get_provenance():
     #
@@ -716,7 +757,7 @@ class Plugin():
         return (exit_code, output)
 
     def __message(self, message_type, brief, **kwargs):
-        message = Message(self.__unique_id, message_type, brief, **kwargs)
+        message = Message(self._unique_id, message_type, brief, **kwargs)
         self.__context.message(message)
 
     def __note_command(self, output, *popenargs, **kwargs):
@@ -734,42 +775,3 @@ class Plugin():
             return '{}:{}'.format(project.junction.name, self.name)
         else:
             return self.name
-
-
-# Hold on to a lookup table by counter of all instantiated plugins.
-# We use this to send the id back from child processes so we can lookup
-# corresponding element/source in the master process.
-#
-# Use WeakValueDictionary() so the map we use to lookup objects does not
-# keep the plugins alive after pipeline destruction.
-#
-# Note that Plugins can only be instantiated in the main process before
-# scheduling tasks.
-__PLUGINS_UNIQUE_ID = 0
-__PLUGINS_TABLE = WeakValueDictionary()
-
-
-# _plugin_lookup():
-#
-# Fetch a plugin in the current process by its
-# unique identifier
-#
-# Args:
-#    unique_id: The unique identifier as returned by
-#               plugin._get_unique_id()
-#
-# Returns:
-#    (Plugin): The plugin for the given ID, or None
-#
-def _plugin_lookup(unique_id):
-    assert unique_id in __PLUGINS_TABLE, "Could not find plugin with ID {}".format(unique_id)
-    return __PLUGINS_TABLE[unique_id]
-
-
-# No need for unregister, WeakValueDictionary() will remove entries
-# in itself when the referenced plugins are garbage collected.
-def _plugin_register(plugin):
-    global __PLUGINS_UNIQUE_ID                # pylint: disable=global-statement
-    __PLUGINS_UNIQUE_ID += 1
-    __PLUGINS_TABLE[__PLUGINS_UNIQUE_ID] = plugin
-    return __PLUGINS_UNIQUE_ID
