@@ -84,7 +84,7 @@ def verify_artifact_ref(ref):
     try:
         project, element, key = ref.split('/', 2)  # This will raise a Value error if unable to split
         # Explicitly raise a ValueError if the key lenght is not as expected
-        if len(key) != len(_cachekey.generate_key({})):
+        if len(key) != len(_cachekey.generate_key(_yaml.new_empty_node())):
             raise ValueError
     except ValueError:
         raise ArtifactElementError("Artifact: {} is not of the expected format".format(ref))

@@ -22,7 +22,7 @@ from buildstream import _yaml
 
 # yaml_file_get_provenance()
 #
-# Load a yaml file and return it's _yaml.Provenance object.
+# Load a yaml file and return its _yaml.ProvenanceInformation object.
 #
 # This is useful for checking the provenance in BuildStream output is as
 # expected.
@@ -34,14 +34,14 @@ from buildstream import _yaml
 #   indices (list of indexes): Optional index path, in the case of list values
 #
 # Returns:
-#   The Provenance of the dict, member or list element
+#   The ProvenanceInformation of the dict, member or list element
 #
 def yaml_file_get_provenance(path, shortname, key=None, indices=None):
-    with open(path) as data:
-        element_yaml = _yaml.load_data(
-            data,
-            _yaml.ProvenanceFile(path, shortname, project=None),
-        )
-    provenance = _yaml.node_get_provenance(element_yaml, key, indices)
+    file_node = _yaml.load(path, shortname)
+    if key:
+        required_node = _yaml.node_get(file_node, dict, key, indices=indices)
+    else:
+        required_node = file_node
+    provenance = _yaml.node_get_provenance(required_node)
     assert provenance is not None
     return provenance

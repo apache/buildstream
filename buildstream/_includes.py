@@ -1,5 +1,4 @@
 import os
-from collections.abc import Mapping
 from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason
 
@@ -36,17 +35,20 @@ class Includes:
         if current_loader is None:
             current_loader = self._loader
 
-        if isinstance(node.get('(@)'), str):
-            includes = [_yaml.node_get(node, str, '(@)')]
-        else:
-            includes = _yaml.node_get(node, list, '(@)', default_value=None)
+        includes = _yaml.node_get(node, None, '(@)', default_value=None)
+        if isinstance(includes, str):
+            includes = [includes]
+
+        if not isinstance(includes, list) and includes is not None:
+            provenance = _yaml.node_get_provenance(node, key='(@)')
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: {} must either be list or str".format(provenance, includes))
 
         include_provenance = None
-        if '(@)' in node:
-            include_provenance = _yaml.node_get_provenance(node, key='(@)')
-            del node['(@)']
-
         if includes:
+            include_provenance = _yaml.node_get_provenance(node, key='(@)')
+            _yaml.node_del(node, '(@)')
+
             for include in reversed(includes):
                 if only_local and ':' in include:
                     continue
@@ -130,7 +132,7 @@ class Includes:
                        included=set(),
                        current_loader=None,
                        only_local=False):
-        if isinstance(value, Mapping):
+        if _yaml.is_node(value):
             self.process(value,
                          included=included,
                          current_loader=current_loader,

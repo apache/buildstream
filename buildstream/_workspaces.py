@@ -114,7 +114,7 @@ class WorkspaceProject():
     def load(cls, directory):
         workspace_file = os.path.join(directory, WORKSPACE_PROJECT_FILE)
         if os.path.exists(workspace_file):
-            data_dict = _yaml.load(workspace_file)
+            data_dict = _yaml.node_sanitize(_yaml.roundtrip_load(workspace_file), dict_type=dict)
             return cls.from_dict(directory, data_dict)
         else:
             return None
@@ -417,7 +417,7 @@ class Workspaces():
     #    A tuple in the following format: (str, Workspace), where the
     #    first element is the name of the workspaced element.
     def list(self):
-        for element, _ in _yaml.node_items(self._workspaces):
+        for element in self._workspaces.keys():
             yield (element, self._workspaces[element])
 
     # create_workspace()
@@ -526,12 +526,11 @@ class Workspaces():
             'format-version': BST_WORKSPACE_FORMAT_VERSION,
             'workspaces': {
                 element: workspace.to_dict()
-                for element, workspace in _yaml.node_items(self._workspaces)
+                for element, workspace in self._workspaces.items()
             }
         }
         os.makedirs(self._bst_directory, exist_ok=True)
-        _yaml.dump(_yaml.node_sanitize(config),
-                   self._get_filename())
+        _yaml.dump(config, self._get_filename())
 
     # _load_config()
     #
@@ -570,16 +569,24 @@ class Workspaces():
     # Raises: LoadError if there was a problem with the workspace config
     #
     def _parse_workspace_config(self, workspaces):
-        version = _yaml.node_get(workspaces, int, "format-version", default_value=0)
+        try:
+            version = _yaml.node_get(workspaces, int, 'format-version', default_value=0)
+        except ValueError:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "Format version is not an integer in workspace configuration")
 
         if version == 0:
             # Pre-versioning format can be of two forms
             for element, config in _yaml.node_items(workspaces):
+                if _yaml.is_node(config):
+                    # Get a dict
+                    config = _yaml.node_sanitize(config, dict_type=dict)
+
                 if isinstance(config, str):
                     pass
 
                 elif isinstance(config, dict):
-                    sources = list(_yaml.node_items(config))
+                    sources = list(config.items())
                     if len(sources) > 1:
                         detail = "There are multiple workspaces open for '{}'.\n" + \
                                  "This is not supported anymore.\n" + \
@@ -587,7 +594,7 @@ class Workspaces():
                         raise LoadError(LoadErrorReason.INVALID_DATA,
                                         detail.format(element, self._get_filename()))
 
-                    workspaces[element] = sources[0][1]
+                    _yaml.node_set(workspaces, element, sources[0][1])
 
                 else:
                     raise LoadError(LoadErrorReason.INVALID_DATA,
@@ -599,7 +606,8 @@ class Workspaces():
             }
 
         elif 1 <= version <= BST_WORKSPACE_FORMAT_VERSION:
-            workspaces = _yaml.node_get(workspaces, dict, "workspaces", default_value={})
+            workspaces = _yaml.node_get(workspaces, dict, "workspaces",
+                                        default_value=_yaml.new_empty_node())
             res = {element: self._load_workspace(node)
                    for element, node in _yaml.node_items(workspaces)}
 
@@ -616,7 +624,7 @@ class Workspaces():
     # Loads a new workspace from a YAML node
     #
     # Args:
-    #    node: A YAML Node
+    #    node: A YAML dict
     #
     # Returns:
     #    (Workspace): A newly instantiated Workspace
@@ -626,7 +634,9 @@ class Workspaces():
             'prepared': _yaml.node_get(node, bool, 'prepared', default_value=False),
             'path': _yaml.node_get(node, str, 'path'),
             'last_successful': _yaml.node_get(node, str, 'last_successful', default_value=None),
-            'running_files': _yaml.node_get(node, dict, 'running_files', default_value=None),
+            'running_files': _yaml.node_sanitize(
+                _yaml.node_get(node, dict, 'running_files', default_value=None),
+                dict_type=dict),
         }
         return Workspace.from_dict(self._toplevel_project, dictionary)
 

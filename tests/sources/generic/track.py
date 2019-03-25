@@ -318,11 +318,18 @@ def test_track_include(cli, tmpdir, datafiles, ref_storage, kind):
         assert os.path.exists(os.path.join(project, 'project.refs'))
     else:
         assert not os.path.exists(os.path.join(project, 'project.refs'))
+
         new_sources = _yaml.load(os.path.join(element_path, 'sources.yml'))
-        assert 'sources' in new_sources
-        assert len(new_sources['sources']) == 1
-        assert 'ref' in new_sources['sources'][0]
-        assert ref == new_sources['sources'][0]['ref']
+
+        # Get all of the sources
+        assert _yaml.node_contains(new_sources, 'sources')
+        sources_list = _yaml.node_get(new_sources, list, 'sources')
+        assert len(sources_list) == 1
+
+        # Get the first source from the sources list
+        new_source = _yaml.node_get(new_sources, dict, 'sources', indices=[0])
+        assert _yaml.node_contains(new_source, 'ref')
+        assert ref == _yaml.node_get(new_source, str, 'ref')
 
 
 @pytest.mark.datafiles(DATA_DIR)

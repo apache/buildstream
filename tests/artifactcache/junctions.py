@@ -29,11 +29,9 @@ def assert_shared(cli, share, project_name, project, element_name):
 def project_set_artifacts(project, url):
     project_conf_file = os.path.join(project, 'project.conf')
     project_config = _yaml.load(project_conf_file)
-    project_config.update({
-        'artifacts': {
-            'url': url,
-            'push': True
-        }
+    _yaml.node_set(project_config, 'artifacts', {
+        'url': url,
+        'push': True
     })
     _yaml.dump(_yaml.node_sanitize(project_config), filename=project_conf_file)
 

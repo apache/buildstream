@@ -357,9 +357,9 @@ def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
 
     # Tracking tries upstream first. Check the ref is from upstream.
     new_element = _yaml.load(element_path)
-    source = new_element['sources'][0]
-    if 'ref' in source:
-        assert source['ref'] == upstream_ref
+    source = _yaml.node_get(new_element, dict, 'sources', [0])
+    if _yaml.node_contains(source, 'ref'):
+        assert _yaml.node_get(source, str, 'ref') == upstream_ref
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -422,6 +422,6 @@ def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
 
     # Check that tracking fell back to the mirror
     new_element = _yaml.load(element_path)
-    source = new_element['sources'][0]
-    if 'ref' in source:
-        assert source['ref'] == mirror_ref
+    source = _yaml.node_get(new_element, dict, 'sources', [0])
+    if _yaml.node_contains(source, 'ref'):
+        assert _yaml.node_get(source, str, 'ref') == mirror_ref

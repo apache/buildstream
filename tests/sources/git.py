@@ -761,7 +761,7 @@ def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
     result.assert_success()
 
     element = _yaml.load(element_path)
-    new_ref = element['sources'][0]['ref']
+    new_ref = _yaml.node_get(_yaml.node_get(element, dict, 'sources', [0]), str, 'ref')
 
     if ref_format == 'git-describe' and tag:
         # Check and strip prefix
@@ -786,7 +786,7 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
     project = str(datafiles)
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    project_config['ref-storage'] = ref_storage
+    _yaml.node_set(project_config, 'ref-storage', ref_storage)
     _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
@@ -850,16 +850,18 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
 
     if ref_storage == 'inline':
         element = _yaml.load(element_path)
-        tags = _yaml.node_sanitize(element['sources'][0]['tags'])
+        tags = _yaml.node_get(_yaml.node_get(element, dict, 'sources', [0]), list, 'tags')
         assert len(tags) == 2
         for tag in tags:
-            assert 'tag' in tag
-            assert 'commit' in tag
-            assert 'annotated' in tag
-            assert tag['annotated'] == (tag_type == 'annotated')
+            assert _yaml.node_contains(tag, 'tag')
+            assert _yaml.node_contains(tag, 'commit')
+            assert _yaml.node_contains(tag, 'annotated')
+            assert _yaml.node_get(tag, bool, 'annotated') == (tag_type == 'annotated')
 
-        assert {(tag['tag'], tag['commit']) for tag in tags} == {('tag1', repo.rev_parse('tag1^{commit}')),
-                                                                 ('tag2', repo.rev_parse('tag2^{commit}'))}
+        assert {(_yaml.node_get(tag, str, 'tag'),
+                 _yaml.node_get(tag, str, 'commit'))
+                for tag in tags} == {('tag1', repo.rev_parse('tag1^{commit}')),
+                                     ('tag2', repo.rev_parse('tag2^{commit}'))}
 
     checkout = os.path.join(str(tmpdir), 'checkout')
 
@@ -898,7 +900,7 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
     project = str(datafiles)
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    project_config['ref-storage'] = ref_storage
+    _yaml.node_set(project_config, 'ref-storage', ref_storage)
     _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
@@ -961,15 +963,19 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
 
     if ref_storage == 'inline':
         element = _yaml.load(element_path)
-        tags = _yaml.node_sanitize(element['sources'][0]['tags'])
+        source = _yaml.node_get(element, dict, 'sources', indices=[0])
+        tags = _yaml.node_get(source, list, 'tags')
         assert len(tags) == 1
-        for tag in tags:
-            assert 'tag' in tag
-            assert 'commit' in tag
-            assert 'annotated' in tag
-            assert tag['annotated'] == (tag_type == 'annotated')
 
-        assert {(tag['tag'], tag['commit']) for tag in tags} == {('tag', repo.rev_parse('tag^{commit}'))}
+        tag = _yaml.node_get(source, dict, 'tags', indices=[0])
+        assert _yaml.node_contains(tag, 'tag')
+        assert _yaml.node_contains(tag, 'commit')
+        assert _yaml.node_contains(tag, 'annotated')
+        assert _yaml.node_get(tag, bool, 'annotated') == (tag_type == 'annotated')
+
+        tag_name = _yaml.node_get(tag, str, 'tag')
+        commit = _yaml.node_get(tag, str, 'commit')
+        assert (tag_name, commit) == ('tag', repo.rev_parse('tag^{commit}'))
 
     checkout = os.path.join(str(tmpdir), 'checkout')
 
@@ -1009,7 +1015,7 @@ def test_git_describe_relevant_history(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    project_config['ref-storage'] = 'project.refs'
+    _yaml.node_set(project_config, 'ref-storage', 'project.refs')
     _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
@@ -1089,7 +1095,7 @@ def test_default_do_not_track_tags(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    project_config['ref-storage'] = 'inline'
+    _yaml.node_set(project_config, 'ref-storage', 'inline')
     _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
@@ -1120,7 +1126,8 @@ def test_default_do_not_track_tags(cli, tmpdir, datafiles):
     result.assert_success()
 
     element = _yaml.load(element_path)
-    assert 'tags' not in element['sources'][0]
+    source = _yaml.node_get(element, dict, 'sources', indices=[0])
+    assert not _yaml.node_contains(source, 'tags')
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -1145,17 +1152,17 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
 
     repodir, reponame = os.path.split(repo.repo)
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    project_config['aliases'] = {
+    _yaml.node_set(project_config, 'aliases', _yaml.new_node_from_dict({
         'repo': 'http://example.com/'
-    }
-    project_config['mirrors'] = [
+    }))
+    _yaml.node_set(project_config, 'mirrors', [
         {
             'name': 'middle-earth',
             'aliases': {
                 'repo': ['file://{}/'.format(repodir)]
             }
         }
-    ]
+    ])
     _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
 
     repo.add_annotated_tag('tag', 'tag')

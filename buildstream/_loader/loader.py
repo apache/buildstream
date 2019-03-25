@@ -121,7 +121,7 @@ class Loader():
 
         # Set up a dummy element that depends on all top-level targets
         # to resolve potential circular dependencies between them
-        dummy_target = LoadElement("", "", self)
+        dummy_target = LoadElement(_yaml.new_empty_node(), "", self)
         dummy_target.dependencies.extend(
             LoadElement.Dependency(element, Symbol.RUNTIME)
             for element in target_elements
@@ -420,12 +420,12 @@ class Loader():
         for i in range(len(sources)):
             source = _yaml.node_get(node, Mapping, Symbol.SOURCES, indices=[i])
             kind = _yaml.node_get(source, str, Symbol.KIND)
-            del source[Symbol.KIND]
+            _yaml.node_del(source, Symbol.KIND)
 
             # Directory is optional
             directory = _yaml.node_get(source, str, Symbol.DIRECTORY, default_value=None)
             if directory:
-                del source[Symbol.DIRECTORY]
+                _yaml.node_del(source, Symbol.DIRECTORY)
 
             index = sources.index(source)
             meta_source = MetaSource(element.name, index, element_kind, kind, source, directory)

@@ -53,6 +53,7 @@ from _pytest.capture import MultiCapture, FDCapture, FDCaptureBinary
 from buildstream._frontend import cli as bst_cli
 from buildstream import _yaml
 
+
 # Special private exception accessor, for test case purposes
 from buildstream._exceptions import BstError, get_last_exception, get_last_task_error
 

@@ -1,0 +1,55 @@
+# This is the roundtrip test YAML document
+# It contains comments such as this
+
+# The test which uses this YAML file will also ensure that
+# any interesting values we load (such as floats, ints, etc)
+# are actually loaded as strings.
+
+# Blank lines such as the above
+
+this:
+  is:
+    a:
+    # Double-quoted
+    - "nested"
+    - mapping
+    # Single-quoted
+    - 'with'
+    - a
+    - list
+
+# Comments can go with mappings too
+such:
+  as: this
+
+# We roundtrip integers and floats as strings, to prevent truncation.
+
+trunctest:
+  simple-int: 123
+  small-float: 123.456
+  int: 000000000000000000000001
+  float: 1.000000000000000000000
+
+# We also roundtrip booleans in various forms as strings to prevent
+# normalisation to 'True' and 'False'
+
+boolcheck:
+- True
+- False
+- true
+- false
+# These are valid YAML booleans, though BuildStream doesn't support them
+- TRUE
+- FALSE
+# The following are YAML 1.1 only
+- yes
+- no
+- on
+- off
+
+nullcheck: null
+
+timestamp: 2019-03-14
+
+# That is all
+

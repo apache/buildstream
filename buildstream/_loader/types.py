@@ -17,8 +17,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from collections.abc import Mapping
-
 from .._exceptions import LoadError, LoadErrorReason
 from .. import _yaml
 
@@ -69,7 +67,7 @@ class Dependency():
             self.dep_type = default_dep_type
             self.junction = None
 
-        elif isinstance(dep, Mapping):
+        elif _yaml.is_node(dep):
             if default_dep_type:
                 _yaml.node_validate(dep, ['filename', 'junction'])
                 dep_type = default_dep_type

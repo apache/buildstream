@@ -18,7 +18,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #
 
-from collections.abc import Mapping
 import jinja2
 
 from .. import _yaml
@@ -153,7 +152,7 @@ class OptionPool():
     def export_variables(self, variables):
         for _, option in self._options.items():
             if option.variable:
-                variables[option.variable] = option.get_value()
+                _yaml.node_set(variables, option.variable, option.get_value())
 
     # printable_variables()
     #
@@ -170,7 +169,7 @@ class OptionPool():
     # process_node()
     #
     # Args:
-    #    node (Mapping): A YAML Loaded dictionary
+    #    node (node): A YAML Loaded dictionary
     #
     def process_node(self, node):
 
@@ -187,7 +186,7 @@ class OptionPool():
         # and process any indirectly nested conditionals.
         #
         for _, value in _yaml.node_items(node):
-            if isinstance(value, Mapping):
+            if _yaml.is_node(value):
                 self.process_node(value)
             elif isinstance(value, list):
                 self._process_list(value)
@@ -238,7 +237,7 @@ class OptionPool():
     #
     def _process_list(self, values):
         for value in values:
-            if isinstance(value, Mapping):
+            if _yaml.is_node(value):
                 self.process_node(value)
             elif isinstance(value, list):
                 self._process_list(value)
@@ -268,7 +267,7 @@ class OptionPool():
                 _yaml.node_get_provenance(node, '(?)', indices=[i])
                 for i in range(len(conditions))
             ]
-            del node['(?)']
+            _yaml.node_del(node, '(?)')
 
             for condition, p in zip(conditions, provenance):
                 tuples = list(_yaml.node_items(condition))
@@ -283,7 +282,7 @@ class OptionPool():
                     # Prepend the provenance of the error
                     raise LoadError(e.reason, "{}: {}".format(p, e)) from e
 
-                if not hasattr(value, 'get'):
+                if not _yaml.is_node(value):
                     raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
                                     "{}: Only values of type 'dict' can be composed.".format(p))
 

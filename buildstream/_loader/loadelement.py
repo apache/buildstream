@@ -176,6 +176,6 @@ def _extract_depends_from_node(node, *, key=None):
         output_deps.append(dependency)
 
     # Now delete the field, we dont want it anymore
-    del node[key]
+    _yaml.node_del(node, key, safe=True)
 
     return output_deps

@@ -192,4 +192,4 @@ def test_invalid_cache_pullbuildtrees(cli, datafiles, value, success):
     if success:
         res.assert_success()
     else:
-        res.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.ILLEGAL_COMPOSITE)
+        res.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)

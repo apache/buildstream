@@ -864,57 +864,117 @@ class Source(Plugin):
         #
         # Step 1 - Obtain the node
         #
-        if project is toplevel:
-            if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
-                node = toplevel_refs.lookup_ref(project.name, element_name, element_idx, write=True)
-            else:
-                node = provenance.node
-        else:
-            if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
-                node = toplevel_refs.lookup_ref(project.name, element_name, element_idx, write=True)
-            else:
-                node = {}
-
-        #
-        # Step 2 - Set the ref in memory, and determine changed state
-        #
-        if not self._set_ref(new_ref, node):
-            return False
-
-        def do_save_refs(refs):
-            try:
-                refs.save()
-            except OSError as e:
-                raise SourceError("{}: Error saving source reference to 'project.refs': {}"
-                                  .format(self, e),
-                                  reason="save-ref-error") from e
-
-        #
-        # Step 3 - Apply the change in project data
-        #
+        node = {}
         if toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
-            do_save_refs(toplevel_refs)
-        else:
-            if provenance.filename.project is toplevel:
-                # Save the ref in the originating file
-                #
-                try:
-                    _yaml.dump(provenance.toplevel, provenance.filename.name)
-                except OSError as e:
-                    raise SourceError("{}: Error saving source reference to '{}': {}"
-                                      .format(self, provenance.filename.name, e),
-                                      reason="save-ref-error") from e
-            elif provenance.filename.project is project:
+            node = toplevel_refs.lookup_ref(project.name, element_name, element_idx, write=True)
+
+        if project is toplevel and not node:
+            node = provenance.node
+
+        # Ensure the node is not from a junction
+        if not toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS and provenance.project is not toplevel:
+            if provenance.project is project:
                 self.warn("{}: Not persisting new reference in junctioned project".format(self))
-            elif provenance.filename.project is None:
-                assert provenance.filename.name == ''
-                assert provenance.filename.shortname == ''
+            elif provenance.project is None:
+                assert provenance.filename == ""
+                assert provenance.shortname == ""
                 raise SourceError("{}: Error saving source reference to synthetic node."
                                   .format(self))
             else:
                 raise SourceError("{}: Cannot track source in a fragment from a junction"
-                                  .format(provenance.filename.shortname),
+                                  .format(provenance.shortname),
                                   reason="tracking-junction-fragment")
+
+        #
+        # Step 2 - Set the ref in memory, and determine changed state
+        #
+        clean = _yaml.node_sanitize(node, dict_type=dict)
+        to_modify = _yaml.node_sanitize(node, dict_type=dict)
+        if not self._set_ref(new_ref, to_modify):
+            # Note: We do not look for and propagate changes at this point
+            # which might result in desync depending if something changes about
+            # tracking in the future.  For now, this is quite safe.
+            return False
+
+        actions = {}
+        for k, v in clean.items():
+            if k not in to_modify:
+                actions[k] = 'del'
+            else:
+                if v != to_modify[k]:
+                    actions[k] = 'mod'
+        for k in to_modify.keys():
+            if k not in clean:
+                actions[k] = 'add'
+
+        def walk_container(container, path):
+            # For each step along path, synthesise if we need to.
+            # If we're synthesising missing list entries, we know we're
+            # doing this for project.refs so synthesise empty dicts for the
+            # intervening entries too
+            lpath = [step for step in path]
+            lpath.append("")  # We know the last step will be a string key
+            for step, next_step in zip(lpath, lpath[1:]):
+                if type(step) is str:  # pylint: disable=unidiomatic-typecheck
+                    # handle dict container
+                    if step not in container:
+                        if type(next_step) is str:  # pylint: disable=unidiomatic-typecheck
+                            container[step] = {}
+                        else:
+                            container[step] = []
+                    container = container[step]
+                else:
+                    # handle list container
+                    if len(container) <= step:
+                        while len(container) <= step:
+                            container.append({})
+                    container = container[step]
+            return container
+
+        def process_value(action, container, path, key, new_value):
+            container = walk_container(container, path)
+            if action == 'del':
+                del container[key]
+            elif action == 'mod':
+                container[key] = new_value
+            elif action == 'add':
+                container[key] = new_value
+            else:
+                assert False, \
+                    "BUG: Unknown action: {}".format(action)
+
+        roundtrip_cache = {}
+        for key, action in actions.items():
+            # Obtain the top level node and its file
+            if action == 'add':
+                provenance = _yaml.node_get_provenance(node)
+            else:
+                provenance = _yaml.node_get_provenance(node, key=key)
+            toplevel_node = provenance.toplevel
+
+            # Get the path to whatever changed
+            path = _yaml.node_find_target(toplevel_node, node)
+            roundtrip_file = roundtrip_cache.get(provenance.filename)
+            if not roundtrip_file:
+                roundtrip_file = roundtrip_cache[provenance.filename] = _yaml.roundtrip_load(
+                    provenance.filename,
+                    allow_missing=True
+                )
+
+            # Get the value of the round trip file that we need to change
+            process_value(action, roundtrip_file, path, key, to_modify.get(key))
+
+        #
+        # Step 3 - Apply the change in project data
+        #
+        for filename, data in roundtrip_cache.items():
+            # This is our roundtrip dump from the track
+            try:
+                _yaml.roundtrip_dump(data, filename)
+            except OSError as e:
+                raise SourceError("{}: Error saving source reference to '{}': {}"
+                                  .format(self, filename, e),
+                                  reason="save-ref-error") from e
 
         return True
 
@@ -1164,7 +1224,7 @@ class Source(Plugin):
                 sources = project.first_pass_config.source_overrides
             else:
                 sources = project.source_overrides
-            type(self).__defaults = sources.get(self.get_kind(), {})
+            type(self).__defaults = _yaml.node_get(sources, Mapping, self.get_kind(), default_value={})
             type(self).__defaults_set = True
 
     # This will resolve the final configuration to be handed
