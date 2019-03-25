@@ -33,6 +33,7 @@ import shutil
 
 from . import _yaml
 from . import Scope
+from ._exceptions import ArtifactError
 from .types import _KeyStrength
 from .storage._casbaseddirectory import CasBasedDirectory
 
@@ -430,6 +431,70 @@ class Artifact():
         metadata_workspaced_dependencies[strong_key] = workspaced
         metadata_workspaced_dependencies[weak_key] = workspaced
         return (workspaced, metadata_workspaced_dependencies, metadata_keys)
+
+    # cached():
+    #
+    # Check whether the artifact corresponding to the specified cache key is
+    # available. This also checks whether all required parts of the artifact
+    # are available, which may depend on command and configuration.
+    #
+    # This is used by _update_state() to set __strong_cached and __weak_cached.
+    #
+    # Args:
+    #     key (str): The artifact key
+    #
+    # Returns:
+    #     (bool): Whether artifact is in local cache
+    #
+    def cached(self, key):
+        context = self._context
+
+        try:
+            vdir, _ = self._get_directory(key)
+        except ArtifactError:
+            # Either ref or top-level artifact directory missing
+            return False
+
+        # Check whether all metadata is available
+        metadigest = vdir._get_child_digest('meta')
+        if not self._artifacts.cas.contains_directory(metadigest, with_files=True):
+            return False
+
+        # Additional checks only relevant if artifact was created with 'files' subdirectory
+        if vdir._exists('files'):
+            # Determine whether directories are required
+            require_directories = context.require_artifact_directories
+            # Determine whether file contents are required as well
+            require_files = context.require_artifact_files
+
+            filesdigest = vdir._get_child_digest('files')
+
+            # Check whether 'files' subdirectory is available, with or without file contents
+            if (require_directories and
+                    not self._artifacts.cas.contains_directory(filesdigest, with_files=require_files)):
+                return False
+
+        return True
+
+    # cached_logs()
+    #
+    # Check if the artifact is cached with log files.
+    #
+    # Args:
+    #     key (str): The artifact key
+    #
+    # Returns:
+    #     (bool): True if artifact is cached with logs, False if
+    #             element not cached or missing logs.
+    #
+    def cached_logs(self, key=None):
+        if not self._element._cached():
+            return False
+
+        vdir, _ = self._get_directory(key)
+
+        logsdigest = vdir._get_child_digest('logs')
+        return self._artifacts.cas.contains_directory(logsdigest, with_files=True)
 
     # _get_directory():
     #

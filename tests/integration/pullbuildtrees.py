@@ -58,6 +58,8 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
                 cas = CASCache(str(tmpdir))
                 cas.checkout(extractdir, digest)
                 yield os.path.join(extractdir, 'buildtree')
+            except FileNotFoundError:
+                yield None
             finally:
                 utils._force_rmtree(extractdir)
 
@@ -87,7 +89,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         assert element_name in result.get_pulled_elements()
         elementdigest = share1.has_artifact('test', element_name, cli2.get_element_key(project, element_name))
         with cas_extract_buildtree(elementdigest) as buildtreedir:
-            assert not os.path.isdir(buildtreedir)
+            assert not buildtreedir
         result = cli2.run(project=project, args=['--pull-buildtrees', 'artifact', 'pull', element_name])
         assert element_name in result.get_pulled_elements()
         with cas_extract_buildtree(elementdigest) as buildtreedir:
@@ -150,7 +152,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         assert "Attempting to fetch missing artifact buildtrees" in result.stderr
         assert element_name not in result.get_pulled_elements()
         with cas_extract_buildtree(elementdigest) as buildtreedir:
-            assert not os.path.isdir(buildtreedir)
+            assert not buildtreedir
         assert element_name not in result.get_pushed_elements()
         assert not share3.has_artifact('test', element_name, cli2.get_element_key(project, element_name))
 

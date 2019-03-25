@@ -122,19 +122,50 @@ class CASCache():
     # Args:
     #     ref (str): The ref to check
     #     subdir (str): The subdir to check
+    #     with_files (bool): Whether to check files as well
     #
     # Returns: True if the subdir exists & is populated in the cache, False otherwise
     #
-    def contains_subdir_artifact(self, ref, subdir):
+    def contains_subdir_artifact(self, ref, subdir, *, with_files=True):
         tree = self.resolve_ref(ref)
 
         try:
             subdirdigest = self._get_subdir(tree, subdir)
-            objpath = self.objpath(subdirdigest)
 
-            # True if subdir content is cached or if empty as expected
-            return os.path.exists(objpath)
-        except CASCacheError:
+            return self.contains_directory(subdirdigest, with_files=with_files)
+        except (CASCacheError, FileNotFoundError):
+            return False
+
+    # contains_directory():
+    #
+    # Check whether the specified directory and subdirecotires are in the cache,
+    # i.e non dangling.
+    #
+    # Args:
+    #     digest (Digest): The directory digest to check
+    #     with_files (bool): Whether to check files as well
+    #
+    # Returns: True if the directory is available in the local cache
+    #
+    def contains_directory(self, digest, *, with_files):
+        try:
+            directory = remote_execution_pb2.Directory()
+            with open(self.objpath(digest), 'rb') as f:
+                directory.ParseFromString(f.read())
+
+            # Optionally check presence of files
+            if with_files:
+                for filenode in directory.files:
+                    if not os.path.exists(self.objpath(filenode.digest)):
+                        return False
+
+            # Check subdirectories
+            for dirnode in directory.directories:
+                if not self.contains_directory(dirnode.digest, with_files=with_files):
+                    return False
+
+            return True
+        except FileNotFoundError:
             return False
 
     # checkout():
@@ -167,10 +198,8 @@ class CASCache():
                          stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 
         for dirnode in directory.directories:
-            # Don't try to checkout a dangling ref
-            if os.path.exists(self.objpath(dirnode.digest)):
-                fullpath = os.path.join(dest, dirnode.name)
-                self.checkout(fullpath, dirnode.digest, can_link=can_link)
+            fullpath = os.path.join(dest, dirnode.name)
+            self.checkout(fullpath, dirnode.digest, can_link=can_link)
 
         for symlinknode in directory.symlinks:
             # symlink
@@ -243,12 +272,8 @@ class CASCache():
             tree.hash = response.digest.hash
             tree.size_bytes = response.digest.size_bytes
 
-            # Check if the element artifact is present, if so just fetch the subdir.
-            if subdir and os.path.exists(self.objpath(tree)):
-                self._fetch_subdir(remote, tree, subdir)
-            else:
-                # Fetch artifact, excluded_subdirs determined in pullqueue
-                self._fetch_directory(remote, tree, excluded_subdirs=excluded_subdirs)
+            # Fetch artifact, excluded_subdirs determined in pullqueue
+            self._fetch_directory(remote, tree, excluded_subdirs=excluded_subdirs)
 
             self.set_ref(ref, tree)
 
@@ -967,10 +992,6 @@ class CASCache():
 
         # Fetch final batch
         self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
-
-    def _fetch_subdir(self, remote, tree, subdir):
-        subdirdigest = self._get_subdir(tree, subdir)
-        self._fetch_directory(remote, subdirdigest)
 
     def _fetch_tree(self, remote, digest):
         # download but do not store the Tree object

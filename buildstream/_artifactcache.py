@@ -19,10 +19,11 @@
 
 from ._basecache import BaseCache
 from .types import _KeyStrength
-from ._exceptions import ArtifactError, CASError
+from ._exceptions import ArtifactError, CASCacheError, CASError
 
 from ._cas import CASRemoteSpec
 from .storage._casbaseddirectory import CasBasedDirectory
+from .storage.directory import VirtualDirectoryError
 
 
 # An ArtifactCacheSpec holds the user configuration for a single remote
@@ -157,12 +158,13 @@ class ArtifactCache(BaseCache):
     #     element (Element): The Element to check
     #     key (str): The cache key to use
     #     subdir (str): The subdir to check
+    #     with_files (bool): Whether to check files as well
     #
     # Returns: True if the subdir exists & is populated in the cache, False otherwise
     #
-    def contains_subdir_artifact(self, element, key, subdir):
+    def contains_subdir_artifact(self, element, key, subdir, *, with_files=True):
         ref = element.get_artifact_name(key)
-        return self.cas.contains_subdir_artifact(ref, subdir)
+        return self.cas.contains_subdir_artifact(ref, subdir, with_files=with_files)
 
     # list_artifacts():
     #
@@ -221,8 +223,11 @@ class ArtifactCache(BaseCache):
     #
     def get_artifact_directory(self, element, key):
         ref = element.get_artifact_name(key)
-        digest = self.cas.resolve_ref(ref, update_mtime=True)
-        return CasBasedDirectory(self.cas, digest=digest)
+        try:
+            digest = self.cas.resolve_ref(ref, update_mtime=True)
+            return CasBasedDirectory(self.cas, digest=digest)
+        except (CASCacheError, VirtualDirectoryError) as e:
+            raise ArtifactError('Directory not in local cache: {}'.format(e)) from e
 
     # commit():
     #

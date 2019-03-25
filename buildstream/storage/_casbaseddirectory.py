@@ -124,9 +124,12 @@ class CasBasedDirectory(Directory):
             self._populate_index(digest)
 
     def _populate_index(self, digest):
-        pb2_directory = remote_execution_pb2.Directory()
-        with open(self.cas_cache.objpath(digest), 'rb') as f:
-            pb2_directory.ParseFromString(f.read())
+        try:
+            pb2_directory = remote_execution_pb2.Directory()
+            with open(self.cas_cache.objpath(digest), 'rb') as f:
+                pb2_directory.ParseFromString(f.read())
+        except FileNotFoundError as e:
+            raise VirtualDirectoryError("Directory not found in local cache: {}".format(e)) from e
 
         for entry in pb2_directory.directories:
             self.index[entry.name] = IndexEntry(entry.name, _FileType.DIRECTORY,
@@ -513,9 +516,7 @@ class CasBasedDirectory(Directory):
                 subdir = i.get_directory(self)
                 total += subdir.get_size()
             elif i.type == _FileType.REGULAR_FILE:
-                src_name = self.cas_cache.objpath(i.digest)
-                filesize = os.stat(src_name).st_size
-                total += filesize
+                total += i.digest.size_bytes
             # Symlink nodes are encoded as part of the directory serialization.
         return total
 
@@ -576,6 +577,20 @@ class CasBasedDirectory(Directory):
             self.__digest = self.cas_cache.add_object(buffer=pb2_directory.SerializeToString())
 
         return self.__digest
+
+    def _get_child_digest(self, *path):
+        subdir = self.descend(*path[:-1])
+        entry = subdir.index[path[-1]]
+        if entry.type == _FileType.DIRECTORY:
+            subdir = entry.buildstream_object
+            if subdir:
+                return subdir._get_digest()
+            else:
+                return entry.digest
+        elif entry.type == _FileType.REGULAR_FILE:
+            return entry.digest
+        else:
+            raise VirtualDirectoryError("Directory entry has no digest: {}".format(os.path.join(*path)))
 
     def _objpath(self, *path):
         subdir = self.descend(*path[:-1])
