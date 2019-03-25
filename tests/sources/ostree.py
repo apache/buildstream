@@ -26,8 +26,7 @@ import pytest
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream.plugintestutils import cli  # pylint: disable=unused-import
-
-from tests.testutils import create_repo
+from buildstream.plugintestutils import create_repo
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

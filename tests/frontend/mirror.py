@@ -4,9 +4,8 @@
 import os
 import pytest
 
-from tests.testutils import create_repo
-
 from buildstream import _yaml
+from buildstream.plugintestutils import create_repo
 from buildstream.plugintestutils import cli  # pylint: disable=unused-import
 
 
