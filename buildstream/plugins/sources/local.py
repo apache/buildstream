@@ -97,32 +97,10 @@ class LocalSource(Source):
         with self.timed_activity("Staging local files at {}".format(self.path)):
 
             if os.path.isdir(self.fullpath):
-                files = list(utils.list_relative_paths(self.fullpath))
                 utils.copy_files(self.fullpath, directory)
             else:
                 destfile = os.path.join(directory, os.path.basename(self.path))
-                files = [os.path.basename(self.path)]
                 utils.safe_copy(self.fullpath, destfile)
-
-            for f in files:
-                # Non empty directories are not listed by list_relative_paths
-                dirs = f.split(os.sep)
-                for i in range(1, len(dirs)):
-                    d = os.path.join(directory, *(dirs[:i]))
-                    assert os.path.isdir(d) and not os.path.islink(d)
-                    os.chmod(d, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
-
-                path = os.path.join(directory, f)
-                if os.path.islink(path):
-                    pass
-                elif os.path.isdir(path):
-                    os.chmod(path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
-                else:
-                    st = os.stat(path)
-                    if st.st_mode & stat.S_IXUSR:
-                        os.chmod(path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
-                    else:
-                        os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
 
     def _get_local_path(self):
         return self.fullpath
