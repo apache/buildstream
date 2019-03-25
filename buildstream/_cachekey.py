@@ -24,6 +24,31 @@ import ujson
 
 from . import _yaml
 
+# Internal record of the size of a cache key
+_CACHEKEY_SIZE = len(hashlib.sha256().hexdigest())
+
+
+# Hex digits
+_HEX_DIGITS = "0123456789abcdef"
+
+
+# is_key()
+#
+# Check if the passed in string *could be* a cache key.  This basically checks
+# that the length matches a sha256 hex digest, and that the string does not
+# contain any non-hex characters and is fully lower case.
+#
+# Args:
+#    key (str): The string to check
+#
+# Returns:
+#    (bool): Whether or not `key` could be a cache key
+#
+def is_key(key):
+    if len(key) != _CACHEKEY_SIZE:
+        return False
+    return not any(ch not in _HEX_DIGITS for ch in key)
+
 
 # generate_key()
 #
