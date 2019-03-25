@@ -1,13 +1,10 @@
 from collections.abc import Mapping
 import os
-import tempfile
 
 import pytest
 
 from buildstream import _yaml
 from buildstream._exceptions import LoadError, LoadErrorReason
-from buildstream._context import Context
-from buildstream._yamlcache import YamlCache
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -154,23 +151,6 @@ def test_composite_preserve_originals(datafiles):
     assert _yaml.node_get(orig_extra, str, 'old') == 'new'
 
 
-def load_yaml_file(filename, *, cache_path, shortname=None, from_cache='raw'):
-
-    _, temppath = tempfile.mkstemp(dir=os.path.join(cache_path.dirname, cache_path.basename), text=True)
-    context = Context()
-
-    with YamlCache.open(context, temppath) as yc:
-        if from_cache == 'raw':
-            return _yaml.load(filename, shortname)
-        elif from_cache == 'cached':
-            _yaml.load(filename, shortname, yaml_cache=yc)
-            return _yaml.load(filename, shortname, yaml_cache=yc)
-        else:
-            raise Exception(
-                "Invalid value for parameter 'from_cache', Expected 'raw' or 'cached'"
-            )
-
-
 # Tests for list composition
 #
 # Each test composits a filename on top of basics.yaml, and tests
@@ -223,8 +203,8 @@ def test_list_composition(datafiles, filename, tmpdir,
     base_file = os.path.join(datafiles.dirname, datafiles.basename, 'basics.yaml')
     overlay_file = os.path.join(datafiles.dirname, datafiles.basename, filename)
 
-    base = load_yaml_file(base_file, cache_path=tmpdir, shortname='basics.yaml', from_cache=caching)
-    overlay = load_yaml_file(overlay_file, cache_path=tmpdir, shortname=filename, from_cache=caching)
+    base = _yaml.load(base_file, 'basics.yaml')
+    overlay = _yaml.load(overlay_file, filename)
 
     _yaml.composite_dict(base, overlay)
 
@@ -344,9 +324,9 @@ def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
     #####################
     # Round 1 - Fight !
     #####################
-    base = load_yaml_file(file_base, cache_path=tmpdir, shortname='basics.yaml', from_cache=caching)
-    overlay1 = load_yaml_file(file1, cache_path=tmpdir, shortname=filename1, from_cache=caching)
-    overlay2 = load_yaml_file(file2, cache_path=tmpdir, shortname=filename2, from_cache=caching)
+    base = _yaml.load(file_base, 'basics.yaml')
+    overlay1 = _yaml.load(file1, filename1)
+    overlay2 = _yaml.load(file2, filename2)
 
     _yaml.composite_dict(base, overlay1)
     _yaml.composite_dict(base, overlay2)
@@ -361,9 +341,9 @@ def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
     #####################
     # Round 2 - Fight !
     #####################
-    base = load_yaml_file(file_base, cache_path=tmpdir, shortname='basics.yaml', from_cache=caching)
-    overlay1 = load_yaml_file(file1, cache_path=tmpdir, shortname=filename1, from_cache=caching)
-    overlay2 = load_yaml_file(file2, cache_path=tmpdir, shortname=filename2, from_cache=caching)
+    base = _yaml.load(file_base, 'basics.yaml')
+    overlay1 = _yaml.load(file1, filename1)
+    overlay2 = _yaml.load(file2, filename2)
 
     _yaml.composite_dict(overlay1, overlay2)
     _yaml.composite_dict(base, overlay1)
