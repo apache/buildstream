@@ -1,4 +1,17 @@
 =================
+buildstream 1.2.5
+=================
+
+  o Fixed failure to process some elements when workspaces are open (#919)
+
+  o Better error reporting when files are missing, or when encountering
+    errors in sub projects (#947)
+
+  o Do not require exact versions of dependencies for running tests (#916)
+
+  o Fail on overlap policy no longer inherited from subprojects (#926)
+
+=================
 buildstream 1.2.4
 =================
 
