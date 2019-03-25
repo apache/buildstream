@@ -2091,6 +2091,17 @@ class Element(Plugin):
     def _buildtree_exists(self):
         return self.__artifact.buildtree_exists()
 
+    # _cached_logs()
+    #
+    # Check if the artifact is cached with log files.
+    #
+    # Returns:
+    #     (bool): True if artifact is cached with logs, False if
+    #             element not cached or missing logs.
+    #
+    def _cached_logs(self):
+        return self.__artifact.cached_logs()
+
     # _fetch()
     #
     # Fetch the element's sources.
