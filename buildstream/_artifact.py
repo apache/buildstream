@@ -476,6 +476,26 @@ class Artifact():
 
         return True
 
+    # cached_logs()
+    #
+    # Check if the artifact is cached with log files.
+    #
+    # Args:
+    #     key (str): The artifact key
+    #
+    # Returns:
+    #     (bool): True if artifact is cached with logs, False if
+    #             element not cached or missing logs.
+    #
+    def cached_logs(self, key=None):
+        if not self._element._cached():
+            return False
+
+        vdir, _ = self._get_directory(key)
+
+        logsdigest = vdir._get_child_digest('logs')
+        return self._artifacts.cas.contains_directory(logsdigest, with_files=True)
+
     # _get_directory():
     #
     # Get a virtual directory for the artifact contents
