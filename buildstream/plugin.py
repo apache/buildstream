@@ -714,8 +714,11 @@ class Plugin():
     #
     @classmethod
     def _lookup(cls, unique_id):
-        assert unique_id in cls.__TABLE, "Could not find plugin with ID {}".format(unique_id)
-        return cls.__TABLE[unique_id]
+        try:
+            return cls.__TABLE[unique_id]
+        except KeyError:
+            assert False, "Could not find plugin with ID {}".format(unique_id)
+            raise  # In case a user is running with "python -O"
 
     # _get_context()
     #
