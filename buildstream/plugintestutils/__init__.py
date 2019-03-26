@@ -15,8 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
+import os
 from collections import OrderedDict
-
+from . import _sourcetests
 from .repo import Repo
 from .runcli import cli, cli_integration, cli_remote_execution
 
@@ -89,5 +90,5 @@ def sourcetests_collection_hook(session):
     # Add the location of the source tests to the session's
     # python_files config. Without this, pytest may filter out these
     # tests during collection.
-    session.config.addinivalue_line("python_files", os.path.join(SOURCE_TESTS_PATH, "/**.py"))
+    session.config.addinivalue_line("python_files", os.path.join(SOURCE_TESTS_PATH, "*.py"))
     session.config.args.append(SOURCE_TESTS_PATH)

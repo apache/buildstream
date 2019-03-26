@@ -1,9 +1,9 @@
 import subprocess
 import pytest
 
-from .._utils.site import HAVE_GIT, GIT, GIT_ENV
-from buildstream.plugintestutils import Repo
 from buildstream import _yaml
+from .. import Repo
+from .site import HAVE_GIT, GIT, GIT_ENV
 
 
 # generate_junction()
