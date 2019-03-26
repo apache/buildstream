@@ -54,7 +54,7 @@ class ProvenanceFile():
 #
 # Args:
 #   node (dict, list, value): A binding to the originally parsed value
-#   filename (string): The filename the node was loaded from
+#   filename (str): The filename the node was loaded from
 #   toplevel (dict): The toplevel of the loaded file, suitable for later dumps
 #   line (int): The line number where node was parsed
 #   col (int): The column number where node was parsed

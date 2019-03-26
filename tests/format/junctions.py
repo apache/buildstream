@@ -81,6 +81,9 @@ def test_junction_missing_project_conf(cli, datafiles):
     result = cli.run(project=project, args=['build', 'app.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_JUNCTION)
 
+    # Assert that we have the expected provenance encoded into the error
+    assert "app.bst [line 6 column 2]" in result.stderr
+
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_workspaced_junction_missing_project_conf(cli, datafiles):
@@ -101,6 +104,9 @@ def test_workspaced_junction_missing_project_conf(cli, datafiles):
 
     result = cli.run(project=project, args=['build', 'app.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_JUNCTION)
+
+    # Assert that we have the expected provenance encoded into the error
+    assert "app.bst [line 6 column 2]" in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -203,6 +209,8 @@ def test_nested_conflict(cli, datafiles):
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.CONFLICTING_JUNCTION)
 
+    assert "bar.bst:target.bst [line 3 column 2]" in result.stderr
+
 
 # Test that we error correctly when the junction element itself is missing
 @pytest.mark.datafiles(DATA_DIR)
@@ -241,6 +249,19 @@ def test_invalid_junction_dep(cli, datafiles):
 
     result = cli.run(project=project, args=['build', 'junction-dep.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+
+# Test that we error correctly when we junction-depend on a non-junction
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_junctiondep_not_a_junction(cli, datafiles):
+    project = os.path.join(str(datafiles), 'invalid')
+    copy_subprojects(project, datafiles, ['base'])
+
+    result = cli.run(project=project, args=['build', 'junctiondep-not-a-junction.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+    # Assert that we have the expected provenance encoded into the error
+    assert "junctiondep-not-a-junction.bst [line 3 column 2]" in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -316,6 +337,9 @@ def test_git_show(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['show', 'target.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_FETCH_NEEDED)
 
+    # Assert that we have the expected provenance encoded into the error
+    assert "target.bst [line 3 column 2]" in result.stderr
+
     # Explicitly fetch subproject
     result = cli.run(project=project, args=['source', 'fetch', 'base.bst'])
     result.assert_success()
@@ -379,6 +403,9 @@ def test_git_missing_project_conf(cli, tmpdir, datafiles):
 
     result = cli.run(project=project, args=['build', 'app.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_JUNCTION)
+
+    # Assert that we have the expected provenance encoded into the error
+    assert "app.bst [line 6 column 2]" in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
