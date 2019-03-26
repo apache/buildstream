@@ -247,6 +247,13 @@ class Stream():
         # Assert that the elements we're not going to track are consistent
         self._pipeline.assert_consistent(elements)
 
+        if all(project.remote_execution_specs for project in self._context.get_projects()):
+            # Remote execution is configured for all projects.
+            # Require artifact files only for target elements and their runtime dependencies.
+            self._context.set_artifact_files_optional()
+            for element in self.targets:
+                element._set_artifact_files_required()
+
         # Now construct the queues
         #
         track_queue = None
