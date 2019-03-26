@@ -22,8 +22,8 @@
 import os
 import pytest
 
-from tests.testutils import generate_junction
 from tests.frontend import configure_project
+from .._utils import generate_junction
 
 from buildstream.plugintestutils import create_repo, ALL_REPO_KINDS
 from buildstream.plugintestutils import cli  # pylint: disable=unused-import
