@@ -15,8 +15,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
+import os
 from collections import OrderedDict
-
+from . import _sourcetests
 from .repo import Repo
 from .runcli import cli, cli_integration, cli_remote_execution
 
@@ -62,3 +63,21 @@ def register_repo_kind(kind, cls):
     """
     ALL_REPO_KINDS[kind] = cls
 
+
+def sourcetests_collection_hook(session):
+    """ Used to hook the templated source plugin tests into a pyest test suite.
+
+    This should be called via the `pytest_sessionstart
+    hook<https://docs.pytest.org/en/latest/reference.html#collection-hooks>`.
+    The tests in the _sourcetests package will be collected as part of
+    whichever test package this hook is called from.
+
+    Args:
+        session (pytest.Session): The current pytest session
+    """
+    SOURCE_TESTS_PATH = os.path.dirname(_sourcetests.__file__)
+    # Add the location of the source tests to the session's
+    # python_files config. Without this, pytest may filter out these
+    # tests during collection.
+    session.config.addinivalue_line("python_files", os.path.join(SOURCE_TESTS_PATH, "/**.py"))
+    session.config.args.append(SOURCE_TESTS_PATH)
