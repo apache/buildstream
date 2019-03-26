@@ -227,6 +227,7 @@ class Element(Plugin):
         self.__staged_sources_directory = None  # Location where Element.stage_sources() was called
         self.__tainted = None                   # Whether the artifact is tainted and should not be shared
         self.__required = False                 # Whether the artifact is required in the current session
+        self.__artifact_files_required = False  # Whether artifact files are required in the local cache
         self.__build_result = None              # The result of assembling this Element (success, description, detail)
         self._build_log_path = None            # The path of the build log for this Element
         self.__artifact = Artifact(self, context)  # Artifact class for direct artifact composite interaction
@@ -1555,6 +1556,29 @@ class Element(Plugin):
     #
     def _is_required(self):
         return self.__required
+
+    # _set_artifact_files_required():
+    #
+    # Mark artifact files for this element and its runtime dependencies as
+    # required in the local cache.
+    #
+    def _set_artifact_files_required(self):
+        if self.__artifact_files_required:
+            # Already done
+            return
+
+        self.__artifact_files_required = True
+
+        # Request artifact files of runtime dependencies
+        for dep in self.dependencies(Scope.RUN, recurse=False):
+            dep._set_artifact_files_required()
+
+    # _artifact_files_required():
+    #
+    # Returns whether artifact files for this element have been marked as required.
+    #
+    def _artifact_files_required(self):
+        return self.__artifact_files_required
 
     # _schedule_assemble():
     #
