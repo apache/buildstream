@@ -53,6 +53,7 @@ class Topics():
 class _Profile:
     def __init__(self, key, message):
         self.profiler = cProfile.Profile()
+        self._additional_pstats_files = []
 
         self.key = key
         self.message = message
@@ -75,6 +76,9 @@ class _Profile:
         self.stop()
         self.save()
 
+    def merge(self, profile):
+        self._additional_pstats_files.append(profile.cprofile_filename)
+
     def start(self):
         self.profiler.enable()
 
@@ -82,10 +86,6 @@ class _Profile:
         self.profiler.disable()
 
     def save(self):
-        self._save_log()
-        self.profiler.dump_stats(self.cprofile_filename)
-
-    def _save_log(self):
         heading = "\n".join([
             "-" * 64,
             "Profile for key: {}".format(self.key),
@@ -96,15 +96,22 @@ class _Profile:
         ])
 
         with open(self.log_filename, "a") as fp:
+            stats = pstats.Stats(self.profiler, *self._additional_pstats_files, stream=fp)
+
+            # Create the log file
             fp.write(heading)
-            ps = pstats.Stats(self.profiler, stream=fp).sort_stats("cumulative")
-            ps.print_stats()
+            stats.sort_stats("cumulative")
+            stats.print_stats()
+
+            # Dump the cprofile
+            stats.dump_stats(self.cprofile_filename)
 
 
 class _Profiler:
     def __init__(self, settings):
         self.active_topics = set()
         self.enabled_topics = set()
+        self._active_profilers = []
 
         if settings:
             self.enabled_topics = {
@@ -118,17 +125,32 @@ class _Profiler:
             yield
             return
 
+        if self._active_profilers:
+            # we are in a nested profiler, stop the parent
+            self._active_profilers[-1].stop()
+
         key = "{}-{}".format(topic, key)
 
         assert key not in self.active_topics
         self.active_topics.add(key)
 
         profiler = _Profile(key, message)
+        self._active_profilers.append(profiler)
 
         with profiler:
             yield
 
         self.active_topics.remove(key)
+
+        # Remove the last profiler from the list
+        self._active_profilers.pop()
+
+        if self._active_profilers:
+            # We were in a previous profiler, add the previous results to it
+            # and reenable it.
+            parent_profiler = self._active_profilers[-1]
+            parent_profiler.merge(profiler)
+            parent_profiler.start()
 
     def _is_profile_enabled(self, topic):
         return topic in self.enabled_topics or Topics.ALL in self.enabled_topics
