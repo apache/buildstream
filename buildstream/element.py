@@ -2348,7 +2348,7 @@ class Element(Plugin):
     # supports it.
     #
     def __use_remote_execution(self):
-        return self.__remote_execution_specs and self.BST_VIRTUAL_DIRECTORY
+        return bool(self.__remote_execution_specs)
 
     # __sandbox():
     #
@@ -2376,6 +2376,11 @@ class Element(Plugin):
 
         if directory is not None and allow_remote and self.__use_remote_execution():
 
+            if not self.BST_VIRTUAL_DIRECTORY:
+                raise ElementError("Element {} is configured to use remote execution but plugin does not support it."
+                                   .format(self.name), detail="Plugin '{kind}' does not support virtual directories."
+                                   .format(kind=self.get_kind()))
+
             self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
 
             sandbox = SandboxRemote(context, project,
@@ -2390,12 +2395,6 @@ class Element(Plugin):
             yield sandbox
 
         elif directory is not None and os.path.exists(directory):
-            if allow_remote and self.__remote_execution_specs:
-                self.warn("Artifact {} is configured to use remote execution but element plugin does not support it."
-                          .format(self.name), detail="Element plugin '{kind}' does not support virtual directories."
-                          .format(kind=self.get_kind()), warning_token="remote-failure")
-
-                self.info("Falling back to local sandbox for artifact {}".format(self.name))
 
             sandbox = platform.create_sandbox(context, project,
                                               directory,
