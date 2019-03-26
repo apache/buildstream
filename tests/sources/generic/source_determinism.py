@@ -22,7 +22,7 @@
 import os
 import pytest
 
-from tests.testutils.site import HAVE_SANDBOX
+from .._utils.site import HAVE_SANDBOX
 
 from buildstream.plugintestutils import create_repo, ALL_REPO_KINDS
 from buildstream.plugintestutils import cli  # pylint: disable=unused-import
