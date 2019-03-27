@@ -1151,6 +1151,32 @@ class Element(Plugin):
         # cache cannot be queried until strict cache key is available
         return self.__strict_cache_key is not None
 
+    # _calculate_weak_cache_key():
+    #
+    # Calculates and sets the weak cache key of this element.
+    #
+    # Note that this bypasses any checks that the element is in a suitable
+    # state for calculating the weak cache key (e.g. that it has a ref).
+    #
+    # Returns:
+    #    (str): A hex digest for this element's weak cache key, or None.
+    #
+    def _calculate_weak_cache_key(self):
+        # Weak cache key includes names of direct build dependencies
+        # but does not include keys of dependencies.
+        if self.BST_STRICT_REBUILD:
+            dependencies = [
+                e._get_cache_key(strength=_KeyStrength.WEAK)
+                for e in self.dependencies(Scope.BUILD)
+            ]
+        else:
+            dependencies = [
+                e.name for e in self.dependencies(Scope.BUILD, recurse=False)
+            ]
+
+        self.__weak_cache_key = self._calculate_cache_key(dependencies)
+        return self.__weak_cache_key
+
     # _update_state()
     #
     # Keep track of element state. Calculate cache keys if possible and
@@ -1182,22 +1208,7 @@ class Element(Plugin):
             return
 
         if self.__weak_cache_key is None:
-            # Calculate weak cache key
-            # Weak cache key includes names of direct build dependencies
-            # but does not include keys of dependencies.
-            if self.BST_STRICT_REBUILD:
-                dependencies = [
-                    e._get_cache_key(strength=_KeyStrength.WEAK)
-                    for e in self.dependencies(Scope.BUILD)
-                ]
-            else:
-                dependencies = [
-                    e.name for e in self.dependencies(Scope.BUILD, recurse=False)
-                ]
-
-            self.__weak_cache_key = self._calculate_cache_key(dependencies)
-
-            if self.__weak_cache_key is None:
+            if self._calculate_weak_cache_key() is None:
                 # Weak cache key could not be calculated yet
                 return
 

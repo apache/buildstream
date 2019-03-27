@@ -555,9 +555,12 @@ class Loader():
             basedir = sources[0]._get_local_path()
         else:
             # Stage sources
-            element._update_state()
+            # We calculate the weak key to use now because:
+            # * We know the source is cached, so key generation is possible
+            # * We know that junction elements don't have dependencies
+            key = element._calculate_weak_cache_key()
             basedir = os.path.join(self.project.directory, ".bst", "staged-junctions",
-                                   filename, element._get_cache_key())
+                                   filename, key)
             if not os.path.exists(basedir):
                 os.makedirs(basedir, exist_ok=True)
                 element._stage_sources_at(basedir, mount_workspaces=False)
