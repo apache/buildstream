@@ -325,6 +325,7 @@ setup(name='BuildStream',
                                     'data/*.yaml', 'data/*.sh.in'],
                     'buildstream.plugintestutils': ['_sourcetests/project']
       },
+      include_package_data=True,
       data_files=[
           # This is a weak attempt to integrate with the user nicely,
           # installing things outside of the python package itself with pip is
