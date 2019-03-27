@@ -6,6 +6,7 @@ include MAINTAINERS
 include NEWS
 include README.rst
 
+# Data files required by BuildStream's generic source tests
 recursive-include buildstream/plugintestutils/_sourcetests/project *
 
 # Documentation package includes
