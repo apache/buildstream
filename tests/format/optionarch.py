@@ -1,7 +1,6 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
-from contextlib import contextmanager
 import os
 
 import pytest
@@ -10,29 +9,14 @@ from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
 
+from tests.testutils import override_os_uname
+
 # Project directory
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
-# Context manager to override the reported value of `os.uname()`
-@contextmanager
-def override_uname_arch(name):
-    orig_uname = os.uname
-    orig_tuple = tuple(os.uname())
-    override_result = (orig_tuple[0], orig_tuple[1],
-                       orig_tuple[2], orig_tuple[3],
-                       name)
-
-    def override():
-        return override_result
-
-    os.uname = override
-    yield
-    os.uname = orig_uname
-
-
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("uname,value,expected", [
+@pytest.mark.parametrize("machine,value,expected", [
     # Test explicitly provided arches
     ('arm', 'aarch32', 'Army'),
     ('arm', 'aarch64', 'Aarchy'),
@@ -46,8 +30,8 @@ def override_uname_arch(name):
     ('i386', 'aarch32', 'Army'),
     ('x86_64', 'aarch64', 'Aarchy'),
 ])
-def test_conditional(cli, datafiles, uname, value, expected):
-    with override_uname_arch(uname):
+def test_conditional(cli, datafiles, machine, value, expected):
+    with override_os_uname(machine=machine):
         project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch')
 
         bst_args = []
@@ -70,7 +54,7 @@ def test_conditional(cli, datafiles, uname, value, expected):
 @pytest.mark.datafiles(DATA_DIR)
 def test_unsupported_arch(cli, datafiles):
 
-    with override_uname_arch("x86_64"):
+    with override_os_uname(machine="x86_64"):
         project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch')
         result = cli.run(project=project, silent=True, args=[
             'show',
@@ -85,7 +69,7 @@ def test_unsupported_arch(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_alias(cli, datafiles):
 
-    with override_uname_arch("arm"):
+    with override_os_uname(machine="arm"):
         project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch-alias')
         result = cli.run(project=project, silent=True, args=[
             'show',
@@ -100,7 +84,7 @@ def test_alias(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_unknown_host_arch(cli, datafiles):
 
-    with override_uname_arch("x86_128"):
+    with override_os_uname(machine="x86_128"):
         project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch')
         result = cli.run(project=project, silent=True, args=[
             'show',

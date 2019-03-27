@@ -30,3 +30,4 @@ from .junction import generate_junction
 from .runner_integration import wait_for_cache_granularity
 from .python_repo import setup_pypi_repo
 from .yaml import yaml_file_get_provenance
+from .platform import override_os_uname
