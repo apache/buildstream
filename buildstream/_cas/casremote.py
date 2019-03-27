@@ -221,28 +221,6 @@ class CASRemote():
 
         return error
 
-    # verify_digest_on_remote():
-    #
-    # Check whether the object is already on the server in which case
-    # there is no need to upload it.
-    #
-    # Args:
-    #     digest (Digest): The object digest.
-    #
-    def verify_digest_on_remote(self, digest):
-        self.init()
-
-        request = remote_execution_pb2.FindMissingBlobsRequest()
-        if self.instance_name:
-            request.instance_name = self.instance_name
-        request.blob_digests.extend([digest])
-
-        response = self.cas.FindMissingBlobs(request)
-        if digest in response.missing_blob_digests:
-            return False
-
-        return True
-
     # push_message():
     #
     # Push the given protobuf message to a remote.
@@ -344,7 +322,7 @@ class _CASBatchRead():
         self._size = new_batch_size
         return True
 
-    def send(self):
+    def send(self, *, missing_blobs=None):
         assert not self._sent
         self._sent = True
 
@@ -355,8 +333,12 @@ class _CASBatchRead():
 
         for response in batch_response.responses:
             if response.status.code == code_pb2.NOT_FOUND:
-                raise BlobNotFound(response.digest.hash, "Failed to download blob {}: {}".format(
-                    response.digest.hash, response.status.code))
+                if missing_blobs is None:
+                    raise BlobNotFound(response.digest.hash, "Failed to download blob {}: {}".format(
+                        response.digest.hash, response.status.code))
+                else:
+                    missing_blobs.append(response.digest)
+
             if response.status.code != code_pb2.OK:
                 raise CASRemoteError("Failed to download blob {}: {}".format(
                     response.digest.hash, response.status.code))

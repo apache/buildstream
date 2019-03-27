@@ -272,8 +272,14 @@ class CASCache():
             tree.hash = response.digest.hash
             tree.size_bytes = response.digest.size_bytes
 
-            # Fetch artifact, excluded_subdirs determined in pullqueue
-            self._fetch_directory(remote, tree, excluded_subdirs=excluded_subdirs)
+            # Fetch Directory objects
+            self._fetch_directory(remote, tree)
+
+            # Fetch files, excluded_subdirs determined in pullqueue
+            required_blobs = self._required_blobs(tree, excluded_subdirs=excluded_subdirs)
+            missing_blobs = self.local_missing_blobs(required_blobs)
+            if missing_blobs:
+                self.fetch_blobs(remote, missing_blobs)
 
             self.set_ref(ref, tree)
 
@@ -372,23 +378,6 @@ class CASCache():
                 raise CASCacheError("Failed to push ref {}: {}".format(refs, e), temporary=True) from e
 
         return not skipped_remote
-
-    # push_directory():
-    #
-    # Push the given virtual directory to a remote.
-    #
-    # Args:
-    #     remote (CASRemote): The remote to push to
-    #     directory (Directory): A virtual directory object to push.
-    #
-    # Raises:
-    #     (CASCacheError): if there was an error
-    #
-    def push_directory(self, remote, directory):
-        remote.init()
-
-        digest = directory._get_digest()
-        self._send_directory(remote, digest)
 
     # objpath():
     #
@@ -648,6 +637,54 @@ class CASCache():
         reachable = set()
         self._reachable_refs_dir(reachable, tree, update_mtime=True)
 
+    # remote_missing_blobs_for_directory():
+    #
+    # Determine which blobs of a directory tree are missing on the remote.
+    #
+    # Args:
+    #     digest (Digest): The directory digest
+    #
+    # Returns: List of missing Digest objects
+    #
+    def remote_missing_blobs_for_directory(self, remote, digest):
+        required_blobs = self._required_blobs(digest)
+
+        missing_blobs = dict()
+        # Limit size of FindMissingBlobs request
+        for required_blobs_group in _grouper(required_blobs, 512):
+            request = remote_execution_pb2.FindMissingBlobsRequest(instance_name=remote.spec.instance_name)
+
+            for required_digest in required_blobs_group:
+                d = request.blob_digests.add()
+                d.hash = required_digest.hash
+                d.size_bytes = required_digest.size_bytes
+
+            response = remote.cas.FindMissingBlobs(request)
+            for missing_digest in response.missing_blob_digests:
+                d = remote_execution_pb2.Digest()
+                d.hash = missing_digest.hash
+                d.size_bytes = missing_digest.size_bytes
+                missing_blobs[d.hash] = d
+
+        return missing_blobs.values()
+
+    # local_missing_blobs():
+    #
+    # Check local cache for missing blobs.
+    #
+    # Args:
+    #    digests (list): The Digests of blobs to check
+    #
+    # Returns: Missing Digest objects
+    #
+    def local_missing_blobs(self, digests):
+        missing_blobs = []
+        for digest in digests:
+            objpath = self.objpath(digest)
+            if not os.path.exists(objpath):
+                missing_blobs.append(digest)
+        return missing_blobs
+
     ################################################
     #             Local Private Methods            #
     ################################################
@@ -841,7 +878,10 @@ class CASCache():
         for dirnode in directory.directories:
             self._reachable_refs_dir(reachable, dirnode.digest, update_mtime=update_mtime)
 
-    def _required_blobs(self, directory_digest):
+    def _required_blobs(self, directory_digest, *, excluded_subdirs=None):
+        if not excluded_subdirs:
+            excluded_subdirs = []
+
         # parse directory, and recursively add blobs
         d = remote_execution_pb2.Digest()
         d.hash = directory_digest.hash
@@ -860,7 +900,8 @@ class CASCache():
             yield d
 
         for dirnode in directory.directories:
-            yield from self._required_blobs(dirnode.digest)
+            if dirnode.name not in excluded_subdirs:
+                yield from self._required_blobs(dirnode.digest)
 
     # _temporary_object():
     #
@@ -900,8 +941,8 @@ class CASCache():
 
         return objpath
 
-    def _batch_download_complete(self, batch):
-        for digest, data in batch.send():
+    def _batch_download_complete(self, batch, *, missing_blobs=None):
+        for digest, data in batch.send(missing_blobs=missing_blobs):
             with self._temporary_object() as f:
                 f.write(data)
                 f.flush()
@@ -953,21 +994,19 @@ class CASCache():
     #
     # Fetches remote directory and adds it to content addressable store.
     #
-    # Fetches files, symbolic links and recursively other directories in
-    # the remote directory and adds them to the content addressable
-    # store.
+    # This recursively fetches directory objects but doesn't fetch any
+    # files.
     #
     # Args:
     #     remote (Remote): The remote to use.
     #     dir_digest (Digest): Digest object for the directory to fetch.
-    #     excluded_subdirs (list): The optional list of subdirs to not fetch
     #
-    def _fetch_directory(self, remote, dir_digest, *, excluded_subdirs=None):
+    def _fetch_directory(self, remote, dir_digest):
+        # TODO Use GetTree() if the server supports it
+
         fetch_queue = [dir_digest]
         fetch_next_queue = []
         batch = _CASBatchRead(remote)
-        if not excluded_subdirs:
-            excluded_subdirs = []
 
         while len(fetch_queue) + len(fetch_next_queue) > 0:
             if not fetch_queue:
@@ -982,13 +1021,8 @@ class CASCache():
                 directory.ParseFromString(f.read())
 
             for dirnode in directory.directories:
-                if dirnode.name not in excluded_subdirs:
-                    batch = self._fetch_directory_node(remote, dirnode.digest, batch,
-                                                       fetch_queue, fetch_next_queue, recursive=True)
-
-            for filenode in directory.files:
-                batch = self._fetch_directory_node(remote, filenode.digest, batch,
-                                                   fetch_queue, fetch_next_queue)
+                batch = self._fetch_directory_node(remote, dirnode.digest, batch,
+                                                   fetch_queue, fetch_next_queue, recursive=True)
 
         # Fetch final batch
         self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
@@ -1016,30 +1050,55 @@ class CASCache():
 
         return dirdigest
 
-    def _send_directory(self, remote, digest, u_uid=uuid.uuid4()):
-        required_blobs = self._required_blobs(digest)
+    # fetch_blobs():
+    #
+    # Fetch blobs from remote CAS. Returns missing blobs that could not be fetched.
+    #
+    # Args:
+    #    remote (CASRemote): The remote repository to fetch from
+    #    digests (list): The Digests of blobs to fetch
+    #
+    # Returns: The Digests of the blobs that were not available on the remote CAS
+    #
+    def fetch_blobs(self, remote, digests):
+        missing_blobs = []
 
-        missing_blobs = dict()
-        # Limit size of FindMissingBlobs request
-        for required_blobs_group in _grouper(required_blobs, 512):
-            request = remote_execution_pb2.FindMissingBlobsRequest(instance_name=remote.spec.instance_name)
+        batch = _CASBatchRead(remote)
 
-            for required_digest in required_blobs_group:
-                d = request.blob_digests.add()
-                d.hash = required_digest.hash
-                d.size_bytes = required_digest.size_bytes
+        for digest in digests:
+            if (digest.size_bytes >= remote.max_batch_total_size_bytes or
+                    not remote.batch_read_supported):
+                # Too large for batch request, download in independent request.
+                try:
+                    self._ensure_blob(remote, digest)
+                except grpc.RpcError as e:
+                    if e.code() == grpc.StatusCode.NOT_FOUND:
+                        missing_blobs.append(digest)
+                    else:
+                        raise CASCacheError("Failed to fetch blob: {}".format(e)) from e
+            else:
+                if not batch.add(digest):
+                    # Not enough space left in batch request.
+                    # Complete pending batch first.
+                    self._batch_download_complete(batch, missing_blobs=missing_blobs)
 
-            response = remote.cas.FindMissingBlobs(request)
-            for missing_digest in response.missing_blob_digests:
-                d = remote_execution_pb2.Digest()
-                d.hash = missing_digest.hash
-                d.size_bytes = missing_digest.size_bytes
-                missing_blobs[d.hash] = d
+                    batch = _CASBatchRead(remote)
+                    batch.add(digest)
 
-        # Upload any blobs missing on the server
-        self._send_blobs(remote, missing_blobs.values(), u_uid)
+        # Complete last pending batch
+        self._batch_download_complete(batch, missing_blobs=missing_blobs)
 
-    def _send_blobs(self, remote, digests, u_uid=uuid.uuid4()):
+        return missing_blobs
+
+    # send_blobs():
+    #
+    # Upload blobs to remote CAS.
+    #
+    # Args:
+    #    remote (CASRemote): The remote repository to upload to
+    #    digests (list): The Digests of Blobs to upload
+    #
+    def send_blobs(self, remote, digests, u_uid=uuid.uuid4()):
         batch = _CASBatchUpdate(remote)
 
         for digest in digests:
@@ -1060,6 +1119,12 @@ class CASCache():
 
         # Send final batch
         batch.send()
+
+    def _send_directory(self, remote, digest, u_uid=uuid.uuid4()):
+        missing_blobs = self.remote_missing_blobs_for_directory(remote, digest)
+
+        # Upload any blobs missing on the server
+        self.send_blobs(remote, missing_blobs, u_uid)
 
 
 class CASQuota:

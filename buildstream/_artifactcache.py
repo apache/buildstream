@@ -359,30 +359,6 @@ class ArtifactCache(BaseCache):
 
         return None
 
-    # push_directory():
-    #
-    # Push the given virtual directory to all remotes.
-    #
-    # Args:
-    #     project (Project): The current project
-    #     directory (Directory): A virtual directory object to push.
-    #
-    # Raises:
-    #     (ArtifactError): if there was an error
-    #
-    def push_directory(self, project, directory):
-        if self._has_push_remotes:
-            push_remotes = [r for r in self._remotes[project] if r.spec.push]
-        else:
-            push_remotes = []
-
-        if not push_remotes:
-            raise ArtifactError("push_directory was called, but no remote artifact " +
-                                "servers are configured as push remotes.")
-
-        for remote in push_remotes:
-            self.cas.push_directory(remote, directory)
-
     # push_message():
     #
     # Push the given protobuf message to all remotes.
@@ -439,3 +415,24 @@ class ArtifactCache(BaseCache):
         cache_id = self.cas.resolve_ref(ref, update_mtime=True)
         vdir = CasBasedDirectory(self.cas, digest=cache_id).descend('logs')
         return vdir
+
+    # fetch_missing_blobs():
+    #
+    # Fetch missing blobs from configured remote repositories.
+    #
+    # Args:
+    #     project (Project): The current project
+    #     missing_blobs (list): The Digests of the blobs to fetch
+    #
+    def fetch_missing_blobs(self, project, missing_blobs):
+        for remote in self._remotes[project]:
+            if not missing_blobs:
+                break
+
+            remote.init()
+
+            # fetch_blobs() will return the blobs that are still missing
+            missing_blobs = self.cas.fetch_blobs(remote, missing_blobs)
+
+        if missing_blobs:
+            raise ArtifactError("Blobs not found on configured artifact servers")
