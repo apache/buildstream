@@ -18,34 +18,32 @@
 #        Angelos Evripiotis <jevripiotis@bloomberg.net>
 
 from contextlib import contextmanager
-import os
+import platform
 
 
 # override_platform_uname()
 #
-# Context manager to override the reported value of `os.uname()`.
+# Context manager to override the reported value of `platform.uname()`.
 #
 # Args:
 #   system (str): Optional str to replace the 1st entry of uname with.
 #   machine (str): Optional str to replace the 5th entry of uname with.
 #
 @contextmanager
-def override_os_uname(*, system=None, machine=None):
-    orig_func = os.uname
-    result = orig_func()
+def override_platform_uname(*, system=None, machine=None):
+    orig_func = platform.uname
+    result = platform.uname()
 
-    result = list(result)
     if system is not None:
-        result[0] = system
+        result = result._replace(system=system)
     if machine is not None:
-        result[4] = machine
-    result = tuple(result)
+        result = result._replace(machine=machine)
 
     def override_func():
         return result
 
-    os.uname = override_func
+    platform.uname = override_func
     try:
         yield
     finally:
-        os.uname = orig_func
+        platform.uname = orig_func

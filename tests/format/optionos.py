@@ -9,7 +9,7 @@ from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
 
-from tests.testutils import override_os_uname
+from tests.testutils import override_platform_uname
 
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -30,7 +30,7 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
     ('HaikuOS', 'SunOS', 'SunOSy'),
 ])
 def test_conditionals(cli, datafiles, system, value, expected):
-    with override_os_uname(system=system):
+    with override_platform_uname(system=system):
         project = os.path.join(datafiles.dirname, datafiles.basename, 'option-os')
 
         bst_args = []
@@ -53,7 +53,7 @@ def test_conditionals(cli, datafiles, system, value, expected):
 @pytest.mark.datafiles(DATA_DIR)
 def test_unsupported_arch(cli, datafiles):
 
-    with override_os_uname(system="AIX"):
+    with override_platform_uname(system="AIX"):
         project = os.path.join(datafiles.dirname, datafiles.basename, 'option-os')
         result = cli.run(project=project, silent=True, args=[
             'show',

@@ -18,6 +18,7 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
+import platform
 import sys
 import resource
 
@@ -75,7 +76,7 @@ class Platform():
 
     @staticmethod
     def get_host_os():
-        return os.uname()[0]
+        return platform.uname()[0]
 
     # canonicalize_arch():
     #
@@ -122,7 +123,7 @@ class Platform():
     @staticmethod
     def get_host_arch():
         # get the hardware identifier from uname
-        uname_machine = os.uname()[4]
+        uname_machine = platform.uname()[4]
         return Platform.canonicalize_arch(uname_machine)
 
     ##################################################################

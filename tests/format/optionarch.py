@@ -9,7 +9,7 @@ from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
 
-from tests.testutils import override_os_uname
+from tests.testutils import override_platform_uname
 
 # Project directory
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -31,7 +31,7 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
     ('x86_64', 'aarch64', 'Aarchy'),
 ])
 def test_conditional(cli, datafiles, machine, value, expected):
-    with override_os_uname(machine=machine):
+    with override_platform_uname(machine=machine):
         project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch')
 
         bst_args = []
@@ -54,7 +54,7 @@ def test_conditional(cli, datafiles, machine, value, expected):
 @pytest.mark.datafiles(DATA_DIR)
 def test_unsupported_arch(cli, datafiles):
 
-    with override_os_uname(machine="x86_64"):
+    with override_platform_uname(machine="x86_64"):
         project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch')
         result = cli.run(project=project, silent=True, args=[
             'show',
@@ -69,7 +69,7 @@ def test_unsupported_arch(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_alias(cli, datafiles):
 
-    with override_os_uname(machine="arm"):
+    with override_platform_uname(machine="arm"):
         project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch-alias')
         result = cli.run(project=project, silent=True, args=[
             'show',
@@ -84,7 +84,7 @@ def test_alias(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_unknown_host_arch(cli, datafiles):
 
-    with override_os_uname(machine="x86_128"):
+    with override_platform_uname(machine="x86_128"):
         project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch')
         result = cli.run(project=project, silent=True, args=[
             'show',
