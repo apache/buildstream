@@ -85,6 +85,8 @@ class Platform():
     #
     @staticmethod
     def canonicalize_arch(arch):
+        # Note that these are all expected to be lowercase, as we want a
+        # case-insensitive lookup. Windows can report its arch in ALLCAPS.
         aliases = {
             "aarch32": "aarch32",
             "aarch64": "aarch64",
@@ -109,7 +111,7 @@ class Platform():
         }
 
         try:
-            return aliases[arch.replace('_', '-')]
+            return aliases[arch.replace('_', '-').lower()]
         except KeyError:
             raise PlatformError("Unknown architecture: {}".format(arch))
 
