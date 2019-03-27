@@ -76,7 +76,7 @@ class Platform():
 
     @staticmethod
     def get_host_os():
-        return platform.uname()[0]
+        return platform.uname().system
 
     # canonicalize_arch():
     #
@@ -125,7 +125,7 @@ class Platform():
     @staticmethod
     def get_host_arch():
         # get the hardware identifier from uname
-        uname_machine = platform.uname()[4]
+        uname_machine = platform.uname().machine
         return Platform.canonicalize_arch(uname_machine)
 
     ##################################################################

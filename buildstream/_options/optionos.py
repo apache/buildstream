@@ -32,7 +32,7 @@ class OptionOS(OptionEnum):
         super(OptionOS, self).load(node, allow_default_definition=False)
 
     def load_default_value(self, node):
-        return platform.uname()[0]
+        return platform.uname().system
 
     def resolve(self):
 
