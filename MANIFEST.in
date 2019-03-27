@@ -6,6 +6,8 @@ include MAINTAINERS
 include NEWS
 include README.rst
 
+recursive-include buildstream/plugintestutils/_sourcetests/project *
+
 # Documentation package includes
 include doc/Makefile
 include doc/badges.py
