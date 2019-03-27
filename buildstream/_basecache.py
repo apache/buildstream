@@ -73,16 +73,17 @@ class BaseCache():
         try:
             artifacts = [_yaml.node_get(config_node, dict, cls.config_node_name)]
         except LoadError:
-            artifacts = _yaml.node_get(config_node, list, cls.config_node_name, default_value=[])
+            try:
+                artifacts = _yaml.node_get(config_node, list, cls.config_node_name, default_value=[])
+            except LoadError:
+                provenance = _yaml.node_get_provenance(config_node, key=cls.config_node_name)
+                raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
+                                      "%s: 'artifacts' must be a single 'url:' mapping, or a list of mappings" %
+                                      (str(provenance)))
 
-        if isinstance(artifacts, list):
-            for spec_node in artifacts:
-                cache_specs.append(cls.spec_class._new_from_config_node(spec_node, basedir))
-        else:
-            provenance = _yaml.node_get_provenance(config_node, key=cls.config_node_name)
-            raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
-                                  "%s: 'artifacts' must be a single 'url:' mapping, or a list of mappings" %
-                                  (str(provenance)))
+        for spec_node in artifacts:
+            cache_specs.append(cls.spec_class._new_from_config_node(spec_node, basedir))
+
         return cache_specs
 
     # _configured_remote_cache_specs():
