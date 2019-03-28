@@ -56,6 +56,7 @@ from buildstream._cas import CASCache
 
 # Special private exception accessor, for test case purposes
 from buildstream._exceptions import BstError, get_last_exception, get_last_task_error
+from buildstream._protos.buildstream.v2 import artifact_pb2
 
 
 # Wrapper for the click.testing result
@@ -636,7 +637,8 @@ class TestArtifact():
     #
     def remove_artifact_from_cache(self, cache_dir, element_name):
 
-        cache_dir = os.path.join(cache_dir, 'cas', 'refs', 'heads')
+        cache_dir = os.path.join(cache_dir, 'artifacts', 'refs')
+
         normal_name = element_name.replace(os.sep, '-')
         cache_dir = os.path.splitext(os.path.join(cache_dir, 'test', normal_name))[0]
         shutil.rmtree(cache_dir)
@@ -655,13 +657,13 @@ class TestArtifact():
     #
     def is_cached(self, cache_dir, element, element_key):
 
-        cas = CASCache(str(cache_dir))
+        # cas = CASCache(str(cache_dir))
         artifact_ref = element.get_artifact_name(element_key)
-        return cas.contains(artifact_ref)
+        return os.path.exists(os.path.join(cache_dir, 'artifacts', 'refs', artifact_ref))
 
     # get_digest():
     #
-    # Get the digest for a given element's artifact
+    # Get the digest for a given element's artifact files
     #
     # Args:
     #    cache_dir (str): Specific cache dir to check
@@ -673,10 +675,12 @@ class TestArtifact():
     #
     def get_digest(self, cache_dir, element, element_key):
 
-        cas = CASCache(str(cache_dir))
         artifact_ref = element.get_artifact_name(element_key)
-        digest = cas.resolve_ref(artifact_ref)
-        return digest
+        artifact_dir = os.path.join(cache_dir, 'artifacts', 'refs')
+        artifact_proto = artifact_pb2.Artifact()
+        with open(os.path.join(artifact_dir, artifact_ref), 'rb') as f:
+            artifact_proto.ParseFromString(f.read())
+        return artifact_proto.files
 
     # extract_buildtree():
     #
@@ -691,9 +695,19 @@ class TestArtifact():
     #    (str): path to extracted buildtree directory, does not guarantee
     #           existence.
     @contextmanager
-    def extract_buildtree(self, tmpdir, digest):
-        with self._extract_subdirectory(tmpdir, digest, 'buildtree') as extract:
-            yield extract
+    def extract_buildtree(self, cache_dir, tmpdir, ref):
+        artifact = artifact_pb2.Artifact()
+        try:
+            with open(os.path.join(cache_dir, 'artifacts', 'refs', ref), 'rb') as f:
+                artifact.ParseFromString(f.read())
+        except FileNotFoundError:
+            yield None
+        else:
+            if str(artifact.buildtree):
+                with self._extract_subdirectory(tmpdir, artifact.buildtree) as f:
+                    yield f
+            else:
+                yield None
 
     # _extract_subdirectory():
     #
@@ -709,12 +723,12 @@ class TestArtifact():
     #    (str): path to extracted subdir directory, does not guarantee
     #           existence.
     @contextmanager
-    def _extract_subdirectory(self, tmpdir, digest, subdir):
+    def _extract_subdirectory(self, tmpdir, digest):
         with tempfile.TemporaryDirectory() as extractdir:
             try:
                 cas = CASCache(str(tmpdir))
                 cas.checkout(extractdir, digest)
-                yield os.path.join(extractdir, subdir)
+                yield extractdir
             except FileNotFoundError:
                 yield None
 

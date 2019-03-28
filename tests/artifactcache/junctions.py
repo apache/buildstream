@@ -70,6 +70,8 @@ def test_push_pull(cli, tmpdir, datafiles):
         #
         cas = os.path.join(cli.directory, 'cas')
         shutil.rmtree(cas)
+        artifact_dir = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifact_dir)
 
         # Assert that nothing is cached locally anymore
         state = cli.get_element_state(project, 'target.bst')

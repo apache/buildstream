@@ -17,6 +17,8 @@
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 #
 import multiprocessing
+import os
+from fnmatch import fnmatch
 
 from . import utils
 from . import _yaml
@@ -274,3 +276,32 @@ class BaseCache():
 
         with self.context.timed_activity("Initializing remote caches", silent_nested=True):
             self.initialize_remotes(on_failure=remote_failed)
+
+    # _list_refs_mtimes()
+    #
+    # List refs in a directory, given a base path. Also returns the
+    # associated mtimes
+    #
+    # Args:
+    #    base_path (str): Base path to traverse over
+    #    glob_expr (str|None): Optional glob expression to match against files
+    #
+    # Returns:
+    #     (iter (mtime, filename)]): iterator of tuples of mtime and refs
+    #
+    def _list_refs_mtimes(self, base_path, *, glob_expr=None):
+        path = base_path
+        if glob_expr is not None:
+            globdir = os.path.dirname(glob_expr)
+            if not any(c in "*?[" for c in globdir):
+                # path prefix contains no globbing characters so
+                # append the glob to optimise the os.walk()
+                path = os.path.join(base_path, globdir)
+
+        for root, _, files in os.walk(path):
+            for filename in files:
+                ref_path = os.path.join(root, filename)
+                relative_path = os.path.relpath(ref_path, base_path)  # Relative to refs head
+                if not glob_expr or fnmatch(relative_path, glob_expr):
+                    # Obtain the mtime (the time a file was last modified)
+                    yield (os.path.getmtime(ref_path), relative_path)

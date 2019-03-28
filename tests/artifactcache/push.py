@@ -4,7 +4,7 @@ import signal
 
 import pytest
 
-from buildstream import _yaml, _signals, utils
+from buildstream import _yaml, _signals, utils, Scope
 from buildstream._context import Context
 from buildstream._project import Project
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
@@ -85,7 +85,7 @@ def test_push(cli, tmpdir, datafiles):
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
         process = multiprocessing.Process(target=_queue_wrapper,
                                           args=(_test_push, queue, user_config_file, project_dir,
-                                                'target.bst', element_key))
+                                                'target.bst'))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -102,7 +102,7 @@ def test_push(cli, tmpdir, datafiles):
         assert share.has_artifact('test', 'target.bst', element_key)
 
 
-def _test_push(user_config_file, project_dir, element_name, element_key, queue):
+def _test_push(user_config_file, project_dir, element_name, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
@@ -118,13 +118,22 @@ def _test_push(user_config_file, project_dir, element_name, element_key, queue):
     # Load the target element
     element = project.load_elements([element_name])[0]
 
+    # Ensure the element's artifact memeber is initialised
+    # This is duplicated from Pipeline.resolve_elements()
+    # as this test does not use the cli frontend.
+    for e in element.dependencies(Scope.ALL):
+        # Preflight
+        e._preflight()
+        # Determine initial element state.
+        e._update_state()
+
     # Manually setup the CAS remotes
     artifactcache.setup_remotes(use_config=True)
     artifactcache.initialize_remotes()
 
     if artifactcache.has_push_remotes(plugin=element):
         # Push the element's artifact
-        if not artifactcache.push(element, [element_key]):
+        if not artifactcache.push(element):
             queue.put("Push operation failed")
         else:
             queue.put(None)

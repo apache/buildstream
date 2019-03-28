@@ -32,7 +32,7 @@ from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
 
 from ._artifactelement import verify_artifact_ref
-from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, CASCacheError
+from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, \
     SourcePushQueue, BuildQueue, PullQueue, ArtifactPushQueue
@@ -587,7 +587,7 @@ class Stream():
         for ref in remove_refs:
             try:
                 self._artifacts.remove(ref, defer_prune=True)
-            except CASCacheError as e:
+            except ArtifactError as e:
                 self._message(MessageType.WARN, str(e))
                 continue
 

@@ -233,7 +233,7 @@ class Context():
         self.tmpdir = os.path.join(self.cachedir, 'tmp')
         self.casdir = os.path.join(self.cachedir, 'cas')
         self.builddir = os.path.join(self.cachedir, 'build')
-        self.artifactdir = os.path.join(self.cachedir, 'artifacts')
+        self.artifactdir = os.path.join(self.cachedir, 'artifacts', 'refs')
 
         # Move old artifact cas to cas if it exists and create symlink
         old_casdir = os.path.join(self.cachedir, 'artifacts', 'cas')
