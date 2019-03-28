@@ -2983,6 +2983,11 @@ class Element(Plugin):
             subdir = "buildtree"
             excluded_subdirs.remove(subdir)
 
+        # If file contents are not required for this element, don't pull them.
+        # The directories themselves will always be pulled.
+        if not context.require_artifact_files and not self._artifact_files_required():
+            excluded_subdirs.append("files")
+
         return (subdir, excluded_subdirs)
 
     # __cache_sources():
