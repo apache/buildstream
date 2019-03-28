@@ -227,7 +227,7 @@ docs:
   stage: test
   variables:
     BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-external.git
-    BST_EXT_REF: 0.9.0-0-g63a19e8068bd777bd9cd59b1a9442f9749ea5a85
+    BST_EXT_REF: 0.12.0-0-g88e6516c21361b434d378569b69b015038cd56ee
     FD_SDK_REF: freedesktop-sdk-18.08.28-0-g29cf2127554cdd83a1532afa53824b23cee2eed3
   before_script:
   - |
