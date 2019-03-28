@@ -196,6 +196,7 @@ def test_buildtree_pulled(cli, tmpdir, datafiles):
 
         # Discard the cache
         shutil.rmtree(str(os.path.join(str(tmpdir), 'cache', 'cas')))
+        shutil.rmtree(str(os.path.join(str(tmpdir), 'cache', 'artifacts')))
         assert cli.get_element_state(project, element_name) != 'cached'
 
         # Pull from cache, ensuring cli options is set to pull the buildtree
@@ -229,6 +230,7 @@ def test_buildtree_options(cli, tmpdir, datafiles):
 
         # Discard the cache
         shutil.rmtree(str(os.path.join(str(tmpdir), 'cache', 'cas')))
+        shutil.rmtree(str(os.path.join(str(tmpdir), 'cache', 'artifacts')))
         assert cli.get_element_state(project, element_name) != 'cached'
 
         # Pull from cache, but do not include buildtrees.
@@ -269,6 +271,7 @@ def test_buildtree_options(cli, tmpdir, datafiles):
         assert 'Attempting to fetch missing artifact buildtree' in res.stderr
         assert 'Hi' in res.output
         shutil.rmtree(os.path.join(os.path.join(str(tmpdir), 'cache', 'cas')))
+        shutil.rmtree(os.path.join(os.path.join(str(tmpdir), 'cache', 'artifacts')))
         assert cli.get_element_state(project, element_name) != 'cached'
 
         # Check it's not loading the shell at all with always set for the buildtree, when the

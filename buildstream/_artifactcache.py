@@ -18,14 +18,16 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
+import grpc
 
+from . import utils
 from ._basecache import BaseCache
 from .types import _KeyStrength
-from ._exceptions import ArtifactError, CASCacheError, CASError
+from ._exceptions import ArtifactError, CASError
+from ._protos.buildstream.v2 import artifact_pb2
 
 from ._cas import CASRemoteSpec
 from .storage._casbaseddirectory import CasBasedDirectory
-from .storage.directory import VirtualDirectoryError
 
 
 # An ArtifactCacheSpec holds the user configuration for a single remote
@@ -61,8 +63,11 @@ class ArtifactCache(BaseCache):
         self.artifactdir = context.artifactdir
         os.makedirs(self.artifactdir, exist_ok=True)
 
-        self.casquota.add_ref_callbacks(self.required_artifacts)
-        self.casquota.add_remove_callbacks((lambda x: not x.startswith('@'), self.remove))
+        self.casquota.add_remove_callbacks(self.unrequired_artifacts, self.remove)
+        self.casquota.add_list_refs_callback(self.list_artifacts)
+
+        self.cas.add_reachable_directories_callback(self._reachable_directories)
+        self.cas.add_reachable_digests_callback(self._reachable_digests)
 
     # mark_required_elements():
     #
@@ -98,12 +103,33 @@ class ArtifactCache(BaseCache):
             weak_key = element._get_cache_key(strength=_KeyStrength.WEAK)
             for key in (strong_key, weak_key):
                 if key:
-                    try:
-                        ref = element.get_artifact_name(key)
+                    ref = element.get_artifact_name(key)
 
-                        self.cas.update_mtime(ref)
-                    except CASError:
+                    try:
+                        self.update_mtime(ref)
+                    except ArtifactError:
                         pass
+
+    def update_mtime(self, ref):
+        try:
+            os.utime(os.path.join(self.artifactdir, ref))
+        except FileNotFoundError as e:
+            raise ArtifactError("Couldn't find artifact: {}".format(ref)) from e
+
+    # unrequired_artifacts()
+    #
+    # Returns iterator over artifacts that are not required in the build plan
+    #
+    # Returns:
+    #     (iter): Iterator over tuples of (float, str) where float is the time
+    #             and str is the artifact ref
+    #
+    def unrequired_artifacts(self):
+        required_artifacts = set(map(lambda x: x.get_artifact_name(),
+                                     self._required_elements))
+        for (mtime, artifact) in utils._list_directory(self.artifactdir):
+            if artifact not in required_artifacts:
+                yield (mtime, artifact)
 
     def required_artifacts(self):
         # Build a set of the cache keys which are required
@@ -153,7 +179,7 @@ class ArtifactCache(BaseCache):
     def contains(self, element, key):
         ref = element.get_artifact_name(key)
 
-        return self.cas.contains(ref)
+        return os.path.exists(os.path.join(self.artifactdir, ref))
 
     # contains_subdir_artifact():
     #
@@ -172,6 +198,22 @@ class ArtifactCache(BaseCache):
         ref = element.get_artifact_name(key)
         return self.cas.contains_subdir_artifact(ref, subdir, with_files=with_files)
 
+    # contains_buildtree()
+    #
+    # Args:
+    #     element (Element): The Element to check
+    #     key (str): The cache key to use
+    #     with_files (bool): Whether to check files as well
+    #
+    # Returns: True if the subdir exists & is populated in the cache, False otherwise
+    #
+    def contains_buildtree(self, element, key, *, with_files=True):
+        artifact = self.get_artifact_proto(element.get_artifact_name(key))
+        if str(artifact.buildtree) and with_files:
+            return self.cas.contains_directory(artifact.buildtree, with_files=with_files)
+        else:
+            return False
+
     # list_artifacts():
     #
     # List artifacts in this cache in LRU order.
@@ -183,9 +225,7 @@ class ArtifactCache(BaseCache):
     #     ([str]) - A list of artifact names as generated in LRU order
     #
     def list_artifacts(self, *, glob=None):
-        return list(filter(
-            lambda x: not x.startswith('@'),
-            self.cas.list_refs(glob=glob)))
+        return [ref for _, ref in sorted(list(utils._list_directory(self.artifactdir, glob_expr=glob)))]
 
     # remove():
     #
@@ -202,7 +242,15 @@ class ArtifactCache(BaseCache):
     #    (int): The amount of space recovered in the cache, in bytes
     #
     def remove(self, ref, *, defer_prune=False):
-        return self.cas.remove(ref, defer_prune=defer_prune)
+        try:
+            utils._remove_ref(self.artifactdir, ref)
+        except FileNotFoundError:
+            raise ArtifactError("Could not find ref '{}'".format(ref))
+
+        if not defer_prune:
+            return self.cas.prune()
+
+        return None
 
     # prune():
     #
@@ -210,47 +258,6 @@ class ArtifactCache(BaseCache):
     #
     def prune(self):
         return self.cas.prune()
-
-    # get_artifact_directory():
-    #
-    # Get virtual directory for cached artifact of the specified Element.
-    #
-    # Assumes artifact has previously been fetched or committed.
-    #
-    # Args:
-    #     element (Element): The Element to extract
-    #     key (str): The cache key to use
-    #
-    # Raises:
-    #     ArtifactError: In cases there was an OSError, or if the artifact
-    #                    did not exist.
-    #
-    # Returns: virtual directory object
-    #
-    def get_artifact_directory(self, element, key):
-        ref = element.get_artifact_name(key)
-        try:
-            digest = self.cas.resolve_ref(ref, update_mtime=True)
-            return CasBasedDirectory(self.cas, digest=digest)
-        except (CASCacheError, VirtualDirectoryError) as e:
-            raise ArtifactError('Directory not in local cache: {}'.format(e)) from e
-
-    # commit():
-    #
-    # Commit built artifact to cache.
-    #
-    # Args:
-    #     element (Element): The Element commit an artifact for
-    #     content (Directory): The element's content directory
-    #     keys (list): The cache keys to use
-    #
-    def commit(self, element, content, keys):
-        refs = [element.get_artifact_name(key) for key in keys]
-
-        tree = content._get_digest()
-
-        for ref in refs:
-            self.cas.set_ref(ref, tree)
 
     # diff():
     #
@@ -264,10 +271,16 @@ class ArtifactCache(BaseCache):
     #     subdir (str): A subdirectory to limit the comparison to
     #
     def diff(self, element, key_a, key_b, *, subdir=None):
-        ref_a = element.get_artifact_name(key_a)
-        ref_b = element.get_artifact_name(key_b)
+        digest_a = self.get_artifact_proto(element.get_artifact_name(key_a)).files
+        digest_b = self.get_artifact_proto(element.get_artifact_name(key_b)).files
 
-        return self.cas.diff(ref_a, ref_b, subdir=subdir)
+        added = []
+        removed = []
+        modified = []
+
+        self.cas.diff_trees(digest_a, digest_b, added=added, removed=removed, modified=modified)
+
+        return modified, removed, added
 
     # push():
     #
@@ -284,8 +297,6 @@ class ArtifactCache(BaseCache):
     #   (ArtifactError): if there was an error
     #
     def push(self, element, keys):
-        refs = [element.get_artifact_name(key) for key in list(keys)]
-
         project = element._get_project()
 
         push_remotes = [r for r in self._remotes[project] if r.spec.push]
@@ -297,7 +308,7 @@ class ArtifactCache(BaseCache):
             display_key = element._get_brief_display_key()
             element.status("Pushing artifact {} -> {}".format(display_key, remote.spec.url))
 
-            if self.cas.push(refs, remote):
+            if self._push_artifact(element, keys, remote):
                 element.info("Pushed artifact {} -> {}".format(display_key, remote.spec.url))
                 pushed = True
             else:
@@ -322,16 +333,16 @@ class ArtifactCache(BaseCache):
     #   (bool): True if pull was successful, False if artifact was not available
     #
     def pull(self, element, key, *, progress=None, subdir=None, excluded_subdirs=None):
-        ref = element.get_artifact_name(key)
-
         project = element._get_project()
+        pull_buildtrees = "buildtree" not in excluded_subdirs if excluded_subdirs else True
 
         for remote in self._remotes[project]:
+            remote.init()
             try:
                 display_key = element._get_brief_display_key()
                 element.status("Pulling artifact {} <- {}".format(display_key, remote.spec.url))
 
-                if self.cas.pull(ref, remote, progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs):
+                if self._pull_artifact(element, key, remote, pull_buildtrees=pull_buildtrees):
                     element.info("Pulled artifact {} <- {}".format(display_key, remote.spec.url))
                     # no need to pull from additional remotes
                     return True
@@ -405,7 +416,9 @@ class ArtifactCache(BaseCache):
         oldref = element.get_artifact_name(oldkey)
         newref = element.get_artifact_name(newkey)
 
-        self.cas.link_ref(oldref, newref)
+        if not os.path.exists(os.path.join(self.artifactdir, newref)):
+            os.link(os.path.join(self.artifactdir, oldref),
+                    os.path.join(self.artifactdir, newref))
 
     # get_artifact_logs():
     #
@@ -469,3 +482,182 @@ class ArtifactCache(BaseCache):
             remote_missing_blobs_set.update(remote_missing_blobs)
 
         return list(remote_missing_blobs_set)
+
+    def get_artifact_proto(self, ref):
+        artifact_path = os.path.join(self.artifactdir, ref)
+        artifact_proto = artifact_pb2.Artifact()
+        with open(artifact_path, 'rb') as f:
+            artifact_proto.ParseFromString(f.read())
+        return artifact_proto
+
+    ################################################
+    #             Local Private Methods            #
+    ################################################
+
+    # _reachable_directories()
+    #
+    # Returns:
+    #     (iter): Iterator over directories digests available from artifacts.
+    #
+    def _reachable_directories(self):
+        for root, _, files in os.walk(self.artifactdir):
+            for artifact_file in files:
+                artifact = artifact_pb2.Artifact()
+                with open(os.path.join(root, artifact_file), 'r+b') as f:
+                    artifact.ParseFromString(f.read())
+
+                if str(artifact.files):
+                    yield artifact.files
+
+                if str(artifact.buildtree):
+                    yield artifact.buildtree
+
+    # _reachable_digests()
+    #
+    # Returns:
+    #     (iter): Iterator over single file digests in artifacts
+    #
+    def _reachable_digests(self):
+        for root, _, files in os.walk(self.artifactdir):
+            for artifact_file in files:
+                artifact = artifact_pb2.Artifact()
+                with open(os.path.join(root, artifact_file), 'r+b') as f:
+                    artifact.ParseFromString(f.read())
+
+                if str(artifact.public_data):
+                    yield artifact.public_data
+
+                for log_file in artifact.logs:
+                    yield log_file.digest
+
+    # _push_artifact()
+    #
+    # Pushes relevant directories and then artifact proto to remote.
+    #
+    # Args:
+    #    element (Element): element
+    #    keys ([str]): keys to push
+    #    remote (CASRemote): remote to push to
+    #
+    # Returns:
+    #    (bool): whether the push was successful
+    #
+    def _push_artifact(self, element, keys, remote):
+        keys = list(keys)
+        if not keys:
+            keys = [element._get_cache_key()]
+        artifacts = list(map(self.get_artifact_proto, list(map(element.get_artifact_name, keys))))
+        # check the artifacts are the same for each key
+        # unsure how necessary this is
+        artifact = artifacts[0]
+        for check_artifact in artifacts:
+            assert artifact == check_artifact
+
+        # Check whether the artifact is on the server
+        present = False
+        for key in keys:
+            get_artifact = artifact_pb2.GetArtifactRequest()
+            get_artifact.cache_key = element.get_artifact_name(key)
+            try:
+                remote.artifact.GetArtifact(get_artifact)
+            except grpc.RpcError as e:
+                if e.code() != grpc.StatusCode.NOT_FOUND:
+                    raise ArtifactError("Error checking artifact cache: {}"
+                                        .format(e.details()))
+            else:
+                present = True
+        if present:
+            return False
+
+        try:
+            self.cas._send_directory(remote, artifact.files)
+
+            if str(artifact.buildtree):
+                try:
+                    self.cas._send_directory(remote, artifact.buildtree)
+                except FileNotFoundError:
+                    pass
+
+            digests = []
+            if str(artifact.public_data):
+                digests.append(artifact.public_data)
+
+            for log_file in artifact.logs:
+                digests.append(log_file.digest)
+
+            self.cas.send_blobs(remote, digests)
+
+        except grpc.RpcError as e:
+            if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
+                raise ArtifactError("Failed to push artifact blobs: {}".format(e.details()))
+            return False
+
+        # finally need to send the artifact proto
+        for key in keys:
+            update_artifact = artifact_pb2.UpdateArtifactRequest()
+            update_artifact.cache_key = element.get_artifact_name(key)
+            update_artifact.artifact.CopyFrom(artifact)
+
+            try:
+                remote.artifact.UpdateArtifact(update_artifact)
+            except grpc.RpcError as e:
+                raise ArtifactError("Failed to push artifact: {}".format(e.details()))
+
+        return True
+
+    # _pull_artifact()
+    #
+    # Args:
+    #     element (Element): element to pull
+    #     key (str): specific key of element to pull
+    #     remote (CASRemote): remote to pull from
+    #     pull_buildtree (bool): whether to pull buildtrees or not
+    #
+    # Returns:
+    #     (bool): whether the pull was successful
+    #
+    def _pull_artifact(self, element, key, remote, pull_buildtrees=False):
+
+        def __pull_digest(digest):
+            self.cas._fetch_directory(remote, digest)
+            required_blobs = self.cas.required_blobs_for_directory(digest)
+            missing_blobs = self.cas.local_missing_blobs(required_blobs)
+            if missing_blobs:
+                self.cas.fetch_blobs(remote, missing_blobs)
+
+        request = artifact_pb2.GetArtifactRequest()
+        request.cache_key = element.get_artifact_name(key=key)
+        try:
+            artifact = remote.artifact.GetArtifact(request)
+        except grpc.RpcError as e:
+            if e.code() != grpc.StatusCode.NOT_FOUND:
+                raise ArtifactError("Failed to pull artifact: {}".format(e.details()))
+            return False
+
+        try:
+            if str(artifact.files):
+                __pull_digest(artifact.files)
+
+            if pull_buildtrees and str(artifact.buildtree):
+                __pull_digest(artifact.buildtree)
+
+            digests = []
+            if str(artifact.public_data):
+                digests.append(artifact.public_data)
+
+            for log_digest in artifact.logs:
+                digests.append(log_digest.digest)
+
+            self.cas.fetch_blobs(remote, digests)
+        except grpc.RpcError as e:
+            if e.code() != grpc.StatusCode.NOT_FOUND:
+                raise ArtifactError("Failed to pull artifact: {}".format(e.details()))
+            return False
+
+        # Write the artifact proto to cache
+        artifact_path = os.path.join(self.artifactdir, request.cache_key)
+        os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
+        with open(artifact_path, 'w+b') as f:
+            f.write(artifact.SerializeToString())
+
+        return True

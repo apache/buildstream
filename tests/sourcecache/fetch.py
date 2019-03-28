@@ -95,6 +95,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             os.path.join(str(tmpdir), 'cache', 'cas'),
             os.path.join(str(tmpdir), 'sourceshare', 'repo'))
         shutil.rmtree(os.path.join(str(tmpdir), 'cache', 'sources'))
+        shutil.rmtree(os.path.join(str(tmpdir), 'cache', 'artifacts'))
 
         digest = share.cas.resolve_ref(source._get_source_name())
         assert share.has_object(digest)

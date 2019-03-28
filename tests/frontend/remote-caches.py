@@ -80,8 +80,9 @@ def test_source_artifact_caches(cli, tmpdir, datafiles):
         # remove the artifact from the repo and check it pulls sources, builds
         # and then pushes the artifacts
         shutil.rmtree(os.path.join(cachedir, 'cas'))
-        print(os.listdir(os.path.join(share.repodir, 'cas', 'refs', 'heads')))
-        shutil.rmtree(os.path.join(share.repodir, 'cas', 'refs', 'heads', 'test'))
+        shutil.rmtree(os.path.join(cachedir, 'artifacts'))
+        print(os.listdir(os.path.join(share.repodir, 'artifacts', 'refs')))
+        shutil.rmtree(os.path.join(share.repodir, 'artifacts', 'refs', 'test'))
 
         res = cli.run(project=project_dir, args=['build', 'repo.bst'])
         res.assert_success()

@@ -352,6 +352,10 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
         assert_shared(cli, share, project, 'element1.bst')
         assert_shared(cli, share, project, 'element2.bst')
 
+        print("share repo: {}".format(share.directory))
+        for x, y, z in os.walk(share.directory):
+            print("{} {} {}".format(x, y, z))
+
         # Remove element1 from the local cache
         cli.remove_artifact_from_cache(project, 'element1.bst')
         assert cli.get_element_state(project, 'element1.bst') != 'cached'
@@ -374,6 +378,10 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
         # Make sure it's cached locally and remotely
         assert cli.get_element_state(project, 'element3.bst') == 'cached'
         assert_shared(cli, share, project, 'element3.bst')
+
+        print("share repo: {}".format(share.directory))
+        for x, y, z in os.walk(share.directory):
+            print("{} {} {}".format(x, y, z))
 
         # Ensure that element2 was deleted from the share and element1 remains
         assert_not_shared(cli, share, project, 'element2.bst')
