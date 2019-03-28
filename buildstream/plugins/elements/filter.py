@@ -217,14 +217,14 @@ class FilterElement(Element):
             for dep in self.dependencies(Scope.BUILD, recurse=False):
                 # Check that all the included/excluded domains exist
                 pub_data = dep.get_public_data('bst')
-                split_rules = pub_data.get('split-rules', {})
+                split_rules = self.node_get_member(pub_data, dict, 'split-rules', {})
                 unfound_includes = []
                 for domain in self.include:
-                    if domain not in split_rules:
+                    if not self.node_has_member(split_rules, domain):
                         unfound_includes.append(domain)
                 unfound_excludes = []
                 for domain in self.exclude:
-                    if domain not in split_rules:
+                    if not self.node_has_member(split_rules, domain):
                         unfound_excludes.append(domain)
 
                 detail = []

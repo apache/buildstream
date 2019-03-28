@@ -118,7 +118,7 @@ class Variables():
         # Initialize it as a string as all variables are processed as strings.
         #
         if _yaml.node_get(node, bool, 'notparallel', default_value=False):
-            node['max-jobs'] = str(1)
+            _yaml.node_set(node, 'max-jobs', str(1))
 
         ret = {}
         for key, value in _yaml.node_items(node):

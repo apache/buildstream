@@ -246,7 +246,7 @@ class Element(Plugin):
 
         # Collect the composited variables and resolve them
         variables = self.__extract_variables(meta)
-        variables['element-name'] = self.name
+        _yaml.node_set(variables, 'element-name', self.name)
         self.__variables = Variables(variables)
 
         # Collect the composited environment now that we have variables
@@ -737,10 +737,11 @@ class Element(Plugin):
         ignored = {}
         overlaps = OrderedDict()
         files_written = {}
-        old_dep_keys = {}
+        old_dep_keys = None
         workspace = self._get_workspace()
 
         if self.__can_build_incrementally() and workspace.last_successful:
+            # Workspaces do not need to work with the special node types
             old_dep_keys = self.__get_artifact_metadata_dependencies(workspace.last_successful)
 
         for dep in self.dependencies(scope):
@@ -752,9 +753,9 @@ class Element(Plugin):
             if workspace and old_dep_keys:
                 dep.__assert_cached()
 
-                if dep.name in old_dep_keys:
+                if _yaml.node_contains(old_dep_keys, dep.name):
                     key_new = dep._get_cache_key()
-                    key_old = old_dep_keys[dep.name]
+                    key_old = _yaml.node_get(old_dep_keys, str, dep.name)
 
                     # We only need to worry about modified and added
                     # files, since removed files will be picked up by
@@ -875,7 +876,7 @@ class Element(Plugin):
         if self.__dynamic_public is None:
             self.__load_public_data()
 
-        data = self.__dynamic_public.get(domain)
+        data = _yaml.node_get(self.__dynamic_public, Mapping, domain, default_value=None)
         if data is not None:
             data = _yaml.node_copy(data)
 
@@ -899,7 +900,7 @@ class Element(Plugin):
         if data is not None:
             data = _yaml.node_copy(data)
 
-        self.__dynamic_public[domain] = data
+        _yaml.node_set(self.__dynamic_public, domain, data)
 
     def get_environment(self):
         """Fetch the environment suitable for running in the sandbox
@@ -2172,7 +2173,7 @@ class Element(Plugin):
             # Filter out nocache variables from the element's environment
             cache_env = {
                 key: value
-                for key, value in self.node_items(self.__environment)
+                for key, value in self.__environment.items()
                 if key not in self.__env_nocache
             }
 
@@ -2434,15 +2435,15 @@ class Element(Plugin):
             # Extend project wide split rules with any split rules defined by the element
             _yaml.composite(splits, element_splits)
 
-        element_bst['split-rules'] = splits
-        element_public['bst'] = element_bst
-        defaults['public'] = element_public
+        _yaml.node_set(element_bst, 'split-rules', splits)
+        _yaml.node_set(element_public, 'bst', element_bst)
+        _yaml.node_set(defaults, 'public', element_public)
 
     def __init_defaults(self, plugin_conf):
         # Defaults are loaded once per class and then reused
         #
         if self.__defaults is None:
-            defaults = {}
+            defaults = _yaml.new_empty_node()
 
             if plugin_conf is not None:
                 # Load the plugin's accompanying .yaml file if one was provided
@@ -2463,7 +2464,7 @@ class Element(Plugin):
             else:
                 elements = project.element_overrides
 
-            overrides = elements.get(self.get_kind())
+            overrides = _yaml.node_get(elements, Mapping, self.get_kind(), default_value=None)
             if overrides:
                 _yaml.composite(defaults, overrides)
 
@@ -2477,7 +2478,7 @@ class Element(Plugin):
         default_env = _yaml.node_get(self.__defaults, Mapping, 'environment', default_value={})
 
         if self.__is_junction:
-            environment = {}
+            environment = _yaml.new_empty_node()
         else:
             project = self._get_project()
             environment = _yaml.node_copy(project.base_environment)
@@ -2531,7 +2532,7 @@ class Element(Plugin):
 
         for var in ('project-name', 'element-name', 'max-jobs'):
             provenance = _yaml.node_get_provenance(variables, var)
-            if provenance and provenance.filename != '':
+            if provenance and not provenance.is_synthetic:
                 raise LoadError(LoadErrorReason.PROTECTED_VARIABLE_REDEFINED,
                                 "{}: invalid redefinition of protected variable '{}'"
                                 .format(provenance, var))
@@ -2556,8 +2557,10 @@ class Element(Plugin):
     #
     def __extract_sandbox_config(self, meta):
         if self.__is_junction:
-            sandbox_config = {'build-uid': 0,
-                              'build-gid': 0}
+            sandbox_config = _yaml.new_node_from_dict({
+                'build-uid': 0,
+                'build-gid': 0
+            })
         else:
             project = self._get_project()
             project.ensure_fully_loaded()
@@ -2609,23 +2612,24 @@ class Element(Plugin):
         # element specific defaults
         _yaml.composite(base_splits, element_splits)
 
-        element_bst['split-rules'] = base_splits
-        element_public['bst'] = element_bst
+        _yaml.node_set(element_bst, 'split-rules', base_splits)
+        _yaml.node_set(element_public, 'bst', element_bst)
 
         _yaml.node_final_assertions(element_public)
 
         # Also, resolve any variables in the public split rules directly
         for domain, splits in self.node_items(base_splits):
-            base_splits[domain] = [
+            splits = [
                 self.__variables.subst(split.strip())
                 for split in splits
             ]
+            _yaml.node_set(base_splits, domain, splits)
 
         return element_public
 
     def __init_splits(self):
         bstdata = self.get_public_data('bst')
-        splits = bstdata.get('split-rules')
+        splits = self.node_get_member(bstdata, dict, 'split-rules')
         self.__splits = {
             domain: re.compile('^(?:' + '|'.join([utils._glob2re(r) for r in rules]) + ')$')
             for domain, rules in self.node_items(splits)

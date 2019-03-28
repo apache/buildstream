@@ -83,8 +83,8 @@ class ArtifactElement(Element):
 def verify_artifact_ref(ref):
     try:
         project, element, key = ref.split('/', 2)  # This will raise a Value error if unable to split
-        # Explicitly raise a ValueError if the key lenght is not as expected
-        if len(key) != len(_cachekey.generate_key({})):
+        # Explicitly raise a ValueError if the key length is not as expected
+        if not _cachekey.is_key(key):
             raise ValueError
     except ValueError:
         raise ArtifactElementError("Artifact: {} is not of the expected format".format(ref))

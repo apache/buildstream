@@ -16,13 +16,13 @@
 #  Authors:
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 #
-from collections.abc import Mapping
 import multiprocessing
 
 from . import utils
 from . import _yaml
 from ._cas import CASRemote
 from ._message import Message, MessageType
+from ._exceptions import LoadError
 
 
 # Base Cache for Caches to derive from
@@ -70,18 +70,20 @@ class BaseCache():
     def specs_from_config_node(cls, config_node, basedir=None):
         cache_specs = []
 
-        artifacts = config_node.get(cls.config_node_name, [])
-        if isinstance(artifacts, Mapping):
-            # pylint: disable=not-callable
-            cache_specs.append(cls.spec_class._new_from_config_node(artifacts, basedir))
-        elif isinstance(artifacts, list):
-            for spec_node in artifacts:
-                cache_specs.append(cls.spec_class._new_from_config_node(spec_node, basedir))
-        else:
-            provenance = _yaml.node_get_provenance(config_node, key=cls.config_node_name)
-            raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
-                                  "%s: 'artifacts' must be a single 'url:' mapping, or a list of mappings" %
-                                  (str(provenance)))
+        try:
+            artifacts = [_yaml.node_get(config_node, dict, cls.config_node_name)]
+        except LoadError:
+            try:
+                artifacts = _yaml.node_get(config_node, list, cls.config_node_name, default_value=[])
+            except LoadError:
+                provenance = _yaml.node_get_provenance(config_node, key=cls.config_node_name)
+                raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
+                                      "%s: 'artifacts' must be a single 'url:' mapping, or a list of mappings" %
+                                      (str(provenance)))
+
+        for spec_node in artifacts:
+            cache_specs.append(cls.spec_class._new_from_config_node(spec_node, basedir))
+
         return cache_specs
 
     # _configured_remote_cache_specs():

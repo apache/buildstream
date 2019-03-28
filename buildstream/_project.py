@@ -201,7 +201,7 @@ class Project():
 
         if url and utils._ALIAS_SEPARATOR in url:
             url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
-            alias_url = config._aliases.get(url_alias)
+            alias_url = _yaml.node_get(config._aliases, str, url_alias, default_value=None)
             if alias_url:
                 url = alias_url + url_body
 
@@ -231,7 +231,7 @@ class Project():
 
             # Anything that alters the build goes into the unique key
             # (currently nothing here)
-            self._cache_key = _cachekey.generate_key({})
+            self._cache_key = _cachekey.generate_key(_yaml.new_empty_node())
 
         return self._cache_key
 
@@ -406,7 +406,7 @@ class Project():
         else:
             config = self.config
 
-        return config._aliases.get(alias)
+        return _yaml.node_get(config._aliases, str, alias, default_value=None)
 
     # get_alias_uris()
     #
@@ -421,7 +421,7 @@ class Project():
         else:
             config = self.config
 
-        if not alias or alias not in config._aliases:
+        if not alias or not _yaml.node_contains(config._aliases, alias):
             return [None]
 
         mirror_list = []
@@ -431,7 +431,7 @@ class Project():
                     mirror_list = alias_mapping[alias] + mirror_list
                 else:
                     mirror_list += alias_mapping[alias]
-        mirror_list.append(config._aliases[alias])
+        mirror_list.append(_yaml.node_get(config._aliases, str, alias))
         return mirror_list
 
     # load_elements()
@@ -589,20 +589,9 @@ class Project():
 
         self._validate_node(pre_config_node)
 
-        # FIXME:
-        #
-        #   Performing this check manually in the absense
-        #   of proper support from _yaml.node_get(), this should
-        #   be removed in favor of a proper accessor function
-        #   from the _yaml module when #591 is fixed.
-        #
-        if self._project_conf.get('name') is None:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: project.conf does not contain expected key '{}'".format(projectfile, 'name'))
-
         # The project name, element path and option declarations
         # are constant and cannot be overridden by option conditional statements
-        self.name = _yaml.node_get(pre_config_node, str, 'name')
+        self.name = _yaml.node_get(self._project_conf, str, 'name')
 
         # Validate that project name is a valid symbol name
         _yaml.assert_symbol_name(_yaml.node_get_provenance(pre_config_node, 'name'),
@@ -772,8 +761,8 @@ class Project():
         # assertion after.
         output.element_overrides = _yaml.node_get(config, Mapping, 'elements', default_value={})
         output.source_overrides = _yaml.node_get(config, Mapping, 'sources', default_value={})
-        config.pop('elements', None)
-        config.pop('sources', None)
+        _yaml.node_del(config, 'elements', safe=True)
+        _yaml.node_del(config, 'sources', safe=True)
         _yaml.node_final_assertions(config)
 
         self._load_plugin_factories(config, output)
@@ -809,7 +798,7 @@ class Project():
         output.base_variables = _yaml.node_get(config, Mapping, 'variables')
 
         # Add the project name as a default variable
-        output.base_variables['project-name'] = self.name
+        _yaml.node_set(output.base_variables, 'project-name', self.name)
 
         # Extend variables with automatic variables and option exports
         # Initialize it as a string as all variables are processed as strings.
@@ -817,7 +806,7 @@ class Project():
         # max-jobs value seems to be around 8-10 if we have enough cores
         # users should set values based on workload and build infrastructure
         platform = Platform.get_platform()
-        output.base_variables['max-jobs'] = str(platform.get_cpu_count(8))
+        _yaml.node_set(output.base_variables, 'max-jobs', str(platform.get_cpu_count(8)))
 
         # Export options into variables, if that was requested
         output.options.export_variables(output.base_variables)
@@ -834,7 +823,7 @@ class Project():
             _yaml.node_validate(mirror, allowed_mirror_fields)
             mirror_name = _yaml.node_get(mirror, str, 'name')
             alias_mappings = {}
-            for alias_mapping, uris in _yaml.node_items(mirror['aliases']):
+            for alias_mapping, uris in _yaml.node_items(_yaml.node_get(mirror, Mapping, 'aliases')):
                 assert isinstance(uris, list)
                 alias_mappings[alias_mapping] = list(uris)
             output.mirrors[mirror_name] = alias_mappings
@@ -897,11 +886,12 @@ class Project():
             allowed_origins = ['core', 'local', 'pip']
             _yaml.node_validate(origin, allowed_origin_fields)
 
-            if origin['origin'] not in allowed_origins:
+            origin_value = _yaml.node_get(origin, str, 'origin')
+            if origin_value not in allowed_origins:
                 raise LoadError(
                     LoadErrorReason.INVALID_YAML,
                     "Origin '{}' is not one of the allowed types"
-                    .format(origin['origin']))
+                    .format(origin_value))
 
             # Store source versions for checking later
             source_versions = _yaml.node_get(origin, Mapping, 'sources', default_value={})
@@ -940,11 +930,11 @@ class Project():
     # Helper function to store plugin origins
     #
     # Args:
-    #    origin (dict) - a dictionary indicating the origin of a group of
+    #    origin (node) - a node indicating the origin of a group of
     #                    plugins.
     #    plugin_group (str) - The name of the type of plugin that is being
     #                         loaded
-    #    destination (list) - A list of dicts to store the origins in
+    #    destination (list) - A list of nodes to store the origins in
     #
     # Raises:
     #    LoadError if 'origin' is an unexpected value
@@ -954,19 +944,21 @@ class Project():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "Unexpected plugin group: {}, expecting {}"
                             .format(plugin_group, expected_groups))
-        if plugin_group in origin:
-            origin_dict = _yaml.node_copy(origin)
+        node_keys = [key for key, _ in _yaml.node_items(origin)]
+        if plugin_group in node_keys:
+            origin_node = _yaml.node_copy(origin)
             plugins = _yaml.node_get(origin, Mapping, plugin_group, default_value={})
-            origin_dict['plugins'] = [k for k, _ in _yaml.node_items(plugins)]
+            _yaml.node_set(origin_node, 'plugins', [k for k, _ in _yaml.node_items(plugins)])
             for group in expected_groups:
-                if group in origin_dict:
-                    del origin_dict[group]
-            if origin_dict['origin'] == 'local':
+                if _yaml.node_contains(origin_node, group):
+                    _yaml.node_del(origin_node, group)
+
+            if _yaml.node_get(origin_node, str, 'origin') == 'local':
                 path = self.get_path_from_node(origin, 'path',
                                                check_is_dir=True)
                 # paths are passed in relative to the project, but must be absolute
-                origin_dict['path'] = os.path.join(self.directory, path)
-            destination.append(origin_dict)
+                _yaml.node_set(origin_node, 'path', os.path.join(self.directory, path))
+            destination.append(origin_node)
 
     # _warning_is_fatal():
     #

@@ -24,6 +24,6 @@ def test_prepend_configure_commands(cli, datafiles):
 
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    config_commands = loaded['configure-commands']
+    config_commands = _yaml.node_get(loaded, list, 'configure-commands')
     assert len(config_commands) == 3
     assert config_commands[0] == 'echo "Hello World!"'

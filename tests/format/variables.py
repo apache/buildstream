@@ -33,7 +33,7 @@ def print_warning(msg):
     ('autotools.bst', 'make-install', "make -j1 DESTDIR=\"/buildstream-install\" install"),
     ('cmake.bst', 'cmake',
      "cmake -B_builddir -H\".\" -G\"Unix Makefiles\" " + "-DCMAKE_INSTALL_PREFIX:PATH=\"/usr\" \\\n" +
-     "-DCMAKE_INSTALL_LIBDIR:PATH=\"lib\"   "),
+     "-DCMAKE_INSTALL_LIBDIR:PATH=\"lib\""),
     ('distutils.bst', 'python-install',
      "python3 ./setup.py install --prefix \"/usr\" \\\n" +
      "--root \"/buildstream-install\""),
@@ -49,7 +49,7 @@ def test_defaults(cli, datafiles, target, varname, expected):
     ])
     result.assert_success()
     result_vars = _yaml.load_data(result.output)
-    assert result_vars[varname] == expected
+    assert _yaml.node_get(result_vars, str, varname) == expected
 
 
 ################################################################
@@ -59,7 +59,7 @@ def test_defaults(cli, datafiles, target, varname, expected):
     ('autotools.bst', 'make-install', "make -j1 DESTDIR=\"/custom/install/root\" install"),
     ('cmake.bst', 'cmake',
      "cmake -B_builddir -H\".\" -G\"Ninja\" " + "-DCMAKE_INSTALL_PREFIX:PATH=\"/opt\" \\\n" +
-     "-DCMAKE_INSTALL_LIBDIR:PATH=\"lib\"   "),
+     "-DCMAKE_INSTALL_LIBDIR:PATH=\"lib\""),
     ('distutils.bst', 'python-install',
      "python3 ./setup.py install --prefix \"/opt\" \\\n" +
      "--root \"/custom/install/root\""),
@@ -75,7 +75,7 @@ def test_overrides(cli, datafiles, target, varname, expected):
     ])
     result.assert_success()
     result_vars = _yaml.load_data(result.output)
-    assert result_vars[varname] == expected
+    assert _yaml.node_get(result_vars, str, varname) == expected
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'missing_variables'))

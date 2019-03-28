@@ -239,7 +239,9 @@ def test_filter_track(datafiles, cli, tmpdir):
 
     # Now check that a ref field exists
     new_input = _yaml.load(input_file)
-    assert new_input["sources"][0]["ref"] == ref
+    source_node = _yaml.node_get(new_input, dict, 'sources', indices=[0])
+    new_input_ref = _yaml.node_get(source_node, str, 'ref')
+    assert new_input_ref == ref
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
@@ -292,7 +294,8 @@ def test_filter_track_excepted(datafiles, cli, tmpdir):
 
     # Now check that a ref field exists
     new_input = _yaml.load(input_file)
-    assert "ref" not in new_input["sources"][0]
+    source_node = _yaml.node_get(new_input, dict, 'sources', indices=[0])
+    assert not _yaml.node_contains(source_node, 'ref')
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
@@ -345,7 +348,9 @@ def test_filter_track_multi_to_one(datafiles, cli, tmpdir):
 
     # Now check that a ref field exists
     new_input = _yaml.load(input_file)
-    assert new_input["sources"][0]["ref"] == ref
+    source_node = _yaml.node_get(new_input, dict, 'sources', indices=[0])
+    new_ref = _yaml.node_get(source_node, str, 'ref')
+    assert new_ref == ref
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
@@ -408,9 +413,14 @@ def test_filter_track_multi(datafiles, cli, tmpdir):
 
     # Now check that a ref field exists
     new_input = _yaml.load(input_file)
-    assert new_input["sources"][0]["ref"] == ref
+    source_node = _yaml.node_get(new_input, dict, 'sources', indices=[0])
+    new_ref = _yaml.node_get(source_node, str, 'ref')
+    assert new_ref == ref
+
     new_input2 = _yaml.load(input2_file)
-    assert new_input2["sources"][0]["ref"] == ref
+    source_node2 = _yaml.node_get(new_input2, dict, 'sources', indices=[0])
+    new_ref2 = _yaml.node_get(source_node2, str, 'ref')
+    assert new_ref2 == ref
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
@@ -472,9 +482,13 @@ def test_filter_track_multi_exclude(datafiles, cli, tmpdir):
 
     # Now check that a ref field exists
     new_input = _yaml.load(input_file)
-    assert "ref" not in new_input["sources"][0]
+    source_node = _yaml.node_get(new_input, dict, 'sources', indices=[0])
+    assert not _yaml.node_contains(source_node, 'ref')
+
     new_input2 = _yaml.load(input2_file)
-    assert new_input2["sources"][0]["ref"] == ref
+    source_node2 = _yaml.node_get(new_input2, dict, 'sources', indices=[0])
+    new_ref2 = _yaml.node_get(source_node2, str, 'ref')
+    assert new_ref2 == ref
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))

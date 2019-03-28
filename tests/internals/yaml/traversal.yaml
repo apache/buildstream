@@ -1,0 +1,20 @@
+# This document is used to test the target finding algorithm
+# employed during tracking.
+
+a:
+  b:
+    c: fish
+
+foo:
+  - bar
+  - baz
+  - meta
+
+stuff:
+  - kind: banana
+    colour: yellow
+  - kind: orange
+    colour: orange
+
+bird:
+  - [ 'a', 'b' ]

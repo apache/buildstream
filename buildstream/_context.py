@@ -157,7 +157,7 @@ class Context():
         self._artifactcache = None
         self._sourcecache = None
         self._projects = []
-        self._project_overrides = {}
+        self._project_overrides = _yaml.new_empty_node()
         self._workspaces = None
         self._workspace_project_cache = WorkspaceProjectCache()
         self._log_handle = None
@@ -203,11 +203,11 @@ class Context():
             _yaml.composite(defaults, user_config)
 
         # Give obsoletion warnings
-        if defaults.get('builddir'):
+        if _yaml.node_contains(defaults, 'builddir'):
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "builddir is obsolete, use cachedir")
 
-        if defaults.get('artifactdir'):
+        if _yaml.node_contains(defaults, 'artifactdir'):
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "artifactdir is obsolete")
 
@@ -306,7 +306,7 @@ class Context():
         self.sched_network_retries = _yaml.node_get(scheduler, int, 'network-retries')
 
         # Load per-projects overrides
-        self._project_overrides = _yaml.node_get(defaults, Mapping, 'projects', default_value={})
+        self._project_overrides = _yaml.node_get(defaults, dict, 'projects', default_value={})
 
         # Shallow validation of overrides, parts of buildstream which rely
         # on the overrides are expected to validate elsewhere.
@@ -441,7 +441,7 @@ class Context():
         if self._cache_key is None:
 
             # Anything that alters the build goes into the unique key
-            self._cache_key = _cachekey.generate_key({})
+            self._cache_key = _cachekey.generate_key(_yaml.new_empty_node())
 
         return self._cache_key
 

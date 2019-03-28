@@ -61,7 +61,6 @@ class ProjectRefs():
     #    options (OptionPool): To resolve conditional statements
     #
     def load(self, options):
-
         try:
             self._toplevel_node = _yaml.load(self._fullpath, shortname=self._base_name, copy_tree=True)
             provenance = _yaml.node_get_provenance(self._toplevel_node)
@@ -80,22 +79,15 @@ class ProjectRefs():
 
             # Ignore failure if the file doesnt exist, it'll be created and
             # for now just assumed to be empty
-            self._toplevel_node = {}
+            self._toplevel_node = _yaml.new_synthetic_file(self._fullpath)
             self._toplevel_save = self._toplevel_node
 
         _yaml.node_validate(self._toplevel_node, ['projects'])
 
         # Ensure we create our toplevel entry point on the fly here
         for node in [self._toplevel_node, self._toplevel_save]:
-            if 'projects' not in node:
-                node['projects'] = {}
-
-    # save()
-    #
-    # Save the project.refs file with any local changes
-    #
-    def save(self):
-        _yaml.dump(self._toplevel_save, self._fullpath)
+            if not _yaml.node_contains(node, 'projects'):
+                _yaml.node_set(node, 'projects', _yaml.new_empty_node(ref_node=node))
 
     # lookup_ref()
     #
@@ -117,11 +109,6 @@ class ProjectRefs():
 
         if write:
 
-            if node is not None:
-                provenance = _yaml.node_get_provenance(node)
-                if provenance:
-                    node = provenance.node
-
             # If we couldnt find the orignal, create a new one.
             #
             if node is None:
@@ -134,22 +121,24 @@ class ProjectRefs():
     # Looks up a ref node in the project.refs file, creates one if ensure is True.
     #
     def _lookup(self, toplevel, project, element, source_index, *, ensure=False):
-
         # Fetch the project
         try:
-            project_node = toplevel['projects'][project]
-        except KeyError:
+            projects = _yaml.node_get(toplevel, dict, 'projects')
+            project_node = _yaml.node_get(projects, dict, project)
+        except LoadError:
             if not ensure:
                 return None
-            project_node = toplevel['projects'][project] = {}
+            project_node = _yaml.new_empty_node(ref_node=projects)
+            _yaml.node_set(projects, project, project_node)
 
         # Fetch the element
         try:
-            element_list = project_node[element]
-        except KeyError:
+            element_list = _yaml.node_get(project_node, list, element)
+        except LoadError:
             if not ensure:
                 return None
-            element_list = project_node[element] = []
+            element_list = []
+            _yaml.node_set(project_node, element, element_list)
 
         # Fetch the source index
         try:
@@ -159,8 +148,8 @@ class ProjectRefs():
                 return None
 
             # Pad the list with empty newly created dictionaries
-            element_list.extend({} for _ in range(len(element_list), source_index + 1))
+            _yaml.node_extend_list(project_node, element, source_index + 1, {})
 
-            node = element_list[source_index]
+            node = _yaml.node_get(project_node, dict, element, indices=[source_index])
 
         return node

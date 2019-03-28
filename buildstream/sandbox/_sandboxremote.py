@@ -107,7 +107,7 @@ class SandboxRemote(Sandbox):
     def specs_from_config_node(config_node, basedir=None):
 
         def require_node(config, keyname):
-            val = config.get(keyname)
+            val = _yaml.node_get(config, dict, keyname, default_value=None)
             if val is None:
                 provenance = _yaml.node_get_provenance(remote_config, key=keyname)
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
@@ -116,7 +116,7 @@ class SandboxRemote(Sandbox):
                                       .format(str(provenance), keyname))
             return val
 
-        remote_config = config_node.get("remote-execution", None)
+        remote_config = _yaml.node_get(config_node, dict, 'remote-execution', default_value=None)
         if remote_config is None:
             return None
 
@@ -126,7 +126,7 @@ class SandboxRemote(Sandbox):
 
         exec_config = require_node(remote_config, 'execution-service')
         storage_config = require_node(remote_config, 'storage-service')
-        action_config = remote_config.get('action-cache-service', {})
+        action_config = _yaml.node_get(remote_config, dict, 'action-cache-service', default_value={})
 
         tls_keys = ['client-key', 'client-cert', 'server-cert']
 
@@ -137,9 +137,9 @@ class SandboxRemote(Sandbox):
 
         # Maintain some backwards compatibility with older configs, in which
         # 'url' was the only valid key for remote-execution:
-        if 'url' in remote_config:
-            if 'execution-service' not in remote_config:
-                exec_config = {'url': remote_config['url']}
+        if _yaml.node_contains(remote_config, 'url'):
+            if not _yaml.node_contains(remote_config, 'execution-service'):
+                exec_config = _yaml.new_node_from_dict({'url': remote_config['url']})
             else:
                 provenance = _yaml.node_get_provenance(remote_config, key='url')
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
@@ -158,7 +158,7 @@ class SandboxRemote(Sandbox):
 
         for config_key, config in zip(service_keys, service_configs):
             # Either both or none of the TLS client key/cert pair must be specified:
-            if ('client-key' in config) != ('client-cert' in config):
+            if _yaml.node_contains(config, 'client-key') != _yaml.node_contains(config, 'client-cert'):
                 provenance = _yaml.node_get_provenance(remote_config, key=config_key)
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
                                       "{}: TLS client key/cert pair is incomplete. "
@@ -167,10 +167,10 @@ class SandboxRemote(Sandbox):
                                       .format(str(provenance)))
 
             for tls_key in tls_keys:
-                if tls_key in config:
-                    config[tls_key] = resolve_path(config[tls_key])
+                if _yaml.node_contains(config, tls_key):
+                    _yaml.node_set(config, tls_key, resolve_path(_yaml.node_get(config, str, tls_key)))
 
-        return RemoteExecutionSpec(*service_configs)
+        return RemoteExecutionSpec(*[_yaml.node_sanitize(conf) for conf in service_configs])
 
     def run_remote_command(self, channel, action_digest):
         # Sends an execution request to the remote execution server.

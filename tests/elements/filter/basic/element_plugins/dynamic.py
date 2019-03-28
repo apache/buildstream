@@ -25,7 +25,7 @@ class DynamicElement(Element):
                 dep.stage_artifact(sandbox)
 
         bstdata = self.get_public_data("bst")
-        bstdata["split-rules"] = self.split_rules
+        self.node_set_member(bstdata, "split-rules", self.split_rules)
         self.set_public_data("bst", bstdata)
 
         return ""

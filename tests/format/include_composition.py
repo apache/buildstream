@@ -28,7 +28,7 @@ def test_main_has_prority(tmpdir):
 
     includes.process(main)
 
-    assert main['test'] == ['main']
+    assert _yaml.node_get(main, list, 'test') == ['main']
 
 
 def test_include_cannot_append(tmpdir):
@@ -44,7 +44,7 @@ def test_include_cannot_append(tmpdir):
 
     includes.process(main)
 
-    assert main['test'] == ['main']
+    assert _yaml.node_get(main, list, 'test') == ['main']
 
 
 def test_main_can_append(tmpdir):
@@ -60,7 +60,7 @@ def test_main_can_append(tmpdir):
 
     includes.process(main)
 
-    assert main['test'] == ['a', 'main']
+    assert _yaml.node_get(main, list, 'test') == ['a', 'main']
 
 
 def test_sibling_cannot_append_backward(tmpdir):
@@ -77,7 +77,7 @@ def test_sibling_cannot_append_backward(tmpdir):
 
     includes.process(main)
 
-    assert main['test'] == ['b']
+    assert _yaml.node_get(main, list, 'test') == ['b']
 
 
 def test_sibling_can_append_forward(tmpdir):
@@ -94,7 +94,7 @@ def test_sibling_can_append_forward(tmpdir):
 
     includes.process(main)
 
-    assert main['test'] == ['a', 'b']
+    assert _yaml.node_get(main, list, 'test') == ['a', 'b']
 
 
 def test_lastest_sibling_has_priority(tmpdir):
@@ -111,7 +111,7 @@ def test_lastest_sibling_has_priority(tmpdir):
 
     includes.process(main)
 
-    assert main['test'] == ['b']
+    assert _yaml.node_get(main, list, 'test') == ['b']
 
 
 def test_main_keeps_keys(tmpdir):
@@ -127,8 +127,8 @@ def test_main_keeps_keys(tmpdir):
 
     includes.process(main)
 
-    assert main['test'] == ['a']
-    assert main['something'] == 'else'
+    assert _yaml.node_get(main, list, 'test') == ['a']
+    assert _yaml.node_get(main, str, 'something') == 'else'
 
 
 def test_overwrite_directive_on_later_composite(tmpdir):
@@ -151,5 +151,5 @@ def test_overwrite_directive_on_later_composite(tmpdir):
 
     includes.process(main)
 
-    assert main['test'] == ['Overwritten']
-    assert main['foo'] == 'should be present'
+    assert _yaml.node_get(main, list, 'test') == ['Overwritten']
+    assert _yaml.node_get(main, str, 'foo') == 'should be present'

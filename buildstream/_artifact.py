@@ -279,7 +279,12 @@ class Artifact():
             return build_result
 
         data = _yaml.load(meta_file, shortname='meta/build-result.yaml')
-        build_result = (data["success"], data.get("description"), data.get("detail"))
+
+        success = _yaml.node_get(data, bool, 'success')
+        description = _yaml.node_get(data, str, 'description', default_value=None)
+        detail = _yaml.node_get(data, str, 'detail', default_value=None)
+
+        build_result = (success, description, detail)
 
         return build_result
 
@@ -310,13 +315,13 @@ class Artifact():
         # Parse the expensive yaml now and cache the result
         meta_file = artifact_vdir._objpath('meta', 'keys.yaml')
         meta = _yaml.load(meta_file, shortname='meta/keys.yaml')
-        strong_key = meta['strong']
-        weak_key = meta['weak']
+        strong_key = _yaml.node_get(meta, str, 'strong')
+        weak_key = _yaml.node_get(meta, str, 'weak')
 
         assert key in (strong_key, weak_key)
 
-        metadata_keys[strong_key] = meta
-        metadata_keys[weak_key] = meta
+        metadata_keys[strong_key] = _yaml.node_sanitize(meta)
+        metadata_keys[weak_key] = _yaml.node_sanitize(meta)
 
         return (strong_key, weak_key, metadata_keys)
 
@@ -351,8 +356,8 @@ class Artifact():
 
         # Cache it under both strong and weak keys
         strong_key, weak_key, metadata_keys = self.get_metadata_keys(key, metadata_keys)
-        metadata_dependencies[strong_key] = meta
-        metadata_dependencies[weak_key] = meta
+        metadata_dependencies[strong_key] = _yaml.node_sanitize(meta)
+        metadata_dependencies[weak_key] = _yaml.node_sanitize(meta)
 
         return (meta, metadata_dependencies, metadata_keys)
 
@@ -385,7 +390,7 @@ class Artifact():
         # Parse the expensive yaml now and cache the result
         meta_file = artifact_vdir._objpath('meta', 'workspaced.yaml')
         meta = _yaml.load(meta_file, shortname='meta/workspaced.yaml')
-        workspaced = meta['workspaced']
+        workspaced = _yaml.node_get(meta, bool, 'workspaced')
 
         # Cache it under both strong and weak keys
         strong_key, weak_key, metadata_keys = self.get_metadata_keys(key, metadata_keys)
@@ -424,7 +429,7 @@ class Artifact():
         # Parse the expensive yaml now and cache the result
         meta_file = artifact_vdir._objpath('meta', 'workspaced-dependencies.yaml')
         meta = _yaml.load(meta_file, shortname='meta/workspaced-dependencies.yaml')
-        workspaced = meta['workspaced-dependencies']
+        workspaced = _yaml.node_sanitize(_yaml.node_get(meta, list, 'workspaced-dependencies'))
 
         # Cache it under both strong and weak keys
         strong_key, weak_key, metadata_keys = self.get_metadata_keys(key, metadata_keys)

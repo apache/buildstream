@@ -411,6 +411,69 @@ class Plugin():
         """
         return _yaml.node_get(node, expected_type, member_name, default_value=default, allow_none=allow_none)
 
+    def node_set_member(self, node, key, value):
+        """Set the value of a node member
+        Args:
+           node (node): A dictionary loaded from YAML
+           key (str): The key name
+           value: The value
+
+        Returns:
+           None
+
+        Raises:
+           None
+
+        **Example:**
+
+        .. code:: python
+
+          # Set a string 'tomjon' in node[name]
+          self.node_set_member(node, 'name', 'tomjon')
+        """
+        _yaml.node_set(node, key, value)
+
+    def node_has_member(self, node, key):
+        """Essentially the `key in node` test
+        Args:
+           node (node): A dictionary loaded from YAML
+           key (str): The key name
+
+        Returns:
+           bool: Whether or not key is in node
+
+        Raises:
+           None
+
+        **Example:**
+
+        .. code:: python
+
+          # To see if `name` is set in `node
+          present = self.node_has_member(node, 'name')
+        """
+        return _yaml.node_contains(node, key)
+
+    def new_empty_node(self):
+        """Create an empty 'Node' object to be handled by BuildStream's core
+        Args:
+           None
+
+        Returns:
+           Node: An empty Node object
+
+        Raises:
+           None
+
+        **Example:**
+
+        .. code:: python
+
+          # Create an empty Node object to store metadata information
+          metadata = self.new_empty_node()
+        """
+        return _yaml.new_empty_node()
+
     def node_get_project_path(self, node, key, *,
                               check_is_file=False, check_is_dir=False):
         """Fetches a project path from a dictionary node and validates it
@@ -841,10 +904,12 @@ class Plugin():
         else:
             silenced_warnings = set()
             project = self.__project
-            plugin_overrides = {**project.element_overrides, **project.source_overrides}
 
-            for key, value in self.node_items(plugin_overrides):
-                if value.get('suppress-deprecation-warnings', False):
+            for key, value in self.node_items(project.element_overrides):
+                if _yaml.node_get(value, bool, 'suppress-deprecation-warnings', default_value=False):
+                    silenced_warnings.add(key)
+            for key, value in self.node_items(project.source_overrides):
+                if _yaml.node_get(value, bool, 'suppress-deprecation-warnings', default_value=False):
                     silenced_warnings.add(key)
 
             return self.get_kind() in silenced_warnings

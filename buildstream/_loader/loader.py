@@ -27,7 +27,6 @@ from .. import _yaml
 from ..element import Element
 from .._profile import Topics, profile_start, profile_end
 from .._includes import Includes
-from .._yamlcache import YamlCache
 
 from .types import Symbol
 from .loadelement import LoadElement, _extract_depends_from_node
@@ -108,19 +107,13 @@ class Loader():
         #
         target_elements = []
 
-        # XXX This will need to be changed to the context's top-level project if this method
-        # is ever used for subprojects
-        top_dir = self.project.directory
-
-        cache_file = YamlCache.get_cache_file(top_dir)
-        with YamlCache.open(self._context, cache_file) as yaml_cache:
-            for target in targets:
-                profile_start(Topics.LOAD_PROJECT, target)
-                _junction, name, loader = self._parse_name(target, rewritable, ticker,
-                                                           fetch_subprojects=fetch_subprojects)
-                element = loader._load_file(name, rewritable, ticker, fetch_subprojects, yaml_cache)
-                target_elements.append(element)
-                profile_end(Topics.LOAD_PROJECT, target)
+        for target in targets:
+            profile_start(Topics.LOAD_PROJECT, target)
+            _junction, name, loader = self._parse_name(target, rewritable, ticker,
+                                                       fetch_subprojects=fetch_subprojects)
+            element = loader._load_file(name, rewritable, ticker, fetch_subprojects)
+            target_elements.append(element)
+            profile_end(Topics.LOAD_PROJECT, target)
 
         #
         # Now that we've resolve the dependencies, scan them for circular dependencies
@@ -128,7 +121,7 @@ class Loader():
 
         # Set up a dummy element that depends on all top-level targets
         # to resolve potential circular dependencies between them
-        dummy_target = LoadElement("", "", self)
+        dummy_target = LoadElement(_yaml.new_empty_node(), "", self)
         dummy_target.dependencies.extend(
             LoadElement.Dependency(element, Symbol.RUNTIME)
             for element in target_elements
@@ -186,13 +179,12 @@ class Loader():
     #    rewritable (bool): Whether we should load in round trippable mode
     #    ticker (callable): A callback to report loaded filenames to the frontend
     #    fetch_subprojects (bool): Whether to fetch subprojects while loading
-    #    yaml_cache (YamlCache): A yaml cache
     #    provenance (Provenance): The location from where the file was referred to, or None
     #
     # Returns:
     #    (LoadElement): A loaded LoadElement
     #
-    def _load_file(self, filename, rewritable, ticker, fetch_subprojects, yaml_cache=None, provenance=None):
+    def _load_file(self, filename, rewritable, ticker, fetch_subprojects, provenance=None):
 
         # Silently ignore already loaded files
         if filename in self._elements:
@@ -206,7 +198,7 @@ class Loader():
         fullpath = os.path.join(self._basedir, filename)
         try:
             node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable,
-                              project=self.project, yaml_cache=yaml_cache)
+                              project=self.project)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_FILE:
 
@@ -264,14 +256,14 @@ class Loader():
         # Load all dependency files for the new LoadElement
         for dep in dependencies:
             if dep.junction:
-                self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, yaml_cache, dep.provenance)
+                self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, dep.provenance)
                 loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
                                           fetch_subprojects=fetch_subprojects, provenance=dep.provenance)
             else:
                 loader = self
 
             dep_element = loader._load_file(dep.name, rewritable, ticker,
-                                            fetch_subprojects, yaml_cache, dep.provenance)
+                                            fetch_subprojects, dep.provenance)
 
             if _yaml.node_get(dep_element.node, str, Symbol.KIND) == 'junction':
                 raise LoadError(LoadErrorReason.INVALID_DATA,
@@ -428,12 +420,12 @@ class Loader():
         for i in range(len(sources)):
             source = _yaml.node_get(node, Mapping, Symbol.SOURCES, indices=[i])
             kind = _yaml.node_get(source, str, Symbol.KIND)
-            del source[Symbol.KIND]
+            _yaml.node_del(source, Symbol.KIND)
 
             # Directory is optional
             directory = _yaml.node_get(source, str, Symbol.DIRECTORY, default_value=None)
             if directory:
-                del source[Symbol.DIRECTORY]
+                _yaml.node_del(source, Symbol.DIRECTORY)
 
             index = sources.index(source)
             meta_source = MetaSource(element.name, index, element_kind, kind, source, directory)

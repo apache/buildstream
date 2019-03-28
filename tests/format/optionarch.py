@@ -64,7 +64,7 @@ def test_conditional(cli, datafiles, uname, value, expected):
         result.assert_success()
 
         loaded = _yaml.load_data(result.output)
-        assert loaded['result'] == expected
+        assert _yaml.node_get(loaded, str, 'result') == expected
 
 
 @pytest.mark.datafiles(DATA_DIR)
