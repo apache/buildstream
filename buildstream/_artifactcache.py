@@ -17,6 +17,8 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+import os
+
 from ._basecache import BaseCache
 from .types import _KeyStrength
 from ._exceptions import ArtifactError, CASCacheError, CASError
@@ -54,6 +56,10 @@ class ArtifactCache(BaseCache):
         super().__init__(context)
 
         self._required_elements = set()       # The elements required for this session
+
+        # create artifact directory
+        self.artifactdir = context.artifactdir
+        os.makedirs(self.artifactdir, exist_ok=True)
 
         self.casquota.add_ref_callbacks(self.required_artifacts)
         self.casquota.add_remove_callbacks((lambda x: not x.startswith('@'), self.remove))
