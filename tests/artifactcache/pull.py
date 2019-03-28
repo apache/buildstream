@@ -257,7 +257,8 @@ def test_pull_tree(cli, tmpdir, datafiles):
             utils._kill_process_tree(process.pid)
             raise
 
-        assert directory_hash and directory_size
+        # Directory size now zero with AaaP and stack element commit #1cbc5e63dc
+        assert directory_hash and not directory_size
 
         directory_digest = remote_execution_pb2.Digest(hash=directory_hash,
                                                        size_bytes=directory_size)

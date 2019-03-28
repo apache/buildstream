@@ -741,6 +741,7 @@ class Element(Plugin):
             #
             if self.__artifacts.contains(self, workspace.last_successful):
                 last_successful = Artifact(self, context, strong_key=workspace.last_successful)
+                # Get a dict of dependency strong keys
                 old_dep_keys = last_successful.get_metadata_dependencies()
             else:
                 # Last successful build is no longer in the artifact cache,
@@ -765,12 +766,12 @@ class Element(Plugin):
 
                 if dep.name in old_dep_keys:
                     key_new = dep._get_cache_key()
-                    key_old = _yaml.node_get(old_dep_keys, str, dep.name)
+                    key_old = old_dep_keys[dep.name]
 
                     # We only need to worry about modified and added
                     # files, since removed files will be picked up by
                     # build systems anyway.
-                    to_update, _, added = self.__artifacts.diff(dep, key_old, key_new, subdir='files')
+                    to_update, _, added = self.__artifacts.diff(dep, key_old, key_new)
                     workspace.add_running_files(dep.name, to_update + added)
                     to_update.extend(workspace.running_files[dep.name])
 
@@ -1882,9 +1883,9 @@ class Element(Plugin):
         # in user context, as to complete a partial artifact
         subdir, _ = self.__pull_directories()
 
-        if self.__strong_cached and subdir:
+        if self.__strong_cached and subdir == 'buildtree':
             # If we've specified a subdir, check if the subdir is cached locally
-            if self.__artifacts.contains_subdir_artifact(self, self.__strict_cache_key, subdir):
+            if self.__artifact.cached_buildtree():
                 return False
         elif self.__strong_cached:
             return False
@@ -1990,8 +1991,8 @@ class Element(Plugin):
             self.warn("Not pushing tainted artifact.")
             return False
 
-        # Push all keys used for local commit
-        pushed = self.__artifacts.push(self, self.__get_cache_keys_for_commit())
+        # Push all keys used for local commit via the Artifact member
+        pushed = self.__artifacts.push(self, self.__artifact)
         if not pushed:
             return False
 
