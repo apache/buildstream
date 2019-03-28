@@ -355,3 +355,43 @@ def test_track_error_cannot_write_file(cli, tmpdir, datafiles):
         result.assert_task_error(ErrorDomain.SOURCE, 'save-ref-error')
     finally:
         os.chmod(element_path, stat.S_IMODE(st.st_mode))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_no_needless_overwrite(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    dev_files_path = os.path.join(project, 'files', 'dev-files')
+    element_path = os.path.join(project, 'elements')
+    target = 'track-test-target.bst'
+
+    # Create our repo object of the given source type with
+    # the dev files, and then collect the initial ref.
+    #
+    repo = create_repo('git', str(tmpdir))
+    repo.create(dev_files_path)
+
+    # Write out our test target and assert it exists
+    generate_element(repo, os.path.join(element_path, target))
+    path_to_target = os.path.join(element_path, target)
+    assert os.path.exists(path_to_target)
+    creation_mtime = os.path.getmtime(path_to_target)
+
+    # Assert tracking is needed
+    states = cli.get_element_states(project, [target])
+    assert states[target] == 'no reference'
+
+    # Perform the track
+    result = cli.run(project=project, args=['source', 'track', target])
+    result.assert_success()
+
+    track1_mtime = os.path.getmtime(path_to_target)
+
+    assert creation_mtime != track1_mtime
+
+    # Now (needlessly) track again
+    result = cli.run(project=project, args=['source', 'track', target])
+    result.assert_success()
+
+    track2_mtime = os.path.getmtime(path_to_target)
+
+    assert track1_mtime == track2_mtime
