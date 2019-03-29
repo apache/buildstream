@@ -451,7 +451,7 @@ def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel,
     assert type(node) is Node
 
     path = key
-    if indices is None:
+    if indices:
         if default_value is _sentinel:
             value = node[0].get(key, Node(default_value, None, 0, 0))
         else:
