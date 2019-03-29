@@ -30,7 +30,7 @@ from . import _cachekey
 from . import _site
 from . import _yaml
 from ._artifactelement import ArtifactElement
-from ._profile import Topics, profile_start, profile_end
+from ._profile import Topics, PROFILER
 from ._exceptions import LoadError, LoadErrorReason
 from ._options import OptionPool
 from ._artifactcache import ArtifactCache
@@ -156,9 +156,8 @@ class Project():
         self._fully_loaded = False
         self._project_includes = None
 
-        profile_start(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
-        self._load(parent_loader=parent_loader)
-        profile_end(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-'))
+        with PROFILER.profile(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-')):
+            self._load(parent_loader=parent_loader)
 
         self._partially_loaded = True
 

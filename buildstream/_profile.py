@@ -18,17 +18,15 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        James Ennis <james.ennis@codethink.co.uk>
+#        Benjamin Schubert <bschubert15@bloomberg.net>
 
+
+import contextlib
 import cProfile
 import pstats
 import os
 import datetime
 import time
-
-# Track what profile topics are active
-active_topics = set()
-active_profiles = {}
-initialized = False
 
 
 # Use the topic values here to decide what to profile
@@ -44,110 +42,119 @@ initialized = False
 class Topics():
     CIRCULAR_CHECK = 'circ-dep-check'
     SORT_DEPENDENCIES = 'sort-deps'
-    LOAD_LOADER = 'load-loader'
     LOAD_CONTEXT = 'load-context'
     LOAD_PROJECT = 'load-project'
     LOAD_PIPELINE = 'load-pipeline'
     LOAD_SELECTION = 'load-selection'
     SCHEDULER = 'scheduler'
-    SHOW = 'show'
-    ARTIFACT_RECEIVE = 'artifact-receive'
     ALL = 'all'
 
 
-class Profile():
-    def __init__(self, topic, key, message):
-        self.message = message
-        self.key = topic + '-' + key
-        self.start = time.time()
+class _Profile:
+    def __init__(self, key, message):
         self.profiler = cProfile.Profile()
+        self._additional_pstats_files = []
+
+        self.key = key
+        self.message = message
+
+        self.start_time = time.time()
+        filename_template = os.path.join(
+            os.getcwd(),
+            "profile-{}-{}".format(
+                datetime.datetime.fromtimestamp(self.start_time).strftime("%Y%m%dT%H%M%S"),
+                self.key.replace("/", "-").replace(".", "-")
+            )
+        )
+        self.log_filename = "{}.log".format(filename_template)
+        self.cprofile_filename = "{}.cprofile".format(filename_template)
+
+    def __enter__(self):
+        self.start()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.stop()
+        self.save()
+
+    def merge(self, profile):
+        self._additional_pstats_files.append(profile.cprofile_filename)
+
+    def start(self):
         self.profiler.enable()
 
-    def end(self):
+    def stop(self):
         self.profiler.disable()
 
-        dt = datetime.datetime.fromtimestamp(self.start)
-        timestamp = dt.strftime('%Y%m%dT%H%M%S')
+    def save(self):
+        heading = "\n".join([
+            "-" * 64,
+            "Profile for key: {}".format(self.key),
+            "Started at: {}".format(self.start_time),
+            "\n\t{}".format(self.message) if self.message else "",
+            "-" * 64,
+            ""  # for a final new line
+        ])
 
-        filename = self.key.replace('/', '-')
-        filename = filename.replace('.', '-')
-        filename = os.path.join(os.getcwd(), 'profile-' + timestamp + '-' + filename)
+        with open(self.log_filename, "a") as fp:
+            stats = pstats.Stats(self.profiler, *self._additional_pstats_files, stream=fp)
 
-        time_ = dt.strftime('%Y-%m-%d %H:%M:%S')  # Human friendly format
-        self.__write_log(filename + '.log', time_)
+            # Create the log file
+            fp.write(heading)
+            stats.sort_stats("cumulative")
+            stats.print_stats()
 
-        self.__write_binary(filename + '.cprofile')
-
-    ########################################
-    #            Private Methods           #
-    ########################################
-
-    def __write_log(self, filename, time_):
-        with open(filename, "a", encoding="utf-8") as f:
-            heading = '================================================================\n'
-            heading += 'Profile for key: {}\n'.format(self.key)
-            heading += 'Started at: {}\n'.format(time_)
-            if self.message:
-                heading += '\n    {}'.format(self.message)
-            heading += '================================================================\n'
-            f.write(heading)
-            ps = pstats.Stats(self.profiler, stream=f).sort_stats('cumulative')
-            ps.print_stats()
-
-    def __write_binary(self, filename):
-        self.profiler.dump_stats(filename)
+            # Dump the cprofile
+            stats.dump_stats(self.cprofile_filename)
 
 
-# profile_start()
-#
-# Start profiling for a given topic.
-#
-# Args:
-#    topic (str): A topic name
-#    key (str): A key for this profile run
-#    message (str): An optional message to print in profile results
-#
-def profile_start(topic, key, message=None):
-    if not profile_enabled(topic):
-        return
+class _Profiler:
+    def __init__(self, settings):
+        self.active_topics = set()
+        self.enabled_topics = set()
+        self._active_profilers = []
 
-    # Start profiling and hold on to the key
-    profile = Profile(topic, key, message)
-    assert active_profiles.get(profile.key) is None
-    active_profiles[profile.key] = profile
+        if settings:
+            self.enabled_topics = {
+                topic
+                for topic in settings.split(":")
+            }
+
+    @contextlib.contextmanager
+    def profile(self, topic, key, message=None):
+        if not self._is_profile_enabled(topic):
+            yield
+            return
+
+        if self._active_profilers:
+            # we are in a nested profiler, stop the parent
+            self._active_profilers[-1].stop()
+
+        key = "{}-{}".format(topic, key)
+
+        assert key not in self.active_topics
+        self.active_topics.add(key)
+
+        profiler = _Profile(key, message)
+        self._active_profilers.append(profiler)
+
+        with profiler:
+            yield
+
+        self.active_topics.remove(key)
+
+        # Remove the last profiler from the list
+        self._active_profilers.pop()
+
+        if self._active_profilers:
+            # We were in a previous profiler, add the previous results to it
+            # and reenable it.
+            parent_profiler = self._active_profilers[-1]
+            parent_profiler.merge(profiler)
+            parent_profiler.start()
+
+    def _is_profile_enabled(self, topic):
+        return topic in self.enabled_topics or Topics.ALL in self.enabled_topics
 
 
-# profile_end()
-#
-# Ends a profiling session previously
-# started with profile_start()
-#
-# Args:
-#    topic (str): A topic name
-#    key (str): A key for this profile run
-#
-def profile_end(topic, key):
-    if not profile_enabled(topic):
-        return
-
-    topic_key = topic + '-' + key
-    profile = active_profiles.get(topic_key)
-    assert profile
-    profile.end()
-    del active_profiles[topic_key]
-
-
-def profile_init():
-    global initialized  # pylint: disable=global-statement
-    if not initialized:
-        setting = os.getenv('BST_PROFILE')
-        if setting:
-            topics = setting.split(':')
-            for topic in topics:
-                active_topics.add(topic)
-        initialized = True
-
-
-def profile_enabled(topic):
-    profile_init()
-    return topic in active_topics or Topics.ALL in active_topics
+# Export a profiler to be used by BuildStream
+PROFILER = _Profiler(os.getenv("BST_PROFILE"))

@@ -30,7 +30,7 @@ from . import _site
 from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
-from ._profile import Topics, profile_start, profile_end
+from ._profile import Topics, PROFILER
 from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASQuota, CASCacheUsage
@@ -181,9 +181,8 @@ class Context():
     # override that configuration with the configuration file indicated
     # by *config*, if any was specified.
     #
+    @PROFILER.profile(Topics.LOAD_CONTEXT, "load")
     def load(self, config=None):
-        profile_start(Topics.LOAD_CONTEXT, 'load')
-
         # If a specific config file is not specified, default to trying
         # a $XDG_CONFIG_HOME/buildstream.conf file
         #
@@ -315,8 +314,6 @@ class Context():
                                 ['artifacts', 'source-caches', 'options',
                                  'strict', 'default-mirror',
                                  'remote-execution'])
-
-        profile_end(Topics.LOAD_CONTEXT, 'load')
 
     @property
     def artifactcache(self):
