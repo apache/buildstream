@@ -51,18 +51,6 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
             'cache': {'cache-buildtrees': 'always'},
         })
 
-        @contextmanager
-        def cas_extract_buildtree(digest):
-            extractdir = tempfile.mkdtemp(prefix="tmp", dir=str(tmpdir))
-            try:
-                cas = CASCache(str(tmpdir))
-                cas.checkout(extractdir, digest)
-                yield os.path.join(extractdir, 'buildtree')
-            except FileNotFoundError:
-                yield None
-            finally:
-                utils._force_rmtree(extractdir)
-
         # Build autotools element, checked pushed, delete local
         result = cli2.run(project=project, args=['build', element_name])
         assert result.exit_code == 0
@@ -88,11 +76,11 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         result = cli2.run(project=project, args=['artifact', 'pull', element_name])
         assert element_name in result.get_pulled_elements()
         elementdigest = share1.has_artifact('test', element_name, cli2.get_element_key(project, element_name))
-        with cas_extract_buildtree(elementdigest) as buildtreedir:
+        with cli2.artifact.extract_buildtree(tmpdir, elementdigest) as buildtreedir:
             assert not buildtreedir
         result = cli2.run(project=project, args=['--pull-buildtrees', 'artifact', 'pull', element_name])
         assert element_name in result.get_pulled_elements()
-        with cas_extract_buildtree(elementdigest) as buildtreedir:
+        with cli2.artifact.extract_buildtree(tmpdir, elementdigest) as buildtreedir:
             assert os.path.isdir(buildtreedir)
         default_state(cli2, tmpdir, share1)
 
@@ -151,7 +139,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         result = cli2.run(project=project, args=['--pull-buildtrees', 'artifact', 'push', element_name])
         assert "Attempting to fetch missing artifact buildtrees" in result.stderr
         assert element_name not in result.get_pulled_elements()
-        with cas_extract_buildtree(elementdigest) as buildtreedir:
+        with cli2.artifact.extract_buildtree(tmpdir, elementdigest) as buildtreedir:
             assert not buildtreedir
         assert element_name not in result.get_pushed_elements()
         assert not share3.has_artifact('test', element_name, cli2.get_element_key(project, element_name))
@@ -164,7 +152,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         result = cli2.run(project=project, args=['--pull-buildtrees', 'artifact', 'push', element_name])
         assert "Attempting to fetch missing artifact buildtrees" in result.stderr
         assert element_name in result.get_pulled_elements()
-        with cas_extract_buildtree(elementdigest) as buildtreedir:
+        with cli2.artifact.extract_buildtree(tmpdir, elementdigest) as buildtreedir:
             assert os.path.isdir(buildtreedir)
         assert element_name in result.get_pushed_elements()
         assert share3.has_artifact('test', element_name, cli2.get_element_key(project, element_name))

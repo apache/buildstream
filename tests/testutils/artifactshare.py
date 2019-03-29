@@ -149,13 +149,9 @@ class ArtifactShare():
             tree = self.cas.resolve_ref(artifact_key)
             reachable = set()
             try:
-                self.cas._reachable_refs_dir(reachable, tree, update_mtime=False)
+                self.cas._reachable_refs_dir(reachable, tree, update_mtime=False, check_exists=True)
             except FileNotFoundError:
                 return None
-            for digest in reachable:
-                object_name = os.path.join(self.cas.casdir, 'objects', digest[:2], digest[2:])
-                if not os.path.exists(object_name):
-                    return None
             return tree
         except CASError:
             return None

@@ -95,15 +95,14 @@ def test_pull(cli, tmpdir, datafiles):
         context.load(config=user_config_file)
         context.set_message_handler(message_handler)
 
-        # Load the project and CAS cache
+        # Load the project
         project = Project(project_dir, context)
         project.ensure_fully_loaded()
-        cas = context.artifactcache
 
         # Assert that the element's artifact is **not** cached
         element = project.load_elements(['target.bst'])[0]
         element_key = cli.get_element_key(project_dir, 'target.bst')
-        assert not cas.contains(element, element_key)
+        assert not cli.artifact.is_cached(cache_dir, element, element_key)
 
         queue = multiprocessing.Queue()
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
@@ -124,7 +123,7 @@ def test_pull(cli, tmpdir, datafiles):
             raise
 
         assert not error
-        assert cas.contains(element, element_key)
+        assert cli.artifact.is_cached(cache_dir, element, element_key)
 
 
 def _test_pull(user_config_file, project_dir, cache_dir,
@@ -209,11 +208,10 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Assert that the element's artifact is cached
         element = project.load_elements(['target.bst'])[0]
         element_key = cli.get_element_key(project_dir, 'target.bst')
-        assert artifactcache.contains(element, element_key)
+        assert cli.artifact.is_cached(rootcache_dir, element, element_key)
 
         # Retrieve the Directory object from the cached artifact
-        artifact_ref = element.get_artifact_name(element_key)
-        artifact_digest = cas.resolve_ref(artifact_ref)
+        artifact_digest = cli.artifact.get_digest(rootcache_dir, element, element_key)
 
         queue = multiprocessing.Queue()
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
