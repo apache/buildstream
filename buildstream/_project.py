@@ -110,6 +110,8 @@ class Project():
             self.directory = directory
             self._invoked_from_workspace_element = None
 
+        self._absolute_directory_path = Path(self.directory).resolve()
+
         # Absolute path to where elements are loaded from within the project
         self.element_path = None
 
@@ -266,11 +268,11 @@ class Project():
                            check_is_file=False, check_is_dir=False):
         path_str = _yaml.node_get(node, str, key)
         path = Path(path_str)
-        project_dir_path = Path(self.directory)
+        full_path = self._absolute_directory_path / path
 
         provenance = _yaml.node_get_provenance(node, key=key)
 
-        if (project_dir_path / path).is_symlink():
+        if full_path.is_symlink():
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
                             "{}: Specified path '{}' must not point to "
                             "symbolic links "
@@ -283,7 +285,6 @@ class Project():
                             .format(provenance, path_str))
 
         try:
-            full_path = (project_dir_path / path)
             if sys.version_info[0] == 3 and sys.version_info[1] < 6:
                 full_resolved_path = full_path.resolve()
             else:
@@ -293,8 +294,8 @@ class Project():
                             "{}: Specified path '{}' does not exist"
                             .format(provenance, path_str))
 
-        is_inside = project_dir_path.resolve() in full_resolved_path.parents or (
-            full_resolved_path == project_dir_path)
+        is_inside = self._absolute_directory_path in full_resolved_path.parents or (
+            full_resolved_path == self._absolute_directory_path)
 
         if not is_inside:
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
