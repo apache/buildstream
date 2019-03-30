@@ -18,7 +18,7 @@ DATA_DIR = os.path.join(
 
 # Test that the project builds successfully
 @pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
-                    reason='Examples are writtent for x86-64')
+                    reason='Examples are written for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_build(cli, datafiles):
@@ -39,7 +39,7 @@ def test_autotools_build(cli, datafiles):
 
 # Test the unmodified hello command works as expected.
 @pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
-                    reason='Examples are writtent for x86-64')
+                    reason='Examples are written for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_run_unmodified_hello(cli, datafiles):
@@ -72,7 +72,7 @@ def test_open_workspace(cli, tmpdir, datafiles):
 
 # Test making a change using the workspace
 @pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
-                    reason='Examples are writtent for x86-64')
+                    reason='Examples are written for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_make_change_in_workspace(cli, tmpdir, datafiles):
