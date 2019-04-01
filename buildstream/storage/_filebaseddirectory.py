@@ -79,7 +79,7 @@ class FileBasedDirectory(Directory):
                      can_link=False):
         """ See superclass Directory for arguments """
 
-        from ._casbaseddirectory import CasBasedDirectory
+        from ._casbaseddirectory import CasBasedDirectory  # pylint: disable=cyclic-import
 
         if isinstance(external_pathspec, CasBasedDirectory):
             if can_link and not update_mtime:

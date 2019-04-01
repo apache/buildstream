@@ -28,8 +28,7 @@ import grpc
 
 from .. import utils
 from .._message import Message, MessageType
-from . import Sandbox, SandboxCommandError
-from .sandbox import _SandboxBatch
+from .sandbox import Sandbox, SandboxCommandError, _SandboxBatch
 from ..storage._casbaseddirectory import CasBasedDirectory
 from .. import _signals
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc

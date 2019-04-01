@@ -50,11 +50,11 @@ class Platform():
             backend = 'unix'
 
         if backend == 'linux':
-            from .linux import Linux as PlatformImpl
+            from .linux import Linux as PlatformImpl  # pylint: disable=cyclic-import
         elif backend == 'darwin':
-            from .darwin import Darwin as PlatformImpl
+            from .darwin import Darwin as PlatformImpl  # pylint: disable=cyclic-import
         elif backend == 'unix':
-            from .unix import Unix as PlatformImpl
+            from .unix import Unix as PlatformImpl  # pylint: disable=cyclic-import
         else:
             raise PlatformError("No such platform: '{}'".format(backend))
 

@@ -19,7 +19,7 @@ import os
 
 from ..sandbox import SandboxDummy
 
-from . import Platform
+from .platform import Platform
 
 
 class Darwin(Platform):

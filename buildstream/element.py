@@ -93,16 +93,16 @@ from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, \
     ErrorDomain, SourceCacheError
 from .utils import UtilError
-from . import Plugin, Consistency, Scope
-from . import SandboxFlags, SandboxCommandError
 from . import utils
 from . import _cachekey
 from . import _signals
 from . import _site
 from ._platform import Platform
+from .plugin import Plugin
+from .sandbox import SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import _KeyStrength, CoreWarnings, _UniquePriorityQueue
+from .types import Consistency, CoreWarnings, Scope, _KeyStrength, _UniquePriorityQueue
 from ._artifact import Artifact
 
 from .storage.directory import Directory

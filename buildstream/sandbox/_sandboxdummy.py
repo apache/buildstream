@@ -17,7 +17,7 @@
 #  Authors:
 
 from .._exceptions import SandboxError
-from . import Sandbox
+from .sandbox import Sandbox
 
 
 class SandboxDummy(Sandbox):

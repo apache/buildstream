@@ -41,7 +41,9 @@ from .. import _yaml
 from .._scheduler import ElementJob, JobStatus
 
 # Import frontend assets
-from . import Profile, LogLine, Status
+from .profile import Profile
+from .status import Status
+from .widget import LogLine
 
 # Intendation for all logging
 INDENT = 4
@@ -127,7 +129,7 @@ class App():
     def create(cls, *args, **kwargs):
         if sys.platform.startswith('linux'):
             # Use an App with linux specific features
-            from .linuxapp import LinuxApp
+            from .linuxapp import LinuxApp  # pylint: disable=cyclic-import
             return LinuxApp(*args, **kwargs)
         else:
             # The base App() class is default

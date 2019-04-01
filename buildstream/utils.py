@@ -485,7 +485,7 @@ def get_bst_version():
        (int): The minor version
     """
     # Import this only conditionally, it's not resolved at bash complete time
-    from . import __version__
+    from . import __version__  # pylint: disable=cyclic-import
     versions = __version__.split('.')[:2]
 
     if versions[0] == '0+untagged':

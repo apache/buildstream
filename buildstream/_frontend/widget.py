@@ -26,7 +26,7 @@ import textwrap
 from ruamel import yaml
 import click
 
-from . import Profile
+from .profile import Profile
 from .. import Element, Consistency, Scope
 from .. import _yaml
 from .. import __version__ as bst_version

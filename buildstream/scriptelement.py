@@ -35,7 +35,9 @@ implementations.
 import os
 from collections import OrderedDict
 
-from . import Element, ElementError, Scope, SandboxFlags
+from .element import Element, ElementError
+from .sandbox import SandboxFlags
+from .types import Scope
 
 
 class ScriptElement(Element):
