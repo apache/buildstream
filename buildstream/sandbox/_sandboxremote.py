@@ -277,7 +277,7 @@ class SandboxRemote(Sandbox):
         cascache = context.get_cascache()
         casremote = CASRemote(self.storage_remote_spec)
 
-        # Now do a pull to ensure we have the necessary parts.
+        # Now do a pull to ensure we have the full directory structure.
         dir_digest = cascache.pull_tree(casremote, tree_digest)
         if dir_digest is None or not dir_digest.hash or not dir_digest.size_bytes:
             raise SandboxError("Output directory structure pulling from remote failed.")
@@ -288,6 +288,14 @@ class SandboxRemote(Sandbox):
 
         new_dir = CasBasedDirectory(context.artifactcache.cas, digest=dir_digest)
         self._set_virtual_directory(new_dir)
+
+        # Fetch the file blobs
+        required_blobs = cascache.required_blobs_for_directory(dir_digest)
+        local_missing_blobs = cascache.local_missing_blobs(required_blobs)
+        remote_missing_blobs = cascache.fetch_blobs(casremote, local_missing_blobs)
+        if remote_missing_blobs:
+            raise SandboxError("{} output files are missing on the CAS server"
+                               .format(len(remote_missing_blobs)))
 
     def _run(self, command, flags, *, cwd, env):
         stdout, stderr = self._get_output()
