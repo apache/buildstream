@@ -1047,11 +1047,6 @@ class CASCache():
 
             tree.children.extend([tree.root])
             for directory in tree.children:
-                for filenode in directory.files:
-                    self._ensure_blob(remote, filenode.digest)
-
-                # place directory blob only in final location when we've downloaded
-                # all referenced blobs to avoid dangling references in the repository
                 dirbuffer = directory.SerializeToString()
                 dirdigest = self.add_object(buffer=dirbuffer)
                 assert dirdigest.size_bytes == len(dirbuffer)
