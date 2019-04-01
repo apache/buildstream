@@ -276,7 +276,7 @@ class CASCache():
             self._fetch_directory(remote, tree)
 
             # Fetch files, excluded_subdirs determined in pullqueue
-            required_blobs = self._required_blobs(tree, excluded_subdirs=excluded_subdirs)
+            required_blobs = self.required_blobs_for_directory(tree, excluded_subdirs=excluded_subdirs)
             missing_blobs = self.local_missing_blobs(required_blobs)
             if missing_blobs:
                 self.fetch_blobs(remote, missing_blobs)
@@ -647,7 +647,7 @@ class CASCache():
     # Returns: List of missing Digest objects
     #
     def remote_missing_blobs_for_directory(self, remote, digest):
-        required_blobs = self._required_blobs(digest)
+        required_blobs = self.required_blobs_for_directory(digest)
 
         missing_blobs = dict()
         # Limit size of FindMissingBlobs request
@@ -684,6 +684,36 @@ class CASCache():
             if not os.path.exists(objpath):
                 missing_blobs.append(digest)
         return missing_blobs
+
+    # required_blobs_for_directory():
+    #
+    # Generator that returns the Digests of all blobs in the tree specified by
+    # the Digest of the toplevel Directory object.
+    #
+    def required_blobs_for_directory(self, directory_digest, *, excluded_subdirs=None):
+        if not excluded_subdirs:
+            excluded_subdirs = []
+
+        # parse directory, and recursively add blobs
+        d = remote_execution_pb2.Digest()
+        d.hash = directory_digest.hash
+        d.size_bytes = directory_digest.size_bytes
+        yield d
+
+        directory = remote_execution_pb2.Directory()
+
+        with open(self.objpath(directory_digest), 'rb') as f:
+            directory.ParseFromString(f.read())
+
+        for filenode in directory.files:
+            d = remote_execution_pb2.Digest()
+            d.hash = filenode.digest.hash
+            d.size_bytes = filenode.digest.size_bytes
+            yield d
+
+        for dirnode in directory.directories:
+            if dirnode.name not in excluded_subdirs:
+                yield from self.required_blobs_for_directory(dirnode.digest)
 
     ################################################
     #             Local Private Methods            #
@@ -880,31 +910,6 @@ class CASCache():
 
         for dirnode in directory.directories:
             self._reachable_refs_dir(reachable, dirnode.digest, update_mtime=update_mtime, check_exists=check_exists)
-
-    def _required_blobs(self, directory_digest, *, excluded_subdirs=None):
-        if not excluded_subdirs:
-            excluded_subdirs = []
-
-        # parse directory, and recursively add blobs
-        d = remote_execution_pb2.Digest()
-        d.hash = directory_digest.hash
-        d.size_bytes = directory_digest.size_bytes
-        yield d
-
-        directory = remote_execution_pb2.Directory()
-
-        with open(self.objpath(directory_digest), 'rb') as f:
-            directory.ParseFromString(f.read())
-
-        for filenode in directory.files:
-            d = remote_execution_pb2.Digest()
-            d.hash = filenode.digest.hash
-            d.size_bytes = filenode.digest.size_bytes
-            yield d
-
-        for dirnode in directory.directories:
-            if dirnode.name not in excluded_subdirs:
-                yield from self._required_blobs(dirnode.digest)
 
     # _temporary_object():
     #
