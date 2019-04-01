@@ -649,9 +649,21 @@ class CASCache():
     def remote_missing_blobs_for_directory(self, remote, digest):
         required_blobs = self.required_blobs_for_directory(digest)
 
+        return self.remote_missing_blobs(remote, required_blobs)
+
+    # remote_missing_blobs():
+    #
+    # Determine which blobs are missing on the remote.
+    #
+    # Args:
+    #     blobs (Digest): The directory digest
+    #
+    # Returns: List of missing Digest objects
+    #
+    def remote_missing_blobs(self, remote, blobs):
         missing_blobs = dict()
         # Limit size of FindMissingBlobs request
-        for required_blobs_group in _grouper(required_blobs, 512):
+        for required_blobs_group in _grouper(blobs, 512):
             request = remote_execution_pb2.FindMissingBlobsRequest(instance_name=remote.spec.instance_name)
 
             for required_digest in required_blobs_group:
