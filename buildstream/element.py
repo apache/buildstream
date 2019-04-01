@@ -2407,6 +2407,8 @@ class Element(Plugin):
 
             self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
 
+            output_files_required = context.require_artifact_files or self._artifact_files_required()
+
             sandbox = SandboxRemote(context, project,
                                     directory,
                                     plugin=self,
@@ -2415,7 +2417,8 @@ class Element(Plugin):
                                     config=config,
                                     specs=self.__remote_execution_specs,
                                     bare_directory=bare_directory,
-                                    allow_real_directory=False)
+                                    allow_real_directory=False,
+                                    output_files_required=output_files_required)
             yield sandbox
 
         elif directory is not None and os.path.exists(directory):
