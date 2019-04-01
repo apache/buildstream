@@ -29,6 +29,7 @@ import grpc
 from .. import utils
 from .._message import Message, MessageType
 from .sandbox import Sandbox, SandboxCommandError, _SandboxBatch
+from ..storage.directory import VirtualDirectoryError
 from ..storage._casbaseddirectory import CasBasedDirectory
 from .. import _signals
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
@@ -253,7 +254,7 @@ class SandboxRemote(Sandbox):
                 raise SandboxError("Failed trying to send CancelOperation request: "
                                    "{} ({})".format(e.details(), e.code().name))
 
-    def process_job_output(self, output_directories, output_files):
+    def process_job_output(self, output_directories, output_files, *, failure):
         # Reads the remote execution server response to an execution request.
         #
         # output_directories is an array of OutputDirectory objects.
@@ -295,7 +296,23 @@ class SandboxRemote(Sandbox):
 
         # Fetch the file blobs if needed
         if self._output_files_required or artifactcache.has_push_remotes():
-            required_blobs = cascache.required_blobs_for_directory(dir_digest)
+            required_blobs = []
+            directories = []
+
+            directories.append(self._output_directory)
+            if self._build_directory and (self._build_directory_always or failure):
+                directories.append(self._build_directory)
+
+            for directory in directories:
+                try:
+                    vdir = new_dir.descend(*directory.strip(os.sep).split(os.sep))
+                    dir_digest = vdir._get_digest()
+                    required_blobs += cascache.required_blobs_for_directory(dir_digest)
+                except VirtualDirectoryError:
+                    # If the directory does not exist, there is no need to
+                    # download file blobs.
+                    pass
+
             local_missing_blobs = cascache.local_missing_blobs(required_blobs)
             if local_missing_blobs:
                 if self._output_files_required:
@@ -401,7 +418,8 @@ class SandboxRemote(Sandbox):
             action_result = self._extract_action_result(operation)
 
         # Get output of build
-        self.process_job_output(action_result.output_directories, action_result.output_files)
+        self.process_job_output(action_result.output_directories, action_result.output_files,
+                                failure=action_result.exit_code != 0)
 
         if stdout:
             if action_result.stdout_raw:
