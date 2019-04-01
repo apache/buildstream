@@ -53,6 +53,8 @@ class SandboxRemote(Sandbox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self._output_files_required = kwargs.get('output_files_required', True)
+
         config = kwargs['specs']  # This should be a RemoteExecutionSpec
         if config is None:
             return
@@ -274,7 +276,9 @@ class SandboxRemote(Sandbox):
             raise SandboxError("Output directory structure had no digest attached.")
 
         context = self._get_context()
+        project = self._get_project()
         cascache = context.get_cascache()
+        artifactcache = context.artifactcache
         casremote = CASRemote(self.storage_remote_spec)
 
         # Now do a pull to ensure we have the full directory structure.
@@ -289,13 +293,25 @@ class SandboxRemote(Sandbox):
         new_dir = CasBasedDirectory(context.artifactcache.cas, digest=dir_digest)
         self._set_virtual_directory(new_dir)
 
-        # Fetch the file blobs
-        required_blobs = cascache.required_blobs_for_directory(dir_digest)
-        local_missing_blobs = cascache.local_missing_blobs(required_blobs)
-        remote_missing_blobs = cascache.fetch_blobs(casremote, local_missing_blobs)
-        if remote_missing_blobs:
-            raise SandboxError("{} output files are missing on the CAS server"
-                               .format(len(remote_missing_blobs)))
+        # Fetch the file blobs if needed
+        if self._output_files_required or artifactcache.has_push_remotes():
+            required_blobs = cascache.required_blobs_for_directory(dir_digest)
+            local_missing_blobs = cascache.local_missing_blobs(required_blobs)
+            if local_missing_blobs:
+                if self._output_files_required:
+                    # Fetch all blobs from Remote Execution CAS server
+                    blobs_to_fetch = local_missing_blobs
+                else:
+                    # Output files are not required in the local cache,
+                    # however, artifact push remotes will need them.
+                    # Only fetch blobs that are missing on one or multiple
+                    # artifact servers.
+                    blobs_to_fetch = artifactcache.find_missing_blobs(project, local_missing_blobs)
+
+                remote_missing_blobs = cascache.fetch_blobs(casremote, blobs_to_fetch)
+                if remote_missing_blobs:
+                    raise SandboxError("{} output files are missing on the CAS server"
+                                       .format(len(remote_missing_blobs)))
 
     def _run(self, command, flags, *, cwd, env):
         stdout, stderr = self._get_output()
