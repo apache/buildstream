@@ -334,6 +334,8 @@ def load(filename, shortname=None, copy_tree=False, *, project=None):
         raise LoadError(LoadErrorReason.LOADING_DIRECTORY,
                         "{} is a directory. bst command expects a .bst file."
                         .format(filename)) from e
+    except LoadError as e:
+        raise LoadError(e.reason, "{}: {}".format(displayname, e)) from e
 
 
 # Like load(), but doesnt require the data to be in a file
