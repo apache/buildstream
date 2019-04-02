@@ -187,6 +187,7 @@ class Element(Plugin):
     """
 
     def __init__(self, context, project, meta, plugin_conf):
+        self._meta_kind = meta.kind
 
         self.__cache_key_dict = None            # Dict for cache key calculation
         self.__cache_key = None                 # Our cached cache key
