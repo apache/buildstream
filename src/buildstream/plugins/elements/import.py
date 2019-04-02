@@ -81,10 +81,10 @@ class ImportElement(Element):
         outputdir = rootdir.descend('output', create=True)
 
         # The directory to grab
-        inputdir = inputdir.descend(*self.source.strip(os.sep).split(os.sep))
+        inputdir = inputdir.descend(*self.source.strip('/').split('/'))
 
         # The output target directory
-        outputdir = outputdir.descend(*self.target.strip(os.sep).split(os.sep), create=True)
+        outputdir = outputdir.descend(*self.target.strip('/').split('/'), create=True)
 
         if inputdir.is_empty():
             raise ElementError("{}: No files were found inside directory '{}'"
@@ -94,7 +94,7 @@ class ImportElement(Element):
         outputdir.import_files(inputdir)
 
         # And we're done
-        return '/output'
+        return os.sep + 'output'
 
     def generate_script(self):
         build_root = self.get_variable('build-root')
