@@ -32,6 +32,12 @@ class ArtifactPushQueue(Queue):
     complete_name = "Pushed"
     resources = [ResourceType.UPLOAD]
 
+    def __getstate__(self):
+        import copy
+        state = copy.copy(self.__dict__)
+        del state['_scheduler']
+        return state
+
     def process(self, element):
         # returns whether an artifact was uploaded or not
         if not element._push():
