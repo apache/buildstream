@@ -47,6 +47,21 @@ class _ReturnCode(FastEnum):
     SKIPPED = 3
 
 
+def _call_on_waitpid_threadfun(running_loop, process, callback):
+    process.join()
+    running_loop.call_soon_threadsafe(callback, process.pid, process.exitcode)
+
+
+def call_on_waitpid(running_loop, pid, callback):
+    import threading
+    t = threading.Thread(
+        target=_call_on_waitpid_threadfun,
+        args=(running_loop, pid, callback)
+    )
+    t.start()
+    return t
+
+
 # JobStatus:
 #
 # The job completion status, passed back through the
@@ -258,8 +273,7 @@ class Job():
         # an event loop callback. Otherwise, if the job completes too fast, then
         # the callback is called immediately.
         #
-        self._watcher = asyncio.get_child_watcher()
-        self._watcher.add_child_handler(self._process.pid, self._parent_child_completed)
+        self._watcher = call_on_waitpid(self._scheduler.loop, self._process, self._parent_child_completed)
 
     # terminate()
     #
