@@ -720,7 +720,7 @@ class Project():
 
         # Perform environment expansion right away
         shell_environment = _yaml.node_get(shell_options, Mapping, 'environment', default_value={})
-        for key, _ in _yaml.node_items(shell_environment):
+        for key in _yaml.node_keys(shell_environment):
             value = _yaml.node_get(shell_environment, str, key)
             self._shell_environment[key] = os.path.expandvars(value)
 
@@ -895,7 +895,7 @@ class Project():
 
             # Store source versions for checking later
             source_versions = _yaml.node_get(origin, Mapping, 'sources', default_value={})
-            for key, _ in _yaml.node_items(source_versions):
+            for key in _yaml.node_keys(source_versions):
                 if key in source_format_versions:
                     raise LoadError(
                         LoadErrorReason.INVALID_YAML,
@@ -904,7 +904,7 @@ class Project():
 
             # Store element versions for checking later
             element_versions = _yaml.node_get(origin, Mapping, 'elements', default_value={})
-            for key, _ in _yaml.node_items(element_versions):
+            for key in _yaml.node_keys(element_versions):
                 if key in element_format_versions:
                     raise LoadError(
                         LoadErrorReason.INVALID_YAML,
@@ -944,11 +944,11 @@ class Project():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "Unexpected plugin group: {}, expecting {}"
                             .format(plugin_group, expected_groups))
-        node_keys = [key for key, _ in _yaml.node_items(origin)]
+        node_keys = [key for key in _yaml.node_keys(origin)]
         if plugin_group in node_keys:
             origin_node = _yaml.node_copy(origin)
             plugins = _yaml.node_get(origin, Mapping, plugin_group, default_value={})
-            _yaml.node_set(origin_node, 'plugins', [k for k, _ in _yaml.node_items(plugins)])
+            _yaml.node_set(origin_node, 'plugins', [k for k in _yaml.node_keys(plugins)])
             for group in expected_groups:
                 if _yaml.node_contains(origin_node, group):
                     _yaml.node_del(origin_node, group)

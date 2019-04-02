@@ -642,6 +642,23 @@ def node_items(node):
             yield (key, value[0])
 
 
+# node_keys()
+#
+# A convenience generator for iterating over loaded keys
+# in a dictionary loaded from project YAML.
+#
+# Args:
+#    node (dict): The dictionary node
+#
+# Yields:
+#    (str): The key name
+#
+def node_keys(node):
+    if type(node) is not Node:
+        node = Node(node, None, 0, 0)
+    yield from node[0].keys()
+
+
 # node_del()
 #
 # A convenience generator for iterating over loaded key/value
