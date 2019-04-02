@@ -121,7 +121,7 @@ class Job():
     #
     def spawn(self):
 
-        self._queue = multiprocessing.Queue()
+        self._queue = self._scheduler.manager.Queue()
 
         self._tries += 1
         self._parent_start_listening()
@@ -490,19 +490,22 @@ class Job():
         #
         #      http://bugs.python.org/issue3831
         #
-        if not self._listening:
-            self._scheduler.loop.add_reader(
-                self._queue._reader.fileno(), self._parent_recv)
-            self._listening = True
+
+        # if not self._listening:
+        #     self._scheduler.loop.add_reader(
+        #         self._queue._reader.fileno(), self._parent_recv)
+        #     self._listening = True
+        pass
 
     # _parent_stop_listening()
     #
     # Stops listening on the message queue
     #
     def _parent_stop_listening(self):
-        if self._listening:
-            self._scheduler.loop.remove_reader(self._queue._reader.fileno())
-            self._listening = False
+        # if self._listening:
+        #     self._scheduler.loop.remove_reader(self._queue._reader.fileno())
+        #     self._listening = False
+        pass
 
 
 class ChildJob():
@@ -732,7 +735,7 @@ class ChildJob():
     #    exit_code (int): The exit code to exit with
     #
     def _child_shutdown(self, exit_code):
-        self._queue.close()
+        # self._queue.close()
         sys.exit(exit_code)
 
     # _child_message_handler()

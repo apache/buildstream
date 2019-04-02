@@ -75,6 +75,10 @@ class Scheduler():
                  job_start_callback=None,
                  job_complete_callback=None):
 
+        import multiprocessing
+        multiprocessing.set_start_method('spawn')
+        self.manager = multiprocessing.Manager()
+
         #
         # Public members
         #
