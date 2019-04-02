@@ -20,7 +20,9 @@
 import os
 import platform
 import sys
-import resource
+#import resource
+
+import psutil
 
 from .._exceptions import PlatformError, ImplError
 
@@ -72,7 +74,7 @@ class Platform():
         return cls._instance
 
     def get_cpu_count(self, cap=None):
-        cpu_count = len(os.sched_getaffinity(0))
+        cpu_count = len(psutil.Process().cpu_affinity())
         if cap is None:
             return cpu_count
         else:
@@ -159,6 +161,8 @@ class Platform():
         # Need to set resources for _frontend/app.py as this is dependent on the platform
         # SafeHardlinks FUSE needs to hold file descriptors for all processes in the sandbox.
         # Avoid hitting the limit too quickly.
+        return
+        import resource
         limits = resource.getrlimit(resource.RLIMIT_NOFILE)
         if limits[0] != limits[1]:
             if soft_limit is None:
