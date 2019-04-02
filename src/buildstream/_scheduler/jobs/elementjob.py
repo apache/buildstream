@@ -20,8 +20,76 @@ from ruamel import yaml
 
 from ..._message import MessageType
 
+from ..._artifact import Artifact
+
 from .job import Job, ChildJob
 
+
+# TODO: Make sure we only unpickle each element and source once, probably using
+# some global mechanism and context manager.
+
+
+def make_picklable_source_state(source):
+    print("Pickling source", source, repr(source))
+    # breakpoint()
+    meta_kind = source._meta_kind
+    project = source._get_project()
+    factory = project.config.source_factory
+    source_dict = source.__dict__.copy()
+    return {
+        'factory': factory,
+        'meta_kind': meta_kind,
+        'source_dict': source_dict,
+    }
+
+
+def make_source_from_picklable_source_state(state):
+    factory = state['factory']
+    meta_kind = state['meta_kind']
+    source_dict = state['source_dict']
+    # breakpoint()
+    source_cls, default_config = factory.lookup(meta_kind)
+    source = source_cls.__new__(source_cls)
+    source.__dict__ = source_dict
+    context = source._get_project()._context
+    print("Unpickled source", source, repr(source))
+    return source
+
+
+def make_picklable_element_state(element):
+    print("Pickling element", element, repr(element))
+    meta_kind = element._meta_kind
+    project = element._get_project()
+    factory = project.config.element_factory
+    element_dict = element.__dict__.copy()
+    # del element_dict['_Element__sources']
+    element_dict['_Element__sources'] = [
+        make_picklable_source_state(s)
+        for s in element.sources()
+    ]
+    del element_dict['_Element__artifact']
+    return {
+        'factory': factory,
+        'meta_kind': meta_kind,
+        'element_dict': element_dict,
+    }
+
+
+def make_element_from_picklable_element_state(state):
+    factory = state['factory']
+    meta_kind = state['meta_kind']
+    element_dict = state['element_dict']
+    element_cls, default_config = factory.lookup(meta_kind)
+    element = element_cls.__new__(element_cls)
+    element.__dict__ = element_dict
+    context = element._get_project()._context
+    element_dict['_Element__sources'] = [
+        make_source_from_picklable_source_state(s)
+        for s in element_dict['_Element__sources']
+    ]
+    element_dict['_Element__artifact'] = Artifact(element, context)
+    print("Unpickled element", element, repr(element))
+    return element
 
 # ElementJob()
 #
@@ -75,6 +143,16 @@ class ElementJob(Job):
         # Set the ID for logging purposes
         self.set_message_unique_id(element._unique_id)
         self.set_task_id(element._unique_id)
+
+    def __getstate__(self):
+        state = super().__getstate__()
+        state['_element'] = make_picklable_element_state(self._element)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._element = make_element_from_picklable_element_state(
+            self._element)
 
     @property
     def element(self):

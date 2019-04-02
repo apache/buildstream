@@ -115,6 +115,15 @@ class Job():
         self._message_unique_id = None
         self._task_id = None
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['_scheduler']
+        state['_scheduler_context'] = self._scheduler.context
+        del state['_process']
+        del state['queue']
+        del state['_watcher']
+        return state
+
     # spawn()
     #
     # Spawns the job.
