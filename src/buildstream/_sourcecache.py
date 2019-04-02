@@ -58,6 +58,12 @@ class SourceCache(BaseCache):
         self.casquota.add_remove_callbacks(self.unrequired_sources, self.cas.remove)
         self.casquota.add_list_refs_callback(self.list_sources)
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # TODO: actually pickle the sources, resolving to the same objects.
+        state['_required_sources'] = set()
+        return state
+
     # mark_required_sources()
     #
     # Mark sources that are required by the current run.
