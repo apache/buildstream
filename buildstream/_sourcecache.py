@@ -53,7 +53,7 @@ class SourceCache(BaseCache):
 
         self._required_sources = set()
 
-        self.casquota.add_ref_callbacks(self.required_sources())
+        self.casquota.add_ref_callbacks(self.required_sources)
         self.casquota.add_remove_callbacks((lambda x: x.startswith('@sources/'), self.cas.remove))
 
     # mark_required_sources()

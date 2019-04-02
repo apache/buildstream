@@ -1383,7 +1383,11 @@ class CASQuota:
 
         # get required refs
         refs = self.cas.list_refs()
-        required_refs = set(itertools.chain.from_iterable(self._ref_callbacks))
+        required_refs = set(
+            required
+            for callback in self._ref_callbacks
+            for required in callback()
+        )
 
         # Start off with an announcement with as much info as possible
         volume_size, volume_avail = self._get_cache_volume_size()
