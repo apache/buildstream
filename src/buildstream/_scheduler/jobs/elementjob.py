@@ -23,6 +23,18 @@ from ..._message import MessageType
 from .job import Job, ChildJob
 
 
+import sys
+import pdb
+
+class MultiprocessingPdb(pdb.Pdb):
+    def interaction(self, *args, **kwargs):
+        _stdin = sys.stdin
+        try:
+            sys.stdin = open('/dev/stdin')
+            pdb.Pdb.interaction(self, *args, **kwargs)
+        finally:
+            sys.stdin = _stdin
+
 # ElementJob()
 #
 # A job to run an element's commands. When this job is started
@@ -105,7 +117,15 @@ class ChildElementJob(ChildJob):
                      detail=env_dump)
 
         # Run the action
-        return self._action_cb(self._element)
+        # MultiprocessingPdb().set_trace()
+        try:
+            result = self._action_cb(self._element)
+        except Exception as e:
+            print(e)
+            import traceback
+            traceback.print_exc()
+            raise
+        return result
 
     def child_process_data(self):
         data = {}
