@@ -334,6 +334,8 @@ def load(filename, shortname=None, copy_tree=False, *, project=None):
         raise LoadError(LoadErrorReason.LOADING_DIRECTORY,
                         "{} is a directory. bst command expects a .bst file."
                         .format(filename)) from e
+    except LoadError as e:
+        raise LoadError(e.reason, "{}: {}".format(displayname, e)) from e
 
 
 # Like load(), but doesnt require the data to be in a file
@@ -450,7 +452,6 @@ _sentinel = object()
 def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel, allow_none=False):
     assert type(node) is Node
 
-    path = key
     if indices is None:
         if default_value is _sentinel:
             value = node[0].get(key, Node(default_value, None, 0, 0))
@@ -469,7 +470,6 @@ def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel,
             value = value[0][index]
             if type(value) is not Node:
                 value = (value,)
-            path += '[{:d}]'.format(index)
 
     # Optionally allow None as a valid value for any type
     if value[0] is None and (allow_none or default_value is None):
@@ -497,6 +497,12 @@ def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel,
                 raise ValueError()
         except (ValueError, TypeError):
             provenance = node_get_provenance(node, key=key, indices=indices)
+            if indices:
+                path = [key]
+                path.extend("[{:d}]".format(i) for i in indices)
+                path = "".join(path)
+            else:
+                path = key
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Value of '{}' is not of the expected type '{}'"
                             .format(provenance, path, expected_type.__name__))
