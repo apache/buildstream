@@ -35,6 +35,12 @@ class FetchQueue(Queue):
     complete_name = "Fetched"
     resources = [ResourceType.DOWNLOAD]
 
+    def __getstate__(self):
+        import copy
+        state = copy.copy(self.__dict__)
+        del state['_scheduler']
+        return state
+
     def __init__(self, scheduler, skip_cached=False, fetch_original=False):
         super().__init__(scheduler)
 
