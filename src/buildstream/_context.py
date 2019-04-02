@@ -677,10 +677,10 @@ class Context():
         # If this message is associated with a plugin, print what
         # we know about the plugin.
         plugin_name = ""
-        if message.unique_id:
-            template += " {plugin}"
-            plugin = Plugin._lookup(message.unique_id)
-            plugin_name = plugin.name
+        # if message.unique_id:
+        #     template += " {plugin}"
+        #     plugin = Plugin._lookup(message.unique_id)
+        #     plugin_name = plugin.name
 
         template += ": {message}"
 
