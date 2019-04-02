@@ -42,9 +42,11 @@ from . import _yaml
 #
 class PluginContext():
 
-    def __init__(self, plugin_base, base_type, site_plugin_path, *,
+    def __init__(self, plugin_base, base_type, site_plugin_path, identifier, *,
                  plugin_origins=None, dependencies=None,
                  format_versions={}):
+
+        self._identifier = identifier
 
         # The plugin kinds which were loaded
         self.loaded_dependencies = []
@@ -59,9 +61,25 @@ class PluginContext():
 
         # The PluginSource object
         self._plugin_base = plugin_base
-        self._site_source = plugin_base.make_plugin_source(searchpath=site_plugin_path)
+        self._site_plugin_path = site_plugin_path
+        self._site_source = plugin_base.make_plugin_source(
+            searchpath=self._site_plugin_path,
+            identifier='site_plugin-' + self._identifier)
         self._alternate_sources = {}
         self._format_versions = format_versions
+
+    def __getstate__(self):
+        import copy
+        state = copy.copy(self.__dict__)
+        del state['_site_source']
+        state['_types'] = {}
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self._site_source = self._plugin_base.make_plugin_source(
+            searchpath=self._site_plugin_path,
+            identifier='site_plugin-' + self._identifier)
 
     # lookup():
     #
@@ -80,7 +98,7 @@ class PluginContext():
     def _get_local_plugin_source(self, path):
         if ('local', path) not in self._alternate_sources:
             # key by a tuple to avoid collision
-            source = self._plugin_base.make_plugin_source(searchpath=[path])
+            source = self._plugin_base.make_plugin_source(searchpath=[path], identifier='local_plugin-' + path + '-' + self._identifier)
             # Ensure that sources never get garbage collected,
             # as they'll take the plugins with them.
             self._alternate_sources[('local', path)] = source
@@ -121,7 +139,7 @@ class PluginContext():
                 # The plugin didn't have an accompanying YAML file
                 defaults = None
 
-            source = self._plugin_base.make_plugin_source(searchpath=[os.path.dirname(location)])
+            source = self._plugin_base.make_plugin_source(searchpath=[os.path.dirname(location)], identifier='pip_plugin-' + self._identifier)
             self._alternate_sources[('pip', package_name)] = source
 
         else:
