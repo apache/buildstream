@@ -56,6 +56,18 @@ class OptionPool():
         self._environment = jinja2.Environment(undefined=jinja2.StrictUndefined)
         self._environment.globals = []
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['_environment']
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+        # jinja2 environment, with default globals cleared out of the way
+        self._environment = jinja2.Environment(undefined=jinja2.StrictUndefined)
+        self._environment.globals = []
+
     # load()
     #
     # Loads the options described in the project.conf
