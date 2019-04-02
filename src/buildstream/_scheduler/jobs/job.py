@@ -211,7 +211,7 @@ class Job():
         # the child process does not inherit the parent's state, but the main
         # process will be notified of any signal after we launch the child.
         #
-        with _signals.blocked([signal.SIGINT, signal.SIGTSTP, signal.SIGTERM], ignore=False):
+        with _signals.blocked([signal.SIGINT, signal.SIGTERM], ignore=False):
             self._process.start()
 
         # Wait for the child task to complete.
@@ -692,15 +692,15 @@ class ChildJob():
 
         # This avoids some SIGTSTP signals from grandchildren
         # getting propagated up to the master process
-        os.setsid()
+        #os.setsid()
 
         # First set back to the default signal handlers for the signals
         # we handle, and then clear their blocked state.
         #
-        signal_list = [signal.SIGTSTP, signal.SIGTERM]
-        for sig in signal_list:
-            signal.signal(sig, signal.SIG_DFL)
-        signal.pthread_sigmask(signal.SIG_UNBLOCK, signal_list)
+        #signal_list = [signal.SIGTSTP, signal.SIGTERM]
+        #for sig in signal_list:
+        #    signal.signal(sig, signal.SIG_DFL)
+        #signal.pthread_sigmask(signal.SIG_UNBLOCK, signal_list)
 
         # Assign the queue we passed across the process boundaries
         #
