@@ -147,6 +147,8 @@ class Sandbox():
                 os.makedirs(directory_, exist_ok=True)
 
         self._output_directory = None
+        self._build_directory = None
+        self._build_directory_always = None
         self._vdir = None
         self._usebuildtree = False
 
@@ -591,6 +593,20 @@ class Sandbox():
     #
     def _disable_run(self):
         self.__allow_run = False
+
+    # _set_build_directory()
+    #
+    # Sets the build directory - the directory which may be preserved as
+    # buildtree in the artifact.
+    #
+    # Args:
+    #    directory (str): An absolute path within the sandbox
+    #    always (bool): True if the build directory should always be downloaded,
+    #                   False if it should be downloaded only on failure
+    #
+    def _set_build_directory(self, directory, *, always):
+        self._build_directory = directory
+        self._build_directory_always = always
 
 
 # _SandboxBatch()
