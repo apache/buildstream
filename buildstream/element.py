@@ -1685,6 +1685,15 @@ class Element(Plugin):
             with _signals.terminator(cleanup_rootdir), \
                 self.__sandbox(rootdir, output_file, output_file, self.__sandbox_config) as sandbox:  # noqa
 
+                # Let the sandbox know whether the buildtree will be required.
+                # This allows the remote execution sandbox to skip buildtree
+                # download when it's not needed.
+                buildroot = self.get_variable('build-root')
+                cache_buildtrees = context.cache_buildtrees
+                if cache_buildtrees != 'never':
+                    always_cache_buildtrees = cache_buildtrees == 'always'
+                    sandbox._set_build_directory(buildroot, always=always_cache_buildtrees)
+
                 if not self.BST_RUN_COMMANDS:
                     # Element doesn't need to run any commands in the sandbox.
                     #
