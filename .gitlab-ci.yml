@@ -227,7 +227,7 @@ docs:
   stage: test
   variables:
     BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
-    BST_EXT_REF: 0.12.0-0-g88e6516c21361b434d378569b69b015038cd56ee
+    BST_EXT_REF: jennis/fixup_plugins
     FD_SDK_REF: freedesktop-sdk-18.08.28-0-g29cf2127554cdd83a1532afa53824b23cee2eed3
   before_script:
   - |
