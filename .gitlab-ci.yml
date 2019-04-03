@@ -47,12 +47,12 @@ tests-debian-9:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-46405991
   <<: *tests
 
-tests-fedora-27:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:27-master-46405991
-  <<: *tests
-
 tests-fedora-28:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:28-master-46405991
+  <<: *tests
+
+tests-fedora-29:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
   <<: *tests
 
 tests-ubuntu-18.04:
@@ -189,8 +189,8 @@ coverage:
     - cp -a .coverage-reports/ ./coverage-report
   dependencies:
   - tests-debian-9
-  - tests-fedora-27
   - tests-fedora-28
+  - tests-fedora-29
   - tests-ubuntu-18.04
   - tests-unix
   except:
