@@ -753,7 +753,7 @@ class Element(Plugin):
             if workspace and old_dep_keys:
                 dep.__assert_cached()
 
-                if _yaml.node_contains(old_dep_keys, dep.name):
+                if dep.name in old_dep_keys:
                     key_new = dep._get_cache_key()
                     key_old = _yaml.node_get(old_dep_keys, str, dep.name)
 

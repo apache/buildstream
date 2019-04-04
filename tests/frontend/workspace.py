@@ -1141,7 +1141,7 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
 
     # Element is tracked now
     element_contents = _yaml.load(element_file)
-    assert _yaml.node_contains(_yaml.node_get(element_contents, dict, 'sources', [0]), 'ref')
+    assert 'ref' in _yaml.node_get(element_contents, dict, 'sources', [0])
 
 
 @pytest.mark.datafiles(DATA_DIR)

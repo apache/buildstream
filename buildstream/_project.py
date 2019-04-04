@@ -421,7 +421,7 @@ class Project():
         else:
             config = self.config
 
-        if not alias or not _yaml.node_contains(config._aliases, alias):
+        if not alias or alias not in config._aliases:
             return [None]
 
         mirror_list = []
@@ -950,7 +950,7 @@ class Project():
             plugins = _yaml.node_get(origin, Mapping, plugin_group, default_value={})
             _yaml.node_set(origin_node, 'plugins', [k for k in _yaml.node_keys(plugins)])
             for group in expected_groups:
-                if _yaml.node_contains(origin_node, group):
+                if group in origin_node:
                     _yaml.node_del(origin_node, group)
 
             if _yaml.node_get(origin_node, str, 'origin') == 'local':

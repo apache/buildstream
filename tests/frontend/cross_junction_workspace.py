@@ -79,7 +79,7 @@ def test_list_cross_junction(cli, tmpdir):
     assert isinstance(_yaml.node_get(loaded, None, 'workspaces'), list)
     workspaces = _yaml.node_get(loaded, list, 'workspaces')
     assert len(workspaces) == 1
-    assert _yaml.node_contains(workspaces[0], 'element')
+    assert 'element' in workspaces[0]
     assert _yaml.node_get(workspaces[0], str, 'element') == element
 
 

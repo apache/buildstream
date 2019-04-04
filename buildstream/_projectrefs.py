@@ -86,7 +86,7 @@ class ProjectRefs():
 
         # Ensure we create our toplevel entry point on the fly here
         for node in [self._toplevel_node, self._toplevel_save]:
-            if not _yaml.node_contains(node, 'projects'):
+            if 'projects' not in node:
                 _yaml.node_set(node, 'projects', _yaml.new_empty_node(ref_node=node))
 
     # lookup_ref()

@@ -774,20 +774,6 @@ def __new_node_from_list(inlist):
     return Node(ret, None, 0, next(_SYNTHETIC_COUNTER))
 
 
-# node_contains()
-#
-# Args:
-#    node (Node): The mapping node to query the contents of
-#    entry (str): The key to look for in the mapping node
-#
-# Returns:
-#    (bool): Whether entry is in the mapping in node.
-#
-def node_contains(node, entry):
-    assert type(node) is Node
-    return entry in node[0]
-
-
 # _is_composite_list
 #
 # Checks if the given node is a Mapping with array composition

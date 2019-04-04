@@ -202,11 +202,11 @@ class Context():
             _yaml.composite(defaults, user_config)
 
         # Give obsoletion warnings
-        if _yaml.node_contains(defaults, 'builddir'):
+        if 'builddir' in defaults:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "builddir is obsolete, use cachedir")
 
-        if _yaml.node_contains(defaults, 'artifactdir'):
+        if 'artifactdir' in defaults:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "artifactdir is obsolete")
 
