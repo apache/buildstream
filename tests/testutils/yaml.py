@@ -17,7 +17,7 @@
 #  Authors:
 #        Angelos Evripiotis <jevripiotis@bloomberg.net>
 
-from buildstream import _yaml
+from buildstream2 import _yaml
 
 
 # yaml_file_get_provenance()

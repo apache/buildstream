@@ -5,10 +5,10 @@ import os
 import pytest
 
 from pluginbase import PluginBase
-from buildstream._elementfactory import ElementFactory
-from buildstream._sourcefactory import SourceFactory
-from buildstream._exceptions import PluginError
-from buildstream import _yaml
+from buildstream2._elementfactory import ElementFactory
+from buildstream2._sourcefactory import SourceFactory
+from buildstream2._exceptions import PluginError
+from buildstream2 import _yaml
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -21,7 +21,7 @@ DATA_DIR = os.path.join(
 @pytest.fixture()
 def plugin_fixture():
     return {
-        'base': PluginBase(package='buildstream.plugins')
+        'base': PluginBase(package='buildstream2.plugins')
     }
 
 

@@ -1,10 +1,10 @@
 import os
 from unittest import mock
 
-from buildstream import _yaml
-from buildstream._cas.cascache import CACHE_SIZE_FILE
-from buildstream._exceptions import ErrorDomain
-from buildstream.testing import cli
+from buildstream2 import _yaml
+from buildstream2._cas.cascache import CACHE_SIZE_FILE
+from buildstream2._exceptions import ErrorDomain
+from buildstream2.testing import cli
 
 from tests.testutils import create_element_size
 
@@ -77,7 +77,7 @@ def test_quota_over_1024T(cli, tmpdir):
     _yaml.dump({'name': 'main'}, str(project.join("project.conf")))
 
     volume_space_patch = mock.patch(
-        "buildstream._cas.CASQuota._get_cache_volume_size",
+        "buildstream2._cas.CASQuota._get_cache_volume_size",
         autospec=True,
         return_value=(1025 * TiB, 1025 * TiB)
     )

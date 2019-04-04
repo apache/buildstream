@@ -36,10 +36,10 @@ Typical cases for this include running ``ldconfig`` at the base of a pipeline,
 or running commands to update various system caches.
 
 Integration commands of a given element are automatically run by the
-:func:`Element.integrate() <buildstream.element.Element.integrate>` method
+:func:`Element.integrate() <buildstream2.element.Element.integrate>` method
 and are used by various plugins.
 
-Notably the :mod:`BuildElement <buildstream.buildelement>` derived classes
+Notably the :mod:`BuildElement <buildstream2.buildelement>` derived classes
 will always integrate the build dependencies after staging and before running
 any build commands.
 
@@ -69,13 +69,13 @@ Split rules indicate how the output of an element can be categorized
 into *domains*.
 
 The ``split-rules`` domains are used by the
-:func:`Element.stage_artifact() <buildstream.element.Element.stage_artifact>`
+:func:`Element.stage_artifact() <buildstream2.element.Element.stage_artifact>`
 method when deciding what domains of an artifact should be staged.
 
 The strings listed in each domain are first substituted with the
 :ref:`variables <format_variables>` in context of the given element, and
 then applied as a glob style match, as understood by
-:func:`utils.glob() <buildstream.utils.glob>`
+:func:`utils.glob() <buildstream2.utils.glob>`
 
 This is used for creating compositions with the :mod:`compose <elements.compose>`
 element and can be used by other deployment related elements for the purpose of
@@ -92,7 +92,7 @@ over other elements when staged together with other elements.
 
 Each item in the overlap whitelist has substitutions applied from
 :ref:`variables <format_variables>`, and is then applied as a glob-style match
-(i.e. :func:`utils.glob() <buildstream.utils.glob>`).
+(i.e. :func:`utils.glob() <buildstream2.utils.glob>`).
 
 .. code:: yaml
 

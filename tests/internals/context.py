@@ -4,8 +4,8 @@
 import os
 import pytest
 
-from buildstream._context import Context
-from buildstream._exceptions import LoadError, LoadErrorReason
+from buildstream2._context import Context
+from buildstream2._exceptions import LoadError, LoadErrorReason
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

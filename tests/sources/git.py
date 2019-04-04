@@ -29,11 +29,11 @@ import shutil
 
 import pytest
 
-from buildstream._exceptions import ErrorDomain
-from buildstream import _yaml
-from buildstream.plugin import CoreWarnings
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
+from buildstream2._exceptions import ErrorDomain
+from buildstream2 import _yaml
+from buildstream2.plugin import CoreWarnings
+from buildstream2.testing import cli  # pylint: disable=unused-import
+from buildstream2.testing import create_repo
 
 from tests.testutils.site import HAVE_GIT, HAVE_OLD_GIT
 

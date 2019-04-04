@@ -24,11 +24,11 @@ import pytest
 import shutil
 import tempfile
 
-from buildstream import utils
-from buildstream.testing import cli_integration as cli
+from buildstream2 import utils
+from buildstream2.testing import cli_integration as cli
 from tests.testutils import create_artifact_share
 from tests.testutils.site import HAVE_SANDBOX
-from buildstream._cas import CASCache
+from buildstream2._cas import CASCache
 
 pytestmark = pytest.mark.integration
 

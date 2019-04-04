@@ -36,11 +36,11 @@ import pytest
 
 from tests.testutils import create_artifact_share, create_element_size, wait_for_cache_granularity
 
-from buildstream.testing import create_repo, ALL_REPO_KINDS
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from buildstream._workspaces import BST_WORKSPACE_FORMAT_VERSION
+from buildstream2.testing import create_repo, ALL_REPO_KINDS
+from buildstream2.testing import cli  # pylint: disable=unused-import
+from buildstream2 import _yaml
+from buildstream2._exceptions import ErrorDomain, LoadErrorReason
+from buildstream2._workspaces import BST_WORKSPACE_FORMAT_VERSION
 
 repo_kinds = [(kind) for kind in ALL_REPO_KINDS]
 

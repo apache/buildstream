@@ -1,9 +1,9 @@
 import os
 import tarfile
 
-from buildstream.utils import sha256sum
+from buildstream2.utils import sha256sum
 
-from buildstream.testing import Repo
+from buildstream2.testing import Repo
 
 
 class Tar(Repo):

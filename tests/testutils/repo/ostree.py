@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from buildstream.testing import Repo
+from buildstream2.testing import Repo
 from .. import site
 
 

@@ -6,10 +6,10 @@ import tarfile
 
 import pytest
 
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream2.testing import cli  # pylint: disable=unused-import
 
-from buildstream import utils, _yaml
-from buildstream._exceptions import ErrorDomain
+from buildstream2 import utils, _yaml
+from buildstream2._exceptions import ErrorDomain
 
 # Project directory
 DATA_DIR = os.path.join(

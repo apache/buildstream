@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from buildstream.testing import cli_integration as cli
+from buildstream2.testing import cli_integration as cli
 from tests.testutils.site import HAVE_BWRAP, IS_LINUX, HAVE_SANDBOX
 
 

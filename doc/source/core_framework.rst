@@ -5,19 +5,19 @@
 Plugin API reference
 ====================
 The core public APIs are of interest to anyone who wishes to
-implement custom :mod:`Element <buildstream.element>` or
-:mod:`Source <buildstream.source>` plugins, and can also be
+implement custom :mod:`Element <buildstream2.element>` or
+:mod:`Source <buildstream2.source>` plugins, and can also be
 useful for working on BuildStream itself.
 
 .. toctree::
    :maxdepth: 1
 
-   buildstream.types
-   buildstream.plugin
-   buildstream.source
-   buildstream.element
-   buildstream.buildelement
-   buildstream.scriptelement
-   buildstream.sandbox.sandbox
-   buildstream.utils
-   buildstream.testing
+   buildstream2.types
+   buildstream2.plugin
+   buildstream2.source
+   buildstream2.element
+   buildstream2.buildelement
+   buildstream2.scriptelement
+   buildstream2.sandbox.sandbox
+   buildstream2.utils
+   buildstream2.testing

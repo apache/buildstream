@@ -1,4 +1,4 @@
-from buildstream import Source, Consistency
+from buildstream2 import Source, Consistency
 
 
 # Just a dummy plugin which does not support the new load_ref() method.

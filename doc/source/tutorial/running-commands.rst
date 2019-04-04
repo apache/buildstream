@@ -232,5 +232,5 @@ which :ref:`depend <format_dependencies>` on that element.
 
    The way that elements consume their dependency input can vary across the
    different *kinds* of elements. This chapter describes how it works for
-   :mod:`build elements <buildstream.buildelement>` implementations, which
+   :mod:`build elements <buildstream2.buildelement>` implementations, which
    are the most commonly used element type.

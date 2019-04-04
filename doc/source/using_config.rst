@@ -282,5 +282,5 @@ Default configuration
 ---------------------
 The default BuildStream configuration is specified here for reference:
 
-  .. literalinclude:: ../../buildstream/data/userconfig.yaml
+  .. literalinclude:: ../../buildstream2/data/userconfig.yaml
      :language: yaml

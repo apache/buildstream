@@ -6,8 +6,8 @@ import subprocess
 import sys
 import platform
 
-from buildstream import _site, utils, ProgramNotFoundError
-from buildstream._platform import Platform
+from buildstream2 import _site, utils, ProgramNotFoundError
+from buildstream2._platform import Platform
 
 try:
     BZR = utils.get_host_tool('bzr')
@@ -32,7 +32,7 @@ except ProgramNotFoundError:
     HAVE_OSTREE_CLI = False
 
 try:
-    from buildstream import _ostree  # pylint: disable=unused-import
+    from buildstream2 import _ostree  # pylint: disable=unused-import
     HAVE_OSTREE = True
 except (ImportError, ValueError):
     HAVE_OSTREE = False

@@ -31,7 +31,7 @@ include .coveragerc
 include .pylintrc
 
 # Protocol Buffers
-recursive-include buildstream/_protos *.proto
+recursive-include buildstream2/_protos *.proto
 
 # Requirements files
 include requirements/requirements.in

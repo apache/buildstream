@@ -21,7 +21,7 @@ output *artifact*. Instead we can employ :mod:`compose <elements.compose>` and
 to achieve sub artifact granularity at build and deploy time.
 
 When developing BuildStream, it is important to understand the distinction
-between dependency types and element :class:`Scope <buildstream.types.Scope>`,
+between dependency types and element :class:`Scope <buildstream2.types.Scope>`,
 which acts as a selector of which elements to consider in the dependency
 graph of a given element when performing recursive activities.
 
@@ -31,7 +31,7 @@ Scope
 
 * **Scope.ALL**
 
-  In the :func:`Scope.ALL <buildstream.types.Scope.ALL>` scope, all elements
+  In the :func:`Scope.ALL <buildstream2.types.Scope.ALL>` scope, all elements
   are considered.
 
   This is used in some cases to forcefully fetch, pull or build all dependencies
@@ -41,7 +41,7 @@ Scope
 
 * **Scope.RUN**
 
-  In the :func:`Scope.RUN <buildstream.types.Scope.RUN>` scope, only elements
+  In the :func:`Scope.RUN <buildstream2.types.Scope.RUN>` scope, only elements
   which are required to run are considered, including the element itself. Note
   that these are transitive - the service also requires the base runtime.
 
@@ -54,7 +54,7 @@ Scope
 
 * **Scope.BUILD**
 
-  In the :func:`Scope.BUILD <buildstream.types.Scope.BUILD>` scope, only
+  In the :func:`Scope.BUILD <buildstream2.types.Scope.BUILD>` scope, only
   elements which are required to build are considered, *excluding* the
   element we intend to build.
 

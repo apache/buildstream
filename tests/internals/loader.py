@@ -1,10 +1,10 @@
 import os
 import pytest
 
-from buildstream._exceptions import LoadError, LoadErrorReason
-from buildstream._context import Context
-from buildstream._project import Project
-from buildstream._loader import MetaElement
+from buildstream2._exceptions import LoadError, LoadErrorReason
+from buildstream2._context import Context
+from buildstream2._project import Project
+from buildstream2._loader import MetaElement
 
 
 DATA_DIR = os.path.join(

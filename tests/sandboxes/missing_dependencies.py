@@ -1,10 +1,10 @@
 import os
 import pytest
-from buildstream.testing import cli
+from buildstream2.testing import cli
 from tests.testutils.site import IS_LINUX
 
-from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain
+from buildstream2 import _yaml
+from buildstream2._exceptions import ErrorDomain
 
 
 # Project directory

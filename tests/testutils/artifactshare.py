@@ -7,10 +7,10 @@ from collections import namedtuple
 from contextlib import contextmanager
 from multiprocessing import Process, Queue
 
-from buildstream._cas import CASCache
-from buildstream._cas.casserver import create_server
-from buildstream._exceptions import CASError
-from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+from buildstream2._cas import CASCache
+from buildstream2._cas.casserver import create_server
+from buildstream2._exceptions import CASError
+from buildstream2._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 
 
 # ArtifactShare()

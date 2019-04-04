@@ -23,8 +23,8 @@ from unittest import mock
 
 import pytest
 
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from buildstream.testing import cli
+from buildstream2._exceptions import ErrorDomain, LoadErrorReason
+from buildstream2.testing import cli
 
 from tests.testutils import create_element_size, update_element_size, wait_for_cache_granularity
 
@@ -370,13 +370,13 @@ def test_invalid_cache_quota(cli, datafiles, quota, err_domain, err_reason):
         total_space = 10000
 
     volume_space_patch = mock.patch(
-        "buildstream.utils._get_volume_size",
+        "buildstream2.utils._get_volume_size",
         autospec=True,
         return_value=(total_space, free_space),
     )
 
     cache_size_patch = mock.patch(
-        "buildstream._cas.CASQuota.get_cache_size",
+        "buildstream2._cas.CASQuota.get_cache_size",
         autospec=True,
         return_value=0,
     )

@@ -10,7 +10,7 @@ previous sources, and copies its contents to a file called "filetransform".
 import os
 import hashlib
 
-from buildstream import Consistency, Source, SourceError, utils
+from buildstream2 import Consistency, Source, SourceError, utils
 
 
 class FooTransformSource(Source):

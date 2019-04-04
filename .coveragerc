@@ -1,15 +1,15 @@
 [run]
 concurrency = multiprocessing
 include =
-  */buildstream/*
+  */buildstream2/*
 
 omit =
   # Omit some internals
-  */buildstream/_profile.py
-  */buildstream/__main__.py
-  */buildstream/_version.py
+  */buildstream2/_profile.py
+  */buildstream2/__main__.py
+  */buildstream2/_version.py
   # Omit generated code
-  */buildstream/_protos/*
+  */buildstream2/_protos/*
   */.eggs/*
   # Omit .tox directory
   */.tox/*
@@ -20,6 +20,6 @@ precision = 2
 
 [paths]
 source =
-    buildstream/
-    */site-packages/buildstream/
-    */buildstream/buildstream/
+    buildstream2/
+    */site-packages/buildstream2/
+    */buildstream/buildstream2/

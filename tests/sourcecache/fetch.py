@@ -23,12 +23,12 @@ import os
 import shutil
 import pytest
 
-from buildstream._exceptions import ErrorDomain
-from buildstream._context import Context
-from buildstream._project import Project
-from buildstream import _yaml
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
+from buildstream2._exceptions import ErrorDomain
+from buildstream2._context import Context
+from buildstream2._project import Project
+from buildstream2 import _yaml
+from buildstream2.testing import cli  # pylint: disable=unused-import
+from buildstream2.testing import create_repo
 from tests.testutils import create_artifact_share
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")

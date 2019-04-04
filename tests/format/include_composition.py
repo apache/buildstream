@@ -1,8 +1,8 @@
 import os
-from buildstream._context import Context
-from buildstream._project import Project
-from buildstream._includes import Includes
-from buildstream import _yaml
+from buildstream2._context import Context
+from buildstream2._project import Project
+from buildstream2._includes import Includes
+from buildstream2 import _yaml
 
 
 def make_includes(basedir):

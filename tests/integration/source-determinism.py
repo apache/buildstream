@@ -1,9 +1,9 @@
 import os
 import pytest
 
-from buildstream import _yaml
-from buildstream.testing import cli_integration as cli
-from buildstream.testing import create_repo
+from buildstream2 import _yaml
+from buildstream2.testing import cli_integration as cli
+from buildstream2.testing import create_repo
 from tests.testutils.site import HAVE_SANDBOX
 
 

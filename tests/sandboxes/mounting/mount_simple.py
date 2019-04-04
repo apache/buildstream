@@ -4,7 +4,7 @@ from contextlib import ExitStack
 
 import pytest
 
-from buildstream.sandbox._mounter import Mounter
+from buildstream2.sandbox._mounter import Mounter
 
 
 @pytest.mark.skipif(not os.geteuid() == 0, reason="requires root permissions")

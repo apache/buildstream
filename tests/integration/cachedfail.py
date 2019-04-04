@@ -1,9 +1,9 @@
 import os
 import pytest
 
-from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain
-from buildstream.testing import cli_integration as cli
+from buildstream2 import _yaml
+from buildstream2._exceptions import ErrorDomain
+from buildstream2.testing import cli_integration as cli
 
 from tests.conftest import clean_platform_cache
 from tests.testutils import create_artifact_share

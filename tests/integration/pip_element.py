@@ -2,10 +2,10 @@ import os
 
 import pytest
 
-from buildstream import _yaml
+from buildstream2 import _yaml
 
-from buildstream.testing import cli_integration as cli
-from buildstream.testing.integration import assert_contains
+from buildstream2.testing import cli_integration as cli
+from buildstream2.testing.integration import assert_contains
 from tests.testutils.site import HAVE_SANDBOX
 
 

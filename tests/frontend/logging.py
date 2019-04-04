@@ -6,11 +6,11 @@ import re
 
 import pytest
 
-from buildstream.testing import create_repo
+from buildstream2.testing import create_repo
 
-from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream2 import _yaml
+from buildstream2._exceptions import ErrorDomain
+from buildstream2.testing import cli  # pylint: disable=unused-import
 
 # Project directory
 DATA_DIR = os.path.join(

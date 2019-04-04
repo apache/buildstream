@@ -5,10 +5,10 @@ import os
 
 import pytest
 
-from buildstream.plugin import CoreWarnings
-from buildstream._exceptions import ErrorDomain
-from buildstream import _yaml
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+from buildstream2.plugin import CoreWarnings
+from buildstream2._exceptions import ErrorDomain
+from buildstream2 import _yaml
+from buildstream2.testing.runcli import cli  # pylint: disable=unused-import
 
 TOP_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

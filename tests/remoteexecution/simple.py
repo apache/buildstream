@@ -1,8 +1,8 @@
 import os
 import pytest
 
-from buildstream.testing import cli_remote_execution as cli
-from buildstream.testing.integration import assert_contains
+from buildstream2.testing import cli_remote_execution as cli
+from buildstream2.testing.integration import assert_contains
 
 
 pytestmark = pytest.mark.remoteexecution

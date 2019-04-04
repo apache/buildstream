@@ -23,4 +23,4 @@ other more elaborate details about BuildStream internals.
 .. toctree::
    :hidden:
 
-   buildstream
+   buildstream2

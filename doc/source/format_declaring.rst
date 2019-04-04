@@ -233,7 +233,7 @@ Environment
      LD_LIBRARY_PATH: /some/custom/path
 
 Environment variables can be set to literal values here, these environment
-variables will be effective in the :mod:`Sandbox <buildstream.sandbox>` where
+variables will be effective in the :mod:`Sandbox <buildstream2.sandbox>` where
 build instructions are run for this element.
 
 

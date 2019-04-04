@@ -3,7 +3,7 @@
 
 import pytest
 
-from buildstream.utils import move_atomic, DirectoryExistsError
+from buildstream2.utils import move_atomic, DirectoryExistsError
 
 
 @pytest.fixture

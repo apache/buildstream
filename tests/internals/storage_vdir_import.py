@@ -4,9 +4,9 @@ import random
 
 import pytest
 
-from buildstream.storage._casbaseddirectory import CasBasedDirectory
-from buildstream.storage._filebaseddirectory import FileBasedDirectory
-from buildstream._cas import CASCache
+from buildstream2.storage._casbaseddirectory import CasBasedDirectory
+from buildstream2.storage._filebaseddirectory import FileBasedDirectory
+from buildstream2._cas import CASCache
 
 
 # These are comparitive tests that check that FileBasedDirectory and

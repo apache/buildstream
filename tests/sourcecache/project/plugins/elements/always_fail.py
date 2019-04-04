@@ -18,8 +18,8 @@
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 #
 
-from buildstream.element import ElementError
-from buildstream.buildelement import BuildElement
+from buildstream2.element import ElementError
+from buildstream2.buildelement import BuildElement
 
 
 class AlwaysFail(BuildElement):

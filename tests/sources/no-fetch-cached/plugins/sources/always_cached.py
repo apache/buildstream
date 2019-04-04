@@ -7,7 +7,7 @@ Used to test that BuildStream core does not call fetch() for cached sources.
 
 """
 
-from buildstream import Consistency, Source
+from buildstream2 import Consistency, Source
 
 
 class AlwaysCachedSource(Source):

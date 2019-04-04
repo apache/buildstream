@@ -1,6 +1,6 @@
 import os
 
-from buildstream import Source, Consistency, SourceError, SourceFetcher
+from buildstream2 import Source, Consistency, SourceError, SourceFetcher
 
 # Expected config
 # sources:

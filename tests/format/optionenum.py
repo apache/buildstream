@@ -3,9 +3,9 @@
 
 import os
 import pytest
-from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+from buildstream2 import _yaml
+from buildstream2._exceptions import ErrorDomain, LoadErrorReason
+from buildstream2.testing.runcli import cli  # pylint: disable=unused-import
 
 # Project directory
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))

@@ -1,4 +1,4 @@
-from buildstream import Source, Consistency
+from buildstream2 import Source, Consistency
 
 
 class BarSource(Source):

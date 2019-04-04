@@ -8,10 +8,10 @@ import itertools
 
 import pytest
 
-from buildstream import _yaml
-from buildstream.testing import create_repo
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream._exceptions import ErrorDomain
+from buildstream2 import _yaml
+from buildstream2.testing import create_repo
+from buildstream2.testing import cli  # pylint: disable=unused-import
+from buildstream2._exceptions import ErrorDomain
 
 from . import configure_project
 

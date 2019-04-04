@@ -2,9 +2,9 @@
 # pylint: disable=redefined-outer-name
 
 import os
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
-from buildstream import _yaml
+from buildstream2.testing import cli  # pylint: disable=unused-import
+from buildstream2.testing import create_repo
+from buildstream2 import _yaml
 
 
 def prepare_junction_project(cli, tmpdir):

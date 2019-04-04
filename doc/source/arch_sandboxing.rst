@@ -38,7 +38,7 @@ running with extra privileges. The exact priviliges that are required depend on
 your platform and backend.
 
 Element plugins can run arbitary commands within the sandbox using the
-:mod:`sandbox API <buildstream.sandbox.sandbox>`.
+:mod:`sandbox API <buildstream2.sandbox.sandbox>`.
 
 What elements can and can't do in the sandbox
 ---------------------------------------------
@@ -54,7 +54,7 @@ Filesystem access
 The filesystem inside sandboxes should be read-only during element assembly,
 except for certain directories which element plugins can mark as being
 read/write. Most elements plugins derive from :mod:`BuildElement
-<buildstream.buildelement>`, which marks ``%{build-root}`` and
+<buildstream2.buildelement>`, which marks ``%{build-root}`` and
 ``%{install-root}`` as read/write.
 
 When running integration commands or `bst shell`, the sandbox should have a

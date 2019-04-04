@@ -44,9 +44,9 @@ import os
 
 import pytest
 
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
-from buildstream.plugin import CoreWarnings
-from buildstream import _yaml
+from buildstream2.testing.runcli import cli  # pylint: disable=unused-import
+from buildstream2.plugin import CoreWarnings
+from buildstream2 import _yaml
 from tests.testutils.site import HAVE_BZR, HAVE_GIT, HAVE_OSTREE, IS_LINUX, MACHINE_ARCH
 
 

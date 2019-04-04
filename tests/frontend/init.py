@@ -3,12 +3,12 @@
 
 import os
 import pytest
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream2.testing import cli  # pylint: disable=unused-import
 
-from buildstream import _yaml
-from buildstream._frontend.app import App
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from buildstream._versions import BST_FORMAT_VERSION
+from buildstream2 import _yaml
+from buildstream2._frontend.app import App
+from buildstream2._exceptions import ErrorDomain, LoadErrorReason
+from buildstream2._versions import BST_FORMAT_VERSION
 
 
 def test_defaults(cli, tmpdir):

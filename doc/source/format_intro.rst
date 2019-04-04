@@ -2,7 +2,7 @@
 
 Introduction
 ============
-At the core of BuildStream is a data model of :mod:`Elements <buildstream.element>` which
+At the core of BuildStream is a data model of :mod:`Elements <buildstream2.element>` which
 are parsed from ``.bst`` files in a project directory and configured from a few different
 sources.
 

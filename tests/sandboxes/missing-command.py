@@ -1,9 +1,9 @@
 import os
 import pytest
 
-from buildstream._exceptions import ErrorDomain
+from buildstream2._exceptions import ErrorDomain
 
-from buildstream.testing import cli
+from buildstream2.testing import cli
 
 
 DATA_DIR = os.path.join(

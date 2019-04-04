@@ -35,9 +35,9 @@ from tempfile import TemporaryDirectory
 
 import click
 
-from buildstream import _yaml
-from buildstream import utils
-from buildstream._exceptions import BstError
+from buildstream2 import _yaml
+from buildstream2 import utils
+from buildstream2._exceptions import BstError
 
 
 _ANSI2HTML_STYLES = {}
@@ -218,7 +218,7 @@ def workdir(source_cache=None):
 def run_bst_command(config_file, directory, command):
     click.echo("Running bst command in directory '{}': bst {}".format(directory, command), err=True)
 
-    argv = ['python3', '-m', 'buildstream', '--colors', '--config', config_file] + shlex.split(command)
+    argv = ['python3', '-m', 'buildstream2', '--colors', '--config', config_file] + shlex.split(command)
     p = subprocess.Popen(argv, cwd=directory, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out, _ = p.communicate()
     return out.decode('utf-8').strip()

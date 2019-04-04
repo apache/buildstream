@@ -13,14 +13,14 @@ The ``Project`` object is the main component of a given BuildStream *project*, a
 is responsible for loading and validating the :ref:`project.conf <projectconf>`, and
 providing this loaded *project data* in a convenient way to the BuildStream core.
 
-Conceptually, the *project* is a container for the :mod:`Elements <buildstream.element>`,
+Conceptually, the *project* is a container for the :mod:`Elements <buildstream2.element>`,
 which are declared within a user's project, and as such acts as a factory for instantiating
 elements at load time.
 
 
 Element
 -------
-:mod:`Elements <buildstream.element>` are the main processing unit in a pipeline. These
+:mod:`Elements <buildstream2.element>` are the main processing unit in a pipeline. These
 are the loaded representation of the ``.bst`` files loaded from the :ref:`project's element path
 <project_element_path>`.
 
@@ -80,7 +80,7 @@ on top.
 
 Source
 ------
-:mod:`Sources <buildstream.element>` are the abstract objects which are responsible
+:mod:`Sources <buildstream2.source>` are the abstract objects which are responsible
 for obtaining remote source code or data to import into the build environment, and
 ensuring that it is done in a bit-for-bit reproducible way without any contamination
 of the host or build environment.

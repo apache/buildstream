@@ -94,7 +94,7 @@ requiring BuildStream's more exigent dependencies by setting the
 Command reference
 ~~~~~~~~~~~~~~~~~
 
-.. click:: buildstream._cas.casserver:server_main
+.. click:: buildstream2._cas.casserver:server_main
    :prog: bst-artifact-server
 
 

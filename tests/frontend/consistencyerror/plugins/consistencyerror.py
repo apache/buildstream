@@ -1,4 +1,4 @@
-from buildstream import Source, SourceError
+from buildstream2 import Source, SourceError
 
 
 class ConsistencyErrorSource(Source):

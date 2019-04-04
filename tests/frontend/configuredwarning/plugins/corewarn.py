@@ -1,5 +1,5 @@
-from buildstream import Element
-from buildstream.plugin import CoreWarnings
+from buildstream2 import Element
+from buildstream2.plugin import CoreWarnings
 
 
 class CoreWarn(Element):

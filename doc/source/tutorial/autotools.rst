@@ -86,8 +86,8 @@ As :ref:`the documentation <format_composition>` mentions:
   are resolved after all composition has taken place.
 
 The variable we needed to override was ``command-subdir``, which is an
-automatic variable provided by the :mod:`BuildElement <buildstream.buildelement>`
-abstract class. This variable simply instructs the :mod:`BuildElement <buildstream.buildelement>`
+automatic variable provided by the :mod:`BuildElement <buildstream2.buildelement>`
+abstract class. This variable simply instructs the :mod:`BuildElement <buildstream2.buildelement>`
 in which subdirectory of the ``%{build-root}`` to run its commands in.
 
 One can always display the resolved set of variables for a given

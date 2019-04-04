@@ -1,4 +1,4 @@
-from buildstream import Element, Scope
+from buildstream2 import Element, Scope
 
 
 # Copies files from the dependent element but inserts split-rules using dynamic data

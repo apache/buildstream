@@ -3,14 +3,14 @@ import pytest
 import itertools
 import os
 
-from buildstream._artifactcache import ArtifactCacheSpec, ArtifactCache
-from buildstream._context import Context
-from buildstream._project import Project
-from buildstream.utils import _deduplicate
-from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
+from buildstream2._artifactcache import ArtifactCacheSpec, ArtifactCache
+from buildstream2._context import Context
+from buildstream2._project import Project
+from buildstream2.utils import _deduplicate
+from buildstream2 import _yaml
+from buildstream2._exceptions import ErrorDomain, LoadErrorReason
 
-from buildstream.testing.runcli import cli
+from buildstream2.testing.runcli import cli
 
 
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))

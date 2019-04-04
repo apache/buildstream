@@ -63,12 +63,12 @@ to support a new feature.
 
 .. note::
 
-   External :mod:`Element <buildstream.element>` and :mod:`Source <buildstream.source>`
+   External :mod:`Element <buildstream2.element>` and :mod:`Source <buildstream2.source>`
    plugins also implement their own YAML configuration fragments and as
    such are revisioned separately from the core format. See :ref:`project_plugins`
    for details on specifying a minimum version of a specific plugin.
 
-   Core :mod:`Elements <buildstream.element>` and :mod:`Sources <buildstream.source>`
+   Core :mod:`Elements <buildstream2.element>` and :mod:`Sources <buildstream2.source>`
    which are maintained and distributed as a part of BuildStream are revisioned
    under the same global ``format-version`` described here.
 
@@ -143,7 +143,7 @@ Individual warnings can be configured as fatal by setting ``fatal-warnings`` to 
   - ref-not-in-track
   - <plugin>:<warning>
 
-BuildStream provides a collection of :class:`Core Warnings <buildstream.types.CoreWarnings>` which may be raised
+BuildStream provides a collection of :class:`Core Warnings <buildstream2.types.CoreWarnings>` which may be raised
 by a variety of plugins. Other configurable warnings are plugin specific and should be noted within their individual documentation.
 
 .. note::
@@ -337,8 +337,8 @@ A default mirror to consult first can be defined via
 
 External plugins
 ----------------
-If your project makes use of any custom :mod:`Element <buildstream.element>` or
-:mod:`Source <buildstream.source>` plugins, then the project must inform BuildStream
+If your project makes use of any custom :mod:`Element <buildstream2.element>` or
+:mod:`Source <buildstream2.source>` plugins, then the project must inform BuildStream
 of the plugins it means to make use of and the origin from which they can be loaded.
 
 Note that plugins with the same name from different origins are not permitted.
@@ -347,8 +347,8 @@ Note that plugins with the same name from different origins are not permitted.
 Local plugins
 ~~~~~~~~~~~~~
 Local plugins are expected to be found in a subdirectory of the actual
-BuildStream project. :mod:`Element <buildstream.element>` and
-:mod:`Source <buildstream.source>` plugins should be stored in separate
+BuildStream project. :mod:`Element <buildstream2.element>` and
+:mod:`Source <buildstream2.source>` plugins should be stored in separate
 directories to avoid namespace collisions.
 
 The versions of local plugins are largely immaterial since they are
@@ -1017,5 +1017,5 @@ Builtin defaults
 BuildStream defines some default values for convenience, the default
 values overridden by your project's ``project.conf`` are presented here:
 
-  .. literalinclude:: ../../buildstream/data/projectconfig.yaml
+  .. literalinclude:: ../../buildstream2/data/projectconfig.yaml
      :language: yaml

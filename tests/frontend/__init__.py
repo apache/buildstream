@@ -1,5 +1,5 @@
 import os
-from buildstream import _yaml
+from buildstream2 import _yaml
 
 
 # Shared function to configure the project.conf inline

@@ -1,4 +1,4 @@
-from buildstream import Source
+from buildstream2 import Source
 
 
 class ConsistencyBugSource(Source):

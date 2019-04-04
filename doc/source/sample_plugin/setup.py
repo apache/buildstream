@@ -9,7 +9,7 @@ setup(name='BuildStream Autotools',
       ],
       include_package_data=True,
       entry_points={
-          'buildstream.plugins': [
+          'buildstream2.plugins': [
               'autotools = elements.autotools'
           ]
       })

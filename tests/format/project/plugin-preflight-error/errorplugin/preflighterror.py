@@ -1,4 +1,4 @@
-from buildstream import Source, SourceError, Consistency
+from buildstream2 import Source, SourceError, Consistency
 
 
 class PreflightErrorSource(Source):

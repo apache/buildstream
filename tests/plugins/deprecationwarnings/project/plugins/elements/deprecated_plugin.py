@@ -1,4 +1,4 @@
-from buildstream import BuildElement
+from buildstream2 import BuildElement
 
 
 class DeprecatedPlugin(BuildElement):

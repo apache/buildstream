@@ -1,6 +1,6 @@
 import pytest
 import os
-from buildstream.testing import cli
+from buildstream2.testing import cli
 
 
 DATA_DIR = os.path.join(

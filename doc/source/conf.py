@@ -19,7 +19,7 @@
 #
 import os
 import sys
-from buildstream import __version__
+from buildstream2 import __version__
 
 sys.path.insert(0, os.path.abspath('..'))
 
@@ -112,7 +112,7 @@ add_module_names = False
 pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
-modindex_common_prefix = ['buildstream.']
+modindex_common_prefix = ['buildstream2.']
 
 # If true, keep warnings as "system message" paragraphs in the built documents.
 # keep_warnings = False
@@ -308,7 +308,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'buildstream', 'BuildStream Documentation',
+    (master_doc, 'buildstream2', 'BuildStream Documentation',
      [author], 1)
 ]
 

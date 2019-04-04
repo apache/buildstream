@@ -2,8 +2,8 @@ import os
 import shutil
 import pytest
 
-from buildstream import _yaml
-from buildstream.testing import cli
+from buildstream2 import _yaml
+from buildstream2.testing import cli
 
 from tests.testutils import create_artifact_share
 

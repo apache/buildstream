@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from buildstream.utils import save_file_atomic
+from buildstream2.utils import save_file_atomic
 
 
 def test_save_new_file(tmpdir):

@@ -4,7 +4,7 @@
 import os
 import pytest
 
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream2.testing import cli  # pylint: disable=unused-import
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

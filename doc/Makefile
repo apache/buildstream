@@ -32,7 +32,7 @@ BST2HTMLOPTS = --force
 endif
 
 # Help Python find buildstream and its plugins
-PYTHONPATH=$(CURDIR)/..:$(CURDIR)/../buildstream/plugins
+PYTHONPATH=$(CURDIR)/..:$(CURDIR)/../buildstream2/plugins
 
 
 .PHONY: all clean templates templates-clean sessions sessions-prep sessions-clean badges badges-clean html devhelp
@@ -82,9 +82,9 @@ clean: templates-clean sessions-clean badges-clean
 templates:
 	mkdir -p source/elements
 	mkdir -p source/sources
-	$(SPHINXAPIDOC) --force --separate --module-first --no-headings --no-toc -o source $(CURDIR)/../buildstream *_pb2*.py
-	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/elements,elements)
-	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream/plugins/sources,sources)
+	$(SPHINXAPIDOC) --force --separate --module-first --no-headings --no-toc -o source $(CURDIR)/../buildstream2 *_pb2*.py
+	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream2/plugins/elements,elements)
+	$(call plugin-doc-skeleton,$(CURDIR)/../buildstream2/plugins/sources,sources)
 
 templates-clean:
 	rm -rf source/elements

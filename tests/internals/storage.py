@@ -2,9 +2,9 @@ import os
 
 import pytest
 
-from buildstream._cas import CASCache
-from buildstream.storage._casbaseddirectory import CasBasedDirectory
-from buildstream.storage._filebaseddirectory import FileBasedDirectory
+from buildstream2._cas import CASCache
+from buildstream2.storage._casbaseddirectory import CasBasedDirectory
+from buildstream2.storage._filebaseddirectory import FileBasedDirectory
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

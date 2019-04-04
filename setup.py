@@ -127,14 +127,14 @@ def list_man_pages():
 # So screw it, lets just use an env var.
 bst_install_entry_points = {
     'console_scripts': [
-        'bst-artifact-server = buildstream._cas.casserver:server_main'
+        'bst-artifact-server = buildstream2._cas.casserver:server_main'
     ],
 }
 
 if not os.environ.get('BST_ARTIFACTS_ONLY', ''):
     check_for_bwrap()
     bst_install_entry_points['console_scripts'] += [
-        'bst = buildstream._frontend:cli'
+        'bst = buildstream2._frontend:cli'
     ]
 
 #####################################################
@@ -200,7 +200,7 @@ class BuildGRPC(Command):
                   "Install it via pip (pip3 install grpcio-tools).")
             exit(1)
 
-        protos_root = 'buildstream/_protos'
+        protos_root = 'buildstream2/_protos'
 
         grpc_tools.command.build_package_protos(protos_root)
 
@@ -213,10 +213,10 @@ class BuildGRPC(Command):
                         code = f.read()
 
                     # All protos are in buildstream._protos
-                    code = re.sub(r'^from ', r'from buildstream._protos.',
+                    code = re.sub(r'^from ', r'from buildstream2._protos.',
                                   code, flags=re.MULTILINE)
                     # Except for the core google.protobuf protos
-                    code = re.sub(r'^from buildstream._protos.google.protobuf', r'from google.protobuf',
+                    code = re.sub(r'^from buildstream2._protos.google.protobuf', r'from google.protobuf',
                                   code, flags=re.MULTILINE)
 
                     with open(path, 'w') as f:
@@ -290,7 +290,7 @@ with open(os.path.join(os.path.dirname(os.path.realpath(__file__)),
 #####################################################
 #             Main setup() Invocation               #
 #####################################################
-setup(name='BuildStream',
+setup(name='BuildStream2',
       # Use versioneer
       version=versioneer.get_version(),
       cmdclass=get_cmdclass(),
@@ -321,8 +321,8 @@ setup(name='BuildStream',
       },
       python_requires='~={}.{}'.format(REQUIRED_PYTHON_MAJOR, REQUIRED_PYTHON_MINOR),
       packages=find_packages(exclude=('tests', 'tests.*')),
-      package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml',
-                                    'data/*.yaml', 'data/*.sh.in']},
+      package_data={'buildstream2': ['plugins/*/*.py', 'plugins/*/*.yaml',
+                                     'data/*.yaml', 'data/*.sh.in']},
       include_package_data=True,
       data_files=[
           # This is a weak attempt to integrate with the user nicely,
@@ -338,7 +338,7 @@ setup(name='BuildStream',
           #
           ('share/man/man1', list_man_pages()),
           ('share/bash-completion/completions', [
-              os.path.join('buildstream', 'data', 'bst')
+              os.path.join('buildstream2', 'data', 'bst')
           ])
       ],
       install_requires=install_requires,

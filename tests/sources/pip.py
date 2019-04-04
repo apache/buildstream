@@ -4,10 +4,10 @@
 import os
 import pytest
 
-from buildstream._exceptions import ErrorDomain
-from buildstream import _yaml
-from buildstream.plugins.sources.pip import _match_package_name
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream2._exceptions import ErrorDomain
+from buildstream2 import _yaml
+from buildstream2.plugins.sources.pip import _match_package_name
+from buildstream2.testing import cli  # pylint: disable=unused-import
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

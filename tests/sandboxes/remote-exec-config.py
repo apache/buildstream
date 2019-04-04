@@ -2,10 +2,10 @@ import pytest
 
 import os
 
-from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
+from buildstream2 import _yaml
+from buildstream2._exceptions import ErrorDomain, LoadErrorReason
 
-from buildstream.testing.runcli import cli
+from buildstream2.testing.runcli import cli
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),

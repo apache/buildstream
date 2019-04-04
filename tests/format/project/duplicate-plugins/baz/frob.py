@@ -1,4 +1,4 @@
-from buildstream import Element
+from buildstream2 import Element
 
 
 class FrobElement(Element):

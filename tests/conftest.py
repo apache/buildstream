@@ -23,15 +23,14 @@ import os
 import shutil
 import tempfile
 import pytest
-from buildstream._platform.platform import Platform
-from buildstream.testing import register_repo_kind, sourcetests_collection_hook
+from buildstream2._platform.platform import Platform
+from buildstream2.testing import register_repo_kind, sourcetests_collection_hook
 
 from tests.testutils.repo.git import Git
 from tests.testutils.repo.bzr import Bzr
 from tests.testutils.repo.ostree import OSTree
 from tests.testutils.repo.tar import Tar
 from tests.testutils.repo.zip import Zip
-
 
 #
 # This file is loaded by pytest, we use it to add a custom
