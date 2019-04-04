@@ -63,8 +63,10 @@ from ._exceptions import LoadError, LoadErrorReason
 #
 class Node(namedtuple('Node', ['value', 'file_index', 'line', 'column'])):
     def __contains__(self, what):
-        assert False, \
-            "BUG: Attempt to do `{} in {}` test".format(what, self)
+        # Delegate to the inner value, though this will likely not work
+        # very well if the node is a list or string, it's unlikely that
+        # code which has access to such nodes would do this.
+        return what in self[0]
 
 
 # File name handling
