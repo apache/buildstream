@@ -131,10 +131,24 @@ bst_install_entry_points = {
     ],
 }
 
+#
+# By default BuildStream 2 installs as 'bst2', but allow
+# the installer to override this and install as 'bst' if
+# they wish
+#
+bst_entry_point = os.environ.get('BST_ENTRY_POINT', '')
+if not bst_entry_point:
+    bst_entry_point = 'bst2'
+
+if bst_entry_point not in ('bst', 'bst2'):
+    print("BST_ENTRY_POINT was set to '{}'".format(bst_entry_point) +
+          ", but only 'bst' or 'bst2' is allowed")
+    sys.exit(1)
+
 if not os.environ.get('BST_ARTIFACTS_ONLY', ''):
     check_for_bwrap()
     bst_install_entry_points['console_scripts'] += [
-        'bst = buildstream2._frontend:cli'
+        '{} = buildstream2._frontend:cli'.format(bst_entry_point)
     ]
 
 #####################################################
