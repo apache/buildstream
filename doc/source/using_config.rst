@@ -19,8 +19,8 @@ the default configuration.
 
 Unless a configuration file is explicitly specified on the command line when
 invoking ``bst``, an attempt is made to load user specific configuration from
-``$XDG_CONFIG_HOME/buildstream.conf``. On most Linux based systems, the location
-will be ``~/.config/buildstream.conf``
+``$XDG_CONFIG_HOME/buildstream2.conf``. On most Linux based systems, the location
+will be ``~/.config/buildstream2.conf``
 
 
 Project specific value
@@ -255,7 +255,7 @@ cache in the user configuration. This can be done in two ways:
 1. By restricting the maximum size of the cache directory itself.
 
 For example, to ensure that BuildStream's cache does not grow beyond 100 GB,
-simply declare the following in your user configuration (``~/.config/buildstream.conf``):
+simply declare the following in your user configuration (``~/.config/buildstream2.conf``):
 
 .. code:: yaml
 
