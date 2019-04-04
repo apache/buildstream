@@ -184,11 +184,11 @@ class Context():
     @PROFILER.profile(Topics.LOAD_CONTEXT, "load")
     def load(self, config=None):
         # If a specific config file is not specified, default to trying
-        # a $XDG_CONFIG_HOME/buildstream.conf file
+        # a $XDG_CONFIG_HOME/buildstream2.conf file
         #
         if not config:
             default_config = os.path.join(os.environ['XDG_CONFIG_HOME'],
-                                          'buildstream.conf')
+                                          'buildstream2.conf')
             if os.path.exists(default_config):
                 config = default_config
 
