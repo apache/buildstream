@@ -433,27 +433,6 @@ class Plugin():
         """
         _yaml.node_set(node, key, value)
 
-    def node_has_member(self, node, key):
-        """Essentially the `key in node` test
-        Args:
-           node (node): A dictionary loaded from YAML
-           key (str): The key name
-
-        Returns:
-           bool: Whether or not key is in node
-
-        Raises:
-           None
-
-        **Example:**
-
-        .. code:: python
-
-          # To see if `name` is set in `node
-          present = self.node_has_member(node, 'name')
-        """
-        return _yaml.node_contains(node, key)
-
     def new_empty_node(self):
         """Create an empty 'Node' object to be handled by BuildStream's core
         Args:

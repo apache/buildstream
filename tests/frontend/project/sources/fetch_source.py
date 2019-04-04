@@ -41,7 +41,7 @@ class FetchSource(Source):
         self.original_urls = self.node_get_member(node, list, 'urls')
         self.output_file = self.node_get_member(node, str, 'output-text')
         self.fetch_succeeds = {}
-        if self.node_has_member(node, 'fetch-succeeds'):
+        if 'fetch-succeeds' in node:
             fetch_succeeds_node = self.node_get_member(node, dict, 'fetch-succeeds')
             for key, value in self.node_items(fetch_succeeds_node):
                 self.fetch_succeeds[key] = value in ('True', 'true')
