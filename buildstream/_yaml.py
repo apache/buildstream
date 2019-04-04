@@ -63,8 +63,10 @@ from ._exceptions import LoadError, LoadErrorReason
 #
 class Node(namedtuple('Node', ['value', 'file_index', 'line', 'column'])):
     def __contains__(self, what):
-        assert False, \
-            "BUG: Attempt to do `{} in {}` test".format(what, self)
+        # Delegate to the inner value, though this will likely not work
+        # very well if the node is a list or string, it's unlikely that
+        # code which has access to such nodes would do this.
+        return what in self[0]
 
 
 # File name handling
@@ -770,20 +772,6 @@ def __new_node_from_list(inlist):
         else:
             ret.append(Node(str(v), None, 0, next(_SYNTHETIC_COUNTER)))
     return Node(ret, None, 0, next(_SYNTHETIC_COUNTER))
-
-
-# node_contains()
-#
-# Args:
-#    node (Node): The mapping node to query the contents of
-#    entry (str): The key to look for in the mapping node
-#
-# Returns:
-#    (bool): Whether entry is in the mapping in node.
-#
-def node_contains(node, entry):
-    assert type(node) is Node
-    return entry in node[0]
 
 
 # _is_composite_list

@@ -127,7 +127,7 @@ def test_node_set(datafiles):
 
     base = _yaml.load(filename)
 
-    assert not _yaml.node_contains(base, 'mother')
+    assert 'mother' not in base
     _yaml.node_set(base, 'mother', 'snow white')
     assert _yaml.node_get(base, str, 'mother') == 'snow white'
 
@@ -283,7 +283,7 @@ def test_nonexistent_list_extension(datafiles):
     base = os.path.join(datafiles.dirname, datafiles.basename, 'basics.yaml')
 
     base = _yaml.load(base, shortname='basics.yaml')
-    assert not _yaml.node_contains(base, 'todo')
+    assert 'todo' not in base
 
     _yaml.node_extend_list(base, 'todo', 3, 'empty')
 

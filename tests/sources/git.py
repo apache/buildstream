@@ -853,9 +853,9 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
         tags = _yaml.node_get(_yaml.node_get(element, dict, 'sources', [0]), list, 'tags')
         assert len(tags) == 2
         for tag in tags:
-            assert _yaml.node_contains(tag, 'tag')
-            assert _yaml.node_contains(tag, 'commit')
-            assert _yaml.node_contains(tag, 'annotated')
+            assert 'tag' in tag
+            assert 'commit' in tag
+            assert 'annotated' in tag
             assert _yaml.node_get(tag, bool, 'annotated') == (tag_type == 'annotated')
 
         assert {(_yaml.node_get(tag, str, 'tag'),
@@ -968,9 +968,9 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
         assert len(tags) == 1
 
         tag = _yaml.node_get(source, dict, 'tags', indices=[0])
-        assert _yaml.node_contains(tag, 'tag')
-        assert _yaml.node_contains(tag, 'commit')
-        assert _yaml.node_contains(tag, 'annotated')
+        assert 'tag' in tag
+        assert 'commit' in tag
+        assert 'annotated' in tag
         assert _yaml.node_get(tag, bool, 'annotated') == (tag_type == 'annotated')
 
         tag_name = _yaml.node_get(tag, str, 'tag')
@@ -1127,7 +1127,7 @@ def test_default_do_not_track_tags(cli, tmpdir, datafiles):
 
     element = _yaml.load(element_path)
     source = _yaml.node_get(element, dict, 'sources', indices=[0])
-    assert not _yaml.node_contains(source, 'tags')
+    assert 'tags' not in source
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")

@@ -322,13 +322,13 @@ def test_track_include(cli, tmpdir, datafiles, ref_storage, kind):
         new_sources = _yaml.load(os.path.join(element_path, 'sources.yml'))
 
         # Get all of the sources
-        assert _yaml.node_contains(new_sources, 'sources')
+        assert 'sources' in new_sources
         sources_list = _yaml.node_get(new_sources, list, 'sources')
         assert len(sources_list) == 1
 
         # Get the first source from the sources list
         new_source = _yaml.node_get(new_sources, dict, 'sources', indices=[0])
-        assert _yaml.node_contains(new_source, 'ref')
+        assert 'ref' in new_source
         assert ref == _yaml.node_get(new_source, str, 'ref')
 
 

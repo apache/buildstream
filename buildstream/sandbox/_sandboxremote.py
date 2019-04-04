@@ -136,8 +136,8 @@ class SandboxRemote(Sandbox):
 
         # Maintain some backwards compatibility with older configs, in which
         # 'url' was the only valid key for remote-execution:
-        if _yaml.node_contains(remote_config, 'url'):
-            if not _yaml.node_contains(remote_config, 'execution-service'):
+        if 'url' in remote_config:
+            if 'execution-service' not in remote_config:
                 exec_config = _yaml.new_node_from_dict({'url': remote_config['url']})
             else:
                 provenance = _yaml.node_get_provenance(remote_config, key='url')
@@ -157,7 +157,7 @@ class SandboxRemote(Sandbox):
 
         for config_key, config in zip(service_keys, service_configs):
             # Either both or none of the TLS client key/cert pair must be specified:
-            if _yaml.node_contains(config, 'client-key') != _yaml.node_contains(config, 'client-cert'):
+            if ('client-key' in config) != ('client-cert' in config):
                 provenance = _yaml.node_get_provenance(remote_config, key=config_key)
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
                                       "{}: TLS client key/cert pair is incomplete. "
@@ -166,7 +166,7 @@ class SandboxRemote(Sandbox):
                                       .format(str(provenance)))
 
             for tls_key in tls_keys:
-                if _yaml.node_contains(config, tls_key):
+                if tls_key in config:
                     _yaml.node_set(config, tls_key, resolve_path(_yaml.node_get(config, str, tls_key)))
 
         return RemoteExecutionSpec(*[_yaml.node_sanitize(conf) for conf in service_configs])

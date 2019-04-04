@@ -220,11 +220,11 @@ class FilterElement(Element):
                 split_rules = self.node_get_member(pub_data, dict, 'split-rules', {})
                 unfound_includes = []
                 for domain in self.include:
-                    if not self.node_has_member(split_rules, domain):
+                    if domain not in split_rules:
                         unfound_includes.append(domain)
                 unfound_excludes = []
                 for domain in self.exclude:
-                    if not self.node_has_member(split_rules, domain):
+                    if domain not in split_rules:
                         unfound_excludes.append(domain)
 
                 detail = []

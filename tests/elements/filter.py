@@ -295,7 +295,7 @@ def test_filter_track_excepted(datafiles, cli, tmpdir):
     # Now check that a ref field exists
     new_input = _yaml.load(input_file)
     source_node = _yaml.node_get(new_input, dict, 'sources', indices=[0])
-    assert not _yaml.node_contains(source_node, 'ref')
+    assert 'ref' not in source_node
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
@@ -483,7 +483,7 @@ def test_filter_track_multi_exclude(datafiles, cli, tmpdir):
     # Now check that a ref field exists
     new_input = _yaml.load(input_file)
     source_node = _yaml.node_get(new_input, dict, 'sources', indices=[0])
-    assert not _yaml.node_contains(source_node, 'ref')
+    assert 'ref' not in source_node
 
     new_input2 = _yaml.load(input2_file)
     source_node2 = _yaml.node_get(new_input2, dict, 'sources', indices=[0])
