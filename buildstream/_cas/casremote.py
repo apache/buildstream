@@ -12,6 +12,7 @@ from .. import _yaml
 from .._protos.google.rpc import code_pb2
 from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
+from .._protos.buildstream.v2 import artifact_pb2_grpc
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
 
 from .._exceptions import CASRemoteError, LoadError, LoadErrorReason
@@ -87,6 +88,7 @@ class CASRemote():
         self.bytestream = None
         self.cas = None
         self.ref_storage = None
+        self.artifact = None
         self.batch_update_supported = None
         self.batch_read_supported = None
         self.capabilities = None
@@ -132,6 +134,7 @@ class CASRemote():
             self.cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self.channel)
             self.capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self.channel)
             self.ref_storage = buildstream_pb2_grpc.ReferenceStorageStub(self.channel)
+            self.artifact = artifact_pb2_grpc.ArtifactServiceStub(self.channel)
 
             self.max_batch_total_size_bytes = _MAX_PAYLOAD_BYTES
             try:
