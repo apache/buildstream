@@ -112,19 +112,19 @@ def _test_push(user_config_file, project_dir, element_name, element_key, queue):
     project = Project(project_dir, context)
     project.ensure_fully_loaded()
 
-    # Create a local CAS cache handle
-    cas = context.artifactcache
+    # Create a local artifact cache handle
+    artifactcache = context.artifactcache
 
     # Load the target element
     element = project.load_elements([element_name])[0]
 
-    # Manually setup the CAS remote
-    cas.setup_remotes(use_config=True)
-    cas.initialize_remotes()
+    # Manually setup the CAS remotes
+    artifactcache.setup_remotes(use_config=True)
+    artifactcache.initialize_remotes()
 
-    if cas.has_push_remotes(plugin=element):
+    if artifactcache.has_push_remotes(plugin=element):
         # Push the element's artifact
-        if not cas.push(element, [element_key]):
+        if not artifactcache.push(element, [element_key]):
             queue.put("Push operation failed")
         else:
             queue.put(None)
@@ -189,21 +189,21 @@ def _test_push_message(user_config_file, project_dir, queue):
     project = Project(project_dir, context)
     project.ensure_fully_loaded()
 
-    # Create a local CAS cache handle
-    cas = context.artifactcache
+    # Create a local artifact cache handle
+    artifactcache = context.artifactcache
 
-    # Manually setup the CAS remote
-    cas.setup_remotes(use_config=True)
-    cas.initialize_remotes()
+    # Manually setup the artifact remote
+    artifactcache.setup_remotes(use_config=True)
+    artifactcache.initialize_remotes()
 
-    if cas.has_push_remotes():
+    if artifactcache.has_push_remotes():
         # Create an example message object
         command = remote_execution_pb2.Command(arguments=['/usr/bin/gcc', '--help'],
                                                working_directory='/buildstream-build',
                                                output_directories=['/buildstream-install'])
 
         # Push the message object
-        command_digest = cas.push_message(project, command)
+        command_digest = artifactcache.push_message(project, command)
 
         queue.put((command_digest.hash, command_digest.size_bytes))
     else:
