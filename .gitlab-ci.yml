@@ -55,6 +55,10 @@ tests-fedora-29:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
   <<: *tests
 
+tests-fedora-30:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-55318540
+  <<: *tests
+
 tests-ubuntu-18.04:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-master-46405991
   <<: *tests
