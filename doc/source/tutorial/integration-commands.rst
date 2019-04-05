@@ -31,20 +31,21 @@ Project structure
 -----------------
 
 
-``project.conf`` and  ``elements/base.bst``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The project.conf and base stack :mod:`stack <elements.stack>` element are configured in the
+``project.conf`` and  ``elements/freedesktop-sdk.bst``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The project.conf and freedesktop-sdk element are configured in the
 same way as in the previous chapter: :ref:`tutorial_running_commands`.
 
 
-``elements/base/alpine.bst``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``elements/libhello.bst``
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. literalinclude:: ../../examples/integration-commands/elements/base/alpine.bst
+.. literalinclude:: ../../examples/integration-commands/elements/libhello.bst
    :language: yaml
 
-This is the same ``base/alpine.bst`` we've seen in previous chapters,
-except that we've added an :ref:`integration command <public_integration>`.
+This is a simple library to be used by ``elements/hello.bst`` - it is
+very similar to elements we have already seen, except that we have
+added an :ref:`integration command <public_integration>`.
 
 This informs BuildStream that whenever the output of this element is
 expected to *run*, this command should be run first. In this case we
@@ -67,16 +68,11 @@ the dependency chain about details of its artifact, or to suggest how
 it should be processed.
 
 
-``elements/libhello.bst`` and  ``elements/hello.bst``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-These are basically manual elements very similar to the ones we've
-seen in the previous chapter: :ref:`tutorial_running_commands`.
+``elements/hello.bst``
+~~~~~~~~~~~~~~~~~~~~~~
 
-These produce a library and a hello program which uses the library,
-we will consider these irrelevant to the topic and leave examination
-of `their sources
-<https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/integration-commands/files>`_
-as an exercise for the reader.
+This is, in essence, the same element we have seen in the previous
+chapter: :ref:`tutorial_running_commands`.
 
 
 Using the project
@@ -91,10 +87,10 @@ following way:
 .. raw:: html
    :file: ../sessions/integration-commands-build.html
 
-Observe in the build process above, the integration command declared on the
-``base/alpine.bst`` element is run after staging the dependency artifacts
-into the build sandbox and before running any of the build commands, for
-both of the ``libhello.bst`` and ``hello.bst`` elements.
+Observe in the build process above, the integration command declared
+on the ``libhello.bst`` element is run after staging the dependency
+artifacts into the build sandbox and before running any of the build
+commands.
 
 BuildStream assumes that commands which are to be run in the build sandbox
 need to be run in an *integrated* sandbox.

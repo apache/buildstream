@@ -92,6 +92,13 @@ This tarball is a sysroot which provides the C runtime libraries
 and some programs - this is what will be providing the programs we're
 going to run in this example.
 
+.. note::
+
+   This alpine sysroot will only work on ``x86_64`` systems, so don't
+   panic if you are using a different architecture! The `next chapter
+   <tutorial_junctions>` will go over an alternative that resolves
+   this problem.
+
 
 ``elements/base.bst``
 ~~~~~~~~~~~~~~~~~~~~~

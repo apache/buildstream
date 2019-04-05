@@ -1,0 +1,20 @@
+ 
+ commands:
+# Build callHello.bst
+ - directory: ../examples/junctions
+   output: ../source/sessions/junctions-build.html
+   command: build callHello.bst
+ 
+# Run callHello.sh in a shell
+ - directory: ../examples/junctions
+   output: ../source/sessions/junctions-shell.html
+   command: shell callHello.bst -- /bin/sh callHello.sh
+ 
+# Open a crossJunction workspace:
+ - directory: ../examples/junctions
+   output: ../source/sessions/junctions-workspace-open.html
+   command: workspace open --directory workspace_hello hello-junction.bst:hello.bst
+ 
+# Remove the workspace 
+ - directory: ../examples/junctions
+   command: workspace close --remove-dirs hello-junction.bst:hello.bst

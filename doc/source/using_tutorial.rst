@@ -14,5 +14,6 @@ projects.
 
    tutorial/first-project
    tutorial/running-commands
+   tutorial/junctions
    tutorial/autotools
    tutorial/integration-commands

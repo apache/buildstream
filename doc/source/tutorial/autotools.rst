@@ -2,7 +2,7 @@
 
 Using the autotools element
 ===========================
-In :ref:`the last chapter <tutorial_running_commands>` we observed how the
+In :ref:`the previous chapters <tutorial_junctions>` we observed how the
 :mod:`manual <elements.manual>` element works, allowing one to specify and
 run commands manually in the process of constructing an *artifact*.
 
@@ -47,10 +47,10 @@ added another :ref:`source alias <project_source_aliases>` for ``gnu``, the loca
 from which we're going to download the ``automake`` tarball.
 
 
-``elements/base/alpine.bst`` and ``elements/base.bst``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The alpine base and base stack element are defined in the
-same way as in the last chapter: :ref:`tutorial_running_commands`.
+``elements/freedesktop-sdk.bst``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The freedesktop-sdk junction is defined in the same way as in the last
+chapter: :ref:`tutorial_running_commands`.
 
 
 ``elements/hello.bst``

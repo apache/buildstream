@@ -1,16 +1,16 @@
 kind: manual
 description: |
 
-  The libhello library
+  Building using freedesktop-sdk as a base
 
 # Depend on the base system
 depends:
-- freedesktop-sdk.bst:public-stacks/buildsystems.bst
+  - freedesktop-sdk.bst:public-stacks/buildsystems.bst
 
-# Stage the files/libhello directory for building
+# Stage the files/src directory for building
 sources:
   - kind: local
-    path: files/libhello
+    path: files/src
 
 # Now configure the commands to run
 config:
@@ -20,8 +20,3 @@ config:
 
   install-commands:
   - make -j1 PREFIX="%{prefix}" DESTDIR="%{install-root}" install
-
-public:
-  bst:
-    integration-commands:
-      - ldconfig "%{libdir}"

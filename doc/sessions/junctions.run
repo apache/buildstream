@@ -1,20 +1,25 @@
 
 commands:
-# Build callHello.bst
-- directory: ../examples/junctions
-  output: ../source/sessions/junctions-build.html
-  command: build callHello.bst
+# We need to fetch the junction
+- directory: ../examples/advanced-junctions
+  command: source fetch freedesktop-sdk.bst
 
-# Run callHello.sh in a shell
-- directory: ../examples/junctions
-  output: ../source/sessions/junctions-shell.html
-  command: shell callHello.bst -- /bin/sh callHello.sh
+# We want to show the project contents
+- directory: ../examples/advanced-junctions
+  command: show hello.bst
+  output: ../source/sessions/advanced-junctions-show-before.html
 
-# Open a crossJunction workspace:
-- directory: ../examples/junctions
-  output: ../source/sessions/junctions-workspace-open.html
-  command: workspace open --directory workspace_hello hello-junction.bst:hello.bst
+# We want to build the project
+- directory: ../examples/advanced-junctions
+  command: build hello.bst
+  output: ../source/sessions/advanced-junctions-build.html
 
-# Remove the workspace 
-- directory: ../examples/junctions
-  command: workspace close --remove-dirs hello-junction.bst:hello.bst
+# We want to show post-build show output
+- directory: ../examples/advanced-junctions
+  command: show hello.bst
+  output: ../source/sessions/advanced-junctions-show-after.html
+
+# We want to show the application running
+- directory: ../examples/advanced-junctions
+  command: run hello.bst -- hello
+  output: ../source/sessions/advanced-junctions-shell.html
