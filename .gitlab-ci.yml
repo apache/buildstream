@@ -44,15 +44,15 @@ variables:
     - .coverage-reports
 
 tests-debian-9:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-46405991
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-55318540
   <<: *tests
 
 tests-fedora-28:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:28-master-46405991
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:28-master-55318540
   <<: *tests
 
 tests-fedora-29:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-55318540
   <<: *tests
 
 tests-fedora-30:
@@ -60,13 +60,13 @@ tests-fedora-30:
   <<: *tests
 
 tests-ubuntu-18.04:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-master-46405991
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-master-55318540
   <<: *tests
 
 tests-unix:
-  # Use fedora here, to a) run a test on fedora and b) ensure that we
+  # Use fedora here, to ensure that we
   # can get rid of ostree - this is not possible with debian-8
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:27-master-46405991
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-55318540
   <<: *tests
   variables:
     BST_FORCE_BACKEND: "unix"
