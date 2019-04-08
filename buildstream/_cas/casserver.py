@@ -428,11 +428,25 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
         with open(artifact_path, 'rb') as f:
             artifact.ParseFromString(f.read())
 
-        files_digest = artifact.files
-
         # Now update mtimes of files present.
         try:
-            self.cas.update_tree_mtime(files_digest)
+
+            if str(artifact.files):
+                self.cas.update_tree_mtime(artifact.files)
+
+            if str(artifact.buildtree):
+                # buildtrees might not be there
+                try:
+                    self.cas.update_tree_mtime(artifact.buildtree)
+                except FileNotFoundError:
+                    pass
+
+            if str(artifact.public_data):
+                os.utime(self.cas.objpath(artifact.public_data))
+
+            for log_file in artifact.logs:
+                os.utime(self.cas.objpath(log_file.digest))
+
         except FileNotFoundError:
             os.unlink(artifact_path)
             context.abort(grpc.StatusCode.NOT_FOUND,
@@ -451,9 +465,6 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
 
         # Unset protocol buffers don't evaluated to False but do return empty
         # strings, hence str()
-        if str(artifact.buildtree):
-            self._check_directory("buildtree", artifact.buildtree, context)
-
         if str(artifact.public_data):
             self._check_file("public data", artifact.public_data, context)
 
