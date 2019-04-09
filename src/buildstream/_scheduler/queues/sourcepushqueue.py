@@ -30,13 +30,16 @@ class SourcePushQueue(Queue):
     complete_name = "Sources pushed"
     resources = [ResourceType.UPLOAD]
 
-    def process(self, element):
-        # Returns whether a source was pushed or not
-        if not element._source_push():
-            raise SkipJob(self.action_name)
+    def get_process_func(self):
+        return _raise_skip_if_not_pushed
 
     def status(self, element):
         if element._skip_source_push():
             return QueueStatus.SKIP
 
         return QueueStatus.READY
+
+
+def _raise_skip_if_not_pushed(element):
+    if not element._source_push():
+        raise SkipJob(SourcePushQueue.action_name)

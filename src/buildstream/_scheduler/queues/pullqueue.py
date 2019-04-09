@@ -33,10 +33,8 @@ class PullQueue(Queue):
     complete_name = "Pulled"
     resources = [ResourceType.DOWNLOAD, ResourceType.CACHE]
 
-    def process(self, element):
-        # returns whether an artifact was downloaded or not
-        if not element._pull():
-            raise SkipJob(self.action_name)
+    def get_process_func(self):
+        return _raise_skip_if_not_pulled
 
     def status(self, element):
         if not element._is_required():
@@ -64,3 +62,8 @@ class PullQueue(Queue):
         # actually check the cache size.
         if status == JobStatus.OK:
             self._scheduler.check_cache_size()
+
+
+def _raise_skip_if_not_pulled(element):
+    if not element._pull():
+        raise SkipJob(PullQueue.action_name)

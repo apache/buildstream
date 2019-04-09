@@ -35,8 +35,8 @@ class TrackQueue(Queue):
     complete_name = "Tracked"
     resources = [ResourceType.DOWNLOAD]
 
-    def process(self, element):
-        return element._track()
+    def get_process_func(self, element):
+        return _track_element
 
     def status(self, element):
         # We can skip elements entirely if they have no sources.
@@ -60,3 +60,7 @@ class TrackQueue(Queue):
             source._set_ref(new_ref, save=True)
 
         element._tracking_done()
+
+
+def _track_element(element):
+    return element._track()

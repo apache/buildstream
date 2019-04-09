@@ -88,20 +88,8 @@ class Queue():
     #     Abstract Methods for Queue implementations    #
     #####################################################
 
-    # process()
-    #
-    # Abstract method for processing an element
-    #
-    # Args:
-    #    element (Element): An element to process
-    #
-    # Returns:
-    #    (any): An optional something to be returned
-    #           for every element successfully processed
-    #
-    #
-    def process(self, element):
-        pass
+    def get_process_func(self):
+        raise NotImplementedError()
 
     # status()
     #
@@ -215,7 +203,7 @@ class Queue():
             ElementJob(self._scheduler, self.action_name,
                        self._element_log_path(element),
                        element=element, queue=self,
-                       action_cb=self.process,
+                       action_cb=self.get_process_func(),
                        complete_cb=self._job_done,
                        max_retries=self._max_retries)
             for element in ready

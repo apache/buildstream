@@ -63,7 +63,7 @@ class BuildQueue(Queue):
                           logfile=logfile)
             job = ElementJob(self._scheduler, self.action_name,
                              logfile, element=element, queue=self,
-                             action_cb=self.process,
+                             action_cb=self.get_process_func(),
                              complete_cb=self._job_done,
                              max_retries=self._max_retries)
             self._done_queue.append(element)
@@ -72,8 +72,8 @@ class BuildQueue(Queue):
 
         return super().enqueue(to_queue)
 
-    def process(self, element):
-        return element._assemble()
+    def get_process_func(self):
+        return _assemble_element
 
     def status(self, element):
         if not element._is_required():
@@ -122,3 +122,7 @@ class BuildQueue(Queue):
 
         # if status == JobStatus.OK:
         #     self._check_cache_size(job, element, result)
+
+
+def _assemble_element(element):
+    return element._assemble()

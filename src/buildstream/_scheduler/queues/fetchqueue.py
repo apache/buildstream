@@ -47,8 +47,11 @@ class FetchQueue(Queue):
         self._skip_cached = skip_cached
         self._fetch_original = fetch_original
 
-    def process(self, element):
-        element._fetch(fetch_original=self._fetch_original)
+    def get_process_func(self):
+        if self._fetch_original:
+            return _fetch_original
+        else:
+            return _fetch_no_original
 
     def status(self, element):
         if not element._is_required():
@@ -84,3 +87,11 @@ class FetchQueue(Queue):
             assert element._get_consistency() == Consistency.CACHED
         else:
             assert element._source_cached()
+
+
+def _fetch_no_original(element):
+    element._fetch(fetch_original=False)
+
+
+def _fetch_original(element):
+    element._fetch(fetch_original=True)

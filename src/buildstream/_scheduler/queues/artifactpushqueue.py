@@ -38,13 +38,16 @@ class ArtifactPushQueue(Queue):
         del state['_scheduler']
         return state
 
-    def process(self, element):
-        # returns whether an artifact was uploaded or not
-        if not element._push():
-            raise SkipJob(self.action_name)
+    def get_process_func(self):
+        return _raise_skip_if_not_pushed
 
     def status(self, element):
         if element._skip_push():
             return QueueStatus.SKIP
 
         return QueueStatus.READY
+
+
+def _raise_skip_if_not_pushed(element):
+    if not element._push():
+        raise SkipJob(ArtifactPushQueue.action_name)
