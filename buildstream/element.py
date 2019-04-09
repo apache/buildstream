@@ -2876,6 +2876,7 @@ class Element(Plugin):
     # Loads the public data from the cached artifact
     #
     def __load_public_data(self):
+        self.__assert_cached()
         assert self.__dynamic_public is None
 
         self.__dynamic_public = self.__artifact.load_public_data()

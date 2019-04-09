@@ -245,9 +245,6 @@ class Artifact():
     #
     def load_public_data(self):
 
-        element = self._element
-        assert element._cached()
-
         # Load the public data from the artifact
         meta_vdir, _ = self._get_subdirectory('meta')
         meta_file = meta_vdir._objpath('public.yaml')
