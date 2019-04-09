@@ -237,12 +237,6 @@ class Element(Plugin):
         self.__batch_prepare_assemble_flags = 0       # Sandbox flags for batching across prepare()/assemble()
         self.__batch_prepare_assemble_collect = None  # Collect dir for batching across prepare()/assemble()
 
-        # hash tables of loaded artifact metadata, hashed by key
-        self.__metadata_keys = {}                     # Strong and weak keys for this key
-        self.__metadata_dependencies = {}             # Dictionary of dependency strong keys
-        self.__metadata_workspaced = {}               # Boolean of whether it's workspaced
-        self.__metadata_workspaced_dependencies = {}  # List of which dependencies are workspaced
-
         # Ensure we have loaded this class's defaults
         self.__init_defaults(plugin_conf)
 
@@ -741,10 +735,11 @@ class Element(Plugin):
         files_written = {}
         old_dep_keys = None
         workspace = self._get_workspace()
+        context = self._get_context()
 
         if self.__can_build_incrementally() and workspace.last_successful:
-            # Workspaces do not need to work with the special node types
-            old_dep_keys = self.__get_artifact_metadata_dependencies(workspace.last_successful)
+            last_successful = Artifact(self, context, strong_key=workspace.last_successful)
+            old_dep_keys = last_successful.get_metadata_dependencies()
 
         for dep in self.dependencies(scope):
             # If we are workspaced, and we therefore perform an
@@ -1280,7 +1275,7 @@ class Element(Plugin):
                 pass
             elif self._cached():
                 # Load the strong cache key from the artifact
-                strong_key, _ = self.__get_artifact_metadata_keys()
+                strong_key, _ = self.__artifact.get_metadata_keys()
                 self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
                 # Artifact will or has been built, not downloaded
@@ -2386,10 +2381,10 @@ class Element(Plugin):
         if recalculate or self.__tainted is None:
 
             # Whether this artifact has a workspace
-            workspaced = self.__get_artifact_metadata_workspaced()
+            workspaced = self.__artifact.get_metadata_workspaced()
 
             # Whether this artifact's dependencies have workspaces
-            workspaced_dependencies = self.__get_artifact_metadata_workspaced_dependencies()
+            workspaced_dependencies = self.__artifact.get_metadata_workspaced_dependencies()
 
             # Other conditions should be or-ed
             self.__tainted = (workspaced or workspaced_dependencies or
@@ -2795,94 +2790,6 @@ class Element(Plugin):
             expression = ('^(?:' + '|'.join(whitelist_expressions) + ')$')
             self.__whitelist_regex = re.compile(expression)
         return self.__whitelist_regex.match(os.path.join(os.sep, path))
-
-    # __get_artifact_metadata_keys():
-    #
-    # Retrieve the strong and weak keys from the given artifact.
-    #
-    # Returns:
-    #     (str): The strong key
-    #     (str): The weak key
-    #
-    def __get_artifact_metadata_keys(self):
-
-        metadata_keys = self.__metadata_keys
-
-        strong_key, weak_key, metadata_keys = self.__artifact.get_metadata_keys(metadata_keys)
-
-        # Update keys if needed
-        if metadata_keys:
-            self.__metadata_keys = metadata_keys
-
-        return (strong_key, weak_key)
-
-    # __get_artifact_metadata_dependencies():
-    #
-    # Retrieve the hash of dependency strong keys from the given artifact.
-    #
-    # Args:
-    #     key (str): The artifact key, or None for the default key
-    #
-    # Returns:
-    #     (dict): A dictionary of element names and their strong keys
-    #
-    def __get_artifact_metadata_dependencies(self, key=None):
-
-        metadata = [self.__metadata_dependencies, self.__metadata_keys]
-        meta, meta_deps, meta_keys = self.__artifact.get_metadata_dependencies(key, *metadata)
-
-        # Update deps if needed
-        if meta_deps:
-            self.__metadata_dependencies = meta_deps
-            # Update keys if needed, no need to check if deps not updated
-            if meta_keys:
-                self.__metadata_keys = meta_keys
-
-        return meta
-
-    # __get_artifact_metadata_workspaced():
-    #
-    # Retrieve the hash of dependency strong keys from the given artifact.
-    #
-    # Returns:
-    #     (bool): Whether the given artifact was workspaced
-    #
-
-    def __get_artifact_metadata_workspaced(self):
-
-        metadata = [self.__metadata_workspaced, self.__metadata_keys]
-        workspaced, meta_workspaced, meta_keys = self.__artifact.get_metadata_workspaced(*metadata)
-
-        # Update workspaced if needed
-        if meta_workspaced:
-            self.__metadata_workspaced = meta_workspaced
-            # Update keys if needed, no need to check if workspaced not updated
-            if meta_keys:
-                self.__metadata_keys = meta_keys
-
-        return workspaced
-
-    # __get_artifact_metadata_workspaced_dependencies():
-    #
-    # Retrieve the hash of dependency strong keys from the given artifact.
-    #
-    # Returns:
-    #     (list): List of which dependencies are workspaced
-    #
-    def __get_artifact_metadata_workspaced_dependencies(self):
-
-        metadata = [self.__metadata_workspaced_dependencies, self.__metadata_keys]
-        workspaced, meta_workspaced_deps,\
-            meta_keys = self.__artifact.get_metadata_workspaced_dependencies(*metadata)
-
-        # Update workspaced if needed
-        if meta_workspaced_deps:
-            self.__metadata_workspaced_dependencies = meta_workspaced_deps
-            # Update keys if needed, no need to check if workspaced not updated
-            if meta_keys:
-                self.__metadata_keys = meta_keys
-
-        return workspaced
 
     # __load_public_data():
     #
