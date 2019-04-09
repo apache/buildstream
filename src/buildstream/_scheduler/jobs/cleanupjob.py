@@ -16,7 +16,7 @@
 #  Author:
 #        Tristan Daniël Maat <tristan.maat@codethink.co.uk>
 #
-from .job import Job, JobStatus
+from .job import Job, JobStatus, ChildJob
 
 
 class CleanupJob(Job):
@@ -26,12 +26,6 @@ class CleanupJob(Job):
 
         context = self._scheduler.context
         self._casquota = context.get_casquota()
-
-    def child_process(self):
-        def progress():
-            self.send_message('update-cache-size',
-                              self._casquota.get_cache_size())
-        return self._casquota.clean(progress)
 
     def handle_message(self, message_type, message):
         # Update the cache size in the main process as we go,
@@ -48,3 +42,18 @@ class CleanupJob(Job):
 
         if self._complete_cb:
             self._complete_cb(status, result)
+
+    def create_child_job(self):
+        return ChildCacheSizeJob(self._scheduler.context.get_casquota())
+
+
+class ChildCleanupJob(ChildJob):
+    def __init__(self, casquota):
+        super().__init__()
+        self._casquota = casquota
+
+    def child_process(self):
+        def progress():
+            self.send_message('update-cache-size',
+                              self._casquota.get_cache_size())
+        return self._casquota.clean(progress)
