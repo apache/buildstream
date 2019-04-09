@@ -249,9 +249,9 @@ class Artifact():
         assert element._cached()
 
         # Load the public data from the artifact
-        artifact_vdir, _ = self._get_directory()
-        meta_file = artifact_vdir._objpath('meta', 'public.yaml')
-        data = _yaml.load(meta_file, shortname='meta/public.yaml')
+        meta_vdir, _ = self._get_subdirectory('meta')
+        meta_file = meta_vdir._objpath('public.yaml')
+        data = _yaml.load(meta_file, shortname='public.yaml')
 
         return data
 
@@ -270,14 +270,14 @@ class Artifact():
     def load_build_result(self, key):
 
         assert key is not None
-        artifact_vdir, _ = self._get_directory(key)
+        meta_vdir, _ = self._get_subdirectory('meta', key)
 
-        meta_file = artifact_vdir._objpath('meta', 'build-result.yaml')
+        meta_file = meta_vdir._objpath('build-result.yaml')
         if not os.path.exists(meta_file):
             build_result = (True, "succeeded", None)
             return build_result
 
-        data = _yaml.load(meta_file, shortname='meta/build-result.yaml')
+        data = _yaml.load(meta_file, shortname='build-result.yaml')
 
         success = _yaml.node_get(data, bool, 'success')
         description = _yaml.node_get(data, str, 'description', default_value=None)
@@ -495,9 +495,9 @@ class Artifact():
         if not self._element._cached():
             return False
 
-        vdir, _ = self._get_directory(key)
+        log_vdir, _ = self._get_subdirectory('logs', key)
 
-        logsdigest = vdir._get_child_digest('logs')
+        logsdigest = log_vdir._get_digest()
         return self._artifacts.cas.contains_directory(logsdigest, with_files=True)
 
     # _get_directory():
