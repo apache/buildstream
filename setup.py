@@ -151,6 +151,51 @@ if not os.environ.get('BST_ARTIFACTS_ONLY', ''):
         '{} = buildstream2._frontend:cli'.format(bst_entry_point)
     ]
 
+
+#####################################################
+#       Generate the bash completion scriptlet      #
+#####################################################
+#
+# Generate the bash completion scriptlet as 'bst' or 'bst2'
+# depending on the selected entry point name.
+#
+COMPLETION_SCRIPTLET = """# BuildStream bash completion scriptlet.
+#
+# On systems which use the bash-completion module for
+# completion discovery with bash, this can be installed at:
+#
+#   pkg-config --variable=completionsdir bash-completion
+#
+# If BuildStream is not installed system wide, you can
+# simply source this script to enable completions or append
+# this script to your ~/.bash_completion file.
+#
+_{entry_point}_completion() {{
+    local IFS=$'
+'
+    COMPREPLY=( $( env COMP_WORDS="${{COMP_WORDS[*]}}" \\
+                   COMP_CWORD=$COMP_CWORD \\
+                   _BST_COMPLETION=complete $1 ) )
+    return 0
+}}
+
+complete -F _bst_completion -o nospace {entry_point};
+""".format(entry_point=bst_entry_point)
+
+
+def get_completions_scriptlet():
+    bst_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(bst_dir, 'buildstream2', 'data', bst_entry_point)
+
+    # Generate the file on demand, only in response to
+    # actually installing.
+    with open(path, 'w') as f:
+        f.write(COMPLETION_SCRIPTLET)
+
+    # Return the relative path
+    return os.path.join('buildstream2', 'data', bst_entry_point)
+
+
 #####################################################
 #    Monkey-patching setuptools for performance     #
 #####################################################
@@ -352,7 +397,7 @@ setup(name='BuildStream2',
           #
           ('share/man/man1', list_man_pages()),
           ('share/bash-completion/completions', [
-              os.path.join('buildstream2', 'data', 'bst')
+              get_completions_scriptlet()
           ])
       ],
       install_requires=install_requires,
