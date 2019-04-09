@@ -20,7 +20,9 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 # System imports
+import io
 import os
+import pickle
 import sys
 import signal
 import datetime
@@ -82,6 +84,28 @@ class Process(multiprocessing.Process):
 
         self._popen = self._Popen(self)
         self._sentinel = self._popen.sentinel
+
+
+def _pickle_child_job(child_job):
+    data = io.BytesIO()
+    pickle.dump(child_job, data)
+    data.seek(0)
+    return data
+
+
+def _unpickle_child_job(pickled):
+    return pickle.load(pickled)
+
+
+def _do_pickled_child_job(pickled, *child_args):
+    child_job = pickle.load(pickled)
+
+    # Spawn the process
+    #
+    # We can call a private method in the child job because this method is
+    # really a friend.
+    #
+    return child_job._child_action(*child_args)
 
 
 # Job()
@@ -150,13 +174,6 @@ class Job():
             self._task_id,
         )
 
-        # Spawn the process
-        #
-        # We can call a private method in the child job because these two
-        # classes go together.
-        #
-        self._process = Process(target=child_job._child_action)
-
         import contextlib
         import time
         @contextlib.contextmanager
@@ -166,13 +183,17 @@ class Job():
             now = time.time()
             print(f"({now - then:,.2}s):", message)
 
-        import buildstream.testpickle
-        with timer(f"Pickle {self._child_action}"):
-            pickled_process = buildstream.testpickle.test_pickle_direct(self._child_action)
-        print(f"Size of pickled data: {len(pickled_process.getbuffer()):,}")
-        import pickle
-        pickled_process.seek(0)
-        # unpickled_process = pickle.load(pickled_process)
+        # import buildstream.testpickle
+        # pickled_process = buildstream.testpickle.test_pickle_direct(child_job)
+
+        # Spawn the process
+        with timer(f"Pickle {child_job}"):
+            pickled = _pickle_child_job(child_job)
+        print(f"Size of pickled data: {len(pickled.getbuffer()):,}")
+        self._process = Process(
+            target=_do_pickled_child_job,
+            args=[pickled],
+        )
 
         # Block signals which are handled in the main process such that
         # the child process does not inherit the parent's state, but the main
