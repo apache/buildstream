@@ -33,10 +33,8 @@ class PullQueue(Queue):
     complete_name = "Pulled"
     resources = [ResourceType.DOWNLOAD, ResourceType.CACHE]
 
-    def process(self, element):
-        # returns whether an artifact was downloaded or not
-        if not element._pull():
-            raise SkipJob(self.action_name)
+    def get_process_func(self):
+        return PullQueue._pull_or_skip
 
     def status(self, element):
         if not element._can_query_cache():
@@ -65,3 +63,8 @@ class PullQueue(Queue):
         # immediately ready to query the artifact cache so that it
         # may be pulled.
         element._set_can_query_cache_callback(self._enqueue_element)
+
+    @staticmethod
+    def _pull_or_skip(element):
+        if not element._pull():
+            raise SkipJob(PullQueue.action_name)
