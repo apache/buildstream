@@ -70,15 +70,15 @@ class Process(multiprocessing.Process):
     # pylint: disable=attribute-defined-outside-init
     def start(self):
 
-        e = self
-        print(e)
-        import buildstream.testpickle
+        # e = self
+        # print(e)
+        # import buildstream.testpickle
 
-        buildstream.testpickle.test_pickle(e, 1)
+        # buildstream.testpickle.test_pickle(e, 1)
 
-        for _ in range(10):
-            print('done test pickle', flush=True)
-        # raise Exception("We made it!")
+        # for _ in range(10):
+        #     print('done test pickle', flush=True)
+        # # raise Exception("We made it!")
 
         self._popen = self._Popen(self)
         self._sentinel = self._popen.sentinel
