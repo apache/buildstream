@@ -17,7 +17,8 @@ from tests.testutils import create_element_size
 def create_project(project_dir):
     project_file = os.path.join(project_dir, "project.conf")
     project_conf = {
-        "name": "test"
+        "name": "test",
+        "version": "2.0"
     }
     _yaml.dump(project_conf, project_file)
     element_name = "test.bst"

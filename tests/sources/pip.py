@@ -17,7 +17,7 @@ DATA_DIR = os.path.join(
 
 def generate_project(project_dir):
     project_file = os.path.join(project_dir, "project.conf")
-    _yaml.dump({'name': 'foo'}, project_file)
+    _yaml.dump({'name': 'foo', 'version': '2.0'}, project_file)
 
 
 # Test that without ref, consistency is set appropriately.

@@ -40,7 +40,7 @@ from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
 from .types import CoreWarnings
 from ._projectrefs import ProjectRefs, ProjectRefStorage
-from ._versions import BST_FORMAT_VERSION
+from ._versions import BST_FORMAT_VERSION, BST_API_VERSION_MAJOR, BST_API_VERSION_MINOR
 from ._loader import Loader
 from .element import Element
 from ._message import Message, MessageType
@@ -331,7 +331,7 @@ class Project():
 
     def _validate_node(self, node):
         _yaml.node_validate(node, [
-            'format-version',
+            'version', 'format-version',
             'element-path', 'variables',
             'environment', 'environment-nocache',
             'split-rules', 'elements', 'plugins',
@@ -583,6 +583,10 @@ class Project():
         _yaml.composite(pre_config_node, self._project_conf)
 
         # Assert project's format version early, before validating toplevel keys
+        #
+        # This is optional and allows fine grained control on format additions
+        # in between stable releases.
+        #
         format_version = _yaml.node_get(pre_config_node, int, 'format-version')
         if BST_FORMAT_VERSION < format_version:
             major, minor = utils.get_bst_version()
@@ -590,6 +594,31 @@ class Project():
                 LoadErrorReason.UNSUPPORTED_PROJECT,
                 "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}"
                 .format(format_version, major, minor, BST_FORMAT_VERSION))
+
+        # Assert project's API version early, before validating toplevel keys
+        #
+        # This is mandatory (there is no default specified in the default project YAML),
+        # and this is the normal way for specifying the minimal version of BuildStream
+        # required by the project.
+        api_version = _yaml.node_get(pre_config_node, str, 'version')
+        api_versions = api_version.split('.')
+        if not all(v.isdigit() for v in api_versions) or len(api_versions) != 2:
+            p = _yaml.node_get_provenance(pre_config_node, 'version')
+            raise LoadError(
+                LoadErrorReason.INVALID_DATA,
+                "{}: Malformed version specified: {}".format(p, api_version),
+                detail="The required version must be specified as MAJOR.MINOR, " +
+                "the current version is: {}.{}".format(BST_API_VERSION_MAJOR,
+                                                       BST_API_VERSION_MINOR))
+
+        # Major version must match, minor version is minimal bound.
+        if int(api_versions[0]) != BST_API_VERSION_MAJOR or \
+           int(api_versions[1]) > BST_API_VERSION_MINOR:
+            raise LoadError(
+                LoadErrorReason.UNSUPPORTED_PROJECT,
+                "Project requested BuildStream {}.{} and cannot be loaded with BuildStream {}.{}"
+                .format(api_versions[0], api_versions[1],
+                        BST_API_VERSION_MAJOR, BST_API_VERSION_MINOR))
 
         self._validate_node(pre_config_node)
 

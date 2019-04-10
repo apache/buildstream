@@ -106,6 +106,7 @@ def test_use_of_protected_var_project_conf(cli, datafiles, protected_var):
     project = str(datafiles)
     conf = {
         'name': 'test',
+        'version': '2.0',
         'variables': {
             protected_var: 'some-value'
         }
@@ -134,6 +135,7 @@ def test_use_of_protected_var_element_overrides(cli, datafiles, protected_var):
     project = str(datafiles)
     conf = {
         'name': 'test',
+        'version': '2.0',
         'elements': {
             'manual': {
                 'variables': {

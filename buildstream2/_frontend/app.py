@@ -36,7 +36,7 @@ from .._project import Project
 from .._exceptions import BstError, StreamError, LoadError, LoadErrorReason, AppError
 from .._message import Message, MessageType, unconditional_messages
 from .._stream import Stream
-from .._versions import BST_FORMAT_VERSION
+from .._versions import BST_FORMAT_VERSION, BST_API_VERSION_MAJOR, BST_API_VERSION_MINOR
 from .. import _yaml
 from .._scheduler import ElementJob, JobStatus
 
@@ -355,6 +355,9 @@ class App():
                 with open(project_path, 'w') as f:
                     f.write("# Unique project name\n" +
                             "name: {}\n\n".format(project_name) +
+                            "# Required BuildStream version\n" +
+                            "version: {}.{}\n\n".format(BST_API_VERSION_MAJOR,
+                                                        BST_API_VERSION_MINOR) +
                             "# Required BuildStream format version\n" +
                             "format-version: {}\n\n".format(format_version) +
                             "# Subdirectory where elements are stored\n" +

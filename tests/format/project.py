@@ -189,6 +189,7 @@ def test_plugin_no_load_ref(cli, datafiles, ref_storage):
     #
     config = {
         'name': 'test',
+        'version': '2.0',
         'ref-storage': ref_storage,
         'plugins': [
             {

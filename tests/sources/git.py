@@ -428,6 +428,7 @@ def test_ref_not_in_track(cli, tmpdir, datafiles, fail):
     if fail == 'error':
         project_template = {
             "name": "foo",
+            "version": "2.0",
             "fatal-warnings": [CoreWarnings.REF_NOT_IN_TRACK]
         }
         _yaml.dump(project_template, os.path.join(project, 'project.conf'))
@@ -471,6 +472,7 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
     if fail == 'error':
         project_template = {
             "name": "foo",
+            "version": "2.0",
             "fatal-warnings": ['git:unlisted-submodule']
         }
         _yaml.dump(project_template, os.path.join(project, 'project.conf'))
@@ -544,6 +546,7 @@ def test_track_unlisted_submodule(cli, tmpdir, datafiles, fail):
     if fail == 'error':
         project_template = {
             "name": "foo",
+            "version": "2.0",
             "fatal-warnings": ['git:unlisted-submodule']
         }
         _yaml.dump(project_template, os.path.join(project, 'project.conf'))
@@ -607,6 +610,7 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
     if fail == 'error':
         project_template = {
             "name": "foo",
+            "version": "2.0",
             "fatal-warnings": ['git:invalid-submodule']
         }
         _yaml.dump(project_template, os.path.join(project, 'project.conf'))
@@ -679,6 +683,7 @@ def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
     if fail == 'error':
         project_template = {
             "name": "foo",
+            "version": "2.0",
             "fatal-warnings": ['git:invalid-submodule']
         }
         _yaml.dump(project_template, os.path.join(project, 'project.conf'))

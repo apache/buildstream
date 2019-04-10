@@ -193,6 +193,7 @@ def test_cache_key_fatal_warnings(cli, tmpdir, first_warnings, second_warnings, 
     def run_get_cache_key(project_name, warnings):
         config = {
             'name': project_name,
+            'version': '2.0',
             'element-path': 'elements',
             'fatal-warnings': warnings
         }

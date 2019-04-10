@@ -20,6 +20,7 @@ def generate_project(project_dir, tmpdir):
     project_file = os.path.join(project_dir, "project.conf")
     _yaml.dump({
         'name': 'foo',
+        'version': '2.0',
         'aliases': {
             'tmpdir': "file:///" + str(tmpdir)
         }
@@ -30,6 +31,7 @@ def generate_project_file_server(server, project_dir):
     project_file = os.path.join(project_dir, "project.conf")
     _yaml.dump({
         'name': 'foo',
+        'version': '2.0',
         'aliases': {
             'tmpdir': server.base_url()
         }

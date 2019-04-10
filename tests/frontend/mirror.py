@@ -41,6 +41,7 @@ def generate_element(output_file):
 def generate_project():
     project = {
         'name': 'test',
+        'version': '2.0',
         'element-path': 'elements',
         'aliases': {
             'foo': 'FOO/',
@@ -132,6 +133,7 @@ def test_mirror_fetch_ref_storage(cli, tmpdir, datafiles, ref_storage, mirror):
 
     project = {
         'name': 'test',
+        'version': '2.0',
         'element-path': 'elements',
         'aliases': {
             alias: upstream_map + "/"
@@ -352,6 +354,7 @@ def test_mirror_git_submodule_fetch(cli, tmpdir, datafiles):
     mirror_map, _ = os.path.split(full_mirror)
     project = {
         'name': 'test',
+        'version': '2.0',
         'element-path': 'elements',
         'aliases': {
             alias: 'http://www.example.com/'
@@ -437,6 +440,7 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
 
     project = {
         'name': 'test',
+        'version': '2.0',
         'element-path': 'elements',
         'aliases': {
             alias: upstream_map + "/"
@@ -533,6 +537,7 @@ def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
 
     project = {
         'name': 'test',
+        'version': '2.0',
         'element-path': 'elements',
         'aliases': {
             alias: upstream_map + "/"

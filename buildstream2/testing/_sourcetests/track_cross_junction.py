@@ -72,6 +72,7 @@ def generate_project(tmpdir, name, config=None):
 
     project_conf = {
         'name': name,
+        'version': '2.0',
         'element-path': 'elements'
     }
     project_conf.update(config)

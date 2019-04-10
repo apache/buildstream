@@ -18,7 +18,8 @@ DATA_DIR = os.path.join(
 
 def gen_project(project_dir, fail_on_overlap, use_fatal_warnings=True, project_name="test"):
     template = {
-        "name": project_name
+        "name": project_name,
+        "version": '2.0'
     }
     if use_fatal_warnings:
         template["fatal-warnings"] = [CoreWarnings.OVERLAPS] if fail_on_overlap else []

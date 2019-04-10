@@ -70,6 +70,7 @@ def test_mirror_fetch(cli, tmpdir, datafiles, kind):
 
     project = {
         'name': 'test',
+        'version': '2.0',
         'element-path': 'elements',
         'aliases': {
             alias: upstream_map + "/"
@@ -128,6 +129,7 @@ def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
 
     project = {
         'name': 'test',
+        'version': '2.0',
         'element-path': 'elements',
         'aliases': {
             alias: 'http://www.example.com/'
@@ -184,7 +186,8 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
     config_project_dir = str(tmpdir.join('config'))
     os.makedirs(config_project_dir, exist_ok=True)
     config_project = {
-        'name': 'config'
+        'name': 'config',
+        'version': '2.0'
     }
     _yaml.dump(config_project, os.path.join(config_project_dir, 'project.conf'))
     extra_mirrors = {
@@ -204,6 +207,7 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
 
     project = {
         'name': 'test',
+        'version': '2.0',
         'element-path': 'elements',
         'aliases': {
             alias: upstream_map + "/"
@@ -257,7 +261,8 @@ def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
     config_project_dir = str(tmpdir.join('config'))
     os.makedirs(config_project_dir, exist_ok=True)
     config_project = {
-        'name': 'config'
+        'name': 'config',
+        'version': '2.0'
     }
     _yaml.dump(config_project, os.path.join(config_project_dir, 'project.conf'))
     extra_mirrors = {
@@ -277,6 +282,7 @@ def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
 
     project = {
         'name': 'test',
+        'version': '2.0',
         'element-path': 'elements',
         'aliases': {
             alias: upstream_map + "/"
@@ -336,6 +342,7 @@ def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
 
     project = {
         'name': 'test',
+        'version': '2.0',
         'element-path': 'elements',
         'aliases': {
             alias: upstream_map + "/"
@@ -401,6 +408,7 @@ def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
 
     project = {
         'name': 'test',
+        'version': '2.0',
         'element-path': 'elements',
         'aliases': {
             alias: 'http://www.example.com/'

@@ -19,6 +19,7 @@ TOP_DIR = os.path.join(
 def get_project(fatal_warnings):
     return {
         "name": "test",
+        "version": "2.0",
         "element-path": "elements",
         "plugins": [
             {

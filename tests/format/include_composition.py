@@ -6,7 +6,7 @@ from buildstream2 import _yaml
 
 
 def make_includes(basedir):
-    _yaml.dump({'name': 'test'},
+    _yaml.dump({'name': 'test', 'version': '2.0'},
                os.path.join(basedir, 'project.conf'))
     context = Context()
     project = Project(basedir, context)

@@ -17,6 +17,31 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+# The API version.
+#
+# This is encoded into BuildStream so that we can perform
+# checks in advance of a release.
+#
+# Rules for updating the versions:
+#
+#    BST_API_VERSION_MAJOR
+#    ~~~~~~~~~~~~~~~~~~~~~
+#    This indicates the main API version, it should only ever
+#    be incremented if we break API again and release BuildStream 3.
+#
+#    BST_API_VERSION_MINOR
+#    ~~~~~~~~~~~~~~~~~~~~~
+#    This should be incremented to the next even number in the master
+#    branch directly after releasing a new stable minor point release.
+#
+#    I.e. after releasing BuildStream 2.0, BST_API_VERSION_MINOR should
+#    be set to 2 in the master branch where we will create development
+#    snapshots of 2.1, leading up to the next feature adding release
+#    of 2.2.
+#
+BST_API_VERSION_MAJOR = 2
+BST_API_VERSION_MINOR = 0
+
 
 # The base BuildStream format version
 #

@@ -90,6 +90,7 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
     # Produce a fake user and project config with the cache configuration.
     user_config, project_config = configure_remote_caches(override_caches, project_caches, user_caches)
     project_config['name'] = 'test'
+    project_config['version'] = '2.0'
 
     user_config_file = str(tmpdir.join('buildstream.conf'))
     _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
@@ -124,7 +125,7 @@ def test_missing_certs(cli, datafiles, config_key, config_value):
 
     project_conf = {
         'name': 'test',
-
+        'version': '2.0',
         'artifacts': {
             'url': 'https://cache.example.com:12345',
             'push': 'true',
