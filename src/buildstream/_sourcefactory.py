@@ -62,5 +62,4 @@ class SourceFactory(PluginContext):
         source = source_type(context, project, meta)
         version = self._format_versions.get(meta.kind, 0)
         self._assert_plugin_format(source, version)
-        proxy = PicklablePluginProxy(source, self, meta.kind)
-        return proxy
+        return source

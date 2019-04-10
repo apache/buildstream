@@ -63,6 +63,5 @@ class ElementFactory(PluginContext):
         element = element_type(context, project, meta, default_config)
         version = self._format_versions.get(meta.kind, 0)
         self._assert_plugin_format(element, version)
-        proxy = PicklablePluginProxy(element, self, meta.kind)
-        element._setup_artifact(proxy, context)
-        return proxy
+        element._setup_artifact(element, context)
+        return element

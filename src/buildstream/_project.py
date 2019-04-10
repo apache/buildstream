@@ -87,6 +87,12 @@ class ProjectConfig:
         self.default_mirror = None               # The name of the preferred mirror.
         self._aliases = {}                       # Aliases dictionary
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state["element_factory"]
+        del state["source_factory"]
+        return state
+
 
 # Project()
 #

@@ -255,9 +255,6 @@ class Plugin():
     def __getstate__(self):
         raise NotImplementedError("Don't pickle this.")
 
-    def __setstate__(self, state):
-        raise NotImplementedError("Don't pickle this.")
-
     def __del__(self):
         # Dont send anything through the Message() pipeline at destruction time,
         # any subsequent lookup of plugin by unique id would raise KeyError.
