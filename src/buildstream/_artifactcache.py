@@ -70,12 +70,6 @@ class ArtifactCache(BaseCache):
         self.cas.add_reachable_directories_callback(self._reachable_directories)
         self.cas.add_reachable_digests_callback(self._reachable_digests)
 
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        # TODO: actually pickle the elements, resolving to the same objects.
-        state['_required_elements'] = set()
-        return state
-
     # mark_required_elements():
     #
     # Mark elements whose artifacts are required for the current run.

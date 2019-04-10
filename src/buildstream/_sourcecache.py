@@ -60,8 +60,6 @@ class SourceCache(BaseCache):
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        # TODO: actually pickle the sources, resolving to the same objects.
-        state['_required_sources'] = set()
         return state
 
     # mark_required_sources()
