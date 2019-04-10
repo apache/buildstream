@@ -44,7 +44,7 @@ def assert_not_shared(cli, share, project, element_name):
 # Tests that:
 #
 #  * `bst build` pushes all build elements to configured 'push' cache
-#  * `bst pull --deps all` downloads everything from cache after local deletion
+#  * `bst artifact pull --deps all` downloads everything from cache after local deletion
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_all(cli, tmpdir, datafiles):
@@ -75,7 +75,7 @@ def test_push_pull_all(cli, tmpdir, datafiles):
         states = cli.get_element_states(project, all_elements)
         assert not any(states[e] == 'cached' for e in all_elements)
 
-        # Now try bst pull
+        # Now try bst artifact pull
         result = cli.run(project=project, args=['artifact', 'pull', '--deps', 'all', 'target.bst'])
         result.assert_success()
 
@@ -87,7 +87,7 @@ def test_push_pull_all(cli, tmpdir, datafiles):
 # Tests that:
 #
 #  * `bst push` (default targets) pushes all built elements to configured 'push' cache
-#  * `bst pull` (default targets) downloads everything from cache after local deletion
+#  * `bst artifact pull` (default targets) downloads everything from cache after local deletion
 #
 @pytest.mark.datafiles(DATA_DIR + '_world')
 def test_push_pull_default_targets(cli, tmpdir, datafiles):
@@ -125,7 +125,7 @@ def test_push_pull_default_targets(cli, tmpdir, datafiles):
         states = cli.get_element_states(project, all_elements)
         assert not any(states[e] == 'cached' for e in all_elements)
 
-        # Now try bst pull
+        # Now try bst artifact pull
         result = cli.run(project=project, args=['artifact', 'pull'])
         result.assert_success()
 
@@ -137,7 +137,7 @@ def test_push_pull_default_targets(cli, tmpdir, datafiles):
 # Tests that:
 #
 #  * `bst build` pushes all build elements ONLY to configured 'push' cache
-#  * `bst pull` finds artifacts that are available only in the secondary cache
+#  * `bst artifact pull` finds artifacts that are available only in the secondary cache
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull_secondary_cache(cli, tmpdir, datafiles):
@@ -166,7 +166,7 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
         # Assert that the element is not cached anymore.
         assert cli.get_element_state(project, 'target.bst') != 'cached'
 
-        # Now try bst pull
+        # Now try bst artifact pull
         result = cli.run(project=project, args=['artifact', 'pull', 'target.bst'])
         result.assert_success()
 
@@ -178,7 +178,7 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
 # Tests that:
 #
 #  * `bst push --remote` pushes to the given remote, not one from the config
-#  * `bst pull --remote` pulls from the given remote
+#  * `bst artifact pull --remote` pulls from the given remote
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_specific_remote(cli, tmpdir, datafiles):
@@ -269,7 +269,7 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
         # Assert that the target is still waiting due to --no-strict
         assert cli.get_element_state(project, 'target.bst') == 'waiting'
 
-        # Now try bst pull
+        # Now try bst artifact pull
         result = cli.run(project=project, args=['artifact', 'pull', '--deps', 'all', 'target.bst'])
         result.assert_success()
 
@@ -344,7 +344,7 @@ def test_push_pull_cross_junction(cli, tmpdir, datafiles):
 
         assert cli.get_element_state(project, 'junction.bst:import-etc.bst') == 'buildable'
 
-        # Now try bst pull
+        # Now try bst artifact pull
         result = cli.run(project=project, args=['artifact', 'pull', 'junction.bst:import-etc.bst'])
         result.assert_success()
 
