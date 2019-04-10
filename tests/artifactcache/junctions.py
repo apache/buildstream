@@ -57,7 +57,7 @@ def test_push_pull(cli, tmpdir, datafiles):
         project_set_artifacts(project, share.repo)
         project_set_artifacts(base_project, base_share.repo)
 
-        # Now try bst push
+        # Now try bst artifact push
         result = cli.run(project=project, args=['artifact', 'push', '--deps', 'all', 'target.bst'])
         assert result.exit_code == 0
 

@@ -86,7 +86,7 @@ def test_push_pull_all(cli, tmpdir, datafiles):
 
 # Tests that:
 #
-#  * `bst push` (default targets) pushes all built elements to configured 'push' cache
+#  * `bst artifact push` (default targets) pushes all built elements to configured 'push' cache
 #  * `bst artifact pull` (default targets) downloads everything from cache after local deletion
 #
 @pytest.mark.datafiles(DATA_DIR + '_world')
@@ -177,7 +177,7 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
 
 # Tests that:
 #
-#  * `bst push --remote` pushes to the given remote, not one from the config
+#  * `bst artifact push --remote` pushes to the given remote, not one from the config
 #  * `bst artifact pull --remote` pulls from the given remote
 #
 @pytest.mark.datafiles(DATA_DIR)
@@ -200,7 +200,7 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
             'artifacts': {'url': bad_share.repo, 'push': True},
         })
 
-        # Now try `bst push` to the good_share.
+        # Now try `bst artifact push` to the good_share.
         result = cli.run(project=project, args=[
             'artifact', 'push', 'target.bst', '--remote', good_share.repo
         ])
