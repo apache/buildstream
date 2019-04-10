@@ -26,7 +26,6 @@ class CleanupJob(Job):
 
         context = self._scheduler.context
         self._casquota = context.get_casquota()
-        self._artifacts = context.artifactcache
 
     def child_process(self):
         def progress():
