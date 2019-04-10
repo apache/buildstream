@@ -281,7 +281,8 @@ class App():
 
             # Exit with the error
             self._error_exit(e)
-        except RecursionError:
+        except RecursionError as e:
+            breakpoint()
             click.echo("RecursionError: Dependency depth is too large. Maximum recursion depth exceeded.",
                        err=True)
             sys.exit(-1)
