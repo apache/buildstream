@@ -171,15 +171,7 @@ class Context():
 
     def __getstate__(self):
         state = self.__dict__.copy()
-
-        # Looks we can construct these if they're missing.
-        # Note that we'll need figure out what to do with 'required elements',
-        # hopefully nothing.
-        # state['_artifactcache'] = None
-        # state['_sourcecache'] = None
-
         del state['_message_handler']
-
         return state
 
     # load()
