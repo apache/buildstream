@@ -166,12 +166,30 @@ class Job():
         #
         self._process = Process(target=child_job._child_action)
 
+        import contextlib
+        import time
+        @contextlib.contextmanager
+        def timer(message):
+            then = time.time()
+            yield
+            now = time.time()
+            print(f"({now - then:,.2}s):", message)
+
+        import buildstream.testpickle
+        with timer(f"Pickle {self._child_action}"):
+            pickled_process = buildstream.testpickle.test_pickle_direct(self._child_action)
+        print(f"Size of pickled data: {len(pickled_process.getbuffer()):,}")
+        import pickle
+        pickled_process.seek(0)
+        # unpickled_process = pickle.load(pickled_process)
+
         # Block signals which are handled in the main process such that
         # the child process does not inherit the parent's state, but the main
         # process will be notified of any signal after we launch the child.
         #
-        with _signals.blocked([signal.SIGINT, signal.SIGTSTP, signal.SIGTERM], ignore=False):
-            self._process.start()
+        with timer(f"process.start {self}"):
+            with _signals.blocked([signal.SIGINT, signal.SIGTSTP, signal.SIGTERM], ignore=False):
+                self._process.start()
 
         # Wait for the child task to complete.
         #
