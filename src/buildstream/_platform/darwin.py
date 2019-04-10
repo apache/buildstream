@@ -17,7 +17,7 @@
 
 import os
 
-from ..sandbox import SandboxDummy
+from ..sandbox import SandboxNone
 
 from .platform import Platform
 
@@ -31,7 +31,7 @@ class Darwin(Platform):
         kwargs['dummy_reason'] = \
             "OSXFUSE is not supported and there are no supported sandbox " + \
             "technologies for MacOS at this time"
-        return SandboxDummy(*args, **kwargs)
+        return SandboxNone(*args, **kwargs)
 
     def check_sandbox_config(self, config):
         # Accept all sandbox configs as it's irrelevant with the dummy sandbox (no Sandbox.run).
