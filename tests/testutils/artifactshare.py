@@ -1,4 +1,3 @@
-import string
 import os
 import shutil
 import signal
@@ -11,6 +10,8 @@ from buildstream._cas import CASCache
 from buildstream._cas.casserver import create_server
 from buildstream._exceptions import CASError
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+
+from tests.testutils.element_name import element_ref_name
 
 
 # ArtifactShare()
@@ -136,13 +137,7 @@ class ArtifactShare():
         #
 
         # Replace path separator and chop off the .bst suffix
-        element_name = os.path.splitext(element_name.replace(os.sep, '-'))[0]
-
-        valid_chars = string.digits + string.ascii_letters + '-._'
-        element_name = ''.join([
-            x if x in valid_chars else '_'
-            for x in element_name
-        ])
+        element_name = element_ref_name(element_name)
         artifact_key = '{0}/{1}/{2}'.format(project_name, element_name, cache_key)
 
         try:
