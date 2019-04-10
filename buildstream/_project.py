@@ -543,7 +543,11 @@ class Project():
 
         # If default targets are not configured, default to all project elements
         default_targets = []
-        for root, _, files in os.walk(self.element_path):
+        for root, dirs, files in os.walk(self.element_path):
+            # Do not recurse down the ".bst" directory which is where we stage
+            # junctions and other BuildStream internals.
+            if ".bst" in dirs:
+                dirs.remove(".bst")
             for file in files:
                 if file.endswith(".bst"):
                     rel_dir = os.path.relpath(root, self.element_path)
