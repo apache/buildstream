@@ -283,6 +283,9 @@ class Element(Plugin):
                 # This will taint the artifact, disable pushing.
                 self.__sandbox_config_supported = False
 
+    def _setup_artifact(self, proxy, context):
+        self.__artifact = Artifact(proxy, context)  # Artifact class for direct artifact composite interaction
+
     def __lt__(self, other):
         return self.name < other.name
 

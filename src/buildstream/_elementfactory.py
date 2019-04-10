@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from . import _site
-from ._plugincontext import PluginContext
+from ._plugincontext import PluginContext, PicklablePluginProxy
 from .element import Element
 
 
@@ -63,4 +63,6 @@ class ElementFactory(PluginContext):
         element = element_type(context, project, meta, default_config)
         version = self._format_versions.get(meta.kind, 0)
         self._assert_plugin_format(element, version)
-        return element
+        proxy = PicklablePluginProxy(element, self, meta.kind)
+        element._setup_artifact(proxy, context)
+        return proxy

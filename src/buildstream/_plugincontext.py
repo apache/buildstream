@@ -25,6 +25,51 @@ from . import utils
 from . import _yaml
 
 
+class PicklablePluginProxy():
+
+    def __init__(self, plugin_to_proxy, factory, kind):
+        object.__setattr__(self, '_PicklablePluginProxy__plugin', plugin_to_proxy)
+        object.__setattr__(self, '_PicklablePluginProxy__factory', factory)
+        object.__setattr__(self, '_PicklablePluginProxy__kind', kind)
+
+    def __getattr__(self, name):
+        return getattr(self.__plugin, name)
+
+    def __setattr__(self, name, value):
+        return setattr(self.__plugin, name, value)
+
+    def __getstate__(self):
+        # print("Pickling plugin", self.__plugin, repr(self.__plugin))
+        plugin_dict = self.__plugin.__dict__.copy()
+        try:
+            # We end up with excessive (infinite?) recursion if we keep these.
+            # TODO: figure out why, pickle is meant to handle cycles.
+            del plugin_dict["_Element__reverse_dependencies"]
+        except KeyError as k:
+            # print(k)
+            pass
+        return {
+            'factory': self.__factory,
+            'kind': self.__kind,
+            'plugin_dict': plugin_dict,
+        }
+
+    def __setstate__(self, state):
+        factory = state['factory']
+        kind = state['kind']
+        plugin_dict = state['plugin_dict']
+
+        cls, _ = factory.lookup(kind)
+        plugin = cls.__new__(cls)
+        plugin.__dict__ = plugin_dict
+
+        object.__setattr__(self, '_PicklablePluginProxy__plugin', plugin)
+        object.__setattr__(self, '_PicklablePluginProxy__factory', factory)
+        object.__setattr__(self, '_PicklablePluginProxy__kind', kind)
+
+        # print("Unpickled plugin", plugin, repr(plugin))
+
+
 # A Context for loading plugin types
 #
 # Args:

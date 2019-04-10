@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from . import _site
-from ._plugincontext import PluginContext
+from ._plugincontext import PluginContext, PicklablePluginProxy
 from .source import Source
 
 
@@ -62,4 +62,5 @@ class SourceFactory(PluginContext):
         source = source_type(context, project, meta)
         version = self._format_versions.get(meta.kind, 0)
         self._assert_plugin_format(source, version)
-        return source
+        proxy = PicklablePluginProxy(source, self, meta.kind)
+        return proxy
