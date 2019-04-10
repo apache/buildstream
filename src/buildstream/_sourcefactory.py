@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from . import _site
-from ._plugincontext import PluginContext, PicklablePluginProxy
+from ._plugincontext import PluginContext
 from .source import Source
 
 
