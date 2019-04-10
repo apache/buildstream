@@ -1384,6 +1384,8 @@ class Element(Plugin):
         self.__tracking_scheduled = False
         self.__tracking_done = True
 
+        # TODO: Update the cache keys of all reverse deps
+        # Also maybe_assemble each of these
         self.__update_state_recursively()
 
     # _track():
@@ -1540,13 +1542,15 @@ class Element(Plugin):
         if self.__required:
             # Already done
             return
-
         self.__required = True
 
         # Request artifacts of runtime dependencies
         for dep in self.dependencies(Scope.RUN, recurse=False):
             dep._set_required()
 
+            # TODO: Notice that we'll be calling update on the deps before we do this to the top level first
+            # We now need to know whether we need to schedule assembly for the deps
+            # So we MIGHT need to do this, call some maybe_assemble function
         self._update_state()
 
     # _is_required():
@@ -1561,6 +1565,7 @@ class Element(Plugin):
     # This is called in the main process before the element is assembled
     # in a subprocess.
     #
+    # TODO: This will be called by CacheKey.maybe_assemble()
     def _schedule_assemble(self):
         assert not self.__assemble_scheduled
         self.__assemble_scheduled = True
@@ -1576,6 +1581,10 @@ class Element(Plugin):
         if workspace:
             workspace.invalidate_key()
 
+        # TODO: Hopefully get rid of entirely?
+        # - Case 1, This is the first time that an uncached, non-strict, can't pull, element can determine it's strong cache key
+        # - Case 2, for workspaces, just set ~everything to None (look at update state now)
+        # NOTE: We probably don't need to do anything that update state does for a strict element
         self._update_state()
 
     # _assemble_done():
@@ -1591,6 +1600,9 @@ class Element(Plugin):
         self.__assemble_scheduled = False
         self.__assemble_done = True
 
+        # TODO:
+        # For workspaces get all the cache keys of reverse deps
+        #  - They might also now know whether they should be assembled
         self.__update_state_recursively()
 
         if self._get_workspace() and self._cached_success():
@@ -1783,7 +1795,10 @@ class Element(Plugin):
     def _fetch_done(self):
         # We are not updating the state recursively here since fetching can
         # never end up in updating them.
-        self._update_state()
+
+        # TODO: Fetching does not change cachekeys or whether to schedule something
+        # Just ensure that the sources are consistent.
+        self.__update_source_state()
 
     # _pull_pending()
     #
@@ -1827,6 +1842,10 @@ class Element(Plugin):
     def _pull_done(self):
         self.__pull_done = True
 
+
+        # TODO:
+        # In strict mode, we don't need to do anything.
+        # For nonstrict - calc strong cache keys for itself and reverse deps
         self.__update_state_recursively()
 
     # _pull():

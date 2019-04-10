@@ -136,6 +136,9 @@ class Pipeline():
                 element._preflight()
 
                 # Determine initial element state.
+                # TODO: Everything...
+                # Get the consistency of sources
+                # Update cache keys, if workspaced, schedule for assembly
                 element._update_state()
 
     # dependencies()

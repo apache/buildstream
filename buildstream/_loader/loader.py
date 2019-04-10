@@ -552,6 +552,7 @@ class Loader():
             basedir = sources[0]._get_local_path()
         else:
             # Stage sources
+            # TODO: New object to update cache keys here
             element._update_state()
             basedir = os.path.join(self.project.directory, ".bst", "staged-junctions",
                                    filename, element._get_cache_key())
