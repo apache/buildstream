@@ -34,12 +34,6 @@ class BuildQueue(Queue):
     complete_name = "Built"
     resources = [ResourceType.PROCESS, ResourceType.CACHE]
 
-    def __getstate__(self):
-        import copy
-        state = copy.copy(self.__dict__)
-        del state['_scheduler']
-        return state
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._tried = set()

@@ -32,12 +32,6 @@ class ArtifactPushQueue(Queue):
     complete_name = "Pushed"
     resources = [ResourceType.UPLOAD]
 
-    def __getstate__(self):
-        import copy
-        state = copy.copy(self.__dict__)
-        del state['_scheduler']
-        return state
-
     def get_process_func(self):
         return _raise_skip_if_not_pushed
 
