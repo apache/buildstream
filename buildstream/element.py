@@ -230,6 +230,7 @@ class Element(Plugin):
         self.__build_result = None              # The result of assembling this Element (success, description, detail)
         self._build_log_path = None            # The path of the build log for this Element
         self.__artifact = Artifact(self, context)  # Artifact class for direct artifact composite interaction
+        self.__workspaced = bool(self._get_workspace())  # Boolean of whether it's workspaced
 
         self.__batch_prepare_assemble = False         # Whether batching across prepare()/assemble() is configured
         self.__batch_prepare_assemble_flags = 0       # Sandbox flags for batching across prepare()/assemble()
@@ -238,7 +239,7 @@ class Element(Plugin):
         # hash tables of loaded artifact metadata, hashed by key
         self.__metadata_keys = {}                     # Strong and weak keys for this key
         self.__metadata_dependencies = {}             # Dictionary of dependency strong keys
-        self.__metadata_workspaced = {}               # Boolean of whether it's workspaced
+        self.__metadata_workspaced = {}               # Boolean of whether the artifact's workspaced
         self.__metadata_workspaced_dependencies = {}  # List of which dependencies are workspaced
 
         # Ensure we have loaded this class's defaults
@@ -1168,7 +1169,7 @@ class Element(Plugin):
             # Tracking may still be pending
             return
 
-        if self._get_workspace() and self.__assemble_scheduled:
+        if self.__workspaced and self.__assemble_scheduled:
             # If we have an active workspace and are going to build, then
             # discard current cache key values as their correct values can only
             # be calculated once the build is complete
@@ -1216,7 +1217,7 @@ class Element(Plugin):
                     not self._pull_pending()):
                 # For uncached workspaced elements, assemble is required
                 # even if we only need the cache key
-                if self._is_required() or self._get_workspace():
+                if self._is_required() or self.__workspaced:
                     self._schedule_assemble()
                     return
 
@@ -1246,7 +1247,7 @@ class Element(Plugin):
 
             # For uncached workspaced elements, assemble is required
             # even if we only need the cache key
-            if self._is_required() or self._get_workspace():
+            if self._is_required() or self.__workspaced:
                 self._schedule_assemble()
                 return
 
@@ -1404,7 +1405,7 @@ class Element(Plugin):
             refs.append((source._unique_id, new_ref))
 
             # Complimentary warning that the new ref will be unused.
-            if old_ref != new_ref and self._get_workspace():
+            if old_ref != new_ref and self.__workspaced:
                 detail = "This source has an open workspace.\n" \
                     + "To start using the new reference, please close the existing workspace."
                 source.warn("Updated reference will be ignored as source has open workspace", detail=detail)
@@ -1593,7 +1594,7 @@ class Element(Plugin):
 
         self.__update_state_recursively()
 
-        if self._get_workspace() and self._cached_success():
+        if self.__workspaced and self._cached_success():
             assert utils._is_main_process(), \
                 "Attempted to save workspace configuration from child process"
             #
@@ -1795,7 +1796,7 @@ class Element(Plugin):
     #   (bool): Whether a pull operation is pending
     #
     def _pull_pending(self):
-        if self._get_workspace():
+        if self.__workspaced:
             # Workspace builds are never pushed to artifact servers
             return False
 
@@ -1858,7 +1859,7 @@ class Element(Plugin):
         return True
 
     def _skip_source_push(self):
-        if not self.__sources or self._get_workspace():
+        if not self.__sources or self.__workspaced:
             return True
         return not (self.__sourcecache.has_push_remotes(plugin=self) and
                     self._source_cached())
@@ -2266,7 +2267,7 @@ class Element(Plugin):
     #    (bool): Whether this element can be built incrementally
     #
     def __can_build_incrementally(self):
-        return bool(self._get_workspace())
+        return self.__workspaced
 
     # __configure_sandbox():
     #
