@@ -1321,3 +1321,49 @@ def _list_directory(base_path, *, glob_expr=None):
             if not glob_expr or fnmatch(relative_path, glob_expr):
                 # Obtain the mtime (the time a file was last modified)
                 yield (os.path.getmtime(ref_path), relative_path)
+
+
+# remove_ref()
+#
+# Removes a ref
+#
+# This also takes care of pruning away directories which can
+# be removed after having removed the given ref.
+#
+# Args:
+#    basedir (str): Path of base directory the ref is in
+#    ref (str): The ref to remove
+#
+# Raises:
+#    (CASCacheError): If the ref didnt exist, or a system error
+#                     occurred while removing it
+#
+def _remove_ref(basedir, ref):
+    # Remove the ref itself
+    refpath = os.path.join(basedir, ref)
+    os.unlink(refpath)
+
+    # Now remove any leading directories
+    components = list(os.path.split(ref))
+    while components:
+        components.pop()
+        refdir = os.path.join(basedir, *components)
+
+        # Break out once we reach the base
+        if refdir == basedir:
+            break
+
+        try:
+            os.rmdir(refdir)
+        except FileNotFoundError:
+            # The parent directory did not exist, but it's
+            # parent directory might still be ready to prune
+            pass
+        except OSError as e:
+            if e.errno == errno.ENOTEMPTY:
+                # The parent directory was not empty, so we
+                # cannot prune directories beyond this point
+                break
+
+            # Something went wrong here
+            raise BstError("System error while removing ref '{}': {}".format(ref, e)) from e
