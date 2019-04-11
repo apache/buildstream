@@ -241,7 +241,7 @@ class CASCache():
         removed = []
         modified = []
 
-        self._diff_trees(tree_a, tree_b, added=added, removed=removed, modified=modified)
+        self.diff_trees(tree_a, tree_b, added=added, removed=removed, modified=modified)
 
         return modified, removed, added
 
@@ -693,6 +693,59 @@ class CASCache():
             if dirnode.name not in excluded_subdirs:
                 yield from self.required_blobs_for_directory(dirnode.digest)
 
+    def diff_trees(self, tree_a, tree_b, *, added, removed, modified, path=""):
+        dir_a = remote_execution_pb2.Directory()
+        dir_b = remote_execution_pb2.Directory()
+
+        if tree_a:
+            with open(self.objpath(tree_a), 'rb') as f:
+                dir_a.ParseFromString(f.read())
+        if tree_b:
+            with open(self.objpath(tree_b), 'rb') as f:
+                dir_b.ParseFromString(f.read())
+
+        a = 0
+        b = 0
+        while a < len(dir_a.files) or b < len(dir_b.files):
+            if b < len(dir_b.files) and (a >= len(dir_a.files) or
+                                         dir_a.files[a].name > dir_b.files[b].name):
+                added.append(os.path.join(path, dir_b.files[b].name))
+                b += 1
+            elif a < len(dir_a.files) and (b >= len(dir_b.files) or
+                                           dir_b.files[b].name > dir_a.files[a].name):
+                removed.append(os.path.join(path, dir_a.files[a].name))
+                a += 1
+            else:
+                # File exists in both directories
+                if dir_a.files[a].digest.hash != dir_b.files[b].digest.hash:
+                    modified.append(os.path.join(path, dir_a.files[a].name))
+                a += 1
+                b += 1
+
+        a = 0
+        b = 0
+        while a < len(dir_a.directories) or b < len(dir_b.directories):
+            if b < len(dir_b.directories) and (a >= len(dir_a.directories) or
+                                               dir_a.directories[a].name > dir_b.directories[b].name):
+                self.diff_trees(None, dir_b.directories[b].digest,
+                                added=added, removed=removed, modified=modified,
+                                path=os.path.join(path, dir_b.directories[b].name))
+                b += 1
+            elif a < len(dir_a.directories) and (b >= len(dir_b.directories) or
+                                                 dir_b.directories[b].name > dir_a.directories[a].name):
+                self.diff_trees(dir_a.directories[a].digest, None,
+                                added=added, removed=removed, modified=modified,
+                                path=os.path.join(path, dir_a.directories[a].name))
+                a += 1
+            else:
+                # Subdirectory exists in both directories
+                if dir_a.directories[a].digest.hash != dir_b.directories[b].digest.hash:
+                    self.diff_trees(dir_a.directories[a].digest, dir_b.directories[b].digest,
+                                    added=added, removed=removed, modified=modified,
+                                    path=os.path.join(path, dir_a.directories[a].name))
+                a += 1
+                b += 1
+
     ################################################
     #             Local Private Methods            #
     ################################################
@@ -806,59 +859,6 @@ class CASCache():
                 return dirnode.digest
 
         raise CASCacheError("Subdirectory {} not found".format(name))
-
-    def _diff_trees(self, tree_a, tree_b, *, added, removed, modified, path=""):
-        dir_a = remote_execution_pb2.Directory()
-        dir_b = remote_execution_pb2.Directory()
-
-        if tree_a:
-            with open(self.objpath(tree_a), 'rb') as f:
-                dir_a.ParseFromString(f.read())
-        if tree_b:
-            with open(self.objpath(tree_b), 'rb') as f:
-                dir_b.ParseFromString(f.read())
-
-        a = 0
-        b = 0
-        while a < len(dir_a.files) or b < len(dir_b.files):
-            if b < len(dir_b.files) and (a >= len(dir_a.files) or
-                                         dir_a.files[a].name > dir_b.files[b].name):
-                added.append(os.path.join(path, dir_b.files[b].name))
-                b += 1
-            elif a < len(dir_a.files) and (b >= len(dir_b.files) or
-                                           dir_b.files[b].name > dir_a.files[a].name):
-                removed.append(os.path.join(path, dir_a.files[a].name))
-                a += 1
-            else:
-                # File exists in both directories
-                if dir_a.files[a].digest.hash != dir_b.files[b].digest.hash:
-                    modified.append(os.path.join(path, dir_a.files[a].name))
-                a += 1
-                b += 1
-
-        a = 0
-        b = 0
-        while a < len(dir_a.directories) or b < len(dir_b.directories):
-            if b < len(dir_b.directories) and (a >= len(dir_a.directories) or
-                                               dir_a.directories[a].name > dir_b.directories[b].name):
-                self._diff_trees(None, dir_b.directories[b].digest,
-                                 added=added, removed=removed, modified=modified,
-                                 path=os.path.join(path, dir_b.directories[b].name))
-                b += 1
-            elif a < len(dir_a.directories) and (b >= len(dir_b.directories) or
-                                                 dir_b.directories[b].name > dir_a.directories[a].name):
-                self._diff_trees(dir_a.directories[a].digest, None,
-                                 added=added, removed=removed, modified=modified,
-                                 path=os.path.join(path, dir_a.directories[a].name))
-                a += 1
-            else:
-                # Subdirectory exists in both directories
-                if dir_a.directories[a].digest.hash != dir_b.directories[b].digest.hash:
-                    self._diff_trees(dir_a.directories[a].digest, dir_b.directories[b].digest,
-                                     added=added, removed=removed, modified=modified,
-                                     path=os.path.join(path, dir_a.directories[a].name))
-                a += 1
-                b += 1
 
     def _reachable_refs_dir(self, reachable, tree, update_mtime=False, check_exists=False):
         if tree.hash in reachable:
