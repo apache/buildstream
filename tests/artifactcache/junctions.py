@@ -57,7 +57,7 @@ def test_push_pull(cli, tmpdir, datafiles):
         project_set_artifacts(project, share.repo)
         project_set_artifacts(base_project, base_share.repo)
 
-        # Now try bst push
+        # Now try bst artifact push
         result = cli.run(project=project, args=['artifact', 'push', '--deps', 'all', 'target.bst'])
         assert result.exit_code == 0
 
@@ -77,7 +77,7 @@ def test_push_pull(cli, tmpdir, datafiles):
         state = cli.get_element_state(base_project, 'target.bst')
         assert state != 'cached'
 
-        # Now try bst pull
+        # Now try bst artifact pull
         result = cli.run(project=project, args=['artifact', 'pull', '--deps', 'all', 'target.bst'])
         assert result.exit_code == 0
 

@@ -64,8 +64,8 @@ def assert_not_shared(cli, share, project, element_name):
 
 # Tests that:
 #
-#  * `bst push` fails if there are no remotes configured for pushing
-#  * `bst push` successfully pushes to any remote that is configured for pushing
+#  * `bst artifact push` fails if there are no remotes configured for pushing
+#  * `bst artifact push` successfully pushes to any remote that is configured for pushing
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_push(cli, tmpdir, datafiles):
@@ -87,7 +87,7 @@ def test_push(cli, tmpdir, datafiles):
             result = cli.run(project=project, args=['artifact', 'push', 'target.bst'])
             result.assert_main_error(ErrorDomain.STREAM, None)
 
-            # Configure bst to pull but not push from a cache and run `bst push`.
+            # Configure bst to pull but not push from a cache and run `bst artifact push`.
             # This should also fail.
             cli.configure({
                 'artifacts': {'url': share1.repo, 'push': False},
@@ -95,7 +95,7 @@ def test_push(cli, tmpdir, datafiles):
             result = cli.run(project=project, args=['artifact', 'push', 'target.bst'])
             result.assert_main_error(ErrorDomain.STREAM, None)
 
-            # Configure bst to push to one of the caches and run `bst push`. This works.
+            # Configure bst to push to one of the caches and run `bst artifact push`. This works.
             cli.configure({
                 'artifacts': [
                     {'url': share1.repo, 'push': False},
@@ -122,7 +122,7 @@ def test_push(cli, tmpdir, datafiles):
             assert_shared(cli, share2, project, 'target.bst')
 
 
-# Tests that `bst push --deps all` pushes all dependencies of the given element.
+# Tests that `bst artifact push --deps all` pushes all dependencies of the given element.
 #
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_all(cli, tmpdir, datafiles):
@@ -156,7 +156,7 @@ def test_push_all(cli, tmpdir, datafiles):
             }
         })
 
-        # Now try bst push all the deps
+        # Now try bst artifact push all the deps
         result = cli.run(project=project, args=[
             'artifact', 'push', 'target.bst',
             '--deps', 'all'
