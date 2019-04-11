@@ -24,6 +24,7 @@ import enum
 import copyreg
 import io
 import os
+import pathlib
 import pickle
 import sys
 import signal
@@ -161,6 +162,10 @@ def _pickle_child_job(child_job, context):
         pickler.dispatch_table[cls] = _reduce_source
     pickler.dump(child_job)
     data.seek(0)
+
+    path = f"{child_job.action_name}_{child_job._task_id}"
+    with open(path, "wb") as f:
+        f.write(data.getvalue())
 
     return data
 
