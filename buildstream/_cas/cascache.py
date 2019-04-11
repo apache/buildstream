@@ -268,9 +268,7 @@ class CASCache():
             request.key = ref
             response = remote.ref_storage.GetReference(request)
 
-            tree = remote_execution_pb2.Digest()
-            tree.hash = response.digest.hash
-            tree.size_bytes = response.digest.size_bytes
+            tree = response.digest
 
             # Fetch Directory objects
             self._fetch_directory(remote, tree)
@@ -368,8 +366,7 @@ class CASCache():
 
                 request = buildstream_pb2.UpdateReferenceRequest(instance_name=remote.spec.instance_name)
                 request.keys.append(ref)
-                request.digest.hash = tree.hash
-                request.digest.size_bytes = tree.size_bytes
+                request.digest.CopyFrom(tree)
                 remote.ref_storage.UpdateReference(request)
 
                 skipped_remote = False
@@ -668,14 +665,12 @@ class CASCache():
 
             for required_digest in required_blobs_group:
                 d = request.blob_digests.add()
-                d.hash = required_digest.hash
-                d.size_bytes = required_digest.size_bytes
+                d.CopyFrom(required_digest)
 
             response = remote.cas.FindMissingBlobs(request)
             for missing_digest in response.missing_blob_digests:
                 d = remote_execution_pb2.Digest()
-                d.hash = missing_digest.hash
-                d.size_bytes = missing_digest.size_bytes
+                d.CopyFrom(missing_digest)
                 missing_blobs[d.hash] = d
 
         return missing_blobs.values()
@@ -707,10 +702,8 @@ class CASCache():
             excluded_subdirs = []
 
         # parse directory, and recursively add blobs
-        d = remote_execution_pb2.Digest()
-        d.hash = directory_digest.hash
-        d.size_bytes = directory_digest.size_bytes
-        yield d
+
+        yield directory_digest
 
         directory = remote_execution_pb2.Directory()
 
@@ -718,10 +711,7 @@ class CASCache():
             directory.ParseFromString(f.read())
 
         for filenode in directory.files:
-            d = remote_execution_pb2.Digest()
-            d.hash = filenode.digest.hash
-            d.size_bytes = filenode.digest.size_bytes
-            yield d
+            yield filenode.digest
 
         for dirnode in directory.directories:
             if dirnode.name not in excluded_subdirs:
