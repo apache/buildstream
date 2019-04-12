@@ -48,6 +48,18 @@ Overview
      # Optionally look in a subpath of the source repository for the project
      path: projects/hello
 
+     # Optionally specify another junction element to serve as a target for
+     # this element. Target should be defined using the syntax
+     # ``{junction-name}:{element-name}``.
+     #
+     # Note that this option cannot be used in conjunction with sources.
+     target: sub-project.bst:sub-sub-project.bst
+
+.. note::
+
+   The configuration option to allow specifying junction targets is available
+   since :ref:`format version 24 <project_format_version>`.
+
 .. note::
 
    Junction elements may not specify any dependencies as they are simply
@@ -124,10 +136,34 @@ As the junctions may differ in source version and options, BuildStream cannot
 simply use one junction and ignore the others. Due to this, BuildStream requires
 the user to resolve possibly conflicting nested junctions by creating a junction
 with the same name in the top-level project, which then takes precedence.
+
+Targeting other junctions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+When working with nested junctions, you can also create a junction element that
+targets another junction element in the sub-project. This can be useful if you
+need to ensure that both the top-level project and the sub-project are using
+the same version of the sub-sub-project.
+
+This can be done using the ``target`` configuration option. See below for an
+example:
+
+.. code:: yaml
+
+   kind: junction
+
+   config:
+     target: subproject.bst:subsubproject.bst
+
+In the above example, this junction element would be targeting the junction
+element named ``subsubproject.bst`` in the subproject referred to by
+``subproject.bst``.
+
+Note that when targeting another junction, the names of the junction element
+must not be the same as the name of the target.
 """
 
 from collections.abc import Mapping
-from buildstream import Element
+from buildstream import Element, ElementError
 from buildstream._pipeline import PipelineError
 
 
@@ -142,9 +178,33 @@ class JunctionElement(Element):
     def configure(self, node):
         self.path = self.node_get_member(node, str, 'path', default='')
         self.options = self.node_get_member(node, Mapping, 'options', default={})
+        self.target = self.node_get_member(node, str, 'target', default=None)
+        self.target_element = None
+        self.target_junction = None
 
     def preflight(self):
-        pass
+        # "target" cannot be used in conjunction with:
+        # 1. sources
+        # 2. config['options']
+        # 3. config['path']
+        if self.target and any(self.sources()):
+            raise ElementError("junction elements cannot define both 'sources' and 'target' config option")
+        if self.target and any(self.node_items(self.options)):
+            raise ElementError("junction elements cannot define both 'options' and 'target'")
+        if self.target and self.path:
+            raise ElementError("junction elements cannot define both 'path' and 'target'")
+
+        # Validate format of target, if defined
+        if self.target:
+            try:
+                self.target_junction, self.target_element = self.target.split(":")
+            except ValueError:
+                raise ElementError("'target' option must be in format '{junction-name}:{element-name}'")
+
+        # We cannot target a junction that has the same name as us, since that
+        # will cause an infinite recursion while trying to load it.
+        if self.name == self.target_element:
+            raise ElementError("junction elements cannot target an element with the same name")
 
     def get_unique_key(self):
         # Junctions do not produce artifacts. get_unique_key() implementation
