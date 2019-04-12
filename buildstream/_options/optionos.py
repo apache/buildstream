@@ -18,7 +18,7 @@
 #  Authors:
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 
-import os
+import platform
 from .optionenum import OptionEnum
 
 
@@ -32,7 +32,7 @@ class OptionOS(OptionEnum):
         super(OptionOS, self).load(node, allow_default_definition=False)
 
     def load_default_value(self, node):
-        return os.uname()[0]
+        return platform.uname().system
 
     def resolve(self):
 

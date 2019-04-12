@@ -1,7 +1,6 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
-from contextlib import contextmanager
 import os
 
 import pytest
@@ -10,27 +9,13 @@ from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
 
+from tests.testutils import override_platform_uname
+
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
-@contextmanager
-def override_uname_os(name):
-    orig_uname = os.uname
-    orig_tuple = tuple(os.uname())
-    override_result = (name, orig_tuple[1],
-                       orig_tuple[2], orig_tuple[3],
-                       orig_tuple[4])
-
-    def override():
-        return override_result
-
-    os.uname = override
-    yield
-    os.uname = orig_uname
-
-
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("uname,value,expected", [
+@pytest.mark.parametrize("system,value,expected", [
     # Test explicitly provided arches
     ('Darwin', 'Linux', 'Linuxy'),
     ('SunOS', 'FreeBSD', 'FreeBSDy'),
@@ -44,8 +29,8 @@ def override_uname_os(name):
     ('AIX', 'Linux', 'Linuxy'),
     ('HaikuOS', 'SunOS', 'SunOSy'),
 ])
-def test_conditionals(cli, datafiles, uname, value, expected):
-    with override_uname_os(uname):
+def test_conditionals(cli, datafiles, system, value, expected):
+    with override_platform_uname(system=system):
         project = os.path.join(datafiles.dirname, datafiles.basename, 'option-os')
 
         bst_args = []
@@ -68,7 +53,7 @@ def test_conditionals(cli, datafiles, uname, value, expected):
 @pytest.mark.datafiles(DATA_DIR)
 def test_unsupported_arch(cli, datafiles):
 
-    with override_uname_os("AIX"):
+    with override_platform_uname(system="AIX"):
         project = os.path.join(datafiles.dirname, datafiles.basename, 'option-os')
         result = cli.run(project=project, silent=True, args=[
             'show',

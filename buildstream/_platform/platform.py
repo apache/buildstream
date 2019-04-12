@@ -18,6 +18,7 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
+import platform
 import sys
 import resource
 
@@ -75,7 +76,7 @@ class Platform():
 
     @staticmethod
     def get_host_os():
-        return os.uname()[0]
+        return platform.uname().system
 
     # canonicalize_arch():
     #
@@ -84,6 +85,8 @@ class Platform():
     #
     @staticmethod
     def canonicalize_arch(arch):
+        # Note that these are all expected to be lowercase, as we want a
+        # case-insensitive lookup. Windows can report its arch in ALLCAPS.
         aliases = {
             "aarch32": "aarch32",
             "aarch64": "aarch64",
@@ -108,7 +111,7 @@ class Platform():
         }
 
         try:
-            return aliases[arch.replace('_', '-')]
+            return aliases[arch.replace('_', '-').lower()]
         except KeyError:
             raise PlatformError("Unknown architecture: {}".format(arch))
 
@@ -122,7 +125,7 @@ class Platform():
     @staticmethod
     def get_host_arch():
         # get the hardware identifier from uname
-        uname_machine = os.uname()[4]
+        uname_machine = platform.uname().machine
         return Platform.canonicalize_arch(uname_machine)
 
     ##################################################################
