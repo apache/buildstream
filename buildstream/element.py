@@ -1056,7 +1056,10 @@ class Element(Plugin):
     #    (str): Detailed description of the result
     #
     def _get_build_result(self):
-        return self.__get_build_result()
+        if self.__build_result is None:
+            self.__load_build_result()
+
+        return self.__build_result
 
     # __set_build_result():
     #
@@ -2893,18 +2896,11 @@ class Element(Plugin):
 
         self.__build_result = self.__artifact.load_build_result()
 
-    def __get_build_result(self):
-
-        if self.__build_result is None:
-            self.__load_build_result()
-
-        return self.__build_result
-
     def __cached_success(self):
         if not self._cached():
             return False
 
-        success, _, _ = self.__get_build_result()
+        success, _, _ = self._get_build_result()
         return success
 
     def __get_cache_keys_for_commit(self):
