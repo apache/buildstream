@@ -232,13 +232,9 @@ class CASCache():
     #     ref_b (str): The second ref
     #     subdir (str): A subdirectory to limit the comparison to
     #
-    def diff(self, ref_a, ref_b, *, subdir=None):
+    def diff(self, ref_a, ref_b):
         tree_a = self.resolve_ref(ref_a)
         tree_b = self.resolve_ref(ref_b)
-
-        if subdir:
-            tree_a = self._get_subdir(tree_a, subdir)
-            tree_b = self._get_subdir(tree_b, subdir)
 
         added = []
         removed = []
@@ -262,7 +258,7 @@ class CASCache():
     # Returns:
     #   (bool): True if pull was successful, False if ref was not available
     #
-    def pull(self, ref, remote, *, progress=None, subdir=None, excluded_subdirs=None):
+    def pull(self, ref, remote, *, progress=None):
         try:
             remote.init()
 
@@ -276,7 +272,7 @@ class CASCache():
             self._fetch_directory(remote, tree)
 
             # Fetch files, excluded_subdirs determined in pullqueue
-            required_blobs = self.required_blobs_for_directory(tree, excluded_subdirs=excluded_subdirs)
+            required_blobs = self.required_blobs_for_directory(tree)
             missing_blobs = self.local_missing_blobs(required_blobs)
             if missing_blobs:
                 self.fetch_blobs(remote, missing_blobs)

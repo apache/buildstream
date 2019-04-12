@@ -1881,9 +1881,9 @@ class Element(Plugin):
 
         # Check whether the pull has been invoked with a specific subdir requested
         # in user context, as to complete a partial artifact
-        subdir, _ = self.__pull_directories()
+        pull_buildtrees = self._get_context().pull_buildtrees
 
-        if self.__strong_cached and subdir == 'buildtree':
+        if self.__strong_cached and pull_buildtrees:
             # If we've specified a subdir, check if the subdir is cached locally
             if self.__artifact.cached_buildtree():
                 return False
@@ -1923,13 +1923,13 @@ class Element(Plugin):
 
         # Get optional specific subdir to pull and optional list to not pull
         # based off of user context
-        subdir, excluded_subdirs = self.__pull_directories()
+        pull_buildtrees = context.pull_buildtrees
 
         # Attempt to pull artifact without knowing whether it's available
-        pulled = self.__pull_strong(progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs)
+        pulled = self.__pull_strong(progress=progress, pull_buildtrees=pull_buildtrees)
 
         if not pulled and not self._cached() and not context.get_strict():
-            pulled = self.__pull_weak(progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs)
+            pulled = self.__pull_weak(progress=progress, pull_buildtrees=pull_buildtrees)
 
         if not pulled:
             return False
@@ -2878,11 +2878,11 @@ class Element(Plugin):
     # Returns:
     #     (bool): Whether or not the pull was successful
     #
-    def __pull_strong(self, *, progress=None, subdir=None, excluded_subdirs=None):
+    def __pull_strong(self, *, progress=None, pull_buildtrees):
         weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
         key = self.__strict_cache_key
-        if not self.__artifacts.pull(self, key, progress=progress, subdir=subdir,
-                                     excluded_subdirs=excluded_subdirs):
+        if not self.__artifacts.pull(self, key, progress=progress,
+                                     pull_buildtrees=pull_buildtrees):
             return False
 
         # update weak ref by pointing it to this newly fetched artifact
@@ -2903,10 +2903,10 @@ class Element(Plugin):
     # Returns:
     #     (bool): Whether or not the pull was successful
     #
-    def __pull_weak(self, *, progress=None, subdir=None, excluded_subdirs=None):
+    def __pull_weak(self, *, progress=None, pull_buildtrees):
         weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
-        if not self.__artifacts.pull(self, weak_key, progress=progress, subdir=subdir,
-                                     excluded_subdirs=excluded_subdirs):
+        if not self.__artifacts.pull(self, weak_key, progress=progress,
+                                     pull_buildtrees=pull_buildtrees):
             return False
 
         # extract strong cache key from this newly fetched artifact
@@ -2917,37 +2917,6 @@ class Element(Plugin):
         self.__artifacts.link_key(self, weak_key, key)
 
         return True
-
-    # __pull_directories():
-    #
-    # Which directories to include or exclude given the current
-    # context
-    #
-    # Returns:
-    #     subdir (str): The optional specific subdir to include, based
-    #                   on user context
-    #     excluded_subdirs (list): The optional list of subdirs to not
-    #                              pull, referenced against subdir value
-    #
-    def __pull_directories(self):
-        context = self._get_context()
-
-        # Current default exclusions on pull
-        excluded_subdirs = ["buildtree"]
-        subdir = ''
-
-        # If buildtrees are to be pulled, remove the value from exclusion list
-        # and set specific subdir
-        if context.pull_buildtrees:
-            subdir = "buildtree"
-            excluded_subdirs.remove(subdir)
-
-        # If file contents are not required for this element, don't pull them.
-        # The directories themselves will always be pulled.
-        if not context.require_artifact_files and not self._artifact_files_required():
-            excluded_subdirs.append("files")
-
-        return (subdir, excluded_subdirs)
 
     # __cache_sources():
     #
