@@ -247,7 +247,6 @@ class ArtifactCache(BaseCache):
     #     element (Element): The element whose artifacts to compare
     #     key_a (str): The first artifact key
     #     key_b (str): The second artifact key
-    #     subdir (str): A subdirectory to limit the comparison to
     #
     def diff(self, element, key_a, key_b, *, subdir=None):
         context = self.context
@@ -314,17 +313,14 @@ class ArtifactCache(BaseCache):
     #     element (Element): The Element whose artifact is to be fetched
     #     key (str): The cache key to use
     #     progress (callable): The progress callback, if any
-    #     subdir (str): The optional specific subdir to pull
-    #     excluded_subdirs (list): The optional list of subdirs to not pull
+    #     pull_buildtrees (bool): Whether to pull buildtrees or not
     #
     # Returns:
     #   (bool): True if pull was successful, False if artifact was not available
     #
-    def pull(self, element, key, *, progress=None, subdir=None, excluded_subdirs=None):
+    def pull(self, element, key, *, progress=None, pull_buildtrees=False):
         display_key = key[:self.context.log_key_length]
-
         project = element._get_project()
-        pull_buildtrees = "buildtree" not in excluded_subdirs if excluded_subdirs else True
 
         for remote in self._remotes[project]:
             remote.init()
