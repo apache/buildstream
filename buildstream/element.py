@@ -1080,7 +1080,11 @@ class Element(Plugin):
     #            the artifact cache and the element assembled successfully
     #
     def _cached_success(self):
-        return self.__cached_success()
+        if not self._cached():
+            return False
+
+        success, _, _ = self._get_build_result()
+        return success
 
     # _cached_failure():
     #
@@ -2895,13 +2899,6 @@ class Element(Plugin):
         assert self.__build_result is None
 
         self.__build_result = self.__artifact.load_build_result()
-
-    def __cached_success(self):
-        if not self._cached():
-            return False
-
-        success, _, _ = self._get_build_result()
-        return success
 
     def __get_cache_keys_for_commit(self):
         keys = []
