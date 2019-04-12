@@ -436,3 +436,30 @@ class ArtifactCache(BaseCache):
 
         if missing_blobs:
             raise ArtifactError("Blobs not found on configured artifact servers")
+
+    # find_missing_blobs():
+    #
+    # Find missing blobs from configured push remote repositories.
+    #
+    # Args:
+    #     project (Project): The current project
+    #     missing_blobs (list): The Digests of the blobs to check
+    #
+    # Returns:
+    #     (list): The Digests of the blobs missing on at least one push remote
+    #
+    def find_missing_blobs(self, project, missing_blobs):
+        if not missing_blobs:
+            return []
+
+        push_remotes = [r for r in self._remotes[project] if r.spec.push]
+
+        remote_missing_blobs_set = set()
+
+        for remote in push_remotes:
+            remote.init()
+
+            remote_missing_blobs = self.cas.remote_missing_blobs(remote, missing_blobs)
+            remote_missing_blobs_set.update(remote_missing_blobs)
+
+        return list(remote_missing_blobs_set)

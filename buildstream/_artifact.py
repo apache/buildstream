@@ -469,7 +469,7 @@ class Artifact():
             # Determine whether directories are required
             require_directories = context.require_artifact_directories
             # Determine whether file contents are required as well
-            require_files = context.require_artifact_files
+            require_files = context.require_artifact_files or self._element._artifact_files_required()
 
             filesdigest = vdir._get_child_digest('files')
 

@@ -227,6 +227,7 @@ class Element(Plugin):
         self.__staged_sources_directory = None  # Location where Element.stage_sources() was called
         self.__tainted = None                   # Whether the artifact is tainted and should not be shared
         self.__required = False                 # Whether the artifact is required in the current session
+        self.__artifact_files_required = False  # Whether artifact files are required in the local cache
         self.__build_result = None              # The result of assembling this Element (success, description, detail)
         self._build_log_path = None            # The path of the build log for this Element
         self.__artifact = Artifact(self, context)  # Artifact class for direct artifact composite interaction
@@ -1556,6 +1557,29 @@ class Element(Plugin):
     def _is_required(self):
         return self.__required
 
+    # _set_artifact_files_required():
+    #
+    # Mark artifact files for this element and its runtime dependencies as
+    # required in the local cache.
+    #
+    def _set_artifact_files_required(self):
+        if self.__artifact_files_required:
+            # Already done
+            return
+
+        self.__artifact_files_required = True
+
+        # Request artifact files of runtime dependencies
+        for dep in self.dependencies(Scope.RUN, recurse=False):
+            dep._set_artifact_files_required()
+
+    # _artifact_files_required():
+    #
+    # Returns whether artifact files for this element have been marked as required.
+    #
+    def _artifact_files_required(self):
+        return self.__artifact_files_required
+
     # _schedule_assemble():
     #
     # This is called in the main process before the element is assembled
@@ -1660,6 +1684,15 @@ class Element(Plugin):
 
             with _signals.terminator(cleanup_rootdir), \
                 self.__sandbox(rootdir, output_file, output_file, self.__sandbox_config) as sandbox:  # noqa
+
+                # Let the sandbox know whether the buildtree will be required.
+                # This allows the remote execution sandbox to skip buildtree
+                # download when it's not needed.
+                buildroot = self.get_variable('build-root')
+                cache_buildtrees = context.cache_buildtrees
+                if cache_buildtrees != 'never':
+                    always_cache_buildtrees = cache_buildtrees == 'always'
+                    sandbox._set_build_directory(buildroot, always=always_cache_buildtrees)
 
                 if not self.BST_RUN_COMMANDS:
                     # Element doesn't need to run any commands in the sandbox.
@@ -2348,7 +2381,7 @@ class Element(Plugin):
     # supports it.
     #
     def __use_remote_execution(self):
-        return self.__remote_execution_specs and self.BST_VIRTUAL_DIRECTORY
+        return bool(self.__remote_execution_specs)
 
     # __sandbox():
     #
@@ -2376,7 +2409,14 @@ class Element(Plugin):
 
         if directory is not None and allow_remote and self.__use_remote_execution():
 
+            if not self.BST_VIRTUAL_DIRECTORY:
+                raise ElementError("Element {} is configured to use remote execution but plugin does not support it."
+                                   .format(self.name), detail="Plugin '{kind}' does not support virtual directories."
+                                   .format(kind=self.get_kind()))
+
             self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
+
+            output_files_required = context.require_artifact_files or self._artifact_files_required()
 
             sandbox = SandboxRemote(context, project,
                                     directory,
@@ -2386,16 +2426,11 @@ class Element(Plugin):
                                     config=config,
                                     specs=self.__remote_execution_specs,
                                     bare_directory=bare_directory,
-                                    allow_real_directory=False)
+                                    allow_real_directory=False,
+                                    output_files_required=output_files_required)
             yield sandbox
 
         elif directory is not None and os.path.exists(directory):
-            if allow_remote and self.__remote_execution_specs:
-                self.warn("Artifact {} is configured to use remote execution but element plugin does not support it."
-                          .format(self.name), detail="Element plugin '{kind}' does not support virtual directories."
-                          .format(kind=self.get_kind()), warning_token="remote-failure")
-
-                self.info("Falling back to local sandbox for artifact {}".format(self.name))
 
             sandbox = platform.create_sandbox(context, project,
                                               directory,
@@ -2959,6 +2994,11 @@ class Element(Plugin):
         if context.pull_buildtrees:
             subdir = "buildtree"
             excluded_subdirs.remove(subdir)
+
+        # If file contents are not required for this element, don't pull them.
+        # The directories themselves will always be pulled.
+        if not context.require_artifact_files and not self._artifact_files_required():
+            excluded_subdirs.append("files")
 
         return (subdir, excluded_subdirs)
 
