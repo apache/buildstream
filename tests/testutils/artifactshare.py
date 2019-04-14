@@ -2,6 +2,7 @@ import string
 import pytest
 import subprocess
 import os
+import sys
 import shutil
 import signal
 from collections import namedtuple
@@ -49,6 +50,7 @@ class ArtifactShare():
 
         context = Context()
         context.artifactdir = self.repodir
+        context.set_message_handler(self._message_handler)
 
         self.cas = context.artifactcache
 
@@ -165,6 +167,13 @@ class ArtifactShare():
                               f_bfree=self.free_space - repo_size,
                               f_bavail=self.free_space - repo_size,
                               f_bsize=1)
+
+    def _message_handler(self, message, context):
+        # We need a message handler because this will own an ArtifactCache
+        # which can in turn fire messages.
+
+        # Just unconditionally print the messages to stderr
+        print(message.message, file=sys.stderr)
 
 
 # create_artifact_share()
