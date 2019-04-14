@@ -57,6 +57,7 @@ bzr - stage files from a bazaar repository
 
 import os
 import shutil
+import fcntl
 from contextlib import contextmanager
 
 from buildstream import Source, SourceError, Consistency
@@ -85,10 +86,12 @@ class BzrSource(Source):
         if self.ref is None or self.tracking is None:
             return Consistency.INCONSISTENT
 
-        if self._check_ref():
-            return Consistency.CACHED
-        else:
-            return Consistency.RESOLVED
+        # Lock for the _check_ref()
+        with self._locked():
+            if self._check_ref():
+                return Consistency.CACHED
+            else:
+                return Consistency.RESOLVED
 
     def load_ref(self, node):
         self.ref = self.node_get_member(node, str, 'ref', None)
@@ -101,7 +104,7 @@ class BzrSource(Source):
 
     def track(self):
         with self.timed_activity("Tracking {}".format(self.url),
-                                 silent_nested=True):
+                                 silent_nested=True), self._locked():
             self._ensure_mirror(skip_ref_check=True)
             ret, out = self.check_output([self.host_bzr, "version-info",
                                           "--custom", "--template={revno}",
@@ -115,7 +118,7 @@ class BzrSource(Source):
 
     def fetch(self):
         with self.timed_activity("Fetching {}".format(self.url),
-                                 silent_nested=True):
+                                 silent_nested=True), self._locked():
             self._ensure_mirror()
 
     def stage(self, directory):
@@ -140,6 +143,26 @@ class BzrSource(Source):
                        "--directory={}".format(directory), url],
                       fail="Failed to switch workspace's parent branch to {}".format(url))
 
+    # _locked()
+    #
+    # This context manager ensures exclusive access to the
+    # bzr repository.
+    #
+    @contextmanager
+    def _locked(self):
+        lockdir = os.path.join(self.get_mirror_directory(), 'locks')
+        lockfile = os.path.join(
+            lockdir,
+            utils.url_directory_name(self.original_url) + '.lock'
+        )
+        os.makedirs(lockdir, exist_ok=True)
+        with open(lockfile, 'w') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock, fcntl.LOCK_UN)
+
     def _check_ref(self):
         # If the mirror doesnt exist yet, then we dont have the ref
         if not os.path.exists(self._get_branch_dir()):
@@ -156,83 +179,27 @@ class BzrSource(Source):
         return os.path.join(self.get_mirror_directory(),
                             utils.url_directory_name(self.original_url))
 
-    def _atomic_replace_mirrordir(self, srcdir):
-        """Helper function to safely replace the mirror dir"""
-
-        if not os.path.exists(self._get_mirror_dir()):
-            # Just move the srcdir to the mirror dir
-            try:
-                os.rename(srcdir, self._get_mirror_dir())
-            except OSError as e:
-                raise SourceError("{}: Failed to move srcdir '{}' to mirror dir '{}'"
-                                  .format(str(self), srcdir, self._get_mirror_dir())) from e
-        else:
-            # Atomically swap the backup dir.
-            backupdir = self._get_mirror_dir() + ".bak"
-            try:
-                os.rename(self._get_mirror_dir(), backupdir)
-            except OSError as e:
-                raise SourceError("{}: Failed to move mirrordir '{}' to backup dir '{}'"
-                                  .format(str(self), self._get_mirror_dir(), backupdir)) from e
-
-            try:
-                os.rename(srcdir, self._get_mirror_dir())
-            except OSError as e:
-                # Attempt to put the backup back!
-                os.rename(backupdir, self._get_mirror_dir())
-                raise SourceError("{}: Failed to replace bzr repo '{}' with '{}"
-                                  .format(str(self), srcdir, self._get_mirror_dir())) from e
-            finally:
-                if os.path.exists(backupdir):
-                    shutil.rmtree(backupdir)
-
-    @contextmanager
-    def _atomic_repodir(self):
-        """Context manager for working in a copy of the bzr repository
-
-        Yields:
-           (str): A path to the copy of the bzr repo
-
-        This should be used because bzr does not give any guarantees of
-        atomicity, and aborting an operation at the wrong time (or
-        accidentally running multiple concurrent operations) can leave the
-        repo in an inconsistent state.
-        """
-        with self.tempdir() as repodir:
-            mirror_dir = self._get_mirror_dir()
-            if os.path.exists(mirror_dir):
-                try:
-                    # shutil.copytree doesn't like it if destination exists
-                    shutil.rmtree(repodir)
-                    shutil.copytree(mirror_dir, repodir)
-                except (shutil.Error, OSError) as e:
-                    raise SourceError("{}: Failed to copy bzr repo from '{}' to '{}'"
-                                      .format(str(self), mirror_dir, repodir)) from e
-
-            yield repodir
-            self._atomic_replace_mirrordir(repodir)
-
     def _ensure_mirror(self, skip_ref_check=False):
-        with self._atomic_repodir() as repodir:
-            # Initialize repo if no metadata
-            bzr_metadata_dir = os.path.join(repodir, ".bzr")
-            if not os.path.exists(bzr_metadata_dir):
-                self.call([self.host_bzr, "init-repo", "--no-trees", repodir],
-                          fail="Failed to initialize bzr repository")
+        mirror_dir = self._get_mirror_dir()
+        bzr_metadata_dir = os.path.join(mirror_dir, ".bzr")
+        if not os.path.exists(bzr_metadata_dir):
+            self.call([self.host_bzr, "init-repo", "--no-trees", mirror_dir],
+                      fail="Failed to initialize bzr repository")
 
-            branch_dir = os.path.join(repodir, self.tracking)
-            branch_url = self.url + "/" + self.tracking
-            if not os.path.exists(branch_dir):
-                # `bzr branch` the branch if it doesn't exist
-                # to get the upstream code
-                self.call([self.host_bzr, "branch", branch_url, branch_dir],
-                          fail="Failed to branch from {} to {}".format(branch_url, branch_dir))
+        branch_dir = os.path.join(mirror_dir, self.tracking)
+        branch_url = self.url + "/" + self.tracking
+        if not os.path.exists(branch_dir):
+            # `bzr branch` the branch if it doesn't exist
+            # to get the upstream code
+            self.call([self.host_bzr, "branch", branch_url, branch_dir],
+                      fail="Failed to branch from {} to {}".format(branch_url, branch_dir))
 
-            else:
-                # `bzr pull` the branch if it does exist
-                # to get any changes to the upstream code
-                self.call([self.host_bzr, "pull", "--directory={}".format(branch_dir), branch_url],
-                          fail="Failed to pull new changes for {}".format(branch_dir))
+        else:
+            # `bzr pull` the branch if it does exist
+            # to get any changes to the upstream code
+            self.call([self.host_bzr, "pull", "--directory={}".format(branch_dir), branch_url],
+                      fail="Failed to pull new changes for {}".format(branch_dir))
+
         if not skip_ref_check and not self._check_ref():
             raise SourceError("Failed to ensure ref '{}' was mirrored".format(self.ref),
                               reason="ref-not-mirrored")

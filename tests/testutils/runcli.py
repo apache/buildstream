@@ -343,6 +343,9 @@ class Cli():
     # Fetch an element state by name by
     # invoking bst show on the project with the CLI
     #
+    # If you need to get the states of multiple elements,
+    # then use get_element_states(s) instead.
+    #
     def get_element_state(self, project, element_name):
         result = self.run(project=project, silent=True, args=[
             'show',
@@ -352,6 +355,25 @@ class Cli():
         ])
         result.assert_success()
         return result.output.strip()
+
+    # Fetch the states of elements for a given target / deps
+    #
+    # Returns a dictionary with the element names as keys
+    #
+    def get_element_states(self, project, target, deps='all'):
+        result = self.run(project=project, silent=True, args=[
+            'show',
+            '--deps', deps,
+            '--format', '%{name}||%{state}',
+            target
+        ])
+        result.assert_success()
+        lines = result.output.splitlines()
+        states = {}
+        for line in lines:
+            split = line.split(sep='||')
+            states[split[0]] = split[1]
+        return states
 
     # Fetch an element's cache key by invoking bst show
     # on the project with the CLI
