@@ -48,6 +48,13 @@ class ArtifactTooLargeException(Exception):
     pass
 
 
+# We need a message handler because this will own an ArtifactCache
+# which can in turn fire messages.
+def message_handler(message, context):
+    logging.info(message.message)
+    logging.info(message.detail)
+
+
 # create_server():
 #
 # Create gRPC CAS artifact server as specified in the Remote Execution API.
@@ -61,6 +68,7 @@ def create_server(repo, *, enable_push,
                   min_head_size=int(2e9)):
     context = Context()
     context.artifactdir = os.path.abspath(repo)
+    context.set_message_handler(message_handler)
 
     artifactcache = context.artifactcache
 
