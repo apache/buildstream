@@ -16,7 +16,7 @@
 #  Author:
 #        Tristan Daniël Maat <tristan.maat@codethink.co.uk>
 #
-from .job import Job
+from .job import Job, JobStatus
 from ..._platform import Platform
 
 
@@ -31,12 +31,9 @@ class CleanupJob(Job):
     def child_process(self):
         return self._artifacts.clean()
 
-    def parent_complete(self, success, result):
-        if success:
+    def parent_complete(self, status, result):
+        if status == JobStatus.OK:
             self._artifacts.set_cache_size(result)
 
-            if self._complete_cb:
-                self._complete_cb()
-
-    def child_process_data(self):
-        return {}
+        if self._complete_cb:
+            self._complete_cb(status, result)

@@ -28,8 +28,6 @@ import traceback
 import asyncio
 import multiprocessing
 
-import psutil
-
 # BuildStream toplevel imports
 from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
@@ -41,6 +39,22 @@ RC_OK = 0
 RC_FAIL = 1
 RC_PERM_FAIL = 2
 RC_SKIPPED = 3
+
+
+# JobStatus:
+#
+# The job completion status, passed back through the
+# complete callbacks.
+#
+class JobStatus():
+    # Job succeeded
+    OK = 0
+
+    # A temporary BstError was raised
+    FAIL = 1
+
+    # A SkipJob was raised
+    SKIPPED = 3
 
 
 # Used to distinguish between status messages and return values
@@ -71,40 +85,17 @@ class Process(multiprocessing.Process):
 #    action_name (str): The queue action name
 #    logfile (str): A template string that points to the logfile
 #                   that should be used - should contain {pid}.
-#    resources (iter(ResourceType)) - A set of resources this job
-#                                     wants to use.
-#    exclusive_resources (iter(ResourceType)) - A set of resources
-#                                               this job wants to use
-#                                               exclusively.
 #    max_retries (int): The maximum number of retries
 #
 class Job():
 
-    def __init__(self, scheduler, action_name, logfile, *,
-                 resources=None, exclusive_resources=None, max_retries=0):
-
-        if resources is None:
-            resources = set()
-        else:
-            resources = set(resources)
-        if exclusive_resources is None:
-            exclusive_resources = set()
-        else:
-            exclusive_resources = set(resources)
-
-        assert exclusive_resources <= resources, "All exclusive resources must also be resources!"
+    def __init__(self, scheduler, action_name, logfile, *, max_retries=0):
 
         #
         # Public members
         #
         self.action_name = action_name   # The action name for the Queue
         self.child_data = None           # Data to be sent to the main process
-
-        # The resources this job wants to access
-        self.resources = resources
-        # Resources this job needs to access exclusively, i.e., no
-        # other job should be allowed to access them
-        self.exclusive_resources = exclusive_resources
 
         #
         # Private members
@@ -118,7 +109,6 @@ class Job():
         self._max_retries = max_retries        # Maximum number of automatic retries
         self._result = None                    # Return value of child action in the parent
         self._tries = 0                        # Try count, for retryable jobs
-        self._skipped_flag = False             # Indicate whether the job was skipped.
         self._terminated = False               # Whether this job has been explicitly terminated
 
         # If False, a retry will not be attempted regardless of whether _tries is less than _max_retries.
@@ -213,17 +203,10 @@ class Job():
     # Forcefully kill the process, and any children it might have.
     #
     def kill(self):
-
         # Force kill
         self.message(MessageType.WARN,
                      "{} did not terminate gracefully, killing".format(self.action_name))
-
-        try:
-            utils._kill_process_tree(self._process.pid)
-        # This can happen if the process died of its own accord before
-        # we try to kill it
-        except psutil.NoSuchProcess:
-            return
+        utils._kill_process_tree(self._process.pid)
 
     # suspend()
     #
@@ -280,18 +263,6 @@ class Job():
     def set_task_id(self, task_id):
         self._task_id = task_id
 
-    # skipped
-    #
-    # This will evaluate to True if the job was skipped
-    # during processing, or if it was forcefully terminated.
-    #
-    # Returns:
-    #    (bool): Whether the job should appear as skipped
-    #
-    @property
-    def skipped(self):
-        return self._skipped_flag or self._terminated
-
     #######################################################
     #                  Abstract Methods                   #
     #######################################################
@@ -302,10 +273,10 @@ class Job():
     # pass the result to the main thread.
     #
     # Args:
-    #    success (bool): Whether the job was successful.
+    #    status (JobStatus): The job exit status
     #    result (any): The result returned by child_process().
     #
-    def parent_complete(self, success, result):
+    def parent_complete(self, status, result):
         raise ImplError("Job '{kind}' does not implement parent_complete()"
                         .format(kind=type(self).__name__))
 
@@ -569,16 +540,23 @@ class Job():
         #
         self._retry_flag = returncode == RC_FAIL
 
-        # Set the flag to alert Queue that this job skipped.
-        self._skipped_flag = returncode == RC_SKIPPED
-
         if self._retry_flag and (self._tries <= self._max_retries) and not self._scheduler.terminated:
             self.spawn()
             return
 
-        success = returncode in (RC_OK, RC_SKIPPED)
-        self.parent_complete(success, self._result)
-        self._scheduler.job_completed(self, success)
+        # Resolve the outward facing overall job completion status
+        #
+        if returncode == RC_OK:
+            status = JobStatus.OK
+        elif returncode == RC_SKIPPED:
+            status = JobStatus.SKIPPED
+        elif returncode in (RC_FAIL, RC_PERM_FAIL):
+            status = JobStatus.FAIL
+        else:
+            status = JobStatus.FAIL
+
+        self.parent_complete(status, self._result)
+        self._scheduler.job_completed(self, status)
 
     # _parent_process_envelope()
     #

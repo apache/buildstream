@@ -19,6 +19,7 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 from . import Queue, QueueStatus
+from ..jobs import JobStatus
 from ..resources import ResourceType
 from ..._platform import Platform
 
@@ -65,9 +66,9 @@ class BuildQueue(Queue):
         if artifacts.has_quota_exceeded():
             self._scheduler.check_cache_size()
 
-    def done(self, job, element, result, success):
+    def done(self, job, element, result, status):
 
-        if success:
+        if status == JobStatus.OK:
             # Inform element in main process that assembly is done
             element._assemble_done()
 
