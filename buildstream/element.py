@@ -1918,18 +1918,15 @@ class Element(Plugin):
     def _pull(self):
         context = self._get_context()
 
-        def progress(percent, message):
-            self.status(message)
-
         # Get optional specific subdir to pull and optional list to not pull
         # based off of user context
         pull_buildtrees = context.pull_buildtrees
 
         # Attempt to pull artifact without knowing whether it's available
-        pulled = self.__pull_strong(progress=progress, pull_buildtrees=pull_buildtrees)
+        pulled = self.__pull_strong(pull_buildtrees=pull_buildtrees)
 
         if not pulled and not self._cached() and not context.get_strict():
-            pulled = self.__pull_weak(progress=progress, pull_buildtrees=pull_buildtrees)
+            pulled = self.__pull_weak(pull_buildtrees=pull_buildtrees)
 
         if not pulled:
             return False
@@ -2867,11 +2864,10 @@ class Element(Plugin):
     # Returns:
     #     (bool): Whether or not the pull was successful
     #
-    def __pull_strong(self, *, progress=None, pull_buildtrees):
+    def __pull_strong(self, *, pull_buildtrees):
         weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
         key = self.__strict_cache_key
-        if not self.__artifacts.pull(self, key, progress=progress,
-                                     pull_buildtrees=pull_buildtrees):
+        if not self.__artifacts.pull(self, key, pull_buildtrees=pull_buildtrees):
             return False
 
         # update weak ref by pointing it to this newly fetched artifact
@@ -2885,16 +2881,15 @@ class Element(Plugin):
     # the weak cache key
     #
     # Args:
-    #     progress (callable): The progress callback, if any
     #     subdir (str): The optional specific subdir to pull
     #     excluded_subdirs (list): The optional list of subdirs to not pull
     #
     # Returns:
     #     (bool): Whether or not the pull was successful
     #
-    def __pull_weak(self, *, progress=None, pull_buildtrees):
+    def __pull_weak(self, *, pull_buildtrees):
         weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
-        if not self.__artifacts.pull(self, weak_key, progress=progress,
+        if not self.__artifacts.pull(self, weak_key,
                                      pull_buildtrees=pull_buildtrees):
             return False
 
