@@ -69,7 +69,7 @@ def register_repo_kind(kind, cls):
     In addition, repo_kinds registred prior to
     `sourcetests_collection_hook` being called will be automatically
     used to test the basic behaviour of their associated source
-    plugins using the tests in `plugintestutils._sourcetests`.
+    plugins using the tests in `testing._sourcetests`.
 
     Args:
        kind (str): The kind of repo to create (a source plugin basename)

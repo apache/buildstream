@@ -8,8 +8,8 @@ import pytest
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from buildstream.plugintestutils import cli  # pylint: disable=unused-import
-from buildstream.plugintestutils import create_repo
+from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing import create_repo
 from tests.testutils.site import HAVE_GIT
 
 

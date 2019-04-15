@@ -23,7 +23,7 @@ import os
 import shutil
 import pytest
 
-from buildstream.plugintestutils import cli  # pylint: disable=unused-import
+from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 
 from tests.testutils import create_artifact_share, create_element_size

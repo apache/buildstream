@@ -4,8 +4,8 @@
 import os
 import pytest
 
-from buildstream.plugintestutils import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.plugintestutils.integration import assert_contains
+from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream.testing.integration import assert_contains
 from tests.testutils.site import IS_LINUX
 
 

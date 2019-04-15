@@ -4,7 +4,7 @@ from unittest import mock
 from buildstream import _yaml
 from buildstream._cas.cascache import CACHE_SIZE_FILE
 from buildstream._exceptions import ErrorDomain
-from buildstream.plugintestutils import cli
+from buildstream.testing import cli
 
 from tests.testutils import create_element_size
 

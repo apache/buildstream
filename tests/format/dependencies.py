@@ -5,7 +5,7 @@ import os
 import pytest
 
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from buildstream.plugintestutils import cli  # pylint: disable=unused-import
+from buildstream.testing import cli  # pylint: disable=unused-import
 
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 

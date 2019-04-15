@@ -9,7 +9,7 @@ from buildstream._context import Context
 from buildstream._project import Project
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
-from buildstream.plugintestutils import cli
+from buildstream.testing import cli
 from tests.testutils import create_artifact_share
 
 

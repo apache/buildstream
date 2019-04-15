@@ -2,7 +2,7 @@ import os
 
 from buildstream import _yaml
 from buildstream import utils
-from buildstream.plugintestutils import create_repo
+from buildstream.testing import create_repo
 
 
 # create_element_size()

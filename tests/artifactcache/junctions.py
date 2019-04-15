@@ -3,7 +3,7 @@ import shutil
 import pytest
 
 from buildstream import _yaml
-from buildstream.plugintestutils import cli
+from buildstream.testing import cli
 
 from tests.testutils import create_artifact_share
 

@@ -24,7 +24,7 @@ import shutil
 import tempfile
 import pytest
 from buildstream._platform.platform import Platform
-from buildstream.plugintestutils import register_repo_kind, sourcetests_collection_hook
+from buildstream.testing import register_repo_kind, sourcetests_collection_hook
 
 from tests.testutils.repo.git import Git
 from tests.testutils.repo.bzr import Bzr
@@ -177,6 +177,6 @@ register_repo_kind('zip', Zip)
 
 
 # This hook enables pytest to collect the templated source tests from
-# buildstream.plugintestutils
+# buildstream.testing
 def pytest_sessionstart(session):
     sourcetests_collection_hook(session)

@@ -6,8 +6,8 @@ import shutil
 
 import pytest
 
-from buildstream.plugintestutils import create_repo
-from buildstream.plugintestutils import cli  # pylint: disable=unused-import
+from buildstream.testing import create_repo
+from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 
