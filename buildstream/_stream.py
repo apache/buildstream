@@ -441,6 +441,20 @@ class Stream():
             self._message(MessageType.INFO, "Attempting to fetch missing artifact buildtrees")
             self._add_queue(PullQueue(self._scheduler))
             self._enqueue_plan(require_buildtrees)
+        else:
+            # FIXME: This hack should be removed as a result of refactoring
+            #        Element._update_state()
+            #
+            # This workaround marks all dependencies of all selected elements as
+            # "pulled" before trying to push.
+            #
+            # Instead of lying to the elements and telling them they have already
+            # been pulled, we should have something more consistent with how other
+            # state bits are handled; and explicitly tell the elements that they
+            # need to be pulled with something like Element._schedule_pull().
+            #
+            for element in elements:
+                element._pull_done()
 
         push_queue = ArtifactPushQueue(self._scheduler)
         self._add_queue(push_queue)
