@@ -17,7 +17,6 @@
 #        Tristan Daniël Maat <tristan.maat@codethink.co.uk>
 #
 from .job import Job, JobStatus
-from ..._platform import Platform
 
 
 class CleanupJob(Job):
@@ -25,11 +24,24 @@ class CleanupJob(Job):
         super().__init__(*args, **kwargs)
         self._complete_cb = complete_cb
 
-        platform = Platform.get_platform()
-        self._artifacts = platform.artifactcache
+        context = self._scheduler.context
+        self._artifacts = context.artifactcache
 
     def child_process(self):
-        return self._artifacts.clean()
+        def progress():
+            self.send_message('update-cache-size',
+                              self._artifacts.get_cache_size())
+        return self._artifacts.clean(progress)
+
+    def handle_message(self, message_type, message):
+
+        # Update the cache size in the main process as we go,
+        # this provides better feedback in the UI.
+        if message_type == 'update-cache-size':
+            self._artifacts.set_cache_size(message)
+            return True
+
+        return False
 
     def parent_complete(self, status, result):
         if status == JobStatus.OK:

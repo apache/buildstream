@@ -37,8 +37,6 @@ from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
 from .._exceptions import ArtifactError
 from .._context import Context
 
-from .cascache import CASCache
-
 
 # The default limit for gRPC messages is 4 MiB.
 # Limit payload to 1 MiB to leave sufficient headroom for metadata.
@@ -48,6 +46,13 @@ _MAX_PAYLOAD_BYTES = 1024 * 1024
 # Trying to push an artifact that is too large
 class ArtifactTooLargeException(Exception):
     pass
+
+
+# We need a message handler because this will own an ArtifactCache
+# which can in turn fire messages.
+def message_handler(message, context):
+    logging.info(message.message)
+    logging.info(message.detail)
 
 
 # create_server():
@@ -63,8 +68,9 @@ def create_server(repo, *, enable_push,
                   min_head_size=int(2e9)):
     context = Context()
     context.artifactdir = os.path.abspath(repo)
+    context.set_message_handler(message_handler)
 
-    artifactcache = CASCache(context)
+    artifactcache = context.artifactcache
 
     # Use max_workers default from Python 3.5+
     max_workers = (os.cpu_count() or 1) * 5

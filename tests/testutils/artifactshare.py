@@ -2,6 +2,7 @@ import string
 import pytest
 import subprocess
 import os
+import sys
 import shutil
 import signal
 from collections import namedtuple
@@ -10,7 +11,6 @@ from contextlib import contextmanager
 from multiprocessing import Process, Queue
 
 from buildstream import _yaml
-from buildstream._artifactcache.cascache import CASCache
 from buildstream._artifactcache.casserver import create_server
 from buildstream._context import Context
 from buildstream._exceptions import ArtifactError
@@ -50,8 +50,9 @@ class ArtifactShare():
 
         context = Context()
         context.artifactdir = self.repodir
+        context.set_message_handler(self._message_handler)
 
-        self.cas = CASCache(context)
+        self.cas = context.artifactcache
 
         self.total_space = total_space
         self.free_space = free_space
@@ -166,6 +167,13 @@ class ArtifactShare():
                               f_bfree=self.free_space - repo_size,
                               f_bavail=self.free_space - repo_size,
                               f_bsize=1)
+
+    def _message_handler(self, message, context):
+        # We need a message handler because this will own an ArtifactCache
+        # which can in turn fire messages.
+
+        # Just unconditionally print the messages to stderr
+        print(message.message, file=sys.stderr)
 
 
 # create_artifact_share()

@@ -28,7 +28,6 @@ from .. import Consistency
 from .. import _yaml
 from ..element import Element
 from .._profile import Topics, profile_start, profile_end
-from .._platform import Platform
 from .._includes import Includes
 
 from .types import Symbol, Dependency
@@ -533,8 +532,7 @@ class Loader():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Expected junction but element kind is {}".format(filename, meta_element.kind))
 
-        platform = Platform.get_platform()
-        element = Element._new_from_meta(meta_element, platform.artifactcache)
+        element = Element._new_from_meta(meta_element, self._context.artifactcache)
         element._preflight()
 
         for source in element.sources():

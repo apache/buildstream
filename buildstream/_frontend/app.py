@@ -199,7 +199,7 @@ class App():
             if option_value is not None:
                 setattr(self.context, context_attr, option_value)
         try:
-            Platform.create_instance(self.context)
+            Platform.get_platform()
         except BstError as e:
             self._error_exit(e, "Error instantiating platform")
 
@@ -214,6 +214,13 @@ class App():
 
         # Propagate pipeline feedback to the user
         self.context.set_message_handler(self._message_handler)
+
+        # Preflight the artifact cache after initializing logging,
+        # this can cause messages to be emitted.
+        try:
+            self.context.artifactcache.preflight()
+        except BstError as e:
+            self._error_exit(e, "Error instantiating artifact cache")
 
         #
         # Load the Project

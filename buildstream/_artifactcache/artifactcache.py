@@ -83,6 +83,39 @@ class ArtifactCacheSpec(namedtuple('ArtifactCacheSpec', 'url push server_cert cl
 ArtifactCacheSpec.__new__.__defaults__ = (None, None, None)
 
 
+# ArtifactCacheUsage
+#
+# A simple object to report the current artifact cache
+# usage details.
+#
+# Note that this uses the user configured cache quota
+# rather than the internal quota with protective headroom
+# removed, to provide a more sensible value to display to
+# the user.
+#
+# Args:
+#    artifacts (ArtifactCache): The artifact cache to get the status of
+#
+class ArtifactCacheUsage():
+
+    def __init__(self, artifacts):
+        context = artifacts.context
+        self.quota_config = context.config_cache_quota       # Configured quota
+        self.quota_size = artifacts._cache_quota_original    # Resolved cache quota in bytes
+        self.used_size = artifacts.get_cache_size()          # Size used by artifacts in bytes
+        self.used_percent = 0                                # Percentage of the quota used
+        if self.quota_size is not None:
+            self.used_percent = int(self.used_size * 100 / self.quota_size)
+
+    # Formattable into a human readable string
+    #
+    def __str__(self):
+        return "{} / {} ({}%)" \
+            .format(utils._pretty_size(self.used_size, dec_places=1),
+                    self.quota_config,
+                    self.used_percent)
+
+
 # An ArtifactCache manages artifacts.
 #
 # Args:
@@ -100,6 +133,7 @@ class ArtifactCache():
         self._required_elements = set()       # The elements required for this session
         self._cache_size = None               # The current cache size, sometimes it's an estimate
         self._cache_quota = None              # The cache quota
+        self._cache_quota_original = None     # The cache quota as specified by the user, in bytes
         self._cache_lower_threshold = None    # The target cache size for a cleanup
 
         os.makedirs(self.extractdir, exist_ok=True)
@@ -242,11 +276,33 @@ class ArtifactCache():
     #
     # Clean the artifact cache as much as possible.
     #
+    # Args:
+    #    progress (callable): A callback to call when a ref is removed
+    #
     # Returns:
     #    (int): The size of the cache after having cleaned up
     #
-    def clean(self):
+    def clean(self, progress=None):
         artifacts = self.list_artifacts()
+        context = self.context
+
+        # Some accumulative statistics
+        removed_ref_count = 0
+        space_saved = 0
+
+        # Start off with an announcement with as much info as possible
+        volume_size, volume_avail = self._get_cache_volume_size()
+        self._message(MessageType.STATUS, "Starting cache cleanup",
+                      detail=("Elements required by the current build plan: {}\n" +
+                              "User specified quota: {} ({})\n" +
+                              "Cache usage: {}\n" +
+                              "Cache volume: {} total, {} available")
+                      .format(len(self._required_elements),
+                              context.config_cache_quota,
+                              utils._pretty_size(self._cache_quota_original, dec_places=2),
+                              utils._pretty_size(self.get_cache_size(), dec_places=2),
+                              utils._pretty_size(volume_size, dec_places=2),
+                              utils._pretty_size(volume_avail, dec_places=2)))
 
         # Build a set of the cache keys which are required
         # based on the required elements at cleanup time
@@ -271,11 +327,18 @@ class ArtifactCache():
                 # can't remove them, we have to abort the build.
                 #
                 # FIXME: Asking the user what to do may be neater
+                #
                 default_conf = os.path.join(os.environ['XDG_CONFIG_HOME'],
                                             'buildstream.conf')
-                detail = ("There is not enough space to complete the build.\n"
-                          "Please increase the cache-quota in {}."
-                          .format(self.context.config_origin or default_conf))
+                detail = ("Aborted after removing {} refs and saving {} disk space.\n"
+                          "The remaining {} in the cache is required by the {} elements in your build plan\n\n"
+                          "There is not enough space to complete the build.\n"
+                          "Please increase the cache-quota in {} and/or make more disk space."
+                          .format(removed_ref_count,
+                                  utils._pretty_size(space_saved, dec_places=2),
+                                  utils._pretty_size(self.get_cache_size(), dec_places=2),
+                                  len(self._required_elements),
+                                  (context.config_origin or default_conf)))
 
                 if self.has_quota_exceeded():
                     raise ArtifactError("Cache too full. Aborting.",
@@ -290,10 +353,33 @@ class ArtifactCache():
                 # Remove the actual artifact, if it's not required.
                 size = self.remove(to_remove)
 
+                removed_ref_count += 1
+                space_saved += size
+
+                self._message(MessageType.STATUS,
+                              "Freed {: <7} {}".format(
+                                  utils._pretty_size(size, dec_places=2),
+                                  to_remove))
+
                 # Remove the size from the removed size
                 self.set_cache_size(self._cache_size - size)
 
-        # This should be O(1) if implemented correctly
+                # User callback
+                #
+                # Currently this process is fairly slow, but we should
+                # think about throttling this progress() callback if this
+                # becomes too intense.
+                if progress:
+                    progress()
+
+        # Informational message about the side effects of the cleanup
+        self._message(MessageType.INFO, "Cleanup completed",
+                      detail=("Removed {} refs and saving {} disk space.\n" +
+                              "Cache usage is now: {}")
+                      .format(removed_ref_count,
+                              utils._pretty_size(space_saved, dec_places=2),
+                              utils._pretty_size(self.get_cache_size(), dec_places=2)))
+
         return self.get_cache_size()
 
     # compute_cache_size()
@@ -305,7 +391,14 @@ class ArtifactCache():
     #    (int): The size of the artifact cache.
     #
     def compute_cache_size(self):
-        self._cache_size = self.calculate_cache_size()
+        old_cache_size = self._cache_size
+        new_cache_size = self.calculate_cache_size()
+
+        if old_cache_size != new_cache_size:
+            self._cache_size = new_cache_size
+
+            usage = ArtifactCacheUsage(self)
+            self._message(MessageType.STATUS, "Cache usage recomputed: {}".format(usage))
 
         return self._cache_size
 
@@ -333,7 +426,7 @@ class ArtifactCache():
     # it is greater than the actual cache size.
     #
     # Returns:
-    #     (int) An approximation of the artifact cache size.
+    #     (int) An approximation of the artifact cache size, in bytes.
     #
     def get_cache_size(self):
 
@@ -377,6 +470,13 @@ class ArtifactCache():
     ################################################
     # Abstract methods for subclasses to implement #
     ################################################
+
+    # preflight():
+    #
+    # Preflight check.
+    #
+    def preflight(self):
+        pass
 
     # update_atime()
     #
@@ -667,21 +767,16 @@ class ArtifactCache():
         else:
             headroom = 2e9
 
-        artifactdir_volume = self.context.artifactdir
-        while not os.path.exists(artifactdir_volume):
-            artifactdir_volume = os.path.dirname(artifactdir_volume)
-
         try:
-            cache_quota = utils._parse_size(self.context.config_cache_quota, artifactdir_volume)
+            cache_quota = utils._parse_size(self.context.config_cache_quota,
+                                            self.context.artifactdir)
         except utils.UtilError as e:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}\nPlease specify the value in bytes or as a % of full disk space.\n"
                             "\nValid values are, for example: 800M 10G 1T 50%\n"
                             .format(str(e))) from e
 
-        stat = os.statvfs(artifactdir_volume)
-        available_space = (stat.f_bsize * stat.f_bavail)
-
+        total_size, available_space = self._get_cache_volume_size()
         cache_size = self.get_cache_size()
 
         # Ensure system has enough storage for the cache_quota
@@ -697,15 +792,22 @@ class ArtifactCache():
                             "Invalid cache quota ({}): ".format(utils._pretty_size(cache_quota)) +
                             "BuildStream requires a minimum cache quota of 2G.")
         elif cache_quota > cache_size + available_space:  # Check maximum
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            ("Your system does not have enough available " +
-                             "space to support the cache quota specified.\n" +
-                             "You currently have:\n" +
-                             "- {used} of cache in use at {local_cache_path}\n" +
-                             "- {available} of available system storage").format(
-                                 used=utils._pretty_size(cache_size),
-                                 local_cache_path=self.context.artifactdir,
-                                 available=utils._pretty_size(available_space)))
+            if '%' in self.context.config_cache_quota:
+                available = (available_space / total_size) * 100
+                available = '{}% of total disk space'.format(round(available, 1))
+            else:
+                available = utils._pretty_size(available_space)
+
+            raise ArtifactError("Your system does not have enough available " +
+                                "space to support the cache quota specified.",
+                                detail=("You have specified a quota of {quota} total disk space.\n" +
+                                        "The filesystem containing {local_cache_path} only " +
+                                        "has {available_size} available.")
+                                .format(
+                                    quota=self.context.config_cache_quota,
+                                    local_cache_path=self.context.artifactdir,
+                                    available_size=available),
+                                reason='insufficient-storage-for-quota')
 
         # Place a slight headroom (2e9 (2GB) on the cache_quota) into
         # cache_quota to try and avoid exceptions.
@@ -714,8 +816,25 @@ class ArtifactCache():
         # if we end up writing more than 2G, but hey, this stuff is
         # already really fuzzy.
         #
+        self._cache_quota_original = cache_quota
         self._cache_quota = cache_quota - headroom
         self._cache_lower_threshold = self._cache_quota / 2
+
+    # _get_cache_volume_size()
+    #
+    # Get the available space and total space for the volume on
+    # which the artifact cache is located.
+    #
+    # Returns:
+    #    (int): The total number of bytes on the volume
+    #    (int): The number of available bytes on the volume
+    #
+    # NOTE: We use this stub to allow the test cases
+    #       to override what an artifact cache thinks
+    #       about it's disk size and available bytes.
+    #
+    def _get_cache_volume_size(self):
+        return utils._get_volume_size(self.context.artifactdir)
 
 
 # _configured_remote_artifact_cache_specs():

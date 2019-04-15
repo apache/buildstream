@@ -583,6 +583,27 @@ def _get_dir_size(path):
     return get_size(path)
 
 
+# _get_volume_size():
+#
+# Gets the overall usage and total size of a mounted filesystem in bytes.
+#
+# Args:
+#    path (str): The path to check
+#
+# Returns:
+#    (int): The total number of bytes on the volume
+#    (int): The number of available bytes on the volume
+#
+def _get_volume_size(path):
+    try:
+        stat_ = os.statvfs(path)
+    except OSError as e:
+        raise UtilError("Failed to retrieve stats on volume for path '{}': {}"
+                        .format(path, e)) from e
+
+    return stat_.f_bsize * stat_.f_blocks, stat_.f_bsize * stat_.f_bavail
+
+
 # _parse_size():
 #
 # Convert a string representing data size to a number of
@@ -617,8 +638,7 @@ def _parse_size(size, volume):
         if num > 100:
             raise UtilError("{}% is not a valid percentage value.".format(num))
 
-        stat_ = os.statvfs(volume)
-        disk_size = stat_.f_blocks * stat_.f_bsize
+        disk_size, _ = _get_volume_size(volume)
 
         return disk_size * (num / 100)
 

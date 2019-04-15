@@ -61,7 +61,6 @@ class BlobNotFound(ArtifactError):
 #
 # Args:
 #     context (Context): The BuildStream context
-#     enable_push (bool): Whether pushing is allowed by the platform
 #
 # Pushing is explicitly disabled by the platform in some cases,
 # like when we are falling back to functioning without using
@@ -69,7 +68,7 @@ class BlobNotFound(ArtifactError):
 #
 class CASCache(ArtifactCache):
 
-    def __init__(self, context, *, enable_push=True):
+    def __init__(self, context):
         super().__init__(context)
 
         self.casdir = os.path.join(context.artifactdir, 'cas')
@@ -77,8 +76,6 @@ class CASCache(ArtifactCache):
         os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
 
         self._calculate_cache_quota()
-
-        self._enable_push = enable_push
 
         # Per-project list of _CASRemote instances.
         self._remotes = {}
@@ -89,6 +86,12 @@ class CASCache(ArtifactCache):
     ################################################
     #     Implementation of abstract methods       #
     ################################################
+
+    def preflight(self):
+        if (not os.path.isdir(os.path.join(self.casdir, 'refs', 'heads')) or
+            not os.path.isdir(os.path.join(self.casdir, 'objects'))):
+            raise ArtifactError("CAS repository check failed for '{}'"
+                                .format(self.casdir))
 
     def contains(self, element, key):
         refpath = self._refpath(self.get_artifact_fullname(element, key))
@@ -221,7 +224,7 @@ class CASCache(ArtifactCache):
             return bool(remotes_for_project)
 
     def has_push_remotes(self, *, element=None):
-        if not self._has_push_remotes or not self._enable_push:
+        if not self._has_push_remotes:
             # No project has push remotes
             return False
         elif element is None:

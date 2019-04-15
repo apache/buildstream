@@ -32,7 +32,6 @@ from ._exceptions import StreamError, ImplError, BstError
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, BuildQueue, PullQueue, PushQueue
 from ._pipeline import Pipeline, PipelineSelection
-from ._platform import Platform
 from . import utils, _yaml, _site
 from . import Scope, Consistency
 
@@ -71,8 +70,7 @@ class Stream():
         #
         # Private members
         #
-        self._platform = Platform.get_platform()
-        self._artifacts = self._platform.artifactcache
+        self._artifacts = context.artifactcache
         self._context = context
         self._project = project
         self._pipeline = Pipeline(context, project, self._artifacts)

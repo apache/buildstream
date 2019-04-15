@@ -29,7 +29,6 @@ from contextlib import contextmanager
 # Local imports
 from .resources import Resources, ResourceType
 from .jobs import JobStatus, CacheSizeJob, CleanupJob
-from .._platform import Platform
 
 
 # A decent return code for Scheduler.run()
@@ -286,6 +285,8 @@ class Scheduler():
 
     # Callback for the cache size job
     def _cache_size_job_complete(self, status, cache_size):
+        context = self.context
+        artifacts = context.artifactcache
 
         # Deallocate cache size job resources
         self._cache_size_running = None
@@ -294,9 +295,6 @@ class Scheduler():
         # Schedule a cleanup job if we've hit the threshold
         if status != JobStatus.OK:
             return
-
-        platform = Platform.get_platform()
-        artifacts = platform.artifactcache
 
         if artifacts.has_quota_exceeded():
             self._cleanup_scheduled = True
