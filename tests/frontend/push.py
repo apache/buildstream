@@ -454,3 +454,58 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles):
             assert_shared(cli, sharecli, project, element_name)
             assert_not_shared(cli, shareuser, project, element_name)
             assert_not_shared(cli, shareproject, project, element_name)
+
+
+# This test ensures that we are able to run `bst artifact push` in non strict mode
+# and that we do not crash when trying to push elements even though they
+# have not yet been pulled.
+#
+# This is a regression test for issue #990
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("buildtrees", [('buildtrees'), ('normal')])
+def test_push_no_strict(caplog, cli, tmpdir, datafiles, buildtrees):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    caplog.set_level(1)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+        cli.configure({
+            'artifacts': {
+                'url': share.repo,
+                'push': True
+            },
+            'projects': {
+                'test': {
+                    'strict': False
+                }
+            }
+        })
+
+        # First get us a build
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
+
+        # Now cause one of the dependenies to change their cache key
+        #
+        # Here we just add a file, causing the strong cache key of the
+        # import-bin.bst element to change due to the local files it
+        # imports changing.
+        path = os.path.join(project, 'files', 'bin-files', 'newfile')
+        with open(path, 'w') as f:
+            f.write("PONY !")
+
+        # Now build again after having changed the dependencies
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
+
+        # Now run `bst artifact push`.
+        #
+        # Optionally try it with --pull-buildtrees, since this causes
+        # a pull queue to be added to the `push` command, the behavior
+        # around this is different.
+        args = []
+        if buildtrees == 'buildtrees':
+            args += ['--pull-buildtrees']
+        args += ['artifact', 'push', '--deps', 'all', 'target.bst']
+        result = cli.run(project=project, args=args)
+        result.assert_success()
