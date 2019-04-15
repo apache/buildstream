@@ -344,6 +344,20 @@ class Stream():
         if not self._artifacts.has_push_remotes():
             raise StreamError("No artifact caches available for pushing artifacts")
 
+        # Mark all dependencies of all selected elements as "pulled" before
+        # trying to push.
+        #
+        # In non-strict mode, elements which are cached by their weak keys
+        # will attempt to pull a remote artifact by it's strict key and prefer
+        # a strict key artifact, however pull does not occur when running
+        # a `bst push` session.
+        #
+        # Marking the elements as pulled is a workaround which ensures that
+        # the cache keys are resolved before pushing.
+        #
+        for element in elements:
+            element._pull_done()
+
         self._pipeline.assert_consistent(elements)
         self._add_queue(PushQueue(self._scheduler))
         self._enqueue_plan(elements)
