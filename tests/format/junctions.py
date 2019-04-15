@@ -446,3 +446,57 @@ def test_build_git_cross_junction_names(cli, tmpdir, datafiles):
 
     # Check that the checkout contains the expected files from both projects
     assert os.path.exists(os.path.join(checkoutdir, 'base.txt'))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_config_target(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), 'config-target')
+    checkoutdir = os.path.join(str(tmpdir), 'checkout')
+
+    # Build, checkout
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
+    result.assert_success()
+
+    # Check that the checkout contains the expected files from sub-sub-project
+    assert os.path.exists(os.path.join(checkoutdir, 'hello.txt'))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_sources_and_target(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), 'config-target')
+
+    result = cli.run(project=project, args=['show', 'invalid-source-target.bst'])
+    result.assert_main_error(ErrorDomain.ELEMENT, None)
+
+    assert "junction elements cannot define both 'sources' and 'target' config option" in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_target_name(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), 'config-target')
+
+    # Rename our junction element to the same name as its target
+    old_path = os.path.join(project, 'elements/subsubproject.bst')
+    new_path = os.path.join(project, 'elements/subsubproject-junction.bst')
+    os.rename(old_path, new_path)
+
+    # This should fail now
+    result = cli.run(project=project, args=['show', 'subsubproject-junction.bst'])
+    result.assert_main_error(ErrorDomain.ELEMENT, None)
+
+    assert "junction elements cannot target an element with the same name" in result.stderr
+
+
+# We cannot exhaustively test all possible ways in which this can go wrong, so
+# test a couple of common ways in which we expect this to go wrong.
+@pytest.mark.parametrize('target', ['no-junction.bst', 'nested-junction-target.bst'])
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_target_format(cli, tmpdir, datafiles, target):
+    project = os.path.join(str(datafiles), 'config-target')
+
+    result = cli.run(project=project, args=['show', target])
+    result.assert_main_error(ErrorDomain.ELEMENT, None)
+
+    assert "'target' option must be in format '{junction-name}:{element-name}'" in result.stderr
