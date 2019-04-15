@@ -389,3 +389,49 @@ def test_push_already_cached(caplog, cli, tmpdir, datafiles):
         assert not result.get_pushed_elements(), "No elements should have been pushed since the cache was populated"
         assert "INFO    Remote ({}) already has ".format(share.repo) in result.stderr
         assert "SKIPPED Push" in result.stderr
+
+
+# This test ensures that we are able to run `bst push` in non strict mode
+# and that we do not crash when trying to push elements even though they
+# have not yet been pulled.
+#
+# This is a regression test for issue #990
+#
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_no_strict(caplog, cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    caplog.set_level(1)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+        cli.configure({
+            'artifacts': {
+                'url': share.repo,
+                'push': True
+            },
+            'projects': {
+                'test': {
+                    'strict': False
+                }
+            }
+        })
+
+        # First get us a build
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
+
+        # Now cause one of the dependenies to change their cache key
+        #
+        # Here we just add a file, causing the strong cache key of the
+        # import-bin.bst element to change due to the local files it
+        # imports changing.
+        path = os.path.join(project, 'files', 'bin-files', 'newfile')
+        with open(path, 'w') as f:
+            f.write("PONY !")
+
+        # Now build again after having changed the dependencies
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
+
+        # Now run `bst push`.
+        result = cli.run(project=project, args=['push', '--deps', 'all', 'target.bst'])
+        result.assert_success()
