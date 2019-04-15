@@ -185,7 +185,7 @@ class SourceCache(BaseCache):
     #
     # Returns:
     #    (bool): True if pull successful, False if not
-    def pull(self, source, *, progress=None):
+    def pull(self, source):
         ref = source._get_source_name()
 
         project = source._get_project()
@@ -196,7 +196,7 @@ class SourceCache(BaseCache):
             try:
                 source.status("Pulling source {} <- {}".format(display_key, remote.spec.url))
 
-                if self.cas.pull(ref, remote, progress=progress):
+                if self.cas.pull(ref, remote):
                     source.info("Pulled source {} <- {}".format(display_key, remote.spec.url))
                     # no need to pull from additional remotes
                     return True

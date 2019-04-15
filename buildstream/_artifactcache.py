@@ -324,13 +324,12 @@ class ArtifactCache(BaseCache):
     # Args:
     #     element (Element): The Element whose artifact is to be fetched
     #     key (str): The cache key to use
-    #     progress (callable): The progress callback, if any
     #     pull_buildtrees (bool): Whether to pull buildtrees or not
     #
     # Returns:
     #   (bool): True if pull was successful, False if artifact was not available
     #
-    def pull(self, element, key, *, progress=None, pull_buildtrees=False):
+    def pull(self, element, key, *, pull_buildtrees=False):
         project = element._get_project()
 
         for remote in self._remotes[project]:

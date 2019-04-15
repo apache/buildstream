@@ -250,14 +250,11 @@ class CASCache():
     # Args:
     #     ref (str): The ref to pull
     #     remote (CASRemote): The remote repository to pull from
-    #     progress (callable): The progress callback, if any
-    #     subdir (str): The optional specific subdir to pull
-    #     excluded_subdirs (list): The optional list of subdirs to not pull
     #
     # Returns:
     #   (bool): True if pull was successful, False if ref was not available
     #
-    def pull(self, ref, remote, *, progress=None):
+    def pull(self, ref, remote):
         try:
             remote.init()
 
