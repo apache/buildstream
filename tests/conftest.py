@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 #
 #  Copyright (C) 2018 Codethink Limited
+#  Copyright (C) 2019 Bloomberg Finance LLP
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -23,6 +24,14 @@ import shutil
 import tempfile
 import pytest
 from buildstream._platform.platform import Platform
+from buildstream.plugintestutils import register_repo_kind, sourcetests_collection_hook
+
+from tests.testutils.repo.git import Git
+from tests.testutils.repo.bzr import Bzr
+from tests.testutils.repo.ostree import OSTree
+from tests.testutils.repo.tar import Tar
+from tests.testutils.repo.zip import Zip
+
 
 #
 # This file is loaded by pytest, we use it to add a custom
@@ -155,3 +164,19 @@ def clean_platform_cache():
 @pytest.fixture(autouse=True)
 def ensure_platform_cache_is_clean():
     clean_platform_cache()
+
+
+#################################################
+# Setup for templated source tests              #
+#################################################
+register_repo_kind('git', Git)
+register_repo_kind('bzr', Bzr)
+register_repo_kind('ostree', OSTree)
+register_repo_kind('tar', Tar)
+register_repo_kind('zip', Zip)
+
+
+# This hook enables pytest to collect the templated source tests from
+# buildstream.plugintestutils
+def pytest_sessionstart(session):
+    sourcetests_collection_hook(session)
