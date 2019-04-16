@@ -128,9 +128,9 @@ class GitMirror(SourceFetcher):
                 except OSError as e:
 
                     # When renaming and the destination repo already exists, os.rename()
-                    # will fail with ENOTEMPTY, since an empty directory will be silently
-                    # replaced
-                    if e.errno == errno.ENOTEMPTY:
+                    # will fail with ENOTEMPTY or EEXIST, since an empty directory will
+                    # be silently replaced
+                    if e.errno in (errno.ENOTEMPTY, errno.EEXIST):
                         self.source.status("{}: Discarding duplicate clone of {}"
                                            .format(self.source, url))
                     else:
