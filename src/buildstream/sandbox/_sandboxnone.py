@@ -59,7 +59,8 @@ class SandboxNone(Sandbox):
 
         path = pathlib.Path(self.get_directory()) / cwd
         print('run', command, 'in', path)
-        result = subprocess.run(command, cwd=path, env=env)
+        #result = subprocess.run(command, cwd=path, env=env)
+        result = subprocess.run(command, cwd=path)
 
         # out = pathlib.Path(self.get_directory()) / 'buildstream-install'
         # out.mkdir(exist_ok=True)
