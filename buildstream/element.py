@@ -229,18 +229,13 @@ class Element(Plugin):
         self.__required = False                 # Whether the artifact is required in the current session
         self.__artifact_files_required = False  # Whether artifact files are required in the local cache
         self.__build_result = None              # The result of assembling this Element (success, description, detail)
-        self._build_log_path = None            # The path of the build log for this Element
-        self.__artifact = Artifact(self, context)  # Artifact class for direct artifact composite interaction
+        self._build_log_path = None             # The path of the build log for this Element
+        self.__artifact = None                  # Artifact class for direct artifact composite interaction
+        self.__strict_artifact = None           # Artifact for strict cache key
 
         self.__batch_prepare_assemble = False         # Whether batching across prepare()/assemble() is configured
         self.__batch_prepare_assemble_flags = 0       # Sandbox flags for batching across prepare()/assemble()
         self.__batch_prepare_assemble_collect = None  # Collect dir for batching across prepare()/assemble()
-
-        # hash tables of loaded artifact metadata, hashed by key
-        self.__metadata_keys = {}                     # Strong and weak keys for this key
-        self.__metadata_dependencies = {}             # Dictionary of dependency strong keys
-        self.__metadata_workspaced = {}               # Boolean of whether it's workspaced
-        self.__metadata_workspaced_dependencies = {}  # List of which dependencies are workspaced
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults(plugin_conf)
@@ -740,10 +735,11 @@ class Element(Plugin):
         files_written = {}
         old_dep_keys = None
         workspace = self._get_workspace()
+        context = self._get_context()
 
         if self.__can_build_incrementally() and workspace.last_successful:
-            # Workspaces do not need to work with the special node types
-            old_dep_keys = self.__get_artifact_metadata_dependencies(workspace.last_successful)
+            last_successful = Artifact(self, context, strong_key=workspace.last_successful)
+            old_dep_keys = last_successful.get_metadata_dependencies()
 
         for dep in self.dependencies(scope):
             # If we are workspaced, and we therefore perform an
@@ -1055,7 +1051,10 @@ class Element(Plugin):
     #    (str): Detailed description of the result
     #
     def _get_build_result(self):
-        return self.__get_build_result(keystrength=None)
+        if self.__build_result is None:
+            self.__load_build_result()
+
+        return self.__build_result
 
     # __set_build_result():
     #
@@ -1076,7 +1075,11 @@ class Element(Plugin):
     #            the artifact cache and the element assembled successfully
     #
     def _cached_success(self):
-        return self.__cached_success(keystrength=None)
+        if not self._cached():
+            return False
+
+        success, _, _ = self._get_build_result()
+        return success
 
     # _cached_failure():
     #
@@ -1180,6 +1183,8 @@ class Element(Plugin):
             self.__strong_cached = None
             self.__weak_cached = None
             self.__build_result = None
+            self.__artifact = None
+            self.__strict_artifact = None
             return
 
         if self.__weak_cache_key is None:
@@ -1203,7 +1208,10 @@ class Element(Plugin):
                 return
 
             if not context.get_strict():
-                self.__weak_cached = self.__artifact.cached(self.__weak_cache_key)
+                # We've calculated the weak_key, so instantiate artifact instance member
+                self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
+                # and update the weak cached state (required early for workspaces)
+                self.__weak_cached = self.__artifact.cached()
 
         if not context.get_strict():
             # Full cache query in non-strict mode requires both the weak and
@@ -1213,7 +1221,7 @@ class Element(Plugin):
             # are sufficient. However, don't update the `cached` attributes
             # until the full cache query below.
             if (not self.__assemble_scheduled and not self.__assemble_done and
-                    not self.__cached_success(keystrength=_KeyStrength.WEAK) and
+                    not self._cached_success() and
                     not self._pull_pending()):
                 # For uncached workspaced elements, assemble is required
                 # even if we only need the cache key
@@ -1226,17 +1234,28 @@ class Element(Plugin):
                 e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
             ]
             self.__strict_cache_key = self._calculate_cache_key(dependencies)
+
             if self.__strict_cache_key is None:
                 # Strict cache key could not be calculated yet
                 return
 
-        # Query caches now that the weak and strict cache keys are available
-        key_for_cache_lookup = self.__strict_cache_key if context.get_strict() else self.__weak_cache_key
+            self.__strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key,
+                                              weak_key=self.__weak_cache_key)
+
+            # In strict mode, the strong cache key always matches the strict cache key
+            if context.get_strict():
+                self.__cache_key = self.__strict_cache_key
+                self.__artifact = self.__strict_artifact
+
+        # Query caches now that the weak and strict cache keys are available.
+        # strong_cached in non-strict mode is only of relevance when querying
+        # if a 'better' artifact could be pulled, which is redudant if we already
+        # have it cached locally with a strict_key. As such strong_cached is only
+        # checked against the 'strict' artifact.
         if not self.__strong_cached:
-            self.__strong_cached = self.__artifact.cached(self.__strict_cache_key)
-        if key_for_cache_lookup == self.__weak_cache_key:
-            if not self.__weak_cached:
-                self.__weak_cached = self.__artifact.cached(self.__weak_cache_key)
+            self.__strong_cached = self.__strict_artifact.cached()
+        if not self.__weak_cached and not context.get_strict():
+            self.__weak_cached = self.__artifact.cached()
 
         if (not self.__assemble_scheduled and not self.__assemble_done and
                 not self._cached_success() and not self._pull_pending()):
@@ -1251,16 +1270,14 @@ class Element(Plugin):
                 self._schedule_assemble()
                 return
 
+        # __cache_key can be None here only in non-strict mode
         if self.__cache_key is None:
-            # Calculate strong cache key
-            if context.get_strict():
-                self.__cache_key = self.__strict_cache_key
-            elif self._pull_pending():
+            if self._pull_pending():
                 # Effective strong cache key is unknown until after the pull
                 pass
             elif self._cached():
                 # Load the strong cache key from the artifact
-                strong_key, _ = self.__get_artifact_metadata_keys()
+                strong_key, _ = self.__artifact.get_metadata_keys()
                 self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
                 # Artifact will or has been built, not downloaded
@@ -1272,6 +1289,9 @@ class Element(Plugin):
             if self.__cache_key is None:
                 # Strong cache key could not be calculated yet
                 return
+
+            # Now we have the strong cache key, update the Artifact
+            self.__artifact._cache_key = self.__cache_key
 
         if not self.__ready_for_runtime and self.__cache_key is not None:
             self.__ready_for_runtime = all(
@@ -1792,11 +1812,10 @@ class Element(Plugin):
 
         # ensure we have cache keys
         self._assemble_done()
-        keys = self.__get_cache_keys_for_commit()
 
         with self.timed_activity("Caching artifact"):
             artifact_size = self.__artifact.cache(rootdir, sandbox_build_dir, collectvdir,
-                                                  buildresult, keys, publicdata)
+                                                  buildresult, publicdata)
 
         if collect is not None and collectvdir is None:
             raise ElementError(
@@ -2132,6 +2151,9 @@ class Element(Plugin):
     #             not its contents.
     #
     def _cached_buildtree(self):
+        if not self._cached():
+            return False
+
         return self.__artifact.cached_buildtree()
 
     # _buildtree_exists()
@@ -2140,9 +2162,13 @@ class Element(Plugin):
     # whether the buildtree is present in the local cache.
     #
     # Returns:
-    #     (bool): True if artifact was created with buildtree
+    #     (bool): True if artifact was created with buildtree, False if
+    #             element not cached or not created with a buildtree.
     #
     def _buildtree_exists(self):
+        if not self._cached():
+            return False
+
         return self.__artifact.buildtree_exists()
 
     # _cached_logs()
@@ -2364,10 +2390,10 @@ class Element(Plugin):
         if recalculate or self.__tainted is None:
 
             # Whether this artifact has a workspace
-            workspaced = self.__get_artifact_metadata_workspaced()
+            workspaced = self.__artifact.get_metadata_workspaced()
 
             # Whether this artifact's dependencies have workspaces
-            workspaced_dependencies = self.__get_artifact_metadata_workspaced_dependencies()
+            workspaced_dependencies = self.__artifact.get_metadata_workspaced_dependencies()
 
             # Other conditions should be or-ed
             self.__tainted = (workspaced or workspaced_dependencies or
@@ -2774,138 +2800,21 @@ class Element(Plugin):
             self.__whitelist_regex = re.compile(expression)
         return self.__whitelist_regex.match(os.path.join(os.sep, path))
 
-    # __get_artifact_metadata_keys():
-    #
-    # Retrieve the strong and weak keys from the given artifact.
-    #
-    # Args:
-    #     key (str): The artifact key, or None for the default key
-    #
-    # Returns:
-    #     (str): The strong key
-    #     (str): The weak key
-    #
-    def __get_artifact_metadata_keys(self, key=None):
-
-        metadata_keys = self.__metadata_keys
-
-        strong_key, weak_key, metadata_keys = self.__artifact.get_metadata_keys(key, metadata_keys)
-
-        # Update keys if needed
-        if metadata_keys:
-            self.__metadata_keys = metadata_keys
-
-        return (strong_key, weak_key)
-
-    # __get_artifact_metadata_dependencies():
-    #
-    # Retrieve the hash of dependency strong keys from the given artifact.
-    #
-    # Args:
-    #     key (str): The artifact key, or None for the default key
-    #
-    # Returns:
-    #     (dict): A dictionary of element names and their strong keys
-    #
-    def __get_artifact_metadata_dependencies(self, key=None):
-
-        metadata = [self.__metadata_dependencies, self.__metadata_keys]
-        meta, meta_deps, meta_keys = self.__artifact.get_metadata_dependencies(key, *metadata)
-
-        # Update deps if needed
-        if meta_deps:
-            self.__metadata_dependencies = meta_deps
-            # Update keys if needed, no need to check if deps not updated
-            if meta_keys:
-                self.__metadata_keys = meta_keys
-
-        return meta
-
-    # __get_artifact_metadata_workspaced():
-    #
-    # Retrieve the hash of dependency strong keys from the given artifact.
-    #
-    # Args:
-    #     key (str): The artifact key, or None for the default key
-    #
-    # Returns:
-    #     (bool): Whether the given artifact was workspaced
-    #
-
-    def __get_artifact_metadata_workspaced(self, key=None):
-
-        metadata = [self.__metadata_workspaced, self.__metadata_keys]
-        workspaced, meta_workspaced, meta_keys = self.__artifact.get_metadata_workspaced(key, *metadata)
-
-        # Update workspaced if needed
-        if meta_workspaced:
-            self.__metadata_workspaced = meta_workspaced
-            # Update keys if needed, no need to check if workspaced not updated
-            if meta_keys:
-                self.__metadata_keys = meta_keys
-
-        return workspaced
-
-    # __get_artifact_metadata_workspaced_dependencies():
-    #
-    # Retrieve the hash of dependency strong keys from the given artifact.
-    #
-    # Args:
-    #     key (str): The artifact key, or None for the default key
-    #
-    # Returns:
-    #     (list): List of which dependencies are workspaced
-    #
-    def __get_artifact_metadata_workspaced_dependencies(self, key=None):
-
-        metadata = [self.__metadata_workspaced_dependencies, self.__metadata_keys]
-        workspaced, meta_workspaced_deps,\
-            meta_keys = self.__artifact.get_metadata_workspaced_dependencies(key, *metadata)
-
-        # Update workspaced if needed
-        if meta_workspaced_deps:
-            self.__metadata_workspaced_dependencies = meta_workspaced_deps
-            # Update keys if needed, no need to check if workspaced not updated
-            if meta_keys:
-                self.__metadata_keys = meta_keys
-
-        return workspaced
-
     # __load_public_data():
     #
     # Loads the public data from the cached artifact
     #
     def __load_public_data(self):
+        self.__assert_cached()
         assert self.__dynamic_public is None
 
         self.__dynamic_public = self.__artifact.load_public_data()
 
-    def __load_build_result(self, keystrength):
-        self.__assert_cached(keystrength=keystrength)
+    def __load_build_result(self):
+        self.__assert_cached()
         assert self.__build_result is None
 
-        # _get_cache_key with _KeyStrength.STRONG returns self.__cache_key, which can be `None`
-        # leading to a failed assertion from get_artifact_directory() using get_artifact_name(),
-        # so explicility pass self.__strict_cache_key
-        key = self.__weak_cache_key if keystrength is _KeyStrength.WEAK else self.__strict_cache_key
-
-        self.__build_result = self.__artifact.load_build_result(key)
-
-    def __get_build_result(self, keystrength):
-        if keystrength is None:
-            keystrength = _KeyStrength.STRONG if self._get_context().get_strict() else _KeyStrength.WEAK
-
-        if self.__build_result is None:
-            self.__load_build_result(keystrength)
-
-        return self.__build_result
-
-    def __cached_success(self, keystrength):
-        if not self.__is_cached(keystrength=keystrength):
-            return False
-
-        success, _, _ = self.__get_build_result(keystrength=keystrength)
-        return success
+        self.__build_result = self.__artifact.load_build_result()
 
     def __get_cache_keys_for_commit(self):
         keys = []
