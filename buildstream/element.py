@@ -1393,7 +1393,6 @@ class Element(Plugin):
     #
     def _schedule_tracking(self):
         self.__tracking_scheduled = True
-        self._update_state()
 
     # _tracking_done():
     #
