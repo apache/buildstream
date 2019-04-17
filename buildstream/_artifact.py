@@ -195,16 +195,12 @@ class Artifact():
     #
     # Returns:
     #     (bool): True if artifact cached with buildtree, False if
-    #             element not cached or missing expected buildtree.
-    #             Note this only confirms if a buildtree is present,
-    #             not its contents.
+    #             missing expected buildtree. Note this only confirms
+    #             if a buildtree is present, not its contents.
     #
     def cached_buildtree(self):
 
         element = self._element
-
-        if not element._cached():
-            return False
 
         key = self.get_extract_key()
         if not self._artifacts.contains_subdir_artifact(element, key, 'buildtree'):
@@ -221,9 +217,6 @@ class Artifact():
     #     (bool): True if artifact was created with buildtree
     #
     def buildtree_exists(self):
-
-        if not self._element._cached():
-            return False
 
         artifact_vdir, _ = self._get_directory()
         return artifact_vdir._exists('buildtree')

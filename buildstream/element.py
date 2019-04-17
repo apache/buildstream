@@ -1183,6 +1183,8 @@ class Element(Plugin):
             self.__strong_cached = None
             self.__weak_cached = None
             self.__build_result = None
+            self.__artifact = None
+            self.__strict_artifact = None
             return
 
         if self.__weak_cache_key is None:
@@ -2149,6 +2151,9 @@ class Element(Plugin):
     #             not its contents.
     #
     def _cached_buildtree(self):
+        if not self._cached():
+            return False
+
         return self.__artifact.cached_buildtree()
 
     # _buildtree_exists()
@@ -2157,9 +2162,13 @@ class Element(Plugin):
     # whether the buildtree is present in the local cache.
     #
     # Returns:
-    #     (bool): True if artifact was created with buildtree
+    #     (bool): True if artifact was created with buildtree, False if
+    #             element not cached or not created with a buildtree.
     #
     def _buildtree_exists(self):
+        if not self._cached():
+            return False
+
         return self.__artifact.buildtree_exists()
 
     # _cached_logs()
