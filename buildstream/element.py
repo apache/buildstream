@@ -1166,7 +1166,7 @@ class Element(Plugin):
         context = self._get_context()
 
         # Compute and determine consistency of sources
-        self.__update_source_state()
+        self._update_source_state()
 
         if self._get_consistency() == Consistency.INCONSISTENT:
             # Tracking may still be pending
@@ -2283,15 +2283,11 @@ class Element(Plugin):
         else:
             return True
 
-    #############################################################
-    #                   Private Local Methods                   #
-    #############################################################
-
-    # __update_source_state()
+    # _update_source_state()
     #
     # Updates source consistency state
     #
-    def __update_source_state(self):
+    def _update_source_state(self):
 
         # Cannot resolve source state until tracked
         if self.__tracking_scheduled:
@@ -2315,6 +2311,11 @@ class Element(Plugin):
             for source in self.__sources:
                 source._update_state()
                 self.__consistency = min(self.__consistency, source._get_consistency())
+
+
+    #############################################################
+    #                   Private Local Methods                   #
+    #############################################################
 
     # __can_build_incrementally()
     #
