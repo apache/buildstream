@@ -1504,7 +1504,7 @@ class Element(Plugin):
         # Ensure deterministic mtime of sources at build time
         vdirectory.set_deterministic_mtime()
         # Ensure deterministic owners of sources at build time
-        vdirectory.set_deterministic_user()
+        #vdirectory.set_deterministic_user()
 
     # _set_required():
     #
