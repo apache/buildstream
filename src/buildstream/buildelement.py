@@ -294,6 +294,6 @@ class BuildElement(Element):
         # Note the -e switch to 'sh' means to exit with an error
         # if any untested command fails.
         #
-        sandbox.run(['sh', '-c', '-e', cmd + '\n'],
+        sandbox.run(['cmd.exe', '/c', cmd],
                     SandboxFlags.ROOT_READ_ONLY,
                     label=cmd)
