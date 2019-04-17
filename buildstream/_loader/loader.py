@@ -552,7 +552,13 @@ class Loader():
             basedir = sources[0]._get_local_path()
         else:
             # Stage sources
-            element._update_state()
+            # TODO: Remove conditional once implemented wholly
+            if element._Element__cache_key_obj:
+                element._update_source_state()
+                element._calculate_keys()
+            else:
+                element._update_state()
+
             basedir = os.path.join(self.project.directory, ".bst", "staged-junctions",
                                    filename, element._get_cache_key())
             if not os.path.exists(basedir):
