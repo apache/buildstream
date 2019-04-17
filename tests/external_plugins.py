@@ -78,13 +78,7 @@ if __name__ == "__main__":
     #                 directly to it's pytest invocations
     _, tmpdir, *pytest_args = sys.argv
 
-    ALL_EXTERNAL_PLUGINS = [
-        ExternalPluginRepo(
-            name='bst-plugins-template',
-            url='https://gitlab.com/BuildStream/bst-plugins-template.git',
-            ref='master'
-        ),
-    ]
+    ALL_EXTERNAL_PLUGINS = []
 
     exit_code = 0
     for plugin in ALL_EXTERNAL_PLUGINS:

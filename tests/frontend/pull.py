@@ -6,7 +6,7 @@ import shutil
 import stat
 import pytest
 from buildstream import utils
-from buildstream.plugintestutils import cli  # pylint: disable=unused-import
+from buildstream.testing import cli  # pylint: disable=unused-import
 from tests.testutils import create_artifact_share, generate_junction
 
 

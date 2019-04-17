@@ -3,7 +3,7 @@
 
 import os
 import pytest
-from buildstream.plugintestutils import cli  # pylint: disable=unused-import
+from buildstream.testing import cli  # pylint: disable=unused-import
 
 from buildstream import _yaml
 from buildstream._frontend.app import App

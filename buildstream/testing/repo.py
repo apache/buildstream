@@ -31,7 +31,7 @@ class Repo():
     Abstract class providing scaffolding for generating data to be
     used with various sources. Subclasses of Repo may be registered to
     run through the suite of generic source plugin tests provided in
-    buildstream.plugintestutils.
+    buildstream.testing.
 
     Args:
     directory (str): The base temp directory for the test

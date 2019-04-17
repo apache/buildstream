@@ -3,8 +3,8 @@ import pytest
 
 from buildstream import _yaml
 
-from buildstream.plugintestutils import cli_integration as cli
-from buildstream.plugintestutils.integration import walk_dir
+from buildstream.testing import cli_integration as cli
+from buildstream.testing.integration import walk_dir
 from tests.testutils.site import HAVE_SANDBOX
 
 

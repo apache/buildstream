@@ -8,7 +8,7 @@ from tests.testutils import create_artifact_share
 from tests.testutils.site import HAVE_SANDBOX
 
 from buildstream import utils
-from buildstream.plugintestutils import cli, cli_integration as cli2
+from buildstream.testing import cli, cli_integration as cli2
 from buildstream._cas import CASCache
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 

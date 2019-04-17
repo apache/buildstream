@@ -24,7 +24,7 @@ from unittest import mock
 import pytest
 
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from buildstream.plugintestutils import cli
+from buildstream.testing import cli
 
 from tests.testutils import create_element_size, update_element_size, wait_for_cache_granularity
 

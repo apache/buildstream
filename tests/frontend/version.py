@@ -1,7 +1,7 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
-from buildstream.plugintestutils.runcli import cli  # pylint: disable=unused-import
+from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 
 
 # For utils.get_bst_version()

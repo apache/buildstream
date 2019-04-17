@@ -3,7 +3,7 @@ import zipfile
 
 from buildstream.utils import sha256sum
 
-from buildstream.plugintestutils import Repo
+from buildstream.testing import Repo
 
 
 class Zip(Repo):
