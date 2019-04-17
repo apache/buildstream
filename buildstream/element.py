@@ -1835,7 +1835,12 @@ class Element(Plugin):
     def _fetch_done(self):
         # We are not updating the state recursively here since fetching can
         # never end up in updating them.
-        self._update_state()
+
+        # Fetching changes the source state from RESOLVED to CACHED
+        # Fetching cannot change the source state from INCONSISTENT to CACHED because
+        # we prevent fetching when it's INCONSISTENT.
+        # Therefore, only the source state will change.
+        self._update_source_state()
 
     # _pull_pending()
     #
