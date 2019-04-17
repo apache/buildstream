@@ -95,6 +95,7 @@ from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, \
 from .utils import UtilError
 from . import utils
 from . import _cachekey
+from ._cachekey import StrictCacheKey
 from . import _signals
 from . import _site
 from ._platform import Platform
@@ -189,8 +190,14 @@ class Element(Plugin):
 
         self.__cache_key_dict = None            # Dict for cache key calculation
         self.__cache_key = None                 # Our cached cache key
+        self.__cache_key_obj = None             # Object for handling cache keys
 
         super().__init__(meta.name, context, project, meta.provenance, "element")
+
+        # TODO: Give a proper name when we've moved the cache keys completely out of element
+        # TODO: Cache the result of _get_workspace
+        if context.get_strict() and not self._get_workspace():
+            self.__cache_key_obj = StrictCacheKey(self)
 
         self.__is_junction = meta.kind == "junction"
 
@@ -1131,10 +1138,16 @@ class Element(Plugin):
     # None is returned if information for the cache key is missing.
     #
     def _get_cache_key(self, strength=_KeyStrength.STRONG):
-        if strength == _KeyStrength.STRONG:
-            return self.__cache_key
+        # TODO: Remove conditional once all implementations are added
+        if self.__cache_key_obj:
+            return self.__cache_key_obj.get_key(strength)
         else:
-            return self.__weak_cache_key
+            if strength == _KeyStrength.STRONG:
+                return self.__cache_key
+            elif strength == _KeyStrength.STRICT:
+                return self.__strict_cache_key
+            else:
+                return self.__weak_cache_key
 
     # _can_query_cache():
     #
@@ -1153,7 +1166,7 @@ class Element(Plugin):
             return True
 
         # cache cannot be queried until strict cache key is available
-        return self.__strict_cache_key is not None
+        return self._get_cache_key(_KeyStrength.STRICT) is not None
 
     # _update_state()
     #
@@ -1231,7 +1244,7 @@ class Element(Plugin):
 
         if self.__strict_cache_key is None:
             dependencies = [
-                e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
+                e._get_cache_key(_KeyStrength.STRICT) for e in self.dependencies(Scope.BUILD)
             ]
             self.__strict_cache_key = self._calculate_cache_key(dependencies)
 
@@ -1314,7 +1327,7 @@ class Element(Plugin):
 
         if not cache_key:
             cache_key = "{:?<64}".format('')
-        elif self._get_cache_key() == self.__strict_cache_key:
+        elif self._get_cache_key() == self._get_cache_key(_KeyStrength.STRICT):
             # Strong cache key used in this session matches cache key
             # that would be used in strict build mode
             dim_key = False
@@ -1402,7 +1415,12 @@ class Element(Plugin):
         self.__tracking_scheduled = False
         self.__tracking_done = True
 
-        self.__update_state_recursively()
+        # TODO: Remove this conditional once implementations are in place
+        if self.__cache_key_obj:
+            self._update_source_state()
+            self.__cache_key_obj.tracking_done()
+        else:
+            self.__update_state_recursively()
 
     # _track():
     #
@@ -1558,14 +1576,17 @@ class Element(Plugin):
         if self.__required:
             # Already done
             return
-
         self.__required = True
 
         # Request artifacts of runtime dependencies
         for dep in self.dependencies(Scope.RUN, recurse=False):
             dep._set_required()
 
-        self._update_state()
+        # TODO: Remove conditional once all implementations are done
+        if self.__cache_key_obj:
+            self.__cache_key_obj.maybe_schedule_assemble()
+        else:
+            self._update_state()
 
     # _is_required():
     #
@@ -1617,7 +1638,13 @@ class Element(Plugin):
         if workspace:
             workspace.invalidate_key()
 
-        self._update_state()
+        # NOTE: Ideally, we won't need to do any state handling here
+        # Currently needed for:
+        # * This is the first time that an uncached, non-strict, can't pull,
+        #    element can determine it's strong cache key
+        # * For workspaces, just set ~everything to None (look at update state now)
+        if not self.__cache_key_obj:
+            self._update_state()
 
     # _assemble_done():
     #
@@ -1632,7 +1659,11 @@ class Element(Plugin):
         self.__assemble_scheduled = False
         self.__assemble_done = True
 
-        self.__update_state_recursively()
+        # TODO: Remove conditional once implementations are done
+        if self.__cache_key_obj:
+            self.__cache_key_obj.assemble_done()
+        else:
+            self.__update_state_recursively()
 
         if self._get_workspace() and self._cached_success():
             assert utils._is_main_process(), \
@@ -1857,11 +1888,12 @@ class Element(Plugin):
         # in user context, as to complete a partial artifact
         subdir, _ = self.__pull_directories()
 
-        if self.__strong_cached and subdir:
+        strong_cached = self.__is_cached(_KeyStrength.STRONG)
+        if strong_cached and subdir:
             # If we've specified a subdir, check if the subdir is cached locally
-            if self.__artifacts.contains_subdir_artifact(self, self.__strict_cache_key, subdir):
+            if self.__artifacts.contains_subdir_artifact(self, self._get_cache_key(_KeyStrength.STRICT), subdir):
                 return False
-        elif self.__strong_cached:
+        elif strong_cached:
             return False
 
         # Pull is pending if artifact remote server available
@@ -1881,7 +1913,11 @@ class Element(Plugin):
     def _pull_done(self):
         self.__pull_done = True
 
-        self.__update_state_recursively()
+        # TODO: Remove conditional when all implementations are done
+        if self.__cache_key_obj:
+            self.__cache_key_obj.pull_done()
+        else:
+            self.__update_state_recursively()
 
     # _pull():
     #
@@ -2314,6 +2350,20 @@ class Element(Plugin):
                 source._update_state()
                 self.__consistency = min(self.__consistency, source._get_consistency())
 
+    # _calculate_keys():
+    #
+    # TODO: DOCSTRING
+    #
+    def _calculate_keys(self):
+        return self.__cache_key_obj.calculate_keys()
+
+    # _maybe_schedule_assemble():
+    #
+    # TODO: DOCSTRING
+    #
+    def _maybe_schedule_assemble(self):
+        self.__cache_key_obj.maybe_schedule_assemble()
+
     # _check_ready_for_runtime():
     #
     # TODO: DOCSTRING
@@ -2323,6 +2373,43 @@ class Element(Plugin):
             self.__ready_for_runtime = all(
                 dep.__ready_for_runtime for dep in self.__runtime_dependencies)
 
+    # _is_key_cached():
+    #
+    # TODO: DOCSTRING
+    #
+    def _is_key_cached(self, key):
+        assert key
+        return self.__artifact.cached(key)
+
+    # _is_pending_assembly():
+    #
+    # TODO: DOCSTRING
+    #
+    def _is_pending_assembly(self):
+        return not self.__assemble_scheduled and not self.__assemble_done
+
+    # _reverse_deps_cachekeys_for_update()
+    #
+    # Yield every reverse dependency that's not ready for runtime
+    #
+    def _reverse_deps_for_update(self):
+        # XXX: Would this be nicer if the CacheKey owned __ready_for_runtime?
+        queue = _UniquePriorityQueue()
+        queue.push(self._unique_id, self)
+
+        while queue:
+            element = queue.pop()
+
+            # If ready, it never becomes unready
+            if element.__ready_for_runtime:
+                continue
+
+            yield element
+
+            # Element readiness changed, maybe rdeps will, too
+            if element.__ready_for_runtime:
+                for rdep in element.__reverse_dependencies:
+                    queue.push(rdep._unique_id, rdep)
 
     #############################################################
     #                   Private Local Methods                   #
@@ -2374,7 +2461,10 @@ class Element(Plugin):
         if keystrength is None:
             keystrength = _KeyStrength.STRONG if self._get_context().get_strict() else _KeyStrength.WEAK
 
-        return self.__strong_cached if keystrength == _KeyStrength.STRONG else self.__weak_cached
+        if self.__cache_key_obj:
+            return self.__cache_key_obj.is_cached(keystrength)
+        else:
+            return self.__strong_cached if keystrength == _KeyStrength.STRONG else self.__weak_cached
 
     # __assert_cached()
     #
@@ -2828,6 +2918,33 @@ class Element(Plugin):
 
         self.__build_result = self.__artifact.load_build_result()
 
+    # TODO: Do we need any of the key logic we introduced?
+    #     # _get_cache_key with _KeyStrength.STRONG returns self.__cache_key, which can be `None`
+    #     # leading to a failed assertion from get_artifact_directory() using get_artifact_name(),
+    #     # so explicility pass the strict cache key
+    #     if keystrength == _KeyStrength.WEAK:
+    #         key = self._get_cache_key(_KeyStrength.WEAK)
+    #     else:
+    #         key = self._get_cache_key(_KeyStrength.STRICT)
+
+    #     self.__build_result = self.__artifact.load_build_result(key)
+
+    # def __get_build_result(self, keystrength):
+    #     if keystrength is None:
+    #         keystrength = _KeyStrength.STRONG if self._get_context().get_strict() else _KeyStrength.WEAK
+
+    #     if self.__build_result is None:
+    #         self.__load_build_result(keystrength)
+
+    #     return self.__build_result
+
+    # def __cached_success(self, keystrength):
+    #     if not self.__is_cached(keystrength=keystrength):
+    #         return False
+
+    #     success, _, _ = self.__get_build_result(keystrength=keystrength)
+    #     return success
+
     def __get_cache_keys_for_commit(self):
         keys = []
 
@@ -2854,7 +2971,7 @@ class Element(Plugin):
     #
     def __pull_strong(self, *, progress=None, subdir=None, excluded_subdirs=None):
         weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
-        key = self.__strict_cache_key
+        key = self._get_cache_key(strength=_KeyStrength.STRICT)
         if not self.__artifacts.pull(self, key, progress=progress, subdir=subdir,
                                      excluded_subdirs=excluded_subdirs):
             return False
@@ -2944,7 +3061,13 @@ class Element(Plugin):
             element = queue.pop()
 
             old_ready_for_runtime = element.__ready_for_runtime
-            element._update_state()
+            # TODO: Replace this once all cases are implemented
+            if element.__cache_key_obj:
+                element._update_source_state()
+                element.__cache_key_obj.calculate_keys()
+                element.__cache_key_obj.maybe_schedule_assemble()
+            else:
+                element._update_state()
 
             if element.__ready_for_runtime != old_ready_for_runtime:
                 for rdep in element.__reverse_dependencies:

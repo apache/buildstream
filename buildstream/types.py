@@ -127,6 +127,10 @@ class _KeyStrength(Enum):
     # cache keys of dependencies.
     WEAK = 2
 
+    # Includes strict cache keys of all build dependencies and their
+    # runtime dependencies.
+    STRICT = 3
+
 
 # _UniquePriorityQueue():
 #
