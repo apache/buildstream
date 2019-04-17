@@ -1293,9 +1293,7 @@ class Element(Plugin):
             # Now we have the strong cache key, update the Artifact
             self.__artifact._cache_key = self.__cache_key
 
-        if not self.__ready_for_runtime and self.__cache_key is not None:
-            self.__ready_for_runtime = all(
-                dep.__ready_for_runtime for dep in self.__runtime_dependencies)
+        self._check_ready_for_runtime()
 
     # _get_display_key():
     #
@@ -2315,6 +2313,15 @@ class Element(Plugin):
             for source in self.__sources:
                 source._update_state()
                 self.__consistency = min(self.__consistency, source._get_consistency())
+
+    # _check_ready_for_runtime():
+    #
+    # TODO: DOCSTRING
+    #
+    def _check_ready_for_runtime(self):
+        if not self.__ready_for_runtime and self._get_cache_key() is not None:
+            self.__ready_for_runtime = all(
+                dep.__ready_for_runtime for dep in self.__runtime_dependencies)
 
 
     #############################################################
