@@ -1036,12 +1036,21 @@ class Element(Plugin):
 
     # _cached():
     #
+    # Determines whether this element is cached (using the stored
+    # cached state)
+    #
+    # Args:
+    #    (_KeyStrength) keystrength: The strength of the key to 
+    #        determine whether it is cached.
     # Returns:
     #    (bool): Whether this element is already present in
     #            the artifact cache
     #
-    def _cached(self):
-        return self.__is_cached(keystrength=None)
+    def _cached(self, keystrength=None):
+        if keystrength is None:
+            keystrength = _KeyStrength.STRONG if self._get_context().get_strict() else _KeyStrength.WEAK
+
+        return self.__strong_cached if keystrength == _KeyStrength.STRONG else self.__weak_cached
 
     # _get_build_result():
     #
@@ -2370,18 +2379,12 @@ class Element(Plugin):
                 # have been executed.
                 sandbox._callback(mark_workspace_prepared)
 
-    def __is_cached(self, keystrength):
-        if keystrength is None:
-            keystrength = _KeyStrength.STRONG if self._get_context().get_strict() else _KeyStrength.WEAK
-
-        return self.__strong_cached if keystrength == _KeyStrength.STRONG else self.__weak_cached
-
     # __assert_cached()
     #
     # Raises an error if the artifact is not cached.
     #
     def __assert_cached(self, keystrength=None):
-        assert self.__is_cached(keystrength=keystrength), "{}: Missing artifact {}".format(
+        assert self._cached(keystrength=keystrength), "{}: Missing artifact {}".format(
             self, self._get_brief_display_key())
 
     # __get_tainted():
