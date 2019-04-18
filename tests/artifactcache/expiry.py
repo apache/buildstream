@@ -348,7 +348,7 @@ def test_never_delete_required_track(cli, datafiles):
 def test_invalid_cache_quota(cli, datafiles, quota, err_domain, err_reason):
     project = str(datafiles)
     os.makedirs(os.path.join(project, 'elements'))
-
+    create_element_size("file.bst", project, 'elements', [], 1024)
     cli.configure({
         'cache': {
             'quota': quota,
@@ -382,7 +382,7 @@ def test_invalid_cache_quota(cli, datafiles, quota, err_domain, err_reason):
     )
 
     with volume_space_patch, cache_size_patch:
-        res = cli.run(project=project, args=['workspace', 'list'])
+        res = cli.run(project=project, args=['build', 'file.bst'])
 
     if err_domain == 'success':
         res.assert_success()

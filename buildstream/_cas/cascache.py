@@ -58,6 +58,8 @@ CACHE_SIZE_FILE = "cache_size"
 class CASCacheUsage():
 
     def __init__(self, casquota):
+        if not casquota._cache_quota_original:
+            casquota._calculate_cache_quota()
         self.quota_config = casquota._config_cache_quota          # Configured quota
         self.quota_size = casquota._cache_quota_original          # Resolved cache quota in bytes
         self.used_size = casquota.get_cache_size()                # Size used by artifacts in bytes
@@ -1151,8 +1153,6 @@ class CASQuota:
         self._ref_callbacks = []   # Call backs to get required refs
         self._remove_callbacks = []   # Call backs to remove refs
 
-        self._calculate_cache_quota()
-
     # compute_cache_size()
     #
     # Computes the real artifact cache size.
@@ -1218,6 +1218,8 @@ class CASQuota:
     #
     def full(self):
 
+        if not self._cache_quota:
+            self._calculate_cache_quota()
         if self.get_cache_size() > self._cache_quota:
             return True
 

@@ -75,6 +75,7 @@ def test_quota_over_1024T(cli, tmpdir):
     project = tmpdir.join("main")
     os.makedirs(str(project))
     _yaml.dump({'name': 'main'}, str(project.join("project.conf")))
+    create_element_size("file.bst", project, ".", [], 1024)
 
     volume_space_patch = mock.patch(
         "buildstream._cas.CASQuota._get_cache_volume_size",
@@ -83,5 +84,5 @@ def test_quota_over_1024T(cli, tmpdir):
     )
 
     with volume_space_patch:
-        result = cli.run(project, args=["build", "file.bst"])
+        result = cli.run(project, args=["build", "file.bst"], project=project)
         result.assert_main_error(ErrorDomain.CAS, 'insufficient-storage-for-quota')
