@@ -519,6 +519,18 @@ class Loader():
         element = Element._new_from_meta(meta_element)
         element._preflight()
 
+        # If this junction element points to a sub-sub-project, we need to
+        # find loader for that project.
+        if element.target:
+            subproject_loader = self._get_loader(element.target_junction, rewritable=rewritable, ticker=ticker,
+                                                 level=level, fetch_subprojects=fetch_subprojects,
+                                                 provenance=provenance)
+            loader = subproject_loader._get_loader(element.target_element, rewritable=rewritable, ticker=ticker,
+                                                   level=level, fetch_subprojects=fetch_subprojects,
+                                                   provenance=provenance)
+            self._loaders[filename] = loader
+            return loader
+
         sources = list(element.sources())
         if not element._source_cached():
             for idx, source in enumerate(sources):
