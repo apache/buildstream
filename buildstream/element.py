@@ -1308,6 +1308,15 @@ class Element(Plugin):
 
         self._check_ready_for_runtime()
 
+    def _assemble_strict_artifact(self):
+        context = self._get_context()
+        strict = self._get_cache_key(strength=_KeyStrength.STRICT)
+        weak = self._get_cache_key(strength=_KeyStrength.WEAK)
+        self.__strict_artifact = Artifact(self, context, strong_key=strict,
+                                          weak_key=weak)
+        self.__artifact = self.__strict_artifact
+
+
     # _get_display_key():
     #
     # Returns cache keys for display purposes
@@ -2373,13 +2382,16 @@ class Element(Plugin):
             self.__ready_for_runtime = all(
                 dep.__ready_for_runtime for dep in self.__runtime_dependencies)
 
-    # _is_key_cached():
+    # _is_strong_cached():
     #
     # TODO: DOCSTRING
     #
-    def _is_key_cached(self, key):
-        assert key
-        return self.__artifact.cached(key)
+    def _is_strong_cached(self):
+        return self.__strict_artifact.cached()
+
+    def _is_weak_cached(self):
+        return self.__artifact.cached()
+
 
     # _is_pending_assembly():
     #

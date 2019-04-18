@@ -71,11 +71,11 @@ class CacheKey():
 
     def _update_weak_cached(self):
         if self._weak_key and not self._weak_cached:
-            self._weak_cached = self._element._is_key_cached(self._weak_key)
+            self._weak_cached = self._element._is_weak_cached()
 
     def _update_strong_cached(self):
         if self._strict_key and not self._strong_cached:
-            self._strong_cached = self._element._is_key_cached(self._strict_key)
+            self._strong_cached = self._element._is_strong_cached()
 
     # Set the weak key
     def _calculate_weak_key(self):

@@ -40,15 +40,18 @@ class StrictCacheKey(CacheKey):
             # and not cached
             return
 
+        # Assemble the strict artifact
+        self._element._assemble_strict_artifact()
+
+        if self._strong_key is None:
+            self._strong_key = self._strict_key
+
         self._update_strong_cached()
 
         # TODO: Figure out why _weak_cached is only set if it's identical
         # NOTE: Elements with no dependencies have identical strict and weak keys.
         if self._strict_key == self._weak_key:
             self._update_weak_cached()
-
-        if self._strong_key is None:
-            self._strong_key = self._strict_key
 
         self._element._check_ready_for_runtime()
 
