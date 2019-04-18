@@ -24,6 +24,7 @@ from collections import OrderedDict
 from . import _sourcetests
 from .repo import Repo
 from .runcli import cli, cli_integration, cli_remote_execution
+from .integration import integration_cache
 
 # To make use of these test utilities it is necessary to have pytest
 # available. However, we don't want to have a hard dependency on

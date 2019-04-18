@@ -23,6 +23,10 @@ integration tests.
 """
 
 import os
+import shutil
+import tempfile
+
+import pytest
 
 
 # Return a list of files relative to the given directory
@@ -49,3 +53,45 @@ def assert_contains(directory, expected):
     if missing:
         raise AssertionError("Missing {} expected elements from list: {}"
                              .format(len(missing), missing))
+
+
+class IntegrationCache:
+
+    def __init__(self, cache):
+        self.root = os.path.abspath(cache)
+        os.makedirs(cache, exist_ok=True)
+
+        # Use the same sources every time
+        self.sources = os.path.join(self.root, 'sources')
+
+        # Create a temp directory for the duration of the test for
+        # the artifacts directory
+        try:
+            self.cachedir = tempfile.mkdtemp(dir=self.root, prefix='cache-')
+        except OSError as e:
+            raise AssertionError("Unable to create test directory !") from e
+
+
+@pytest.fixture(scope='session')
+def integration_cache(request):
+    # Set the cache dir to the INTEGRATION_CACHE variable, or the
+    # default if that is not set.
+    if 'INTEGRATION_CACHE' in os.environ:
+        cache_dir = os.environ['INTEGRATION_CACHE']
+    else:
+        cache_dir = os.path.abspath('./integration-cache')
+
+    cache = IntegrationCache(cache_dir)
+
+    yield cache
+
+    # Clean up the artifacts after each test session - we only want to
+    # cache sources between tests
+    try:
+        shutil.rmtree(cache.cachedir)
+    except FileNotFoundError:
+        pass
+    try:
+        shutil.rmtree(os.path.join(cache.root, 'cas'))
+    except FileNotFoundError:
+        pass
