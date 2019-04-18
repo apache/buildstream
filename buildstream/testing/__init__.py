@@ -90,9 +90,31 @@ def sourcetests_collection_hook(session):
     Args:
         session (pytest.Session): The current pytest session
     """
+    def should_collect_tests(config):
+        args = config.args
+        rootdir = config.rootdir
+        # When no args are supplied, pytest defaults the arg list to
+        # just include the session's root_dir. We want to collect
+        # tests as part of the default collection
+        if args == [str(rootdir)]:
+            return True
+
+        # If specific tests are passed, don't collect
+        # everything. Pytest will handle this correctly without
+        # modification.
+        if len(args) > 1 or rootdir not in args:
+            return False
+
+        # If in doubt, collect them, this will be an easier bug to
+        # spot and is less likely to result in bug not being found.
+        return True
+
     SOURCE_TESTS_PATH = os.path.dirname(_sourcetests.__file__)
     # Add the location of the source tests to the session's
     # python_files config. Without this, pytest may filter out these
     # tests during collection.
     session.config.addinivalue_line("python_files", os.path.join(SOURCE_TESTS_PATH, "*.py"))
-    session.config.args.append(SOURCE_TESTS_PATH)
+    # If test invocation has specified specic tests, don't
+    # automatically collect templated tests.
+    if should_collect_tests(session.config):
+        session.config.args.append(SOURCE_TESTS_PATH)
