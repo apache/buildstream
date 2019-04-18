@@ -3,10 +3,6 @@ description: |
 
   Building manually
 
-# Depend on the base system
-depends:
-- base.bst
-
 # Stage the files/src directory for building
 sources:
   - kind: local
@@ -16,7 +12,6 @@ sources:
 config:
 
   build-commands:
-  - make PREFIX="%{prefix}"
-
-  install-commands:
-  - make -j1 PREFIX="%{prefix}" DESTDIR="%{install-root}" install
+  - cl hello.c
+  - mkdir ..\..\..\buildstream-install
+  - copy hello.exe ..\..\..\buildstream-install
