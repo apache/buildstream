@@ -70,7 +70,7 @@ class CASCacheUsage():
     def __str__(self):
         return "{} / {} ({}%)" \
             .format(utils._pretty_size(self.used_size, dec_places=1),
-                    self.quota_config,
+                    utils._pretty_size(self.quota_size, dec_places=1),
                     self.used_percent)
 
 
