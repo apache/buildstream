@@ -317,12 +317,12 @@ class ArtifactCache(BaseCache):
     #
     def pull(self, element, key, *, progress=None, subdir=None, excluded_subdirs=None):
         ref = element.get_artifact_name(key)
+        display_key = key[:self.context.log_key_length]
 
         project = element._get_project()
 
         for remote in self._remotes[project]:
             try:
-                display_key = element._get_brief_display_key()
                 element.status("Pulling artifact {} <- {}".format(display_key, remote.spec.url))
 
                 if self.cas.pull(ref, remote, progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs):
@@ -331,12 +331,12 @@ class ArtifactCache(BaseCache):
                     return True
                 else:
                     element.info("Remote ({}) does not have artifact {} cached".format(
-                        remote.spec.url, element._get_brief_display_key()
+                        remote.spec.url, display_key
                     ))
 
             except CASError as e:
                 raise ArtifactError("Failed to pull artifact {}: {}".format(
-                    element._get_brief_display_key(), e)) from e
+                    display_key, e)) from e
 
         return False
 
