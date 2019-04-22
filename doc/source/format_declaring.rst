@@ -29,7 +29,7 @@ Here is a rather complete example using the autotools element kind and git sourc
 
    # Override some variables
    variables:
-     sysconfdir: %{prefix}/etc
+     sysconfdir: "%{prefix}/etc"
 
    # Tweak the sandbox shell environment
    environment:
