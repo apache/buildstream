@@ -55,15 +55,7 @@ class StackElement(Element):
         # Just create a dummy empty artifact, its existence is a statement
         # that all this stack's dependencies are built.
         vrootdir = sandbox.get_virtual_directory()
-
-        # XXX FIXME: This is currently needed because the artifact
-        #            cache wont let us commit an empty artifact.
-        #
-        # We need to fix the artifact cache so that it stores
-        # the actual artifact data in a subdirectory, then we
-        # will be able to store some additional state in the
-        # artifact cache, and we can also remove this hack.
-        vrootdir.descend('output', 'bst', create=True)
+        vrootdir.descend('output', create=True)
 
         # And we're done
         return '/output'
