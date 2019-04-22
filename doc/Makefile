@@ -13,7 +13,7 @@
 #
 SPHINXOPTS    =
 SPHINXBUILD   = python3 -m sphinx
-SPHINXAPIDOC  = python3 -m sphinx.apidoc
+SPHINXAPIDOC  = python3 -m sphinx.ext.apidoc
 PAPER         =
 BUILDDIR      = build
 
