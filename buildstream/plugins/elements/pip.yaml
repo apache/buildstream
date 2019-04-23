@@ -3,6 +3,14 @@
 variables:
 
   pip: pip
+  pip-flags: |
+    %{pip} install --no-deps --root=%{install-root} --prefix=%{prefix}
+  pip-install-package: |
+    %{pip-flags} %{conf-root}
+  pip-download-dir: |
+    .bst_pip_downloads
+  pip-install-dependencies: |
+    if [ -e %{pip-download-dir} ]; then %{pip-flags} %{pip-download-dir}/*; fi
 
 config:
 
@@ -14,7 +22,9 @@ config:
   #
   install-commands:
   - |
-    %{pip} install --no-deps --root=%{install-root} --prefix=%{prefix} %{conf-root} 
+    %{pip-install-package}
+  - |
+    %{pip-install-dependencies}
 
   # Commands for stripping debugging information out of
   # installed binaries
