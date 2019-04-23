@@ -25,6 +25,8 @@ import subprocess
 import sys
 import versioneer
 
+from pathlib import Path
+
 
 ##################################################################
 # Python requirements
@@ -115,6 +117,19 @@ def list_man_pages():
     except FileNotFoundError:
         # Do not error out when 'man' directory does not exist
         return []
+
+
+#####################################################
+# List the data files needed by buildstream.testing #
+#####################################################
+#
+# List the datafiles which need to be installed for the
+# buildstream.testing package
+#
+def list_testing_datafiles():
+    bst_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+    data_dir = bst_dir.joinpath('buildstream', 'testing', '_sourcetests', 'project')
+    return [str(f) for f in data_dir.rglob('*')]
 
 
 #####################################################
@@ -322,8 +337,8 @@ setup(name='BuildStream',
       python_requires='~={}.{}'.format(REQUIRED_PYTHON_MAJOR, REQUIRED_PYTHON_MINOR),
       packages=find_packages(exclude=('tests', 'tests.*')),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml',
-                                    'data/*.yaml', 'data/*.sh.in']},
-      include_package_data=True,
+                                    'data/*.yaml', 'data/*.sh.in',
+                                    *list_testing_datafiles()]},
       data_files=[
           # This is a weak attempt to integrate with the user nicely,
           # installing things outside of the python package itself with pip is
