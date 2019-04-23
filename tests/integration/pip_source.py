@@ -19,7 +19,65 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_pip_source_import(cli, datafiles, setup_pypi_repo):
+def test_pip_source_import_packages(cli, datafiles, setup_pypi_repo):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout')
+    element_path = os.path.join(project, 'elements')
+    element_name = 'pip/hello.bst'
+
+    # check that exotically named packages are imported correctly
+    myreqs_packages = 'hellolib'
+    dependencies = ['app2', 'app.3', 'app-4', 'app_5', 'app.no.6', 'app-no-7', 'app_no_8']
+    mock_packages = {
+        myreqs_packages: {
+            package: {} for package in dependencies
+        }
+    }
+
+    # create mock pypi repository
+    pypi_repo = os.path.join(project, 'files', 'pypi-repo')
+    os.makedirs(pypi_repo, exist_ok=True)
+    setup_pypi_repo(mock_packages, pypi_repo)
+
+    element = {
+        'kind': 'import',
+        'sources': [
+            {
+                'kind': 'local',
+                'path': 'files/pip-source'
+            },
+            {
+                'kind': 'pip',
+                'url': 'file://{}'.format(os.path.realpath(pypi_repo)),
+                'packages': [myreqs_packages]
+            }
+        ]
+    }
+    os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
+    _yaml.dump(element, os.path.join(element_path, element_name))
+
+    result = cli.run(project=project, args=['source', 'track', element_name])
+    assert result.exit_code == 0
+
+    result = cli.run(project=project, args=['build', element_name])
+    assert result.exit_code == 0
+
+    result = cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkout])
+    assert result.exit_code == 0
+
+    assert_contains(checkout, ['/.bst_pip_downloads',
+                               '/.bst_pip_downloads/hellolib-0.1.tar.gz',
+                               '/.bst_pip_downloads/app2-0.1.tar.gz',
+                               '/.bst_pip_downloads/app.3-0.1.tar.gz',
+                               '/.bst_pip_downloads/app-4-0.1.tar.gz',
+                               '/.bst_pip_downloads/app_5-0.1.tar.gz',
+                               '/.bst_pip_downloads/app.no.6-0.1.tar.gz',
+                               '/.bst_pip_downloads/app-no-7-0.1.tar.gz',
+                               '/.bst_pip_downloads/app_no_8-0.1.tar.gz'])
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_pip_source_import_requirements_files(cli, datafiles, setup_pypi_repo):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
     element_path = os.path.join(project, 'elements')
@@ -50,7 +108,6 @@ def test_pip_source_import(cli, datafiles, setup_pypi_repo):
                 'kind': 'pip',
                 'url': 'file://{}'.format(os.path.realpath(pypi_repo)),
                 'requirements-files': ['myreqs.txt'],
-                'packages': [myreqs_packages]
             }
         ]
     }
