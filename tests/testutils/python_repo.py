@@ -15,6 +15,7 @@ setup(
     version='{version}',
     description='{name}',
     packages=['{pkgdirname}'],
+    install_requires={pkgdeps},
     entry_points={{
         'console_scripts': [
             '{pkgdirname}={pkgdirname}:main'
@@ -56,7 +57,9 @@ HTML_TEMPLATE = '''\
 # Returns:
 #    None
 #
-def generate_pip_package(tmpdir, pypi, name, version='0.1'):
+def generate_pip_package(tmpdir, pypi, name, version='0.1', dependencies=None):
+    if dependencies is None:
+        dependencies = []
     # check if package already exists in pypi
     pypi_package = os.path.join(pypi, re.sub('[^0-9a-zA-Z]+', '-', name))
     if os.path.exists(pypi_package):
@@ -77,7 +80,8 @@ def generate_pip_package(tmpdir, pypi, name, version='0.1'):
             SETUP_TEMPLATE.format(
                 name=name,
                 version=version,
-                pkgdirname=pkgdirname
+                pkgdirname=pkgdirname,
+                pkgdeps=dependencies
             )
         )
     os.chmod(setup_file, 0o755)
@@ -125,8 +129,10 @@ def setup_pypi_repo(tmpdir):
         return pkgdir
 
     def add_packages(packages, pypi_repo):
-        for package in packages:
+        for package, dependencies in packages.items():
             pkgdir = create_pkgdir(package)
-            generate_pip_package(pkgdir, pypi_repo, package)
+            generate_pip_package(pkgdir, pypi_repo, package, dependencies=list(dependencies.keys()))
+            for dependency, dependency_dependencies in dependencies.items():
+                add_packages({dependency: dependency_dependencies}, pypi_repo)
 
     return add_packages

@@ -26,13 +26,18 @@ def test_pip_source_import(cli, datafiles, setup_pypi_repo):
     element_name = 'pip/hello.bst'
 
     # check that exotically named packages are imported correctly
-    myreqs_packages = ['hellolib']
-    packages = ['app2', 'app.3', 'app-4', 'app_5', 'app.no.6', 'app-no-7', 'app_no_8']
+    myreqs_packages = 'hellolib'
+    dependencies = ['app2', 'app.3', 'app-4', 'app_5', 'app.no.6', 'app-no-7', 'app_no_8']
+    mock_packages = {
+        myreqs_packages: {
+            package: {} for package in dependencies
+        }
+    }
 
     # create mock pypi repository
     pypi_repo = os.path.join(project, 'files', 'pypi-repo')
     os.makedirs(pypi_repo, exist_ok=True)
-    setup_pypi_repo(myreqs_packages + packages, pypi_repo)
+    setup_pypi_repo(mock_packages, pypi_repo)
 
     element = {
         'kind': 'import',
@@ -45,7 +50,7 @@ def test_pip_source_import(cli, datafiles, setup_pypi_repo):
                 'kind': 'pip',
                 'url': 'file://{}'.format(os.path.realpath(pypi_repo)),
                 'requirements-files': ['myreqs.txt'],
-                'packages': packages
+                'packages': [myreqs_packages]
             }
         ]
     }
@@ -80,13 +85,18 @@ def test_pip_source_build(cli, datafiles, setup_pypi_repo):
     element_name = 'pip/hello.bst'
 
     # check that exotically named packages are imported correctly
-    myreqs_packages = ['hellolib']
-    packages = ['app2', 'app.3', 'app-4', 'app_5', 'app.no.6', 'app-no-7', 'app_no_8']
+    myreqs_packages = 'hellolib'
+    dependencies = ['app2', 'app.3', 'app-4', 'app_5', 'app.no.6', 'app-no-7', 'app_no_8']
+    mock_packages = {
+        myreqs_packages: {
+            package: {} for package in dependencies
+        }
+    }
 
     # create mock pypi repository
     pypi_repo = os.path.join(project, 'files', 'pypi-repo')
     os.makedirs(pypi_repo, exist_ok=True)
-    setup_pypi_repo(myreqs_packages + packages, pypi_repo)
+    setup_pypi_repo(mock_packages, pypi_repo)
 
     element = {
         'kind': 'manual',
@@ -100,7 +110,7 @@ def test_pip_source_build(cli, datafiles, setup_pypi_repo):
                 'kind': 'pip',
                 'url': 'file://{}'.format(os.path.realpath(pypi_repo)),
                 'requirements-files': ['myreqs.txt'],
-                'packages': packages
+                'packages': dependencies
             }
         ],
         'config': {
