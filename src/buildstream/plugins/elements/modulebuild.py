@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 Mathieu Bridon
+#  Copyright (C) 2016 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -8,23 +8,23 @@
 #
 #  This library is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
 #  Lesser General Public License for more details.
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 #  Authors:
-#        Mathieu Bridon <bochecha@daitauha.fr>
+#        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 """
-pip - Pip build element
-=======================
-A :mod:`BuildElement <buildstream.buildelement>` implementation for installing
-Python modules with pip
+modulebuild - Perl Module::Build build element
+==============================================
+A :mod:`BuildElement <buildstream.buildelement>` implementation for using
+the Perl Module::Build build system
 
-The pip default configuration:
-  .. literalinclude:: ../../../buildstream/plugins/elements/pip.yaml
+The modulebuild default configuration:
+  .. literalinclude:: ../../../src/buildstream/plugins/elements/modulebuild.yaml
      :language: yaml
 
 See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
@@ -34,8 +34,8 @@ details on common configuration options for build elements.
 from buildstream import BuildElement, SandboxFlags
 
 
-# Element implementation for the 'pip' kind.
-class PipElement(BuildElement):
+# Element implementation for the 'modulebuild' kind.
+class ModuleBuildElement(BuildElement):
     # Supports virtual directories (required for remote execution)
     BST_VIRTUAL_DIRECTORY = True
 
@@ -48,4 +48,4 @@ class PipElement(BuildElement):
 
 # Plugin entry point
 def setup():
-    return PipElement
+    return ModuleBuildElement

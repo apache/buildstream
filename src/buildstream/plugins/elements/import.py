@@ -26,7 +26,7 @@ import an SDK to build on top of or to overlay your build with
 some configuration data.
 
 The empty configuration is as such:
-  .. literalinclude:: ../../../buildstream/plugins/elements/import.yaml
+  .. literalinclude:: ../../../src/buildstream/plugins/elements/import.yaml
      :language: yaml
 """
 

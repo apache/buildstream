@@ -18,36 +18,37 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 """
-cmake - CMake build element
-===========================
+autotools - Autotools build element
+===================================
 This is a :mod:`BuildElement <buildstream.buildelement>` implementation for
-using the `CMake <https://cmake.org/>`_ build system.
+using Autotools build scripts (also known as the `GNU Build System
+<https://en.wikipedia.org/wiki/GNU_Build_System>`_).
 
-You will often want to pass additional arguments to the ``cmake`` program for
-specific configuration options. This should be done on a per-element basis by
-setting the ``cmake-local`` variable.  Here is an example:
+You will often want to pass additional arguments to ``configure``. This should
+be done on a per-element basis by setting the ``conf-local`` variable.  Here is
+an example:
 
 .. code:: yaml
 
    variables:
-     cmake-local: |
-       -DCMAKE_BUILD_TYPE=Debug
+     conf-local: |
+       --disable-foo --enable-bar
 
-If you want to pass extra options to ``cmake`` for every element in your
-project, set the ``cmake-global`` variable in your project.conf file. Here is
+If you want to pass extra options to ``configure`` for every element in your
+project, set the ``conf-global`` variable in your project.conf file. Here is
 an example of that:
 
 .. code:: yaml
 
    elements:
-     cmake:
+     autotools:
        variables:
-         cmake-global: |
-           -DCMAKE_BUILD_TYPE=Release
+         conf-global: |
+           --disable-gtk-doc --disable-static
 
-Here is the default configuration for the ``cmake`` element in full:
+Here is the default configuration for the ``autotools`` element in full:
 
-  .. literalinclude:: ../../../buildstream/plugins/elements/cmake.yaml
+  .. literalinclude:: ../../../src/buildstream/plugins/elements/autotools.yaml
      :language: yaml
 
 See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
@@ -57,8 +58,8 @@ details on common configuration options for build elements.
 from buildstream import BuildElement, SandboxFlags
 
 
-# Element implementation for the 'cmake' kind.
-class CMakeElement(BuildElement):
+# Element implementation for the 'autotools' kind.
+class AutotoolsElement(BuildElement):
     # Supports virtual directories (required for remote execution)
     BST_VIRTUAL_DIRECTORY = True
 
@@ -71,4 +72,4 @@ class CMakeElement(BuildElement):
 
 # Plugin entry point
 def setup():
-    return CMakeElement
+    return AutotoolsElement

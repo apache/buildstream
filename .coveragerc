@@ -20,6 +20,6 @@ precision = 2
 
 [paths]
 source =
-    buildstream/
+    src/buildstream/
     */site-packages/buildstream/
     */buildstream/buildstream/

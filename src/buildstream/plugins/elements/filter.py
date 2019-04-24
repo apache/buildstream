@@ -139,7 +139,7 @@ The artifact of ``filter-misc.bst`` will only contain the file 'baz'.
 Below is more information regarding the the default configurations and possible options
 of the filter element:
 
-.. literalinclude:: ../../../buildstream/plugins/elements/filter.yaml
+.. literalinclude:: ../../../src/buildstream/plugins/elements/filter.yaml
    :language: yaml
 """
 

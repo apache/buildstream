@@ -29,7 +29,7 @@ Since this element's output includes its dependencies, it may only
 depend on elements as `build` type dependencies.
 
 The default configuration and possible options are as such:
-  .. literalinclude:: ../../../buildstream/plugins/elements/compose.yaml
+  .. literalinclude:: ../../../src/buildstream/plugins/elements/compose.yaml
      :language: yaml
 """
 
