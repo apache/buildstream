@@ -1190,122 +1190,28 @@ class Element(Plugin):
             # If we have an active workspace and are going to build, then
             # discard current cache key values as their correct values can only
             # be calculated once the build is complete
-            self.__cache_key_dict = None
-            self.__cache_key = None
-            self.__weak_cache_key = None
-            self.__strict_cache_key = None
-            self.__strong_cached = None
-            self.__weak_cached = None
-            self.__build_result = None
-            self.__artifact = None
-            self.__strict_artifact = None
+            self.__reset_cache_data()
             return
 
-        if self.__weak_cache_key is None:
-            # Calculate weak cache key
-            # Weak cache key includes names of direct build dependencies
-            # but does not include keys of dependencies.
-            if self.BST_STRICT_REBUILD:
-                dependencies = [
-                    e._get_cache_key(strength=_KeyStrength.WEAK)
-                    for e in self.dependencies(Scope.BUILD)
-                ]
-            else:
-                dependencies = [
-                    e.name for e in self.dependencies(Scope.BUILD, recurse=False)
-                ]
+        self.__update_cache_keys()
+        self.__update_artifact_state()
 
-            self.__weak_cache_key = self._calculate_cache_key(dependencies)
-
-            if self.__weak_cache_key is None:
-                # Weak cache key could not be calculated yet
-                return
-
-            if not context.get_strict():
-                # We've calculated the weak_key, so instantiate artifact instance member
-                self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
-                # and update the weak cached state (required early for workspaces)
-                self.__weak_cached = self.__artifact.cached()
+        # Workspaced sources are considered unstable if a build is pending
+        # as the build will modify the contents of the workspace.
+        # Determine as early as possible if a build is pending to discard
+        # unstable cache keys.
+        # Also, uncached workspaced elements must be assembled so we can know
+        # the cache key.
+        if (not self.__assemble_scheduled and not self.__assemble_done and
+                self.__artifact and
+                (self._is_required() or self._get_workspace()) and
+                not self._cached_success() and
+                not self._pull_pending()):
+            self._schedule_assemble()
+            return
 
         if not context.get_strict():
-            # Full cache query in non-strict mode requires both the weak and
-            # strict cache keys. However, we need to determine as early as
-            # possible whether a build is pending to discard unstable cache keys
-            # for workspaced elements. For this cache check the weak cache keys
-            # are sufficient. However, don't update the `cached` attributes
-            # until the full cache query below.
-            if (not self.__assemble_scheduled and not self.__assemble_done and
-                    not self._cached_success() and
-                    not self._pull_pending()):
-                # For uncached workspaced elements, assemble is required
-                # even if we only need the cache key
-                if self._is_required() or self._get_workspace():
-                    self._schedule_assemble()
-                    return
-
-        if self.__strict_cache_key is None:
-            dependencies = [
-                e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
-            ]
-            self.__strict_cache_key = self._calculate_cache_key(dependencies)
-
-            if self.__strict_cache_key is None:
-                # Strict cache key could not be calculated yet
-                return
-
-            self.__strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key,
-                                              weak_key=self.__weak_cache_key)
-
-            # In strict mode, the strong cache key always matches the strict cache key
-            if context.get_strict():
-                self.__cache_key = self.__strict_cache_key
-                self.__artifact = self.__strict_artifact
-
-        # Query caches now that the weak and strict cache keys are available.
-        # strong_cached in non-strict mode is only of relevance when querying
-        # if a 'better' artifact could be pulled, which is redudant if we already
-        # have it cached locally with a strict_key. As such strong_cached is only
-        # checked against the 'strict' artifact.
-        if not self.__strong_cached:
-            self.__strong_cached = self.__strict_artifact.cached()
-        if not self.__weak_cached and not context.get_strict():
-            self.__weak_cached = self.__artifact.cached()
-
-        if (not self.__assemble_scheduled and not self.__assemble_done and
-                not self._cached_success() and not self._pull_pending()):
-            # Workspaced sources are considered unstable if a build is pending
-            # as the build will modify the contents of the workspace.
-            # Determine as early as possible if a build is pending to discard
-            # unstable cache keys.
-
-            # For uncached workspaced elements, assemble is required
-            # even if we only need the cache key
-            if self._is_required() or self._get_workspace():
-                self._schedule_assemble()
-                return
-
-        # __cache_key can be None here only in non-strict mode
-        if self.__cache_key is None:
-            if self._pull_pending():
-                # Effective strong cache key is unknown until after the pull
-                pass
-            elif self._cached():
-                # Load the strong cache key from the artifact
-                strong_key, _ = self.__artifact.get_metadata_keys()
-                self.__cache_key = strong_key
-            elif self.__assemble_scheduled or self.__assemble_done:
-                # Artifact will or has been built, not downloaded
-                dependencies = [
-                    e._get_cache_key() for e in self.dependencies(Scope.BUILD)
-                ]
-                self.__cache_key = self._calculate_cache_key(dependencies)
-
-            if self.__cache_key is None:
-                # Strong cache key could not be calculated yet
-                return
-
-            # Now we have the strong cache key, update the Artifact
-            self.__artifact._cache_key = self.__cache_key
+            self.__update_cache_key_non_strict()
 
         if not self.__ready_for_runtime and self.__cache_key is not None:
             self.__ready_for_runtime = all(
@@ -2327,6 +2233,10 @@ class Element(Plugin):
     #
     # Updates source consistency state
     #
+    # An element's source state must be resolved before it may compute
+    # cache keys, because the source's ref, whether defined in yaml or
+    # from the workspace, is a component of the element's cache keys.
+    #
     def __update_source_state(self):
 
         # Cannot resolve source state until tracked
@@ -2954,6 +2864,156 @@ class Element(Plugin):
                element.__strict_cache_key != old_strict_cache_key:
                 for rdep in element.__reverse_dependencies:
                     queue.push(rdep._unique_id, rdep)
+
+    # __reset_cache_data()
+    #
+    # Resets all data related to cache key calculation and whether an artifact
+    # is cached.
+    #
+    # This is useful because we need to know whether a workspace is cached
+    # before we know whether to assemble it, and doing that would generate a
+    # different cache key to the initial one.
+    #
+    def __reset_cache_data(self):
+        self.__build_result = None
+        self.__cache_key_dict = None
+        self.__cache_key = None
+        self.__weak_cache_key = None
+        self.__strict_cache_key = None
+        self.__artifact = None
+        self.__strict_artifact = None
+        self.__weak_cached = None
+        self.__strong_cached = None
+
+    # __update_cache_keys()
+    #
+    # Updates weak and strict cache keys
+    #
+    # Note that it does not update *all* cache keys - In non-strict mode, the
+    # strong cache key is updated in __update_cache_key_non_strict()
+    #
+    # If the cache keys are not stable (i.e. workspace that isn't cached),
+    # then cache keys are erased.
+    # Otherwise, the weak and strict cache keys will be calculated if not
+    # already set.
+    # The weak cache key is a cache key that doesn't necessarily change when
+    # its dependencies change, useful for avoiding full rebuilds when one's
+    # dependencies guarantee stability across versions.
+    # The strict cache key is a cache key that changes if any build-dependency
+    # has changed.
+    #
+    def __update_cache_keys(self):
+        if self.__weak_cache_key is None:
+            # Calculate weak cache key
+            # Weak cache key includes names of direct build dependencies
+            # but does not include keys of dependencies.
+            if self.BST_STRICT_REBUILD:
+                dependencies = [
+                    e._get_cache_key(strength=_KeyStrength.WEAK)
+                    for e in self.dependencies(Scope.BUILD)
+                ]
+            else:
+                dependencies = [
+                    e.name for e in self.dependencies(Scope.BUILD, recurse=False)
+                ]
+
+            self.__weak_cache_key = self._calculate_cache_key(dependencies)
+
+            if self.__weak_cache_key is None:
+                # Weak cache key could not be calculated yet, therefore
+                # the Strict cache key also can't be calculated yet.
+                return
+
+        if self.__strict_cache_key is None:
+            dependencies = [
+                e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
+            ]
+            self.__strict_cache_key = self._calculate_cache_key(dependencies)
+
+    # __update_artifact_state()
+    #
+    # Updates the data involved in knowing about the artifact corresponding
+    # to this element.
+    #
+    # This involves erasing all data pertaining to artifacts if the cache
+    # key is unstable.
+    #
+    # Element.__update_cache_keys() must be called before this to have
+    # meaningful results, because the element must know its cache key before
+    # it can check whether an artifact exists for that cache key.
+    #
+    def __update_artifact_state(self):
+        context = self._get_context()
+
+        if not self.__weak_cache_key:
+            return
+
+        if not context.get_strict() and not self.__artifact:
+            # We've calculated the weak_key, so instantiate artifact instance member
+            self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
+            # and update the weak cached state (required early for workspaces)
+            self.__weak_cached = self.__artifact.cached()
+
+        if not self.__strict_cache_key:
+            return
+
+        if not self.__strict_artifact:
+            self.__strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key,
+                                              weak_key=self.__weak_cache_key)
+
+            # In strict mode, the strong cache key always matches the strict cache key
+            if context.get_strict():
+                self.__cache_key = self.__strict_cache_key
+                self.__artifact = self.__strict_artifact
+
+        # Query caches now that the weak and strict cache keys are available.
+        # strong_cached in non-strict mode is only of relevance when querying
+        # if a 'better' artifact could be pulled, which is redudant if we already
+        # have it cached locally with a strict_key. As such strong_cached is only
+        # checked against the 'strict' artifact.
+        if not self.__strong_cached:
+            self.__strong_cached = self.__strict_artifact.cached()
+        if not self.__weak_cached and not context.get_strict():
+            self.__weak_cached = self.__artifact.cached()
+
+    # __update_cache_key_non_strict()
+    #
+    # Calculates the strong cache key if it hasn't already been set.
+    #
+    # When buildstream runs in strict mode, this is identical to the
+    # strict cache key, so no work needs to be done.
+    #
+    # When buildstream is not run in strict mode, this requires the artifact
+    # state (as set in Element.__update_artifact_state()) to be set accordingly,
+    # as the cache key can be loaded from the cache (possibly pulling from
+    # a remote cache).
+    #
+    def __update_cache_key_non_strict(self):
+        if not self.__strict_artifact:
+            return
+
+        # The final cache key can be None here only in non-strict mode
+        if self.__cache_key is None:
+            if self._pull_pending():
+                # Effective strong cache key is unknown until after the pull
+                pass
+            elif self._cached():
+                # Load the strong cache key from the artifact
+                strong_key, _ = self.__artifact.get_metadata_keys()
+                self.__cache_key = strong_key
+            elif self.__assemble_scheduled or self.__assemble_done:
+                # Artifact will or has been built, not downloaded
+                dependencies = [
+                    e._get_cache_key() for e in self.dependencies(Scope.BUILD)
+                ]
+                self.__cache_key = self._calculate_cache_key(dependencies)
+
+            if self.__cache_key is None:
+                # Strong cache key could not be calculated yet
+                return
+
+            # Now we have the strong cache key, update the Artifact
+            self.__artifact._cache_key = self.__cache_key
 
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):
