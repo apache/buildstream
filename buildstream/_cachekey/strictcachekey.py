@@ -48,11 +48,6 @@ class StrictCacheKey(CacheKey):
 
         self._update_strong_cached()
 
-        # TODO: Figure out why _weak_cached is only set if it's identical
-        # NOTE: Elements with no dependencies have identical strict and weak keys.
-        if self._strict_key == self._weak_key:
-            self._update_weak_cached()
-
         self._element._check_ready_for_runtime()
 
     def get_key(self, strength):
@@ -75,17 +70,6 @@ class StrictCacheKey(CacheKey):
                 not self._element._pull_pending()):
             self._element._schedule_assemble()
 
-    def is_cached(self, strength):
-        if strength == _KeyStrength.STRONG:
-            return self._strong_cached
-        elif strength == _KeyStrength.STRICT:
-            # TODO: Understand difference between strict cached and strong cached
-            raise AssertionError("I have no idea why it's strong_cached and not strict_cached")
-        elif strength == _KeyStrength.WEAK:
-            return self._weak_cached
-        else:
-            raise AssertionError("Bad key strength value {}".format(strength))
-
     def tracking_done(self):
         # this generator includes this corresponding element
         for element in self._element._reverse_deps_for_update():
@@ -96,8 +80,6 @@ class StrictCacheKey(CacheKey):
         # Cache keys are already known before this.
         # Element may become cached.
         self._update_strong_cached()
-        if self._weak_key == self._strict_key:
-            self._update_weak_cached()
 
         # If it failed to pull, it should assemble.
         self._element._maybe_schedule_assemble()
@@ -106,5 +88,3 @@ class StrictCacheKey(CacheKey):
         # Cache keys are already known before this.
         # Element may become cached.
         self._update_strong_cached()
-        if self._weak_key == self._strict_key:
-            self._update_weak_cached()

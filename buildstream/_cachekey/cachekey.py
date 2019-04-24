@@ -56,8 +56,6 @@ class CacheKey():
     def maybe_schedule_assemble(self):
         raise ImplError("CacheKey does not implement maybe_schedule_assemble()")
 
-    def is_cached(self, strength):
-        raise ImplError("CacheKey does not implement is_cached()")
 
     def tracking_done(self):
         raise ImplError("CacheKey does not implement tracking_done()")
@@ -67,6 +65,19 @@ class CacheKey():
 
     def assemble_done(self):
         raise ImplError("CacheKey does not implement assemble_done()")
+
+    # PUBLIC METHODS
+
+    def is_cached(self, strength):
+        if strength == _KeyStrength.STRONG:
+            return self._strong_cached
+        elif strength == _KeyStrength.STRICT:
+            # TODO: Understand difference between strict cached and strong cached
+            raise AssertionError("I have no idea why it's strong_cached and not strict_cached")
+        elif strength == _KeyStrength.WEAK:
+            return self._weak_cached
+        else:
+            raise AssertionError("Bad key strength value {}".format(strength))
 
     # PRIVATE METHODS
 
