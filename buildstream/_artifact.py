@@ -67,12 +67,10 @@ class Artifact():
     #
     # Returns:
     #    (Directory): The virtual directory object
-    #    (str): The chosen key
     #
     def get_files(self):
-        subdir = "files"
-
-        return self._get_subdirectory(subdir)
+        files, _ = self._get_subdirectory("files")
+        return files
 
     # get_buildtree():
     #
@@ -80,12 +78,10 @@ class Artifact():
     #
     # Returns:
     #    (Directory): The virtual directory object
-    #    (str): The chosen key
     #
     def get_buildtree(self):
-        subdir = "buildtree"
-
-        return self._get_subdirectory(subdir)
+        buildtree, _ = self._get_subdirectory("buildtree")
+        return buildtree
 
     # get_extract_key():
     #
