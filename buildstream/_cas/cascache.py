@@ -59,7 +59,7 @@ class CASCacheUsage():
 
     def __init__(self, casquota):
         if not casquota._cache_quota_original:
-            casquota._calculate_cache_quota()
+            casquota.calculate_cache_quota()
         self.quota_config = casquota._config_cache_quota          # Configured quota
         self.quota_size = casquota._cache_quota_original          # Resolved cache quota in bytes
         self.used_size = casquota.get_cache_size()                # Size used by artifacts in bytes
@@ -1219,7 +1219,7 @@ class CASQuota:
     def full(self):
 
         if not self._cache_quota:
-            self._calculate_cache_quota()
+            self.calculate_cache_quota()
         if self.get_cache_size() > self._cache_quota:
             return True
 
@@ -1287,14 +1287,14 @@ class CASQuota:
     def _get_cache_volume_size(self):
         return utils._get_volume_size(self.casdir)
 
-    # _calculate_cache_quota()
+    # calculate_cache_quota()
     #
     # Calculates and sets the cache quota and lower threshold based on the
     # quota set in Context.
     # It checks that the quota is both a valid expression, and that there is
     # enough disk space to satisfy that quota
     #
-    def _calculate_cache_quota(self):
+    def calculate_cache_quota(self):
         # Headroom intended to give BuildStream a bit of leeway.
         # This acts as the minimum size of cache_quota and also
         # is taken from the user requested cache_quota.
