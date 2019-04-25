@@ -116,28 +116,6 @@ class CASCache():
         # This assumes that the repository doesn't have any dangling pointers
         return os.path.exists(refpath)
 
-    # contains_subdir_artifact():
-    #
-    # Check whether the specified artifact element tree has a digest for a subdir
-    # which is populated in the cache, i.e non dangling.
-    #
-    # Args:
-    #     ref (str): The ref to check
-    #     subdir (str): The subdir to check
-    #     with_files (bool): Whether to check files as well
-    #
-    # Returns: True if the subdir exists & is populated in the cache, False otherwise
-    #
-    def contains_subdir_artifact(self, ref, subdir, *, with_files=True):
-        tree = self.resolve_ref(ref)
-
-        try:
-            subdirdigest = self._get_subdir(tree, subdir)
-
-            return self.contains_directory(subdirdigest, with_files=with_files)
-        except (CASCacheError, FileNotFoundError):
-            return False
-
     # contains_directory():
     #
     # Check whether the specified directory and subdirecotires are in the cache,
