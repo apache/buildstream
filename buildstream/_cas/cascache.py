@@ -496,21 +496,6 @@ class CASCache():
         except FileNotFoundError as e:
             raise CASCacheError("Attempt to access unavailable ref: {}".format(e)) from e
 
-    # list_refs():
-    #
-    # List refs in Least Recently Modified (LRM) order.
-    #
-    # Args:
-    #     glob (str) - An optional glob expression to be used to list refs satisfying the glob
-    #
-    # Returns:
-    #     (list) - A list of refs in LRM order
-    #
-    def list_refs(self, *, glob=None):
-        # string of: /path/to/repo/refs/heads
-        return [ref for _, ref in sorted(list(utils._list_directory(
-            os.path.join(self.casdir, 'refs', 'heads'), glob_expr=glob)))]
-
     # list_objects():
     #
     # List cached objects in Least Recently Modified (LRM) order.
