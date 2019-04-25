@@ -1229,64 +1229,6 @@ class CASQuota:
 
         return False
 
-    ################################################
-    #             Local Private Methods            #
-    ################################################
-
-    # _read_cache_size()
-    #
-    # Reads and returns the size of the artifact cache that's stored in the
-    # cache's size file
-    #
-    # Returns:
-    #    (int): The size of the artifact cache, as recorded in the file
-    #
-    def _read_cache_size(self):
-        size_file_path = os.path.join(self.casdir, CACHE_SIZE_FILE)
-
-        if not os.path.exists(size_file_path):
-            return None
-
-        with open(size_file_path, "r") as f:
-            size = f.read()
-
-        try:
-            num_size = int(size)
-        except ValueError as e:
-            raise CASCacheError("Size '{}' parsed from '{}' was not an integer".format(
-                size, size_file_path)) from e
-
-        return num_size
-
-    # _write_cache_size()
-    #
-    # Writes the given size of the artifact to the cache's size file
-    #
-    # Args:
-    #    size (int): The size of the artifact cache to record
-    #
-    def _write_cache_size(self, size):
-        assert isinstance(size, int)
-        size_file_path = os.path.join(self.casdir, CACHE_SIZE_FILE)
-        with utils.save_file_atomic(size_file_path, "w", tempdir=self.cas.tmpdir) as f:
-            f.write(str(size))
-
-    # _get_cache_volume_size()
-    #
-    # Get the available space and total space for the volume on
-    # which the artifact cache is located.
-    #
-    # Returns:
-    #    (int): The total number of bytes on the volume
-    #    (int): The number of available bytes on the volume
-    #
-    # NOTE: We use this stub to allow the test cases
-    #       to override what an artifact cache thinks
-    #       about it's disk size and available bytes.
-    #
-    def _get_cache_volume_size(self):
-        return utils._get_volume_size(self.casdir)
-
     # calculate_cache_quota()
     #
     # Calculates and sets the cache quota and lower threshold based on the
@@ -1502,6 +1444,64 @@ class CASQuota:
     #        removing.
     def add_remove_callbacks(self, callback):
         self._remove_callbacks.append(callback)
+
+    ################################################
+    #             Local Private Methods            #
+    ################################################
+
+    # _read_cache_size()
+    #
+    # Reads and returns the size of the artifact cache that's stored in the
+    # cache's size file
+    #
+    # Returns:
+    #    (int): The size of the artifact cache, as recorded in the file
+    #
+    def _read_cache_size(self):
+        size_file_path = os.path.join(self.casdir, CACHE_SIZE_FILE)
+
+        if not os.path.exists(size_file_path):
+            return None
+
+        with open(size_file_path, "r") as f:
+            size = f.read()
+
+        try:
+            num_size = int(size)
+        except ValueError as e:
+            raise CASCacheError("Size '{}' parsed from '{}' was not an integer".format(
+                size, size_file_path)) from e
+
+        return num_size
+
+    # _write_cache_size()
+    #
+    # Writes the given size of the artifact to the cache's size file
+    #
+    # Args:
+    #    size (int): The size of the artifact cache to record
+    #
+    def _write_cache_size(self, size):
+        assert isinstance(size, int)
+        size_file_path = os.path.join(self.casdir, CACHE_SIZE_FILE)
+        with utils.save_file_atomic(size_file_path, "w", tempdir=self.cas.tmpdir) as f:
+            f.write(str(size))
+
+    # _get_cache_volume_size()
+    #
+    # Get the available space and total space for the volume on
+    # which the artifact cache is located.
+    #
+    # Returns:
+    #    (int): The total number of bytes on the volume
+    #    (int): The number of available bytes on the volume
+    #
+    # NOTE: We use this stub to allow the test cases
+    #       to override what an artifact cache thinks
+    #       about it's disk size and available bytes.
+    #
+    def _get_cache_volume_size(self):
+        return utils._get_volume_size(self.casdir)
 
 
 def _grouper(iterable, n):
