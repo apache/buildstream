@@ -675,7 +675,7 @@ class Element(Plugin):
         self.__assert_cached()
 
         with self.timed_activity("Staging {}/{}".format(self.name, self._get_brief_display_key())):
-            files_vdir, _ = self.__artifact.get_files()
+            files_vdir = self.__artifact.get_files()
 
             # Hard link it into the staging area
             #
@@ -1525,7 +1525,7 @@ class Element(Plugin):
 
             # Check if we have a cached buildtree to use
             elif usebuildtree:
-                import_dir, _ = self.__artifact.get_buildtree()
+                import_dir = self.__artifact.get_buildtree()
                 if import_dir.is_empty():
                     detail = "Element type either does not expect a buildtree or it was explictily cached without one."
                     self.warn("WARNING: {} Artifact contains an empty buildtree".format(self.name), detail=detail)
@@ -2774,7 +2774,7 @@ class Element(Plugin):
     def __compute_splits(self, include=None, exclude=None, orphans=True):
         filter_func = self.__split_filter_func(include=include, exclude=exclude, orphans=orphans)
 
-        files_vdir, _ = self.__artifact.get_files()
+        files_vdir = self.__artifact.get_files()
 
         element_files = files_vdir.list_relative_paths()
 

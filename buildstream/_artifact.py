@@ -56,11 +56,10 @@ class Artifact():
         self._cache_key = strong_key
         self._weak_cache_key = weak_key
 
-        # hash tables of loaded artifact metadata, hashed by key
-        self._metadata_keys = {}                     # Strong and weak keys for this key
-        self._metadata_dependencies = {}             # Dictionary of dependency strong keys
-        self._metadata_workspaced = {}               # Boolean of whether it's workspaced
-        self._metadata_workspaced_dependencies = {}  # List of which dependencies are workspaced
+        self._metadata_keys = None                    # Strong and weak key tuple extracted from the artifact
+        self._metadata_dependencies = None             # Dictionary of dependency strong keys from the artifact
+        self._metadata_workspaced = None              # Boolean of whether it's a workspaced artifact
+        self._metadata_workspaced_dependencies = None  # List of which dependencies are workspaced from the artifact
 
     # get_files():
     #
@@ -68,12 +67,9 @@ class Artifact():
     #
     # Returns:
     #    (Directory): The virtual directory object
-    #    (str): The chosen key
     #
     def get_files(self):
-        subdir = "files"
-
-        return self._get_subdirectory(subdir)
+        return self._get_subdirectory("files")
 
     # get_buildtree():
     #
@@ -81,12 +77,9 @@ class Artifact():
     #
     # Returns:
     #    (Directory): The virtual directory object
-    #    (str): The chosen key
     #
     def get_buildtree(self):
-        subdir = "buildtree"
-
-        return self._get_subdirectory(subdir)
+        return self._get_subdirectory("buildtree")
 
     # get_extract_key():
     #
@@ -218,7 +211,7 @@ class Artifact():
     #
     def buildtree_exists(self):
 
-        artifact_vdir, _ = self._get_directory()
+        artifact_vdir = self._get_directory()
         return artifact_vdir._exists('buildtree')
 
     # load_public_data():
@@ -231,7 +224,7 @@ class Artifact():
     def load_public_data(self):
 
         # Load the public data from the artifact
-        meta_vdir, _ = self._get_subdirectory('meta')
+        meta_vdir = self._get_subdirectory('meta')
         meta_file = meta_vdir._objpath('public.yaml')
         data = _yaml.load(meta_file, shortname='public.yaml')
 
@@ -248,7 +241,7 @@ class Artifact():
     #
     def load_build_result(self):
 
-        meta_vdir, _ = self._get_subdirectory('meta')
+        meta_vdir = self._get_subdirectory('meta')
 
         meta_file = meta_vdir._objpath('build-result.yaml')
         if not os.path.exists(meta_file):
@@ -275,12 +268,11 @@ class Artifact():
     #
     def get_metadata_keys(self):
 
-        # Now extract it and possibly derive the key
-        meta_vdir, key = self._get_subdirectory('meta')
+        if self._metadata_keys is not None:
+            return self._metadata_keys
 
-        # Now try the cache, once we're sure about the key
-        if key in self._metadata_keys:
-            return (self._metadata_keys[key]['strong'], self._metadata_keys[key]['weak'])
+        # Extract the metadata dir
+        meta_vdir = self._get_subdirectory('meta')
 
         # Parse the expensive yaml now and cache the result
         meta_file = meta_vdir._objpath('keys.yaml')
@@ -288,12 +280,9 @@ class Artifact():
         strong_key = _yaml.node_get(meta, str, 'strong')
         weak_key = _yaml.node_get(meta, str, 'weak')
 
-        assert key in (strong_key, weak_key)
+        self._metadata_keys = (strong_key, weak_key)
 
-        self._metadata_keys[strong_key] = _yaml.node_sanitize(meta)
-        self._metadata_keys[weak_key] = _yaml.node_sanitize(meta)
-
-        return (strong_key, weak_key)
+        return self._metadata_keys
 
     # get_metadata_dependencies():
     #
@@ -304,23 +293,19 @@ class Artifact():
     #
     def get_metadata_dependencies(self):
 
-        # Extract it and possibly derive the key
-        meta_vdir, key = self._get_subdirectory('meta')
+        if self._metadata_dependencies is not None:
+            return self._metadata_dependencies
 
-        # Now try the cache, once we're sure about the key
-        if key in self._metadata_dependencies:
-            return self._metadata_dependencies[key]
+        # Extract the metadata dir
+        meta_vdir = self._get_subdirectory('meta')
 
         # Parse the expensive yaml now and cache the result
         meta_file = meta_vdir._objpath('dependencies.yaml')
         meta = _yaml.load(meta_file, shortname='dependencies.yaml')
 
-        # Cache it under both strong and weak keys
-        strong_key, weak_key = self.get_metadata_keys()
-        self._metadata_dependencies[strong_key] = _yaml.node_sanitize(meta)
-        self._metadata_dependencies[weak_key] = _yaml.node_sanitize(meta)
+        self._metadata_dependencies = meta
 
-        return meta
+        return self._metadata_dependencies
 
     # get_metadata_workspaced():
     #
@@ -331,25 +316,19 @@ class Artifact():
     #
     def get_metadata_workspaced(self):
 
-        # Extract it and possibly derive the key
-        meta_vdir, key = self._get_subdirectory('meta')
+        if self._metadata_workspaced is not None:
+            return self._metadata_workspaced
 
-        # Now try the cache, once we're sure about the key
-        if key in self._metadata_workspaced:
-            return self._metadata_workspaced[key]
+        # Extract the metadata dir
+        meta_vdir = self._get_subdirectory('meta')
 
         # Parse the expensive yaml now and cache the result
         meta_file = meta_vdir._objpath('workspaced.yaml')
         meta = _yaml.load(meta_file, shortname='workspaced.yaml')
 
-        workspaced = _yaml.node_get(meta, bool, 'workspaced')
+        self._metadata_workspaced = _yaml.node_get(meta, bool, 'workspaced')
 
-        # Cache it under both strong and weak keys
-        strong_key, weak_key = self.get_metadata_keys()
-        self._metadata_workspaced[strong_key] = workspaced
-        self._metadata_workspaced[weak_key] = workspaced
-
-        return workspaced
+        return self._metadata_workspaced
 
     # get_metadata_workspaced_dependencies():
     #
@@ -360,24 +339,20 @@ class Artifact():
     #
     def get_metadata_workspaced_dependencies(self):
 
-        # Extract it and possibly derive the key
-        meta_vdir, key = self._get_subdirectory('meta')
+        if self._metadata_workspaced_dependencies is not None:
+            return self._metadata_workspaced_dependencies
 
-        # Now try the cache, once we're sure about the key
-        if key in self._metadata_workspaced_dependencies:
-            return self._metadata_workspaced_dependencies[key]
+        # Extract the metadata dir
+        meta_vdir = self._get_subdirectory('meta')
 
         # Parse the expensive yaml now and cache the result
         meta_file = meta_vdir._objpath('workspaced-dependencies.yaml')
         meta = _yaml.load(meta_file, shortname='workspaced-dependencies.yaml')
-        workspaced = _yaml.node_sanitize(_yaml.node_get(meta, list, 'workspaced-dependencies'))
 
-        # Cache it under both strong and weak keys
-        strong_key, weak_key = self.get_metadata_keys()
-        self._metadata_workspaced_dependencies[strong_key] = workspaced
-        self._metadata_workspaced_dependencies[weak_key] = workspaced
+        self._metadata_workspaced_dependencies = _yaml.node_sanitize(_yaml.node_get(meta, list,
+                                                                                    'workspaced-dependencies'))
 
-        return workspaced
+        return self._metadata_workspaced_dependencies
 
     # cached():
     #
@@ -395,7 +370,7 @@ class Artifact():
         context = self._context
 
         try:
-            vdir, _ = self._get_directory()
+            vdir = self._get_directory()
         except ArtifactError:
             # Either ref or top-level artifact directory missing
             return False
@@ -433,7 +408,7 @@ class Artifact():
         if not self._element._cached():
             return False
 
-        log_vdir, _ = self._get_subdirectory('logs')
+        log_vdir = self._get_subdirectory('logs')
 
         logsdigest = log_vdir._get_digest()
         return self._artifacts.cas.contains_directory(logsdigest, with_files=True)
@@ -448,7 +423,6 @@ class Artifact():
     #
     # Returns:
     #    (Directory): The virtual directory object
-    #    (str): The chosen key
     #
     def _get_directory(self, key=None):
 
@@ -457,7 +431,7 @@ class Artifact():
         if key is None:
             key = self.get_extract_key()
 
-        return (self._artifacts.get_artifact_directory(element, key), key)
+        return self._artifacts.get_artifact_directory(element, key)
 
     # _get_subdirectory():
     #
@@ -470,11 +444,10 @@ class Artifact():
     #
     # Returns:
     #    (Directory): The virtual subdirectory object
-    #    (str): The chosen key
     #
     def _get_subdirectory(self, subdir, key=None):
 
-        artifact_vdir, key = self._get_directory(key)
+        artifact_vdir = self._get_directory(key)
         sub_vdir = artifact_vdir.descend(subdir)
 
-        return (sub_vdir, key)
+        return sub_vdir
