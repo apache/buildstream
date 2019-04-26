@@ -20,11 +20,12 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 #
 import os
-import shutil
-import tempfile
 import pytest
 from buildstream._platform.platform import Platform
+
 from buildstream.testing import register_repo_kind, sourcetests_collection_hook
+from buildstream.testing.integration import integration_cache  # pylint: disable=unused-import
+
 
 from tests.testutils.repo.git import Git
 from tests.testutils.repo.bzr import Bzr
@@ -66,54 +67,6 @@ def pytest_runtest_setup(item):
     else:
         if item.get_closest_marker('remoteexecution'):
             pytest.skip('skipping remote-execution test')
-
-
-#################################################
-#           integration_cache fixture           #
-#################################################
-#
-# This is yielded by the `integration_cache` fixture
-#
-class IntegrationCache():
-
-    def __init__(self, cache):
-        self.root = os.path.abspath(cache)
-        os.makedirs(cache, exist_ok=True)
-
-        # Use the same sources every time
-        self.sources = os.path.join(self.root, 'sources')
-
-        # Create a temp directory for the duration of the test for
-        # the artifacts directory
-        try:
-            self.cachedir = tempfile.mkdtemp(dir=self.root, prefix='cache-')
-        except OSError as e:
-            raise AssertionError("Unable to create test directory !") from e
-
-
-@pytest.fixture(scope='session')
-def integration_cache(request):
-    # Set the cache dir to the INTEGRATION_CACHE variable, or the
-    # default if that is not set.
-    if 'INTEGRATION_CACHE' in os.environ:
-        cache_dir = os.environ['INTEGRATION_CACHE']
-    else:
-        cache_dir = os.path.abspath('./integration-cache')
-
-    cache = IntegrationCache(cache_dir)
-
-    yield cache
-
-    # Clean up the artifacts after each test run - we only want to
-    # cache sources between runs
-    try:
-        shutil.rmtree(cache.cachedir)
-    except FileNotFoundError:
-        pass
-    try:
-        shutil.rmtree(os.path.join(cache.root, 'cas'))
-    except FileNotFoundError:
-        pass
 
 
 #################################################
