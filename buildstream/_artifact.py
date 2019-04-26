@@ -69,8 +69,7 @@ class Artifact():
     #    (Directory): The virtual directory object
     #
     def get_files(self):
-        files, _ = self._get_subdirectory("files")
-        return files
+        return self._get_subdirectory("files")
 
     # get_buildtree():
     #
@@ -80,8 +79,7 @@ class Artifact():
     #    (Directory): The virtual directory object
     #
     def get_buildtree(self):
-        buildtree, _ = self._get_subdirectory("buildtree")
-        return buildtree
+        return self._get_subdirectory("buildtree")
 
     # get_extract_key():
     #
@@ -213,7 +211,7 @@ class Artifact():
     #
     def buildtree_exists(self):
 
-        artifact_vdir, _ = self._get_directory()
+        artifact_vdir = self._get_directory()
         return artifact_vdir._exists('buildtree')
 
     # load_public_data():
@@ -226,7 +224,7 @@ class Artifact():
     def load_public_data(self):
 
         # Load the public data from the artifact
-        meta_vdir, _ = self._get_subdirectory('meta')
+        meta_vdir = self._get_subdirectory('meta')
         meta_file = meta_vdir._objpath('public.yaml')
         data = _yaml.load(meta_file, shortname='public.yaml')
 
@@ -243,7 +241,7 @@ class Artifact():
     #
     def load_build_result(self):
 
-        meta_vdir, _ = self._get_subdirectory('meta')
+        meta_vdir = self._get_subdirectory('meta')
 
         meta_file = meta_vdir._objpath('build-result.yaml')
         if not os.path.exists(meta_file):
@@ -274,7 +272,7 @@ class Artifact():
             return self._metadata_keys
 
         # Extract the metadata dir
-        meta_vdir, _ = self._get_subdirectory('meta')
+        meta_vdir = self._get_subdirectory('meta')
 
         # Parse the expensive yaml now and cache the result
         meta_file = meta_vdir._objpath('keys.yaml')
@@ -299,7 +297,7 @@ class Artifact():
             return self._metadata_dependencies
 
         # Extract the metadata dir
-        meta_vdir, _ = self._get_subdirectory('meta')
+        meta_vdir = self._get_subdirectory('meta')
 
         # Parse the expensive yaml now and cache the result
         meta_file = meta_vdir._objpath('dependencies.yaml')
@@ -322,7 +320,7 @@ class Artifact():
             return self._metadata_workspaced
 
         # Extract the metadata dir
-        meta_vdir, _ = self._get_subdirectory('meta')
+        meta_vdir = self._get_subdirectory('meta')
 
         # Parse the expensive yaml now and cache the result
         meta_file = meta_vdir._objpath('workspaced.yaml')
@@ -345,7 +343,7 @@ class Artifact():
             return self._metadata_workspaced_dependencies
 
         # Extract the metadata dir
-        meta_vdir, _ = self._get_subdirectory('meta')
+        meta_vdir = self._get_subdirectory('meta')
 
         # Parse the expensive yaml now and cache the result
         meta_file = meta_vdir._objpath('workspaced-dependencies.yaml')
@@ -372,7 +370,7 @@ class Artifact():
         context = self._context
 
         try:
-            vdir, _ = self._get_directory()
+            vdir = self._get_directory()
         except ArtifactError:
             # Either ref or top-level artifact directory missing
             return False
@@ -410,7 +408,7 @@ class Artifact():
         if not self._element._cached():
             return False
 
-        log_vdir, _ = self._get_subdirectory('logs')
+        log_vdir = self._get_subdirectory('logs')
 
         logsdigest = log_vdir._get_digest()
         return self._artifacts.cas.contains_directory(logsdigest, with_files=True)
@@ -425,7 +423,6 @@ class Artifact():
     #
     # Returns:
     #    (Directory): The virtual directory object
-    #    (str): The chosen key
     #
     def _get_directory(self, key=None):
 
@@ -434,7 +431,7 @@ class Artifact():
         if key is None:
             key = self.get_extract_key()
 
-        return (self._artifacts.get_artifact_directory(element, key), key)
+        return self._artifacts.get_artifact_directory(element, key)
 
     # _get_subdirectory():
     #
@@ -447,11 +444,10 @@ class Artifact():
     #
     # Returns:
     #    (Directory): The virtual subdirectory object
-    #    (str): The chosen key
     #
     def _get_subdirectory(self, subdir, key=None):
 
-        artifact_vdir, key = self._get_directory(key)
+        artifact_vdir = self._get_directory(key)
         sub_vdir = artifact_vdir.descend(subdir)
 
-        return (sub_vdir, key)
+        return sub_vdir
