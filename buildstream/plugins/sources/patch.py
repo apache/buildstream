@@ -52,6 +52,8 @@ from buildstream import utils
 class PatchSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
+    BST_REQUIRES_PREVIOUS_SOURCES_STAGE = True
+
     def configure(self, node):
         self.path = self.node_get_project_path(node, 'path',
                                                check_is_file=True)

@@ -286,6 +286,17 @@ class Source(Plugin):
     *Since: 1.4*
     """
 
+    BST_REQUIRES_PREVIOUS_SOURCES_STAGE = False
+    """Whether access to previous sources is required during cache
+
+    When set to True:
+      * All sources listed before current source in the given element will be
+        staged with the source when it's cached.
+      * This source can not be the first source for an element.
+
+    *Since: 1.4*
+    """
+
     def __init__(self, context, project, meta, *, alias_override=None, unique_id=None):
         provenance = _yaml.node_get_provenance(meta.config)
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
@@ -1029,8 +1040,9 @@ class Source(Plugin):
     def _generate_key(self, previous_sources):
         keys = [self._get_unique_key(True)]
 
-        for previous_source in previous_sources:
-            keys.append(previous_source._get_unique_key(True))
+        if self.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
+            for previous_source in previous_sources:
+                keys.append(previous_source._get_unique_key(True))
 
         self.__key = generate_key(keys)
 

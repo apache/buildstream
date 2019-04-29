@@ -118,12 +118,17 @@ class SourceCache(BaseCache):
         ref = source._get_source_name()
 
         # Use tmpdir for now
-        with utils._tempdir(dir=self.context.tmpdir, prefix='staging-temp') as tmpdir:
-            for previous_source in previous_sources:
-                previous_source._stage(tmpdir)
-            source._stage(tmpdir)
+        vdir = CasBasedDirectory(self.cas)
+        for previous_source in previous_sources:
+            vdir.import_files(self.export(previous_source))
 
-            self.cas.commit([ref], tmpdir)
+        with utils._tempdir(dir=self.context.tmpdir, prefix='staging-temp') as tmpdir:
+            if not vdir.is_empty():
+                vdir.export_files(tmpdir)
+            source._stage(tmpdir)
+            vdir.import_files(tmpdir, can_link=True)
+
+        self.cas.set_ref(ref, vdir._get_digest())
 
     # export()
     #

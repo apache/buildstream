@@ -18,6 +18,7 @@ class FooTransformSource(Source):
     # We need access to previous both at track time and fetch time
     BST_REQUIRES_PREVIOUS_SOURCES_TRACK = True
     BST_REQUIRES_PREVIOUS_SOURCES_FETCH = True
+    BST_REQUIRES_PREVIOUS_SOURCES_CACHE = True
 
     @property
     def mirror(self):
