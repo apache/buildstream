@@ -2,6 +2,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -90,7 +91,7 @@ def generate_pip_package(tmpdir, pypi, name, version='0.1'):
     os.chmod(main_file, 0o644)
 
     # Run sdist with a fresh process
-    p = subprocess.run(['python3', 'setup.py', 'sdist'], cwd=tmpdir)
+    p = subprocess.run([sys.executable, 'setup.py', 'sdist'], cwd=tmpdir)
     assert p.returncode == 0
 
     # create directory for this package in pypi resulting in a directory
