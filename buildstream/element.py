@@ -455,6 +455,9 @@ class Element(Plugin):
 
             yield from visit(self, scope, visited)
 
+    def get_artifact_proto(self, key):
+        return self.__artifact._get_proto()
+
     def search(self, scope, name):
         """Search for a dependency by name
 

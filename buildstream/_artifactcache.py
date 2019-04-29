@@ -542,7 +542,7 @@ class ArtifactCache(BaseCache):
         keys = list(keys)
         if not keys:
             keys = [element._get_cache_key()]
-        artifacts = list(map(self.get_artifact_proto, list(map(element.get_artifact_name, keys))))
+        artifacts = list(map(element.get_artifact_proto, keys))
         # check the artifacts are the same for each key
         # unsure how necessary this is
         artifact = artifacts[0]
