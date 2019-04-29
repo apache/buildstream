@@ -48,7 +48,7 @@ def create_test_directory(*path, mode=0o644):
 
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", ['local', *ALL_REPO_KINDS])
+@pytest.mark.parametrize("kind", [*ALL_REPO_KINDS])
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
     project = str(datafiles)
@@ -71,13 +71,9 @@ def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
     create_test_directory(sourcedir, 'dir-e', mode=0o2755)
     create_test_directory(sourcedir, 'dir-f', mode=0o1755)
 
-    if kind == 'local':
-        source = {'kind': 'local',
-                  'path': 'source'}
-    else:
-        repo = create_repo(kind, repodir)
-        ref = repo.create(sourcedir)
-        source = repo.source_config(ref=ref)
+    repo = create_repo(kind, repodir)
+    ref = repo.create(sourcedir)
+    source = repo.source_config(ref=ref)
     element = {
         'kind': 'manual',
         'depends': [
