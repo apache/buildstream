@@ -196,11 +196,6 @@ class Representer:
                 "Invalid input detected. No handler for {} in state {} at line {} column {}"
                 .format(event, self.state, event.start_mark.line, event.start_mark.column))
 
-        if handler is None:
-            raise YAMLLoadError(
-                "Invalid input detected. No handler for {} in state {} at line {} column {}"
-                .format(event, self.state, event.start_mark.line, event.start_mark.column))
-
         self.state = handler(event)  # pylint: disable=not-callable
 
     # Get the output of the YAML parse
