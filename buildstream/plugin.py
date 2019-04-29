@@ -167,7 +167,7 @@ class Plugin():
     # scheduling tasks.
     __TABLE = WeakValueDictionary()
 
-    def __init__(self, name, context, project, provenance, type_tag):
+    def __init__(self, name, context, project, provenance, type_tag, unique_id=None):
 
         self.name = name
         """The plugin name
@@ -188,10 +188,14 @@ class Plugin():
         # to give us a topological sort over all elements.
         # Modifying how we handle ids here will modify the behavior of the
         # Element's state handling.
-        self._unique_id = next(self.__id_generator)
-
-        # register ourself in the table containing all existing plugins
-        self.__TABLE[self._unique_id] = self
+        if unique_id is None:
+            # Register ourself in the table containing all existing plugins
+            self._unique_id = next(self.__id_generator)
+            self.__TABLE[self._unique_id] = self
+        else:
+            # If the unique ID is passed in the constructor, then it is a cloned
+            # plugin in a subprocess and should use the same ID.
+            self._unique_id = unique_id
 
         self.__context = context        # The Context object
         self.__project = project        # The Project object
