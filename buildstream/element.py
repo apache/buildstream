@@ -107,6 +107,7 @@ from ._artifact import Artifact
 
 from .storage.directory import Directory
 from .storage._filebaseddirectory import FileBasedDirectory
+from .storage._casbaseddirectory import CasBasedDirectory
 from .storage.directory import VirtualDirectoryError
 
 
@@ -1537,9 +1538,17 @@ class Element(Plugin):
 
                 if self.__sources:
 
-                    sourcecache = self._get_context().sourcecache
+                    sourcecache = context.sourcecache
+                    # find last required source
+                    last_required_previous_ix = 0
+                    for ix, source in enumerate(self.__sources):
+                        if source.BST_REQUIRES_PREVIOUS_SOURCES_CACHE:
+                            last_required_previous_ix = ix
+
                     try:
-                        import_dir = sourcecache.export(self.__sources[-1])
+                        import_dir = CasBasedDirectory(context.get_cascache())
+                        for source in self.__sources[last_required_previous_ix:]:
+                            import_dir.import_files(sourcecache.export(source))
                     except SourceCacheError as e:
                         raise ElementError("Error trying to export source for {}: {}"
                                            .format(self.name, e))
@@ -2192,24 +2201,32 @@ class Element(Plugin):
     def _fetch(self, fetch_original=False):
         previous_sources = []
         sources = self.__sources
+        fetch_needed = False
         if sources and not fetch_original:
-            source = sources[-1]
-            if self.__sourcecache.contains(source):
-                return
+            last_requires_previous = 0
+            for ix, source in enumerate(self.__sources):
+                if source.BST_REQUIRES_PREVIOUS_SOURCES_CACHE:
+                    last_requires_previous = ix
 
-            # try and fetch from source cache
-            if source._get_consistency() < Consistency.CACHED and \
-                    self.__sourcecache.has_fetch_remotes() and \
-                    not self.__sourcecache.contains(source):
-                if self.__sourcecache.pull(source):
-                    return
+            for source in self.__sources[last_requires_previous:]:
+                if self.__sourcecache.contains(source):
+                    continue
+
+                # try and fetch from source cache
+                if source._get_consistency() < Consistency.CACHED and \
+                        self.__sourcecache.has_fetch_remotes():
+                    if self.__sourcecache.pull(source):
+                        continue
+
+                fetch_needed = True
 
         # We need to fetch original sources
-        for source in self.sources():
-            source_consistency = source._get_consistency()
-            if source_consistency != Consistency.CACHED:
-                source._fetch(previous_sources)
-            previous_sources.append(source)
+        if fetch_needed or fetch_original:
+            for source in self.sources():
+                source_consistency = source._get_consistency()
+                if source_consistency != Consistency.CACHED:
+                    source._fetch(previous_sources)
+                previous_sources.append(source)
 
         self.__cache_sources()
 
@@ -2264,12 +2281,27 @@ class Element(Plugin):
     # Check if sources are cached, generating the source key if it hasn't been
     def _source_cached(self):
         if self.__sources:
-            last_source = self.__sources[-1]
-            if not last_source._key:
-                last_source._generate_key(self.__sources[:-1])
-            return self._get_context().sourcecache.contains(last_source)
-        else:
-            return True
+            last_requires_previous = 0
+            for ix, source in enumerate(self.__sources):
+                if source.BST_REQUIRES_PREVIOUS_SOURCES_CACHE:
+                    last_requires_previous = ix
+
+            sourcecache = self._get_context().sourcecache
+            if not self.__sources[last_requires_previous]._key:
+                self.__sources[last_requires_previous]._generate_key(
+                    self.__sources[:last_requires_previous])
+
+            # Go through individual sources
+            for source in self.__sources[last_requires_previous+1:]:
+                if not source._key:
+                    source._generate_key([])
+                if not sourcecache.contains(source):
+                    return False
+
+            if not sourcecache.contains(self.__sources[last_requires_previous]):
+                return False
+
+        return True
 
     def _should_fetch(self, fetch_original=False):
         """ return bool of if we need to run the fetch stage for this element
@@ -2918,7 +2950,18 @@ class Element(Plugin):
     def __cache_sources(self):
         sources = self.__sources
         if sources and not self._source_cached():
-            sources[-1]._cache(sources[:-1])
+            last_requires_previous = 0
+            for ix, source in enumerate(sources):
+                if source.BST_REQUIRES_PREVIOUS_SOURCES_CACHE:
+                    last_requires_previous = ix
+
+            # cache last source that requires previous sources
+            self.__sourcecache.commit(sources[last_requires_previous],
+                                      sources[:last_requires_previous])
+
+            # commit all other sources by themselves
+            for source in sources[last_requires_previous+1:]:
+                self.__sourcecache.commit(source, [])
 
     # __update_state_recursively()
     #

@@ -286,6 +286,15 @@ class Source(Plugin):
     *Since: 1.4*
     """
 
+    BST_REQUIRES_PREVIOUS_SOURCES_CACHE = False
+    """Whether access to previous sources is required during cache
+
+    When set to True:
+      * all sources listed before current source in the given element will be
+        passed to the source when it's cached.
+      * This source can not be the first source for an element.
+    """
+
     def __init__(self, context, project, meta, *, alias_override=None):
         provenance = _yaml.node_get_provenance(meta.config)
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
@@ -709,7 +718,10 @@ class Source(Plugin):
 
     def _cache(self, previous_sources):
         # stage the source into the source cache
-        self.__source_cache.commit(self, previous_sources)
+        if self.BST_REQUIRES_PREVIOUS_SOURCES_CACHE:
+            self.__source_cache.commit(self, previous_sources)
+        else:
+            self.__source_cache.commit(self, [])
 
     # Wrapper for stage() api which gives the source
     # plugin a fully constructed path considering the
