@@ -94,7 +94,6 @@ from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, \
     ErrorDomain, SourceCacheError
 from .utils import UtilError
 from . import utils
-from . import _cachekey
 from . import _signals
 from . import _site
 from ._platform import Platform
@@ -104,6 +103,7 @@ from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
 from .types import Consistency, CoreWarnings, Scope, _KeyStrength, _UniquePriorityQueue
 from ._artifact import Artifact
+from ._cachekeycontroller import StrictCacheKeyController, NonStrictCacheKeyController
 
 from .storage.directory import Directory
 from .storage._filebaseddirectory import FileBasedDirectory
@@ -189,7 +189,13 @@ class Element(Plugin):
     def __init__(self, context, project, meta, plugin_conf):
 
         self.__cache_key_dict = None            # Dict for cache key calculation
-        self.__cache_key = None                 # Our cached cache key
+        self.__cache_key_ctrl = None            # Our non-strict cache keys
+        self.__strict_cache_key_ctrl = StrictCacheKeyController()  # Our strict cache keys
+
+        if context.get_strict():
+            self.__cache_key_ctrl = self.__strict_cache_key_ctrl
+        else:
+            self.__cache_key_ctrl = NonStrictCacheKeyController()
 
         super().__init__(meta.name, context, project, meta.provenance, "element")
 
@@ -211,8 +217,6 @@ class Element(Plugin):
         self.__reverse_dependencies = set()     # Direct reverse dependency Elements
         self.__ready_for_runtime = False        # Wether the element has all its dependencies ready and has a cache key
         self.__sources = []                     # List of Sources
-        self.__weak_cache_key = None            # Our cached weak cache key
-        self.__strict_cache_key = None          # Our cached cache key for strict builds
         self.__artifacts = context.artifactcache  # Artifact cache
         self.__sourcecache = context.sourcecache  # Source cache
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
@@ -1148,10 +1152,14 @@ class Element(Plugin):
     # None is returned if information for the cache key is missing.
     #
     def _get_cache_key(self, strength=_KeyStrength.STRONG):
-        if strength == _KeyStrength.STRONG:
-            return self.__cache_key
-        else:
-            return self.__weak_cache_key
+        return self.__cache_key_ctrl.get_key(strength)
+
+    # _get_strict_cache_key():
+    #
+    # Returns the strict cache key, a.k.a. the strong cache key of the
+    # strict cache key controller
+    def _get_strict_cache_key(self):
+        return self.__strict_cache_key_ctrl.get_key(_KeyStrength.STRONG)
 
     # _can_query_cache():
     #
@@ -1170,7 +1178,7 @@ class Element(Plugin):
             return True
 
         # cache cannot be queried until strict cache key is available
-        return self.__strict_cache_key is not None
+        return self.__strict_cache_key_ctrl.get_key(_KeyStrength.STRONG) is not None
 
     # _update_state()
     #
@@ -1216,7 +1224,7 @@ class Element(Plugin):
         if not context.get_strict():
             self.__update_cache_key_non_strict()
 
-        if not self.__ready_for_runtime and self.__cache_key is not None:
+        if not self.__ready_for_runtime and self.__cache_key_ctrl.get_key(_KeyStrength.STRONG) is not None:
             self.__ready_for_runtime = all(
                 dep.__ready_for_runtime for dep in self.__runtime_dependencies)
 
@@ -1239,7 +1247,7 @@ class Element(Plugin):
 
         if not cache_key:
             cache_key = "{:?<64}".format('')
-        elif self._get_cache_key() == self.__strict_cache_key:
+        elif self._get_cache_key() == self.__strict_cache_key_ctrl.get_key(_KeyStrength.STRONG):
             # Strong cache key used in this session matches cache key
             # that would be used in strict build mode
             dim_key = False
@@ -2148,20 +2156,15 @@ class Element(Plugin):
 
         self.__cache_sources()
 
-    # _calculate_cache_key():
+    # _get_cache_key_dict():
     #
-    # Calculates the cache key
+    # Calculate (if necessary) and return a dictionary of relevant data to
+    # calculate a cache key from this element
     #
     # Returns:
-    #    (str): A hex digest cache key for this Element, or None
+    #    (dict): A copy of the dictionary of relevant data to generating a cache key, or None
     #
-    # None is returned if information for the cache key is missing.
-    #
-    def _calculate_cache_key(self, dependencies):
-        # No cache keys for dependencies which have no cache keys
-        if None in dependencies:
-            return None
-
+    def _get_cache_key_dict(self):
         # Generate dict that is used as base for all cache keys
         if self.__cache_key_dict is None:
             # Filter out nocache variables from the element's environment
@@ -2191,10 +2194,7 @@ class Element(Plugin):
 
             self.__cache_key_dict['fatal-warnings'] = sorted(project._fatal_warnings)
 
-        cache_key_dict = self.__cache_key_dict.copy()
-        cache_key_dict['dependencies'] = dependencies
-
-        return _cachekey.generate_key(cache_key_dict)
+        return self.__cache_key_dict.copy()
 
     # Check if sources are cached, generating the source key if it hasn't been
     def _source_cached(self):
@@ -2227,6 +2227,10 @@ class Element(Plugin):
             return False
         else:
             return True
+
+    def _get_strong_key_from_artifact(self):
+        strong_key, _ = self.__artifact.get_metadata_keys()
+        return strong_key
 
     #############################################################
     #                   Private Local Methods                   #
@@ -2774,7 +2778,7 @@ class Element(Plugin):
     #
     def __pull_strong(self, *, pull_buildtrees):
         weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
-        key = self.__strict_cache_key
+        key = self.__strict_cache_key_ctrl.get_key(_KeyStrength.STRONG)
         if not self.__artifacts.pull(self, key, pull_buildtrees=pull_buildtrees):
             return False
 
@@ -2854,11 +2858,12 @@ class Element(Plugin):
             element = queue.pop()
 
             old_ready_for_runtime = element.__ready_for_runtime
-            old_strict_cache_key = element.__strict_cache_key
+            old_strict_cache_key = element.__strict_cache_key_ctrl.get_key(_KeyStrength.STRONG)
             element._update_state()
+            new_strict_cache_key = element.__strict_cache_key_ctrl.get_key(_KeyStrength.STRONG)
 
             if element.__ready_for_runtime != old_ready_for_runtime or \
-               element.__strict_cache_key != old_strict_cache_key:
+               new_strict_cache_key != old_strict_cache_key:
                 for rdep in element.__reverse_dependencies:
                     queue.push(rdep._unique_id, rdep)
 
@@ -2874,9 +2879,8 @@ class Element(Plugin):
     def __reset_cache_data(self):
         self.__build_result = None
         self.__cache_key_dict = None
-        self.__cache_key = None
-        self.__weak_cache_key = None
-        self.__strict_cache_key = None
+        self.__cache_key_ctrl.clear_keys()
+        self.__strict_cache_key_ctrl.clear_keys()
         self.__artifact = None
         self.__strict_artifact = None
         self.__weak_cached = None
@@ -2900,32 +2904,16 @@ class Element(Plugin):
     # has changed.
     #
     def __update_cache_keys(self):
-        if self.__weak_cache_key is None:
-            # Calculate weak cache key
-            # Weak cache key includes names of direct build dependencies
-            # but does not include keys of dependencies.
-            if self.BST_STRICT_REBUILD:
-                dependencies = [
-                    e._get_cache_key(strength=_KeyStrength.WEAK)
-                    for e in self.dependencies(Scope.BUILD)
-                ]
-            else:
-                dependencies = [
-                    e.name for e in self.dependencies(Scope.BUILD, recurse=False)
-                ]
+        # Simply retrieves the value if it's already calculated
+        weak_key = self.__cache_key_ctrl.calculate_weak_key(self)
 
-            self.__weak_cache_key = self._calculate_cache_key(dependencies)
+        if weak_key is None:
+            # Weak cache key could not be calculated yet, therefore
+            # the Strict cache key also can't be calculated yet.
+            return
 
-            if self.__weak_cache_key is None:
-                # Weak cache key could not be calculated yet, therefore
-                # the Strict cache key also can't be calculated yet.
-                return
-
-        if self.__strict_cache_key is None:
-            dependencies = [
-                e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
-            ]
-            self.__strict_cache_key = self._calculate_cache_key(dependencies)
+        # Does no work if it's already calculated
+        self.__strict_cache_key_ctrl.calculate_strong_key(self)
 
     # __update_artifact_state()
     #
@@ -2942,25 +2930,28 @@ class Element(Plugin):
     def __update_artifact_state(self):
         context = self._get_context()
 
-        if not self.__weak_cache_key:
+        weak_cache_key = self.__cache_key_ctrl.get_key(_KeyStrength.WEAK)
+        if not weak_cache_key:
+            # No useful work can be done
             return
 
         if not context.get_strict() and not self.__artifact:
             # We've calculated the weak_key, so instantiate artifact instance member
-            self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
+            self.__artifact = Artifact(self, context, weak_key=weak_cache_key)
             # and update the weak cached state (required early for workspaces)
             self.__weak_cached = self.__artifact.cached()
 
-        if not self.__strict_cache_key:
+        strict_cache_key = self.__strict_cache_key_ctrl.get_key(_KeyStrength.STRONG)
+        if not strict_cache_key:
             return
 
         if not self.__strict_artifact:
-            self.__strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key,
-                                              weak_key=self.__weak_cache_key)
+            self.__strict_artifact = Artifact(self, context, strong_key=strict_cache_key,
+                                              weak_key=weak_cache_key)
 
-            # In strict mode, the strong cache key always matches the strict cache key
+            # In strict mode, the strict and strong cache keys are identical,
+            # thus so are their artifacts
             if context.get_strict():
-                self.__cache_key = self.__strict_cache_key
                 self.__artifact = self.__strict_artifact
 
         # Query caches now that the weak and strict cache keys are available.
@@ -2990,27 +2981,15 @@ class Element(Plugin):
             return
 
         # The final cache key can be None here only in non-strict mode
-        if self.__cache_key is None:
-            if self._pull_pending():
-                # Effective strong cache key is unknown until after the pull
-                pass
-            elif self._cached():
-                # Load the strong cache key from the artifact
-                strong_key, _ = self.__artifact.get_metadata_keys()
-                self.__cache_key = strong_key
-            elif self.__assemble_scheduled or self.__assemble_done:
-                # Artifact will or has been built, not downloaded
-                dependencies = [
-                    e._get_cache_key() for e in self.dependencies(Scope.BUILD)
-                ]
-                self.__cache_key = self._calculate_cache_key(dependencies)
+        if not self.__cache_key_ctrl.get_key(_KeyStrength.STRONG):
+            strong_cache_key = self.__cache_key_ctrl.calculate_strong_key(self)
 
-            if self.__cache_key is None:
+            if strong_cache_key is None:
                 # Strong cache key could not be calculated yet
                 return
 
             # Now we have the strong cache key, update the Artifact
-            self.__artifact._cache_key = self.__cache_key
+            self.__artifact._cache_key = strong_cache_key
 
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):
