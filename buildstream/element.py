@@ -1885,7 +1885,8 @@ class Element(Plugin):
 
         if self.__strong_cached and pull_buildtrees:
             # If we've specified a subdir, check if the subdir is cached locally
-            if self.__artifact.cached_buildtree():
+            # or if it's possible to get
+            if self._cached_buildtree() or not self._buildtree_exists():
                 return False
         elif self.__strong_cached:
             return False
