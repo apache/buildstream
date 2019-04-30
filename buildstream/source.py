@@ -225,10 +225,10 @@ class Source(Plugin):
     __defaults = {}          # The defaults from the project
     __defaults_set = False   # Flag, in case there are not defaults at all
 
-    def __init__(self, context, project, meta, *, alias_override=None):
+    def __init__(self, context, project, meta, *, alias_override=None, unique_id=None):
         provenance = _yaml.node_get_provenance(meta.config)
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
-                         context, project, provenance, "source")
+                         context, project, provenance, "source", unique_id=unique_id)
 
         self.__element_name = meta.element_name         # The name of the element owning this source
         self.__element_index = meta.element_index       # The index of the source in the owning element's source list
@@ -916,7 +916,9 @@ class Source(Plugin):
         alias = self._get_alias()
         source_kind = type(self)
 
-        clone = source_kind(context, project, self.__meta, alias_override=(alias, uri))
+        clone = source_kind(context, project, self.__meta,
+                            alias_override=(alias, uri),
+                            unique_id=self._unique_id)
 
         # Do the necessary post instantiation routines here
         #
