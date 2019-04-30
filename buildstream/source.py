@@ -286,10 +286,10 @@ class Source(Plugin):
     *Since: 1.4*
     """
 
-    def __init__(self, context, project, meta, *, alias_override=None):
+    def __init__(self, context, project, meta, *, alias_override=None, unique_id=None):
         provenance = _yaml.node_get_provenance(meta.config)
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
-                         context, project, provenance, "source")
+                         context, project, provenance, "source", unique_id=unique_id)
 
         self.__source_cache = context.sourcecache
 
@@ -1092,7 +1092,9 @@ class Source(Plugin):
 
         meta.first_pass = self.__first_pass
 
-        clone = source_kind(context, project, meta, alias_override=(alias, uri))
+        clone = source_kind(context, project, meta,
+                            alias_override=(alias, uri),
+                            unique_id=self._unique_id)
 
         # Do the necessary post instantiation routines here
         #
