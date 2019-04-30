@@ -20,6 +20,7 @@ from . import Element
 from . import _cachekey
 from ._exceptions import ArtifactElementError
 from ._loader.metaelement import MetaElement
+from ._cachekeycontroller import ArtifactElementCacheKeyController
 
 
 # ArtifactElement()
@@ -42,6 +43,8 @@ class ArtifactElement(Element):
         plugin_conf = None
 
         super().__init__(context, project, meta, plugin_conf)
+        ctrl = ArtifactElementCacheKeyController(self._key)
+        self._set_cache_key_controller(ctrl)
 
     # Override Element.get_artifact_name()
     def get_artifact_name(self, key=None):
@@ -54,14 +57,6 @@ class ArtifactElement(Element):
     # Dummy preflight method
     def preflight(self):
         pass
-
-    # Override Element._calculate_cache_key
-    def _calculate_cache_key(self, dependencies=None):
-        return self._key
-
-    # Override Element._get_cache_key()
-    def _get_cache_key(self, strength=None):
-        return self._key
 
 
 # verify_artifact_ref()

@@ -19,3 +19,4 @@
 
 from .strictcachekeycontroller import StrictCacheKeyController
 from .nonstrictcachekeycontroller import NonStrictCacheKeyController
+from .artifactelementcachekeycontroller import ArtifactElementCacheKeyController

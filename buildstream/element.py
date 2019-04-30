@@ -2232,6 +2232,12 @@ class Element(Plugin):
         strong_key, _ = self.__artifact.get_metadata_keys()
         return strong_key
 
+    # Replaces the current cache key controllers with the specified one
+    # NOTE: Very likely to cause problems if not called before Pipeline.resolve_elements
+    def _set_cache_key_controller(self, controller):
+        self.__strict_cache_key_ctrl = controller
+        self.__cache_key_ctrl = controller
+
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
