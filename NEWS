@@ -1,4 +1,26 @@
 =================
+buildstream 1.2.6
+=================
+
+  o Fix 'quit' option when interrupting a build (#525)
+
+  o Only queue one cache size calculation job at a time
+
+  o Fix stack traces on forceful termination
+
+  o Fix scheduler processing order regression (#712)
+
+  o Fix race condition in bzr source plugin
+
+  o Better error messages for insufficient disk space
+
+  o UI/Logging improvements regarding cache quota usage
+
+  o Fix `bst push` in non-strict mode (#990)
+
+  o Fix crash (regression) when tracking a single element (#1012)
+
+=================
 buildstream 1.2.5
 =================
 
