@@ -386,6 +386,18 @@ class CasBasedDirectory(Directory):
 
         return result
 
+    def import_single_file(self, srcpath):
+        result = FileListResult()
+        if self._check_replacement(os.path.basename(srcpath),
+                                   os.path.dirname(srcpath),
+                                   result):
+            self._add_file(os.path.dirname(srcpath),
+                           os.path.basename(srcpath),
+                           modified=os.path.basename(srcpath)
+                           in result.overwritten)
+            result.files_written.append(srcpath)
+        return result
+
     def set_deterministic_mtime(self):
         """ Sets a static modification time for all regular files in this directory.
         Since we don't store any modification time, we don't need to do anything.

@@ -103,6 +103,10 @@ class Directory():
 
         raise NotImplementedError()
 
+    def import_single_file(self, external_pathspec):
+        """Imports a single file from an external path"""
+        raise NotImplementedError()
+
     def export_files(self, to_directory, *, can_link=False, can_destroy=False):
         """Copies everything from this into to_directory.
 
