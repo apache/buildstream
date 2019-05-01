@@ -172,6 +172,8 @@ from ._exceptions import BstError, ImplError, ErrorDomain
 from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage
 from ._cachekey import generate_key
+from .storage import FileBasedDirectory
+from .storage.directory import Directory, VirtualDirectoryError
 
 
 class SourceError(BstError):
@@ -293,6 +295,15 @@ class Source(Plugin):
       * All sources listed before current source in the given element will be
         staged with the source when it's cached.
       * This source can not be the first source for an element.
+
+    *Since: 1.4*
+    """
+
+    BST_STAGE_VIRTUAL_DIRECTORY = False
+    """Whether we can stage this source directly to a virtual directory
+
+    When set to true, virtual directories can be passed to the source to stage
+    to.
 
     *Since: 1.4*
     """
@@ -711,9 +722,7 @@ class Source(Plugin):
 
         if self.BST_REQUIRES_PREVIOUS_SOURCES_FETCH:
             self.__ensure_previous_sources(previous_sources)
-            with self.tempdir() as staging_directory:
-                for src in previous_sources:
-                    src._stage(staging_directory)
+            with self.__stage_previous_sources(previous_sources) as staging_directory:
                 self.__do_fetch(previous_sources_dir=self.__ensure_directory(staging_directory))
         else:
             self.__do_fetch()
@@ -727,12 +736,15 @@ class Source(Plugin):
     # 'directory' option
     #
     def _stage(self, directory):
-        staging_directory = self.__ensure_directory(directory)
+        directory = self.__ensure_directory(directory)
 
-        self.stage(staging_directory)
+        self.stage(directory)
 
     # Wrapper for init_workspace()
     def _init_workspace(self, directory):
+        if self.BST_STAGE_VIRTUAL_DIRECTORY:
+            directory = FileBasedDirectory(external_directory=directory)
+
         directory = self.__ensure_directory(directory)
 
         self.init_workspace(directory)
@@ -994,9 +1006,8 @@ class Source(Plugin):
     def _track(self, previous_sources):
         if self.BST_REQUIRES_PREVIOUS_SOURCES_TRACK:
             self.__ensure_previous_sources(previous_sources)
-            with self.tempdir() as staging_directory:
-                for src in previous_sources:
-                    src._stage(staging_directory)
+            with self.__stage_previous_sources(previous_sources) \
+                    as staging_directory:
                 new_ref = self.__do_track(previous_sources_dir=self.__ensure_directory(staging_directory))
         else:
             new_ref = self.__do_track()
@@ -1115,6 +1126,24 @@ class Source(Plugin):
 
         return clone
 
+    # Context manager that stages sources in a cas based or temporary file
+    # based directory
+    @contextmanager
+    def __stage_previous_sources(self, sources):
+        with self.tempdir() as tempdir:
+            directory = FileBasedDirectory(external_directory=tempdir)
+
+            for src in sources:
+                if src.BST_STAGE_VIRTUAL_DIRECTORY:
+                    src._stage(directory)
+                else:
+                    src._stage(tempdir)
+
+            if self.BST_STAGE_VIRTUAL_DIRECTORY:
+                yield directory
+            else:
+                yield tempdir
+
     # Tries to call fetch for every mirror, stopping once it succeeds
     def __do_fetch(self, **kwargs):
         project = self._get_project()
@@ -1220,15 +1249,28 @@ class Source(Plugin):
     # Ensures a fully constructed path and returns it
     def __ensure_directory(self, directory):
 
-        if self.__directory is not None:
-            directory = os.path.join(directory, self.__directory.lstrip(os.sep))
+        if not isinstance(directory, Directory):
+            if self.__directory is not None:
+                directory = os.path.join(directory, self.__directory.lstrip(os.sep))
 
-        try:
-            os.makedirs(directory, exist_ok=True)
-        except OSError as e:
-            raise SourceError("Failed to create staging directory: {}"
-                              .format(e),
-                              reason="ensure-stage-dir-fail") from e
+            try:
+                os.makedirs(directory, exist_ok=True)
+            except OSError as e:
+                raise SourceError("Failed to create staging directory: {}"
+                                  .format(e),
+                                  reason="ensure-stage-dir-fail") from e
+
+        else:
+            if self.__directory is not None:
+                try:
+                    directory = directory.descend(
+                        *self.__directory.lstrip(os.sep).split(os.sep),
+                        create=True)
+                except VirtualDirectoryError as e:
+                    raise SourceError("Failed to descend into staging directory: {}"
+                                      .format(e),
+                                      reason="ensure-stage-dir-fail") from e
+
         return directory
 
     @classmethod
