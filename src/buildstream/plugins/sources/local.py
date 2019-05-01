@@ -37,13 +37,15 @@ details on common configuration options for sources.
 """
 
 import os
-import stat
-from buildstream import Source, Consistency
+from buildstream.storage.directory import Directory
+from buildstream import Source, SourceError, Consistency
 from buildstream import utils
 
 
 class LocalSource(Source):
     # pylint: disable=attribute-defined-outside-init
+
+    BST_STAGE_VIRTUAL_DIRECTORY = True
 
     def __init__(self, context, project, meta):
         super().__init__(context, project, meta)
@@ -91,38 +93,18 @@ class LocalSource(Source):
         pass  # pragma: nocover
 
     def stage(self, directory):
-
-        # Dont use hardlinks to stage sources, they are not write protected
-        # in the sandbox.
-        with self.timed_activity("Staging local files at {}".format(self.path)):
-
-            if os.path.isdir(self.fullpath):
-                files = list(utils.list_relative_paths(self.fullpath))
-                utils.copy_files(self.fullpath, directory)
+        # directory should always be a Directory object
+        assert isinstance(directory, Directory)
+        with self.timed_activity("Staging local files into CAS"):
+            if os.path.isdir(self.fullpath) and not os.path.islink(self.fullpath):
+                result = directory.import_files(self.fullpath)
             else:
-                destfile = os.path.join(directory, os.path.basename(self.path))
-                files = [os.path.basename(self.path)]
-                utils.safe_copy(self.fullpath, destfile)
+                result = directory.import_single_file(self.fullpath)
 
-            for f in files:
-                # Non empty directories are not listed by list_relative_paths
-                dirs = f.split(os.sep)
-                for i in range(1, len(dirs)):
-                    d = os.path.join(directory, *(dirs[:i]))
-                    assert os.path.isdir(d) and not os.path.islink(d)
-                    os.chmod(d, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
-
-                path = os.path.join(directory, f)
-                if os.path.islink(path):
-                    pass
-                elif os.path.isdir(path):
-                    os.chmod(path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
-                else:
-                    st = os.stat(path)
-                    if st.st_mode & stat.S_IXUSR:
-                        os.chmod(path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
-                    else:
-                        os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+            if result.overwritten or result.ignored:
+                raise SourceError(
+                    "Failed to stage source: files clash with existing directory",
+                    reason='ensure-stage-dir-fail')
 
     def _get_local_path(self):
         return self.fullpath
