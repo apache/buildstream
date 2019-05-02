@@ -701,24 +701,6 @@ class Source(Plugin):
 
         return key
 
-    # Wrapper for set_ref(), also returns whether it changed.
-    #
-    def _set_ref(self, ref, node):
-        current_ref = self.get_ref()
-        changed = False
-
-        # This comparison should work even for tuples and lists,
-        # but we're mostly concerned about simple strings anyway.
-        if current_ref != ref:
-            changed = True
-
-        # Set the ref regardless of whether it changed, the
-        # TrackQueue() will want to update a specific node with
-        # the ref, regardless of whether the original has changed.
-        self.set_ref(ref, node)
-
-        return changed
-
     # _project_refs():
     #
     # Gets the appropriate ProjectRefs object for this source,
@@ -795,7 +777,7 @@ class Source(Plugin):
 
         return redundant_ref
 
-    # _save_ref()
+    # _set_ref()
     #
     # Persists the ref for this source. This will decide where to save the
     # ref, or refuse to persist it, depending on active ref-storage project
@@ -803,6 +785,7 @@ class Source(Plugin):
     #
     # Args:
     #    new_ref (smth): The new reference to save
+    #    save (bool): Whether to write the new reference to file or not
     #
     # Returns:
     #    (bool): Whether the ref has changed
@@ -810,7 +793,7 @@ class Source(Plugin):
     # Raises:
     #    (SourceError): In the case we encounter errors saving a file to disk
     #
-    def _save_ref(self, new_ref):
+    def _set_ref(self, new_ref, *, save):
 
         context = self._get_context()
         project = self._get_project()
@@ -838,7 +821,17 @@ class Source(Plugin):
         #
         # Step 2 - Set the ref in memory, and determine changed state
         #
-        if not self._set_ref(new_ref, node):
+        current_ref = self.get_ref()  # pylint: disable=assignment-from-no-return
+
+        # Set the ref regardless of whether it changed, the
+        # TrackQueue() will want to update a specific node with
+        # the ref, regardless of whether the original has changed.
+        self.set_ref(new_ref, node)
+
+        if current_ref == new_ref or not save:
+            # Note: We do not look for and propagate changes at this point
+            # which might result in desync depending if something changes about
+            # tracking in the future.  For now, this is quite safe.
             return False
 
         def do_save_refs(refs):
@@ -901,6 +894,9 @@ class Source(Plugin):
 
         if current_ref != new_ref:
             self.info("Found new revision: {}".format(new_ref))
+
+            # Save ref in local process for subsequent sources
+            self._set_ref(new_ref, save=False)
 
         return new_ref
 

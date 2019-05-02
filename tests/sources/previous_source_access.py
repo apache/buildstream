@@ -1,6 +1,7 @@
 import os
 import pytest
 
+from buildstream import _yaml
 from tests.testutils import cli
 
 DATA_DIR = os.path.join(
@@ -16,6 +17,13 @@ DATA_DIR = os.path.join(
 @pytest.mark.datafiles(DATA_DIR)
 def test_custom_transform_source(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Set the project_dir alias in project.conf to the path to the tested project
+    project_config_path = os.path.join(project, "project.conf")
+    project_config = _yaml.load(project_config_path)
+    aliases = _yaml.node_get(project_config, dict, "aliases")
+    aliases["project_dir"] = "file://{}".format(project)
+    _yaml.dump(_yaml.node_sanitize(project_config), project_config_path)
 
     # Ensure we can track
     result = cli.run(project=project, args=[
