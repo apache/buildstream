@@ -66,6 +66,7 @@ class Artifact():
         self._metadata_dependencies = None             # Dictionary of dependency strong keys from the artifact
         self._metadata_workspaced = None              # Boolean of whether it's a workspaced artifact
         self._metadata_workspaced_dependencies = None  # List of which dependencies are workspaced from the artifact
+        self._cached = None                          # Boolean of whether the artifact is cached
 
     # get_files():
     #
@@ -341,17 +342,20 @@ class Artifact():
     # are available, which may depend on command and configuration. The cache
     # key used for querying is dependant on the current context.
     #
-    # This is used by _update_state() to set __strong_cached and __weak_cached.
-    #
     # Returns:
     #     (bool): Whether artifact is in local cache
     #
     def cached(self):
+
+        if self._cached is not None:
+            return self._cached
+
         context = self._context
 
         artifact = self._get_proto()
 
         if not artifact:
+            self._cached = False
             return False
 
         # Determine whether directories are required
@@ -363,8 +367,10 @@ class Artifact():
         # Check whether 'files' subdirectory is available, with or without file contents
         if (require_directories and str(artifact.files) and
                 not self._cas.contains_directory(artifact.files, with_files=require_files)):
+            self._cached = False
             return False
 
+        self._cached = True
         return True
 
     # cached_logs()
@@ -386,6 +392,21 @@ class Artifact():
                 return False
 
         return True
+
+    # reset_cached()
+    #
+    # Allow the Artifact to query the filesystem to determine whether it
+    # is cached or not.
+    #
+    # NOTE: Due to the fact that a normal buildstream run does not make an
+    # artifact *not* cached (`bst artifact delete` can do so, but doesn't
+    # query the Artifact afterwards), it does not update_cached if the
+    # artifact is already cached. If a cached artifact ever has its key
+    # changed, this will need to be revisited.
+    #
+    def reset_cached(self):
+        if self._cached is False:
+            self._cached = None
 
     # _get_proto()
     #
