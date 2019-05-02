@@ -951,10 +951,15 @@ class Source(Plugin):
                 provenance = _yaml.node_get_provenance(node)
             else:
                 provenance = _yaml.node_get_provenance(node, key=key)
+
             toplevel_node = provenance.toplevel
 
             # Get the path to whatever changed
-            path = _yaml.node_find_target(toplevel_node, node)
+            if action == 'add':
+                path = _yaml.node_find_target(toplevel_node, node)
+            else:
+                path = _yaml.node_find_target(toplevel_node, node, key=key)
+
             roundtrip_file = roundtrip_cache.get(provenance.filename)
             if not roundtrip_file:
                 roundtrip_file = roundtrip_cache[provenance.filename] = _yaml.roundtrip_load(
