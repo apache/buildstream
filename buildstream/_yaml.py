@@ -1204,18 +1204,27 @@ def assert_symbol_name(provenance, symbol_name, purpose, *, allow_dashes=True):
 # This is typically used when trying to walk a path to a given node
 # for the purpose of then modifying a similar tree of objects elsewhere
 #
+# If the key is provided, then we actually hunt for the node represented by
+# target[key] and return its container, rather than hunting for target directly
+#
 # Args:
 #    node (Node): The node at the root of the tree to search
 #    target (Node): The node you are looking for in that tree
+#    key (str): Optional string key within target node
 #
 # Returns:
 #    (list): A path from `node` to `target` or None if `target` is not in the subtree
-def node_find_target(node, target):
+def node_find_target(node, target, *, key=None):
     assert type(node) is Node
     assert type(target) is Node
+    if key is not None:
+        target = target[0][key]
 
     path = []
     if _walk_find_target(node, path, target):
+        if key:
+            # Remove key from end of path
+            path = path[:-1]
         return path
     return None
 
