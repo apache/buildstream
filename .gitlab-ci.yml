@@ -190,6 +190,7 @@ coverage:
   dependencies:
   - tests-debian-9
   - tests-fedora-29
+  - tests-fedora-30
   - tests-ubuntu-18.04
   - tests-unix
   except:
