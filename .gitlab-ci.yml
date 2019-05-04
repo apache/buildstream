@@ -54,12 +54,12 @@ tests-debian-9:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-46405991
   <<: *tests
 
-tests-fedora-28:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:28-master-46405991
-  <<: *tests
-
 tests-fedora-29:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
+  <<: *tests
+
+tests-fedora-30:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-59168197
   <<: *tests
 
 tests-ubuntu-18.04:
@@ -328,8 +328,8 @@ coverage:
   dependencies:
   - tests-centos-7.6
   - tests-debian-9
-  - tests-fedora-28
   - tests-fedora-29
+  - tests-fedora-30
   - tests-fedora-missing-deps
   - tests-fedora-update-deps
   - tests-remote-execution
