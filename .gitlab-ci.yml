@@ -70,8 +70,8 @@ tests-centos-7.6:
   <<: *tests
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.6.1810-master-46405991
 
-overnight-fedora-29-aarch64:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:aarch64-29-master-47052095
+overnight-fedora-30-aarch64:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:aarch64-30-master-59168197
   tags:
     - aarch64
   <<: *tests
@@ -80,12 +80,6 @@ overnight-fedora-29-aarch64:
   except: []
   only:
   - schedules
-  before_script:
-    # grpcio needs to be compiled from source on aarch64 so we additionally
-    # need a C++ compiler here.
-    # FIXME: Ideally this would be provided by the base image. This will be
-    # unblocked by https://gitlab.com/BuildStream/buildstream-docker-images/issues/34
-    - dnf install -y gcc-c++
 
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
