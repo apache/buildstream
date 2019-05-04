@@ -237,13 +237,13 @@ class CASCache(ArtifactCache):
 
     def pull(self, element, key, *, progress=None):
         ref = self.get_artifact_fullname(element, key)
+        display_key = key[:self.context.log_key_length]
 
         project = element._get_project()
 
         for remote in self._remotes[project]:
             try:
                 remote.init()
-                display_key = element._get_brief_display_key()
                 element.status("Pulling artifact {} <- {}".format(display_key, remote.spec.url))
 
                 request = buildstream_pb2.GetReferenceRequest()
@@ -265,14 +265,14 @@ class CASCache(ArtifactCache):
             except grpc.RpcError as e:
                 if e.code() != grpc.StatusCode.NOT_FOUND:
                     raise ArtifactError("Failed to pull artifact {}: {}".format(
-                        element._get_brief_display_key(), e)) from e
+                        display_key, e)) from e
                 else:
                     element.info("Remote ({}) does not have {} cached".format(
-                        remote.spec.url, element._get_brief_display_key()
+                        remote.spec.url, display_key
                     ))
             except BlobNotFound as e:
                 element.info("Remote ({}) does not have {} cached".format(
-                    remote.spec.url, element._get_brief_display_key()
+                    remote.spec.url, display_key
                 ))
 
         return False
