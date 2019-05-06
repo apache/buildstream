@@ -699,9 +699,26 @@ class Element(Plugin):
         old_dep_keys = {}
         workspace = self._get_workspace()
         project = self._get_project()
+        context = self._get_context()
 
         if self.__can_build_incrementally() and workspace.last_successful:
-            old_dep_keys = self.__get_artifact_metadata_dependencies(workspace.last_successful)
+
+            # Try to perform an incremental build if the last successful
+            # build is still in the artifact cache
+            #
+            if self.__artifacts.contains(self, workspace.last_successful):
+                old_dep_keys = self.__get_artifact_metadata_dependencies(workspace.last_successful)
+            else:
+                # Last successful build is no longer in the artifact cache,
+                # so let's reset it and perform a full build now.
+                workspace.prepared = False
+                workspace.last_successful = None
+
+                self.info("Resetting workspace state, last successful build is no longer in the cache")
+
+                # In case we are staging in the main process
+                if utils._is_main_process():
+                    context.get_workspaces().save_config()
 
         for dep in self.dependencies(scope):
             # If we are workspaced, and we therefore perform an
@@ -726,7 +743,7 @@ class Element(Plugin):
                     # In case we are running `bst shell`, this happens in the
                     # main process and we need to update the workspace config
                     if utils._is_main_process():
-                        self._get_context().get_workspaces().save_config()
+                        context.get_workspaces().save_config()
 
             result = dep.stage_artifact(sandbox,
                                         path=path,
