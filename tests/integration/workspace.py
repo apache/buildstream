@@ -271,3 +271,36 @@ def test_incremental_configure_commands_run_only_once(cli, datafiles):
     res = cli.run(project=project, args=['build', element_name])
     res.assert_success()
     assert not os.path.exists(os.path.join(workspace, 'prepared-again'))
+
+
+# Test that rebuilding an already built workspaced element does
+# not crash after the last successfully built artifact is removed
+# from the cache
+#
+# A user can remove their artifact cache, or manually remove the
+# artifact with `bst artifact delete`, or BuildStream can delete
+# the last successfully built artifact for this workspace as a
+# part of a cleanup job.
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+def test_workspace_missing_last_successful(cli, datafiles):
+    project = str(datafiles)
+    workspace = os.path.join(cli.directory, 'workspace')
+    element_name = 'workspace/workspace-commanddir.bst'
+
+    # Open workspace
+    res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
+    assert res.exit_code == 0
+
+    # Build first, this will record the last successful build in local state
+    res = cli.run(project=project, args=['build', element_name])
+    assert res.exit_code == 0
+
+    # Remove the artifact from the cache, invalidating the last successful build
+    res = cli.run(project=project, args=['artifact', 'delete', element_name])
+    assert res.exit_code == 0
+
+    # Build again, ensure we dont crash just because the artifact went missing
+    res = cli.run(project=project, args=['build', element_name])
+    assert res.exit_code == 0
