@@ -218,8 +218,8 @@ class Cli():
             cache_dir = os.path.join(project, 'cache', 'artifacts')
 
         cache_dir = os.path.join(cache_dir, 'cas', 'refs', 'heads')
-
-        cache_dir = os.path.splitext(os.path.join(cache_dir, 'test', element_name))[0]
+        normal_name = element_name.replace(os.sep, '-')
+        cache_dir = os.path.splitext(os.path.join(cache_dir, 'test', normal_name))[0]
         shutil.rmtree(cache_dir)
 
     # run():
