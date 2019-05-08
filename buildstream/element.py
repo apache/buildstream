@@ -198,7 +198,7 @@ class Element(Plugin):
         if not self.__is_junction:
             project.ensure_fully_loaded()
 
-        self.normal_name = os.path.splitext(self.name.replace(os.sep, '-'))[0]
+        self.normal_name = _get_normal_name(self.name)
         """A normalized element name
 
         This is the original element without path separators or
@@ -620,15 +620,7 @@ class Element(Plugin):
 
         assert key is not None
 
-        valid_chars = string.digits + string.ascii_letters + '-._'
-        element_name = ''.join([
-            x if x in valid_chars else '_'
-            for x in self.normal_name
-        ])
-
-        # Note that project names are not allowed to contain slashes. Element names containing
-        # a '/' will have this replaced with a '-' upon Element object instantiation.
-        return '{0}/{1}/{2}'.format(project.name, element_name, key)
+        return _compose_artifact_name(project.name, self.normal_name, key)
 
     def stage_artifact(self, sandbox, *, path=None, include=None, exclude=None, orphans=True, update_mtimes=None):
         """Stage this element's output artifact in the sandbox
@@ -3017,3 +3009,42 @@ def _overlap_error_detail(f, forbidden_overlap_elements, elements):
                         " above ".join(reversed(elements))))
     else:
         return ""
+
+
+# _get_normal_name():
+#
+# Get the element name without path separators or
+# the extension.
+#
+# Args:
+#     element_name (str): The element's name
+#
+# Returns:
+#     (str): The normalised element name
+#
+def _get_normal_name(element_name):
+    return os.path.splitext(element_name.replace(os.sep, '-'))[0]
+
+
+# _compose_artifact_name():
+#
+# Compose the completely resolved 'artifact_name' as a filepath
+#
+# Args:
+#     project_name (str): The project's name
+#     normal_name (str): The element's normalised name
+#     cache_key (str): The relevant cache key
+#
+# Returns:
+#     (str): The constructed artifact name path
+#
+def _compose_artifact_name(project_name, normal_name, cache_key):
+    valid_chars = string.digits + string.ascii_letters + '-._'
+    normal_name = ''.join([
+        x if x in valid_chars else '_'
+        for x in normal_name
+    ])
+
+    # Note that project names are not allowed to contain slashes. Element names containing
+    # a '/' will have this replaced with a '-' upon Element object instantiation.
+    return '{0}/{1}/{2}'.format(project_name, normal_name, cache_key)

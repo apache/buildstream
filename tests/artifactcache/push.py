@@ -99,7 +99,7 @@ def test_push(cli, tmpdir, datafiles):
             raise
 
         assert not error
-        assert share.has_artifact('test', 'target.bst', element_key)
+        assert share.has_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst', cache_key=element_key))
 
 
 def _test_push(user_config_file, project_dir, element_name, element_key, queue):

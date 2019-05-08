@@ -65,11 +65,11 @@ def test_cache_buildtrees(cli, tmpdir, datafiles):
         result = cli.run(project=project, args=['build', element_name])
         assert result.exit_code == 0
         assert cli.get_element_state(project, element_name) == 'cached'
-        assert share1.has_artifact('test', element_name, cli.get_element_key(project, element_name))
+        assert share1.has_artifact(cli.get_artifact_name(project, 'test', element_name))
 
         # The buildtree dir should not exist, as we set the config to not cache buildtrees.
         cache_key = cli.get_element_key(project, element_name)
-        elementdigest = share1.has_artifact('test', element_name, cache_key)
+        elementdigest = share1.has_artifact(cli.get_artifact_name(project, 'test', element_name, cache_key=cache_key))
         with cli.artifact.extract_buildtree(tmpdir, elementdigest) as buildtreedir:
             assert not os.path.isdir(buildtreedir)
 
@@ -102,10 +102,10 @@ def test_cache_buildtrees(cli, tmpdir, datafiles):
         result = cli.run(project=project, args=['--cache-buildtrees', 'always', 'build', element_name])
         assert result.exit_code == 0
         assert cli.get_element_state(project, element_name) == 'cached'
-        assert share2.has_artifact('test', element_name, cli.get_element_key(project, element_name))
+        assert share2.has_artifact(cli.get_artifact_name(project, 'test', element_name))
 
         # Cache key will be the same however the digest hash will have changed as expected, so reconstruct paths
-        elementdigest = share2.has_artifact('test', element_name, cache_key)
+        elementdigest = share2.has_artifact(cli.get_artifact_name(project, 'test', element_name, cache_key=cache_key))
         with cli.artifact.extract_buildtree(tmpdir, elementdigest) as buildtreedir:
             assert os.path.isdir(buildtreedir)
             assert os.listdir(buildtreedir)
@@ -132,8 +132,7 @@ def test_cache_buildtrees(cli, tmpdir, datafiles):
         result = cli.run(project=project, args=['build', element_name])
         assert result.exit_code == 0
         assert cli.get_element_state(project, element_name) == 'cached'
-        cache_key = cli.get_element_key(project, element_name)
-        elementdigest = share3.has_artifact('test', element_name, cache_key)
+        elementdigest = share3.has_artifact(cli.get_artifact_name(project, 'test', element_name))
         with cli.artifact.extract_buildtree(tmpdir, elementdigest) as buildtreedir:
             assert os.path.isdir(buildtreedir)
             assert os.listdir(buildtreedir)

@@ -81,8 +81,7 @@ def test_pull(cli, tmpdir, datafiles):
         # Assert that we are now cached locally
         assert cli.get_element_state(project_dir, 'target.bst') == 'cached'
         # Assert that we shared/pushed the cached artifact
-        element_key = cli.get_element_key(project_dir, 'target.bst')
-        assert share.has_artifact('test', 'target.bst', element_key)
+        assert share.has_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst'))
 
         # Delete the artifact locally
         cli.remove_artifact_from_cache(project_dir, 'target.bst')
@@ -191,8 +190,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Assert that we are now cached locally
         assert cli.get_element_state(project_dir, 'target.bst') == 'cached'
         # Assert that we shared/pushed the cached artifact
-        element_key = cli.get_element_key(project_dir, 'target.bst')
-        assert share.has_artifact('test', 'target.bst', element_key)
+        assert share.has_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst'))
 
         # Fake minimal context
         context = Context()

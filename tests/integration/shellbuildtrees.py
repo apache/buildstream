@@ -225,7 +225,7 @@ def test_buildtree_options(cli, tmpdir, datafiles):
         result = cli.run(project=project, args=['--cache-buildtrees', 'always', 'build', element_name])
         result.assert_success()
         assert cli.get_element_state(project, element_name) == 'cached'
-        assert share.has_artifact('test', element_name, cli.get_element_key(project, element_name))
+        assert share.has_artifact(cli.get_artifact_name(project, 'test', element_name))
 
         # Discard the cache
         shutil.rmtree(str(os.path.join(str(tmpdir), 'cache', 'cas')))

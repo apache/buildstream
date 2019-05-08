@@ -44,8 +44,7 @@ def assert_shared(cli, share, project, element_name):
     # NOTE: 'test' here is the name of the project
     # specified in the project.conf we are testing with.
     #
-    cache_key = cli.get_element_key(project, element_name)
-    if not share.has_artifact('test', element_name, cache_key):
+    if not share.has_artifact(cli.get_artifact_name(project, 'test', element_name)):
         raise AssertionError("Artifact share at {} does not contain the expected element {}"
                              .format(share.repo, element_name))
 
@@ -56,8 +55,7 @@ def assert_not_shared(cli, share, project, element_name):
     # NOTE: 'test' here is the name of the project
     # specified in the project.conf we are testing with.
     #
-    cache_key = cli.get_element_key(project, element_name)
-    if share.has_artifact('test', element_name, cache_key):
+    if share.has_artifact(cli.get_artifact_name(project, 'test', element_name)):
         raise AssertionError("Artifact share at {} unexpectedly contains the element {}"
                              .format(share.repo, element_name))
 
@@ -400,7 +398,7 @@ def test_push_cross_junction(cli, tmpdir, datafiles):
         cli.run(project=project, args=['artifact', 'push', 'junction.bst:import-etc.bst'])
 
         cache_key = cli.get_element_key(project, 'junction.bst:import-etc.bst')
-        assert share.has_artifact('subtest', 'import-etc.bst', cache_key)
+        assert share.has_artifact(cli.get_artifact_name(project, 'subtest', 'import-etc.bst', cache_key=cache_key))
 
 
 @pytest.mark.datafiles(DATA_DIR)

@@ -1,4 +1,3 @@
-import string
 import os
 import shutil
 import signal
@@ -122,31 +121,13 @@ class ArtifactShare():
     # Checks whether the artifact is present in the share
     #
     # Args:
-    #    project_name (str): The project name
-    #    element_name (str): The element name
-    #    cache_key (str): The cache key
+    #    artifact_name (str): The composed complete artifact name
     #
     # Returns:
     #    (str): artifact digest if the artifact exists in the share, otherwise None.
-    def has_artifact(self, project_name, element_name, cache_key):
-
-        # NOTE: This should be kept in line with our
-        #       artifact cache code, the below is the
-        #       same algo for creating an artifact reference
-        #
-
-        # Replace path separator and chop off the .bst suffix
-        element_name = os.path.splitext(element_name.replace(os.sep, '-'))[0]
-
-        valid_chars = string.digits + string.ascii_letters + '-._'
-        element_name = ''.join([
-            x if x in valid_chars else '_'
-            for x in element_name
-        ])
-        artifact_key = '{0}/{1}/{2}'.format(project_name, element_name, cache_key)
-
+    def has_artifact(self, artifact_name):
         try:
-            tree = self.cas.resolve_ref(artifact_key)
+            tree = self.cas.resolve_ref(artifact_name)
             reachable = set()
             try:
                 self.cas._reachable_refs_dir(reachable, tree, update_mtime=False, check_exists=True)

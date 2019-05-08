@@ -23,8 +23,7 @@ def assert_shared(cli, share, project, element_name):
     # NOTE: 'test' here is the name of the project
     # specified in the project.conf we are testing with.
     #
-    cache_key = cli.get_element_key(project, element_name)
-    if not share.has_artifact('test', element_name, cache_key):
+    if not share.has_artifact(cli.get_artifact_name(project, 'test', element_name)):
         raise AssertionError("Artifact share at {} does not contain the expected element {}"
                              .format(share.repo, element_name))
 
@@ -35,8 +34,7 @@ def assert_not_shared(cli, share, project, element_name):
     # NOTE: 'test' here is the name of the project
     # specified in the project.conf we are testing with.
     #
-    cache_key = cli.get_element_key(project, element_name)
-    if share.has_artifact('test', element_name, cache_key):
+    if share.has_artifact(cli.get_artifact_name(project, 'test', element_name)):
         raise AssertionError("Artifact share at {} unexpectedly contains the element {}"
                              .format(share.repo, element_name))
 

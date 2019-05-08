@@ -193,8 +193,7 @@ def test_artifact_delete_pulled_artifact_without_buildtree(cli, tmpdir, datafile
         result.assert_success()
 
         # Make sure it's in the share
-        cache_key = cli.get_element_key(project, element)
-        assert remote.has_artifact('test', element, cache_key)
+        assert remote.has_artifact(cli.get_artifact_name(project, 'test', element))
 
         # Delete and then pull the artifact (without its buildtree)
         result = cli.run(project=project, args=['artifact', 'delete', element])

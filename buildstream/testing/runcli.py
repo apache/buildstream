@@ -53,6 +53,7 @@ from _pytest.capture import MultiCapture, FDCapture, FDCaptureBinary
 from buildstream._frontend import cli as bst_cli
 from buildstream import _yaml
 from buildstream._cas import CASCache
+from buildstream.element import _get_normal_name, _compose_artifact_name
 
 # Special private exception accessor, for test case purposes
 from buildstream._exceptions import BstError, get_last_exception, get_last_task_error
@@ -494,6 +495,17 @@ class Cli():
         result = self.run(project=project, silent=True, args=args + elements)
         result.assert_success()
         return result.output.splitlines()
+
+    # Fetch an element's complete artifact name, cache_key will be generated
+    # if not given.
+    #
+    def get_artifact_name(self, project, project_name, element_name, cache_key=None):
+        if not cache_key:
+            cache_key = self.get_element_key(project, element_name)
+
+        # Replace path separator and chop off the .bst suffix for normal name
+        normal_name = _get_normal_name(element_name)
+        return _compose_artifact_name(project_name, normal_name, cache_key)
 
 
 class CliIntegration(Cli):
