@@ -2986,8 +2986,10 @@ class Element(Plugin):
         if not self.__strict_artifact:
             return
 
-        # The final cache key can be None here only in non-strict mode
-        if not self.__cache_key_ctrl.get_key(_KeyStrength.STRONG):
+        # The final cache key can be None here only in non-strict mode.
+        # If it's not required, don't calculate it since it's expensve to try
+        # to pull it first.
+        if not self.__cache_key_ctrl.get_key(_KeyStrength.STRONG) and self._is_required():
             strong_cache_key = self.__cache_key_ctrl.calculate_strong_key(self)
 
             if strong_cache_key is None:

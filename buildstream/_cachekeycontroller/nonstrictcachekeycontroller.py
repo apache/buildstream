@@ -46,11 +46,7 @@ class NonStrictCacheKeyController(CacheKeyController):
                 # Load the strong cache key from the artifact
                 self._strong_key = element._get_strong_key_from_artifact()
 
-            # XXX: This is a significant change from how strong cache keys were originally
-            #      calculated. It seems to be correct, but I am not certain it's the best way.
-            #      If bugs occur, try replacing the conditional with
-            #      `element._Element__assemble_scheduled or element._Element__assemble_done`.
-            elif element._is_required():
+            else:
                 # Artifact will or has been built, not downloaded
                 dependencies = [
                     e._get_cache_key() for e in element.dependencies(Scope.BUILD)
