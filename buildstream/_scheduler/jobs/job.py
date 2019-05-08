@@ -111,9 +111,6 @@ class Job():
         self._tries = 0                        # Try count, for retryable jobs
         self._terminated = False               # Whether this job has been explicitly terminated
 
-        # If False, a retry will not be attempted regardless of whether _tries is less than _max_retries.
-        #
-        self._retry_flag = True
         self._logfile = logfile
         self._task_id = None
 
@@ -432,9 +429,9 @@ class Job():
                 self._child_shutdown(RC_SKIPPED)
             except BstError as e:
                 elapsed = datetime.datetime.now() - starttime
-                self._retry_flag = e.temporary
+                retry_flag = e.temporary
 
-                if self._retry_flag and (self._tries <= self._max_retries):
+                if retry_flag and (self._tries <= self._max_retries):
                     self.message(MessageType.FAIL,
                                  "Try #{} failed, retrying".format(self._tries),
                                  elapsed=elapsed, logfile=filename)
@@ -450,7 +447,7 @@ class Job():
 
                 # Set return code based on whether or not the error was temporary.
                 #
-                self._child_shutdown(RC_FAIL if self._retry_flag else RC_PERM_FAIL)
+                self._child_shutdown(RC_FAIL if retry_flag else RC_PERM_FAIL)
 
             except Exception as e:                        # pylint: disable=broad-except
 
@@ -575,11 +572,9 @@ class Job():
         self._parent_shutdown()
 
         # We don't want to retry if we got OK or a permanent fail.
-        # This is set in _child_action but must also be set for the parent.
-        #
-        self._retry_flag = returncode == RC_FAIL
+        retry_flag = returncode == RC_FAIL
 
-        if self._retry_flag and (self._tries <= self._max_retries) and not self._scheduler.terminated:
+        if retry_flag and (self._tries <= self._max_retries) and not self._scheduler.terminated:
             self.spawn()
             return
 
