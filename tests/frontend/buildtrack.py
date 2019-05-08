@@ -12,6 +12,7 @@ from buildstream import _yaml
 from buildstream.testing import create_repo
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream._exceptions import ErrorDomain
+from tests.testutils import generate_junction
 
 from . import configure_project
 
@@ -154,6 +155,82 @@ def test_build_track(cli, datafiles, tmpdir, ref_storage, strict,
         assert os.path.exists(os.path.join(project, 'project.refs'))
     else:
         assert not os.path.exists(os.path.join(project, 'project.refs'))
+
+
+# This tests a very specific scenario:
+#
+#  o Local cache is empty
+#  o Strict mode is disabled
+#  o The build target has only build dependencies
+#  o The build is launched with --track-all
+#
+# In this scenario, we have encountered bugs where BuildStream returns
+# successfully after tracking completes without ever pulling, fetching or
+# building anything.
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("strict", [True, False], ids=["strict", "no-strict"])
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+def test_build_track_all(cli, tmpdir, datafiles, strict, ref_storage):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    subproject_path = os.path.join(project, 'files', 'sub-project')
+    subproject_element_path = os.path.join(project, 'files', 'sub-project', 'elements')
+    junction_path = os.path.join(project, 'elements', 'junction.bst')
+    element_path = os.path.join(project, 'elements')
+    dev_files_path = os.path.join(project, 'files', 'dev-files')
+
+    configure_project(project, {
+        'ref-storage': ref_storage
+    })
+    cli.configure({
+        'projects': {
+            'test': {
+                'strict': strict
+            }
+        }
+    })
+
+    # We need a repo for real trackable elements
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(dev_files_path)
+
+    # Create a trackable element to depend on the cross junction element,
+    # this one has it's ref resolved already
+    create_element(repo, 'sub-target.bst', subproject_element_path, ['import-etc.bst'], ref=ref)
+
+    # Create a trackable element to depend on the cross junction element
+    create_element(repo, 'target.bst', element_path, [
+        {
+            'junction': 'junction.bst',
+            'filename': 'sub-target.bst'
+        }
+    ])
+
+    # Create a repo to hold the subproject and generate a junction element for it
+    generate_junction(tmpdir, subproject_path, junction_path, store_ref=False)
+
+    # Now create a compose element at the top level
+    element = {
+        'kind': 'compose',
+        'depends': [
+            {
+                'filename': 'target.bst',
+                'type': 'build'
+            }
+        ]
+    }
+    _yaml.dump(element, os.path.join(element_path, 'composed.bst'))
+
+    # Track the junction itself first.
+    result = cli.run(project=project, args=['source', 'track', 'junction.bst'])
+    result.assert_success()
+
+    # Build it with --track-all
+    result = cli.run(project=project, silent=True, args=['build', '--track-all', 'composed.bst'])
+    result.assert_success()
+
+    # Assert that the main target is cached as a result
+    assert cli.get_element_state(project, 'composed.bst') == 'cached'
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
