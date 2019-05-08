@@ -30,6 +30,7 @@ def create_element(repo, name, path, dependencies, ref=None):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
+@pytest.mark.parametrize("strict", [True, False], ids=["strict", "no-strict"])
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 @pytest.mark.parametrize("track_targets,exceptions,tracked", [
     # Test with no exceptions
@@ -47,7 +48,7 @@ def create_element(repo, name, path, dependencies, ref=None):
     (['3.bst'], ['2.bst', '3.bst'], []),
     (['2.bst', '3.bst'], ['2.bst', '3.bst'], [])
 ])
-def test_build_track(cli, datafiles, tmpdir, ref_storage,
+def test_build_track(cli, datafiles, tmpdir, ref_storage, strict,
                      track_targets, exceptions, tracked):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
@@ -58,6 +59,13 @@ def test_build_track(cli, datafiles, tmpdir, ref_storage,
 
     configure_project(project, {
         'ref-storage': ref_storage
+    })
+    cli.configure({
+        'projects': {
+            'test': {
+                'strict': strict
+            }
+        }
     })
 
     create_elements = {
@@ -115,8 +123,13 @@ def test_build_track(cli, datafiles, tmpdir, ref_storage,
     args += ['0.bst']
 
     result = cli.run(project=project, silent=True, args=args)
-    tracked_elements = result.get_tracked_elements()
+    result.assert_success()
 
+    # Assert that the main target 0.bst is cached
+    assert cli.get_element_state(project, '0.bst') == 'cached'
+
+    # Assert that we tracked exactly the elements we expected to
+    tracked_elements = result.get_tracked_elements()
     assert set(tracked_elements) == set(tracked)
 
     # Delete element sources
@@ -129,6 +142,68 @@ def test_build_track(cli, datafiles, tmpdir, ref_storage,
 
         # Assert that it's tracked
         assert cli.get_element_state(project, target) == 'fetch needed'
+
+    # Assert there was a project.refs created, depending on the configuration
+    if ref_storage == 'project.refs':
+        assert os.path.exists(os.path.join(project, 'project.refs'))
+    else:
+        assert not os.path.exists(os.path.join(project, 'project.refs'))
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+@pytest.mark.parametrize("strict", [True, False], ids=["strict", "no-strict"])
+@pytest.mark.parametrize("dep_type", ["build", "runtime", "both"])
+@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
+def test_build_track_all(cli, datafiles, tmpdir, ref_storage, strict, dep_type):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+    dev_files_path = os.path.join(project, 'files', 'dev-files')
+    element_path = os.path.join(project, 'elements')
+
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(dev_files_path)
+
+    configure_project(project, {
+        'ref-storage': ref_storage
+    })
+    cli.configure({
+        'projects': {
+            'test': {
+                'strict': strict
+            }
+        }
+    })
+
+    # Generate the elements
+    create_elements = {
+        '0.bst': ['2.bst', '3.bst'],
+        '2.bst': ['3.bst', '7.bst'],
+        '3.bst': ['4.bst', '5.bst', '6.bst'],
+        '4.bst': [],
+        '5.bst': [],
+        '6.bst': ['5.bst'],
+        '7.bst': []
+    }
+    for element, dependencies in create_elements.items():
+        if dep_type in ('build', 'runtime'):
+            dependencies = [
+                {
+                    'filename': dep_name,
+                    'type': dep_type
+                }
+                for dep_name in dependencies
+            ]
+        create_element(repo, element, element_path, dependencies)
+
+    # Build it with --track-all
+    result = cli.run(project=project, silent=True, args=['build', '--track-all', '0.bst'])
+    result.assert_success()
+
+    # Assert that the main target 0.bst is cached
+    assert cli.get_element_state(project, '0.bst') == 'cached'
+
+    # Assert that we tracked all the elements
+    tracked_elements = result.get_tracked_elements()
+    assert set(tracked_elements) == set(['0.bst', '2.bst', '3.bst', '4.bst', '5.bst', '6.bst', '7.bst'])
 
     # Assert there was a project.refs created, depending on the configuration
     if ref_storage == 'project.refs':
