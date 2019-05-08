@@ -144,6 +144,10 @@ class Queue():
         if not elts:
             return
 
+        for e in elts:
+            self._message(e, MessageType.STATUS,
+                          "{} queue enqueue element".format(self.action_name))
+
         # Place skipped elements on the done queue right away.
         #
         # The remaining ready and waiting elements must remain in the
@@ -152,6 +156,10 @@ class Queue():
         #
         skip = [elt for elt in elts if self.status(elt) == QueueStatus.SKIP]
         wait = [elt for elt in elts if elt not in skip]
+
+        for e in skip:
+            self._message(e, MessageType.INFO,
+                          "{} queue skipping at enqueue time".format(self.action_name))
 
         self.skipped_elements.extend(skip)  # Public record of skipped elements
         self._done_queue.extend(skip)       # Elements to be processed
@@ -167,7 +175,10 @@ class Queue():
     #
     def dequeue(self):
         while self._done_queue:
-            yield self._done_queue.popleft()
+            e = self._done_queue.popleft()
+            self._message(e, MessageType.STATUS,
+                          "{} queue dequeue element".format(self.action_name))
+            yield e
 
     # dequeue_ready()
     #
@@ -204,6 +215,9 @@ class Queue():
             elif status == QueueStatus.SKIP:
                 self._done_queue.append(element)
                 self.skipped_elements.append(element)
+
+                self._message(element, MessageType.INFO,
+                              "{} queue reported skip".format(self.action_name))
             else:
                 reserved = self._resources.reserve(self.resources)
                 assert reserved

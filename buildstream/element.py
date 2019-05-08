@@ -1054,6 +1054,10 @@ class Element(Plugin):
         # is not available yet.
         # This special case is required for workspaced elements to prevent
         # them from getting blocked in the pull queue.
+
+        #
+        # XXX I think this special case is flatly wrong
+        #
         if self.__assemble_scheduled:
             return True
 

@@ -23,6 +23,7 @@ from . import Queue, QueueStatus
 from ..resources import ResourceType
 from ..jobs import JobStatus
 from ..._exceptions import SkipJob
+from ..._message import MessageType
 
 
 # A queue which pulls element artifacts
@@ -42,14 +43,26 @@ class PullQueue(Queue):
         if not element._is_required():
             # Artifact is not currently required but it may be requested later.
             # Keep it in the queue.
+            self._message(element, MessageType.INFO,
+                          "{} queue holding element, it is not required".format(self.action_name))
+
             return QueueStatus.WAIT
 
         if not element._can_query_cache():
+            self._message(element, MessageType.INFO,
+                          "{} queue holding element, cannot query cache".format(self.action_name),
+                          detail="Assemble scheduled: {}, Strict cache key: {}"
+                          .format(element._Element__assemble_scheduled,
+                                  element._Element__strict_cache_key))
             return QueueStatus.WAIT
 
         if element._pull_pending():
+            self._message(element, MessageType.INFO,
+                          "{} queue element ready, pull is pending".format(self.action_name))
             return QueueStatus.READY
         else:
+            self._message(element, MessageType.INFO,
+                          "{} queue skipping element, pull is not pending".format(self.action_name))
             return QueueStatus.SKIP
 
     def done(self, _, element, result, status):
