@@ -112,6 +112,7 @@ class Job():
         self._terminated = False               # Whether this job has been explicitly terminated
 
         self._logfile = logfile
+        self._message_unique_id = None
         self._task_id = None
 
     # spawn()
@@ -254,11 +255,24 @@ class Job():
             os.kill(self._process.pid, signal.SIGCONT)
             self._suspended = False
 
+    # set_message_unique_id()
+    #
+    # This is called by Job subclasses to set the plugin ID
+    # issuing the message (if an element is related to the Job).
+    #
+    # Args:
+    #     unique_id (int): The id to be supplied to the Message() constructor
+    #
+    def set_message_unique_id(self, unique_id):
+        self._message_unique_id = unique_id
+
     # set_task_id()
     #
     # This is called by Job subclasses to set a plugin ID
     # associated with the task at large (if any element is related
     # to the task).
+    #
+    # This will only be used in the child process running the task.
     #
     # The task ID helps keep messages in the frontend coherent
     # in the case that multiple plugins log in the context of
@@ -271,6 +285,26 @@ class Job():
     #
     def set_task_id(self, task_id):
         self._task_id = task_id
+
+    # message():
+    #
+    # Logs a message, this will be logged in the task's logfile and
+    # conditionally also be sent to the frontend.
+    #
+    # Args:
+    #    message_type (MessageType): The type of message to send
+    #    message (str): The message
+    #    kwargs: Remaining Message() constructor arguments, note that you can
+    #            override 'unique_id' this way.
+    #
+    def message(self, message_type, message, **kwargs):
+        kwargs['scheduler'] = True
+        unique_id = self._message_unique_id
+        if "unique_id" in kwargs:
+            unique_id = kwargs["unique_id"]
+            del kwargs["unique_id"]
+        self._scheduler.context.message(
+            Message(unique_id, message_type, message, **kwargs))
 
     # send_message()
     #
@@ -328,21 +362,6 @@ class Job():
     def child_process(self):
         raise ImplError("Job '{kind}' does not implement child_process()"
                         .format(kind=type(self).__name__))
-
-    # message():
-    #
-    # Logs a message, this will be logged in the task's logfile and
-    # conditionally also be sent to the frontend.
-    #
-    # Args:
-    #    message_type (MessageType): The type of message to send
-    #    message (str): The message
-    #    kwargs: Remaining Message() constructor arguments
-    #
-    def message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        args['scheduler'] = True
-        self._scheduler.context.message(Message(None, message_type, message, **args))
 
     # child_process_data()
     #

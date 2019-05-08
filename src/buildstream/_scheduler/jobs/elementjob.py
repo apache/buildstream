@@ -18,7 +18,7 @@
 #
 from ruamel import yaml
 
-from ..._message import Message, MessageType
+from ..._message import MessageType
 
 from .job import Job
 
@@ -72,7 +72,8 @@ class ElementJob(Job):
         self._action_cb = action_cb            # The action callable function
         self._complete_cb = complete_cb        # The complete callable function
 
-        # Set the task wide ID for logging purposes
+        # Set the ID for logging purposes
+        self.set_message_unique_id(element._unique_id)
         self.set_task_id(element._unique_id)
 
     @property
@@ -95,15 +96,6 @@ class ElementJob(Job):
 
     def parent_complete(self, status, result):
         self._complete_cb(self, self._element, status, self._result)
-
-    def message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        args['scheduler'] = True
-        self._scheduler.context.message(
-            Message(self._element._unique_id,
-                    message_type,
-                    message,
-                    **args))
 
     def child_process_data(self):
         data = {}
