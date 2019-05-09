@@ -79,8 +79,9 @@ def test_fetch_consistency_bug(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("strict", [True, False], ids=["strict", "no-strict"])
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
-def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
+def test_unfetched_junction(cli, tmpdir, datafiles, strict, ref_storage):
     project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
@@ -88,6 +89,13 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
 
     configure_project(project, {
         'ref-storage': ref_storage
+    })
+    cli.configure({
+        'projects': {
+            'test': {
+                'strict': strict
+            }
+        }
     })
 
     # Create a repo to hold the subproject and generate a junction element for it
