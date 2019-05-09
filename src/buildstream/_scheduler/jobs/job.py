@@ -75,7 +75,7 @@ class Process(multiprocessing.Process):
 
 # Job()
 #
-# The Job object represents a parallel task, when calling Job.spawn(),
+# The Job object represents a parallel task. When calling Job.spawn(),
 # the given `Job.child_process()` will be called in parallel to the
 # calling process, and `Job.parent_complete()` will be called with the
 # action result in the calling process when the job completes.
