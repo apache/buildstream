@@ -1,7 +1,5 @@
 [run]
 concurrency = multiprocessing
-include =
-  */buildstream/*
 
 omit =
   # Omit some internals
@@ -21,5 +19,5 @@ precision = 2
 [paths]
 source =
     src/buildstream/
+    buildstream/
     */site-packages/buildstream/
-    */buildstream/buildstream/
