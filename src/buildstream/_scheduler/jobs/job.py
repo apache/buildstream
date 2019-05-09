@@ -130,7 +130,7 @@ class Job():
 
         child_job.setup(
             self.action_name,
-            self._scheduler,
+            self._scheduler.context,
             self._queue,
             self._max_retries,
             self._tries,
@@ -508,10 +508,10 @@ class Job():
 class ChildJob():
 
     def setup(
-            self, action_name, scheduler, queue, max_retries, tries, logfile, message_unique_id, task_id):
+            self, action_name, scheduler_context, queue, max_retries, tries, logfile, message_unique_id, task_id):
 
         self.action_name = action_name
-        self._scheduler = scheduler
+        self._scheduler_context = scheduler_context
         self._queue = queue
         self._max_retries = max_retries
         self._tries = tries
@@ -537,7 +537,7 @@ class ChildJob():
         if "unique_id" in kwargs:
             unique_id = kwargs["unique_id"]
             del kwargs["unique_id"]
-        self._scheduler.context.message(
+        self._scheduler_context.message(
             Message(unique_id, message_type, message, **kwargs))
 
     # send_message()
@@ -606,7 +606,7 @@ class ChildJob():
 
         # Set the global message handler in this child
         # process to forward messages to the parent process
-        self._scheduler.context.set_message_handler(self._child_message_handler)
+        self._scheduler_context.set_message_handler(self._child_message_handler)
 
         starttime = datetime.datetime.now()
         stopped_time = None
@@ -623,7 +623,7 @@ class ChildJob():
         # Time, log and and run the action function
         #
         with _signals.suspendable(stop_time, resume_time), \
-            self._scheduler.context.recorded_messages(self._logfile) as filename:
+            self._scheduler_context.recorded_messages(self._logfile) as filename:
 
             self.message(MessageType.START, self.action_name, logfile=filename)
 
