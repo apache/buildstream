@@ -469,7 +469,10 @@ class _GitSourceBase(Source):
         self.mirror.tags = self._load_tags(node)
 
     def get_ref(self):
-        return self.mirror.ref, self.mirror.tags
+        if self.mirror.ref:
+            return self.mirror.ref, self.mirror.tags
+        else:
+            return None
 
     def set_ref(self, ref_data, node):
         if not ref_data:
