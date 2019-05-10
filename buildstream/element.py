@@ -2568,9 +2568,11 @@ class Element(Plugin):
             element = queue.pop()
 
             old_ready_for_runtime = element.__ready_for_runtime
+            old_strict_cache_key = element.__strict_cache_key
             element._update_state()
 
-            if element.__ready_for_runtime != old_ready_for_runtime:
+            if element.__ready_for_runtime != old_ready_for_runtime or \
+               element.__strict_cache_key != old_strict_cache_key:
                 for rdep in element.__reverse_dependencies:
                     queue.push(rdep._unique_id, rdep)
 
