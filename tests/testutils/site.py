@@ -32,7 +32,7 @@ except ProgramNotFoundError:
     HAVE_OSTREE_CLI = False
 
 try:
-    from buildstream import _ostree  # pylint: disable=unused-import
+    from bst_plugins_experimental.sources import _ostree  # pylint: disable=unused-import
     HAVE_OSTREE = True
 except (ImportError, ValueError):
     HAVE_OSTREE = False

@@ -1484,12 +1484,12 @@ for installing them for some common distributions are listed below.
 
 For Fedora-based systems::
 
-  dnf install gcc pkg-config python3-devel cairo-gobject-devel glib2-devel gobject-introspection-devel
+  dnf install gcc python3-devel
 
 
 For Debian-based systems::
 
-  apt install gcc pkg-config python3-dev libcairo2-dev libgirepository1.0-dev
+  apt install gcc python3-dev
 
 
 Running tests

@@ -2,6 +2,9 @@
 buildstream 1.3.1
 =================
 
+  o BREAKING CHANGE: ostree plugin has been removed. It now leaves in the
+    bst-plugins-experimental repo
+
   o BREAKING CHANGE: YAML New World Order. The parsing and loading of .bst files
     and node handling has been completely rewritten and is now faster. This now
     requires that plugin authors must use the Plugin API to access or modify node
