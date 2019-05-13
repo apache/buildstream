@@ -242,7 +242,8 @@ class Stream():
                        dynamic_plan=True)
 
         # Remove the tracking elements from the main targets
-        elements = self._pipeline.subtract_elements(elements, track_elements)
+        if track_elements:
+            elements = self._pipeline.subtract_elements(elements, track_elements)
 
         # Assert that the elements we're not going to track are consistent
         self._pipeline.assert_consistent(elements)
@@ -1230,9 +1231,9 @@ class Stream():
 
         if track_elements is None:
             track_elements = []
-
-        # Subtract the track elements from the fetch elements, they will be added separately
-        fetch_plan = self._pipeline.subtract_elements(elements, track_elements)
+        else:
+            # Subtract the track elements from the fetch elements, they will be added separately
+            fetch_plan = self._pipeline.subtract_elements(elements, track_elements)
 
         # Assert consistency for the fetch elements
         self._pipeline.assert_consistent(fetch_plan)
@@ -1241,7 +1242,8 @@ class Stream():
         # let the track plan resolve new refs.
         cached = [elt for elt in fetch_plan
                   if not elt._should_fetch(fetch_original)]
-        fetch_plan = self._pipeline.subtract_elements(fetch_plan, cached)
+        if cached:
+            fetch_plan = self._pipeline.subtract_elements(fetch_plan, cached)
 
         # Construct queues, enqueue and run
         #
