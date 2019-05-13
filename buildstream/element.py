@@ -2854,17 +2854,6 @@ class Element(Plugin):
 
         self.__build_result = self.__artifact.load_build_result()
 
-    def __get_cache_keys_for_commit(self):
-        keys = []
-
-        # tag with strong cache key based on dependency versions used for the build
-        keys.append(self._get_cache_key(strength=_KeyStrength.STRONG))
-
-        # also store under weak cache key
-        keys.append(self._get_cache_key(strength=_KeyStrength.WEAK))
-
-        return utils._deduplicate(keys)
-
     # __pull_strong():
     #
     # Attempt pulling given element from configured artifact caches with
