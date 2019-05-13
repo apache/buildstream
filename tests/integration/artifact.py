@@ -45,6 +45,7 @@ DATA_DIR = os.path.join(
 # content of an element on caching.
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.timeout(300)
 def test_cache_buildtrees(cli, tmpdir, datafiles):
     project = str(datafiles)
     element_name = 'autotools/amhello.bst'

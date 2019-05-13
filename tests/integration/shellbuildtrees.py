@@ -213,6 +213,7 @@ def test_buildtree_pulled(cli, tmpdir, datafiles):
 # This test checks for correct behaviour if a buildtree is not present in the local cache.
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.timeout(180)
 def test_buildtree_options(cli, tmpdir, datafiles):
     project = str(datafiles)
     element_name = 'build-shell/buildtree.bst'

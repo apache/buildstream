@@ -39,6 +39,7 @@ def workaround_setuptools_bug(project):
                     reason='Examples are written for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_OSTREE, reason='Only available on linux with ostree')
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.timeout(300)
 def test_autotools_build(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -62,6 +63,7 @@ def test_autotools_build(cli, datafiles):
                     reason='Examples are written for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_OSTREE, reason='Only available on linux with ostree')
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.timeout(300)
 def test_autotools_run(cli, datafiles):
     project = str(datafiles)
     workaround_setuptools_bug(project)
