@@ -270,8 +270,10 @@ class CasBasedDirectory(Directory):
                     self._copy_link_from_filesystem(source_directory, direntry.name)
                     result.files_written.append(relative_pathname)
 
-    def _partial_import_cas_into_cas(self, source_directory, filter_callback, *, path_prefix="", result):
+    def _partial_import_cas_into_cas(self, source_directory, filter_callback, *, path_prefix="", origin=None, result):
         """ Import files from a CAS-based directory. """
+        if origin is None:
+            origin = self
 
         for name, entry in source_directory.index.items():
             # The destination filename, relative to the root where the import started
@@ -307,6 +309,8 @@ class CasBasedDirectory(Directory):
                     subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
                 else:
                     src_subdir = source_directory.descend(name)
+                    if src_subdir == origin:
+                        continue
 
                     try:
                         dest_subdir = self.descend(name, create=create_subdir)
@@ -316,7 +320,8 @@ class CasBasedDirectory(Directory):
                                                     .format(filetype, relative_pathname))
 
                     dest_subdir._partial_import_cas_into_cas(src_subdir, filter_callback,
-                                                             path_prefix=relative_pathname, result=result)
+                                                             path_prefix=relative_pathname,
+                                                             origin=origin, result=result)
 
             if filter_callback and not filter_callback(relative_pathname):
                 if is_dir and create_subdir and dest_subdir.is_empty():
