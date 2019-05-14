@@ -39,13 +39,8 @@ class PullQueue(Queue):
             raise SkipJob(self.action_name)
 
     def status(self, element):
-        if not element._is_required():
-            # Artifact is not currently required but it may be requested later.
-            # Keep it in the queue.
-            return QueueStatus.WAIT
-
         if not element._can_query_cache():
-            return QueueStatus.WAIT
+            return QueueStatus.PENDING
 
         if element._pull_pending():
             return QueueStatus.READY
@@ -64,3 +59,9 @@ class PullQueue(Queue):
         # actually check the cache size.
         if status is JobStatus.OK:
             self._scheduler.check_cache_size()
+
+    def register_pending_element(self, element):
+        # Set a "can_query_cache"_callback for an element which is not
+        # immediately ready to query the artifact cache so that it
+        # may be pulled.
+        element._set_can_query_cache_callback(self._enqueue_element)

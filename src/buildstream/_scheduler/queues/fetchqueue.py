@@ -45,15 +45,10 @@ class FetchQueue(Queue):
         element._fetch(fetch_original=self._fetch_original)
 
     def status(self, element):
-        if not element._is_required():
-            # Artifact is not currently required but it may be requested later.
-            # Keep it in the queue.
-            return QueueStatus.WAIT
-
         # Optionally skip elements that are already in the artifact cache
         if self._skip_cached:
             if not element._can_query_cache():
-                return QueueStatus.WAIT
+                return QueueStatus.PENDING
 
             if element._cached():
                 return QueueStatus.SKIP
@@ -78,3 +73,8 @@ class FetchQueue(Queue):
             assert element._get_consistency() == Consistency.CACHED
         else:
             assert element._source_cached()
+
+    def register_pending_element(self, element):
+        # Set a "can_query_cache" callback for an element not yet ready
+        # to be processed in the fetch queue.
+        element._set_can_query_cache_callback(self._enqueue_element)
