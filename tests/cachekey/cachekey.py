@@ -47,7 +47,7 @@ import pytest
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 from buildstream.plugin import CoreWarnings
 from buildstream import _yaml
-from tests.testutils.site import HAVE_BZR, HAVE_GIT, HAVE_OSTREE, IS_LINUX, MACHINE_ARCH
+from tests.testutils.site import HAVE_BZR, HAVE_GIT, IS_LINUX, MACHINE_ARCH
 
 
 ##############################################
@@ -155,7 +155,6 @@ DATA_DIR = os.path.join(
 @pytest.mark.skipif(not IS_LINUX, reason='Only available on linux')
 @pytest.mark.skipif(HAVE_BZR is False, reason="bzr is not available")
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
-@pytest.mark.skipif(HAVE_OSTREE is False, reason="ostree is not available")
 @pytest.mark.datafiles(DATA_DIR)
 def test_cache_key(datafiles, cli):
     project = str(datafiles)

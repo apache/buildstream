@@ -55,7 +55,6 @@ Sources
    sources/zip
    sources/git
    sources/bzr
-   sources/ostree
    sources/patch
    sources/deb
    sources/pip
