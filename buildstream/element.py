@@ -107,6 +107,7 @@ from ._artifact import Artifact
 
 from .storage.directory import Directory
 from .storage._filebaseddirectory import FileBasedDirectory
+from .storage._casbaseddirectory import CasBasedDirectory
 from .storage.directory import VirtualDirectoryError
 
 
@@ -232,6 +233,10 @@ class Element(Plugin):
         self._build_log_path = None             # The path of the build log for this Element
         self.__artifact = None                  # Artifact class for direct artifact composite interaction
         self.__strict_artifact = None           # Artifact for strict cache key
+
+        # the index of the last source in this element that requires previous
+        # sources for staging
+        self.__last_source_requires_previous_ix = None
 
         self.__batch_prepare_assemble = False         # Whether batching across prepare()/assemble() is configured
         self.__batch_prepare_assemble_flags = 0       # Sandbox flags for batching across prepare()/assemble()
@@ -1552,12 +1557,22 @@ class Element(Plugin):
 
                 if self.__sources:
 
-                    sourcecache = self._get_context().sourcecache
+                    sourcecache = context.sourcecache
+                    # find last required source
+                    last_required_previous_ix = self.__last_source_requires_previous()
+                    import_dir = CasBasedDirectory(context.get_cascache())
+
                     try:
-                        import_dir = sourcecache.export(self.__sources[-1])
+                        for source in self.__sources[last_required_previous_ix:]:
+                            source_dir = sourcecache.export(source)
+                            import_dir.import_files(source_dir)
                     except SourceCacheError as e:
                         raise ElementError("Error trying to export source for {}: {}"
                                            .format(self.name, e))
+                    except VirtualDirectoryError as e:
+                        raise ElementError("Error trying to import sources together for {}: {}"
+                                           .format(self.name, e),
+                                           reason="import-source-files-fail")
 
             with utils._deterministic_umask():
                 vdirectory.import_files(import_dir)
@@ -1938,11 +1953,8 @@ class Element(Plugin):
     def _source_push(self):
         # try and push sources if we've got them
         if self.__sourcecache.has_push_remotes(plugin=self) and self._source_cached():
-            sources = list(self.sources())
-            if sources:
-                source_pushed = self.__sourcecache.push(sources[-1])
-
-                if not source_pushed:
+            for source in self.sources():
+                if not self.__sourcecache.push(source):
                     return False
 
         # Notify successful upload
@@ -2212,24 +2224,27 @@ class Element(Plugin):
     def _fetch(self, fetch_original=False):
         previous_sources = []
         sources = self.__sources
+        fetch_needed = False
         if sources and not fetch_original:
-            source = sources[-1]
-            if self.__sourcecache.contains(source):
-                return
+            for source in self.__sources:
+                if self.__sourcecache.contains(source):
+                    continue
 
-            # try and fetch from source cache
-            if source._get_consistency() < Consistency.CACHED and \
-                    self.__sourcecache.has_fetch_remotes() and \
-                    not self.__sourcecache.contains(source):
-                if self.__sourcecache.pull(source):
-                    return
+                # try and fetch from source cache
+                if source._get_consistency() < Consistency.CACHED and \
+                        self.__sourcecache.has_fetch_remotes():
+                    if self.__sourcecache.pull(source):
+                        continue
+
+                fetch_needed = True
 
         # We need to fetch original sources
-        for source in self.sources():
-            source_consistency = source._get_consistency()
-            if source_consistency != Consistency.CACHED:
-                source._fetch(previous_sources)
-            previous_sources.append(source)
+        if fetch_needed or fetch_original:
+            for source in self.sources():
+                source_consistency = source._get_consistency()
+                if source_consistency != Consistency.CACHED:
+                    source._fetch(previous_sources)
+                previous_sources.append(source)
 
         self.__cache_sources()
 
@@ -2284,12 +2299,22 @@ class Element(Plugin):
     # Check if sources are cached, generating the source key if it hasn't been
     def _source_cached(self):
         if self.__sources:
-            last_source = self.__sources[-1]
-            if not last_source._key:
-                last_source._generate_key(self.__sources[:-1])
-            return self._get_context().sourcecache.contains(last_source)
-        else:
-            return True
+            sourcecache = self._get_context().sourcecache
+
+            # Go through sources we'll cache generating keys
+            for ix, source in enumerate(self.__sources):
+                if not source._key:
+                    if source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
+                        source._generate_key(self.__sources[:ix])
+                    else:
+                        source._generate_key([])
+
+            # Check all sources are in source cache
+            for source in self.__sources:
+                if not sourcecache.contains(source):
+                    return False
+
+        return True
 
     def _should_fetch(self, fetch_original=False):
         """ return bool of if we need to run the fetch stage for this element
@@ -2936,9 +2961,32 @@ class Element(Plugin):
     # Caches the sources into the local CAS
     #
     def __cache_sources(self):
-        sources = self.__sources
-        if sources and not self._source_cached():
-            sources[-1]._cache(sources[:-1])
+        if self.__sources and not self._source_cached():
+            last_requires_previous = 0
+            # commit all other sources by themselves
+            for ix, source in enumerate(self.__sources):
+                if source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
+                    self.__sourcecache.commit(source, self.__sources[last_requires_previous:ix])
+                    last_requires_previous = ix
+                else:
+                    self.__sourcecache.commit(source, [])
+
+    # __last_source_requires_previous
+    #
+    # This is the last source that requires previous sources to be cached.
+    # Sources listed after this will be cached separately.
+    #
+    # Returns:
+    #    (int): index of last source that requires previous sources
+    #
+    def __last_source_requires_previous(self):
+        if self.__last_source_requires_previous_ix is None:
+            last_requires_previous = 0
+            for ix, source in enumerate(self.__sources):
+                if source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
+                    last_requires_previous = ix
+            self.__last_source_requires_previous_ix = last_requires_previous
+        return self.__last_source_requires_previous_ix
 
     # __update_state_recursively()
     #
