@@ -28,6 +28,9 @@ See also: :ref:`sandboxing`.
 """
 
 import os
+import stat
+import tarfile as tarfilelib
+from io import StringIO
 
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .directory import Directory, VirtualDirectoryError, _FileType
@@ -413,7 +416,33 @@ class CasBasedDirectory(Directory):
         self.cas_cache.checkout(to_directory, self._get_digest(), can_link=can_link)
 
     def export_to_tar(self, tarfile, destination_dir, mtime=BST_ARBITRARY_TIMESTAMP):
-        raise NotImplementedError()
+        for filename, entry in self.index.items():
+            arcname = os.path.join(destination_dir, filename)
+            if entry.type == _FileType.DIRECTORY:
+                tarinfo = tarfilelib.TarInfo(arcname)
+                tarinfo.mtime = mtime
+                tarinfo.type = tarfilelib.DIRTYPE
+                tarinfo.mode = 0o755
+                tarfile.addfile(tarinfo)
+                self.descend(filename).export_to_tar(tarfile, arcname, mtime)
+            elif entry.type == _FileType.REGULAR_FILE:
+                source_name = self.cas_cache.objpath(entry.digest)
+                tarinfo = tarfilelib.TarInfo(arcname)
+                tarinfo.mtime = mtime
+                tarinfo.mode |= entry.is_executable & stat.S_IXUSR
+                tarinfo.size = os.path.getsize(source_name)
+                with open(source_name, "rb") as f:
+                    tarfile.addfile(tarinfo, f)
+            elif entry.type == _FileType.SYMLINK:
+                tarinfo = tarfilelib.TarInfo(arcname)
+                tarinfo.mtime = mtime
+                tarinfo.mode |= entry.is_executable & stat.S_IXUSR
+                tarinfo.linkname = entry.target
+                tarinfo.type = tarfilelib.SYMTYPE
+                f = StringIO(entry.target)
+                tarfile.addfile(tarinfo, f)
+            else:
+                raise VirtualDirectoryError("can not export file type {} to tar".format(entry.type))
 
     def _mark_changed(self):
         """ It should not be possible to externally modify a CAS-based
