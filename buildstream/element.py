@@ -193,9 +193,8 @@ class Element(Plugin):
 
         super().__init__(meta.name, context, project, meta.provenance, "element")
 
-        self.__is_junction = meta.kind == "junction"
-
-        if not self.__is_junction:
+        # Ensure the project is fully loaded here rather than later on
+        if meta.kind != "junction":
             project.ensure_fully_loaded()
 
         self.normal_name = _get_normal_name(self.name)
@@ -243,7 +242,7 @@ class Element(Plugin):
         self.__batch_prepare_assemble_collect = None  # Collect dir for batching across prepare()/assemble()
 
         # Ensure we have loaded this class's defaults
-        self.__init_defaults(project, plugin_conf, self.__is_junction, self.get_kind())
+        self.__init_defaults(project, plugin_conf, self.get_kind())
 
         # Collect the composited variables and resolve them
         variables = self.__extract_variables(meta)
@@ -267,10 +266,10 @@ class Element(Plugin):
         self._configure(self.__config)
 
         # Extract remote execution URL
-        if not self.__is_junction:
-            self.__remote_execution_specs = project.remote_execution_specs
-        else:
+        if meta.kind == "junction":
             self.__remote_execution_specs = None
+        else:
+            self.__remote_execution_specs = project.remote_execution_specs
 
         # Extract Sandbox config
         self.__sandbox_config = self.__extract_sandbox_config(meta)
@@ -2443,7 +2442,8 @@ class Element(Plugin):
         _yaml.node_set(defaults, 'public', element_public)
 
     @classmethod
-    def __init_defaults(cls, project, plugin_conf, is_junction, kind):
+    def __init_defaults(cls, project, plugin_conf, kind):
+        is_junction = kind == "junction"
         # Defaults are loaded once per class and then reused
         #
         if cls.__defaults is None:
@@ -2480,7 +2480,7 @@ class Element(Plugin):
     def __extract_environment(self, meta):
         default_env = _yaml.node_get(self.__defaults, Mapping, 'environment', default_value={})
 
-        if self.__is_junction:
+        if meta.kind == "junction":
             environment = _yaml.new_empty_node()
         else:
             project = self._get_project()
@@ -2498,7 +2498,7 @@ class Element(Plugin):
         return final_env
 
     def __extract_env_nocache(self, meta):
-        if self.__is_junction:
+        if meta.kind == "junction":
             project_nocache = []
         else:
             project = self._get_project()
@@ -2523,10 +2523,9 @@ class Element(Plugin):
                                       default_value={})
 
         project = self._get_project()
-        if self.__is_junction:
+        if meta.kind == "junction":
             variables = _yaml.node_copy(project.first_pass_config.base_variables)
         else:
-            project.ensure_fully_loaded()
             variables = _yaml.node_copy(project.base_variables)
 
         _yaml.composite(variables, default_vars)
@@ -2559,7 +2558,7 @@ class Element(Plugin):
     # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
     #
     def __extract_sandbox_config(self, meta):
-        if self.__is_junction:
+        if meta.kind == "junction":
             sandbox_config = _yaml.new_node_from_dict({
                 'build-uid': 0,
                 'build-gid': 0
