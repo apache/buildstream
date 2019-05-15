@@ -243,7 +243,7 @@ class Element(Plugin):
         self.__batch_prepare_assemble_collect = None  # Collect dir for batching across prepare()/assemble()
 
         # Ensure we have loaded this class's defaults
-        self.__init_defaults(plugin_conf)
+        self.__init_defaults(project, plugin_conf, self.__is_junction, self.get_kind())
 
         # Collect the composited variables and resolve them
         variables = self.__extract_variables(meta)
@@ -2422,14 +2422,14 @@ class Element(Plugin):
             # Cleanup the build dir
             utils._force_rmtree(rootdir)
 
-    def __compose_default_splits(self, defaults):
-        project = self._get_project()
+    @classmethod
+    def __compose_default_splits(cls, project, defaults, is_junction):
 
         element_public = _yaml.node_get(defaults, Mapping, 'public', default_value={})
         element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
         element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
 
-        if self.__is_junction:
+        if is_junction:
             splits = _yaml.node_copy(element_splits)
         else:
             assert project._splits is not None
@@ -2442,10 +2442,11 @@ class Element(Plugin):
         _yaml.node_set(element_public, 'bst', element_bst)
         _yaml.node_set(defaults, 'public', element_public)
 
-    def __init_defaults(self, plugin_conf):
+    @classmethod
+    def __init_defaults(cls, project, plugin_conf, is_junction, kind):
         # Defaults are loaded once per class and then reused
         #
-        if self.__defaults is None:
+        if cls.__defaults is None:
             defaults = _yaml.new_empty_node()
 
             if plugin_conf is not None:
@@ -2457,22 +2458,21 @@ class Element(Plugin):
                         raise e
 
             # Special case; compose any element-wide split-rules declarations
-            self.__compose_default_splits(defaults)
+            cls.__compose_default_splits(project, defaults, is_junction)
 
             # Override the element's defaults with element specific
             # overrides from the project.conf
-            project = self._get_project()
-            if self.__is_junction:
+            if is_junction:
                 elements = project.first_pass_config.element_overrides
             else:
                 elements = project.element_overrides
 
-            overrides = _yaml.node_get(elements, Mapping, self.get_kind(), default_value=None)
+            overrides = _yaml.node_get(elements, Mapping, kind, default_value=None)
             if overrides:
                 _yaml.composite(defaults, overrides)
 
             # Set the data class wide
-            type(self).__defaults = defaults
+            cls.__defaults = defaults
 
     # This will resolve the final environment to be used when
     # creating sandboxes for this element
