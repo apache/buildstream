@@ -245,7 +245,7 @@ class Element(Plugin):
         self.__init_defaults(project, plugin_conf, self.get_kind())
 
         # Collect the composited variables and resolve them
-        variables = self.__extract_variables(meta)
+        variables = self.__extract_variables(project, meta)
         _yaml.node_set(variables, 'element-name', self.name)
         self.__variables = Variables(variables)
 
@@ -2518,11 +2518,11 @@ class Element(Plugin):
     # This will resolve the final variables to be used when
     # substituting command strings to be run in the sandbox
     #
-    def __extract_variables(self, meta):
-        default_vars = _yaml.node_get(self.__defaults, Mapping, 'variables',
+    @classmethod
+    def __extract_variables(cls, project, meta):
+        default_vars = _yaml.node_get(cls.__defaults, Mapping, 'variables',
                                       default_value={})
 
-        project = self._get_project()
         if meta.kind == "junction":
             variables = _yaml.node_copy(project.first_pass_config.base_variables)
         else:
