@@ -17,6 +17,8 @@
 #  Authors:
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 #
+import os
+
 from ._cas import CASRemoteSpec
 from .storage._casbaseddirectory import CasBasedDirectory
 from ._basecache import BaseCache
@@ -53,8 +55,8 @@ class SourceCache(BaseCache):
 
         self._required_sources = set()
 
-        self.casquota.add_ref_callbacks(self.required_sources)
-        self.casquota.add_remove_callbacks((lambda x: x.startswith('@sources/'), self.cas.remove))
+        self.casquota.add_remove_callbacks(self.unrequired_sources, self.cas.remove)
+        self.casquota.add_list_refs_callback(self.list_sources)
 
     # mark_required_sources()
     #
@@ -81,14 +83,43 @@ class SourceCache(BaseCache):
 
     # required_sources()
     #
-    # Yields the keys of all sources marked as required
+    # Yields the keys of all sources marked as required by the current build
+    # plan
     #
     # Returns:
-    #     iterable (str): iterable over the source keys
+    #     iterable (str): iterable over the required source refs
     #
     def required_sources(self):
         for source in self._required_sources:
-            yield source._key
+            yield source._get_source_name()
+
+    # unrequired_sources()
+    #
+    # Yields the refs of all sources not required by the current build plan
+    #
+    # Returns:
+    #     iter (str): iterable over unrequired source keys
+    #
+    def unrequired_sources(self):
+        required_source_names = set(map(
+            lambda x: x._get_source_name(), self._required_sources))
+        for (mtime, source) in self._list_refs_mtimes(
+                os.path.join(self.cas.casdir, 'refs', 'heads'),
+                glob_expr="@sources/*"):
+            if source not in required_source_names:
+                yield (mtime, source)
+
+    # list_sources()
+    #
+    # Get list of all sources in the `cas/refs/heads/@sources/` folder
+    #
+    # Returns:
+    #     ([str]): iterable over all source refs
+    #
+    def list_sources(self):
+        return [ref for _, ref in self._list_refs_mtimes(
+            os.path.join(self.cas.casdir, 'refs', 'heads'),
+            glob_expr="@sources/*")]
 
     # contains()
     #
@@ -159,7 +190,7 @@ class SourceCache(BaseCache):
     #
     # Returns:
     #    (bool): True if pull successful, False if not
-    def pull(self, source, *, progress=None):
+    def pull(self, source):
         ref = source._get_source_name()
 
         project = source._get_project()
@@ -170,7 +201,7 @@ class SourceCache(BaseCache):
             try:
                 source.status("Pulling source {} <- {}".format(display_key, remote.spec.url))
 
-                if self.cas.pull(ref, remote, progress=progress):
+                if self.cas.pull(ref, remote):
                     source.info("Pulled source {} <- {}".format(display_key, remote.spec.url))
                     # no need to pull from additional remotes
                     return True

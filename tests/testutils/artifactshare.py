@@ -1,4 +1,3 @@
-import string
 import os
 import shutil
 import signal
@@ -11,6 +10,7 @@ from buildstream._cas import CASCache
 from buildstream._cas.casserver import create_server
 from buildstream._exceptions import CASError
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+from buildstream._protos.buildstream.v2 import artifact_pb2
 
 
 # ArtifactShare()
@@ -43,6 +43,8 @@ class ArtifactShare():
         #
         self.repodir = os.path.join(self.directory, 'repo')
         os.makedirs(self.repodir)
+        self.artifactdir = os.path.join(self.repodir, 'artifacts', 'refs')
+        os.makedirs(self.artifactdir)
 
         self.cas = CASCache(self.repodir)
 
@@ -122,38 +124,48 @@ class ArtifactShare():
     # Checks whether the artifact is present in the share
     #
     # Args:
-    #    project_name (str): The project name
-    #    element_name (str): The element name
-    #    cache_key (str): The cache key
+    #    artifact_name (str): The composed complete artifact name
     #
     # Returns:
     #    (str): artifact digest if the artifact exists in the share, otherwise None.
-    def has_artifact(self, project_name, element_name, cache_key):
+    def has_artifact(self, artifact_name):
 
-        # NOTE: This should be kept in line with our
-        #       artifact cache code, the below is the
-        #       same algo for creating an artifact reference
-        #
-
-        # Replace path separator and chop off the .bst suffix
-        element_name = os.path.splitext(element_name.replace(os.sep, '-'))[0]
-
-        valid_chars = string.digits + string.ascii_letters + '-._'
-        element_name = ''.join([
-            x if x in valid_chars else '_'
-            for x in element_name
-        ])
-        artifact_key = '{0}/{1}/{2}'.format(project_name, element_name, cache_key)
+        artifact_proto = artifact_pb2.Artifact()
+        artifact_path = os.path.join(self.artifactdir, artifact_name)
 
         try:
-            tree = self.cas.resolve_ref(artifact_key)
-            reachable = set()
-            try:
-                self.cas._reachable_refs_dir(reachable, tree, update_mtime=False, check_exists=True)
-            except FileNotFoundError:
-                return None
-            return tree
+            with open(artifact_path, 'rb') as f:
+                artifact_proto.ParseFromString(f.read())
+        except FileNotFoundError:
+            return None
+
+        reachable = set()
+
+        def reachable_dir(digest):
+            self.cas._reachable_refs_dir(
+                reachable, digest, update_mtime=False, check_exists=True)
+
+        try:
+            if str(artifact_proto.files):
+                reachable_dir(artifact_proto.files)
+
+            if str(artifact_proto.buildtree):
+                reachable_dir(artifact_proto.buildtree)
+
+            if str(artifact_proto.public_data):
+                if not os.path.exists(self.cas.objpath(artifact_proto.public_data)):
+                    return None
+
+            for log_file in artifact_proto.logs:
+                if not os.path.exists(self.cas.objpath(log_file.digest)):
+                    return None
+
+            return artifact_proto.files
+
         except CASError:
+            return None
+
+        except FileNotFoundError:
             return None
 
     # close():

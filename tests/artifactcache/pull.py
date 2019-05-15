@@ -81,8 +81,7 @@ def test_pull(cli, tmpdir, datafiles):
         # Assert that we are now cached locally
         assert cli.get_element_state(project_dir, 'target.bst') == 'cached'
         # Assert that we shared/pushed the cached artifact
-        element_key = cli.get_element_key(project_dir, 'target.bst')
-        assert share.has_artifact('test', 'target.bst', element_key)
+        assert share.has_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst'))
 
         # Delete the artifact locally
         cli.remove_artifact_from_cache(project_dir, 'target.bst')
@@ -140,18 +139,18 @@ def _test_pull(user_config_file, project_dir, cache_dir,
     project = Project(project_dir, context)
     project.ensure_fully_loaded()
 
-    # Create a local CAS cache handle
-    cas = context.artifactcache
+    # Create a local artifact cache handle
+    artifactcache = context.artifactcache
 
     # Load the target element
     element = project.load_elements([element_name])[0]
 
     # Manually setup the CAS remote
-    cas.setup_remotes(use_config=True)
+    artifactcache.setup_remotes(use_config=True)
 
-    if cas.has_push_remotes(plugin=element):
+    if artifactcache.has_push_remotes(plugin=element):
         # Push the element's artifact
-        if not cas.pull(element, element_key):
+        if not artifactcache.pull(element, element_key):
             queue.put("Pull operation failed")
         else:
             queue.put(None)
@@ -191,8 +190,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Assert that we are now cached locally
         assert cli.get_element_state(project_dir, 'target.bst') == 'cached'
         # Assert that we shared/pushed the cached artifact
-        element_key = cli.get_element_key(project_dir, 'target.bst')
-        assert share.has_artifact('test', 'target.bst', element_key)
+        assert share.has_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst'))
 
         # Fake minimal context
         context = Context()
@@ -203,7 +201,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         project = Project(project_dir, context)
         project.ensure_fully_loaded()
         artifactcache = context.artifactcache
-        cas = artifactcache.cas
+        cas = context.get_cascache()
 
         # Assert that the element's artifact is cached
         element = project.load_elements(['target.bst'])[0]
@@ -259,7 +257,8 @@ def test_pull_tree(cli, tmpdir, datafiles):
             utils._kill_process_tree(process.pid)
             raise
 
-        assert directory_hash and directory_size
+        # Directory size now zero with AaaP and stack element commit #1cbc5e63dc
+        assert directory_hash and not directory_size
 
         directory_digest = remote_execution_pb2.Digest(hash=directory_hash,
                                                        size_bytes=directory_size)
@@ -278,9 +277,9 @@ def _test_push_tree(user_config_file, project_dir, artifact_digest, queue):
     project = Project(project_dir, context)
     project.ensure_fully_loaded()
 
-    # Create a local CAS cache handle
+    # Create a local artifact cache and cas handle
     artifactcache = context.artifactcache
-    cas = artifactcache.cas
+    cas = context.get_cascache()
 
     # Manually setup the CAS remote
     artifactcache.setup_remotes(use_config=True)
@@ -313,15 +312,15 @@ def _test_pull_tree(user_config_file, project_dir, artifact_digest, queue):
     project = Project(project_dir, context)
     project.ensure_fully_loaded()
 
-    # Create a local CAS cache handle
-    cas = context.artifactcache
+    # Create a local artifact cache handle
+    artifactcache = context.artifactcache
 
     # Manually setup the CAS remote
-    cas.setup_remotes(use_config=True)
+    artifactcache.setup_remotes(use_config=True)
 
-    if cas.has_push_remotes():
+    if artifactcache.has_push_remotes():
         # Pull the artifact using the Tree object
-        directory_digest = cas.pull_tree(project, artifact_digest)
+        directory_digest = artifactcache.pull_tree(project, artifact_digest)
         queue.put((directory_digest.hash, directory_digest.size_bytes))
     else:
         queue.put("No remote configured")

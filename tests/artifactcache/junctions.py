@@ -20,8 +20,7 @@ def assert_shared(cli, share, project_name, project, element_name):
     # NOTE: 'test' here is the name of the project
     # specified in the project.conf we are testing with.
     #
-    cache_key = cli.get_element_key(project, element_name)
-    if not share.has_artifact(project_name, element_name, cache_key):
+    if not share.has_artifact(cli.get_artifact_name(project, project_name, element_name)):
         raise AssertionError("Artifact share at {} does not contain the expected element {}"
                              .format(share.repo, element_name))
 
@@ -70,6 +69,8 @@ def test_push_pull(cli, tmpdir, datafiles):
         #
         cas = os.path.join(cli.directory, 'cas')
         shutil.rmtree(cas)
+        artifact_dir = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifact_dir)
 
         # Assert that nothing is cached locally anymore
         state = cli.get_element_state(project, 'target.bst')

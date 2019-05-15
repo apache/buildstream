@@ -161,7 +161,7 @@ def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
         # This element should have failed
         assert cli.get_element_state(project, 'element.bst') == 'failed'
         # This element should have been pushed to the remote
-        assert share.has_artifact('test', 'element.bst', cli.get_element_key(project, 'element.bst'))
+        assert share.has_artifact(cli.get_artifact_name(project, 'test', 'element.bst'))
 
 
 @pytest.mark.skipif(not (IS_LINUX and HAVE_BWRAP), reason='Only available with bubblewrap on Linux')

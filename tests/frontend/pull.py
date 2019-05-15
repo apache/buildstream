@@ -23,8 +23,7 @@ def assert_shared(cli, share, project, element_name):
     # NOTE: 'test' here is the name of the project
     # specified in the project.conf we are testing with.
     #
-    cache_key = cli.get_element_key(project, element_name)
-    if not share.has_artifact('test', element_name, cache_key):
+    if not share.has_artifact(cli.get_artifact_name(project, 'test', element_name)):
         raise AssertionError("Artifact share at {} does not contain the expected element {}"
                              .format(share.repo, element_name))
 
@@ -35,8 +34,7 @@ def assert_not_shared(cli, share, project, element_name):
     # NOTE: 'test' here is the name of the project
     # specified in the project.conf we are testing with.
     #
-    cache_key = cli.get_element_key(project, element_name)
-    if share.has_artifact('test', element_name, cache_key):
+    if share.has_artifact(cli.get_artifact_name(project, 'test', element_name)):
         raise AssertionError("Artifact share at {} unexpectedly contains the element {}"
                              .format(share.repo, element_name))
 
@@ -68,8 +66,10 @@ def test_push_pull_all(cli, tmpdir, datafiles):
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the share
         #
-        cas = os.path.join(cli.directory, 'cas')
-        shutil.rmtree(cas)
+        casdir = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(casdir)
+        artifactdir = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifactdir)
 
         # Assert that nothing is cached locally anymore
         states = cli.get_element_states(project, all_elements)
@@ -118,8 +118,10 @@ def test_push_pull_default_targets(cli, tmpdir, datafiles):
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the share
         #
-        artifacts = os.path.join(cli.directory, 'cas')
-        shutil.rmtree(artifacts)
+        casdir = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(casdir)
+        artifactdir = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifactdir)
 
         # Assert that nothing is cached locally anymore
         states = cli.get_element_states(project, all_elements)
@@ -160,8 +162,10 @@ def test_pull_secondary_cache(cli, tmpdir, datafiles):
         assert_shared(cli, share2, project, 'target.bst')
 
         # Delete the user's local artifact cache.
-        cas = os.path.join(cli.directory, 'cas')
-        shutil.rmtree(cas)
+        casdir = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(casdir)
+        artifactdir = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifactdir)
 
         # Assert that the element is not cached anymore.
         assert cli.get_element_state(project, 'target.bst') != 'cached'
@@ -214,8 +218,10 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the good_share.
         #
-        cas = os.path.join(cli.directory, 'cas')
-        shutil.rmtree(cas)
+        casdir = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(casdir)
+        artifactdir = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifactdir)
 
         result = cli.run(project=project, args=['artifact', 'pull', 'target.bst', '--remote',
                                                 good_share.repo])
@@ -245,7 +251,7 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
         result.assert_success()
         assert cli.get_element_state(project, 'target.bst') == 'cached'
 
-        # Assert that everything is now cached in the remote.
+        # Assert that everything is now cached in the reote.
         all_elements = ['target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst']
         for element_name in all_elements:
             assert_shared(cli, share, project, element_name)
@@ -253,8 +259,10 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the share
         #
-        cas = os.path.join(cli.directory, 'cas')
-        shutil.rmtree(cas)
+        casdir = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(casdir)
+        artifactdir = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifactdir)
 
         # Assert that nothing is cached locally anymore
         for element_name in all_elements:
@@ -303,8 +311,10 @@ def test_push_pull_track_non_strict(cli, tmpdir, datafiles):
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the share
         #
-        cas = os.path.join(cli.directory, 'cas')
-        shutil.rmtree(cas)
+        casdir = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(casdir)
+        artifactdir = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifactdir)
 
         # Assert that nothing is cached locally anymore
         for element_name in all_elements:
@@ -341,6 +351,8 @@ def test_push_pull_cross_junction(cli, tmpdir, datafiles):
 
         cache_dir = os.path.join(project, 'cache', 'cas')
         shutil.rmtree(cache_dir)
+        artifact_dir = os.path.join(project, 'cache', 'artifacts')
+        shutil.rmtree(artifact_dir)
 
         assert cli.get_element_state(project, 'junction.bst:import-etc.bst') == 'buildable'
 
@@ -374,8 +386,10 @@ def test_pull_missing_blob(cli, tmpdir, datafiles):
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the share
         #
-        cas = os.path.join(cli.directory, 'cas')
-        shutil.rmtree(cas)
+        casdir = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(casdir)
+        artifactdir = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifactdir)
 
         # Assert that nothing is cached locally anymore
         for element_name in all_elements:

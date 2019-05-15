@@ -2,6 +2,12 @@
 buildstream 1.3.1
 =================
 
+  o BREAKING CHANGE: Artifact as a Proto. The caching of buildstream artifacts
+    has changed from a reference based impelementation. Existing artifacts and
+    artifact servers are not compatible, as such remote artifact servers need to
+    be updated to the latest version which will then allow them to be repopulated
+    with new artifacts.
+
   o BREAKING CHANGE: ostree plugin has been removed. It now leaves in the
     bst-plugins-experimental repo
 

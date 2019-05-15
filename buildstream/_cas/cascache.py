@@ -24,7 +24,6 @@ import stat
 import errno
 import uuid
 import contextlib
-from fnmatch import fnmatch
 
 import grpc
 
@@ -89,6 +88,9 @@ class CASCache():
         os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
 
+        self.__reachable_directory_callbacks = []
+        self.__reachable_digest_callbacks = []
+
     # preflight():
     #
     # Preflight check.
@@ -113,28 +115,6 @@ class CASCache():
 
         # This assumes that the repository doesn't have any dangling pointers
         return os.path.exists(refpath)
-
-    # contains_subdir_artifact():
-    #
-    # Check whether the specified artifact element tree has a digest for a subdir
-    # which is populated in the cache, i.e non dangling.
-    #
-    # Args:
-    #     ref (str): The ref to check
-    #     subdir (str): The subdir to check
-    #     with_files (bool): Whether to check files as well
-    #
-    # Returns: True if the subdir exists & is populated in the cache, False otherwise
-    #
-    def contains_subdir_artifact(self, ref, subdir, *, with_files=True):
-        tree = self.resolve_ref(ref)
-
-        try:
-            subdirdigest = self._get_subdir(tree, subdir)
-
-            return self.contains_directory(subdirdigest, with_files=with_files)
-        except (CASCacheError, FileNotFoundError):
-            return False
 
     # contains_directory():
     #
@@ -230,19 +210,15 @@ class CASCache():
     #     ref_b (str): The second ref
     #     subdir (str): A subdirectory to limit the comparison to
     #
-    def diff(self, ref_a, ref_b, *, subdir=None):
+    def diff(self, ref_a, ref_b):
         tree_a = self.resolve_ref(ref_a)
         tree_b = self.resolve_ref(ref_b)
-
-        if subdir:
-            tree_a = self._get_subdir(tree_a, subdir)
-            tree_b = self._get_subdir(tree_b, subdir)
 
         added = []
         removed = []
         modified = []
 
-        self._diff_trees(tree_a, tree_b, added=added, removed=removed, modified=modified)
+        self.diff_trees(tree_a, tree_b, added=added, removed=removed, modified=modified)
 
         return modified, removed, added
 
@@ -253,14 +229,11 @@ class CASCache():
     # Args:
     #     ref (str): The ref to pull
     #     remote (CASRemote): The remote repository to pull from
-    #     progress (callable): The progress callback, if any
-    #     subdir (str): The optional specific subdir to pull
-    #     excluded_subdirs (list): The optional list of subdirs to not pull
     #
     # Returns:
     #   (bool): True if pull was successful, False if ref was not available
     #
-    def pull(self, ref, remote, *, progress=None, subdir=None, excluded_subdirs=None):
+    def pull(self, ref, remote):
         try:
             remote.init()
 
@@ -274,7 +247,7 @@ class CASCache():
             self._fetch_directory(remote, tree)
 
             # Fetch files, excluded_subdirs determined in pullqueue
-            required_blobs = self.required_blobs_for_directory(tree, excluded_subdirs=excluded_subdirs)
+            required_blobs = self.required_blobs_for_directory(tree)
             missing_blobs = self.local_missing_blobs(required_blobs)
             if missing_blobs:
                 self.fetch_blobs(remote, missing_blobs)
@@ -502,44 +475,6 @@ class CASCache():
         except FileNotFoundError as e:
             raise CASCacheError("Attempt to access unavailable ref: {}".format(e)) from e
 
-    # list_refs():
-    #
-    # List refs in Least Recently Modified (LRM) order.
-    #
-    # Args:
-    #     glob (str) - An optional glob expression to be used to list refs satisfying the glob
-    #
-    # Returns:
-    #     (list) - A list of refs in LRM order
-    #
-    def list_refs(self, *, glob=None):
-        # string of: /path/to/repo/refs/heads
-        ref_heads = os.path.join(self.casdir, 'refs', 'heads')
-        path = ref_heads
-
-        if glob is not None:
-            globdir = os.path.dirname(glob)
-            if not any(c in "*?[" for c in globdir):
-                # path prefix contains no globbing characters so
-                # append the glob to optimise the os.walk()
-                path = os.path.join(ref_heads, globdir)
-
-        refs = []
-        mtimes = []
-
-        for root, _, files in os.walk(path):
-            for filename in files:
-                ref_path = os.path.join(root, filename)
-                relative_path = os.path.relpath(ref_path, ref_heads)  # Relative to refs head
-                if not glob or fnmatch(relative_path, glob):
-                    refs.append(relative_path)
-                    # Obtain the mtime (the time a file was last modified)
-                    mtimes.append(os.path.getmtime(ref_path))
-
-        # NOTE: Sorted will sort from earliest to latest, thus the
-        # first ref of this list will be the file modified earliest.
-        return [ref for _, ref in sorted(zip(mtimes, refs))]
-
     # list_objects():
     #
     # List cached objects in Least Recently Modified (LRM) order.
@@ -581,6 +516,8 @@ class CASCache():
     #
     # Args:
     #    ref (str): A symbolic ref
+    #    basedir (str): Path of base directory the ref is in, defaults to
+    #                   CAS refs heads
     #    defer_prune (bool): Whether to defer pruning to the caller. NOTE:
     #                        The space won't be freed until you manually
     #                        call prune.
@@ -589,16 +526,26 @@ class CASCache():
     #    (int|None) The amount of space pruned from the repository in
     #               Bytes, or None if defer_prune is True
     #
-    def remove(self, ref, *, defer_prune=False):
+    def remove(self, ref, *, basedir=None, defer_prune=False):
 
+        if basedir is None:
+            basedir = os.path.join(self.casdir, 'refs', 'heads')
         # Remove cache ref
-        self._remove_ref(ref)
+        self._remove_ref(ref, basedir)
 
         if not defer_prune:
             pruned = self.prune()
             return pruned
 
         return None
+
+    # adds callback of iterator over reachable directory digests
+    def add_reachable_directories_callback(self, callback):
+        self.__reachable_directory_callbacks.append(callback)
+
+    # adds callbacks of iterator over reachable file digests
+    def add_reachable_digests_callback(self, callback):
+        self.__reachable_digest_callbacks.append(callback)
 
     # prune():
     #
@@ -618,6 +565,16 @@ class CASCache():
 
                 tree = self.resolve_ref(ref)
                 self._reachable_refs_dir(reachable, tree)
+
+        # check callback directory digests that are reachable
+        for digest_callback in self.__reachable_directory_callbacks:
+            for digest in digest_callback():
+                self._reachable_refs_dir(reachable, digest)
+
+        # check callback file digests that are reachable
+        for digest_callback in self.__reachable_digest_callbacks:
+            for digest in digest_callback():
+                reachable.add(digest.hash)
 
         # Prune unreachable objects
         for root, _, files in os.walk(os.path.join(self.casdir, 'objects')):
@@ -717,6 +674,59 @@ class CASCache():
             if dirnode.name not in excluded_subdirs:
                 yield from self.required_blobs_for_directory(dirnode.digest)
 
+    def diff_trees(self, tree_a, tree_b, *, added, removed, modified, path=""):
+        dir_a = remote_execution_pb2.Directory()
+        dir_b = remote_execution_pb2.Directory()
+
+        if tree_a:
+            with open(self.objpath(tree_a), 'rb') as f:
+                dir_a.ParseFromString(f.read())
+        if tree_b:
+            with open(self.objpath(tree_b), 'rb') as f:
+                dir_b.ParseFromString(f.read())
+
+        a = 0
+        b = 0
+        while a < len(dir_a.files) or b < len(dir_b.files):
+            if b < len(dir_b.files) and (a >= len(dir_a.files) or
+                                         dir_a.files[a].name > dir_b.files[b].name):
+                added.append(os.path.join(path, dir_b.files[b].name))
+                b += 1
+            elif a < len(dir_a.files) and (b >= len(dir_b.files) or
+                                           dir_b.files[b].name > dir_a.files[a].name):
+                removed.append(os.path.join(path, dir_a.files[a].name))
+                a += 1
+            else:
+                # File exists in both directories
+                if dir_a.files[a].digest.hash != dir_b.files[b].digest.hash:
+                    modified.append(os.path.join(path, dir_a.files[a].name))
+                a += 1
+                b += 1
+
+        a = 0
+        b = 0
+        while a < len(dir_a.directories) or b < len(dir_b.directories):
+            if b < len(dir_b.directories) and (a >= len(dir_a.directories) or
+                                               dir_a.directories[a].name > dir_b.directories[b].name):
+                self.diff_trees(None, dir_b.directories[b].digest,
+                                added=added, removed=removed, modified=modified,
+                                path=os.path.join(path, dir_b.directories[b].name))
+                b += 1
+            elif a < len(dir_a.directories) and (b >= len(dir_b.directories) or
+                                                 dir_b.directories[b].name > dir_a.directories[a].name):
+                self.diff_trees(dir_a.directories[a].digest, None,
+                                added=added, removed=removed, modified=modified,
+                                path=os.path.join(path, dir_a.directories[a].name))
+                a += 1
+            else:
+                # Subdirectory exists in both directories
+                if dir_a.directories[a].digest.hash != dir_b.directories[b].digest.hash:
+                    self.diff_trees(dir_a.directories[a].digest, dir_b.directories[b].digest,
+                                    added=added, removed=removed, modified=modified,
+                                    path=os.path.join(path, dir_a.directories[a].name))
+                a += 1
+                b += 1
+
     ################################################
     #             Local Private Methods            #
     ################################################
@@ -733,22 +743,24 @@ class CASCache():
     #
     # Args:
     #    ref (str): The ref to remove
+    #    basedir (str): Path of base directory the ref is in
     #
     # Raises:
     #    (CASCacheError): If the ref didnt exist, or a system error
     #                     occurred while removing it
     #
-    def _remove_ref(self, ref):
+    def _remove_ref(self, ref, basedir):
 
         # Remove the ref itself
-        refpath = self._refpath(ref)
+        refpath = os.path.join(basedir, ref)
+
         try:
             os.unlink(refpath)
         except FileNotFoundError as e:
             raise CASCacheError("Could not find ref '{}'".format(ref)) from e
 
         # Now remove any leading directories
-        basedir = os.path.join(self.casdir, 'refs', 'heads')
+
         components = list(os.path.split(ref))
         while components:
             components.pop()
@@ -830,59 +842,6 @@ class CASCache():
                 return dirnode.digest
 
         raise CASCacheError("Subdirectory {} not found".format(name))
-
-    def _diff_trees(self, tree_a, tree_b, *, added, removed, modified, path=""):
-        dir_a = remote_execution_pb2.Directory()
-        dir_b = remote_execution_pb2.Directory()
-
-        if tree_a:
-            with open(self.objpath(tree_a), 'rb') as f:
-                dir_a.ParseFromString(f.read())
-        if tree_b:
-            with open(self.objpath(tree_b), 'rb') as f:
-                dir_b.ParseFromString(f.read())
-
-        a = 0
-        b = 0
-        while a < len(dir_a.files) or b < len(dir_b.files):
-            if b < len(dir_b.files) and (a >= len(dir_a.files) or
-                                         dir_a.files[a].name > dir_b.files[b].name):
-                added.append(os.path.join(path, dir_b.files[b].name))
-                b += 1
-            elif a < len(dir_a.files) and (b >= len(dir_b.files) or
-                                           dir_b.files[b].name > dir_a.files[a].name):
-                removed.append(os.path.join(path, dir_a.files[a].name))
-                a += 1
-            else:
-                # File exists in both directories
-                if dir_a.files[a].digest.hash != dir_b.files[b].digest.hash:
-                    modified.append(os.path.join(path, dir_a.files[a].name))
-                a += 1
-                b += 1
-
-        a = 0
-        b = 0
-        while a < len(dir_a.directories) or b < len(dir_b.directories):
-            if b < len(dir_b.directories) and (a >= len(dir_a.directories) or
-                                               dir_a.directories[a].name > dir_b.directories[b].name):
-                self._diff_trees(None, dir_b.directories[b].digest,
-                                 added=added, removed=removed, modified=modified,
-                                 path=os.path.join(path, dir_b.directories[b].name))
-                b += 1
-            elif a < len(dir_a.directories) and (b >= len(dir_b.directories) or
-                                                 dir_b.directories[b].name > dir_a.directories[a].name):
-                self._diff_trees(dir_a.directories[a].digest, None,
-                                 added=added, removed=removed, modified=modified,
-                                 path=os.path.join(path, dir_a.directories[a].name))
-                a += 1
-            else:
-                # Subdirectory exists in both directories
-                if dir_a.directories[a].digest.hash != dir_b.directories[b].digest.hash:
-                    self._diff_trees(dir_a.directories[a].digest, dir_b.directories[b].digest,
-                                     added=added, removed=removed, modified=modified,
-                                     path=os.path.join(path, dir_a.directories[a].name))
-                a += 1
-                b += 1
 
     def _reachable_refs_dir(self, reachable, tree, update_mtime=False, check_exists=False):
         if tree.hash in reachable:
@@ -1148,8 +1107,8 @@ class CASQuota:
 
         self._message = context.message
 
-        self._ref_callbacks = []   # Call backs to get required refs
-        self._remove_callbacks = []   # Call backs to remove refs
+        self._remove_callbacks = []   # Callbacks to remove unrequired refs and their remove method
+        self._list_refs_callbacks = []  # Callbacks to all refs
 
         self._calculate_cache_quota()
 
@@ -1226,6 +1185,21 @@ class CASQuota:
             return True
 
         return False
+
+    # add_remove_callbacks()
+    #
+    # This adds tuples of iterators over unrequired objects (currently
+    # artifacts and source refs), and a callback to remove them.
+    #
+    # Args:
+    #    callback (iter(unrequired), remove): tuple of iterator and remove
+    #        method associated.
+    #
+    def add_remove_callbacks(self, list_unrequired, remove_method):
+        self._remove_callbacks.append((list_unrequired, remove_method))
+
+    def add_list_refs_callback(self, list_callback):
+        self._list_refs_callbacks.append(list_callback)
 
     ################################################
     #             Local Private Methods            #
@@ -1383,28 +1357,25 @@ class CASQuota:
         removed_ref_count = 0
         space_saved = 0
 
-        # get required refs
-        refs = self.cas.list_refs()
-        required_refs = set(
-            required
-            for callback in self._ref_callbacks
-            for required in callback()
-        )
+        total_refs = 0
+        for refs in self._list_refs_callbacks:
+            total_refs += len(list(refs()))
 
         # Start off with an announcement with as much info as possible
         volume_size, volume_avail = self._get_cache_volume_size()
         self._message(Message(
             None, MessageType.STATUS, "Starting cache cleanup",
-            detail=("Elements required by the current build plan: {}\n" +
+            detail=("Elements required by the current build plan:\n" + "{}\n" +
                     "User specified quota: {} ({})\n" +
                     "Cache usage: {}\n" +
                     "Cache volume: {} total, {} available")
-            .format(len(required_refs),
-                    context.config_cache_quota,
-                    utils._pretty_size(self._cache_quota, dec_places=2),
-                    utils._pretty_size(self.get_cache_size(), dec_places=2),
-                    utils._pretty_size(volume_size, dec_places=2),
-                    utils._pretty_size(volume_avail, dec_places=2))))
+            .format(
+                total_refs,
+                context.config_cache_quota,
+                utils._pretty_size(self._cache_quota, dec_places=2),
+                utils._pretty_size(self.get_cache_size(), dec_places=2),
+                utils._pretty_size(volume_size, dec_places=2),
+                utils._pretty_size(volume_avail, dec_places=2))))
 
         # Do a real computation of the cache size once, just in case
         self.compute_cache_size()
@@ -1412,67 +1383,63 @@ class CASQuota:
         self._message(Message(None, MessageType.STATUS,
                               "Cache usage recomputed: {}".format(usage)))
 
-        while self.get_cache_size() >= self._cache_lower_threshold:
-            try:
-                to_remove = refs.pop(0)
-            except IndexError:
-                # If too many artifacts are required, and we therefore
-                # can't remove them, we have to abort the build.
-                #
-                # FIXME: Asking the user what to do may be neater
-                #
-                default_conf = os.path.join(os.environ['XDG_CONFIG_HOME'],
-                                            'buildstream.conf')
-                detail = ("Aborted after removing {} refs and saving {} disk space.\n"
-                          "The remaining {} in the cache is required by the {} references in your build plan\n\n"
-                          "There is not enough space to complete the build.\n"
-                          "Please increase the cache-quota in {} and/or make more disk space."
-                          .format(removed_ref_count,
-                                  utils._pretty_size(space_saved, dec_places=2),
-                                  utils._pretty_size(self.get_cache_size(), dec_places=2),
-                                  len(required_refs),
-                                  (context.config_origin or default_conf)))
+        # Collect digests and their remove method
+        all_unrequired_refs = []
+        for (unrequired_refs, remove) in self._remove_callbacks:
+            for (mtime, ref) in unrequired_refs():
+                all_unrequired_refs.append((mtime, ref, remove))
 
-                if self.full():
-                    raise CASCacheError("Cache too full. Aborting.",
-                                        detail=detail,
-                                        reason="cache-too-full")
-                else:
-                    break
+        # Pair refs and their remove method sorted in time order
+        all_unrequired_refs = [(ref, remove) for (_, ref, remove) in sorted(all_unrequired_refs)]
 
-            key = to_remove.rpartition('/')[2]
-            if key not in required_refs:
+        # Go through unrequired refs and remove them, oldest first
+        made_space = False
+        for (ref, remove) in all_unrequired_refs:
+            size = remove(ref)
+            removed_ref_count += 1
+            space_saved += size
 
-                # Remove the actual artifact, if it's not required.
-                size = 0
-                removed_ref = False
-                for (pred, remove) in self._remove_callbacks:
-                    if pred(to_remove):
-                        size = remove(to_remove)
-                        removed_ref = True
-                        break
+            self._message(Message(
+                None, MessageType.STATUS,
+                "Freed {: <7} {}".format(
+                    utils._pretty_size(size, dec_places=2),
+                    ref)))
 
-                if not removed_ref:
-                    continue
+            self.set_cache_size(self._cache_size - size)
 
-                removed_ref_count += 1
-                space_saved += size
+            # User callback
+            #
+            # Currently this process is fairly slow, but we should
+            # think about throttling this progress() callback if this
+            # becomes too intense.
+            if progress:
+                progress()
 
-                self._message(Message(
-                    None, MessageType.STATUS,
-                    "Freed {: <7} {}".format(
-                        utils._pretty_size(size, dec_places=2),
-                        to_remove)))
+            if self.get_cache_size() < self._cache_lower_threshold:
+                made_space = True
+                break
 
-                self.set_cache_size(self._cache_size - size)
+        if not made_space and self.full():
+            # If too many artifacts are required, and we therefore
+            # can't remove them, we have to abort the build.
+            #
+            # FIXME: Asking the user what to do may be neater
+            #
+            default_conf = os.path.join(os.environ['XDG_CONFIG_HOME'],
+                                        'buildstream.conf')
+            detail = ("Aborted after removing {} refs and saving {} disk space.\n"
+                      "The remaining {} in the cache is required by the {} references in your build plan\n\n"
+                      "There is not enough space to complete the build.\n"
+                      "Please increase the cache-quota in {} and/or make more disk space."
+                      .format(removed_ref_count,
+                              utils._pretty_size(space_saved, dec_places=2),
+                              utils._pretty_size(self.get_cache_size(), dec_places=2),
+                              total_refs,
+                              (context.config_origin or default_conf)))
 
-                # User callback
-                #
-                # Currently this process is fairly slow, but we should
-                # think about throttling this progress() callback if this
-                # becomes too intense.
-                if progress:
-                    progress()
+            raise CASCacheError("Cache too full. Aborting.",
+                                detail=detail,
+                                reason="cache-too-full")
 
         # Informational message about the side effects of the cleanup
         self._message(Message(
@@ -1484,22 +1451,6 @@ class CASQuota:
                     utils._pretty_size(self.get_cache_size(), dec_places=2))))
 
         return self.get_cache_size()
-
-    # add_ref_callbacks()
-    #
-    # Args:
-    #     callback (Iterator): function that gives list of required refs
-    def add_ref_callbacks(self, callback):
-        self._ref_callbacks.append(callback)
-
-    # add_remove_callbacks()
-    #
-    # Args:
-    #    callback (predicate, callback): The predicate says whether this is the
-    #        correct type to remove given a ref and the callback does actual
-    #        removing.
-    def add_remove_callbacks(self, callback):
-        self._remove_callbacks.append(callback)
 
 
 def _grouper(iterable, n):

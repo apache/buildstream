@@ -4,7 +4,7 @@ import signal
 
 import pytest
 
-from buildstream import _yaml, _signals, utils
+from buildstream import _yaml, _signals, utils, Scope
 from buildstream._context import Context
 from buildstream._project import Project
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
@@ -85,7 +85,7 @@ def test_push(cli, tmpdir, datafiles):
         # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
         process = multiprocessing.Process(target=_queue_wrapper,
                                           args=(_test_push, queue, user_config_file, project_dir,
-                                                'target.bst', element_key))
+                                                'target.bst'))
 
         try:
             # Keep SIGINT blocked in the child process
@@ -99,10 +99,10 @@ def test_push(cli, tmpdir, datafiles):
             raise
 
         assert not error
-        assert share.has_artifact('test', 'target.bst', element_key)
+        assert share.has_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst', cache_key=element_key))
 
 
-def _test_push(user_config_file, project_dir, element_name, element_key, queue):
+def _test_push(user_config_file, project_dir, element_name, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
@@ -112,19 +112,28 @@ def _test_push(user_config_file, project_dir, element_name, element_key, queue):
     project = Project(project_dir, context)
     project.ensure_fully_loaded()
 
-    # Create a local CAS cache handle
-    cas = context.artifactcache
+    # Create a local artifact cache handle
+    artifactcache = context.artifactcache
 
     # Load the target element
     element = project.load_elements([element_name])[0]
 
-    # Manually setup the CAS remote
-    cas.setup_remotes(use_config=True)
-    cas.initialize_remotes()
+    # Ensure the element's artifact memeber is initialised
+    # This is duplicated from Pipeline.resolve_elements()
+    # as this test does not use the cli frontend.
+    for e in element.dependencies(Scope.ALL):
+        # Preflight
+        e._preflight()
+        # Determine initial element state.
+        e._update_state()
 
-    if cas.has_push_remotes(plugin=element):
+    # Manually setup the CAS remotes
+    artifactcache.setup_remotes(use_config=True)
+    artifactcache.initialize_remotes()
+
+    if artifactcache.has_push_remotes(plugin=element):
         # Push the element's artifact
-        if not cas.push(element, [element_key]):
+        if not element._push():
             queue.put("Push operation failed")
         else:
             queue.put(None)
@@ -189,21 +198,21 @@ def _test_push_message(user_config_file, project_dir, queue):
     project = Project(project_dir, context)
     project.ensure_fully_loaded()
 
-    # Create a local CAS cache handle
-    cas = context.artifactcache
+    # Create a local artifact cache handle
+    artifactcache = context.artifactcache
 
-    # Manually setup the CAS remote
-    cas.setup_remotes(use_config=True)
-    cas.initialize_remotes()
+    # Manually setup the artifact remote
+    artifactcache.setup_remotes(use_config=True)
+    artifactcache.initialize_remotes()
 
-    if cas.has_push_remotes():
+    if artifactcache.has_push_remotes():
         # Create an example message object
         command = remote_execution_pb2.Command(arguments=['/usr/bin/gcc', '--help'],
                                                working_directory='/buildstream-build',
                                                output_directories=['/buildstream-install'])
 
         # Push the message object
-        command_digest = cas.push_message(project, command)
+        command_digest = artifactcache.push_message(project, command)
 
         queue.put((command_digest.hash, command_digest.size_bytes))
     else:

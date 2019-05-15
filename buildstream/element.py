@@ -198,7 +198,7 @@ class Element(Plugin):
         if not self.__is_junction:
             project.ensure_fully_loaded()
 
-        self.normal_name = os.path.splitext(self.name.replace(os.sep, '-'))[0]
+        self.normal_name = _get_normal_name(self.name)
         """A normalized element name
 
         This is the original element without path separators or
@@ -620,15 +620,7 @@ class Element(Plugin):
 
         assert key is not None
 
-        valid_chars = string.digits + string.ascii_letters + '-._'
-        element_name = ''.join([
-            x if x in valid_chars else '_'
-            for x in self.normal_name
-        ])
-
-        # Note that project names are not allowed to contain slashes. Element names containing
-        # a '/' will have this replaced with a '-' upon Element object instantiation.
-        return '{0}/{1}/{2}'.format(project.name, element_name, key)
+        return _compose_artifact_name(project.name, self.normal_name, key)
 
     def stage_artifact(self, sandbox, *, path=None, include=None, exclude=None, orphans=True, update_mtimes=None):
         """Stage this element's output artifact in the sandbox
@@ -749,6 +741,7 @@ class Element(Plugin):
             #
             if self.__artifacts.contains(self, workspace.last_successful):
                 last_successful = Artifact(self, context, strong_key=workspace.last_successful)
+                # Get a dict of dependency strong keys
                 old_dep_keys = last_successful.get_metadata_dependencies()
             else:
                 # Last successful build is no longer in the artifact cache,
@@ -773,12 +766,12 @@ class Element(Plugin):
 
                 if dep.name in old_dep_keys:
                     key_new = dep._get_cache_key()
-                    key_old = _yaml.node_get(old_dep_keys, str, dep.name)
+                    key_old = old_dep_keys[dep.name]
 
                     # We only need to worry about modified and added
                     # files, since removed files will be picked up by
                     # build systems anyway.
-                    to_update, _, added = self.__artifacts.diff(dep, key_old, key_new, subdir='files')
+                    to_update, _, added = self.__artifacts.diff(dep, key_old, key_new)
                     workspace.add_running_files(dep.name, to_update + added)
                     to_update.extend(workspace.running_files[dep.name])
 
@@ -1888,11 +1881,12 @@ class Element(Plugin):
 
         # Check whether the pull has been invoked with a specific subdir requested
         # in user context, as to complete a partial artifact
-        subdir, _ = self.__pull_directories()
+        pull_buildtrees = self._get_context().pull_buildtrees
 
-        if self.__strong_cached and subdir:
+        if self.__strong_cached and pull_buildtrees:
             # If we've specified a subdir, check if the subdir is cached locally
-            if self.__artifacts.contains_subdir_artifact(self, self.__strict_cache_key, subdir):
+            # or if it's possible to get
+            if self._cached_buildtree() or not self._buildtree_exists():
                 return False
         elif self.__strong_cached:
             return False
@@ -1925,18 +1919,15 @@ class Element(Plugin):
     def _pull(self):
         context = self._get_context()
 
-        def progress(percent, message):
-            self.status(message)
-
         # Get optional specific subdir to pull and optional list to not pull
         # based off of user context
-        subdir, excluded_subdirs = self.__pull_directories()
+        pull_buildtrees = context.pull_buildtrees
 
         # Attempt to pull artifact without knowing whether it's available
-        pulled = self.__pull_strong(progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs)
+        pulled = self.__pull_strong(pull_buildtrees=pull_buildtrees)
 
         if not pulled and not self._cached() and not context.get_strict():
-            pulled = self.__pull_weak(progress=progress, subdir=subdir, excluded_subdirs=excluded_subdirs)
+            pulled = self.__pull_weak(pull_buildtrees=pull_buildtrees)
 
         if not pulled:
             return False
@@ -1998,8 +1989,8 @@ class Element(Plugin):
             self.warn("Not pushing tainted artifact.")
             return False
 
-        # Push all keys used for local commit
-        pushed = self.__artifacts.push(self, self.__get_cache_keys_for_commit())
+        # Push all keys used for local commit via the Artifact member
+        pushed = self.__artifacts.push(self, self.__artifact)
         if not pushed:
             return False
 
@@ -2861,17 +2852,6 @@ class Element(Plugin):
 
         self.__build_result = self.__artifact.load_build_result()
 
-    def __get_cache_keys_for_commit(self):
-        keys = []
-
-        # tag with strong cache key based on dependency versions used for the build
-        keys.append(self._get_cache_key(strength=_KeyStrength.STRONG))
-
-        # also store under weak cache key
-        keys.append(self._get_cache_key(strength=_KeyStrength.WEAK))
-
-        return utils._deduplicate(keys)
-
     # __pull_strong():
     #
     # Attempt pulling given element from configured artifact caches with
@@ -2885,11 +2865,10 @@ class Element(Plugin):
     # Returns:
     #     (bool): Whether or not the pull was successful
     #
-    def __pull_strong(self, *, progress=None, subdir=None, excluded_subdirs=None):
+    def __pull_strong(self, *, pull_buildtrees):
         weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
         key = self.__strict_cache_key
-        if not self.__artifacts.pull(self, key, progress=progress, subdir=subdir,
-                                     excluded_subdirs=excluded_subdirs):
+        if not self.__artifacts.pull(self, key, pull_buildtrees=pull_buildtrees):
             return False
 
         # update weak ref by pointing it to this newly fetched artifact
@@ -2903,17 +2882,16 @@ class Element(Plugin):
     # the weak cache key
     #
     # Args:
-    #     progress (callable): The progress callback, if any
     #     subdir (str): The optional specific subdir to pull
     #     excluded_subdirs (list): The optional list of subdirs to not pull
     #
     # Returns:
     #     (bool): Whether or not the pull was successful
     #
-    def __pull_weak(self, *, progress=None, subdir=None, excluded_subdirs=None):
+    def __pull_weak(self, *, pull_buildtrees):
         weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
-        if not self.__artifacts.pull(self, weak_key, progress=progress, subdir=subdir,
-                                     excluded_subdirs=excluded_subdirs):
+        if not self.__artifacts.pull(self, weak_key,
+                                     pull_buildtrees=pull_buildtrees):
             return False
 
         # extract strong cache key from this newly fetched artifact
@@ -2924,37 +2902,6 @@ class Element(Plugin):
         self.__artifacts.link_key(self, weak_key, key)
 
         return True
-
-    # __pull_directories():
-    #
-    # Which directories to include or exclude given the current
-    # context
-    #
-    # Returns:
-    #     subdir (str): The optional specific subdir to include, based
-    #                   on user context
-    #     excluded_subdirs (list): The optional list of subdirs to not
-    #                              pull, referenced against subdir value
-    #
-    def __pull_directories(self):
-        context = self._get_context()
-
-        # Current default exclusions on pull
-        excluded_subdirs = ["buildtree"]
-        subdir = ''
-
-        # If buildtrees are to be pulled, remove the value from exclusion list
-        # and set specific subdir
-        if context.pull_buildtrees:
-            subdir = "buildtree"
-            excluded_subdirs.remove(subdir)
-
-        # If file contents are not required for this element, don't pull them.
-        # The directories themselves will always be pulled.
-        if not context.require_artifact_files and not self._artifact_files_required():
-            excluded_subdirs.append("files")
-
-        return (subdir, excluded_subdirs)
 
     # __cache_sources():
     #
@@ -3017,3 +2964,42 @@ def _overlap_error_detail(f, forbidden_overlap_elements, elements):
                         " above ".join(reversed(elements))))
     else:
         return ""
+
+
+# _get_normal_name():
+#
+# Get the element name without path separators or
+# the extension.
+#
+# Args:
+#     element_name (str): The element's name
+#
+# Returns:
+#     (str): The normalised element name
+#
+def _get_normal_name(element_name):
+    return os.path.splitext(element_name.replace(os.sep, '-'))[0]
+
+
+# _compose_artifact_name():
+#
+# Compose the completely resolved 'artifact_name' as a filepath
+#
+# Args:
+#     project_name (str): The project's name
+#     normal_name (str): The element's normalised name
+#     cache_key (str): The relevant cache key
+#
+# Returns:
+#     (str): The constructed artifact name path
+#
+def _compose_artifact_name(project_name, normal_name, cache_key):
+    valid_chars = string.digits + string.ascii_letters + '-._'
+    normal_name = ''.join([
+        x if x in valid_chars else '_'
+        for x in normal_name
+    ])
+
+    # Note that project names are not allowed to contain slashes. Element names containing
+    # a '/' will have this replaced with a '-' upon Element object instantiation.
+    return '{0}/{1}/{2}'.format(project_name, normal_name, cache_key)
