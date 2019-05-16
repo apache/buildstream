@@ -250,10 +250,11 @@ class Element(Plugin):
         self.__variables = Variables(variables)
 
         # Collect the composited environment now that we have variables
-        self.__environment = self.__extract_environment(meta)
+        unexpanded_env = self.__extract_environment(project, meta)
+        self.__environment = self.__expand_environment(unexpanded_env)
 
         # Collect the environment nocache blacklist list
-        nocache = self.__extract_env_nocache(meta)
+        nocache = self.__extract_env_nocache(project, meta)
         self.__env_nocache = nocache
 
         # Grab public domain data declared for this instance
@@ -2474,22 +2475,28 @@ class Element(Plugin):
             # Set the data class wide
             cls.__defaults = defaults
 
-    # This will resolve the final environment to be used when
+    # This will acquire the environment to be used when
     # creating sandboxes for this element
     #
-    def __extract_environment(self, meta):
-        default_env = _yaml.node_get(self.__defaults, Mapping, 'environment', default_value={})
+    @classmethod
+    def __extract_environment(cls, project, meta):
+        default_env = _yaml.node_get(cls.__defaults, Mapping, 'environment', default_value={})
 
         if meta.kind == "junction":
             environment = _yaml.new_empty_node()
         else:
-            project = self._get_project()
             environment = _yaml.node_copy(project.base_environment)
 
         _yaml.composite(environment, default_env)
         _yaml.composite(environment, meta.environment)
         _yaml.node_final_assertions(environment)
 
+        return environment
+
+    # This will resolve the final environment to be used when
+    # creating sandboxes for this element
+    #
+    def __expand_environment(self, environment):
         # Resolve variables in environment value strings
         final_env = {}
         for key, _ in self.node_items(environment):
@@ -2497,15 +2504,14 @@ class Element(Plugin):
 
         return final_env
 
-    def __extract_env_nocache(self, meta):
+    @classmethod
+    def __extract_env_nocache(cls, project, meta):
         if meta.kind == "junction":
             project_nocache = []
         else:
-            project = self._get_project()
-            project.ensure_fully_loaded()
             project_nocache = project.base_env_nocache
 
-        default_nocache = _yaml.node_get(self.__defaults, list, 'environment-nocache', default_value=[])
+        default_nocache = _yaml.node_get(cls.__defaults, list, 'environment-nocache', default_value=[])
         element_nocache = meta.env_nocache
 
         # Accumulate values from the element default, the project and the element
