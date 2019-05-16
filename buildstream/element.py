@@ -2551,10 +2551,11 @@ class Element(Plugin):
     # This will resolve the final configuration to be handed
     # off to element.configure()
     #
-    def __extract_config(self, meta):
+    @classmethod
+    def __extract_config(cls, meta):
 
         # The default config is already composited with the project overrides
-        config = _yaml.node_get(self.__defaults, Mapping, 'config', default_value={})
+        config = _yaml.node_get(cls.__defaults, Mapping, 'config', default_value={})
         config = _yaml.node_copy(config)
 
         _yaml.composite(config, meta.config)
