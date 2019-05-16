@@ -1231,6 +1231,35 @@ def test_external_list(cli, datafiles, tmpdir_factory):
     result.assert_success()
 
 
+@pytest.mark.datafiles(DATA_DIR)
+def test_multisource_workspace(cli, datafiles, tmpdir):
+    # checks that if an element has multiple sources, then the opened workspace
+    # will contain them
+    project = str(datafiles)
+    element_name = "multisource.bst"
+    element = {
+        'kind': 'import',
+        'sources': [{
+            'kind': 'local',
+            'path': 'files/bin-files'
+        }, {
+            'kind': 'local',
+            'path': 'files/dev-files'
+        }]
+    }
+    element_path = os.path.join(project, 'elements', element_name)
+    _yaml.dump(element, element_path)
+
+    workspace_dir = os.path.join(str(tmpdir), 'multisource')
+    res = cli.run(project=project,
+                  args=['workspace', 'open', 'multisource.bst',
+                        '--directory', workspace_dir])
+    res.assert_success()
+
+    directories = os.listdir(os.path.join(workspace_dir, 'usr'))
+    assert 'bin' in directories and 'include' in directories
+
+
 # This strange test tests against a regression raised in issue #919,
 # where opening a workspace on a runtime dependency of a build only
 # dependency causes `bst build` to not build the specified target

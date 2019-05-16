@@ -1993,12 +1993,8 @@ class Element(Plugin):
         os.makedirs(context.builddir, exist_ok=True)
         with utils._tempdir(dir=context.builddir, prefix='workspace-{}'
                             .format(self.normal_name)) as temp:
-            last_source = None
             for source in self.sources():
-                last_source = source
-
-            if last_source:
-                last_source._init_workspace(temp)
+                source._init_workspace(temp)
 
             # Now hardlink the files into the workspace target.
             utils.link_files(temp, workspace.get_absolute_path())
