@@ -319,7 +319,7 @@ class Source(Plugin):
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
-        self.__init_defaults(meta)
+        self.__init_defaults(project, meta)
         self.__config = self.__extract_config(meta)
         self.__first_pass = meta.first_pass
 
@@ -1231,21 +1231,22 @@ class Source(Plugin):
                               reason="ensure-stage-dir-fail") from e
         return directory
 
-    def __init_defaults(self, meta):
-        if not self.__defaults_set:
-            project = self._get_project()
+    @classmethod
+    def __init_defaults(cls, project, meta):
+        if not cls.__defaults_set:
             if meta.first_pass:
                 sources = project.first_pass_config.source_overrides
             else:
                 sources = project.source_overrides
-            type(self).__defaults = _yaml.node_get(sources, Mapping, self.get_kind(), default_value={})
-            type(self).__defaults_set = True
+            cls.__defaults = _yaml.node_get(sources, Mapping, meta.kind, default_value={})
+            cls.__defaults_set = True
 
     # This will resolve the final configuration to be handed
     # off to source.configure()
     #
-    def __extract_config(self, meta):
-        config = _yaml.node_get(self.__defaults, Mapping, 'config', default_value={})
+    @classmethod
+    def __extract_config(cls, meta):
+        config = _yaml.node_get(cls.__defaults, Mapping, 'config', default_value={})
         config = _yaml.node_copy(config)
 
         _yaml.composite(config, meta.config)
