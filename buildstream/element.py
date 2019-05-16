@@ -274,7 +274,7 @@ class Element(Plugin):
             self.__remote_execution_specs = project.remote_execution_specs
 
         # Extract Sandbox config
-        self.__sandbox_config = self.__extract_sandbox_config(meta)
+        self.__sandbox_config = self.__extract_sandbox_config(project, meta)
 
         self.__sandbox_config_supported = True
         if not self.__use_remote_execution():
@@ -2565,15 +2565,14 @@ class Element(Plugin):
 
     # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
     #
-    def __extract_sandbox_config(self, meta):
+    @classmethod
+    def __extract_sandbox_config(cls, project, meta):
         if meta.kind == "junction":
             sandbox_config = _yaml.new_node_from_dict({
                 'build-uid': 0,
                 'build-gid': 0
             })
         else:
-            project = self._get_project()
-            project.ensure_fully_loaded()
             sandbox_config = _yaml.node_copy(project._sandbox)
 
         # Get the platform to ask for host architecture
@@ -2582,7 +2581,7 @@ class Element(Plugin):
         host_os = platform.get_host_os()
 
         # The default config is already composited with the project overrides
-        sandbox_defaults = _yaml.node_get(self.__defaults, Mapping, 'sandbox', default_value={})
+        sandbox_defaults = _yaml.node_get(cls.__defaults, Mapping, 'sandbox', default_value={})
         sandbox_defaults = _yaml.node_copy(sandbox_defaults)
 
         _yaml.composite(sandbox_config, sandbox_defaults)
@@ -2592,16 +2591,16 @@ class Element(Plugin):
         # Sandbox config, unlike others, has fixed members so we should validate them
         _yaml.node_validate(sandbox_config, ['build-uid', 'build-gid', 'build-os', 'build-arch'])
 
-        build_arch = self.node_get_member(sandbox_config, str, 'build-arch', default=None)
+        build_arch = _yaml.node_get(sandbox_config, str, 'build-arch', default_value=None)
         if build_arch:
             build_arch = Platform.canonicalize_arch(build_arch)
         else:
             build_arch = host_arch
 
         return SandboxConfig(
-            self.node_get_member(sandbox_config, int, 'build-uid'),
-            self.node_get_member(sandbox_config, int, 'build-gid'),
-            self.node_get_member(sandbox_config, str, 'build-os', default=host_os),
+            _yaml.node_get(sandbox_config, int, 'build-uid'),
+            _yaml.node_get(sandbox_config, int, 'build-gid'),
+            _yaml.node_get(sandbox_config, str, 'build-os', default_value=host_os),
             build_arch)
 
     # This makes a special exception for the split rules, which
