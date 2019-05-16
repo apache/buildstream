@@ -258,7 +258,8 @@ class Element(Plugin):
         self.__env_nocache = nocache
 
         # Grab public domain data declared for this instance
-        self.__public = self.__extract_public(meta)
+        unexpanded_public = self.__extract_public(meta)
+        self.__public = self.__expand_splits(unexpanded_public)
         self.__dynamic_public = None
 
         # Collect the composited element configuration and
@@ -2605,8 +2606,9 @@ class Element(Plugin):
     # This makes a special exception for the split rules, which
     # elements may extend but whos defaults are defined in the project.
     #
-    def __extract_public(self, meta):
-        base_public = _yaml.node_get(self.__defaults, Mapping, 'public', default_value={})
+    @classmethod
+    def __extract_public(cls, meta):
+        base_public = _yaml.node_get(cls.__defaults, Mapping, 'public', default_value={})
         base_public = _yaml.node_copy(base_public)
 
         base_bst = _yaml.node_get(base_public, Mapping, 'bst', default_value={})
@@ -2625,13 +2627,20 @@ class Element(Plugin):
 
         _yaml.node_final_assertions(element_public)
 
-        # Also, resolve any variables in the public split rules directly
-        for domain, splits in self.node_items(base_splits):
+        return element_public
+
+    # Expand the splits in the public data using the Variables in the element
+    def __expand_splits(self, element_public):
+        element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
+        element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
+
+        # Resolve any variables in the public split rules directly
+        for domain, splits in self.node_items(element_splits):
             splits = [
                 self.__variables.subst(split.strip())
                 for split in splits
             ]
-            _yaml.node_set(base_splits, domain, splits)
+            _yaml.node_set(element_splits, domain, splits)
 
         return element_public
 
