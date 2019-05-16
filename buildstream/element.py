@@ -216,7 +216,7 @@ class Element(Plugin):
         self.__artifacts = context.artifactcache  # Artifact cache
         self.__sourcecache = context.sourcecache  # Source cache
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
-        self.__strong_cached = None             # Whether we have a cached artifact
+        self.__strict_cached = None             # Whether we have a cached artifact
         self.__weak_cached = None               # Whether we have a cached artifact
         self.__assemble_scheduled = False       # Element is scheduled to be assembled
         self.__assemble_done = False            # Element is assembled
@@ -1789,12 +1789,12 @@ class Element(Plugin):
         # in user context, as to complete a partial artifact
         pull_buildtrees = self._get_context().pull_buildtrees
 
-        if self.__strong_cached and pull_buildtrees:
+        if self.__strict_cached and pull_buildtrees:
             # If we've specified a subdir, check if the subdir is cached locally
             # or if it's possible to get
             if self._cached_buildtree() or not self._buildtree_exists():
                 return False
-        elif self.__strong_cached:
+        elif self.__strict_cached:
             return False
 
         # Pull is pending if artifact remote server available
@@ -2308,7 +2308,7 @@ class Element(Plugin):
         if keystrength is None:
             keystrength = _KeyStrength.STRONG if self._get_context().get_strict() else _KeyStrength.WEAK
 
-        return self.__strong_cached if keystrength == _KeyStrength.STRONG else self.__weak_cached
+        return self.__strict_cached if keystrength == _KeyStrength.STRONG else self.__weak_cached
 
     # __assert_cached()
     #
@@ -2883,7 +2883,7 @@ class Element(Plugin):
         self.__artifact = None
         self.__strict_artifact = None
         self.__weak_cached = None
-        self.__strong_cached = None
+        self.__strict_cached = None
 
     # __update_cache_keys()
     #
@@ -2967,12 +2967,12 @@ class Element(Plugin):
                 self.__artifact = self.__strict_artifact
 
         # Query caches now that the weak and strict cache keys are available.
-        # strong_cached in non-strict mode is only of relevance when querying
-        # if a 'better' artifact could be pulled, which is redudant if we already
-        # have it cached locally with a strict_key. As such strong_cached is only
+        # strict_cached in non-strict mode is only of relevance when querying
+        # if a 'better' artifact could be pulled, which is redundant if we already
+        # have it cached locally with a strict_key. As such strict_cached is only
         # checked against the 'strict' artifact.
-        if not self.__strong_cached:
-            self.__strong_cached = self.__strict_artifact.cached()
+        if not self.__strict_cached:
+            self.__strict_cached = self.__strict_artifact.cached()
         if not self.__weak_cached and not context.get_strict():
             self.__weak_cached = self.__artifact.cached()
 
