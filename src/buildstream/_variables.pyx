@@ -172,11 +172,15 @@ cdef class Variables:
     #    LoadError, if the string contains unresolved variable references or
     #               if cycles are detected in the variable references
     #
-    def _flatten(self):
-        flat = {}
+    cdef dict _flatten(self):
+        cdef dict flat = {}
+        cdef str key
+        cdef list expstr
+
         try:
             for key, expstr in self._expstr_map.items():
                 if len(expstr) > 1:
+                    # FIXME: do we really gain anything by interning?
                     expstr = [sys.intern(_expand_expstr(self._expstr_map, expstr))]
                     self._expstr_map[key] = expstr
                 flat[key] = expstr[0]
