@@ -102,9 +102,20 @@ templates-clean:
 # messes up the docs version number and the version number
 # printed in some command line output.
 #
+# For builds on the gitlab master branch, this will also configure
+# buildstream to push to the artifact server.
+#
 sessions-prep:
+
 	mkdir -p source/sessions
 	cp source/sessions-stored/*.html source/sessions
+
+ifeq($(CI_COMMIT_REF_NAME),tlater/freedocstop-sdk)
+	$(file >$(HOME)/client.key,$(TUTORIAL_CACHE_CLIENT_KEY))
+	$(file >$(HOME)/client.crt,$(TUTORIAL_CACHE_CLIENT_CERTIFICATE))
+	$(file >$(HOME)/server.crt,$(TUTORIAL_CACHE_SERVER_CERTIFICATE))
+	cp ./buildstream.conf "$(HOME)/.config/"
+endif
 
 # By default, this will generate the html fragments of colorized BuildStream terminal
 # output only if they don't yet exist.
