@@ -255,15 +255,15 @@ cdef void _expand_expstr_helper(dict content, list value, list acc, int counter 
 # of the given dictionary of expansion strings.
 #
 # Note: Will raise KeyError if any expansion is missing
-def _expand_expstr(content, topvalue):
+cdef str _expand_expstr(dict content, list topvalue):
     # Short-circuit constant strings
     if len(topvalue) == 1:
-        return topvalue[0]
+        return <str> topvalue[0]
 
     # Short-circuit strings which are entirely an expansion of another variable
     # e.g. "%{another}"
-    if len(topvalue) == 2 and topvalue[0] == "":
-        return _expand_expstr(content, content[topvalue[1]])
+    if len(topvalue) == 2 and len(<str> topvalue[0]) == 0:
+        return _expand_expstr(content, <list> content[topvalue[1]])
 
     cdef list result = []
     _expand_expstr_helper(content, topvalue, result)
