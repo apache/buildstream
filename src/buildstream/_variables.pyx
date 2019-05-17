@@ -63,10 +63,13 @@ PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
 # Raises:
 #     LoadError, if unresolved variables, or cycles in resolution, occur.
 #
-class Variables():
+cdef class Variables:
+
+    cdef object original
+    cdef dict _expstr_map
+    cdef public dict flat
 
     def __init__(self, node):
-
         self.original = node
         self._expstr_map = self._resolve(node)
         self.flat = self._flatten()
