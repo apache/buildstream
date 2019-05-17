@@ -34,9 +34,8 @@ PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
 # These hold data structures called "expansion strings" and are the parsed
 # form of the strings which are the input to this subsystem.  Strings
 # such as "Hello %{name}, how are you?" are parsed into the form:
-# (3, ["Hello ", "name", ", how are you?"])
-# i.e. a tuple of an integer and a list, where the integer is the cached
-# length of the list, and the list consists of one or more strings.
+# ["Hello ", "name", ", how are you?"]
+# i.e. a list which consists of one or more strings.
 # Strings in even indices of the list (0, 2, 4, etc) are constants which
 # are copied into the output of the expansion algorithm.  Strings in the
 # odd indices (1, 3, 5, etc) are the names of further expansions to make.
@@ -93,7 +92,7 @@ class Variables():
             unmatched = []
 
             # Look for any unmatched variable names in the expansion string
-            for var in expstr[1][1::2]:
+            for var in expstr[1::2]:
                 if var not in self._expstr_map:
                     unmatched.append(var)
 
@@ -130,7 +129,7 @@ class Variables():
         # First the check for anything unresolvable
         summary = []
         for key, expstr in self._expstr_map.items():
-            for var in expstr[1][1::2]:
+            for var in expstr[1::2]:
                 if var not in self._expstr_map:
                     line = "  unresolved variable '{unmatched}' in declaration of '{variable}' at: {provenance}"
                     provenance = _yaml.node_get_provenance(self.original, key)
@@ -142,7 +141,7 @@ class Variables():
     def _check_for_cycles(self):
         # And now the cycle checks
         def cycle_check(expstr, visited, cleared):
-            for var in expstr[1][1::2]:
+            for var in expstr[1::2]:
                 if var in cleared:
                     continue
                 if var in visited:
@@ -173,10 +172,10 @@ class Variables():
         flat = {}
         try:
             for key, expstr in self._expstr_map.items():
-                if expstr[0] > 1:
-                    expstr = (1, [sys.intern(_expand_expstr(self._expstr_map, expstr))])
+                if len(expstr) > 1:
+                    expstr = [sys.intern(_expand_expstr(self._expstr_map, expstr))]
                     self._expstr_map[key] = expstr
-                flat[key] = expstr[1][0]
+                flat[key] = expstr[0]
         except KeyError:
             self._check_for_missing()
             raise
@@ -193,7 +192,7 @@ class Variables():
 PARSE_CACHE = {
     # Prime the cache with the empty string since otherwise that can
     # cause issues with the parser, complications to which cause slowdown
-    "": (1, [""]),
+    "": [""],
 }
 
 
@@ -216,7 +215,7 @@ def _parse_expstr(instr):
         # memory impact of the cache.  It seems odd to cache the list length
         # but this is measurably cheaper than calculating it each time during
         # string expansion.
-        PARSE_CACHE[instr] = (len(splits), [sys.intern(s) for s in splits])
+        PARSE_CACHE[instr] = [sys.intern(s) for s in splits]
         return PARSE_CACHE[instr]
 
 
@@ -226,26 +225,27 @@ def _parse_expstr(instr):
 # Note: Will raise KeyError if any expansion is missing
 def _expand_expstr(content, topvalue):
     # Short-circuit constant strings
-    if topvalue[0] == 1:
-        return topvalue[1][0]
+    if len(topvalue) == 1:
+        return topvalue[0]
 
     # Short-circuit strings which are entirely an expansion of another variable
     # e.g. "%{another}"
-    if topvalue[0] == 2 and topvalue[1][0] == "":
-        return _expand_expstr(content, content[topvalue[1][1]])
+    if len(topvalue) == 2 and topvalue[0] == "":
+        return _expand_expstr(content, content[topvalue[1]])
 
     # Otherwise process fully...
     def internal_expand(value):
-        (expansion_len, expansion_bits) = value
         idx = 0
-        while idx < expansion_len:
+        value_len = len(value)
+
+        while idx < value_len:
             # First yield any constant string content
-            yield expansion_bits[idx]
+            yield value[idx]
             idx += 1
             # Now, if there is an expansion variable left to expand, yield
             # the expansion of that variable too
-            if idx < expansion_len:
-                yield from internal_expand(content[expansion_bits[idx]])
+            if idx < value_len:
+                yield from internal_expand(content[value[idx]])
             idx += 1
 
     return "".join(internal_expand(topvalue))
