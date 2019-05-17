@@ -190,7 +190,7 @@ class Variables():
 # something which might "waste" memory, in reality each of these
 # will live as long as the element which uses it, which is the
 # vast majority of the memory usage across the execution of BuildStream.
-PARSE_CACHE = {
+cdef dict PARSE_CACHE = {
     # Prime the cache with the empty string since otherwise that can
     # cause issues with the parser, complications to which cause slowdown
     "": [""],
@@ -200,9 +200,11 @@ PARSE_CACHE = {
 # Helper to parse a string into an expansion string tuple, caching
 # the results so that future parse requests don't need to think about
 # the string
-def _parse_expstr(instr):
+cdef list _parse_expstr(str instr):
+    cdef list ret
+
     try:
-        return PARSE_CACHE[instr]
+        return <list> PARSE_CACHE[instr]
     except KeyError:
         # This use of the regex turns a string like "foo %{bar} baz" into
         # a list ["foo ", "bar", " baz"]
@@ -211,13 +213,14 @@ def _parse_expstr(instr):
         # which we can optimise away, making the expansion routines not need
         # a test for this.
         if splits[-1] == '':
-            splits = splits[:-1]
+           del splits [-1]
         # Cache an interned copy of this.  We intern it to try and reduce the
         # memory impact of the cache.  It seems odd to cache the list length
         # but this is measurably cheaper than calculating it each time during
         # string expansion.
-        PARSE_CACHE[instr] = [sys.intern(s) for s in splits]
-        return PARSE_CACHE[instr]
+        ret = [sys.intern(<str> s) for s in <list> splits]
+        PARSE_CACHE[instr] = ret
+        return ret
 
 
 # Helper to expand recursively an expansion string in the context
