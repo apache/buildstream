@@ -87,7 +87,7 @@ cdef class Variables:
     # Raises:
     #    LoadError, if the string contains unresolved variable references.
     #
-    def subst(self, string):
+    def subst(self, str string):
         expstr = _parse_expstr(string)
 
         try:
@@ -115,7 +115,8 @@ cdef class Variables:
     #
     # Here we resolve all of our inputs into a dictionary, ready for use
     # in subst()
-    def _resolve(self, node):
+    # FIXME: node should be a yaml Node if moved
+    cdef dict _resolve(self, object node):
         # Special case, if notparallel is specified in the variables for this
         # element, then override max-jobs to be 1.
         # Initialize it as a string as all variables are processed as strings.
@@ -123,9 +124,12 @@ cdef class Variables:
         if _yaml.node_get(node, bool, 'notparallel', default_value=False):
             _yaml.node_set(node, 'max-jobs', str(1))
 
-        ret = {}
-        for key, value in _yaml.node_items(node):
-            value = _yaml.node_get(node, str, key)
+        cdef dict ret = {}
+        cdef str key
+        cdef str value
+
+        for key in _yaml.node_keys(node):
+            value = <str> _yaml.node_get(node, str, key)
             ret[sys.intern(key)] = _parse_expstr(value)
         return ret
 
