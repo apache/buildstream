@@ -19,11 +19,12 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Daniel Silverstone <daniel.silverstone@codethink.co.uk>
 #        James Ennis <james.ennis@codethink.co.uk>
+#        Benjamin Schubert <bschubert@bloomberg.net>
 
 import sys
 import string
 from contextlib import ExitStack
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from itertools import count
@@ -55,29 +56,36 @@ from ._exceptions import LoadError, LoadErrorReason
 #   line (int): The line number within the file where the value appears.
 #   col (int): The column number within the file where the value appears.
 #
-# For efficiency, each field should be accessed by its integer index:
-#   value = Node[0]
-#   file_index = Node[1]
-#   line = Node[2]
-#   column = Node[3]
-#
-class Node(namedtuple('Node', ['value', 'file_index', 'line', 'column'])):
+cdef class Node:
+
+    cdef public object value
+    cdef public int file_index
+    cdef public int line
+    cdef public int column
+
+    def __init__(self, object value, int file_index, int line, int column):
+        self.value = value
+        self.file_index = file_index
+        self.line = line
+        self.column = column
+
     def __contains__(self, what):
         # Delegate to the inner value, though this will likely not work
         # very well if the node is a list or string, it's unlikely that
         # code which has access to such nodes would do this.
-        return what in self[0]
-
+        return what in self.value
 
 # File name handling
 _FILE_LIST = []
 
 
-# Purely synthetic node will have None for the file number, have line number
+# Purely synthetic node will have _SYNCTHETIC_FILE_INDEX for the file number, have line number
 # zero, and a negative column number which comes from inverting the next value
 # out of this counter.  Synthetic nodes created with a reference node will
 # have a file number from the reference node, some unknown line number, and
 # a negative column number from this counter.
+cdef int _SYNTHETIC_FILE_INDEX = -1
+
 _SYNTHETIC_COUNTER = count(start=-1, step=-1)
 
 
@@ -98,7 +106,7 @@ class ProvenanceInformation:
 
     def __init__(self, nodeish):
         self.node = nodeish
-        if (nodeish is None) or (nodeish[1] is None):
+        if (nodeish is None) or (nodeish.file_index is None):
             self.filename = ""
             self.shortname = ""
             self.displayname = ""
@@ -107,13 +115,13 @@ class ProvenanceInformation:
             self.toplevel = None
             self.project = None
         else:
-            fileinfo = _FILE_LIST[nodeish[1]]
+            fileinfo = _FILE_LIST[nodeish.file_index]
             self.filename = fileinfo[0]
             self.shortname = fileinfo[1]
             self.displayname = fileinfo[2]
             # We add 1 here to convert from computerish to humanish
-            self.line = nodeish[2] + 1
-            self.col = nodeish[3]
+            self.line = nodeish.line + 1
+            self.col = nodeish.column
             self.toplevel = fileinfo[3]
             self.project = fileinfo[4]
         self.is_synthetic = (self.filename == '') or (self.col < 0)
@@ -226,14 +234,14 @@ class Representer:
 
     def _handle_wait_value_ScalarEvent(self, ev):
         key = self.keys.pop()
-        self.output[-1][0][key] = \
+        self.output[-1].value[key] = \
             Node(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column)
         return "wait_key"
 
     def _handle_wait_value_MappingStartEvent(self, ev):
         new_state = self._handle_doc_MappingStartEvent(ev)
         key = self.keys.pop()
-        self.output[-2][0][key] = self.output[-1]
+        self.output[-2].value[key] = self.output[-1]
         return new_state
 
     def _handle_wait_key_MappingEndEvent(self, ev):
@@ -241,7 +249,7 @@ class Representer:
         # unless it's the last one in which case we leave it
         if len(self.output) > 1:
             self.output.pop()
-            if type(self.output[-1][0]) is list:
+            if type(self.output[-1].value) is list:
                 return "wait_list_item"
             else:
                 return "wait_key"
@@ -250,13 +258,13 @@ class Representer:
 
     def _handle_wait_value_SequenceStartEvent(self, ev):
         self.output.append(Node([], self._file_index, ev.start_mark.line, ev.start_mark.column))
-        self.output[-2][0][self.keys[-1]] = self.output[-1]
+        self.output[-2].value[self.keys[-1]] = self.output[-1]
         return "wait_list_item"
 
     def _handle_wait_list_item_SequenceStartEvent(self, ev):
-        self.keys.append(len(self.output[-1][0]))
+        self.keys.append(len(self.output[-1].value))
         self.output.append(Node([], self._file_index, ev.start_mark.line, ev.start_mark.column))
-        self.output[-2][0].append(self.output[-1])
+        self.output[-2].value.append(self.output[-1])
         return "wait_list_item"
 
     def _handle_wait_list_item_SequenceEndEvent(self, ev):
@@ -271,13 +279,13 @@ class Representer:
             return "wait_key"
 
     def _handle_wait_list_item_ScalarEvent(self, ev):
-        self.output[-1][0].append(
+        self.output[-1].value.append(
             Node(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column))
         return "wait_list_item"
 
     def _handle_wait_list_item_MappingStartEvent(self, ev):
         new_state = self._handle_doc_MappingStartEvent(ev)
-        self.output[-2][0].append(self.output[-1])
+        self.output[-2].value.append(self.output[-1])
         return new_state
 
     def _handle_doc_DocumentEndEvent(self, ev):
@@ -337,7 +345,7 @@ def load(filename, shortname=None, copy_tree=False, *, project=None):
 
 # Like load(), but doesnt require the data to be in a file
 #
-def load_data(data, file_index=None, file_name=None, copy_tree=False):
+def load_data(data, file_index=_SYNTHETIC_FILE_INDEX, file_name=None, copy_tree=False):
 
     try:
         rep = Representer(file_index)
@@ -351,7 +359,7 @@ def load_data(data, file_index=None, file_name=None, copy_tree=False):
         raise LoadError(LoadErrorReason.INVALID_YAML,
                         "Severely malformed YAML:\n\n{}\n\n".format(e)) from e
 
-    if not isinstance(contents, tuple) or not isinstance(contents[0], dict):
+    if type(contents) != Node:
         # Special case allowance for None, when the loaded file has only comments in it.
         if contents is None:
             contents = Node({}, file_index, 0, 0)
@@ -409,11 +417,11 @@ def node_get_provenance(node, key=None, indices=None):
         return ProvenanceInformation(node)
 
     if key and not indices:
-        return ProvenanceInformation(node[0].get(key))
+        return ProvenanceInformation(node.value.get(key))
 
-    nodeish = node[0].get(key)
+    nodeish = node.value.get(key)
     for idx in indices:
-        nodeish = nodeish[0][idx]
+        nodeish = nodeish.value[idx]
 
     return ProvenanceInformation(nodeish)
 
@@ -451,45 +459,45 @@ def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel,
 
     if indices is None:
         if default_value is _sentinel:
-            value = node[0].get(key, Node(default_value, None, 0, 0))
+            value = node.value.get(key, Node(default_value, _SYNTHETIC_FILE_INDEX, 0, 0))
         else:
-            value = node[0].get(key, Node(default_value, None, 0, next(_SYNTHETIC_COUNTER)))
+            value = node.value.get(key, Node(default_value, _SYNTHETIC_FILE_INDEX, 0, next(_SYNTHETIC_COUNTER)))
 
-        if value[0] is _sentinel:
+        if value.value is _sentinel:
             provenance = node_get_provenance(node)
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
     else:
         # Implied type check of the element itself
         # No need to synthesise useful node content as we destructure it immediately
-        value = Node(node_get(node, list, key), None, 0, 0)
+        value = Node(node_get(node, list, key), _SYNTHETIC_FILE_INDEX, 0, 0)
         for index in indices:
-            value = value[0][index]
+            value = value.value[index]
             if type(value) is not Node:
-                value = (value,)
+                value = Node(value, _SYNTHETIC_FILE_INDEX, 0, 0)
 
     # Optionally allow None as a valid value for any type
-    if value[0] is None and (allow_none or default_value is None):
+    if value.value is None and (allow_none or default_value is None):
         return None
 
-    if (expected_type is not None) and (not isinstance(value[0], expected_type)):
+    if (expected_type is not None) and (not isinstance(value.value, expected_type)):
         # Attempt basic conversions if possible, typically we want to
         # be able to specify numeric values and convert them to strings,
         # but we dont want to try converting dicts/lists
         try:
-            if (expected_type == bool and isinstance(value[0], str)):
+            if (expected_type == bool and isinstance(value.value, str)):
                 # Dont coerce booleans to string, this makes "False" strings evaluate to True
                 # We don't structure into full nodes since there's no need.
-                if value[0] in ('True', 'true'):
-                    value = (True, None, 0, 0)
-                elif value[0] in ('False', 'false'):
-                    value = (False, None, 0, 0)
+                if value.value in ('True', 'true'):
+                    value = Node(True, _SYNTHETIC_FILE_INDEX, 0, 0)
+                elif value.value in ('False', 'false'):
+                    value = Node(False, _SYNTHETIC_FILE_INDEX, 0, 0)
                 else:
                     raise ValueError()
             elif not (expected_type == list or
                       expected_type == dict or
-                      isinstance(value[0], (list, dict))):
-                value = (expected_type(value[0]), None, 0, 0)
+                      isinstance(value.value, (list, dict))):
+                value = Node(expected_type(value.value), _SYNTHETIC_FILE_INDEX, 0, 0)
             else:
                 raise ValueError()
         except (ValueError, TypeError):
@@ -505,8 +513,8 @@ def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel,
                             .format(provenance, path, expected_type.__name__))
 
     # Now collapse lists, and scalars, to their value, leaving nodes as-is
-    if type(value[0]) is not dict:
-        value = value[0]
+    if type(value.value) is not dict:
+        value = value.value
 
     # Trim it at the bud, let all loaded strings from yaml be stripped of whitespace
     if type(value) is str:
@@ -524,13 +532,13 @@ def __trim_list_provenance(value):
     ret = []
     for entry in value:
         if type(entry) is not Node:
-            entry = (entry, None, 0, 0)
-        if type(entry[0]) is list:
-            ret.append(__trim_list_provenance(entry[0]))
-        elif type(entry[0]) is dict:
+            entry = Node(entry, _SYNTHETIC_FILE_INDEX, 0, 0)
+        if type(entry.value) is list:
+            ret.append(__trim_list_provenance(entry.value))
+        elif type(entry.value) is dict:
             ret.append(entry)
         else:
-            ret.append(entry[0])
+            ret.append(entry.value)
     return ret
 
 
@@ -549,22 +557,22 @@ def __trim_list_provenance(value):
 #
 def node_set(node, key, value, indices=None):
     if indices:
-        node = node[0][key]
+        node = node.value[key]
         key = indices.pop()
         for idx in indices:
-            node = node[0][idx]
+            node = node.value[idx]
     if type(value) is Node:
-        node[0][key] = value
+        node.value[key] = value
     else:
         try:
             # Need to do this just in case we're modifying a list
-            old_value = node[0][key]
+            old_value = node.value[key]
         except KeyError:
             old_value = None
         if old_value is None:
-            node[0][key] = Node(value, node[1], node[2], next(_SYNTHETIC_COUNTER))
+            node.value[key] = Node(value, node.file_index, node.line, next(_SYNTHETIC_COUNTER))
         else:
-            node[0][key] = Node(value, old_value[1], old_value[2], old_value[3])
+            node.value[key] = Node(value, old_value.file_index, old_value.line, old_value.column)
 
 
 # node_extend_list()
@@ -585,20 +593,20 @@ def node_set(node, key, value, indices=None):
 def node_extend_list(node, key, length, default):
     assert type(default) is str or default in ([], {})
 
-    list_node = node[0].get(key)
+    list_node = node.value.get(key)
     if list_node is None:
-        list_node = node[0][key] = Node([], node[1], node[2], next(_SYNTHETIC_COUNTER))
+        list_node = node.value[key] = Node([], node.file_index, node.line, next(_SYNTHETIC_COUNTER))
 
-    assert type(list_node[0]) is list
+    assert type(list_node.value) is list
 
-    the_list = list_node[0]
+    the_list = list_node.value
     def_type = type(default)
 
-    file_index = node[1]
+    file_index = node.file_index
     if the_list:
         line_num = the_list[-1][2]
     else:
-        line_num = list_node[2]
+        line_num = list_node.line
 
     while length > len(the_list):
         if def_type is str:
@@ -627,16 +635,16 @@ def node_extend_list(node, key, length, default):
 #
 def node_items(node):
     if type(node) is not Node:
-        node = Node(node, None, 0, 0)
-    for key, value in node[0].items():
+        node = Node(node, _SYNTHETIC_FILE_INDEX, 0, 0)
+    for key, value in node.value.items():
         if type(value) is not Node:
-            value = Node(value, None, 0, 0)
-        if type(value[0]) is dict:
+            value = Node(value, _SYNTHETIC_FILE_INDEX, 0, 0)
+        if type(value.value) is dict:
             yield (key, value)
-        elif type(value[0]) is list:
-            yield (key, __trim_list_provenance(value[0]))
+        elif type(value.value) is list:
+            yield (key, __trim_list_provenance(value.value))
         else:
-            yield (key, value[0])
+            yield (key, value.value)
 
 
 # node_keys()
@@ -652,8 +660,8 @@ def node_items(node):
 #
 def node_keys(node):
     if type(node) is not Node:
-        node = Node(node, None, 0, 0)
-    yield from node[0].keys()
+        node = Node(node, _SYNTHETIC_FILE_INDEX, 0, 0)
+    yield from node.value.keys()
 
 
 # node_del()
@@ -668,7 +676,7 @@ def node_keys(node):
 #
 def node_del(node, key, safe=False):
     try:
-        del node[0][key]
+        del node.value[key]
     except KeyError:
         if not safe:
             raise
@@ -689,7 +697,7 @@ def node_del(node, key, safe=False):
 def is_node(maybenode):
     # It's a programming error to give this a Node which isn't a mapping
     # so assert that.
-    assert (type(maybenode) is not Node) or (type(maybenode[0]) is dict)
+    assert (type(maybenode) is not Node) or (type(maybenode.value) is dict)
     # Now return the type check
     return type(maybenode) is Node
 
@@ -729,9 +737,9 @@ def new_synthetic_file(filename, project=None):
 #
 def new_empty_node(ref_node=None):
     if ref_node is not None:
-        return Node({}, ref_node[1], ref_node[2], next(_SYNTHETIC_COUNTER))
+        return Node({}, ref_node.file_index, ref_node.line, next(_SYNTHETIC_COUNTER))
     else:
-        return Node({}, None, 0, 0)
+        return Node({}, _SYNTHETIC_FILE_INDEX, 0, 0)
 
 
 # new_node_from_dict()
@@ -751,8 +759,8 @@ def new_node_from_dict(indict):
         elif vtype is list:
             ret[k] = __new_node_from_list(v)
         else:
-            ret[k] = Node(str(v), None, 0, next(_SYNTHETIC_COUNTER))
-    return Node(ret, None, 0, next(_SYNTHETIC_COUNTER))
+            ret[k] = Node(str(v), _SYNTHETIC_FILE_INDEX, 0, next(_SYNTHETIC_COUNTER))
+    return Node(ret, _SYNTHETIC_FILE_INDEX, 0, next(_SYNTHETIC_COUNTER))
 
 
 # Internal function to help new_node_from_dict() to handle lists
@@ -765,8 +773,8 @@ def __new_node_from_list(inlist):
         elif vtype is list:
             ret.append(__new_node_from_list(v))
         else:
-            ret.append(Node(str(v), None, 0, next(_SYNTHETIC_COUNTER)))
-    return Node(ret, None, 0, next(_SYNTHETIC_COUNTER))
+            ret.append(Node(str(v), _SYNTHETIC_FILE_INDEX, 0, next(_SYNTHETIC_COUNTER)))
+    return Node(ret, _SYNTHETIC_FILE_INDEX, 0, next(_SYNTHETIC_COUNTER))
 
 
 # _is_composite_list
@@ -787,7 +795,7 @@ def __new_node_from_list(inlist):
 #
 def _is_composite_list(node):
 
-    if type(node[0]) is dict:
+    if type(node.value) is dict:
         has_directives = False
         has_keys = False
 
@@ -817,35 +825,35 @@ def _is_composite_list(node):
 #    source (Node): A composite list
 #
 def _compose_composite_list(target, source):
-    clobber = source[0].get("(=)")
-    prefix = source[0].get("(<)")
-    suffix = source[0].get("(>)")
+    clobber = source.value.get("(=)")
+    prefix = source.value.get("(<)")
+    suffix = source.value.get("(>)")
     if clobber is not None:
         # We want to clobber the target list
         # which basically means replacing the target list
         # with ourselves
-        target[0]["(=)"] = clobber
+        target.value["(=)"] = clobber
         if prefix is not None:
-            target[0]["(<)"] = prefix
-        elif "(<)" in target[0]:
-            target[0]["(<)"][0].clear()
+            target.value["(<)"] = prefix
+        elif "(<)" in target.value:
+            target.value["(<)"].value.clear()
         if suffix is not None:
-            target[0]["(>)"] = suffix
-        elif "(>)" in target[0]:
-            target[0]["(>)"][0].clear()
+            target.value["(>)"] = suffix
+        elif "(>)" in target.value:
+            target.value["(>)"].value.clear()
     else:
         # Not clobbering, so prefix the prefix and suffix the suffix
         if prefix is not None:
-            if "(<)" in target[0]:
-                for v in reversed(prefix[0]):
-                    target[0]["(<)"][0].insert(0, v)
+            if "(<)" in target.value:
+                for v in reversed(prefix.value):
+                    target.value["(<)"].value.insert(0, v)
             else:
-                target[0]["(<)"] = prefix
+                target.value["(<)"] = prefix
         if suffix is not None:
-            if "(>)" in target[0]:
-                target[0]["(>)"][0].extend(suffix[0])
+            if "(>)" in target.value:
+                target.value["(>)"].value.extend(suffix.value)
             else:
-                target[0]["(>)"] = suffix
+                target.value["(>)"] = suffix
 
 
 # _compose_list()
@@ -858,17 +866,17 @@ def _compose_composite_list(target, source):
 #    source (Node): The composition list to be composed from
 #
 def _compose_list(target, source):
-    clobber = source[0].get("(=)")
-    prefix = source[0].get("(<)")
-    suffix = source[0].get("(>)")
+    clobber = source.value.get("(=)")
+    prefix = source.value.get("(<)")
+    suffix = source.value.get("(>)")
     if clobber is not None:
-        target[0].clear()
-        target[0].extend(clobber[0])
+        target.value.clear()
+        target.value.extend(clobber.value)
     if prefix is not None:
-        for v in reversed(prefix[0]):
-            target[0].insert(0, v)
+        for v in reversed(prefix.value):
+            target.value.insert(0, v)
     if suffix is not None:
-        target[0].extend(suffix[0])
+        target.value.extend(suffix.value)
 
 
 # composite_dict()
@@ -885,13 +893,13 @@ def _compose_list(target, source):
 def composite_dict(target, source, path=None):
     if path is None:
         path = []
-    for k, v in source[0].items():
+    for k, v in source.value.items():
         path.append(k)
-        if type(v[0]) is list:
+        if type(v.value) is list:
             # List clobbers anything list-like
-            target_value = target[0].get(k)
+            target_value = target.value.get(k)
             if not (target_value is None or
-                    type(target_value[0]) is list or
+                    type(target_value.value) is list or
                     _is_composite_list(target_value)):
                 raise CompositeError(path,
                                      "{}: List cannot overwrite {} at: {}"
@@ -899,51 +907,51 @@ def composite_dict(target, source, path=None):
                                              k,
                                              node_get_provenance(target, k)))
             # Looks good, clobber it
-            target[0][k] = v
+            target.value[k] = v
         elif _is_composite_list(v):
-            if k not in target[0]:
+            if k not in target.value:
                 # Composite list clobbers empty space
-                target[0][k] = v
-            elif type(target[0][k][0]) is list:
+                target.value[k] = v
+            elif type(target.value[k].value) is list:
                 # Composite list composes into a list
-                _compose_list(target[0][k], v)
-            elif _is_composite_list(target[0][k]):
+                _compose_list(target.value[k], v)
+            elif _is_composite_list(target.value[k]):
                 # Composite list merges into composite list
-                _compose_composite_list(target[0][k], v)
+                _compose_composite_list(target.value[k], v)
             else:
                 # Else composing on top of normal dict or a scalar, so raise...
                 raise CompositeError(path,
                                      "{}: Cannot compose lists onto {}".format(
                                          node_get_provenance(v),
-                                         node_get_provenance(target[0][k])))
-        elif type(v[0]) is dict:
+                                         node_get_provenance(target.value[k])))
+        elif type(v.value) is dict:
             # We're composing a dict into target now
-            if k not in target[0]:
+            if k not in target.value:
                 # Target lacks a dict at that point, make a fresh one with
                 # the same provenance as the incoming dict
-                target[0][k] = Node({}, v[1], v[2], v[3])
-            if type(target[0]) is not dict:
+                target.value[k] = Node({}, v.file_index, v.line, v.column)
+            if type(target.value) is not dict:
                 raise CompositeError(path,
                                      "{}: Cannot compose dictionary onto {}".format(
                                          node_get_provenance(v),
-                                         node_get_provenance(target[0][k])))
-            composite_dict(target[0][k], v, path)
+                                         node_get_provenance(target.value[k])))
+            composite_dict(target.value[k], v, path)
         else:
-            target_value = target[0].get(k)
-            if target_value is not None and type(target_value[0]) is not str:
+            target_value = target.value.get(k)
+            if target_value is not None and type(target_value.value) is not str:
                 raise CompositeError(path,
                                      "{}: Cannot compose scalar on non-scalar at {}".format(
                                          node_get_provenance(v),
-                                         node_get_provenance(target[0][k])))
-            target[0][k] = v
+                                         node_get_provenance(target.value[k])))
+            target.value[k] = v
         path.pop()
 
 
 # Like composite_dict(), but raises an all purpose LoadError for convenience
 #
 def composite(target, source):
-    assert type(source[0]) is dict
-    assert type(target[0]) is dict
+    assert type(source.value) is dict
+    assert type(target.value) is dict
 
     try:
         composite_dict(target, source)
@@ -964,11 +972,11 @@ def composite(target, source):
 def composite_and_move(target, source):
     composite(source, target)
 
-    to_delete = [key for key in target[0].keys() if key not in source[0]]
-    for key, value in source[0].items():
-        target[0][key] = value
+    to_delete = [key for key in target.value.keys() if key not in source.value]
+    for key, value in source.value.items():
+        target.value[key] = value
     for key in to_delete:
-        del target[0][key]
+        del target.value[key]
 
 
 # Types we can short-circuit in node_sanitize for speed.
@@ -987,7 +995,7 @@ def node_sanitize(node, *, dict_type=OrderedDict):
 
     # If we have an unwrappable node, unwrap it
     if node_type is Node:
-        node = node[0]
+        node = node.value
         node_type = type(node)
 
     # Short-circuit None which occurs ca. twice per element
@@ -1039,7 +1047,7 @@ def node_validate(node, valid_keys):
 
     # Probably the fastest way to do this: https://stackoverflow.com/a/23062482
     valid_keys = set(valid_keys)
-    invalid = next((key for key in node[0] if key not in valid_keys), None)
+    invalid = next((key for key in node.value if key not in valid_keys), None)
 
     if invalid:
         provenance = node_get_provenance(node, key=invalid)
@@ -1077,8 +1085,8 @@ __NODE_ASSERT_COMPOSITION_DIRECTIVES = ('(>)', '(<)', '(=)')
 #
 def node_copy(source):
     copy = {}
-    for key, value in source[0].items():
-        value_type = type(value[0])
+    for key, value in source.value.items():
+        value_type = type(value.value)
         if value_type is dict:
             copy[key] = node_copy(value)
         elif value_type is list:
@@ -1088,14 +1096,18 @@ def node_copy(source):
         else:
             raise ValueError("Unable to be quick about node_copy of {}".format(value_type))
 
-    return Node(copy, source[1], source[2], source[3])
+    return Node(copy, source.file_index, source.line, source.column)
 
 
 # Internal function to help node_copy() but for lists.
 def _list_copy(source):
     copy = []
-    for item in source[0]:
-        item_type = type(item[0])
+    for item in source.value:
+        if type(item) is Node:
+            item_type = type(item.value)
+        else:
+            item_type = type(item)
+
         if item_type is dict:
             copy.append(node_copy(item))
         elif item_type is list:
@@ -1105,7 +1117,7 @@ def _list_copy(source):
         else:
             raise ValueError("Unable to be quick about list_copy of {}".format(item_type))
 
-    return Node(copy, source[1], source[2], source[3])
+    return Node(copy, source.file_index, source.line, source.column)
 
 
 # node_final_assertions()
@@ -1122,7 +1134,7 @@ def _list_copy(source):
 def node_final_assertions(node):
     assert type(node) is Node
 
-    for key, value in node[0].items():
+    for key, value in node.value.items():
 
         # Assert that list composition directives dont remain, this
         # indicates that the user intended to override a list which
@@ -1133,7 +1145,7 @@ def node_final_assertions(node):
             raise LoadError(LoadErrorReason.TRAILING_LIST_DIRECTIVE,
                             "{}: Attempt to override non-existing list".format(provenance))
 
-        value_type = type(value[0])
+        value_type = type(value.value)
 
         if value_type is dict:
             node_final_assertions(value)
@@ -1143,8 +1155,8 @@ def node_final_assertions(node):
 
 # Helper function for node_final_assertions(), but for lists.
 def _list_final_assertions(values):
-    for value in values[0]:
-        value_type = type(value[0])
+    for value in values.value:
+        value_type = type(value.value)
 
         if value_type is dict:
             node_final_assertions(value)
@@ -1218,7 +1230,7 @@ def node_find_target(node, target, *, key=None):
     assert type(node) is Node
     assert type(target) is Node
     if key is not None:
-        target = target[0][key]
+        target = target.value[key]
 
     path = []
     if _walk_find_target(node, path, target):
@@ -1231,18 +1243,18 @@ def node_find_target(node, target, *, key=None):
 
 # Helper for node_find_target() which walks a value
 def _walk_find_target(node, path, target):
-    if node[1:] == target[1:]:
+    if node.file_index == target.file_index and node.line == target.line and node.column == target.column:
         return True
-    elif type(node[0]) is dict:
+    elif type(node.value) is dict:
         return _walk_dict_node(node, path, target)
-    elif type(node[0]) is list:
+    elif type(node.value) is list:
         return _walk_list_node(node, path, target)
     return False
 
 
 # Helper for node_find_target() which walks a list
 def _walk_list_node(node, path, target):
-    for i, v in enumerate(node[0]):
+    for i, v in enumerate(node.value):
         path.append(i)
         if _walk_find_target(v, path, target):
             return True
@@ -1252,7 +1264,7 @@ def _walk_list_node(node, path, target):
 
 # Helper for node_find_target() which walks a mapping
 def _walk_dict_node(node, path, target):
-    for k, v in node[0].items():
+    for k, v in node.value.items():
         path.append(k)
         if _walk_find_target(v, path, target):
             return True

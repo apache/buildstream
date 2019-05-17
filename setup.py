@@ -391,6 +391,7 @@ def register_cython_module(module_name, dependencies=None):
 
 BUILD_EXTENSIONS = []
 
+register_cython_module("buildstream._yaml")
 register_cython_module("buildstream._variables")
 
 #####################################################
