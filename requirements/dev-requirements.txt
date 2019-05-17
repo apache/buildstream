@@ -1,9 +1,9 @@
 pylint==2.2.2
 pycodestyle==2.5.0
-pytest==4.3.0
+pytest==4.5.0
 pytest-datafiles==2.0
 pytest-env==0.6.2
-pytest-xdist==1.26.1
+pytest-xdist==1.28.0
 pytest-timeout==1.3.3
 pyftpdlib==1.5.4
 ## The following requirements were added by pip freeze:
