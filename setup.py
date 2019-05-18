@@ -19,13 +19,15 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
+from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
-import versioneer
 
-from pathlib import Path
+# Add local directory to the path, in order to be able to import versioneer
+sys.path.append(os.path.dirname(__file__))
+import versioneer  # noqa
 
 
 ##################################################################

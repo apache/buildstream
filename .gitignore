@@ -8,6 +8,9 @@ build
 # Setuptools distribution folder.
 /dist/
 
+# Pip build metadata
+pip-wheel-metadata/
+
 # Python egg metadata, regenerated from source files by setuptools.
 /src/*.egg-info
 .eggs
