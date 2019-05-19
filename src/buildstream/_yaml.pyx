@@ -528,8 +528,8 @@ def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel,
     return value
 
 
-def __trim_list_provenance(value):
-    ret = []
+cdef list __trim_list_provenance(list value):
+    cdef list ret = []
     for entry in value:
         if type(entry) is not Node:
             entry = Node(entry, _SYNTHETIC_FILE_INDEX, 0, 0)
@@ -764,8 +764,8 @@ def new_node_from_dict(indict):
 
 
 # Internal function to help new_node_from_dict() to handle lists
-def __new_node_from_list(inlist):
-    ret = []
+cdef Node __new_node_from_list(list inlist):
+    cdef list ret = []
     for v in inlist:
         vtype = type(v)
         if vtype is dict:
@@ -793,13 +793,13 @@ def __new_node_from_list(inlist):
 #    (LoadError): If node was a mapping and contained a mix of
 #                 list composition directives and other keys
 #
-def _is_composite_list(node):
+cdef bint _is_composite_list(Node node):
+    cdef bint has_directives = False
+    cdef bint has_keys = False
+    cdef str key
 
     if type(node.value) is dict:
-        has_directives = False
-        has_keys = False
-
-        for key, _ in node_items(node):
+        for key in node_keys(node):
             if key in ['(>)', '(<)', '(=)']:  # pylint: disable=simplifiable-if-statement
                 has_directives = True
             else:
@@ -824,7 +824,7 @@ def _is_composite_list(node):
 #    target (Node): A composite list
 #    source (Node): A composite list
 #
-def _compose_composite_list(target, source):
+cdef void _compose_composite_list(Node target, Node source):
     clobber = source.value.get("(=)")
     prefix = source.value.get("(<)")
     suffix = source.value.get("(>)")
@@ -865,7 +865,7 @@ def _compose_composite_list(target, source):
 #    target (Node): The target list to be composed into
 #    source (Node): The composition list to be composed from
 #
-def _compose_list(target, source):
+cdef void _compose_list(Node target, Node source):
     clobber = source.value.get("(=)")
     prefix = source.value.get("(<)")
     suffix = source.value.get("(>)")
@@ -1100,8 +1100,8 @@ def node_copy(source):
 
 
 # Internal function to help node_copy() but for lists.
-def _list_copy(source):
-    copy = []
+cdef Node _list_copy(Node source):
+    cdef list copy = []
     for item in source.value:
         if type(item) is Node:
             item_type = type(item.value)
@@ -1154,7 +1154,7 @@ def node_final_assertions(node):
 
 
 # Helper function for node_final_assertions(), but for lists.
-def _list_final_assertions(values):
+def _list_final_assertions(Node values):
     for value in values.value:
         value_type = type(value.value)
 
@@ -1242,7 +1242,7 @@ def node_find_target(node, target, *, key=None):
 
 
 # Helper for node_find_target() which walks a value
-def _walk_find_target(node, path, target):
+cdef bint _walk_find_target(Node node, list path, Node target):
     if node.file_index == target.file_index and node.line == target.line and node.column == target.column:
         return True
     elif type(node.value) is dict:
@@ -1253,7 +1253,10 @@ def _walk_find_target(node, path, target):
 
 
 # Helper for node_find_target() which walks a list
-def _walk_list_node(node, path, target):
+cdef bint _walk_list_node(Node node, list path, Node target):
+    cdef int i
+    cdef Node v
+
     for i, v in enumerate(node.value):
         path.append(i)
         if _walk_find_target(v, path, target):
@@ -1263,7 +1266,10 @@ def _walk_list_node(node, path, target):
 
 
 # Helper for node_find_target() which walks a mapping
-def _walk_dict_node(node, path, target):
+cdef bint _walk_dict_node(Node node, list path, Node target):
+    cdef str k
+    cdef Node v
+
     for k, v in node.value.items():
         path.append(k)
         if _walk_find_target(v, path, target):
