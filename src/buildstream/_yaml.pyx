@@ -76,7 +76,7 @@ cdef class Node:
         return what in self.value
 
 # File name handling
-_FILE_LIST = []
+cdef _FILE_LIST = []
 
 
 # Purely synthetic node will have _SYNCTHETIC_FILE_INDEX for the file number, have line number
@@ -310,17 +310,20 @@ class Representer:
 #
 # Raises: LoadError
 #
-def load(filename, shortname=None, copy_tree=False, *, project=None):
+cpdef Node load(str filename, str shortname=None, bint copy_tree=False, object project=None):
     if not shortname:
         shortname = filename
 
+    cdef str displayname
     if (project is not None) and (project.junction is not None):
         displayname = "{}:{}".format(project.junction.name, shortname)
     else:
         displayname = shortname
 
-    file_number = len(_FILE_LIST)
+    cdef Py_ssize_t file_number = len(_FILE_LIST)
     _FILE_LIST.append((filename, shortname, displayname, None, project))
+
+    cdef Node data
 
     try:
         with open(filename) as f:
@@ -345,7 +348,7 @@ def load(filename, shortname=None, copy_tree=False, *, project=None):
 
 # Like load(), but doesnt require the data to be in a file
 #
-def load_data(data, file_index=_SYNTHETIC_FILE_INDEX, file_name=None, copy_tree=False):
+def load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_name=None, bint copy_tree=False):
 
     try:
         rep = Representer(file_index)
@@ -394,7 +397,7 @@ def load_data(data, file_index=_SYNTHETIC_FILE_INDEX, file_name=None, copy_tree=
 # Args:
 #    contents (any): Content to write out
 #    filename (str): The (optional) file name to write out to
-def dump(contents, filename=None):
+def dump(object contents, str filename=None):
     roundtrip_dump(node_sanitize(contents), file=filename)
 
 
@@ -403,14 +406,14 @@ def dump(contents, filename=None):
 # Gets the provenance for a node
 #
 # Args:
-#   node (dict): a dictionary
+#   node (Node): a dictionary
 #   key (str): key in the dictionary
 #   indices (list of indexes): Index path, in the case of list values
 #
 # Returns: The Provenance of the dict, member or list element
 #
-def node_get_provenance(node, key=None, indices=None):
-    assert is_node(node)
+def node_get_provenance(Node node, str key=None, list indices=None):
+    assert type(node.value) is dict
 
     if key is None:
         # Retrieving the provenance for this node directly
@@ -419,9 +422,9 @@ def node_get_provenance(node, key=None, indices=None):
     if key and not indices:
         return ProvenanceInformation(node.value.get(key))
 
-    nodeish = node.value.get(key)
+    cdef Node nodeish = <Node> node.value.get(key)
     for idx in indices:
-        nodeish = nodeish.value[idx]
+        nodeish = <Node> nodeish.value[idx]
 
     return ProvenanceInformation(nodeish)
 
@@ -454,9 +457,7 @@ _sentinel = object()
 # Note:
 #    Returned strings are stripped of leading and trailing whitespace
 #
-def node_get(node, expected_type, key, indices=None, *, default_value=_sentinel, allow_none=False):
-    assert type(node) is Node
-
+def node_get(Node node, object expected_type, str key, list indices=None, *, object default_value=_sentinel, bint allow_none=False):
     if indices is None:
         if default_value is _sentinel:
             value = node.value.get(key, Node(default_value, _SYNTHETIC_FILE_INDEX, 0, 0))
@@ -549,24 +550,26 @@ cdef list __trim_list_provenance(list value):
 # create entries before using `node_set`
 #
 # Args:
-#    node (tuple): The node
+#    node (Node): The node
 #    key (str): The key name
 #    value: The value
 #    indices: Any indices to index into the list referenced by key, like in
 #             `node_get` (must be a list of integers)
 #
-def node_set(node, key, value, indices=None):
+def node_set(Node node, object key, object value, list indices=None):
+    cdef int idx
+
     if indices:
-        node = node.value[key]
+        node = <Node> (<dict> node.value)[key]
         key = indices.pop()
         for idx in indices:
-            node = node.value[idx]
+            node = <Node> (<list> node.value)[idx]
     if type(value) is Node:
         node.value[key] = value
     else:
         try:
             # Need to do this just in case we're modifying a list
-            old_value = node.value[key]
+            old_value = <Node> node.value[key]
         except KeyError:
             old_value = None
         if old_value is None:
@@ -590,16 +593,14 @@ def node_set(node, key, value, indices=None):
 #    key (str): The list name in the node
 #    length (int): The length to extend the list to
 #    default (any): The default value to extend with.
-def node_extend_list(node, key, length, default):
+def node_extend_list(Node node, str key, Py_ssize_t length, object default):
     assert type(default) is str or default in ([], {})
 
-    list_node = node.value.get(key)
+    cdef Node list_node = <Node> node.value.get(key)
     if list_node is None:
         list_node = node.value[key] = Node([], node.file_index, node.line, next(_SYNTHETIC_COUNTER))
 
-    assert type(list_node.value) is list
-
-    the_list = list_node.value
+    cdef list the_list = list_node.value
     def_type = type(default)
 
     file_index = node.file_index
@@ -636,6 +637,9 @@ def node_extend_list(node, key, length, default):
 def node_items(node):
     if type(node) is not Node:
         node = Node(node, _SYNTHETIC_FILE_INDEX, 0, 0)
+
+    cdef str key
+
     for key, value in node.value.items():
         if type(value) is not Node:
             value = Node(value, _SYNTHETIC_FILE_INDEX, 0, 0)
@@ -674,7 +678,7 @@ def node_keys(node):
 #    key (str): The key we want to remove
 #    safe (bool): Whether to raise a KeyError if unable
 #
-def node_del(node, key, safe=False):
+def node_del(Node node, str key, bint safe=False):
     try:
         del node.value[key]
     except KeyError:
@@ -716,9 +720,10 @@ def is_node(maybenode):
 #    (Node): An empty YAML mapping node, whose provenance is to this new
 #            synthetic file
 #
-def new_synthetic_file(filename, project=None):
-    file_index = len(_FILE_LIST)
-    node = Node({}, file_index, 0, 0)
+def new_synthetic_file(str filename, object project=None):
+    cdef Py_ssize_t file_index = len(_FILE_LIST)
+    cdef Node node = Node({}, file_index, 0, 0)
+
     _FILE_LIST.append((filename,
                        filename,
                        "<synthetic {}>".format(filename),
@@ -735,7 +740,7 @@ def new_synthetic_file(filename, project=None):
 # Returns
 #    (Node): A new empty YAML mapping node
 #
-def new_empty_node(ref_node=None):
+def new_empty_node(Node ref_node=None):
     if ref_node is not None:
         return Node({}, ref_node.file_index, ref_node.line, next(_SYNTHETIC_COUNTER))
     else:
@@ -750,8 +755,9 @@ def new_empty_node(ref_node=None):
 # Returns:
 #   (Node): A new synthetic YAML tree which represents this dictionary
 #
-def new_node_from_dict(indict):
-    ret = {}
+def new_node_from_dict(dict indict):
+    cdef dict ret = {}
+    cdef str k
     for k, v in indict.items():
         vtype = type(v)
         if vtype is dict:
@@ -890,7 +896,10 @@ cdef void _compose_list(Node target, Node source):
 #
 # Raises: CompositeError
 #
-def composite_dict(target, source, path=None):
+def composite_dict(Node target, Node source, list path=None):
+    cdef str k
+    cdef Node v, target_value
+
     if path is None:
         path = []
     for k, v in source.value.items():
@@ -949,7 +958,7 @@ def composite_dict(target, source, path=None):
 
 # Like composite_dict(), but raises an all purpose LoadError for convenience
 #
-def composite(target, source):
+def composite(Node target, Node source):
     assert type(source.value) is dict
     assert type(target.value) is dict
 
@@ -969,10 +978,12 @@ def composite(target, source):
 
 # Like composite(target, source), but where target overrides source instead.
 #
-def composite_and_move(target, source):
+def composite_and_move(Node target, Node source):
     composite(source, target)
 
-    to_delete = [key for key in target.value.keys() if key not in source.value]
+    cdef str key
+    cdef Node value
+    cdef list to_delete = [key for key in target.value.keys() if key not in source.value]
     for key, value in source.value.items():
         target.value[key] = value
     for key in to_delete:
@@ -1036,18 +1047,18 @@ def node_sanitize(node, *, dict_type=OrderedDict):
 # means a typo which would otherwise not trigger an error).
 #
 # Args:
-#    node (dict): A dictionary loaded from YAML
+#    node (Node): A dictionary loaded from YAML
 #    valid_keys (list): A list of valid keys for the specified node
 #
 # Raises:
 #    LoadError: In the case that the specified node contained
 #               one or more invalid keys
 #
-def node_validate(node, valid_keys):
+def node_validate(Node node, list valid_keys):
 
     # Probably the fastest way to do this: https://stackoverflow.com/a/23062482
-    valid_keys = set(valid_keys)
-    invalid = next((key for key in node.value if key not in valid_keys), None)
+    cdef set valid_keys_set = set(valid_keys)
+    invalid = next((key for key in node.value if key not in valid_keys_set), None)
 
     if invalid:
         provenance = node_get_provenance(node, key=invalid)
@@ -1083,8 +1094,11 @@ __NODE_ASSERT_COMPOSITION_DIRECTIVES = ('(>)', '(<)', '(=)')
 # Returns:
 #    (Node): A deep copy of source with provenance preserved.
 #
-def node_copy(source):
-    copy = {}
+def node_copy(Node source):
+    cdef dict copy = {}
+    cdef str key
+    cdef Node value
+
     for key, value in source.value.items():
         value_type = type(value.value)
         if value_type is dict:
@@ -1131,8 +1145,9 @@ cdef Node _list_copy(Node source):
 # Raises:
 #    (LoadError): If any assertions fail
 #
-def node_final_assertions(node):
-    assert type(node) is Node
+def node_final_assertions(Node node):
+    cdef str key
+    cdef Node value
 
     for key, value in node.value.items():
 
@@ -1182,12 +1197,12 @@ def _list_final_assertions(Node values):
 # Note that dashes are generally preferred for variable names and
 # usage in YAML, but things such as option names which will be
 # evaluated with jinja2 cannot use dashes.
-def assert_symbol_name(provenance, symbol_name, purpose, *, allow_dashes=True):
-    valid_chars = string.digits + string.ascii_letters + '_'
+def assert_symbol_name(object provenance, str symbol_name, str purpose, *, bint allow_dashes=True):
+    cdef str valid_chars = string.digits + string.ascii_letters + '_'
     if allow_dashes:
         valid_chars += '-'
 
-    valid = True
+    cdef bint valid = True
     if not symbol_name:
         valid = False
     elif any(x not in valid_chars for x in symbol_name):
@@ -1226,13 +1241,11 @@ def assert_symbol_name(provenance, symbol_name, purpose, *, allow_dashes=True):
 #
 # Returns:
 #    (list): A path from `node` to `target` or None if `target` is not in the subtree
-def node_find_target(node, target, *, key=None):
-    assert type(node) is Node
-    assert type(target) is Node
+def node_find_target(Node node, Node target, *, str key=None):
     if key is not None:
         target = target.value[key]
 
-    path = []
+    cdef list path = []
     if _walk_find_target(node, path, target):
         if key:
             # Remove key from end of path
