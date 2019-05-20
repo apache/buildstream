@@ -90,21 +90,16 @@ _SYNTHETIC_COUNTER = count(start=-1, step=-1)
 
 
 # Returned from node_get_provenance
-class ProvenanceInformation:
+cdef class ProvenanceInformation:
 
-    __slots__ = (
-        "filename",
-        "shortname",
-        "displayname",
-        "line",
-        "col",
-        "toplevel",
-        "node",
-        "project",
-        "is_synthetic",
-    )
+    cdef public Node node
+    cdef str displayname
+    cdef public str filename, shortname
+    cdef public int col, line
+    cdef public object project, toplevel
+    cdef public bint is_synthetic
 
-    def __init__(self, nodeish):
+    def __init__(self, Node nodeish):
         self.node = nodeish
         if (nodeish is None) or (nodeish.file_index is None):
             self.filename = ""
@@ -1239,7 +1234,7 @@ def _list_final_assertions(Node values):
 # Note that dashes are generally preferred for variable names and
 # usage in YAML, but things such as option names which will be
 # evaluated with jinja2 cannot use dashes.
-def assert_symbol_name(object provenance, str symbol_name, str purpose, *, bint allow_dashes=True):
+def assert_symbol_name(ProvenanceInformation provenance, str symbol_name, str purpose, *, bint allow_dashes=True):
     cdef str valid_chars = string.digits + string.ascii_letters + '_'
     if allow_dashes:
         valid_chars += '-'
