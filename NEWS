@@ -1,4 +1,18 @@
 =================
+buildstream 1.2.7
+=================
+
+  o Improved messaging around unknown artifact cache keys (#981)
+
+  o Fixed crash which occurs when deleting artifact cache with
+    open workspaces (#1017)
+
+  o Fixed `bst --no-strict build --track-all ...` which sometimes
+    exited successfully without building anything (#1014)
+
+  o Fixed incorrect error message with malformed YAML in project.conf (#1019)
+
+=================
 buildstream 1.2.6
 =================
 
