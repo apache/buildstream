@@ -474,7 +474,7 @@ def dump(object contents, str filename=None):
 #
 # Returns: The Provenance of the dict, member or list element
 #
-def node_get_provenance(Node node, str key=None, list indices=None):
+cpdef ProvenanceInformation node_get_provenance(Node node, str key=None, list indices=None):
     assert type(node.value) is dict
 
     if key is None:
@@ -519,7 +519,7 @@ _sentinel = object()
 # Note:
 #    Returned strings are stripped of leading and trailing whitespace
 #
-def node_get(Node node, object expected_type, str key, list indices=None, *, object default_value=_sentinel, bint allow_none=False):
+cpdef node_get(Node node, object expected_type, str key, list indices=None, object default_value=_sentinel, bint allow_none=False):
     if indices is None:
         if default_value is _sentinel:
             value = node.value.get(key, Node(default_value, _SYNTHETIC_FILE_INDEX, 0, 0))
@@ -566,8 +566,7 @@ def node_get(Node node, object expected_type, str key, list indices=None, *, obj
         except (ValueError, TypeError):
             provenance = node_get_provenance(node, key=key, indices=indices)
             if indices:
-                path = [key]
-                path.extend("[{:d}]".format(i) for i in indices)
+                path = [key, *["[{:d}]".format(i) for i in indices]]
                 path = "".join(path)
             else:
                 path = key
@@ -817,7 +816,7 @@ def new_empty_node(Node ref_node=None):
 # Returns:
 #   (Node): A new synthetic YAML tree which represents this dictionary
 #
-def new_node_from_dict(dict indict):
+cpdef Node new_node_from_dict(dict indict):
     cdef dict ret = {}
     cdef str k
     for k, v in indict.items():
@@ -958,7 +957,7 @@ cdef void _compose_list(Node target, Node source):
 #
 # Raises: CompositeError
 #
-def composite_dict(Node target, Node source, list path=None):
+cpdef void composite_dict(Node target, Node source, list path=None) except *:
     cdef str k
     cdef Node v, target_value
 
@@ -1020,7 +1019,7 @@ def composite_dict(Node target, Node source, list path=None):
 
 # Like composite_dict(), but raises an all purpose LoadError for convenience
 #
-def composite(Node target, Node source):
+cpdef void composite(Node target, Node source) except *:
     assert type(source.value) is dict
     assert type(target.value) is dict
 
@@ -1063,7 +1062,7 @@ __SANITIZE_SHORT_CIRCUIT_TYPES = (int, float, str, bool)
 #
 # Only dicts are ordered, list elements are left in order.
 #
-def node_sanitize(node, *, dict_type=OrderedDict):
+cpdef object node_sanitize(object node, object dict_type=OrderedDict):
     node_type = type(node)
 
     # If we have an unwrappable node, unwrap it
@@ -1096,7 +1095,7 @@ def node_sanitize(node, *, dict_type=OrderedDict):
     # Sometimes we're handed tuples and we can't be sure what they contain
     # so we have to sanitize into them
     elif node_type is tuple:
-        return tuple((node_sanitize(v, dict_type=dict_type) for v in node))
+        return tuple([node_sanitize(v, dict_type=dict_type) for v in node])
 
     # Everything else just gets returned as-is.
     return node
@@ -1156,7 +1155,7 @@ __NODE_ASSERT_COMPOSITION_DIRECTIVES = ('(>)', '(<)', '(=)')
 # Returns:
 #    (Node): A deep copy of source with provenance preserved.
 #
-def node_copy(Node source):
+cpdef Node node_copy(Node source):
     cdef dict copy = {}
     cdef str key
     cdef Node value
@@ -1207,7 +1206,7 @@ cdef Node _list_copy(Node source):
 # Raises:
 #    (LoadError): If any assertions fail
 #
-def node_final_assertions(Node node):
+cpdef void node_final_assertions(Node node) except *:
     cdef str key
     cdef Node value
 
@@ -1303,7 +1302,7 @@ def assert_symbol_name(ProvenanceInformation provenance, str symbol_name, str pu
 #
 # Returns:
 #    (list): A path from `node` to `target` or None if `target` is not in the subtree
-def node_find_target(Node node, Node target, *, str key=None):
+cpdef list node_find_target(Node node, Node target, str key=None):
     if key is not None:
         target = target.value[key]
 
