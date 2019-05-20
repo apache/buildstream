@@ -57,3 +57,4 @@ class MetaElement():
         self.build_dependencies = []
         self.dependencies = []
         self.first_pass = first_pass
+        self.is_junction = kind == "junction"

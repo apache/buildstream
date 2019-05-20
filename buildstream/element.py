@@ -193,9 +193,8 @@ class Element(Plugin):
 
         super().__init__(meta.name, context, project, meta.provenance, "element")
 
-        self.__is_junction = meta.kind == "junction"
-
-        if not self.__is_junction:
+        # Ensure the project is fully loaded here rather than later on
+        if not meta.is_junction:
             project.ensure_fully_loaded()
 
         self.normal_name = _get_normal_name(self.name)
@@ -243,22 +242,24 @@ class Element(Plugin):
         self.__batch_prepare_assemble_collect = None  # Collect dir for batching across prepare()/assemble()
 
         # Ensure we have loaded this class's defaults
-        self.__init_defaults(plugin_conf)
+        self.__init_defaults(project, plugin_conf, meta.kind, meta.is_junction)
 
         # Collect the composited variables and resolve them
-        variables = self.__extract_variables(meta)
+        variables = self.__extract_variables(project, meta)
         _yaml.node_set(variables, 'element-name', self.name)
         self.__variables = Variables(variables)
 
         # Collect the composited environment now that we have variables
-        self.__environment = self.__extract_environment(meta)
+        unexpanded_env = self.__extract_environment(project, meta)
+        self.__environment = self.__expand_environment(unexpanded_env)
 
         # Collect the environment nocache blacklist list
-        nocache = self.__extract_env_nocache(meta)
+        nocache = self.__extract_env_nocache(project, meta)
         self.__env_nocache = nocache
 
         # Grab public domain data declared for this instance
-        self.__public = self.__extract_public(meta)
+        unexpanded_public = self.__extract_public(meta)
+        self.__public = self.__expand_splits(unexpanded_public)
         self.__dynamic_public = None
 
         # Collect the composited element configuration and
@@ -267,13 +268,13 @@ class Element(Plugin):
         self._configure(self.__config)
 
         # Extract remote execution URL
-        if not self.__is_junction:
-            self.__remote_execution_specs = project.remote_execution_specs
-        else:
+        if meta.is_junction:
             self.__remote_execution_specs = None
+        else:
+            self.__remote_execution_specs = project.remote_execution_specs
 
         # Extract Sandbox config
-        self.__sandbox_config = self.__extract_sandbox_config(meta)
+        self.__sandbox_config = self.__extract_sandbox_config(project, meta)
 
         self.__sandbox_config_supported = True
         if not self.__use_remote_execution():
@@ -981,7 +982,7 @@ class Element(Plugin):
 
         # Instantiate sources and generate their keys
         for meta_source in meta.sources:
-            meta_source.first_pass = meta.kind == "junction"
+            meta_source.first_pass = meta.is_junction
             source = meta.project.create_source(meta_source,
                                                 first_pass=meta.first_pass)
 
@@ -2422,14 +2423,14 @@ class Element(Plugin):
             # Cleanup the build dir
             utils._force_rmtree(rootdir)
 
-    def __compose_default_splits(self, defaults):
-        project = self._get_project()
+    @classmethod
+    def __compose_default_splits(cls, project, defaults, is_junction):
 
         element_public = _yaml.node_get(defaults, Mapping, 'public', default_value={})
         element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
         element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
 
-        if self.__is_junction:
+        if is_junction:
             splits = _yaml.node_copy(element_splits)
         else:
             assert project._splits is not None
@@ -2442,10 +2443,11 @@ class Element(Plugin):
         _yaml.node_set(element_public, 'bst', element_bst)
         _yaml.node_set(defaults, 'public', element_public)
 
-    def __init_defaults(self, plugin_conf):
+    @classmethod
+    def __init_defaults(cls, project, plugin_conf, kind, is_junction):
         # Defaults are loaded once per class and then reused
         #
-        if self.__defaults is None:
+        if cls.__defaults is None:
             defaults = _yaml.new_empty_node()
 
             if plugin_conf is not None:
@@ -2457,39 +2459,44 @@ class Element(Plugin):
                         raise e
 
             # Special case; compose any element-wide split-rules declarations
-            self.__compose_default_splits(defaults)
+            cls.__compose_default_splits(project, defaults, is_junction)
 
             # Override the element's defaults with element specific
             # overrides from the project.conf
-            project = self._get_project()
-            if self.__is_junction:
+            if is_junction:
                 elements = project.first_pass_config.element_overrides
             else:
                 elements = project.element_overrides
 
-            overrides = _yaml.node_get(elements, Mapping, self.get_kind(), default_value=None)
+            overrides = _yaml.node_get(elements, Mapping, kind, default_value=None)
             if overrides:
                 _yaml.composite(defaults, overrides)
 
             # Set the data class wide
-            type(self).__defaults = defaults
+            cls.__defaults = defaults
 
-    # This will resolve the final environment to be used when
+    # This will acquire the environment to be used when
     # creating sandboxes for this element
     #
-    def __extract_environment(self, meta):
-        default_env = _yaml.node_get(self.__defaults, Mapping, 'environment', default_value={})
+    @classmethod
+    def __extract_environment(cls, project, meta):
+        default_env = _yaml.node_get(cls.__defaults, Mapping, 'environment', default_value={})
 
-        if self.__is_junction:
+        if meta.is_junction:
             environment = _yaml.new_empty_node()
         else:
-            project = self._get_project()
             environment = _yaml.node_copy(project.base_environment)
 
         _yaml.composite(environment, default_env)
         _yaml.composite(environment, meta.environment)
         _yaml.node_final_assertions(environment)
 
+        return environment
+
+    # This will resolve the final environment to be used when
+    # creating sandboxes for this element
+    #
+    def __expand_environment(self, environment):
         # Resolve variables in environment value strings
         final_env = {}
         for key, _ in self.node_items(environment):
@@ -2497,15 +2504,14 @@ class Element(Plugin):
 
         return final_env
 
-    def __extract_env_nocache(self, meta):
-        if self.__is_junction:
+    @classmethod
+    def __extract_env_nocache(cls, project, meta):
+        if meta.is_junction:
             project_nocache = []
         else:
-            project = self._get_project()
-            project.ensure_fully_loaded()
             project_nocache = project.base_env_nocache
 
-        default_nocache = _yaml.node_get(self.__defaults, list, 'environment-nocache', default_value=[])
+        default_nocache = _yaml.node_get(cls.__defaults, list, 'environment-nocache', default_value=[])
         element_nocache = meta.env_nocache
 
         # Accumulate values from the element default, the project and the element
@@ -2518,15 +2524,14 @@ class Element(Plugin):
     # This will resolve the final variables to be used when
     # substituting command strings to be run in the sandbox
     #
-    def __extract_variables(self, meta):
-        default_vars = _yaml.node_get(self.__defaults, Mapping, 'variables',
+    @classmethod
+    def __extract_variables(cls, project, meta):
+        default_vars = _yaml.node_get(cls.__defaults, Mapping, 'variables',
                                       default_value={})
 
-        project = self._get_project()
-        if self.__is_junction:
+        if meta.is_junction:
             variables = _yaml.node_copy(project.first_pass_config.base_variables)
         else:
-            project.ensure_fully_loaded()
             variables = _yaml.node_copy(project.base_variables)
 
         _yaml.composite(variables, default_vars)
@@ -2545,10 +2550,11 @@ class Element(Plugin):
     # This will resolve the final configuration to be handed
     # off to element.configure()
     #
-    def __extract_config(self, meta):
+    @classmethod
+    def __extract_config(cls, meta):
 
         # The default config is already composited with the project overrides
-        config = _yaml.node_get(self.__defaults, Mapping, 'config', default_value={})
+        config = _yaml.node_get(cls.__defaults, Mapping, 'config', default_value={})
         config = _yaml.node_copy(config)
 
         _yaml.composite(config, meta.config)
@@ -2558,15 +2564,14 @@ class Element(Plugin):
 
     # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
     #
-    def __extract_sandbox_config(self, meta):
-        if self.__is_junction:
+    @classmethod
+    def __extract_sandbox_config(cls, project, meta):
+        if meta.is_junction:
             sandbox_config = _yaml.new_node_from_dict({
                 'build-uid': 0,
                 'build-gid': 0
             })
         else:
-            project = self._get_project()
-            project.ensure_fully_loaded()
             sandbox_config = _yaml.node_copy(project._sandbox)
 
         # Get the platform to ask for host architecture
@@ -2575,7 +2580,7 @@ class Element(Plugin):
         host_os = platform.get_host_os()
 
         # The default config is already composited with the project overrides
-        sandbox_defaults = _yaml.node_get(self.__defaults, Mapping, 'sandbox', default_value={})
+        sandbox_defaults = _yaml.node_get(cls.__defaults, Mapping, 'sandbox', default_value={})
         sandbox_defaults = _yaml.node_copy(sandbox_defaults)
 
         _yaml.composite(sandbox_config, sandbox_defaults)
@@ -2585,23 +2590,24 @@ class Element(Plugin):
         # Sandbox config, unlike others, has fixed members so we should validate them
         _yaml.node_validate(sandbox_config, ['build-uid', 'build-gid', 'build-os', 'build-arch'])
 
-        build_arch = self.node_get_member(sandbox_config, str, 'build-arch', default=None)
+        build_arch = _yaml.node_get(sandbox_config, str, 'build-arch', default_value=None)
         if build_arch:
             build_arch = Platform.canonicalize_arch(build_arch)
         else:
             build_arch = host_arch
 
         return SandboxConfig(
-            self.node_get_member(sandbox_config, int, 'build-uid'),
-            self.node_get_member(sandbox_config, int, 'build-gid'),
-            self.node_get_member(sandbox_config, str, 'build-os', default=host_os),
+            _yaml.node_get(sandbox_config, int, 'build-uid'),
+            _yaml.node_get(sandbox_config, int, 'build-gid'),
+            _yaml.node_get(sandbox_config, str, 'build-os', default_value=host_os),
             build_arch)
 
     # This makes a special exception for the split rules, which
     # elements may extend but whos defaults are defined in the project.
     #
-    def __extract_public(self, meta):
-        base_public = _yaml.node_get(self.__defaults, Mapping, 'public', default_value={})
+    @classmethod
+    def __extract_public(cls, meta):
+        base_public = _yaml.node_get(cls.__defaults, Mapping, 'public', default_value={})
         base_public = _yaml.node_copy(base_public)
 
         base_bst = _yaml.node_get(base_public, Mapping, 'bst', default_value={})
@@ -2620,13 +2626,20 @@ class Element(Plugin):
 
         _yaml.node_final_assertions(element_public)
 
-        # Also, resolve any variables in the public split rules directly
-        for domain, splits in self.node_items(base_splits):
+        return element_public
+
+    # Expand the splits in the public data using the Variables in the element
+    def __expand_splits(self, element_public):
+        element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
+        element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
+
+        # Resolve any variables in the public split rules directly
+        for domain, splits in self.node_items(element_splits):
             splits = [
                 self.__variables.subst(split.strip())
                 for split in splits
             ]
-            _yaml.node_set(base_splits, domain, splits)
+            _yaml.node_set(element_splits, domain, splits)
 
         return element_public
 
