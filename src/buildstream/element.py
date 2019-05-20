@@ -207,7 +207,8 @@ class Element(Plugin):
         self.__runtime_dependencies = []        # Direct runtime dependency Elements
         self.__build_dependencies = []          # Direct build dependency Elements
         self.__reverse_dependencies = set()     # Direct reverse dependency Elements
-        self.__ready_for_runtime = False        # Wether the element has all its dependencies ready and has a cache key
+        self.__ready_for_runtime = False        # Whether the element has all dependencies ready and has a cache key
+        self.__ready_for_runtime_and_cached = False  # Whether the element has all deps ready for runtime and cached
         self.__sources = []                     # List of Sources
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
@@ -1218,6 +1219,13 @@ class Element(Plugin):
         if not self.__ready_for_runtime and self.__cache_key is not None:
             self.__ready_for_runtime = all(
                 dep.__ready_for_runtime for dep in self.__runtime_dependencies)
+
+        if self.__ready_for_runtime:
+            # ready_for_runtime_and_cached is stronger than ready_for_runtime, so don't
+            # check the former if the latter is False
+            if not self.__ready_for_runtime_and_cached and self._cached_success():
+                self.__ready_for_runtime_and_cached = all(
+                    dep.__ready_for_runtime_and_cached for dep in self.__runtime_dependencies)
 
     # _get_display_key():
     #
@@ -2873,10 +2881,12 @@ class Element(Plugin):
             element = queue.pop()
 
             old_ready_for_runtime = element.__ready_for_runtime
+            old_ready_for_runtime_and_cached = element.__ready_for_runtime_and_cached
             old_strict_cache_key = element.__strict_cache_key
             element._update_state()
 
             if element.__ready_for_runtime != old_ready_for_runtime or \
+               element.__ready_for_runtime_and_cached != old_ready_for_runtime_and_cached or \
                element.__strict_cache_key != old_strict_cache_key:
                 for rdep in element.__reverse_dependencies:
                     queue.push(rdep._unique_id, rdep)
