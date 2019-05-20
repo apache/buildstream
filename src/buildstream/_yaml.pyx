@@ -156,13 +156,11 @@ class YAMLLoadError(Exception):
 # Mappings must only have string keys, values are always represented as
 # strings if they are scalar, or else as simple dictionaries and lists.
 #
-class Representer:
-    __slots__ = (
-        "_file_index",
-        "state",
-        "output",
-        "keys",
-    )
+cdef class Representer:
+
+    cdef int _file_index
+    cdef str state
+    cdef list output, keys
 
     # Initialise a new representer
     #
@@ -171,7 +169,7 @@ class Representer:
     #
     # Args:
     #   file_index (int): The index of this YAML file
-    def __init__(self, file_index):
+    def __init__(self, int file_index):
         self._file_index = file_index
         self.state = "init"
         self.output = []
@@ -184,12 +182,14 @@ class Representer:
     #
     # Raises:
     #   YAMLLoadError: Something went wrong.
-    def handle_event(self, event):
+    cdef void handle_event(self, event) except *:
         if getattr(event, "anchor", None) is not None:
             raise YAMLLoadError("Anchors are disallowed in BuildStream at line {} column {}"
                                 .format(event.start_mark.line, event.start_mark.column))
 
-        if event.__class__.__name__ == "ScalarEvent":
+        cdef str event_name = event.__class__.__name__
+
+        if event_name == "ScalarEvent":
             if event.tag is not None:
                 if not event.tag.startswith("tag:yaml.org,2002:"):
                     raise YAMLLoadError(
@@ -197,77 +197,112 @@ class Representer:
                         "This is disallowed in BuildStream. At line {} column {}"
                         .format(event.start_mark.line, event.start_mark.column))
 
-        handler = "_handle_{}_{}".format(self.state, event.__class__.__name__)
-        handler = getattr(self, handler, None)
+        cdef object handler = self._get_handler_for_event(event_name)
         if handler is None:
             raise YAMLLoadError(
                 "Invalid input detected. No handler for {} in state {} at line {} column {}"
                 .format(event, self.state, event.start_mark.line, event.start_mark.column))
 
-        self.state = handler(event)  # pylint: disable=not-callable
+        # Cython weirdness here, we need to pass self to the function
+        self.state = handler(self, event)  # pylint: disable=not-callable
 
     # Get the output of the YAML parse
     #
     # Returns:
     #   (Node or None): Return the Node instance of the top level mapping or
     #                   None if there wasn't one.
-    def get_output(self):
-        try:
+    cdef Node get_output(self):
+        if len(self.output):
             return self.output[0]
-        except IndexError:
-            return None
+        return None
 
-    def _handle_init_StreamStartEvent(self, ev):
+    cdef object _get_handler_for_event(self, str event_name):
+        if self.state == "wait_list_item":
+            if event_name == "ScalarEvent":
+                return self._handle_wait_list_item_ScalarEvent
+            elif event_name == "MappingStartEvent":
+                return self._handle_wait_list_item_MappingStartEvent
+            elif event_name == "SequenceStartEvent":
+                return self._handle_wait_list_item_SequenceStartEvent
+            elif event_name == "SequenceEndEvent":
+                return self._handle_wait_list_item_SequenceEndEvent
+        elif self.state == "wait_value":
+            if event_name == "ScalarEvent":
+                return self._handle_wait_value_ScalarEvent
+            elif event_name == "MappingStartEvent":
+                return self._handle_wait_value_MappingStartEvent
+            elif event_name == "SequenceStartEvent":
+                return self._handle_wait_value_SequenceStartEvent
+        elif self.state == "wait_key":
+            if event_name == "ScalarEvent":
+                return self._handle_wait_key_ScalarEvent
+            elif event_name == "MappingEndEvent":
+                return self._handle_wait_key_MappingEndEvent
+        elif self.state == "stream":
+            if event_name == "DocumentStartEvent":
+                return self._handle_stream_DocumentStartEvent
+            elif event_name == "StreamEndEvent":
+                return self._handle_stream_StreamEndEvent
+        elif self.state == "doc":
+            if event_name == "MappingStartEvent":
+                return self._handle_doc_MappingStartEvent
+            elif event_name == "DocumentEndEvent":
+                return self._handle_doc_DocumentEndEvent
+        elif self.state == "init" and event_name == "StreamStartEvent":
+            return self._handle_init_StreamStartEvent
+        return None
+
+    cdef str _handle_init_StreamStartEvent(self, object ev):
         return "stream"
 
-    def _handle_stream_DocumentStartEvent(self, ev):
+    cdef str _handle_stream_DocumentStartEvent(self, object ev):
         return "doc"
 
-    def _handle_doc_MappingStartEvent(self, ev):
+    cdef str _handle_doc_MappingStartEvent(self, object ev):
         newmap = Node({}, self._file_index, ev.start_mark.line, ev.start_mark.column)
         self.output.append(newmap)
         return "wait_key"
 
-    def _handle_wait_key_ScalarEvent(self, ev):
+    cdef str _handle_wait_key_ScalarEvent(self, object ev):
         self.keys.append(ev.value)
         return "wait_value"
 
-    def _handle_wait_value_ScalarEvent(self, ev):
+    cdef str _handle_wait_value_ScalarEvent(self, object ev):
         key = self.keys.pop()
-        self.output[-1].value[key] = \
+        (<dict> (<Node> self.output[-1]).value)[key] = \
             Node(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column)
         return "wait_key"
 
-    def _handle_wait_value_MappingStartEvent(self, ev):
-        new_state = self._handle_doc_MappingStartEvent(ev)
+    cdef str _handle_wait_value_MappingStartEvent(self, object ev):
+        cdef str new_state = self._handle_doc_MappingStartEvent(ev)
         key = self.keys.pop()
-        self.output[-2].value[key] = self.output[-1]
+        (<dict> (<Node> self.output[-2]).value)[key] = self.output[-1]
         return new_state
 
-    def _handle_wait_key_MappingEndEvent(self, ev):
+    cdef str _handle_wait_key_MappingEndEvent(self, object ev):
         # We've finished a mapping, so pop it off the output stack
         # unless it's the last one in which case we leave it
         if len(self.output) > 1:
             self.output.pop()
-            if type(self.output[-1].value) is list:
+            if type((<Node> self.output[-1]).value) is list:
                 return "wait_list_item"
             else:
                 return "wait_key"
         else:
             return "doc"
 
-    def _handle_wait_value_SequenceStartEvent(self, ev):
+    cdef str _handle_wait_value_SequenceStartEvent(self, object ev):
         self.output.append(Node([], self._file_index, ev.start_mark.line, ev.start_mark.column))
-        self.output[-2].value[self.keys[-1]] = self.output[-1]
+        (<dict> (<Node> self.output[-2]).value)[self.keys[-1]] = self.output[-1]
         return "wait_list_item"
 
-    def _handle_wait_list_item_SequenceStartEvent(self, ev):
-        self.keys.append(len(self.output[-1].value))
+    cdef str _handle_wait_list_item_SequenceStartEvent(self, object ev):
+        self.keys.append(len((<Node> self.output[-1]).value))
         self.output.append(Node([], self._file_index, ev.start_mark.line, ev.start_mark.column))
-        self.output[-2].value.append(self.output[-1])
+        (<list> (<Node> self.output[-2]).value).append(self.output[-1])
         return "wait_list_item"
 
-    def _handle_wait_list_item_SequenceEndEvent(self, ev):
+    cdef str _handle_wait_list_item_SequenceEndEvent(self, object ev):
         # When ending a sequence, we need to pop a key because we retain the
         # key until the end so that if we need to mutate the underlying entry
         # we can.
@@ -278,22 +313,22 @@ class Representer:
         else:
             return "wait_key"
 
-    def _handle_wait_list_item_ScalarEvent(self, ev):
-        self.output[-1].value.append(
+    cdef str _handle_wait_list_item_ScalarEvent(self, object ev):
+        (<Node> self.output[-1]).value.append(
             Node(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column))
         return "wait_list_item"
 
-    def _handle_wait_list_item_MappingStartEvent(self, ev):
-        new_state = self._handle_doc_MappingStartEvent(ev)
-        self.output[-2].value.append(self.output[-1])
+    cdef str _handle_wait_list_item_MappingStartEvent(self, object ev):
+        cdef str new_state = self._handle_doc_MappingStartEvent(ev)
+        (<list> (<Node> self.output[-2]).value).append(self.output[-1])
         return new_state
 
-    def _handle_doc_DocumentEndEvent(self, ev):
+    cdef str _handle_doc_DocumentEndEvent(self, object ev):
         if len(self.output) != 1:
             raise YAMLLoadError("Zero, or more than one document found in YAML stream")
         return "stream"
 
-    def _handle_stream_StreamEndEvent(self, ev):
+    cdef str _handle_stream_StreamEndEvent(self, object ev):
         return "init"
 
 
@@ -348,12 +383,19 @@ cpdef Node load(str filename, str shortname=None, bint copy_tree=False, object p
 
 # Like load(), but doesnt require the data to be in a file
 #
-def load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_name=None, bint copy_tree=False):
+cpdef Node load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_name=None, bint copy_tree=False):
+    cdef Representer rep
 
     try:
         rep = Representer(file_index)
-        for event in yaml.parse(data, Loader=yaml.CBaseLoader):
-            rep.handle_event(event)
+        parser = yaml.CParser(data)
+
+        try:
+            while parser.check_event():
+                rep.handle_event(parser.get_event())
+        finally:
+            parser.dispose()
+
         contents = rep.get_output()
     except YAMLLoadError as e:
         raise LoadError(LoadErrorReason.INVALID_YAML,
