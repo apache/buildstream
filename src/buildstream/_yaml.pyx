@@ -75,6 +75,26 @@ cdef class Node:
         # code which has access to such nodes would do this.
         return what in self.value
 
+
+# Metadata container for a yaml toplevel node.
+#
+# This class contains metadata around a yaml node in order to be able
+# to trace back the provenance of a node to the file.
+#
+cdef class FileInfo:
+
+    cdef str filename, shortname, displayname
+    cdef Node toplevel,
+    cdef object project
+
+    def __init__(self, str filename, str shortname, str displayname, Node toplevel, object project):
+        self.filename = filename
+        self.shortname = shortname
+        self.displayname = displayname
+        self.toplevel = toplevel
+        self.project = project
+
+
 # File name handling
 cdef _FILE_LIST = []
 
@@ -100,6 +120,8 @@ cdef class ProvenanceInformation:
     cdef public bint is_synthetic
 
     def __init__(self, Node nodeish):
+        cdef FileInfo fileinfo
+
         self.node = nodeish
         if (nodeish is None) or (nodeish.file_index is None):
             self.filename = ""
@@ -110,15 +132,15 @@ cdef class ProvenanceInformation:
             self.toplevel = None
             self.project = None
         else:
-            fileinfo = _FILE_LIST[nodeish.file_index]
-            self.filename = fileinfo[0]
-            self.shortname = fileinfo[1]
-            self.displayname = fileinfo[2]
+            fileinfo = <FileInfo> _FILE_LIST[nodeish.file_index]
+            self.filename = fileinfo.filename
+            self.shortname = fileinfo.shortname
+            self.displayname = fileinfo.displayname
             # We add 1 here to convert from computerish to humanish
             self.line = nodeish.line + 1
             self.col = nodeish.column
-            self.toplevel = fileinfo[3]
-            self.project = fileinfo[4]
+            self.toplevel = fileinfo.toplevel
+            self.project = fileinfo.project
         self.is_synthetic = (self.filename == '') or (self.col < 0)
 
     # Convert a Provenance to a string for error reporting
@@ -351,7 +373,7 @@ cpdef Node load(str filename, str shortname=None, bint copy_tree=False, object p
         displayname = shortname
 
     cdef Py_ssize_t file_number = len(_FILE_LIST)
-    _FILE_LIST.append((filename, shortname, displayname, None, project))
+    _FILE_LIST.append(FileInfo(filename, shortname, displayname, None, project))
 
     cdef Node data
 
@@ -380,6 +402,7 @@ cpdef Node load(str filename, str shortname=None, bint copy_tree=False, object p
 #
 cpdef Node load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_name=None, bint copy_tree=False):
     cdef Representer rep
+    cdef FileInfo f_info
 
     try:
         rep = Representer(file_index)
@@ -410,12 +433,14 @@ cpdef Node load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_na
 
     # Store this away because we'll use it later for "top level" provenance
     if file_index is not None:
-        _FILE_LIST[file_index] = (
-            _FILE_LIST[file_index][0],  # Filename
-            _FILE_LIST[file_index][1],  # Shortname
-            _FILE_LIST[file_index][2],  # Displayname
+        f_info = <FileInfo> _FILE_LIST[file_index]
+
+        _FILE_LIST[file_index] = FileInfo(
+            f_info.filename,
+            f_info.shortname,
+            f_info.displayname,
             contents,
-            _FILE_LIST[file_index][4],  # Project
+            f_info.project,
         )
 
     if copy_tree:
@@ -761,7 +786,7 @@ def new_synthetic_file(str filename, object project=None):
     cdef Py_ssize_t file_index = len(_FILE_LIST)
     cdef Node node = Node({}, file_index, 0, 0)
 
-    _FILE_LIST.append((filename,
+    _FILE_LIST.append(FileInfo(filename,
                        filename,
                        "<synthetic {}>".format(filename),
                        node,
