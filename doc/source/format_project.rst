@@ -1017,5 +1017,5 @@ Builtin defaults
 BuildStream defines some default values for convenience, the default
 values overridden by your project's ``project.conf`` are presented here:
 
-  .. literalinclude:: ../../buildstream/data/projectconfig.yaml
+  .. literalinclude:: ../../src/buildstream/data/projectconfig.yaml
      :language: yaml

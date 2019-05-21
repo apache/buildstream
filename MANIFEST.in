@@ -7,7 +7,7 @@ include NEWS
 include README.rst
 
 # Data files required by BuildStream's generic source tests
-recursive-include buildstream/testing/_sourcetests/project *
+recursive-include src/buildstream/testing/_sourcetests/project *
 
 # Documentation package includes
 include doc/Makefile
@@ -31,7 +31,7 @@ include .coveragerc
 include .pylintrc
 
 # Protocol Buffers
-recursive-include buildstream/_protos *.proto
+recursive-include src/buildstream/_protos *.proto
 
 # Requirements files
 include requirements/requirements.in

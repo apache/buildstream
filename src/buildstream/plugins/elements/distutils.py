@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018 Codethink Limited
+#  Copyright (C) 2016 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -18,37 +18,13 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 """
-autotools - Autotools build element
-===================================
-This is a :mod:`BuildElement <buildstream.buildelement>` implementation for
-using Autotools build scripts (also known as the `GNU Build System
-<https://en.wikipedia.org/wiki/GNU_Build_System>`_).
+distutils - Python distutils element
+====================================
+A :mod:`BuildElement <buildstream.buildelement>` implementation for using
+python distutils
 
-You will often want to pass additional arguments to ``configure``. This should
-be done on a per-element basis by setting the ``conf-local`` variable.  Here is
-an example:
-
-.. code:: yaml
-
-   variables:
-     conf-local: |
-       --disable-foo --enable-bar
-
-If you want to pass extra options to ``configure`` for every element in your
-project, set the ``conf-global`` variable in your project.conf file. Here is
-an example of that:
-
-.. code:: yaml
-
-   elements:
-     autotools:
-       variables:
-         conf-global: |
-           --disable-gtk-doc --disable-static
-
-Here is the default configuration for the ``autotools`` element in full:
-
-  .. literalinclude:: ../../../buildstream/plugins/elements/autotools.yaml
+The distutils default configuration:
+  .. literalinclude:: ../../../src/buildstream/plugins/elements/distutils.yaml
      :language: yaml
 
 See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
@@ -58,8 +34,8 @@ details on common configuration options for build elements.
 from buildstream import BuildElement, SandboxFlags
 
 
-# Element implementation for the 'autotools' kind.
-class AutotoolsElement(BuildElement):
+# Element implementation for the python 'distutils' kind.
+class DistutilsElement(BuildElement):
     # Supports virtual directories (required for remote execution)
     BST_VIRTUAL_DIRECTORY = True
 
@@ -72,4 +48,4 @@ class AutotoolsElement(BuildElement):
 
 # Plugin entry point
 def setup():
-    return AutotoolsElement
+    return DistutilsElement

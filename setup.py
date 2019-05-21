@@ -128,7 +128,7 @@ def list_man_pages():
 #
 def list_testing_datafiles():
     bst_dir = Path(os.path.dirname(os.path.abspath(__file__)))
-    data_dir = bst_dir.joinpath('buildstream', 'testing', '_sourcetests', 'project')
+    data_dir = bst_dir.joinpath('src', 'buildstream', 'testing', '_sourcetests', 'project')
     return [str(f) for f in data_dir.rglob('*')]
 
 
@@ -215,7 +215,7 @@ class BuildGRPC(Command):
                   "Install it via pip (pip3 install grpcio-tools).")
             exit(1)
 
-        protos_root = 'buildstream/_protos'
+        protos_root = 'src/buildstream/_protos'
 
         grpc_tools.command.build_package_protos(protos_root)
 
@@ -335,7 +335,8 @@ setup(name='BuildStream',
           'Mailing List': 'https://mail.gnome.org/mailman/listinfo/buildstream-list'
       },
       python_requires='~={}.{}'.format(REQUIRED_PYTHON_MAJOR, REQUIRED_PYTHON_MINOR),
-      packages=find_packages(exclude=('tests', 'tests.*')),
+      package_dir={'': 'src'},
+      packages=find_packages(where='src', exclude=('tests', 'tests.*')),
       package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml',
                                     'data/*.yaml', 'data/*.sh.in',
                                     *list_testing_datafiles()]},
@@ -353,7 +354,7 @@ setup(name='BuildStream',
           #
           ('share/man/man1', list_man_pages()),
           ('share/bash-completion/completions', [
-              os.path.join('buildstream', 'data', 'bst')
+              os.path.join('src', 'buildstream', 'data', 'bst')
           ])
       ],
       install_requires=install_requires,

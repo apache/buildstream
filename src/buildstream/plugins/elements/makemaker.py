@@ -18,13 +18,13 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 """
-modulebuild - Perl Module::Build build element
-==============================================
+makemaker - Perl MakeMaker build element
+========================================
 A :mod:`BuildElement <buildstream.buildelement>` implementation for using
-the Perl Module::Build build system
+the Perl ExtUtil::MakeMaker build system
 
-The modulebuild default configuration:
-  .. literalinclude:: ../../../buildstream/plugins/elements/modulebuild.yaml
+The MakeMaker default configuration:
+  .. literalinclude:: ../../../src/buildstream/plugins/elements/makemaker.yaml
      :language: yaml
 
 See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
@@ -34,8 +34,8 @@ details on common configuration options for build elements.
 from buildstream import BuildElement, SandboxFlags
 
 
-# Element implementation for the 'modulebuild' kind.
-class ModuleBuildElement(BuildElement):
+# Element implementation for the 'makemaker' kind.
+class MakeMakerElement(BuildElement):
     # Supports virtual directories (required for remote execution)
     BST_VIRTUAL_DIRECTORY = True
 
@@ -48,4 +48,4 @@ class ModuleBuildElement(BuildElement):
 
 # Plugin entry point
 def setup():
-    return ModuleBuildElement
+    return MakeMakerElement

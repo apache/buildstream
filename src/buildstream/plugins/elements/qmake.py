@@ -1,5 +1,5 @@
 #
-#  Copyright Bloomberg Finance LP
+#  Copyright (C) 2016 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -15,21 +15,16 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 #  Authors:
-#        Ed Baunton <ebaunton1@bloomberg.net>
+#        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 """
-make - Make build element
-=========================
-This is a :mod:`BuildElement <buildstream.buildelement>` implementation for
-using GNU make based build.
+qmake - QMake build element
+===========================
+A :mod:`BuildElement <buildstream.buildelement>` implementation for using
+the qmake build system
 
-.. note::
-
-   The ``make`` element is available since :ref:`format version 9 <project_format_version>`
-
-Here is the default configuration for the ``make`` element in full:
-
-  .. literalinclude:: ../../../buildstream/plugins/elements/make.yaml
+The qmake default configuration:
+  .. literalinclude:: ../../../src/buildstream/plugins/elements/qmake.yaml
      :language: yaml
 
 See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
@@ -39,8 +34,8 @@ details on common configuration options for build elements.
 from buildstream import BuildElement, SandboxFlags
 
 
-# Element implementation for the 'make' kind.
-class MakeElement(BuildElement):
+# Element implementation for the 'qmake' kind.
+class QMakeElement(BuildElement):
     # Supports virtual directories (required for remote execution)
     BST_VIRTUAL_DIRECTORY = True
 
@@ -53,4 +48,4 @@ class MakeElement(BuildElement):
 
 # Plugin entry point
 def setup():
-    return MakeElement
+    return QMakeElement

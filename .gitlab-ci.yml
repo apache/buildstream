@@ -297,18 +297,18 @@ analysis:
 
   - |
     echo "Calculating Maintainability Index"
-    radon mi -s -j buildstream > analysis/mi.json
-    radon mi -s buildstream
+    radon mi -s -j src/buildstream > analysis/mi.json
+    radon mi -s src/buildstream
 
   - |
     echo "Calculating Cyclomatic Complexity"
-    radon cc -a -s -j buildstream > analysis/cc.json
-    radon cc -a -s buildstream
+    radon cc -a -s -j src/buildstream > analysis/cc.json
+    radon cc -a -s src/buildstream
 
   - |
     echo "Calculating Raw Metrics"
-    radon raw -s -j buildstream > analysis/raw.json
-    radon raw -s buildstream
+    radon raw -s -j src/buildstream > analysis/raw.json
+    radon raw -s src/buildstream
 
   except:
   - schedules

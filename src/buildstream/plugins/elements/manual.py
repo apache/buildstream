@@ -1,5 +1,5 @@
-#  Copyright (C) 2017 Patrick Griffis
-#  Copyright (C) 2018 Codethink Ltd.
+#
+#  Copyright (C) 2016 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -13,38 +13,18 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
+#
+#  Authors:
+#        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 """
-meson - Meson build element
-===========================
-This is a :mod:`BuildElement <buildstream.buildelement>` implementation for
-using `Meson <http://mesonbuild.com/>`_ build scripts.
+manual - Manual build element
+=============================
+The most basic build element does nothing but allows users to
+add custom build commands to the array understood by the :mod:`BuildElement <buildstream.buildelement>`
 
-You will often want to pass additional arguments to ``meson``. This should
-be done on a per-element basis by setting the ``meson-local`` variable.  Here is
-an example:
-
-.. code:: yaml
-
-   variables:
-     meson-local: |
-       -Dmonkeys=yes
-
-If you want to pass extra options to ``meson`` for every element in your
-project, set the ``meson-global`` variable in your project.conf file. Here is
-an example of that:
-
-.. code:: yaml
-
-   elements:
-     meson:
-       variables:
-         meson-global: |
-           -Dmonkeys=always
-
-Here is the default configuration for the ``meson`` element in full:
-
-  .. literalinclude:: ../../../buildstream/plugins/elements/meson.yaml
+The empty configuration is as such:
+  .. literalinclude:: ../../../src/buildstream/plugins/elements/manual.yaml
      :language: yaml
 
 See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
@@ -54,8 +34,8 @@ details on common configuration options for build elements.
 from buildstream import BuildElement, SandboxFlags
 
 
-# Element implementation for the 'meson' kind.
-class MesonElement(BuildElement):
+# Element implementation for the 'manual' kind.
+class ManualElement(BuildElement):
     # Supports virtual directories (required for remote execution)
     BST_VIRTUAL_DIRECTORY = True
 
@@ -68,4 +48,4 @@ class MesonElement(BuildElement):
 
 # Plugin entry point
 def setup():
-    return MesonElement
+    return ManualElement

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -15,16 +15,21 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 #  Authors:
-#        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#        Ed Baunton <ebaunton1@bloomberg.net>
 
 """
-manual - Manual build element
-=============================
-The most basic build element does nothing but allows users to
-add custom build commands to the array understood by the :mod:`BuildElement <buildstream.buildelement>`
+make - Make build element
+=========================
+This is a :mod:`BuildElement <buildstream.buildelement>` implementation for
+using GNU make based build.
 
-The empty configuration is as such:
-  .. literalinclude:: ../../../buildstream/plugins/elements/manual.yaml
+.. note::
+
+   The ``make`` element is available since :ref:`format version 9 <project_format_version>`
+
+Here is the default configuration for the ``make`` element in full:
+
+  .. literalinclude:: ../../../src/buildstream/plugins/elements/make.yaml
      :language: yaml
 
 See :ref:`built-in functionality documentation <core_buildelement_builtins>` for
@@ -34,8 +39,8 @@ details on common configuration options for build elements.
 from buildstream import BuildElement, SandboxFlags
 
 
-# Element implementation for the 'manual' kind.
-class ManualElement(BuildElement):
+# Element implementation for the 'make' kind.
+class MakeElement(BuildElement):
     # Supports virtual directories (required for remote execution)
     BST_VIRTUAL_DIRECTORY = True
 
@@ -48,4 +53,4 @@ class ManualElement(BuildElement):
 
 # Plugin entry point
 def setup():
-    return ManualElement
+    return MakeElement

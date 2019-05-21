@@ -31,7 +31,7 @@ input and create some output.
    detail on specifying dependencies.
 
 The default configuration and possible options are as such:
-  .. literalinclude:: ../../../buildstream/plugins/elements/script.yaml
+  .. literalinclude:: ../../../src/buildstream/plugins/elements/script.yaml
      :language: yaml
 """
 
