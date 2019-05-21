@@ -285,3 +285,12 @@ class FileBasedDirectory(Directory):
                     assert entry.type == _FileType.SYMLINK
                     os.symlink(entry.target, dest_path)
                 result.files_written.append(relative_pathname)
+
+    def _exists(self, *path, follow_symlinks=False):
+        """This is very simple but mirrors the cas based storage were it is less trivial"""
+        if follow_symlinks:
+            # The lexists is not ideal as it cant spot broken symlinks but this is a long
+            # standing bug in buildstream as exists follow absolute syslinks to real root
+            # and incorrectly thinks they are broken the new casbaseddirectory dose not have this bug.
+            return os.path.lexists(os.path.join(self.external_directory, *path))
+        raise ImplError("_exists can only follow symlinks in filebaseddirectory")

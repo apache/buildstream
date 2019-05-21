@@ -548,13 +548,17 @@ class Sandbox():
     #     Returns:
     #         (bool): Whether a command exists inside the sandbox.
     def _has_command(self, command, env=None):
+        vroot = self.get_virtual_directory()
+        command_as_parts = command.lstrip(os.sep).split(os.sep)
         if os.path.isabs(command):
-            return os.path.lexists(os.path.join(
-                self._root, command.lstrip(os.sep)))
+            return vroot._exists(*command_as_parts, follow_symlinks=True)
+
+        if len(command_as_parts) > 1:
+            return False
 
         for path in env.get('PATH').split(':'):
-            if os.path.lexists(os.path.join(
-                    self._root, path.lstrip(os.sep), command)):
+            path_as_parts = path.lstrip(os.sep).split(os.sep)
+            if vroot._exists(*path_as_parts, command, follow_symlinks=True):
                 return True
 
         return False
