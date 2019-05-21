@@ -24,7 +24,7 @@ import re
 import sys
 
 from ._exceptions import LoadError, LoadErrorReason
-from . import _yaml
+from . cimport _yaml
 
 # Variables are allowed to have dashes here
 #
@@ -58,18 +58,18 @@ PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
 # variable settings for the element.
 #
 # Args:
-#     node (dict): A node loaded and composited with yaml tools
+#     node (Node): A node loaded and composited with yaml tools
 #
 # Raises:
 #     LoadError, if unresolved variables, or cycles in resolution, occur.
 #
 cdef class Variables:
 
-    cdef object original
+    cdef _yaml.Node original
     cdef dict _expstr_map
     cdef public dict flat
 
-    def __init__(self, node):
+    def __init__(self, _yaml.Node node):
         self.original = node
         self._expstr_map = self._resolve(node)
         self.flat = self._flatten()
@@ -115,13 +115,12 @@ cdef class Variables:
     #
     # Here we resolve all of our inputs into a dictionary, ready for use
     # in subst()
-    # FIXME: node should be a yaml Node if moved
-    cdef dict _resolve(self, object node):
+    cdef dict _resolve(self, _yaml.Node node):
         # Special case, if notparallel is specified in the variables for this
         # element, then override max-jobs to be 1.
         # Initialize it as a string as all variables are processed as strings.
         #
-        if _yaml.node_get(node, bool, 'notparallel', default_value=False):
+        if _yaml.node_get(node, bool, 'notparallel', None, False):
             _yaml.node_set(node, 'max-jobs', str(1))
 
         cdef dict ret = {}

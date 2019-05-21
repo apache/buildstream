@@ -58,11 +58,6 @@ from ._exceptions import LoadError, LoadErrorReason
 #
 cdef class Node:
 
-    cdef public object value
-    cdef public int file_index
-    cdef public int line
-    cdef public int column
-
     def __init__(self, object value, int file_index, int line, int column):
         self.value = value
         self.file_index = file_index
@@ -111,13 +106,6 @@ _SYNTHETIC_COUNTER = count(start=-1, step=-1)
 
 # Returned from node_get_provenance
 cdef class ProvenanceInformation:
-
-    cdef public Node node
-    cdef str displayname
-    cdef public str filename, shortname
-    cdef public int col, line
-    cdef public object project, toplevel
-    cdef public bint is_synthetic
 
     def __init__(self, Node nodeish):
         cdef FileInfo fileinfo
@@ -519,7 +507,7 @@ _sentinel = object()
 # Note:
 #    Returned strings are stripped of leading and trailing whitespace
 #
-cpdef node_get(Node node, object expected_type, str key, list indices=None, object default_value=_sentinel, bint allow_none=False):
+cpdef object node_get(Node node, object expected_type, str key, list indices=None, object default_value=_sentinel, bint allow_none=False):
     if indices is None:
         if default_value is _sentinel:
             value = node.value.get(key, Node(default_value, _SYNTHETIC_FILE_INDEX, 0, 0))
@@ -617,7 +605,7 @@ cdef list __trim_list_provenance(list value):
 #    indices: Any indices to index into the list referenced by key, like in
 #             `node_get` (must be a list of integers)
 #
-def node_set(Node node, object key, object value, list indices=None):
+cpdef void node_set(Node node, object key, object value, list indices=None) except *:
     cdef int idx
 
     if indices:
@@ -723,10 +711,10 @@ def node_items(node):
 # Yields:
 #    (str): The key name
 #
-def node_keys(node):
-    if type(node) is not Node:
-        node = Node(node, _SYNTHETIC_FILE_INDEX, 0, 0)
-    yield from node.value.keys()
+cpdef list node_keys(object node):
+    if type(node) is Node:
+        return list((<Node> node).value.keys())
+    return list(node.keys())
 
 
 # node_del()
