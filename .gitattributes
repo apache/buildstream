@@ -1,1 +1,1 @@
-buildstream/_version.py export-subst
+src/buildstream/_version.py export-subst
