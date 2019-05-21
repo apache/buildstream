@@ -27,7 +27,6 @@ from contextlib import ExitStack
 from collections import OrderedDict
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
-from itertools import count
 
 from ruamel import yaml
 from ._exceptions import LoadError, LoadErrorReason
@@ -94,14 +93,18 @@ cdef class FileInfo:
 cdef _FILE_LIST = []
 
 
-# Purely synthetic node will have _SYNCTHETIC_FILE_INDEX for the file number, have line number
+# Purely synthetic node will have _SYNTHETIC_FILE_INDEX for the file number, have line number
 # zero, and a negative column number which comes from inverting the next value
 # out of this counter.  Synthetic nodes created with a reference node will
 # have a file number from the reference node, some unknown line number, and
 # a negative column number from this counter.
 cdef int _SYNTHETIC_FILE_INDEX = -1
+cdef int __counter = 0
 
-_SYNTHETIC_COUNTER = count(start=-1, step=-1)
+cdef int next_synthetic_counter():
+    global __counter
+    __counter -= 1
+    return __counter
 
 
 # Returned from node_get_provenance
@@ -512,7 +515,7 @@ cpdef object node_get(Node node, object expected_type, str key, list indices=Non
         if default_value is _sentinel:
             value = node.value.get(key, Node(default_value, _SYNTHETIC_FILE_INDEX, 0, 0))
         else:
-            value = node.value.get(key, Node(default_value, _SYNTHETIC_FILE_INDEX, 0, next(_SYNTHETIC_COUNTER)))
+            value = node.value.get(key, Node(default_value, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
 
         if value.value is _sentinel:
             provenance = node_get_provenance(node)
@@ -622,7 +625,7 @@ cpdef void node_set(Node node, object key, object value, list indices=None) exce
         except KeyError:
             old_value = None
         if old_value is None:
-            node.value[key] = Node(value, node.file_index, node.line, next(_SYNTHETIC_COUNTER))
+            node.value[key] = Node(value, node.file_index, node.line, next_synthetic_counter())
         else:
             node.value[key] = Node(value, old_value.file_index, old_value.line, old_value.column)
 
@@ -647,7 +650,7 @@ def node_extend_list(Node node, str key, Py_ssize_t length, object default):
 
     cdef Node list_node = <Node> node.value.get(key)
     if list_node is None:
-        list_node = node.value[key] = Node([], node.file_index, node.line, next(_SYNTHETIC_COUNTER))
+        list_node = node.value[key] = Node([], node.file_index, node.line, next_synthetic_counter())
 
     cdef list the_list = list_node.value
     def_type = type(default)
@@ -668,7 +671,7 @@ def node_extend_list(Node node, str key, Py_ssize_t length, object default):
 
         line_num += 1
 
-        the_list.append(Node(value, file_index, line_num, next(_SYNTHETIC_COUNTER)))
+        the_list.append(Node(value, file_index, line_num, next_synthetic_counter()))
 
 
 # node_items()
@@ -791,7 +794,7 @@ def new_synthetic_file(str filename, object project=None):
 #
 def new_empty_node(Node ref_node=None):
     if ref_node is not None:
-        return Node({}, ref_node.file_index, ref_node.line, next(_SYNTHETIC_COUNTER))
+        return Node({}, ref_node.file_index, ref_node.line, next_synthetic_counter())
     else:
         return Node({}, _SYNTHETIC_FILE_INDEX, 0, 0)
 
@@ -814,8 +817,8 @@ cpdef Node new_node_from_dict(dict indict):
         elif vtype is list:
             ret[k] = __new_node_from_list(v)
         else:
-            ret[k] = Node(str(v), _SYNTHETIC_FILE_INDEX, 0, next(_SYNTHETIC_COUNTER))
-    return Node(ret, _SYNTHETIC_FILE_INDEX, 0, next(_SYNTHETIC_COUNTER))
+            ret[k] = Node(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+    return Node(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
 
 
 # Internal function to help new_node_from_dict() to handle lists
@@ -828,8 +831,8 @@ cdef Node __new_node_from_list(list inlist):
         elif vtype is list:
             ret.append(__new_node_from_list(v))
         else:
-            ret.append(Node(str(v), _SYNTHETIC_FILE_INDEX, 0, next(_SYNTHETIC_COUNTER)))
-    return Node(ret, _SYNTHETIC_FILE_INDEX, 0, next(_SYNTHETIC_COUNTER))
+            ret.append(Node(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
+    return Node(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
 
 
 # _is_composite_list
