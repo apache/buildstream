@@ -1158,7 +1158,7 @@ Protocol buffers
 BuildStream uses protobuf and gRPC for serialization and communication with
 artifact cache servers.  This requires ``.proto`` files and Python code
 generated from the ``.proto`` files using protoc.  All these files live in the
-``buildstream/_protos`` directory.  The generated files are included in the
+``src/buildstream/_protos`` directory.  The generated files are included in the
 git repository to avoid depending on grpcio-tools for user installations.
 
 
@@ -1744,7 +1744,7 @@ using BST_PROFILE.
 
 BST_PROFILE can be set to a section name, or a list of section names separated
 by ":". You can also use "all" for getting all profiles at the same time.
-There is a list of topics in `buildstream/_profile.py`. For example, running::
+There is a list of topics in `src/buildstream/_profile.py`. For example, running::
 
     BST_PROFILE=load-pipeline bst build bootstrap-system-x86.bst
 
