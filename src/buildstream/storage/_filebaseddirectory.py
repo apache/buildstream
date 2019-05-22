@@ -28,6 +28,7 @@ See also: :ref:`sandboxing`.
 """
 
 import os
+import shutil
 import stat
 import time
 
@@ -110,6 +111,15 @@ class FileBasedDirectory(Directory):
             for f in import_result.files_written:
                 os.utime(os.path.join(self.external_directory, f), times=(cur_time, cur_time))
         return import_result
+
+    def import_single_file(self, srcpath):
+        dstpath = os.path.join(self.external_directory, os.path.basename(srcpath))
+        result = FileListResult()
+        if os.path.exists(dstpath):
+            result.ignored.append(dstpath)
+        else:
+            shutil.copyfile(srcpath, dstpath, follow_symlinks=False)
+        return result
 
     def _mark_changed(self):
         pass

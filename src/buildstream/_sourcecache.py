@@ -153,11 +153,14 @@ class SourceCache(BaseCache):
         for previous_source in previous_sources:
             vdir.import_files(self.export(previous_source))
 
-        with utils._tempdir(dir=self.context.tmpdir, prefix='staging-temp') as tmpdir:
-            if not vdir.is_empty():
-                vdir.export_files(tmpdir)
-            source._stage(tmpdir)
-            vdir.import_files(tmpdir, can_link=True)
+        if not source.BST_STAGE_VIRTUAL_DIRECTORY:
+            with utils._tempdir(dir=self.context.tmpdir, prefix='staging-temp') as tmpdir:
+                if not vdir.is_empty():
+                    vdir.export_files(tmpdir)
+                source._stage(tmpdir)
+                vdir.import_files(tmpdir, can_link=True)
+        else:
+            source._stage(vdir)
 
         self.cas.set_ref(ref, vdir._get_digest())
 

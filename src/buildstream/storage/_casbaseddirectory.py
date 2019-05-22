@@ -161,11 +161,11 @@ class CasBasedDirectory(Directory):
 
         return newdir
 
-    def _add_file(self, basename, filename, modified=False):
+    def _add_file(self, basename, filename, modified=False, can_link=False):
         entry = IndexEntry(filename, _FileType.REGULAR_FILE,
                            modified=modified or filename in self.index)
         path = os.path.join(basename, filename)
-        entry.digest = self.cas_cache.add_object(path=path)
+        entry.digest = self.cas_cache.add_object(path=path, link_directly=can_link)
         entry.is_executable = os.access(path, os.X_OK)
         self.index[filename] = entry
 
@@ -253,7 +253,9 @@ class CasBasedDirectory(Directory):
             fileListResult.overwritten.append(relative_pathname)
             return True
 
-    def _import_files_from_directory(self, source_directory, filter_callback, *, path_prefix="", result):
+    def _import_files_from_directory(self, source_directory, filter_callback,
+                                     *, path_prefix="", result,
+                                     can_link=False):
         """ Import files from a traditional directory. """
 
         for direntry in os.scandir(source_directory):
@@ -273,8 +275,10 @@ class CasBasedDirectory(Directory):
                     raise VirtualDirectoryError('Destination is a {}, not a directory: /{}'
                                                 .format(filetype, relative_pathname))
 
-                dest_subdir._import_files_from_directory(src_subdir, filter_callback,
-                                                         path_prefix=relative_pathname, result=result)
+                dest_subdir._import_files_from_directory(
+                    src_subdir, filter_callback,
+                    path_prefix=relative_pathname, result=result,
+                    can_link=can_link)
 
             if filter_callback and not filter_callback(relative_pathname):
                 if is_dir and create_subdir and dest_subdir.is_empty():
@@ -286,7 +290,9 @@ class CasBasedDirectory(Directory):
 
             if direntry.is_file(follow_symlinks=False):
                 if self._check_replacement(direntry.name, relative_pathname, result):
-                    self._add_file(source_directory, direntry.name, modified=relative_pathname in result.overwritten)
+                    self._add_file(source_directory, direntry.name,
+                                   modified=relative_pathname in result.overwritten,
+                                   can_link=can_link)
                     result.files_written.append(relative_pathname)
             elif direntry.is_symlink():
                 if self._check_replacement(direntry.name, relative_pathname, result):
@@ -372,18 +378,32 @@ class CasBasedDirectory(Directory):
 
         if isinstance(external_pathspec, FileBasedDirectory):
             source_directory = external_pathspec._get_underlying_directory()
-            self._import_files_from_directory(source_directory, filter_callback, result=result)
+            self._import_files_from_directory(source_directory, filter_callback,
+                                              result=result, can_link=can_link)
         elif isinstance(external_pathspec, str):
             source_directory = external_pathspec
-            self._import_files_from_directory(source_directory, filter_callback, result=result)
+            self._import_files_from_directory(source_directory, filter_callback,
+                                              result=result, can_link=can_link)
         else:
             assert isinstance(external_pathspec, CasBasedDirectory)
             self._partial_import_cas_into_cas(external_pathspec, filter_callback, result=result)
 
-        # TODO: No notice is taken of report_written, update_mtime or can_link.
+        # TODO: No notice is taken of report_written or update_mtime.
         # Current behaviour is to fully populate the report, which is inefficient,
         # but still correct.
 
+        return result
+
+    def import_single_file(self, srcpath):
+        result = FileListResult()
+        if self._check_replacement(os.path.basename(srcpath),
+                                   os.path.dirname(srcpath),
+                                   result):
+            self._add_file(os.path.dirname(srcpath),
+                           os.path.basename(srcpath),
+                           modified=os.path.basename(srcpath)
+                           in result.overwritten)
+            result.files_written.append(srcpath)
         return result
 
     def set_deterministic_mtime(self):

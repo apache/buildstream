@@ -356,7 +356,7 @@ def copy_files(src, dest, *, filter_callback=None, ignore_missing=False, report_
     """Copy files from source to destination.
 
     Args:
-       src (str): The source file or directory
+       src (str): The source directory
        dest (str): The destination directory
        filter_callback (callable): Optional filter callback. Called with the relative path as
                                    argument for every file in the source directory. The file is
@@ -395,7 +395,7 @@ def link_files(src, dest, *, filter_callback=None, ignore_missing=False, report_
     """Hardlink files from source to destination.
 
     Args:
-       src (str): The source file or directory
+       src (str): The source directory
        dest (str): The destination directory
        filter_callback (callable): Optional filter callback. Called with the relative path as
                                    argument for every file in the source directory. The file is
