@@ -40,7 +40,7 @@ def test_context_create(context_fixture):
 #######################################
 def test_context_load(context_fixture):
     context = context_fixture['context']
-    cache_home = context_fixture['xdg-cache']
+    cache_home = os.path.normpath(context_fixture['xdg-cache'])
     assert isinstance(context, Context)
 
     context.load(config=os.devnull)
