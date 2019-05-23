@@ -37,6 +37,7 @@ from .._protos.google.rpc import code_pb2
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, \
     artifact_pb2, artifact_pb2_grpc
 
+from .. import utils
 from .._exceptions import CASError
 
 from .cascache import CASCache
@@ -474,7 +475,7 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
         # Add the artifact proto to the cas
         artifact_path = os.path.join(self.artifactdir, request.cache_key)
         os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
-        with open(artifact_path, 'wb') as f:
+        with utils.save_file_atomic(artifact_path, mode='wb') as f:
             f.write(artifact.SerializeToString())
 
         return artifact
