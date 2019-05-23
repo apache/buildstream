@@ -183,7 +183,7 @@ class Artifact():
         keys = utils._deduplicate([self._cache_key, self._weak_cache_key])
         for key in keys:
             path = os.path.join(self._artifactdir, element.get_artifact_name(key=key))
-            with open(path, mode='w+b') as f:
+            with utils.save_file_atomic(path, mode='wb') as f:
                 f.write(artifact.SerializeToString())
 
         return size
