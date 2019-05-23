@@ -611,7 +611,7 @@ class ArtifactCache(BaseCache):
         # Write the artifact proto to cache
         artifact_path = os.path.join(self.artifactdir, request.cache_key)
         os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
-        with open(artifact_path, 'w+b') as f:
+        with utils.save_file_atomic(artifact_path, mode='wb') as f:
             f.write(artifact.SerializeToString())
 
         return True
