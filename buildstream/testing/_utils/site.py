@@ -32,11 +32,14 @@ except ProgramNotFoundError:
     HAVE_BWRAP = False
     HAVE_BWRAP_JSON_STATUS = False
 
+IS_MAC = (sys.platform == 'darwin')
 IS_LINUX = os.getenv('BST_FORCE_BACKEND', sys.platform).startswith('linux')
 IS_WSL = (IS_LINUX and 'Microsoft' in platform.uname().release)
 IS_WINDOWS = (os.name == 'nt')
 
-if not IS_LINUX:
+if IS_MAC or IS_WINDOWS:
+    HAVE_SANDBOX = False
+elif not IS_LINUX:
     HAVE_SANDBOX = True   # fallback to a chroot sandbox on unix
 elif IS_WSL:
     HAVE_SANDBOX = False  # Sandboxes are inoperable under WSL due to lack of FUSE
