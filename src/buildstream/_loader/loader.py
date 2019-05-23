@@ -74,6 +74,10 @@ class Loader():
         self._elements = {}       # Dict of elements
         self._loaders = {}        # Dict of junction loaders
 
+        # Progress object stored in the loader during element loading because
+        # passing it through function args would be a huge mess
+        self._progress = None
+
         self._includes = Includes(self, copy_tree=True)
 
     # load():
@@ -86,11 +90,14 @@ class Loader():
     #    ticker (callable): An optional function for tracking load progress
     #    targets (list of str): Target, element-path relative bst filenames in the project
     #    fetch_subprojects (bool): Whether to fetch subprojects while loading
+    #    progress (Progress): The object to report progress to
     #
     # Raises: LoadError
     #
     # Returns: The toplevel LoadElement
-    def load(self, targets, rewritable=False, ticker=None, fetch_subprojects=False):
+    def load(self, targets, progress, rewritable=False, ticker=None, fetch_subprojects=False):
+
+        self._progress = progress
 
         for filename in targets:
             if os.path.isabs(filename):
@@ -143,6 +150,7 @@ class Loader():
             ret.append(loader._collect_element(element))
 
         self._clean_caches()
+        self._progress = None
 
         return ret
 
@@ -405,6 +413,9 @@ class Loader():
         if meta_element:
             return meta_element
 
+        if self._progress:
+            self._progress.add_total(1)
+
         node = element.node
         elt_provenance = _yaml.node_get_provenance(node)
         meta_sources = []
@@ -449,6 +460,9 @@ class Loader():
                 meta_element.build_dependencies.append(meta_dep)
             if dep.dep_type != 'build':
                 meta_element.dependencies.append(meta_dep)
+
+        if self._progress:
+            self._progress.add_progress(1)
 
         return meta_element
 

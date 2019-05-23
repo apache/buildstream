@@ -34,6 +34,7 @@ from ._profile import Topics, PROFILER
 from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASQuota, CASCacheUsage
+from ._progress import Progress
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .plugin import Plugin
 from .sandbox import SandboxRemote
@@ -553,6 +554,18 @@ class Context():
             message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed)
             self._pop_message_depth()
             self.message(message)
+
+    @contextmanager
+    def progress_activity(self, activity_name, *, total=None, unique_id=None,
+                          detail=None, silent_nested=False):
+        with self.timed_activity(activity_name, unique_id=unique_id,
+                                 detail=detail, silent_nested=silent_nested):
+            progress = Progress(self, activity_name, total=total, unique_id=unique_id)
+            yield progress
+
+    def report_progress(self, message_text, unique_id=None):
+        message = Message(unique_id, MessageType.INFO, message_text)
+        self.message(message)
 
     # recorded_messages()
     #

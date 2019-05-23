@@ -449,8 +449,8 @@ class Project():
     #
     def load_elements(self, targets, *,
                       rewritable=False, fetch_subprojects=False):
-        with self._context.timed_activity("Loading elements", silent_nested=True):
-            meta_elements = self.loader.load(targets, rewritable=rewritable,
+        with self._context.progress_activity("Loading elements", silent_nested=True) as progress:
+            meta_elements = self.loader.load(targets, progress, rewritable=rewritable,
                                              ticker=None,
                                              fetch_subprojects=fetch_subprojects)
 
