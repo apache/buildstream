@@ -398,15 +398,8 @@ class Artifact():
     # Allow the Artifact to query the filesystem to determine whether it
     # is cached or not.
     #
-    # NOTE: Due to the fact that a normal buildstream run does not make an
-    # artifact *not* cached (`bst artifact delete` can do so, but doesn't
-    # query the Artifact afterwards), it does not update_cached if the
-    # artifact is already cached. If a cached artifact ever has its key
-    # changed, this will need to be revisited.
-    #
     def reset_cached(self):
-        if self._cached is False:
-            self._cached = None
+        self._cached = None
 
     # _get_proto()
     #

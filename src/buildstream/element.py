@@ -1566,6 +1566,12 @@ class Element(Plugin):
         self.__assemble_scheduled = False
         self.__assemble_done = True
 
+        # Artifact may have a cached success now.
+        if self.__strict_artifact:
+            self.__strict_artifact.reset_cached()
+        if self.__artifact:
+            self.__artifact.reset_cached()
+
         self.__update_state_recursively()
 
         if self._get_workspace() and self._cached_success():
@@ -1816,6 +1822,11 @@ class Element(Plugin):
     #
     def _pull_done(self):
         self.__pull_done = True
+
+        # Artifact may become cached after pulling, so let it query the
+        # filesystem again to check
+        self.__strict_artifact.reset_cached()
+        self.__artifact.reset_cached()
 
         self.__update_state_recursively()
 
@@ -2966,12 +2977,6 @@ class Element(Plugin):
             if context.get_strict():
                 self.__cache_key = self.__strict_cache_key
                 self.__artifact = self.__strict_artifact
-
-        # Allow caches to be queried, since they may now be cached
-        # The next invocation of Artifact.cached() will access the filesystem.
-        # Note that this will safely do nothing if the artifacts are already cached.
-        self.__strict_artifact.reset_cached()
-        self.__artifact.reset_cached()
 
     # __update_cache_key_non_strict()
     #
