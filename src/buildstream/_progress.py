@@ -49,5 +49,3 @@ class Progress():
             if self._total is not None:
                 message_text += "/" + str(self._total)
             self._context.report_progress(message_text, self._unique_id)
-
-        

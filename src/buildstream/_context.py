@@ -18,6 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
+import sys
 import shutil
 import datetime
 from collections import deque
@@ -169,6 +170,7 @@ class Context():
         self._cascache = None
         self._casquota = None
         self._directory = directory
+        self._last_progress_length = 0
 
     # load()
     #
@@ -560,12 +562,20 @@ class Context():
                           detail=None, silent_nested=False):
         with self.timed_activity(activity_name, unique_id=unique_id,
                                  detail=detail, silent_nested=silent_nested):
+            self._last_progress_length = 0
             progress = Progress(self, activity_name, total=total, unique_id=unique_id)
             yield progress
 
     def report_progress(self, message_text, unique_id=None):
-        message = Message(unique_id, MessageType.INFO, message_text)
-        self.message(message)
+        new_len = len(message_text)
+        if self._last_progress_length:
+            message_text = "\b" * (self._last_progress_length) + message_text
+        self._last_progress_length = new_len
+        sys.stderr.write(message_text)
+        sys.stderr.flush()
+        
+        #message = Message(unique_id, MessageType.INFO, message_text)
+        #self.message(message)
 
     # recorded_messages()
     #
