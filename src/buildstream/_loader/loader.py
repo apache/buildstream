@@ -534,14 +534,11 @@ class Loader():
 
         # Handle the case where a subproject needs to be fetched
         #
-        sources = list(element.sources())
         if element._get_consistency() == Consistency.RESOLVED:
             if fetch_subprojects:
-                for source in sources:
-                    if ticker:
-                        ticker(filename, 'Fetching subproject from {} source'.format(source.get_kind()))
-                    if source._get_consistency() != Consistency.CACHED:
-                        source._fetch()
+                if ticker:
+                    ticker(filename, 'Fetching subproject')
+                element._fetch()
             else:
                 detail = "Try fetching the project with `bst source fetch {}`".format(filename)
                 raise LoadError(LoadErrorReason.SUBPROJECT_FETCH_NEEDED,
@@ -556,6 +553,7 @@ class Loader():
                             "{}Subproject has no ref for junction: {}".format(provenance_str, filename),
                             detail=detail)
 
+        sources = list(element.sources())
         workspace = element._get_workspace()
         if workspace:
             # If a workspace is open, load it from there instead
