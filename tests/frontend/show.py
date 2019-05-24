@@ -227,7 +227,8 @@ def test_target_is_dependency(cli, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
 @pytest.mark.parametrize("element_name", ['junction-dep.bst', 'junction.bst:import-etc.bst'])
-def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name):
+@pytest.mark.parametrize("workspaced", [True, False], ids=["workspace", "no-workspace"])
+def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name, workspaced):
     project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
@@ -269,16 +270,28 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name):
         }
         _yaml.dump(project_refs, os.path.join(project, 'junction.refs'))
 
+    # Open a workspace if we're testing workspaced behavior
+    if workspaced:
+        result = cli.run(project=project, silent=True, args=[
+            'workspace', 'open', '--no-checkout', '--directory', subproject_path, 'junction.bst'
+        ])
+        result.assert_success()
+
     # Assert the correct error when trying to show the pipeline
     result = cli.run(project=project, silent=True, args=[
         'show', element_name])
 
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_FETCH_NEEDED)
+    # If a workspace is open, no fetch is needed
+    if workspaced:
+        result.assert_success()
+    else:
+        result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_FETCH_NEEDED)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 @pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
-def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
+@pytest.mark.parametrize("workspaced", [True, False], ids=["workspace", "no-workspace"])
+def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage, workspaced):
     project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
@@ -304,6 +317,13 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
     }
     _yaml.dump(element, element_path)
 
+    # Open a workspace if we're testing workspaced behavior
+    if workspaced:
+        result = cli.run(project=project, silent=True, args=[
+            'workspace', 'open', '--no-checkout', '--directory', subproject_path, 'junction.bst'
+        ])
+        result.assert_success()
+
     # Assert the correct error when trying to show the pipeline
     dep_result = cli.run(project=project, silent=True, args=[
         'show', 'junction-dep.bst'])
@@ -312,19 +332,26 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
     etc_result = cli.run(project=project, silent=True, args=[
         'show', 'junction.bst:import-etc.bst'])
 
-    # Assert that we have the expected provenance encoded into the error
-    provenance = yaml_file_get_provenance(
-        element_path, 'junction-dep.bst', key='depends', indices=[0])
-    assert str(provenance) in dep_result.stderr
+    # If a workspace is open, no ref is needed
+    if workspaced:
+        dep_result.assert_success()
+        etc_result.assert_success()
+    else:
+        # Assert that we have the expected provenance encoded into the error
+        provenance = yaml_file_get_provenance(
+            element_path, 'junction-dep.bst', key='depends', indices=[0])
+        assert str(provenance) in dep_result.stderr
 
-    dep_result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
-    etc_result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
+        dep_result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
+        etc_result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
 @pytest.mark.parametrize("element_name", ['junction-dep.bst', 'junction.bst:import-etc.bst'])
-def test_fetched_junction(cli, tmpdir, datafiles, element_name):
+@pytest.mark.parametrize("workspaced", [True, False], ids=["workspace", "no-workspace"])
+def test_fetched_junction(cli, tmpdir, datafiles, element_name, workspaced):
     project = str(datafiles)
+    project = os.path.join(datafiles.dirname, datafiles.basename)
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(project, 'elements', 'junction.bst')
     element_path = os.path.join(project, 'elements', 'junction-dep.bst')
@@ -347,8 +374,14 @@ def test_fetched_junction(cli, tmpdir, datafiles, element_name):
 
     result = cli.run(project=project, silent=True, args=[
         'source', 'fetch', 'junction.bst'])
-
     result.assert_success()
+
+    # Open a workspace if we're testing workspaced behavior
+    if workspaced:
+        result = cli.run(project=project, silent=True, args=[
+            'workspace', 'open', '--no-checkout', '--directory', subproject_path, 'junction.bst'
+        ])
+        result.assert_success()
 
     # Assert the correct error when trying to show the pipeline
     result = cli.run(project=project, silent=True, args=[
