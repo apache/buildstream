@@ -534,28 +534,30 @@ class Loader():
 
         element = Element._new_from_meta(meta_element, self._context.artifactcache)
         element._preflight()
+        element._update_state()
 
-        for source in element.sources():
-            # Handle the case where a subproject needs to be fetched
-            #
-            if source.get_consistency() == Consistency.RESOLVED:
-                if fetch_subprojects:
+        # Handle the case where a subproject needs to be fetched
+        #
+        if element._get_consistency() == Consistency.RESOLVED:
+            if fetch_subprojects:
+                for source in element.sources():
                     if ticker:
                         ticker(filename, 'Fetching subproject from {} source'.format(source.get_kind()))
-                    source._fetch()
-                else:
-                    detail = "Try fetching the project with `bst fetch {}`".format(filename)
-                    raise LoadError(LoadErrorReason.SUBPROJECT_FETCH_NEEDED,
-                                    "Subproject fetch needed for junction: {}".format(filename),
-                                    detail=detail)
-
-            # Handle the case where a subproject has no ref
-            #
-            elif source.get_consistency() == Consistency.INCONSISTENT:
-                detail = "Try tracking the junction element with `bst track {}`".format(filename)
-                raise LoadError(LoadErrorReason.SUBPROJECT_INCONSISTENT,
-                                "Subproject has no ref for junction: {}".format(filename),
+                    if source._get_consistency() != Consistency.CACHED:
+                        source._fetch()
+            else:
+                detail = "Try fetching the project with `bst fetch {}`".format(filename)
+                raise LoadError(LoadErrorReason.SUBPROJECT_FETCH_NEEDED,
+                                "Subproject fetch needed for junction: {}".format(filename),
                                 detail=detail)
+
+        # Handle the case where a subproject has no ref
+        #
+        elif element._get_consistency() == Consistency.INCONSISTENT:
+            detail = "Try tracking the junction element with `bst track {}`".format(filename)
+            raise LoadError(LoadErrorReason.SUBPROJECT_INCONSISTENT,
+                            "Subproject has no ref for junction: {}".format(filename),
+                            detail=detail)
 
         # Stage sources
         os.makedirs(self._context.builddir, exist_ok=True)
