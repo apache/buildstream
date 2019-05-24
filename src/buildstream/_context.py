@@ -565,6 +565,7 @@ class Context():
             self._last_progress_length = 0
             progress = Progress(self, activity_name, total=total, unique_id=unique_id)
             yield progress
+            self._finish_progress()
 
     def report_progress(self, message_text, unique_id=None):
         new_len = len(message_text)
@@ -678,6 +679,10 @@ class Context():
     #
     def set_artifact_files_optional(self):
         self.require_artifact_files = False
+
+    def _finish_progress(self):
+        sys.stderr.write("\n")
+        sys.stderr.flush()
 
     # _record_message()
     #

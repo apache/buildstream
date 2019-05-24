@@ -35,6 +35,9 @@ class Progress():
             self._total += count
         self._check_report_progress()
 
+    def get_total(self):
+        return self._total
+
     def add_progress(self, count):
         self._count += count
         self._check_report_progress()

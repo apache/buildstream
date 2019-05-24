@@ -454,9 +454,13 @@ class Project():
                                              ticker=None,
                                              fetch_subprojects=fetch_subprojects)
 
-        with self._context.timed_activity("Resolving elements"):
+            # meta_elements is a list of target meta elements in a tree structure,
+            # not a list of all elements.
+            total_elements = progress.get_total()
+
+        with self._context.progress_activity("Resolving elements", total=total_elements) as progress:
             elements = [
-                Element._new_from_meta(meta)
+                Element._new_from_meta(meta, progress)
                 for meta in meta_elements
             ]
 
