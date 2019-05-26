@@ -1,5 +1,6 @@
 [run]
 concurrency = multiprocessing
+plugins = Cython.Coverage
 
 omit =
   # Omit some internals
@@ -11,6 +12,8 @@ omit =
   */.eggs/*
   # Omit .tox directory
   */.tox/*
+  # Omit a dynamically generated Cython file
+  */stringsource
 
 [report]
 show_missing = True

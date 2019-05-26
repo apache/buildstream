@@ -6,6 +6,11 @@ include MAINTAINERS
 include NEWS
 include README.rst
 
+# Cython files
+recursive-include src/buildstream *.pyx
+recursive-include src/buildstream *.pxd
+recursive-include src/buildstream *.c
+
 # Data files required by BuildStream's generic source tests
 recursive-include src/buildstream/testing/_sourcetests/project *
 

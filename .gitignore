@@ -2,6 +2,13 @@
 src/buildstream/**/*.pyc
 tests/**/*.pyc
 
+# Generated C files
+src/buildstream/**/*.c
+src/buildstream/**/*.so
+
+# Cython report files when using annotations
+src/buildstream/**/*.html
+
 # Build output directory
 build
 
