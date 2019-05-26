@@ -931,7 +931,8 @@ class Element(Plugin):
            (str): The resolved value for *varname*, or None if no
            variable was declared with the given name.
         """
-        return self.__variables.flat.get(varname)
+        # Flat is not recognized correctly by Pylint as being a dictionary
+        return self.__variables.flat.get(varname)  # pylint: disable=no-member
 
     def batch_prepare_assemble(self, flags, *, collect=None):
         """ Configure command batching across prepare() and assemble()

@@ -18,6 +18,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Daniel Silverstone <daniel.silverstone@codethink.co.uk>
+#        Benjamin Schubert <bschubert@bloomberg.net>
 
 import re
 import sys
@@ -219,6 +220,37 @@ def _parse_expstr(instr):
         return PARSE_CACHE[instr]
 
 
+# Helper to expand recursively an expansion string in the context
+# of the given dictionary of expansion string
+#
+# Args:
+#     content (dict): dictionary context for resolving the variables
+#     value (list): expansion string to expand
+#     acc (list): list in which to add the result
+#     counter (int): counter to count the number of recursion in order to
+#                    detect cycles.
+#
+# Raises:
+#     KeyError: if any expansion is missing
+#     RecursionError: if a variable is defined recursively
+#
+cdef void _expand_expstr_helper(dict content, list value, list acc, int counter = 0) except *:
+    cdef Py_ssize_t idx = 0
+    cdef Py_ssize_t value_len = len(value)
+
+    if counter > 1000:
+        raise RecursionError()
+
+    while idx < value_len:
+        acc.append(value[idx])
+        idx += 1
+
+        if idx < value_len:
+            _expand_expstr_helper(content, <list> content[value[idx]], acc, counter + 1)
+
+        idx += 1
+
+
 # Helper to expand a given top level expansion string tuple in the context
 # of the given dictionary of expansion strings.
 #
@@ -233,19 +265,6 @@ def _expand_expstr(content, topvalue):
     if len(topvalue) == 2 and topvalue[0] == "":
         return _expand_expstr(content, content[topvalue[1]])
 
-    # Otherwise process fully...
-    def internal_expand(value):
-        idx = 0
-        value_len = len(value)
-
-        while idx < value_len:
-            # First yield any constant string content
-            yield value[idx]
-            idx += 1
-            # Now, if there is an expansion variable left to expand, yield
-            # the expansion of that variable too
-            if idx < value_len:
-                yield from internal_expand(content[value[idx]])
-            idx += 1
-
-    return "".join(internal_expand(topvalue))
+    cdef list result = []
+    _expand_expstr_helper(content, topvalue, result)
+    return "".join(result)
