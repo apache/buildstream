@@ -227,8 +227,8 @@ docs:
   stage: test
   variables:
     BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
-    BST_EXT_REF: 0.12.0-17-g1b3d37ec015b9962970a60b0f9ea453a874cb34a
-    FD_SDK_REF: freedesktop-sdk-18.08.29.2-92-g271ac39d6865a0878e44466b6a54fbd38482b2d1
+    BST_EXT_REF: 0.12.0-31-g604196876f31536a837c95a098af7bea948b4731
+    FD_SDK_REF: freedesktop-sdk-18.08.31.1-2-g5c639b8d553016ea6c28ea160a572da2e189745e
   before_script:
   - |
     mkdir -p "${HOME}/.config"
