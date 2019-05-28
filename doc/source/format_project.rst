@@ -218,6 +218,13 @@ The use of ports are required to distinguish between pull only access and
 push/pull access. For information regarding the server/client certificates
 and keys, please see: :ref:`Key pair for the server <server_authentication>`.
 
+.. note::
+
+   Buildstream artifact servers have changed since 1.2 to use protocol buffers
+   to store artifact information rather than a directory structure, as well as a
+   new server API. As a result newer buildstream clients won't work with older
+   servers.
+
 .. _project_source_cache:
 
 Source cache server
@@ -238,12 +245,6 @@ Exactly the same as artifact servers, source cache servers can be specified.
       server-cert: server.crt
       client-cert: client.crt
       client-key: client.key
-
-.. note::
-
-   As artifact caches work in exactly the same way, a configured artifact server
-   can also be used as a source cache server. If you want to use a server as
-   both you can put it under both artifacts and source caches configs.
 
 .. _project_remote_execution:
 
