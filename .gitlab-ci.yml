@@ -78,8 +78,8 @@ overnight-fedora-29-aarch64:
   # We need to override the exclusion from the template
   # in order to run on schedules
   except: []
-  only:
-  - schedules
+  # only:
+  # - schedules
   before_script:
     # grpcio needs to be compiled from source on aarch64 so we additionally
     # need a C++ compiler here.
@@ -242,12 +242,12 @@ docs:
   # As we're building freedesktop, we need to have the OSTree plugin's system dependencies
   - apt update && apt install -y python3-gi python3-gi-cairo
   - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
-  - git -C freedesktop-sdk checkout ${FD_SDK_REF}
+  - git -C freedesktop-sdk checkout jennis/include_ostree
   artifacts:
     paths:
     - "${HOME}/.cache/buildstream/logs"
-  only:
-  - schedules
+  # only:
+  # - schedules
 
 overnight-tests:
   <<: *overnight-tests-template
