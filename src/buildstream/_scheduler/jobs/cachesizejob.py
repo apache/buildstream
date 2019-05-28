@@ -36,6 +36,3 @@ class CacheSizeJob(Job):
 
         if self._complete_cb:
             self._complete_cb(status, result)
-
-    def child_process_data(self):
-        return {}
