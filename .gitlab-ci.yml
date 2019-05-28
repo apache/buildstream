@@ -239,6 +239,8 @@ docs:
   - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
   - pip3 install --no-index .
   - pip3 install --user -e ${BST_EXT_URL}@${BST_EXT_REF}#egg=bst_ext
+  # As we're building freedesktop, we need to have the OSTree plugin's system dependencies
+  - apt update && apt install -y python3-gi python3-gi-cairo
   - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
   - git -C freedesktop-sdk checkout ${FD_SDK_REF}
   artifacts:
