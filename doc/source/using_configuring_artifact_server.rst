@@ -91,6 +91,8 @@ requiring BuildStream's more exigent dependencies by setting the
     BST_ARTIFACTS_ONLY=1 pip3 install .
 
 
+.. _artifact_command_reference:
+
 Command reference
 ~~~~~~~~~~~~~~~~~
 
