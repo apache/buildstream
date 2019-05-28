@@ -22,6 +22,7 @@
 import os
 from collections import deque
 from enum import Enum
+import heapq
 import traceback
 
 # Local imports
@@ -73,7 +74,7 @@ class Queue():
         #
         self._scheduler = scheduler
         self._resources = scheduler.resources  # Shared resource pool
-        self._ready_queue = deque()            # Ready elements
+        self._ready_queue = []                 # Ready elements
         self._done_queue = deque()             # Processed / Skipped elements
         self._max_retries = 0
 
@@ -210,7 +211,7 @@ class Queue():
             if not reserved:
                 break
 
-            element = self._ready_queue.popleft()
+            _, element = heapq.heappop(self._ready_queue)
             ready.append(element)
 
         return [
@@ -355,7 +356,7 @@ class Queue():
             self._done_queue.append(element)            # Elements to proceed to the next queue
         elif status == QueueStatus.READY:
             # Push elements which are ready to be processed immediately into the queue
-            self._ready_queue.append(element)
+            heapq.heappush(self._ready_queue, (element._depth, element))
         else:
             # Register a queue specific callback for pending elements
             self.register_pending_element(element)

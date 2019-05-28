@@ -244,6 +244,8 @@ class Element(Plugin):
         self.__can_query_cache_callback = None        # Callback to PullQueue/FetchQueue
         self.__buildable_callback = None              # Callback to BuildQueue
 
+        self._depth = None                            # Depth of Element in its current dependency graph
+
         # Ensure we have loaded this class's defaults
         self.__init_defaults(project, plugin_conf, meta.kind, meta.is_junction)
 
@@ -2309,6 +2311,16 @@ class Element(Plugin):
     #
     def _set_buildable_callback(self, callback):
         self.__buildable_callback = callback
+
+    # _set_depth()
+    #
+    # Set the depth of the Element.
+    #
+    # The depth represents the position of the Element within the current
+    # session's dependency graph. A depth of zero represents the bottommost element.
+    #
+    def _set_depth(self, depth):
+        self._depth = depth
 
     #############################################################
     #                   Private Local Methods                   #

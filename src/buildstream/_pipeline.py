@@ -513,4 +513,9 @@ class _Planner():
             self.plan_element(root, 0)
 
         depth_sorted = sorted(self.depth_map.items(), key=itemgetter(1), reverse=True)
+
+        # Set the depth of each element
+        for index, item in enumerate(depth_sorted):
+            item[0]._set_depth(index)
+
         return [item[0] for item in depth_sorted if plan_cached or not item[0]._cached_success()]
