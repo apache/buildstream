@@ -25,7 +25,7 @@ from .types import _KeyStrength
 from ._exceptions import ArtifactError, CASError, CASCacheError
 from ._protos.buildstream.v2 import artifact_pb2, artifact_pb2_grpc
 
-from ._cas import CASRemoteSpec
+from ._cas import CASRemoteSpec, CASRemote
 from .storage._casbaseddirectory import CasBasedDirectory
 from ._artifact import Artifact
 from . import utils
@@ -43,6 +43,38 @@ class ArtifactCacheSpec(CASRemoteSpec):
     pass
 
 
+# ArtifactRemote extends CASRemote to check during initialisation that there is
+# an artifact service
+class ArtifactRemote(CASRemote):
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.artifact_service = None
+
+    def init(self):
+        if not self._initialized:
+            # do default initialisation
+            super().init()
+
+            # Add artifact stub
+            self.artifact_service = artifact_pb2_grpc.ArtifactServiceStub(self.channel)
+
+            # Check whether the server supports newer proto based artifact.
+            try:
+                request = artifact_pb2.ArtifactStatusRequest()
+                if self.instance_name:
+                    request.instance_name = self.instance_name
+                self.artifact_service.ArtifactStatus(request)
+            except grpc.RpcError as e:
+                # Check if this remote has the artifact service
+                if e.code() == grpc.StatusCode.UNIMPLEMENTED:
+                    raise ArtifactError(
+                        "Configured remote does not have the BuildStream "
+                        "ArtifactService. Please check remote configuration.")
+                # Else raise exception with details
+                raise ArtifactError(
+                    "Remote initialisation failed: {}".format(e.details()))
+
+
 # An ArtifactCache manages artifacts.
 #
 # Args:
@@ -54,6 +86,7 @@ class ArtifactCache(BaseCache):
     spec_name = "artifact_cache_specs"
     spec_error = ArtifactError
     config_node_name = "artifacts"
+    remote_class = ArtifactRemote
 
     def __init__(self, context):
         super().__init__(context)
