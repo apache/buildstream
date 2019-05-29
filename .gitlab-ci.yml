@@ -225,6 +225,7 @@ docs:
 
 .overnight-tests: &overnight-tests-template
   stage: test
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-59168197
   variables:
     BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
     BST_EXT_REF: 0.12.0-31-g604196876f31536a837c95a098af7bea948b4731
@@ -236,6 +237,7 @@ docs:
     scheduler:
       fetchers: 2
     EOF
+  - dnf install -y ostree python3-gobject-base
   - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
   - pip3 install --no-index .
   - pip3 install --user -e ${BST_EXT_URL}@${BST_EXT_REF}#egg=bst_ext
