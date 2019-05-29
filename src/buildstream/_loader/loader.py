@@ -282,8 +282,13 @@ class Loader():
         # Load all dependency files for the new LoadElement
         while loader_queue:
             if loader_queue[-1][1]:
-                # We have deps to process, so look at the next one to do
-                dep = loader_queue[-1][1][-1]
+                current_element = loader_queue[-1]
+
+                # Process the first dependency of the last loaded element
+                dep = current_element[1].pop()
+                # And record its name for checking later
+                current_element[2].append(dep.name)
+
                 if dep.junction:
                     self._load_file(dep.junction, rewritable, ticker,
                                     fetch_subprojects, dep.provenance)
@@ -292,36 +297,26 @@ class Loader():
                                               ticker=ticker,
                                               fetch_subprojects=fetch_subprojects,
                                               provenance=dep.provenance)
+                    dep_element = loader._load_file(dep.name, rewritable, ticker, fetch_subprojects, dep.provenance)
                 else:
-                    loader = self
+                    dep_element = self._elements.get(dep.name)
 
-                if loader._elements.get(dep.name) is None:
-                    # The loader does not have this available so we need to
-                    # either recursively cause it to be loaded, or else we
-                    # need to push this onto the loader queue in this loader
-                    if loader is self:
+                    if dep_element is None:
+                        # The loader does not have this available so we need to
+                        # either recursively cause it to be loaded, or else we
+                        # need to push this onto the loader queue in this loader
                         dep_element = self._load_file_no_deps(dep.name, rewritable, dep.provenance)
                         dep_deps = _extract_depends_from_node(dep_element.node)
                         loader_queue.append((dep_element, list(reversed(dep_deps)), []))
-                    else:
-                        # We discard the return value since we'll catch it
-                        # next time around the loop
-                        loader._load_file(dep.name, rewritable, ticker,
-                                          fetch_subprojects, dep.provenance)
-                else:
-                    dep_element = loader._elements[dep.name]
-                    if _yaml.node_get(dep_element.node, str, Symbol.KIND) == 'junction':
-                        raise LoadError(LoadErrorReason.INVALID_DATA,
-                                        "{}: Cannot depend on junction"
-                                        .format(dep.provenance))
 
-                    # All is well, push the dependency onto the LoadElement
-                    loader_queue[-1][0].dependencies.append(
-                        LoadElement.Dependency(dep_element, dep.dep_type))
-                    # Pop it off the queue
-                    loader_queue[-1][1].pop()
-                    # And record its name for checking later
-                    loader_queue[-1][2].append(dep.name)
+                        if _yaml.node_get(dep_element.node, str, Symbol.KIND) == 'junction':
+                            raise LoadError(LoadErrorReason.INVALID_DATA,
+                                            "{}: Cannot depend on junction"
+                                            .format(dep.provenance))
+
+                # All is well, push the dependency onto the LoadElement
+                current_element[0].dependencies.append(
+                    LoadElement.Dependency(dep_element, dep.dep_type))
             else:
                 # We do not have any more dependencies to load for this
                 # element on the queue, report any invalid dep names
