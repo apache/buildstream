@@ -167,30 +167,23 @@ class Loader():
     #            Private Methods              #
     ###########################################
 
-    # _load_file():
+    # _load_file_no_deps():
     #
-    # Recursively load bst files
+    # Load a bst file as a LoadElement
+    #
+    # This loads a bst file into a LoadElement but does no work to resolve
+    # the element's dependencies.  The dependencies must be resolved properly
+    # before the LoadElement makes its way out of the loader.
     #
     # Args:
     #    filename (str): The element-path relative bst file
     #    rewritable (bool): Whether we should load in round trippable mode
-    #    ticker (callable): A callback to report loaded filenames to the frontend
-    #    fetch_subprojects (bool): Whether to fetch subprojects while loading
     #    provenance (Provenance): The location from where the file was referred to, or None
     #
     # Returns:
-    #    (LoadElement): A loaded LoadElement
+    #    (LoadElement): A partially-loaded LoadElement
     #
-    def _load_file(self, filename, rewritable, ticker, fetch_subprojects, provenance=None):
-
-        # Silently ignore already loaded files
-        if filename in self._elements:
-            return self._elements[filename]
-
-        # Call the ticker
-        if ticker:
-            ticker(filename)
-
+    def _load_file_no_deps(self, filename, rewritable, provenance=None):
         # Load the data and process any conditional statements therein
         fullpath = os.path.join(self._basedir, filename)
         try:
@@ -248,31 +241,91 @@ class Loader():
 
         self._elements[filename] = element
 
-        dependencies = _extract_depends_from_node(node)
+        return element
+
+    # _load_file():
+    #
+    # Semi-Iteratively load bst files
+    #
+    # The "Semi-" qualification is because where junctions get involved there
+    # is a measure of recursion, though this is limited only to the points at
+    # which junctions are crossed.
+    #
+    # Args:
+    #    filename (str): The element-path relative bst file
+    #    rewritable (bool): Whether we should load in round trippable mode
+    #    ticker (callable): A callback to report loaded filenames to the frontend
+    #    fetch_subprojects (bool): Whether to fetch subprojects while loading
+    #    provenance (Provenance): The location from where the file was referred to, or None
+    #
+    # Returns:
+    #    (LoadElement): A loaded LoadElement
+    #
+    def _load_file(self, filename, rewritable, ticker, fetch_subprojects, provenance=None):
+
+        # Silently ignore already loaded files
+        if filename in self._elements:
+            return self._elements[filename]
+
+        # Call the ticker
+        if ticker:
+            ticker(filename)
+
+        top_element = self._load_file_no_deps(filename, rewritable, provenance)
+        dependencies = _extract_depends_from_node(top_element.node)
+        # The loader queue is a stack of tuples
+        # [0] is the LoadElement instance
+        # [1] is a stack of dependencies to load
+        # [2] is a list of dependency names used to warn when all deps are loaded
+        loader_queue = [(top_element, list(reversed(dependencies)), [])]
 
         # Load all dependency files for the new LoadElement
-        for dep in dependencies:
-            if dep.junction:
-                self._load_file(dep.junction, rewritable, ticker, fetch_subprojects, dep.provenance)
-                loader = self._get_loader(dep.junction, rewritable=rewritable, ticker=ticker,
-                                          fetch_subprojects=fetch_subprojects, provenance=dep.provenance)
+        while loader_queue:
+            if loader_queue[-1][1]:
+                current_element = loader_queue[-1]
+
+                # Process the first dependency of the last loaded element
+                dep = current_element[1].pop()
+                # And record its name for checking later
+                current_element[2].append(dep.name)
+
+                if dep.junction:
+                    self._load_file(dep.junction, rewritable, ticker,
+                                    fetch_subprojects, dep.provenance)
+                    loader = self._get_loader(dep.junction,
+                                              rewritable=rewritable,
+                                              ticker=ticker,
+                                              fetch_subprojects=fetch_subprojects,
+                                              provenance=dep.provenance)
+                    dep_element = loader._load_file(dep.name, rewritable, ticker, fetch_subprojects, dep.provenance)
+                else:
+                    dep_element = self._elements.get(dep.name)
+
+                    if dep_element is None:
+                        # The loader does not have this available so we need to
+                        # either recursively cause it to be loaded, or else we
+                        # need to push this onto the loader queue in this loader
+                        dep_element = self._load_file_no_deps(dep.name, rewritable, dep.provenance)
+                        dep_deps = _extract_depends_from_node(dep_element.node)
+                        loader_queue.append((dep_element, list(reversed(dep_deps)), []))
+
+                        if _yaml.node_get(dep_element.node, str, Symbol.KIND) == 'junction':
+                            raise LoadError(LoadErrorReason.INVALID_DATA,
+                                            "{}: Cannot depend on junction"
+                                            .format(dep.provenance))
+
+                # All is well, push the dependency onto the LoadElement
+                current_element[0].dependencies.append(
+                    LoadElement.Dependency(dep_element, dep.dep_type))
             else:
-                loader = self
+                # We do not have any more dependencies to load for this
+                # element on the queue, report any invalid dep names
+                self._warn_invalid_elements(loader_queue[-1][2])
+                # And pop the element off the queue
+                loader_queue.pop()
 
-            dep_element = loader._load_file(dep.name, rewritable, ticker,
-                                            fetch_subprojects, dep.provenance)
-
-            if _yaml.node_get(dep_element.node, str, Symbol.KIND) == 'junction':
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Cannot depend on junction"
-                                .format(dep.provenance))
-
-            element.dependencies.append(LoadElement.Dependency(dep_element, dep.dep_type))
-
-        deps_names = [dep.name for dep in dependencies]
-        self._warn_invalid_elements(deps_names)
-
-        return element
+        # Nothing more in the queue, return the top level element we loaded.
+        return top_element
 
     # _check_circular_deps():
     #
