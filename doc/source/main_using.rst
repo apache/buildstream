@@ -17,4 +17,4 @@ guides and information on user preferences and configuration.
    using_examples
    using_config
    using_commands
-   using_configuring_artifact_server
+   using_configuring_cache_server

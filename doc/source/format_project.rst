@@ -189,7 +189,7 @@ for more detail.
 
 Artifact server
 ~~~~~~~~~~~~~~~
-If you have setup an :ref:`artifact server <artifacts>` for your
+If you have setup an :ref:`artifact server <cache_servers>` for your
 project then it is convenient to configure the following in your ``project.conf``
 so that users need not have any additional configuration to communicate
 with an artifact share.
@@ -274,7 +274,7 @@ using the `remote-execution` option:
       instance-name: development-emea-1
 
 storage-service specifies a remote CAS store and the parameters are the
-same as those used to specify an :ref:`artifact server <artifacts>`.
+same as those used to specify an :ref:`artifact server <cache_servers>`.
 
 The action-cache-service specifies where built actions are cached, allowing
 buildstream to check whether an action has already been executed and download it
