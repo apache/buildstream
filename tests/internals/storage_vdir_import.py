@@ -1,3 +1,18 @@
+#
+#  Copyright (C) 2018 Bloomberg LP
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 from hashlib import sha256
 import os
 import random
@@ -7,6 +22,7 @@ import pytest
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
 from buildstream._cas import CASCache
+from buildstream.storage.directory import VirtualDirectoryError
 
 
 # These are comparitive tests that check that FileBasedDirectory and
@@ -42,9 +58,13 @@ NUM_RANDOM_TESTS = 10
 def generate_import_roots(rootno, directory):
     rootname = "root{}".format(rootno)
     rootdir = os.path.join(directory, "content", rootname)
+    generate_import_root(rootdir, root_filesets[rootno - 1])
+
+
+def generate_import_root(rootdir, filelist):
     if os.path.exists(rootdir):
         return
-    for (path, typesymbol, content) in root_filesets[rootno - 1]:
+    for (path, typesymbol, content) in filelist:
         if typesymbol == 'F':
             (dirnames, filename) = os.path.split(path)
             os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
@@ -251,3 +271,123 @@ def test_random_directory_listing(tmpdir, root):
 @pytest.mark.parametrize("root", [1, 2, 3, 4, 5])
 def test_fixed_directory_listing(tmpdir, root):
     _listing_test(str(tmpdir), root, generate_import_roots)
+
+
+# Check that the vdir is decending and readable
+def test_descend(tmpdir):
+    cas_dir = os.path.join(str(tmpdir), 'cas')
+    cas_cache = CASCache(cas_dir)
+    d = CasBasedDirectory(cas_cache)
+
+    Content_to_check = 'You got me'
+    test_dir = os.path.join(str(tmpdir), 'importfrom')
+    filesys_discription = [
+        ('a', 'D', ''),
+        ('a/l', 'D', ''),
+        ('a/l/g', 'F', Content_to_check)
+    ]
+    generate_import_root(test_dir, filesys_discription)
+
+    d.import_files(test_dir)
+    digest = d.descend('a', 'l').index['g'].get_digest()
+
+    assert Content_to_check == open(cas_cache.objpath(digest)).read()
+
+
+# Check symlink logic for edgecases
+# Make sure the correct erros are raised when trying
+# to decend in to files or links to files
+def test_bad_symlinks(tmpdir):
+    cas_dir = os.path.join(str(tmpdir), 'cas')
+    cas_cache = CASCache(cas_dir)
+    d = CasBasedDirectory(cas_cache)
+
+    test_dir = os.path.join(str(tmpdir), 'importfrom')
+    filesys_discription = [
+        ('a', 'D', ''),
+        ('a/l', 'S', '../target'),
+        ('target', 'F', 'You got me')
+    ]
+    generate_import_root(test_dir, filesys_discription)
+    d.import_files(test_dir)
+    exp_reason = "not-a-directory"
+
+    with pytest.raises(VirtualDirectoryError) as error:
+        d.descend('a', 'l', follow_symlinks=True)
+        assert error.reason == exp_reason
+
+    with pytest.raises(VirtualDirectoryError) as error:
+        d.descend('a', 'l')
+        assert error.reason == exp_reason
+
+    with pytest.raises(VirtualDirectoryError) as error:
+        d.descend('a', 'f')
+        assert error.reason == exp_reason
+
+
+# Check symlink logic for edgecases
+# Check decend accross relitive link
+def test_relitive_symlink(tmpdir):
+    cas_dir = os.path.join(str(tmpdir), 'cas')
+    cas_cache = CASCache(cas_dir)
+    d = CasBasedDirectory(cas_cache)
+
+    Content_to_check = 'You got me'
+    test_dir = os.path.join(str(tmpdir), 'importfrom')
+    filesys_discription = [
+        ('a', 'D', ''),
+        ('a/l', 'S', '../target'),
+        ('target', 'D', ''),
+        ('target/file', 'F', Content_to_check)
+    ]
+    generate_import_root(test_dir, filesys_discription)
+    d.import_files(test_dir)
+
+    digest = d.descend('a', 'l', follow_symlinks=True).index['file'].get_digest()
+    assert Content_to_check == open(cas_cache.objpath(digest)).read()
+
+
+# Check symlink logic for edgecases
+# Check deccend accross abs link
+def test_abs_symlink(tmpdir):
+    cas_dir = os.path.join(str(tmpdir), 'cas')
+    cas_cache = CASCache(cas_dir)
+    d = CasBasedDirectory(cas_cache)
+
+    Content_to_check = 'two step file'
+    test_dir = os.path.join(str(tmpdir), 'importfrom')
+    filesys_discription = [
+        ('a', 'D', ''),
+        ('a/l', 'S', '/target'),
+        ('target', 'D', ''),
+        ('target/file', 'F', Content_to_check)
+    ]
+    generate_import_root(test_dir, filesys_discription)
+    d.import_files(test_dir)
+
+    digest = d.descend('a', 'l', follow_symlinks=True).index['file'].get_digest()
+
+    assert Content_to_check == open(cas_cache.objpath(digest)).read()
+
+
+# Check symlink logic for edgecases
+# Check symlink can not escape root
+def test_bad_sym_escape(tmpdir):
+    cas_dir = os.path.join(str(tmpdir), 'cas')
+    cas_cache = CASCache(cas_dir)
+    d = CasBasedDirectory(cas_cache)
+
+    test_dir = os.path.join(str(tmpdir), 'importfrom')
+    filesys_discription = [
+        ('jail', 'D', ''),
+        ('jail/a', 'D', ''),
+        ('jail/a/l', 'S', '../../target'),
+        ('target', 'D', ''),
+        ('target/file', 'F', 'two step file')
+    ]
+    generate_import_root(test_dir, filesys_discription)
+    d.import_files(os.path.join(test_dir, 'jail'))
+
+    with pytest.raises(VirtualDirectoryError) as error:
+        d.descend('a', 'l', follow_symlinks=True)
+        assert error.reason == "directory-not-found"
