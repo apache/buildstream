@@ -338,7 +338,8 @@ class Loader():
     # Raises:
     #    (LoadError): In case there was a circular dependency error
     #
-    def _check_circular_deps(self, element, check_elements=None, validated=None, sequence=None):
+    @staticmethod
+    def _check_circular_deps(element, check_elements=None, validated=None, sequence=None):
 
         if check_elements is None:
             check_elements = set()
@@ -366,7 +367,7 @@ class Loader():
         check_elements.add(element)
         sequence.append(element.full_name)
         for dep in element.dependencies:
-            dep.element._loader._check_circular_deps(dep.element, check_elements, validated, sequence)
+            Loader._check_circular_deps(dep.element, check_elements, validated, sequence)
         check_elements.remove(element)
         sequence.pop()
 
