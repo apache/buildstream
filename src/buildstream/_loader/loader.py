@@ -391,15 +391,11 @@ class Loader():
     # Args:
     #    element (LoadElement): The element to sort
     #
-    def _sort_dependencies(self, element, visited=None):
-        if visited is None:
-            visited = set()
+    @staticmethod
+    def _sort_dependencies(element):
 
-        if element in visited:
-            return
-
-        for dep in element.dependencies:
-            dep.element._loader._sort_dependencies(dep.element, visited=visited)
+        working_elements = [element]
+        visited = set(working_elements)
 
         def dependency_cmp(dep_a, dep_b):
             element_a = dep_a.element
@@ -443,9 +439,16 @@ class Loader():
         # Now dependency sort, we ensure that if any direct dependency
         # directly or indirectly depends on another direct dependency,
         # it is found later in the list.
-        element.dependencies.sort(key=cmp_to_key(dependency_cmp))
+        while working_elements:
+            element = working_elements.pop()
+            for dep in element.dependencies:
+                dep_element = dep.element
+                if dep_element not in visited:
+                    visited.add(dep_element)
+                    working_elements.append(dep_element)
 
-        visited.add(element)
+            element.dependencies.sort(key=cmp_to_key(dependency_cmp))
+
 
     # _collect_element()
     #
