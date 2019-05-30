@@ -338,40 +338,45 @@ class Loader():
     # Raises:
     #    (LoadError): In case there was a circular dependency error
     #
-    def _check_circular_deps(self, element, check_elements=None, validated=None, sequence=None):
+    @staticmethod
+    def _check_circular_deps(top_element):
 
-        if check_elements is None:
-            check_elements = set()
-        if validated is None:
-            validated = set()
-        if sequence is None:
-            sequence = []
+        sequence = [top_element]
+        sequence_indices = [0]
+        check_elements = set(sequence)
+        validated = set()
 
-        # Skip already validated branches
-        if element in validated:
-            return
-
-        if element in check_elements:
-            # Create `chain`, the loop of element dependencies from this
-            # element back to itself, by trimming everything before this
-            # element from the sequence under consideration.
-            chain = sequence[sequence.index(element.full_name):]
-            chain.append(element.full_name)
-            raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
-                            ("Circular dependency detected at element: {}\n" +
-                             "Dependency chain: {}")
-                            .format(element.full_name, " -> ".join(chain)))
-
-        # Push / Check each dependency / Pop
-        check_elements.add(element)
-        sequence.append(element.full_name)
-        for dep in element.dependencies:
-            dep.element._loader._check_circular_deps(dep.element, check_elements, validated, sequence)
-        check_elements.remove(element)
-        sequence.pop()
-
-        # Eliminate duplicate paths
-        validated.add(element)
+        while sequence:
+            this_element = sequence[-1]
+            index = sequence_indices[-1]
+            if index < len(this_element.dependencies):
+                element = this_element.dependencies[index].element
+                sequence_indices[-1] = index + 1
+                if element in check_elements:
+                    # Create `chain`, the loop of element dependencies from this
+                    # element back to itself, by trimming everything before this
+                    # element from the sequence under consideration.
+                    chain = [element.full_name for element in sequence[sequence.index(element):]]
+                    chain.append(element.full_name)
+                    raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
+                                    ("Circular dependency detected at element: {}\n" +
+                                     "Dependency chain: {}")
+                                    .format(element.full_name, " -> ".join(chain)))
+                if element not in validated:
+                    # We've not already validated this element, so let's
+                    # descend into it to check it out
+                    sequence.append(element)
+                    sequence_indices.append(0)
+                    check_elements.add(element)
+                # Otherwise we'll head back around the loop to validate the
+                # next dependency in this entry
+            else:
+                # Done with entry, pop it off, indicate we're no longer
+                # in its chain, and mark it valid
+                sequence.pop()
+                sequence_indices.pop()
+                check_elements.remove(this_element)
+                validated.add(this_element)
 
     # _sort_dependencies():
     #
