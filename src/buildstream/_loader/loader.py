@@ -391,15 +391,11 @@ class Loader():
     # Args:
     #    element (LoadElement): The element to sort
     #
-    def _sort_dependencies(self, element, visited=None):
-        if visited is None:
-            visited = set()
+    @staticmethod
+    def _sort_dependencies(element):
 
-        if element in visited:
-            return
-
-        for dep in element.dependencies:
-            dep.element._loader._sort_dependencies(dep.element, visited=visited)
+        working_elements = [element]
+        visited = set(working_elements)
 
         def dependency_cmp(dep_a, dep_b):
             element_a = dep_a.element
@@ -443,21 +439,27 @@ class Loader():
         # Now dependency sort, we ensure that if any direct dependency
         # directly or indirectly depends on another direct dependency,
         # it is found later in the list.
-        element.dependencies.sort(key=cmp_to_key(dependency_cmp))
+        while working_elements:
+            element = working_elements.pop()
+            for dep in element.dependencies:
+                dep_element = dep.element
+                if dep_element not in visited:
+                    visited.add(dep_element)
+                    working_elements.append(dep_element)
 
-        visited.add(element)
+            element.dependencies.sort(key=cmp_to_key(dependency_cmp))
 
-    # _collect_element()
+    # _collect_element_no_deps()
     #
-    # Collect the toplevel elements we have
+    # Collect a single element, without its dependencies, into a meta_element
     #
     # Args:
     #    element (LoadElement): The element for which to load a MetaElement
     #
     # Returns:
-    #    (MetaElement): A recursively loaded MetaElement
+    #    (MetaElement): A partially loaded MetaElement
     #
-    def _collect_element(self, element):
+    def _collect_element_no_deps(self, element):
         # Return the already built one, if we already built it
         meta_element = self._meta_elements.get(element.name)
         if meta_element:
@@ -499,16 +501,51 @@ class Loader():
         # Cache it now, make sure it's already there before recursing
         self._meta_elements[element.name] = meta_element
 
-        # Descend
-        for dep in element.dependencies:
-            loader = dep.element._loader
-            meta_dep = loader._collect_element(dep.element)
-            if dep.dep_type != 'runtime':
-                meta_element.build_dependencies.append(meta_dep)
-            if dep.dep_type != 'build':
-                meta_element.dependencies.append(meta_dep)
-
         return meta_element
+
+    # _collect_element()
+    #
+    # Collect the toplevel elements we have
+    #
+    # Args:
+    #    top_element (LoadElement): The element for which to load a MetaElement
+    #
+    # Returns:
+    #    (MetaElement): A fully loaded MetaElement
+    #
+    def _collect_element(self, top_element):
+        element_queue = [top_element]
+        meta_element_queue = [self._collect_element_no_deps(top_element)]
+
+        while element_queue:
+            element = element_queue.pop()
+            meta_element = meta_element_queue.pop()
+
+            if element.meta_done:
+                # This can happen if there are multiple top level targets
+                # in which case, we simply skip over this element.
+                continue
+
+            for dep in element.dependencies:
+
+                loader = dep.element._loader
+                name = dep.element.name
+
+                if name not in loader._meta_elements:
+                    meta_dep = loader._collect_element_no_deps(dep.element)
+                    element_queue.append(dep.element)
+                    meta_element_queue.append(meta_dep)
+                else:
+                    meta_dep = loader._meta_elements[name]
+
+                if dep.dep_type != 'runtime':
+                    meta_element.build_dependencies.append(meta_dep)
+                if dep.dep_type != 'build':
+                    meta_element.dependencies.append(meta_dep)
+
+            element.meta_done = True
+
+        return self._meta_elements[top_element.name]
 
     # _get_loader():
     #
