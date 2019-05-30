@@ -37,6 +37,7 @@ from .. import utils
 from ..utils import link_files, copy_files, list_relative_paths, _get_link_mtime, BST_ARBITRARY_TIMESTAMP
 from ..utils import _set_deterministic_user, _set_deterministic_mtime
 from ..utils import FileListResult
+from .._exceptions import ImplError
 
 # FileBasedDirectory intentionally doesn't call its superclass constuctor,
 # which is meant to be unimplemented.
@@ -47,8 +48,11 @@ class FileBasedDirectory(Directory):
     def __init__(self, external_directory=None):
         self.external_directory = external_directory
 
-    def descend(self, *paths, create=False):
+    def descend(self, *paths, create=False, follow_symlinks=False):
         """ See superclass Directory for arguments """
+
+        if follow_symlinks:
+            ImplError("FileBasedDirectory.Decend dose not implement follow_symlinks=True")
 
         current_dir = self
 

@@ -159,7 +159,15 @@ class CasBasedDirectory(Directory):
 
         self.__invalidate_digest()
 
-    def descend(self, *paths, create=False):
+    def find_root(self):
+        """ Finds the root of this directory tree by following 'parent' until there is
+        no parent. """
+        if self.parent:
+            return self.parent.find_root()
+        else:
+            return self
+
+    def descend(self, *paths, create=False, follow_symlinks=False):
         """Descend one or more levels of directory hierarchy and return a new
         Directory object for that directory.
 
@@ -177,6 +185,7 @@ class CasBasedDirectory(Directory):
         """
 
         current_dir = self
+        paths = list(paths)
 
         for path in paths:
             # Skip empty path segments
@@ -184,20 +193,37 @@ class CasBasedDirectory(Directory):
                 continue
 
             entry = current_dir.index.get(path)
+
             if entry:
                 if entry.type == _FileType.DIRECTORY:
                     current_dir = entry.get_directory(current_dir)
+                elif follow_symlinks and entry.type == _FileType.SYMLINK:
+                    linklocation = entry.target
+                    newpaths = linklocation.split(os.path.sep)
+                    if os.path.isabs(linklocation):
+                        current_dir = current_dir.find_root().descend(*newpaths, follow_symlinks=True)
+                    else:
+                        current_dir = current_dir.descend(*newpaths, follow_symlinks=True)
                 else:
                     error = "Cannot descend into {}, which is a '{}' in the directory {}"
                     raise VirtualDirectoryError(error.format(path,
                                                              current_dir.index[path].type,
-                                                             current_dir))
+                                                             current_dir),
+                                                reason="not-a-directory")
             else:
-                if create:
+                if path == '.':
+                    continue
+                elif path == '..':
+                    if current_dir.parent is not None:
+                        current_dir = current_dir.parent
+                    # In POSIX /.. == / so just stay at the root dir
+                    continue
+                elif create:
                     current_dir = current_dir._add_directory(path)
                 else:
                     error = "'{}' not found in {}"
-                    raise VirtualDirectoryError(error.format(path, str(current_dir)))
+                    raise VirtualDirectoryError(error.format(path, str(current_dir)),
+                                                reason="directory-not-found")
 
         return current_dir
 
@@ -617,6 +643,23 @@ class CasBasedDirectory(Directory):
             self.__digest = self.cas_cache.add_object(buffer=pb2_directory.SerializeToString())
 
         return self.__digest
+
+    def _exists(self, *path, follow_symlinks=False):
+        try:
+            subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
+            target = subdir.index.get(path[-1])
+            if target is not None:
+                if target.type == _FileType.REGULAR_FILE:
+                    return True
+                elif follow_symlinks and target.type == _FileType.SYMLINK:
+                    linklocation = target.target
+                    newpath = linklocation.split(os.path.sep)
+                    if os.path.isabs(linklocation):
+                        return subdir.find_root()._exists(*newpath, follow_symlinks=True)
+                    return subdir._exists(*newpath, follow_symlinks=True)
+            return False
+        except VirtualDirectoryError:
+            return False
 
     def __invalidate_digest(self):
         if self.__digest:
