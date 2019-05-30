@@ -584,11 +584,21 @@ class ChildJob():
 
     # send_message()
     #
-    # These messages will be processed by the Job.handle_message()
-    # implementation.
+    # Send data in a message to the parent Job, running in the main process.
     #
-    def send_message(self, message_type, message):
-        self._queue.put(_Envelope(message_type, message))
+    # This allows for custom inter-process communication between subclasses of
+    # Job and ChildJob.
+    #
+    # These messages will be processed by the Job.handle_message()
+    # implementation, which may be overridden to support one or more custom
+    # 'message_type's.
+    #
+    # Args:
+    #    message_type (str): The type of message to send.
+    #    message_data (any): A (simple!) object to be sent to the parent Job.
+    #
+    def send_message(self, message_type, message_data):
+        self._queue.put(_Envelope(message_type, message_data))
 
     #######################################################
     #                  Abstract Methods                   #
