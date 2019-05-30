@@ -22,7 +22,7 @@ def test_load_yaml(datafiles):
                             'basics.yaml')
 
     loaded = _yaml.load(filename)
-    assert loaded[0].get('kind')[0] == 'pony'
+    assert loaded.value.get('kind').value == 'pony'
 
 
 def assert_provenance(filename, line, col, node, key=None, indices=None):
@@ -43,7 +43,7 @@ def test_basic_provenance(datafiles):
                             'basics.yaml')
 
     loaded = _yaml.load(filename)
-    assert loaded[0].get('kind')[0] == 'pony'
+    assert loaded.value.get('kind').value == 'pony'
 
     assert_provenance(filename, 1, 0, loaded)
 
@@ -56,7 +56,7 @@ def test_member_provenance(datafiles):
                             'basics.yaml')
 
     loaded = _yaml.load(filename)
-    assert loaded[0].get('kind')[0] == 'pony'
+    assert loaded.value.get('kind').value == 'pony'
     assert_provenance(filename, 2, 13, loaded, 'description')
 
 
@@ -68,7 +68,7 @@ def test_element_provenance(datafiles):
                             'basics.yaml')
 
     loaded = _yaml.load(filename)
-    assert loaded[0].get('kind')[0] == 'pony'
+    assert loaded.value.get('kind').value == 'pony'
     assert_provenance(filename, 5, 2, loaded, 'moods', [1])
 
 
@@ -102,7 +102,7 @@ def test_node_get(datafiles):
                             'basics.yaml')
 
     base = _yaml.load(filename)
-    assert base[0].get('kind')[0] == 'pony'
+    assert base.value.get('kind').value == 'pony'
 
     children = _yaml.node_get(base, list, 'children')
     assert isinstance(children, list)
@@ -522,9 +522,9 @@ def test_node_find_target(datafiles, case):
     # laid out.  Client code should never do this.
     def _walk(node, entry, rest):
         if rest:
-            return _walk(node[0][entry], rest[0], rest[1:])
+            return _walk(node.value[entry], rest[0], rest[1:])
         else:
-            return node[0][entry]
+            return node.value[entry]
 
     want = _walk(loaded, case[0], case[1:])
     found_path = _yaml.node_find_target(toplevel, want)

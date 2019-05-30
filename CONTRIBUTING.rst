@@ -1598,6 +1598,15 @@ can run ``tox`` with ``-r`` or  ``--recreate`` option.
 
      ./setup.py test --addopts 'tests/frontend/buildtrack.py::test_build_track'
 
+   If you want to run coverage, you will need need to add ``BST_CYTHON_TRACE=1``
+   to your environment if you also want coverage on cython files. You could then
+   get coverage by running::
+
+     BST_CYTHON_TRACE=1 coverage run ./setup.py test
+
+   Note that to be able to run ``./setup.py test``, you will need to have ``Cython``
+   installed.
+
 .. tip::
 
    We also have an environment called 'venv' which takes any arguments
@@ -1737,6 +1746,12 @@ You can install it with `pip install snakeviz`. Here is an example invocation:
 
 It will then start a webserver and launch a browser to the relevant page.
 
+.. note::
+
+    If you want to also profile cython files, you will need to add
+    BST_CYTHON_PROFILE=1 and recompile the cython files.
+    ``pip install`` would take care of that.
+
 Profiling specific parts of BuildStream with BST_PROFILE
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 BuildStream can also turn on cProfile for specific parts of execution
@@ -1753,6 +1768,32 @@ call most of `initialized`, for each element. These profile files
 are in the same cProfile format as those mentioned in the previous
 section, and can be analysed in the same way.
 
+Fixing performance issues
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+BuildStream uses `Cython <https://cython.org/>`_ in order to speed up specific parts of the
+code base.
+
+.. note::
+
+    When optimizing for performance, please ensure that you optimize the algorithms before
+    jumping into Cython code. Cython will make the code harder to maintain and less accessible
+    to all developers.
+
+When adding a new cython file to the codebase, you will need to register it in ``setup.py``.
+
+For example, for a module ``buildstream._my_module``, to be written in ``src/buildstream/_my_module.pyx``, you would do::
+
+   register_cython_module("buildstream._my_module")
+
+In ``setup.py`` and the build tool will automatically use your module.
+
+.. note::
+
+   Please register cython modules at the same place as the others.
+
+When adding a definition class to share cython symbols between modules, please document the implementation file
+and only expose the required definitions.
 
 Managing data files
 -------------------

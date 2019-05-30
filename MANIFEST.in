@@ -6,6 +6,11 @@ include MAINTAINERS
 include NEWS
 include README.rst
 
+# Cython files
+recursive-include src/buildstream *.pyx
+recursive-include src/buildstream *.pxd
+recursive-include src/buildstream *.c
+
 # Data files required by BuildStream's generic source tests
 recursive-include src/buildstream/testing/_sourcetests/project *
 
@@ -43,3 +48,6 @@ include requirements/plugin-requirements.txt
 
 # Versioneer
 include versioneer.py
+
+# setuptools.build_meta don't include setup.py by default. Add it
+include setup.py

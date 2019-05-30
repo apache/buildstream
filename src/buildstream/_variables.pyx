@@ -18,12 +18,13 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Daniel Silverstone <daniel.silverstone@codethink.co.uk>
+#        Benjamin Schubert <bschubert@bloomberg.net>
 
 import re
 import sys
 
 from ._exceptions import LoadError, LoadErrorReason
-from . import _yaml
+from . cimport _yaml
 
 # Variables are allowed to have dashes here
 #
@@ -34,9 +35,8 @@ PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
 # These hold data structures called "expansion strings" and are the parsed
 # form of the strings which are the input to this subsystem.  Strings
 # such as "Hello %{name}, how are you?" are parsed into the form:
-# (3, ["Hello ", "name", ", how are you?"])
-# i.e. a tuple of an integer and a list, where the integer is the cached
-# length of the list, and the list consists of one or more strings.
+# ["Hello ", "name", ", how are you?"]
+# i.e. a list which consists of one or more strings.
 # Strings in even indices of the list (0, 2, 4, etc) are constants which
 # are copied into the output of the expansion algorithm.  Strings in the
 # odd indices (1, 3, 5, etc) are the names of further expansions to make.
@@ -58,15 +58,18 @@ PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
 # variable settings for the element.
 #
 # Args:
-#     node (dict): A node loaded and composited with yaml tools
+#     node (Node): A node loaded and composited with yaml tools
 #
 # Raises:
 #     LoadError, if unresolved variables, or cycles in resolution, occur.
 #
-class Variables():
+cdef class Variables:
 
-    def __init__(self, node):
+    cdef _yaml.Node original
+    cdef dict _expstr_map
+    cdef public dict flat
 
+    def __init__(self, _yaml.Node node):
         self.original = node
         self._expstr_map = self._resolve(node)
         self.flat = self._flatten()
@@ -84,7 +87,7 @@ class Variables():
     # Raises:
     #    LoadError, if the string contains unresolved variable references.
     #
-    def subst(self, string):
+    def subst(self, str string):
         expstr = _parse_expstr(string)
 
         try:
@@ -93,7 +96,7 @@ class Variables():
             unmatched = []
 
             # Look for any unmatched variable names in the expansion string
-            for var in expstr[1][1::2]:
+            for var in expstr[1::2]:
                 if var not in self._expstr_map:
                     unmatched.append(var)
 
@@ -112,17 +115,20 @@ class Variables():
     #
     # Here we resolve all of our inputs into a dictionary, ready for use
     # in subst()
-    def _resolve(self, node):
+    cdef dict _resolve(self, _yaml.Node node):
         # Special case, if notparallel is specified in the variables for this
         # element, then override max-jobs to be 1.
         # Initialize it as a string as all variables are processed as strings.
         #
-        if _yaml.node_get(node, bool, 'notparallel', default_value=False):
+        if _yaml.node_get(node, bool, 'notparallel', None, False):
             _yaml.node_set(node, 'max-jobs', str(1))
 
-        ret = {}
-        for key, value in _yaml.node_items(node):
-            value = _yaml.node_get(node, str, key)
+        cdef dict ret = {}
+        cdef str key
+        cdef str value
+
+        for key in _yaml.node_keys(node):
+            value = <str> _yaml.node_get(node, str, key)
             ret[sys.intern(key)] = _parse_expstr(value)
         return ret
 
@@ -130,7 +136,7 @@ class Variables():
         # First the check for anything unresolvable
         summary = []
         for key, expstr in self._expstr_map.items():
-            for var in expstr[1][1::2]:
+            for var in expstr[1::2]:
                 if var not in self._expstr_map:
                     line = "  unresolved variable '{unmatched}' in declaration of '{variable}' at: {provenance}"
                     provenance = _yaml.node_get_provenance(self.original, key)
@@ -142,7 +148,7 @@ class Variables():
     def _check_for_cycles(self):
         # And now the cycle checks
         def cycle_check(expstr, visited, cleared):
-            for var in expstr[1][1::2]:
+            for var in expstr[1::2]:
                 if var in cleared:
                     continue
                 if var in visited:
@@ -169,14 +175,18 @@ class Variables():
     #    LoadError, if the string contains unresolved variable references or
     #               if cycles are detected in the variable references
     #
-    def _flatten(self):
-        flat = {}
+    cdef dict _flatten(self):
+        cdef dict flat = {}
+        cdef str key
+        cdef list expstr
+
         try:
             for key, expstr in self._expstr_map.items():
-                if expstr[0] > 1:
-                    expstr = (1, [sys.intern(_expand_expstr(self._expstr_map, expstr))])
+                if len(expstr) > 1:
+                    # FIXME: do we really gain anything by interning?
+                    expstr = [sys.intern(_expand_expstr(self._expstr_map, expstr))]
                     self._expstr_map[key] = expstr
-                flat[key] = expstr[1][0]
+                flat[key] = expstr[0]
         except KeyError:
             self._check_for_missing()
             raise
@@ -190,19 +200,21 @@ class Variables():
 # something which might "waste" memory, in reality each of these
 # will live as long as the element which uses it, which is the
 # vast majority of the memory usage across the execution of BuildStream.
-PARSE_CACHE = {
+cdef dict PARSE_CACHE = {
     # Prime the cache with the empty string since otherwise that can
     # cause issues with the parser, complications to which cause slowdown
-    "": (1, [""]),
+    "": [""],
 }
 
 
 # Helper to parse a string into an expansion string tuple, caching
 # the results so that future parse requests don't need to think about
 # the string
-def _parse_expstr(instr):
+cdef list _parse_expstr(str instr):
+    cdef list ret
+
     try:
-        return PARSE_CACHE[instr]
+        return <list> PARSE_CACHE[instr]
     except KeyError:
         # This use of the regex turns a string like "foo %{bar} baz" into
         # a list ["foo ", "bar", " baz"]
@@ -211,41 +223,61 @@ def _parse_expstr(instr):
         # which we can optimise away, making the expansion routines not need
         # a test for this.
         if splits[-1] == '':
-            splits = splits[:-1]
+           del splits [-1]
         # Cache an interned copy of this.  We intern it to try and reduce the
         # memory impact of the cache.  It seems odd to cache the list length
         # but this is measurably cheaper than calculating it each time during
         # string expansion.
-        PARSE_CACHE[instr] = (len(splits), [sys.intern(s) for s in splits])
-        return PARSE_CACHE[instr]
+        ret = [sys.intern(<str> s) for s in <list> splits]
+        PARSE_CACHE[instr] = ret
+        return ret
+
+
+# Helper to expand recursively an expansion string in the context
+# of the given dictionary of expansion string
+#
+# Args:
+#     content (dict): dictionary context for resolving the variables
+#     value (list): expansion string to expand
+#     acc (list): list in which to add the result
+#     counter (int): counter to count the number of recursion in order to
+#                    detect cycles.
+#
+# Raises:
+#     KeyError: if any expansion is missing
+#     RecursionError: if a variable is defined recursively
+#
+cdef void _expand_expstr_helper(dict content, list value, list acc, int counter = 0) except *:
+    cdef Py_ssize_t idx = 0
+    cdef Py_ssize_t value_len = len(value)
+
+    if counter > 1000:
+        raise RecursionError()
+
+    while idx < value_len:
+        acc.append(value[idx])
+        idx += 1
+
+        if idx < value_len:
+            _expand_expstr_helper(content, <list> content[value[idx]], acc, counter + 1)
+
+        idx += 1
 
 
 # Helper to expand a given top level expansion string tuple in the context
 # of the given dictionary of expansion strings.
 #
 # Note: Will raise KeyError if any expansion is missing
-def _expand_expstr(content, topvalue):
+cdef str _expand_expstr(dict content, list topvalue):
     # Short-circuit constant strings
-    if topvalue[0] == 1:
-        return topvalue[1][0]
+    if len(topvalue) == 1:
+        return <str> topvalue[0]
 
     # Short-circuit strings which are entirely an expansion of another variable
     # e.g. "%{another}"
-    if topvalue[0] == 2 and topvalue[1][0] == "":
-        return _expand_expstr(content, content[topvalue[1][1]])
+    if len(topvalue) == 2 and len(<str> topvalue[0]) == 0:
+        return _expand_expstr(content, <list> content[topvalue[1]])
 
-    # Otherwise process fully...
-    def internal_expand(value):
-        (expansion_len, expansion_bits) = value
-        idx = 0
-        while idx < expansion_len:
-            # First yield any constant string content
-            yield expansion_bits[idx]
-            idx += 1
-            # Now, if there is an expansion variable left to expand, yield
-            # the expansion of that variable too
-            if idx < expansion_len:
-                yield from internal_expand(content[expansion_bits[idx]])
-            idx += 1
-
-    return "".join(internal_expand(topvalue))
+    cdef list result = []
+    _expand_expstr_helper(content, topvalue, result)
+    return "".join(result)

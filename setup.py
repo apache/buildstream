@@ -17,15 +17,18 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#        Benjamin Schubert <bschubert15@bloomberg.net>
 
 import os
+from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
-import versioneer
 
-from pathlib import Path
+# Add local directory to the path, in order to be able to import versioneer
+sys.path.append(os.path.dirname(__file__))
+import versioneer  # noqa
 
 
 ##################################################################
@@ -39,7 +42,7 @@ if sys.version_info[0] != REQUIRED_PYTHON_MAJOR or sys.version_info[1] < REQUIRE
     sys.exit(1)
 
 try:
-    from setuptools import setup, find_packages, Command
+    from setuptools import setup, find_packages, Command, Extension
     from setuptools.command.easy_install import ScriptWriter
     from setuptools.command.test import test as TestCommand
 except ImportError:
@@ -303,6 +306,95 @@ with open(os.path.join(os.path.dirname(os.path.realpath(__file__)),
 
 
 #####################################################
+#            Setup Cython and extensions            #
+#####################################################
+# We want to ensure that source distributions always
+# include the .c files, in order to allow users to
+# not need cython when building.
+def assert_cython_required():
+    if "sdist" not in sys.argv:
+        return
+
+    print("Cython is required when building 'sdist' in order to "
+          "ensure source distributions can be built without Cython. "
+          "Please install it using your package manager (usually 'python3-cython') "
+          "or pip (pip install cython).",
+          file=sys.stderr)
+
+    raise SystemExit(1)
+
+
+extension_macros = [
+    ("CYTHON_TRACE", os.environ.get("BST_CYTHON_TRACE", 0))
+]
+
+
+def cythonize(extensions, **kwargs):
+    try:
+        from Cython.Build import cythonize as _cythonize
+    except ImportError:
+        assert_cython_required()
+
+        print("Cython not found. Using preprocessed c files instead")
+
+        missing_c_sources = []
+
+        for extension in extensions:
+            for source in extension.sources:
+                if source.endswith(".pyx"):
+                    c_file = source.replace(".pyx", ".c")
+
+                    if not os.path.exists(c_file):
+                        missing_c_sources.append((extension, c_file))
+
+        if missing_c_sources:
+            for extension, source in missing_c_sources:
+                print("Missing '{}' for building extension '{}'".format(source, extension.name))
+
+            raise SystemExit(1)
+        return extensions
+
+    return _cythonize(extensions, **kwargs)
+
+
+def register_cython_module(module_name, dependencies=None):
+    def files_from_module(modname):
+        basename = "src/{}".format(modname.replace(".", "/"))
+        return "{}.pyx".format(basename), "{}.pxd".format(basename)
+
+    if dependencies is None:
+        dependencies = []
+
+    implementation_file, definition_file = files_from_module(module_name)
+
+    assert os.path.exists(implementation_file)
+
+    depends = []
+    if os.path.exists(definition_file):
+        depends.append(definition_file)
+
+    for module in dependencies:
+        imp_file, def_file = files_from_module(module)
+        assert os.path.exists(imp_file), "Dependency file not found: {}".format(imp_file)
+        assert os.path.exists(def_file), "Dependency declaration file not found: {}".format(def_file)
+
+        depends.append(imp_file)
+        depends.append(def_file)
+
+    BUILD_EXTENSIONS.append(Extension(
+        name=module_name,
+        sources=[implementation_file],
+        depends=depends,
+        define_macros=extension_macros,
+    ))
+
+
+BUILD_EXTENSIONS = []
+
+register_cython_module("buildstream._yaml")
+register_cython_module("buildstream._variables", dependencies=["buildstream._yaml"])
+
+#####################################################
 #             Main setup() Invocation               #
 #####################################################
 setup(name='BuildStream',
@@ -360,4 +452,16 @@ setup(name='BuildStream',
       install_requires=install_requires,
       entry_points=bst_install_entry_points,
       tests_require=dev_requires,
+      ext_modules=cythonize(
+          BUILD_EXTENSIONS,
+          compiler_directives={
+              # Version of python to use
+              # https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html#arguments
+              "language_level": "3",
+              # Enable line tracing, this is needed in order to generate coverage.
+              # This is not enabled unless the CYTHON_TRACE macro for distutils is defined.
+              "linetrace": True,
+              "profile": os.environ.get("BST_CYTHON_PROFILE", False),
+          }
+      ),
       zip_safe=False)

@@ -2,11 +2,21 @@
 src/buildstream/**/*.pyc
 tests/**/*.pyc
 
+# Generated C files
+src/buildstream/**/*.c
+src/buildstream/**/*.so
+
+# Cython report files when using annotations
+src/buildstream/**/*.html
+
 # Build output directory
 build
 
 # Setuptools distribution folder.
 /dist/
+
+# Pip build metadata
+pip-wheel-metadata/
 
 # Python egg metadata, regenerated from source files by setuptools.
 /src/*.egg-info
