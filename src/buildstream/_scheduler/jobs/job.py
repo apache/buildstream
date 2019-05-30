@@ -701,7 +701,7 @@ class ChildJob():
                                  elapsed=elapsed, detail=e.detail,
                                  logfile=filename, sandbox=e.sandbox)
 
-                self._queue.put(_Envelope('child_data', self.child_process_data()))
+                self.send_message('child_data', self.child_process_data())
 
                 # Report the exception to the parent (for internal testing purposes)
                 self._child_send_error(e)
@@ -727,7 +727,7 @@ class ChildJob():
 
             else:
                 # No exception occurred in the action
-                self._queue.put(_Envelope('child_data', self.child_process_data()))
+                self.send_message('child_data', self.child_process_data())
                 self._child_send_result(result)
 
                 elapsed = datetime.datetime.now() - starttime
@@ -758,11 +758,10 @@ class ChildJob():
             domain = e.domain
             reason = e.reason
 
-        envelope = _Envelope('error', {
+        self.send_message('error', {
             'domain': domain,
             'reason': reason
         })
-        self._queue.put(envelope)
 
     # _child_send_result()
     #
@@ -776,8 +775,7 @@ class ChildJob():
     #
     def _child_send_result(self, result):
         if result is not None:
-            envelope = _Envelope('result', result)
-            self._queue.put(envelope)
+            self.send_message('result', result)
 
     # _child_shutdown()
     #
@@ -813,4 +811,4 @@ class ChildJob():
         if message.message_type == MessageType.LOG:
             return
 
-        self._queue.put(_Envelope('message', message))
+        self.send_message('message', message)
