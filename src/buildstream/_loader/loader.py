@@ -521,6 +521,11 @@ class Loader():
             element = element_queue.pop()
             meta_element = meta_element_queue.pop()
 
+            if element.meta_done:
+                # This can happen if there are multiple top level targets
+                # in which case, we simply skip over this element.
+                continue
+
             for dep in element.dependencies:
 
                 loader = dep.element._loader
@@ -537,6 +542,8 @@ class Loader():
                     meta_element.build_dependencies.append(meta_dep)
                 if dep.dep_type != 'build':
                     meta_element.dependencies.append(meta_dep)
+
+            element.meta_done = True
 
         return self._meta_elements[top_element.name]
 
