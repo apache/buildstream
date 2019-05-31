@@ -23,12 +23,6 @@ except (ImportError, ValueError):
     HAVE_OSTREE = False
 
 try:
-    utils.get_host_tool('lzip')
-    HAVE_LZIP = True
-except ProgramNotFoundError:
-    HAVE_LZIP = False
-
-try:
     import arpy  # pylint: disable=unused-import
     HAVE_ARPY = True
 except ImportError:

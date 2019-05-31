@@ -49,6 +49,12 @@ except ProgramNotFoundError:
     HAVE_BWRAP = False
     HAVE_BWRAP_JSON_STATUS = False
 
+try:
+    utils.get_host_tool('lzip')
+    HAVE_LZIP = True
+except ProgramNotFoundError:
+    HAVE_LZIP = False
+
 IS_LINUX = os.getenv('BST_FORCE_BACKEND', sys.platform).startswith('linux')
 IS_WSL = (IS_LINUX and 'Microsoft' in platform.uname().release)
 IS_WINDOWS = (os.name == 'nt')
