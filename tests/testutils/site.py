@@ -22,12 +22,6 @@ try:
 except (ImportError, ValueError):
     HAVE_OSTREE = False
 
-try:
-    import arpy  # pylint: disable=unused-import
-    HAVE_ARPY = True
-except ImportError:
-    HAVE_ARPY = False
-
 IS_LINUX = os.getenv('BST_FORCE_BACKEND', sys.platform).startswith('linux')
 IS_WSL = (IS_LINUX and 'Microsoft' in platform.uname().release)
 IS_WINDOWS = (os.name == 'nt')
