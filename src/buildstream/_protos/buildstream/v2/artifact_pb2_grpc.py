@@ -24,6 +24,11 @@ class ArtifactServiceStub(object):
         request_serializer=buildstream_dot_v2_dot_artifact__pb2.UpdateArtifactRequest.SerializeToString,
         response_deserializer=buildstream_dot_v2_dot_artifact__pb2.Artifact.FromString,
         )
+    self.ArtifactStatus = channel.unary_unary(
+        '/buildstream.v2.ArtifactService/ArtifactStatus',
+        request_serializer=buildstream_dot_v2_dot_artifact__pb2.ArtifactStatusRequest.SerializeToString,
+        response_deserializer=buildstream_dot_v2_dot_artifact__pb2.ArtifactStatusResponse.FromString,
+        )
 
 
 class ArtifactServiceServicer(object):
@@ -50,6 +55,13 @@ class ArtifactServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def ArtifactStatus(self, request, context):
+    """Returns status of service, can be used for checking presence of service
+    """
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_ArtifactServiceServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -62,6 +74,11 @@ def add_ArtifactServiceServicer_to_server(servicer, server):
           servicer.UpdateArtifact,
           request_deserializer=buildstream_dot_v2_dot_artifact__pb2.UpdateArtifactRequest.FromString,
           response_serializer=buildstream_dot_v2_dot_artifact__pb2.Artifact.SerializeToString,
+      ),
+      'ArtifactStatus': grpc.unary_unary_rpc_method_handler(
+          servicer.ArtifactStatus,
+          request_deserializer=buildstream_dot_v2_dot_artifact__pb2.ArtifactStatusRequest.FromString,
+          response_serializer=buildstream_dot_v2_dot_artifact__pb2.ArtifactStatusResponse.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

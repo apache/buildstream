@@ -34,6 +34,9 @@ service ArtifactService {
   // Errors:
   // * `FAILED_PRECONDITION`: Files specified in upload aren't present in CAS
   rpc UpdateArtifact(UpdateArtifactRequest) returns (Artifact) {}
+
+  // Returns status of service, can be used for checking presence of service
+  rpc ArtifactStatus(ArtifactStatusRequest) returns (ArtifactStatusResponse) {}
 }
 
 message Artifact {
@@ -85,4 +88,11 @@ message UpdateArtifactRequest {
   string instance_name = 1;
   string cache_key = 2;
   Artifact artifact = 3;
+}
+
+message ArtifactStatusRequest {
+  string instance_name = 1;
+}
+
+message ArtifactStatusResponse {
 }

@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='buildstream.v2',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x1d\x62uildstream/v2/artifact.proto\x12\x0e\x62uildstream.v2\x1a\x36\x62uild/bazel/remote/execution/v2/remote_execution.proto\x1a\x1cgoogle/api/annotations.proto\"\xde\x04\n\x08\x41rtifact\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x15\n\rbuild_success\x18\x02 \x01(\x08\x12\x13\n\x0b\x62uild_error\x18\x03 \x01(\t\x12\x1b\n\x13\x62uild_error_details\x18\x04 \x01(\t\x12\x12\n\nstrong_key\x18\x05 \x01(\t\x12\x10\n\x08weak_key\x18\x06 \x01(\t\x12\x16\n\x0ewas_workspaced\x18\x07 \x01(\x08\x12\x36\n\x05\x66iles\x18\x08 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x37\n\nbuild_deps\x18\t \x03(\x0b\x32#.buildstream.v2.Artifact.Dependency\x12<\n\x0bpublic_data\x18\n \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12.\n\x04logs\x18\x0b \x03(\x0b\x32 .buildstream.v2.Artifact.LogFile\x12:\n\tbuildtree\x18\x0c \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x1aM\n\nDependency\x12\x14\n\x0c\x65lement_name\x18\x01 \x01(\t\x12\x11\n\tcache_key\x18\x02 \x01(\t\x12\x16\n\x0ewas_workspaced\x18\x03 \x01(\x08\x1aP\n\x07LogFile\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\">\n\x12GetArtifactRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x11\n\tcache_key\x18\x02 \x01(\t\"m\n\x15UpdateArtifactRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x11\n\tcache_key\x18\x02 \x01(\t\x12*\n\x08\x61rtifact\x18\x03 \x01(\x0b\x32\x18.buildstream.v2.Artifact2\xb5\x01\n\x0f\x41rtifactService\x12M\n\x0bGetArtifact\x12\".buildstream.v2.GetArtifactRequest\x1a\x18.buildstream.v2.Artifact\"\x00\x12S\n\x0eUpdateArtifact\x12%.buildstream.v2.UpdateArtifactRequest\x1a\x18.buildstream.v2.Artifact\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x1d\x62uildstream/v2/artifact.proto\x12\x0e\x62uildstream.v2\x1a\x36\x62uild/bazel/remote/execution/v2/remote_execution.proto\x1a\x1cgoogle/api/annotations.proto\"\xde\x04\n\x08\x41rtifact\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x15\n\rbuild_success\x18\x02 \x01(\x08\x12\x13\n\x0b\x62uild_error\x18\x03 \x01(\t\x12\x1b\n\x13\x62uild_error_details\x18\x04 \x01(\t\x12\x12\n\nstrong_key\x18\x05 \x01(\t\x12\x10\n\x08weak_key\x18\x06 \x01(\t\x12\x16\n\x0ewas_workspaced\x18\x07 \x01(\x08\x12\x36\n\x05\x66iles\x18\x08 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x37\n\nbuild_deps\x18\t \x03(\x0b\x32#.buildstream.v2.Artifact.Dependency\x12<\n\x0bpublic_data\x18\n \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12.\n\x04logs\x18\x0b \x03(\x0b\x32 .buildstream.v2.Artifact.LogFile\x12:\n\tbuildtree\x18\x0c \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x1aM\n\nDependency\x12\x14\n\x0c\x65lement_name\x18\x01 \x01(\t\x12\x11\n\tcache_key\x18\x02 \x01(\t\x12\x16\n\x0ewas_workspaced\x18\x03 \x01(\x08\x1aP\n\x07LogFile\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\">\n\x12GetArtifactRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x11\n\tcache_key\x18\x02 \x01(\t\"m\n\x15UpdateArtifactRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x11\n\tcache_key\x18\x02 \x01(\t\x12*\n\x08\x61rtifact\x18\x03 \x01(\x0b\x32\x18.buildstream.v2.Artifact\".\n\x15\x41rtifactStatusRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"\x18\n\x16\x41rtifactStatusResponse2\x98\x02\n\x0f\x41rtifactService\x12M\n\x0bGetArtifact\x12\".buildstream.v2.GetArtifactRequest\x1a\x18.buildstream.v2.Artifact\"\x00\x12S\n\x0eUpdateArtifact\x12%.buildstream.v2.UpdateArtifactRequest\x1a\x18.buildstream.v2.Artifact\"\x00\x12\x61\n\x0e\x41rtifactStatus\x12%.buildstream.v2.ArtifactStatusRequest\x1a&.buildstream.v2.ArtifactStatusResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[build_dot_bazel_dot_remote_dot_execution_dot_v2_dot_remote__execution__pb2.DESCRIPTOR,google_dot_api_dot_annotations__pb2.DESCRIPTOR,])
 
@@ -299,6 +299,61 @@ _UPDATEARTIFACTREQUEST = _descriptor.Descriptor(
   serialized_end=917,
 )
 
+
+_ARTIFACTSTATUSREQUEST = _descriptor.Descriptor(
+  name='ArtifactStatusRequest',
+  full_name='buildstream.v2.ArtifactStatusRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='instance_name', full_name='buildstream.v2.ArtifactStatusRequest.instance_name', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=919,
+  serialized_end=965,
+)
+
+
+_ARTIFACTSTATUSRESPONSE = _descriptor.Descriptor(
+  name='ArtifactStatusResponse',
+  full_name='buildstream.v2.ArtifactStatusResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=967,
+  serialized_end=991,
+)
+
 _ARTIFACT_DEPENDENCY.containing_type = _ARTIFACT
 _ARTIFACT_LOGFILE.fields_by_name['digest'].message_type = build_dot_bazel_dot_remote_dot_execution_dot_v2_dot_remote__execution__pb2._DIGEST
 _ARTIFACT_LOGFILE.containing_type = _ARTIFACT
@@ -311,6 +366,8 @@ _UPDATEARTIFACTREQUEST.fields_by_name['artifact'].message_type = _ARTIFACT
 DESCRIPTOR.message_types_by_name['Artifact'] = _ARTIFACT
 DESCRIPTOR.message_types_by_name['GetArtifactRequest'] = _GETARTIFACTREQUEST
 DESCRIPTOR.message_types_by_name['UpdateArtifactRequest'] = _UPDATEARTIFACTREQUEST
+DESCRIPTOR.message_types_by_name['ArtifactStatusRequest'] = _ARTIFACTSTATUSREQUEST
+DESCRIPTOR.message_types_by_name['ArtifactStatusResponse'] = _ARTIFACTSTATUSRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Artifact = _reflection.GeneratedProtocolMessageType('Artifact', (_message.Message,), dict(
@@ -350,6 +407,20 @@ UpdateArtifactRequest = _reflection.GeneratedProtocolMessageType('UpdateArtifact
   ))
 _sym_db.RegisterMessage(UpdateArtifactRequest)
 
+ArtifactStatusRequest = _reflection.GeneratedProtocolMessageType('ArtifactStatusRequest', (_message.Message,), dict(
+  DESCRIPTOR = _ARTIFACTSTATUSREQUEST,
+  __module__ = 'buildstream.v2.artifact_pb2'
+  # @@protoc_insertion_point(class_scope:buildstream.v2.ArtifactStatusRequest)
+  ))
+_sym_db.RegisterMessage(ArtifactStatusRequest)
+
+ArtifactStatusResponse = _reflection.GeneratedProtocolMessageType('ArtifactStatusResponse', (_message.Message,), dict(
+  DESCRIPTOR = _ARTIFACTSTATUSRESPONSE,
+  __module__ = 'buildstream.v2.artifact_pb2'
+  # @@protoc_insertion_point(class_scope:buildstream.v2.ArtifactStatusResponse)
+  ))
+_sym_db.RegisterMessage(ArtifactStatusResponse)
+
 
 
 _ARTIFACTSERVICE = _descriptor.ServiceDescriptor(
@@ -358,8 +429,8 @@ _ARTIFACTSERVICE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=920,
-  serialized_end=1101,
+  serialized_start=994,
+  serialized_end=1274,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetArtifact',
@@ -377,6 +448,15 @@ _ARTIFACTSERVICE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_UPDATEARTIFACTREQUEST,
     output_type=_ARTIFACT,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='ArtifactStatus',
+    full_name='buildstream.v2.ArtifactService.ArtifactStatus',
+    index=2,
+    containing_service=None,
+    input_type=_ARTIFACTSTATUSREQUEST,
+    output_type=_ARTIFACTSTATUSRESPONSE,
     serialized_options=None,
   ),
 ])
