@@ -5,23 +5,13 @@ import subprocess
 import pytest
 
 from buildstream.testing import Repo
-from .. import site
-
-
-GIT_ENV = {
-    'GIT_AUTHOR_DATE': '1320966000 +0200',
-    'GIT_AUTHOR_NAME': 'tomjon',
-    'GIT_AUTHOR_EMAIL': 'tom@jon.com',
-    'GIT_COMMITTER_DATE': '1320966000 +0200',
-    'GIT_COMMITTER_NAME': 'tomjon',
-    'GIT_COMMITTER_EMAIL': 'tom@jon.com'
-}
+from buildstream.testing._utils.site import GIT, GIT_ENV, HAVE_GIT
 
 
 class Git(Repo):
 
     def __init__(self, directory, subdir):
-        if not site.HAVE_GIT:
+        if not HAVE_GIT:
             pytest.skip("git is not available")
 
         self.submodules = {}
@@ -29,7 +19,7 @@ class Git(Repo):
         super(Git, self).__init__(directory, subdir)
 
     def _run_git(self, *args, **kwargs):
-        argv = [site.GIT]
+        argv = [GIT]
         argv.extend(args)
         if 'env' not in kwargs:
             kwargs['env'] = dict(GIT_ENV, PWD=self.repo)

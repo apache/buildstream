@@ -2,6 +2,7 @@
 # so we dont have to repeat this everywhere
 #
 import os
+import subprocess
 import sys
 import platform
 
@@ -11,6 +12,11 @@ from buildstream import _site, utils, ProgramNotFoundError
 try:
     GIT = utils.get_host_tool('git')
     HAVE_GIT = True
+
+    out = str(subprocess.check_output(['git', '--version']), "utf-8")
+    version = tuple(int(x) for x in out.split(' ')[2].split('.'))
+    HAVE_OLD_GIT = version < (1, 8, 5)
+
     GIT_ENV = {
         'GIT_AUTHOR_DATE': '1320966000 +0200',
         'GIT_AUTHOR_NAME': 'tomjon',
@@ -22,6 +28,7 @@ try:
 except ProgramNotFoundError:
     GIT = None
     HAVE_GIT = False
+    HAVE_OLD_GIT = False
     GIT_ENV = dict()
 
 try:

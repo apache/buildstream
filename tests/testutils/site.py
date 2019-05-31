@@ -2,23 +2,12 @@
 # so we dont have to repeat this everywhere
 #
 import os
-import subprocess
 import sys
 import platform
 
 from buildstream import _site, utils, ProgramNotFoundError
 from buildstream._platform import Platform
 
-
-try:
-    GIT = utils.get_host_tool('git')
-    HAVE_GIT = True
-    out = str(subprocess.check_output(['git', '--version']), "utf-8")
-    version = tuple(int(x) for x in out.split(' ')[2].split('.'))
-    HAVE_OLD_GIT = version < (1, 8, 5)
-except ProgramNotFoundError:
-    HAVE_GIT = False
-    HAVE_OLD_GIT = False
 
 try:
     OSTREE_CLI = utils.get_host_tool('ostree')
