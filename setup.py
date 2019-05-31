@@ -324,8 +324,10 @@ def assert_cython_required():
     raise SystemExit(1)
 
 
+ENABLE_CYTHON_TRACE = os.environ.get("BST_CYTHON_TRACE", "0")
+
 extension_macros = [
-    ("CYTHON_TRACE", os.environ.get("BST_CYTHON_TRACE", 0))
+    ("CYTHON_TRACE", ENABLE_CYTHON_TRACE)
 ]
 
 
@@ -458,9 +460,8 @@ setup(name='BuildStream',
               # Version of python to use
               # https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html#arguments
               "language_level": "3",
-              # Enable line tracing, this is needed in order to generate coverage.
-              # This is not enabled unless the CYTHON_TRACE macro for distutils is defined.
-              "linetrace": True,
+              # Enable line tracing when requested only, this is needed in order to generate coverage.
+              "linetrace": bool(ENABLE_CYTHON_TRACE),
               "profile": os.environ.get("BST_CYTHON_PROFILE", False),
           }
       ),
