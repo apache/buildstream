@@ -9,11 +9,6 @@ import platform
 from buildstream import _site, utils, ProgramNotFoundError
 from buildstream._platform import Platform
 
-try:
-    BZR = utils.get_host_tool('bzr')
-    HAVE_BZR = True
-except ProgramNotFoundError:
-    HAVE_BZR = False
 
 try:
     GIT = utils.get_host_tool('git')

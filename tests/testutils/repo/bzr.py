@@ -3,21 +3,16 @@ import subprocess
 import pytest
 
 from buildstream.testing import Repo
-from .. import site
-
-
-BZR_ENV = {
-    "BZR_EMAIL": "Testy McTesterson <testy.mctesterson@example.com>"
-}
+from buildstream.testing._utils.site import BZR, BZR_ENV, HAVE_BZR
 
 
 class Bzr(Repo):
 
     def __init__(self, directory, subdir):
-        if not site.HAVE_BZR:
+        if not HAVE_BZR:
             pytest.skip("bzr is not available")
         super(Bzr, self).__init__(directory, subdir)
-        self.bzr = site.BZR
+        self.bzr = BZR
 
     def create(self, directory):
         branch_dir = os.path.join(self.repo, 'trunk')
