@@ -189,7 +189,7 @@ for more detail.
 
 Artifact server
 ~~~~~~~~~~~~~~~
-If you have setup an :ref:`artifact server <artifacts>` for your
+If you have setup an :ref:`artifact server <cache_servers>` for your
 project then it is convenient to configure the following in your ``project.conf``
 so that users need not have any additional configuration to communicate
 with an artifact share.
@@ -218,6 +218,13 @@ The use of ports are required to distinguish between pull only access and
 push/pull access. For information regarding the server/client certificates
 and keys, please see: :ref:`Key pair for the server <server_authentication>`.
 
+.. note::
+
+   Buildstream artifact servers have changed since 1.2 to use protocol buffers
+   to store artifact information rather than a directory structure, as well as a
+   new server API. As a result newer buildstream clients won't work with older
+   servers.
+
 .. _project_source_cache:
 
 Source cache server
@@ -238,12 +245,6 @@ Exactly the same as artifact servers, source cache servers can be specified.
       server-cert: server.crt
       client-cert: client.crt
       client-key: client.key
-
-.. note::
-
-   As artifact caches work in exactly the same way, a configured artifact server
-   can also be used as a source cache server. If you want to use a server as
-   both you can put it under both artifacts and source caches configs.
 
 .. _project_remote_execution:
 
@@ -273,7 +274,7 @@ using the `remote-execution` option:
       instance-name: development-emea-1
 
 storage-service specifies a remote CAS store and the parameters are the
-same as those used to specify an :ref:`artifact server <artifacts>`.
+same as those used to specify an :ref:`artifact server <cache_servers>`.
 
 The action-cache-service specifies where built actions are cached, allowing
 buildstream to check whether an action has already been executed and download it

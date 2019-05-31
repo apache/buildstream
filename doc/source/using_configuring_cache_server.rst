@@ -1,32 +1,34 @@
 
 
-.. _artifacts:
+.. _cache_servers:
 
-Configuring Artifact Server
-===========================
+Configuring Cache Servers
+=========================
 BuildStream caches the results of builds in a local artifact cache, and will
 avoid building an element if there is a suitable build already present in the
-local artifact cache.
+local artifact cache. Similarly it will cache sources and avoid pulling them if
+present in the local cache. See :ref:`caches <caches>` for more details.
 
-In addition to the local artifact cache, you can configure one or more remote
-artifact caches and BuildStream will then try to pull a suitable build from one
-of the remotes, falling back to a local build if needed.
+In addition to the local caches, you can configure one or more remote caches and
+BuildStream will then try to pull a suitable object from one of the remotes,
+falling back to performing a local build or fetching a source if needed.
 
 Configuring BuildStream to use remote caches
 --------------------------------------------
 A project will often set up continuous build infrastructure that pushes
-built artifacts to a shared cache, so developers working on the project can
-make use of these pre-built artifacts instead of having to each build the whole
+cached objects to a shared cache, so developers working on the project can
+make use of these pre-made objects instead of having to each build the whole
 project locally. The project can declare this cache in its
-:ref:`project configuration file <project_essentials_artifacts>`.
+project configuration file for :ref:`artifacts <project_essentials_artifacts>`
+and :ref:`sources <project_source_cache>`.
 
 Users can declare additional remote caches in the :ref:`user configuration
 <config_artifacts>`. There are several use cases for this: your project may not
 define its own cache, it may be useful to have a local mirror of its cache, or
 you may have a reason to share artifacts privately.
 
-Remote artifact caches are identified by their URL. There are currently two
-supported protocols:
+Remote caches are identified by their URL. There are currently two supported
+protocols:
 
 * ``http``: Pull and push access, without transport-layer security
 * ``https``: Pull and push access, with transport-layer security
@@ -38,23 +40,24 @@ them in a specific order:
 2. Project configuration
 3. User configuration
 
-When an artifact is built locally, BuildStream will try to push it to all the
+When an an object is created locally, BuildStream will try to push it to all the
 caches which have the ``push: true`` flag set. You can also manually push
-artifacts to a specific cache using the :ref:`bst artifact push command <invoking_artifact_push>`.
+artifacts to a specific cache using the :ref:`bst artifact push command
+<invoking_artifact_push>`.
 
-Artifacts are identified using the element's :ref:`cache key <cachekeys>` so
-the builds provided by a cache should be interchangable with those provided
+Objects are identified using the element or sources :ref:`cache key <cachekeys>`
+so the objects provided by a cache should be interchangable with those provided
 by any other cache.
 
 
-Setting up a remote artifact cache
-----------------------------------
-The rest of this page outlines how to set up a shared artifact cache.
+Setting up a remote cache
+-------------------------
+The rest of this page outlines how to set up a shared cache.
 
 Setting up the user
 ~~~~~~~~~~~~~~~~~~~
-A specific user is not needed, however, a dedicated user to own the
-artifact cache is recommended.
+A specific user is not needed, however, a dedicated user to own the cache is
+recommended.
 
 .. code:: bash
 
@@ -70,11 +73,11 @@ and authorization there.
 
 Installing the server
 ~~~~~~~~~~~~~~~~~~~~~
-You will also need to install BuildStream on the artifact server in order
+You will also need to install BuildStream on the cache server in order
 to receive uploaded artifacts over ssh. Follow the instructions for installing
 BuildStream `here <https://buildstream.build/install.html>`_.
 
-When installing BuildStream on the artifact server, it must be installed
+When installing BuildStream on the cache server, it must be installed
 in a system wide location, with ``pip3 install .`` in the BuildStream
 checkout directory.
 
@@ -90,6 +93,8 @@ requiring BuildStream's more exigent dependencies by setting the
 
     BST_ARTIFACTS_ONLY=1 pip3 install .
 
+
+.. _artifact_command_reference:
 
 Command reference
 ~~~~~~~~~~~~~~~~~
@@ -239,12 +244,14 @@ We can then check if the services are successfully running with:
 For more information on systemd services see: 
 `Creating Systemd Service Files <https://www.devdungeon.com/content/creating-systemd-service-files>`_.
 
-Declaring remote artifact caches
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Remote artifact caches can be declared within either:
+Declaring remote caches
+~~~~~~~~~~~~~~~~~~~~~~~
+Remote caches can be declared within either:
 
-1. The :ref:`project configuration <project_essentials_artifacts>`, or
-2. The :ref:`user configuration <config_artifacts>`.
+1. The project configuration for :ref:`artifact <project_essentials_artifacts>`
+   and :ref:`sources <project_source_cache>`, or
+2. The user configuration for :ref:`artifacts <config_artifacts>` and
+   :ref:`sources <config_sources>`.
 
 Please follow the above links to see examples showing how we declare remote
 caches in both the project configuration and the user configuration, respectively.

@@ -32,8 +32,8 @@ the supported configurations on a project wide basis are listed here.
 
 Artifact server
 ~~~~~~~~~~~~~~~
-Although project's often specify a :ref:`remote artifact cache <artifacts>` in
-their ``project.conf``, you may also want to specify extra caches.
+Although project's often specify a :ref:`remote artifact cache <cache_servers>`
+in their ``project.conf``, you may also want to specify extra caches.
 
 Assuming that your host/server is reachable on the internet as ``artifacts.com``
 (for example), there are two ways to declare remote caches in your user
@@ -99,6 +99,8 @@ Notice that the use of different ports for the same server distinguishes between
 pull only access and push/pull access. For information regarding this and the
 server/client certificates and keys, please see:
 :ref:`Key pair for the server <server_authentication>`.
+
+.. _config_sources:
 
 Source cache server
 ~~~~~~~~~~~~~~~~~~~
