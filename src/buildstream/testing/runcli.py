@@ -37,17 +37,10 @@ import tempfile
 import itertools
 import traceback
 from contextlib import contextmanager, ExitStack
+
+from click.testing import CliRunner
 from ruamel import yaml
 import pytest
-
-# XXX Using pytest private internals here
-#
-# We use pytest internals to capture the stdout/stderr during
-# a run of the buildstream CLI. We do this because click's
-# CliRunner convenience API (click.testing module) does not support
-# separation of stdout/stderr.
-#
-from _pytest.capture import MultiCapture, FDCapture, FDCaptureBinary
 
 # Import the main cli entrypoint
 from buildstream._frontend import cli as bst_cli
@@ -63,17 +56,12 @@ from buildstream._protos.buildstream.v2 import artifact_pb2
 # Wrapper for the click.testing result
 class Result():
 
-    def __init__(self,
-                 exit_code=None,
-                 exception=None,
-                 exc_info=None,
-                 output=None,
-                 stderr=None):
-        self.exit_code = exit_code
-        self.exc = exception
-        self.exc_info = exc_info
-        self.output = output
-        self.stderr = stderr
+    def __init__(self, result):
+        self.exit_code = result.exit_code
+        self.exc = result.exception
+        self.exc_info = result.exc_info
+        self.output = result.output
+        self.stderr = result.stderr
         self.unhandled_exception = False
 
         # The last exception/error state is stored at exception
@@ -90,7 +78,7 @@ class Result():
             # exception, topevel CLI exit should always
             # be a SystemExit exception.
             #
-            if not isinstance(exception, SystemExit):
+            if not isinstance(result.exception, SystemExit):
                 self.unhandled_exception = True
 
             self.exception = get_last_exception()
@@ -254,6 +242,7 @@ class Cli():
     def __init__(self, directory, verbose=True, default_options=None):
         self.directory = directory
         self.config = None
+        self.runner = CliRunner(mix_stderr=False)
         self.verbose = verbose
         self.artifact = TestArtifact()
 
@@ -311,10 +300,9 @@ class Cli():
     #    silent (bool): Whether to pass --no-verbose
     #    env (dict): Environment variables to temporarily set during the test
     #    args (list): A list of arguments to pass buildstream
-    #    binary_capture (bool): Whether to capture the stdout/stderr as binary
     #
     def run(self, configure=True, project=None, silent=False, env=None,
-            cwd=None, options=None, args=None, binary_capture=False):
+            cwd=None, options=None, args=None):
         if args is None:
             args = []
         if options is None:
@@ -360,7 +348,7 @@ class Cli():
             except ValueError:
                 sys.__stdout__ = open('/dev/stdout', 'w')
 
-            result = self._invoke(bst_cli, bst_args, binary_capture=binary_capture)
+            result = self.runner.invoke(bst_cli, bst_args)
 
         # Some informative stdout we can observe when anything fails
         if self.verbose:
@@ -375,52 +363,7 @@ class Cli():
             if result.exc_info and result.exc_info[0] != SystemExit:
                 traceback.print_exception(*result.exc_info)
 
-        return result
-
-    def _invoke(self, cli_object, args=None, binary_capture=False):
-        exc_info = None
-        exception = None
-        exit_code = 0
-
-        # Temporarily redirect sys.stdin to /dev/null to ensure that
-        # Popen doesn't attempt to read pytest's dummy stdin.
-        old_stdin = sys.stdin
-        with open(os.devnull) as devnull:
-            sys.stdin = devnull
-            capture_kind = FDCaptureBinary if binary_capture else FDCapture
-            capture = MultiCapture(out=True, err=True, in_=False, Capture=capture_kind)
-            capture.start_capturing()
-
-            try:
-                cli_object.main(args=args or (), prog_name=cli_object.name)
-            except SystemExit as e:
-                if e.code != 0:
-                    exception = e
-
-                exc_info = sys.exc_info()
-
-                exit_code = e.code
-                if not isinstance(exit_code, int):
-                    sys.stdout.write('Program exit code was not an integer: ')
-                    sys.stdout.write(str(exit_code))
-                    sys.stdout.write('\n')
-                    exit_code = 1
-            except Exception as e:  # pylint: disable=broad-except
-                exception = e
-                exit_code = -1
-                exc_info = sys.exc_info()
-            finally:
-                sys.stdout.flush()
-
-        sys.stdin = old_stdin
-        out, err = capture.readouterr()
-        capture.stop_capturing()
-
-        return Result(exit_code=exit_code,
-                      exception=exception,
-                      exc_info=exc_info,
-                      output=out,
-                      stderr=err)
+        return Result(result)
 
     # Fetch an element state by name by
     # invoking bst show on the project with the CLI

@@ -244,7 +244,7 @@ def test_build_checkout_tarball_stdout(datafiles, cli):
 
     checkout_args = ['artifact', 'checkout', '--tar', '-', 'target.bst']
 
-    result = cli.run(project=project, args=checkout_args, binary_capture=True)
+    result = cli.run(project=project, args=checkout_args)
     result.assert_success()
 
     with open(tarball, 'wb') as f:
