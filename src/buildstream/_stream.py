@@ -109,6 +109,7 @@ class Stream():
     #    selection (PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from fetching
     #    use_artifact_config (bool): If artifact remote configs should be loaded
+    #    no_scheduler (bool): Whether we need to set elements as required for the scheduler
     #
     # Returns:
     #    (list of Element): The selected elements
@@ -116,14 +117,16 @@ class Stream():
                        selection=PipelineSelection.NONE,
                        except_targets=(),
                        use_artifact_config=False,
-                       load_refs=False):
+                       load_refs=False,
+                       no_scheduler=False):
         with PROFILER.profile(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, "-") for t in targets)):
             target_objects, _ = self._load(targets, (),
                                            selection=selection,
                                            except_targets=except_targets,
                                            fetch_subprojects=False,
                                            use_artifact_config=use_artifact_config,
-                                           load_refs=load_refs)
+                                           load_refs=load_refs,
+                                           no_scheduler=no_scheduler)
 
             return target_objects
 
@@ -1022,6 +1025,7 @@ class Stream():
     #    artifact_remote_url (str): A remote url for initializing the artifacts
     #    source_remote_url (str): A remote url for initializing source caches
     #    fetch_subprojects (bool): Whether to fetch subprojects while loading
+    #    no_scheduler (bool): Whether we need to set elements as required for the scheduler
     #
     # Returns:
     #    (list of Element): The primary element selection
@@ -1040,7 +1044,8 @@ class Stream():
               source_remote_url=None,
               fetch_subprojects=False,
               dynamic_plan=False,
-              load_refs=False):
+              load_refs=False,
+              no_scheduler=False):
 
         # Classify element and artifact strings
         target_elements, target_artifacts = self._classify_artifacts(targets)
@@ -1131,6 +1136,11 @@ class Stream():
         selected = self._pipeline.except_elements(self.targets,
                                                   selected,
                                                   except_elements)
+
+        if no_scheduler:
+            # XXX: Would it be nicer to just return selected here and then modify
+            # the callsites?
+            return selected, track_selected
 
         # Set the "required" artifacts that should not be removed
         # while this pipeline is active

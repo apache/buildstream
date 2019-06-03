@@ -1129,9 +1129,6 @@ class Element(Plugin):
             if not dependency._cached_success() or not dependency._get_cache_key(strength=_KeyStrength.STRONG):
                 return False
 
-        if not self.__assemble_scheduled:
-            return False
-
         return True
 
     # _get_cache_key():
