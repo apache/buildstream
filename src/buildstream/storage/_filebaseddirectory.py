@@ -34,7 +34,7 @@ import time
 
 from .directory import Directory, VirtualDirectoryError, _FileType
 from .. import utils
-from ..utils import link_files, copy_files, list_relative_paths, _get_link_mtime, _magic_timestamp
+from ..utils import link_files, copy_files, list_relative_paths, _get_link_mtime, BST_ARBITRARY_TIMESTAMP
 from ..utils import _set_deterministic_user, _set_deterministic_mtime
 from ..utils import FileListResult
 
@@ -153,7 +153,7 @@ class FileBasedDirectory(Directory):
     # First, it sorts the results of os.listdir() to ensure the ordering of
     # the files in the archive is the same.  Second, it sets a fixed
     # timestamp for each entry. See also https://bugs.python.org/issue24465.
-    def export_to_tar(self, tarfile, destination_dir, mtime=_magic_timestamp):
+    def export_to_tar(self, tarfile, destination_dir, mtime=BST_ARBITRARY_TIMESTAMP):
         # We need directories here, including non-empty ones,
         # so list_relative_paths is not used.
         for filename in sorted(os.listdir(self.external_directory)):
@@ -187,7 +187,7 @@ class FileBasedDirectory(Directory):
         Return value: List(str) - list of modified paths
         """
         return [f for f in list_relative_paths(self.external_directory)
-                if _get_link_mtime(os.path.join(self.external_directory, f)) != _magic_timestamp]
+                if _get_link_mtime(os.path.join(self.external_directory, f)) != BST_ARBITRARY_TIMESTAMP]
 
     def list_relative_paths(self):
         """Provide a list of all relative paths.
