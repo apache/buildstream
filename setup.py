@@ -324,7 +324,12 @@ def assert_cython_required():
     raise SystemExit(1)
 
 
-ENABLE_CYTHON_TRACE = os.environ.get("BST_CYTHON_TRACE", "0")
+try:
+    ENABLE_CYTHON_TRACE = int(os.environ.get("BST_CYTHON_TRACE", "0"))
+except ValueError:
+    print("BST_CYTHON_TRACE must be an integer. Please set it to '1' to enable, '0' to disable", file=sys.stderr)
+    raise SystemExit(1)
+
 
 extension_macros = [
     ("CYTHON_TRACE", ENABLE_CYTHON_TRACE)
