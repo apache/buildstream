@@ -547,12 +547,12 @@ cpdef object node_get(Node node, object expected_type, str key, list indices=Non
     if value.value is None and (allow_none or default_value is None):
         return None
 
-    if (expected_type is not None) and (not isinstance(value.value, expected_type)):
+    if (expected_type is not None) and (type(value.value) is not expected_type):
         # Attempt basic conversions if possible, typically we want to
         # be able to specify numeric values and convert them to strings,
         # but we dont want to try converting dicts/lists
         try:
-            if (expected_type == bool and isinstance(value.value, str)):
+            if expected_type == bool and type(value.value) is str:
                 # Dont coerce booleans to string, this makes "False" strings evaluate to True
                 # We don't structure into full nodes since there's no need.
                 if value.value in ('True', 'true'):

@@ -162,7 +162,6 @@ Class Reference
 """
 
 import os
-from collections.abc import Mapping
 from contextlib import contextmanager
 
 from . import _yaml, utils
@@ -1280,7 +1279,7 @@ class Source(Plugin):
                 sources = project.first_pass_config.source_overrides
             else:
                 sources = project.source_overrides
-            cls.__defaults = _yaml.node_get(sources, Mapping, meta.kind, default_value={})
+            cls.__defaults = _yaml.node_get(sources, dict, meta.kind, default_value={})
             cls.__defaults_set = True
 
     # This will resolve the final configuration to be handed
@@ -1288,7 +1287,7 @@ class Source(Plugin):
     #
     @classmethod
     def __extract_config(cls, meta):
-        config = _yaml.node_get(cls.__defaults, Mapping, 'config', default_value={})
+        config = _yaml.node_get(cls.__defaults, dict, 'config', default_value={})
         config = _yaml.node_copy(config)
 
         _yaml.composite(config, meta.config)

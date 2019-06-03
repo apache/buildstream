@@ -1,4 +1,3 @@
-from collections.abc import Mapping
 import os
 from io import StringIO
 
@@ -108,12 +107,12 @@ def test_node_get(datafiles):
     assert isinstance(children, list)
     assert len(children) == 7
 
-    child = _yaml.node_get(base, Mapping, 'children', indices=[6])
+    child = _yaml.node_get(base, dict, 'children', indices=[6])
     assert_provenance(filename, 20, 8, child, 'mood')
 
-    extra = _yaml.node_get(base, Mapping, 'extra')
+    extra = _yaml.node_get(base, dict, 'extra')
     with pytest.raises(LoadError) as exc:
-        _yaml.node_get(extra, Mapping, 'old')
+        _yaml.node_get(extra, dict, 'old')
 
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
@@ -189,8 +188,8 @@ def test_composite_preserve_originals(datafiles):
     base_copy = _yaml.node_copy(base)
     _yaml.composite_dict(base_copy, overlay)
 
-    copy_extra = _yaml.node_get(base_copy, Mapping, 'extra')
-    orig_extra = _yaml.node_get(base, Mapping, 'extra')
+    copy_extra = _yaml.node_get(base_copy, dict, 'extra')
+    orig_extra = _yaml.node_get(base, dict, 'extra')
 
     # Test that the node copy has the overridden value...
     assert _yaml.node_get(copy_extra, str, 'old') == 'override'
@@ -474,7 +473,7 @@ def test_roundtrip_dump(datafiles, fromdisk):
         for v in node.values():
             if isinstance(v, list):
                 walk_list(v)
-            elif isinstance(v, Mapping):
+            elif isinstance(v, dict):
                 walk_node(v)
             else:
                 assert isinstance(v, str)
@@ -483,7 +482,7 @@ def test_roundtrip_dump(datafiles, fromdisk):
         for v in l:
             if isinstance(v, list):
                 walk_list(v)
-            elif isinstance(v, Mapping):
+            elif isinstance(v, dict):
                 walk_node(v)
             else:
                 assert isinstance(v, str)
