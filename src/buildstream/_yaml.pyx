@@ -525,15 +525,15 @@ _sentinel = object()
 #
 cpdef object node_get(Node node, object expected_type, str key, list indices=None, object default_value=_sentinel, bint allow_none=False):
     if indices is None:
-        if default_value is _sentinel:
-            value = node.value.get(key, Node(default_value, _SYNTHETIC_FILE_INDEX, 0, 0))
-        else:
-            value = node.value.get(key, Node(default_value, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
+        value = node.value.get(key, _sentinel)
 
-        if value.value is _sentinel:
-            provenance = node_get_provenance(node)
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
+        if value is _sentinel:
+            if default_value is _sentinel:
+                provenance = node_get_provenance(node)
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
+
+            value = Node(default_value, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
     else:
         # Implied type check of the element itself
         # No need to synthesise useful node content as we destructure it immediately
