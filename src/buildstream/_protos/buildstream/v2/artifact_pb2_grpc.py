@@ -44,6 +44,7 @@ class ArtifactServiceServicer(object):
     """Sets an Artifact message
 
     Errors:
+    * `FAILED_PRECONDITION`: Files specified in upload aren't present in CAS
     """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
