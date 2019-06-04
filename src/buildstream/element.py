@@ -77,7 +77,6 @@ import re
 import stat
 import copy
 from collections import OrderedDict
-from collections.abc import Mapping
 import contextlib
 from contextlib import contextmanager
 from functools import partial
@@ -886,7 +885,7 @@ class Element(Plugin):
         if self.__dynamic_public is None:
             self.__load_public_data()
 
-        data = _yaml.node_get(self.__dynamic_public, Mapping, domain, default_value=None)
+        data = _yaml.node_get(self.__dynamic_public, dict, domain, default_value=None)
         if data is not None:
             data = _yaml.node_copy(data)
 
@@ -2434,9 +2433,9 @@ class Element(Plugin):
     @classmethod
     def __compose_default_splits(cls, project, defaults, is_junction):
 
-        element_public = _yaml.node_get(defaults, Mapping, 'public', default_value={})
-        element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
-        element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
+        element_public = _yaml.node_get(defaults, dict, 'public', default_value={})
+        element_bst = _yaml.node_get(element_public, dict, 'bst', default_value={})
+        element_splits = _yaml.node_get(element_bst, dict, 'split-rules', default_value={})
 
         if is_junction:
             splits = _yaml.node_copy(element_splits)
@@ -2476,7 +2475,7 @@ class Element(Plugin):
             else:
                 elements = project.element_overrides
 
-            overrides = _yaml.node_get(elements, Mapping, kind, default_value=None)
+            overrides = _yaml.node_get(elements, dict, kind, default_value=None)
             if overrides:
                 _yaml.composite(defaults, overrides)
 
@@ -2488,7 +2487,7 @@ class Element(Plugin):
     #
     @classmethod
     def __extract_environment(cls, project, meta):
-        default_env = _yaml.node_get(cls.__defaults, Mapping, 'environment', default_value={})
+        default_env = _yaml.node_get(cls.__defaults, dict, 'environment', default_value={})
 
         if meta.is_junction:
             environment = _yaml.new_empty_node()
@@ -2534,7 +2533,7 @@ class Element(Plugin):
     #
     @classmethod
     def __extract_variables(cls, project, meta):
-        default_vars = _yaml.node_get(cls.__defaults, Mapping, 'variables',
+        default_vars = _yaml.node_get(cls.__defaults, dict, 'variables',
                                       default_value={})
 
         if meta.is_junction:
@@ -2562,7 +2561,7 @@ class Element(Plugin):
     def __extract_config(cls, meta):
 
         # The default config is already composited with the project overrides
-        config = _yaml.node_get(cls.__defaults, Mapping, 'config', default_value={})
+        config = _yaml.node_get(cls.__defaults, dict, 'config', default_value={})
         config = _yaml.node_copy(config)
 
         _yaml.composite(config, meta.config)
@@ -2588,7 +2587,7 @@ class Element(Plugin):
         host_os = platform.get_host_os()
 
         # The default config is already composited with the project overrides
-        sandbox_defaults = _yaml.node_get(cls.__defaults, Mapping, 'sandbox', default_value={})
+        sandbox_defaults = _yaml.node_get(cls.__defaults, dict, 'sandbox', default_value={})
         sandbox_defaults = _yaml.node_copy(sandbox_defaults)
 
         _yaml.composite(sandbox_config, sandbox_defaults)
@@ -2615,15 +2614,15 @@ class Element(Plugin):
     #
     @classmethod
     def __extract_public(cls, meta):
-        base_public = _yaml.node_get(cls.__defaults, Mapping, 'public', default_value={})
+        base_public = _yaml.node_get(cls.__defaults, dict, 'public', default_value={})
         base_public = _yaml.node_copy(base_public)
 
-        base_bst = _yaml.node_get(base_public, Mapping, 'bst', default_value={})
-        base_splits = _yaml.node_get(base_bst, Mapping, 'split-rules', default_value={})
+        base_bst = _yaml.node_get(base_public, dict, 'bst', default_value={})
+        base_splits = _yaml.node_get(base_bst, dict, 'split-rules', default_value={})
 
         element_public = _yaml.node_copy(meta.public)
-        element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
-        element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
+        element_bst = _yaml.node_get(element_public, dict, 'bst', default_value={})
+        element_splits = _yaml.node_get(element_bst, dict, 'split-rules', default_value={})
 
         # Allow elements to extend the default splits defined in their project or
         # element specific defaults
@@ -2638,8 +2637,8 @@ class Element(Plugin):
 
     # Expand the splits in the public data using the Variables in the element
     def __expand_splits(self, element_public):
-        element_bst = _yaml.node_get(element_public, Mapping, 'bst', default_value={})
-        element_splits = _yaml.node_get(element_bst, Mapping, 'split-rules', default_value={})
+        element_bst = _yaml.node_get(element_public, dict, 'bst', default_value={})
+        element_splits = _yaml.node_get(element_bst, dict, 'split-rules', default_value={})
 
         # Resolve any variables in the public split rules directly
         for domain, splits in self.node_items(element_splits):

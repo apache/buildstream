@@ -29,7 +29,6 @@ import sys
 import re
 import shlex
 import subprocess
-from collections.abc import Mapping
 from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 
@@ -348,7 +347,7 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
     #        tarball. This workaround lets us build docs from
     #        a source distribution tarball.
     #
-    symlinks = _yaml.node_get(desc, Mapping, 'workaround-symlinks', default_value={})
+    symlinks = _yaml.node_get(desc, dict, 'workaround-symlinks', default_value={})
     for symlink, target in _yaml.node_items(symlinks):
 
         # Resolve real path to where symlink should be
@@ -382,7 +381,7 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
     #
     commands = _yaml.node_get(desc, list, 'commands')
     for c in commands:
-        command = _yaml.node_get(desc, Mapping, 'commands', indices=[commands.index(c)])
+        command = _yaml.node_get(desc, dict, 'commands', indices=[commands.index(c)])
 
         # Get the directory where this command should be run
         directory = _yaml.node_get(command, str, 'directory')

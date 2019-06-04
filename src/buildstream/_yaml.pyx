@@ -525,15 +525,15 @@ _sentinel = object()
 #
 cpdef object node_get(Node node, object expected_type, str key, list indices=None, object default_value=_sentinel, bint allow_none=False):
     if indices is None:
-        if default_value is _sentinel:
-            value = node.value.get(key, Node(default_value, _SYNTHETIC_FILE_INDEX, 0, 0))
-        else:
-            value = node.value.get(key, Node(default_value, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
+        value = node.value.get(key, _sentinel)
 
-        if value.value is _sentinel:
-            provenance = node_get_provenance(node)
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
+        if value is _sentinel:
+            if default_value is _sentinel:
+                provenance = node_get_provenance(node)
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
+
+            value = Node(default_value, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
     else:
         # Implied type check of the element itself
         # No need to synthesise useful node content as we destructure it immediately
@@ -547,12 +547,12 @@ cpdef object node_get(Node node, object expected_type, str key, list indices=Non
     if value.value is None and (allow_none or default_value is None):
         return None
 
-    if (expected_type is not None) and (not isinstance(value.value, expected_type)):
+    if (expected_type is not None) and (type(value.value) is not expected_type):
         # Attempt basic conversions if possible, typically we want to
         # be able to specify numeric values and convert them to strings,
         # but we dont want to try converting dicts/lists
         try:
-            if (expected_type == bool and isinstance(value.value, str)):
+            if expected_type == bool and type(value.value) is str:
                 # Dont coerce booleans to string, this makes "False" strings evaluate to True
                 # We don't structure into full nodes since there's no need.
                 if value.value in ('True', 'true'):

@@ -162,7 +162,6 @@ Note that when targeting another junction, the names of the junction element
 must not be the same as the name of the target.
 """
 
-from collections.abc import Mapping
 from buildstream import Element, ElementError
 from buildstream._pipeline import PipelineError
 
@@ -177,7 +176,7 @@ class JunctionElement(Element):
 
     def configure(self, node):
         self.path = self.node_get_member(node, str, 'path', default='')
-        self.options = self.node_get_member(node, Mapping, 'options', default={})
+        self.options = self.node_get_member(node, dict, 'options', default={})
         self.target = self.node_get_member(node, str, 'target', default=None)
         self.target_element = None
         self.target_junction = None

@@ -21,7 +21,6 @@
 import os
 import sys
 from collections import OrderedDict
-from collections.abc import Mapping
 from pathlib import Path
 from pluginbase import PluginBase
 from . import utils
@@ -606,7 +605,7 @@ class Project():
         self.config.options = OptionPool(self.element_path)
         self.first_pass_config.options = OptionPool(self.element_path)
 
-        defaults = _yaml.node_get(pre_config_node, Mapping, 'defaults')
+        defaults = _yaml.node_get(pre_config_node, dict, 'defaults')
         _yaml.node_validate(defaults, ['targets'])
         self._default_targets = _yaml.node_get(defaults, list, "targets")
 
@@ -683,14 +682,14 @@ class Project():
             self.remote_execution_specs = self._context.remote_execution_specs
 
         # Load sandbox environment variables
-        self.base_environment = _yaml.node_get(config, Mapping, 'environment')
+        self.base_environment = _yaml.node_get(config, dict, 'environment')
         self.base_env_nocache = _yaml.node_get(config, list, 'environment-nocache')
 
         # Load sandbox configuration
-        self._sandbox = _yaml.node_get(config, Mapping, 'sandbox')
+        self._sandbox = _yaml.node_get(config, dict, 'sandbox')
 
         # Load project split rules
-        self._splits = _yaml.node_get(config, Mapping, 'split-rules')
+        self._splits = _yaml.node_get(config, dict, 'split-rules')
 
         # Support backwards compatibility for fail-on-overlap
         fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap', default_value=None)
@@ -714,12 +713,12 @@ class Project():
             self.refs.load(self.options)
 
         # Parse shell options
-        shell_options = _yaml.node_get(config, Mapping, 'shell')
+        shell_options = _yaml.node_get(config, dict, 'shell')
         _yaml.node_validate(shell_options, ['command', 'environment', 'host-files'])
         self._shell_command = _yaml.node_get(shell_options, list, 'command')
 
         # Perform environment expansion right away
-        shell_environment = _yaml.node_get(shell_options, Mapping, 'environment', default_value={})
+        shell_environment = _yaml.node_get(shell_options, dict, 'environment', default_value={})
         for key in _yaml.node_keys(shell_environment):
             value = _yaml.node_get(shell_environment, str, key)
             self._shell_environment[key] = os.path.expandvars(value)
@@ -732,7 +731,7 @@ class Project():
             else:
                 # Some validation
                 index = host_files.index(host_file)
-                host_file_desc = _yaml.node_get(shell_options, Mapping, 'host-files', indices=[index])
+                host_file_desc = _yaml.node_get(shell_options, dict, 'host-files', indices=[index])
                 _yaml.node_validate(host_file_desc, ['path', 'host_path', 'optional'])
 
                 # Parse the host mount
@@ -759,8 +758,8 @@ class Project():
         # Element and Source  type configurations will be composited later onto
         # element/source types, so we delete it from here and run our final
         # assertion after.
-        output.element_overrides = _yaml.node_get(config, Mapping, 'elements', default_value={})
-        output.source_overrides = _yaml.node_get(config, Mapping, 'sources', default_value={})
+        output.element_overrides = _yaml.node_get(config, dict, 'elements', default_value={})
+        output.source_overrides = _yaml.node_get(config, dict, 'sources', default_value={})
         _yaml.node_del(config, 'elements', safe=True)
         _yaml.node_del(config, 'sources', safe=True)
         _yaml.node_final_assertions(config)
@@ -768,7 +767,7 @@ class Project():
         self._load_plugin_factories(config, output)
 
         # Load project options
-        options_node = _yaml.node_get(config, Mapping, 'options', default_value={})
+        options_node = _yaml.node_get(config, dict, 'options', default_value={})
         output.options.load(options_node)
         if self.junction:
             # load before user configuration
@@ -776,7 +775,7 @@ class Project():
 
         # Collect option values specified in the user configuration
         overrides = self._context.get_overrides(self.name)
-        override_options = _yaml.node_get(overrides, Mapping, 'options', default_value={})
+        override_options = _yaml.node_get(overrides, dict, 'options', default_value={})
         output.options.load_yaml_values(override_options)
         if self._cli_options:
             output.options.load_cli_values(self._cli_options, ignore_unknown=ignore_unknown)
@@ -795,7 +794,7 @@ class Project():
         output.options.process_node(output.source_overrides)
 
         # Load base variables
-        output.base_variables = _yaml.node_get(config, Mapping, 'variables')
+        output.base_variables = _yaml.node_get(config, dict, 'variables')
 
         # Add the project name as a default variable
         _yaml.node_set(output.base_variables, 'project-name', self.name)
@@ -823,7 +822,7 @@ class Project():
             _yaml.node_validate(mirror, allowed_mirror_fields)
             mirror_name = _yaml.node_get(mirror, str, 'name')
             alias_mappings = {}
-            for alias_mapping, uris in _yaml.node_items(_yaml.node_get(mirror, Mapping, 'aliases')):
+            for alias_mapping, uris in _yaml.node_items(_yaml.node_get(mirror, dict, 'aliases')):
                 assert isinstance(uris, list)
                 alias_mappings[alias_mapping] = list(uris)
             output.mirrors[mirror_name] = alias_mappings
@@ -831,7 +830,7 @@ class Project():
                 output.default_mirror = mirror_name
 
         # Source url aliases
-        output._aliases = _yaml.node_get(config, Mapping, 'aliases', default_value={})
+        output._aliases = _yaml.node_get(config, dict, 'aliases', default_value={})
 
     # _find_project_dir()
     #
@@ -894,7 +893,7 @@ class Project():
                     .format(origin_value))
 
             # Store source versions for checking later
-            source_versions = _yaml.node_get(origin, Mapping, 'sources', default_value={})
+            source_versions = _yaml.node_get(origin, dict, 'sources', default_value={})
             for key in _yaml.node_keys(source_versions):
                 if key in source_format_versions:
                     raise LoadError(
@@ -903,7 +902,7 @@ class Project():
                 source_format_versions[key] = _yaml.node_get(source_versions, int, key)
 
             # Store element versions for checking later
-            element_versions = _yaml.node_get(origin, Mapping, 'elements', default_value={})
+            element_versions = _yaml.node_get(origin, dict, 'elements', default_value={})
             for key in _yaml.node_keys(element_versions):
                 if key in element_format_versions:
                     raise LoadError(
@@ -947,7 +946,7 @@ class Project():
         node_keys = [key for key in _yaml.node_keys(origin)]
         if plugin_group in node_keys:
             origin_node = _yaml.node_copy(origin)
-            plugins = _yaml.node_get(origin, Mapping, plugin_group, default_value={})
+            plugins = _yaml.node_get(origin, dict, plugin_group, default_value={})
             _yaml.node_set(origin_node, 'plugins', [k for k in _yaml.node_keys(plugins)])
             for group in expected_groups:
                 if group in origin_node:

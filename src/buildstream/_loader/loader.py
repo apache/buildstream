@@ -19,7 +19,6 @@
 
 import os
 from functools import cmp_to_key
-from collections.abc import Mapping
 
 from .._exceptions import LoadError, LoadErrorReason
 from .. import Consistency
@@ -475,7 +474,7 @@ class Loader():
         # Safe loop calling into _yaml.node_get() for each element ensures
         # we have good error reporting
         for i in range(len(sources)):
-            source = _yaml.node_get(node, Mapping, Symbol.SOURCES, indices=[i])
+            source = _yaml.node_get(node, dict, Symbol.SOURCES, indices=[i])
             kind = _yaml.node_get(source, str, Symbol.KIND)
             _yaml.node_del(source, Symbol.KIND)
 
@@ -490,12 +489,12 @@ class Loader():
 
         meta_element = MetaElement(self.project, element.name, element_kind,
                                    elt_provenance, meta_sources,
-                                   _yaml.node_get(node, Mapping, Symbol.CONFIG, default_value={}),
-                                   _yaml.node_get(node, Mapping, Symbol.VARIABLES, default_value={}),
-                                   _yaml.node_get(node, Mapping, Symbol.ENVIRONMENT, default_value={}),
+                                   _yaml.node_get(node, dict, Symbol.CONFIG, default_value={}),
+                                   _yaml.node_get(node, dict, Symbol.VARIABLES, default_value={}),
+                                   _yaml.node_get(node, dict, Symbol.ENVIRONMENT, default_value={}),
                                    _yaml.node_get(node, list, Symbol.ENV_NOCACHE, default_value=[]),
-                                   _yaml.node_get(node, Mapping, Symbol.PUBLIC, default_value={}),
-                                   _yaml.node_get(node, Mapping, Symbol.SANDBOX, default_value={}),
+                                   _yaml.node_get(node, dict, Symbol.PUBLIC, default_value={}),
+                                   _yaml.node_get(node, dict, Symbol.SANDBOX, default_value={}),
                                    element_kind == 'junction')
 
         # Cache it now, make sure it's already there before recursing

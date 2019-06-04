@@ -21,7 +21,6 @@ import os
 import shutil
 import datetime
 from collections import deque
-from collections.abc import Mapping
 from contextlib import contextmanager
 from . import utils
 from . import _cachekey
@@ -252,7 +251,7 @@ class Context():
         # Load quota configuration
         # We need to find the first existing directory in the path of our
         # cachedir - the cachedir may not have been created yet.
-        cache = _yaml.node_get(defaults, Mapping, 'cache')
+        cache = _yaml.node_get(defaults, dict, 'cache')
         _yaml.node_validate(cache, ['quota', 'pull-buildtrees', 'cache-buildtrees'])
 
         self.config_cache_quota_string = _yaml.node_get(cache, str, 'quota')
@@ -281,7 +280,7 @@ class Context():
             cache, 'cache-buildtrees', ['always', 'auto', 'never'])
 
         # Load logging config
-        logging = _yaml.node_get(defaults, Mapping, 'logging')
+        logging = _yaml.node_get(defaults, dict, 'logging')
         _yaml.node_validate(logging, [
             'key-length', 'verbose',
             'error-lines', 'message-lines',
@@ -296,7 +295,7 @@ class Context():
         self.log_message_format = _yaml.node_get(logging, str, 'message-format')
 
         # Load scheduler config
-        scheduler = _yaml.node_get(defaults, Mapping, 'scheduler')
+        scheduler = _yaml.node_get(defaults, dict, 'scheduler')
         _yaml.node_validate(scheduler, [
             'on-error', 'fetchers', 'builders',
             'pushers', 'network-retries'
@@ -406,10 +405,10 @@ class Context():
     #    project_name (str): The project name
     #
     # Returns:
-    #    (Mapping): The overrides dictionary for the specified project
+    #    (dict): The overrides dictionary for the specified project
     #
     def get_overrides(self, project_name):
-        return _yaml.node_get(self._project_overrides, Mapping, project_name, default_value={})
+        return _yaml.node_get(self._project_overrides, dict, project_name, default_value={})
 
     # get_strict():
     #
