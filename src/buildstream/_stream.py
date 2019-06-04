@@ -356,7 +356,8 @@ class Stream():
                        except_targets=except_targets,
                        track_except_targets=except_targets,
                        track_cross_junctions=cross_junctions,
-                       fetch_subprojects=True)
+                       fetch_subprojects=True,
+                       no_scheduler=True)
 
         track_queue = TrackQueue(self._scheduler)
         self._add_queue(track_queue, track=True)
@@ -491,7 +492,7 @@ class Stream():
                  tar=False):
 
         # We only have one target in a checkout command
-        elements, _ = self._load((target,), (), fetch_subprojects=True)
+        elements, _ = self._load((target,), (), fetch_subprojects=True, no_scheduler=True)
         target = elements[0]
 
         self._check_location_writable(location, force=force, tar=tar)
@@ -550,7 +551,8 @@ class Stream():
     #
     def artifact_log(self, targets):
         # Return list of Element and/or ArtifactElement objects
-        target_objects = self.load_selection(targets, selection=PipelineSelection.NONE, load_refs=True)
+        target_objects = self.load_selection(targets, selection=PipelineSelection.NONE,
+                                             load_refs=True, no_scheduler=True)
 
         logsdirs = []
         for obj in target_objects:
@@ -576,7 +578,8 @@ class Stream():
     #
     def artifact_delete(self, targets, no_prune):
         # Return list of Element and/or ArtifactElement objects
-        target_objects = self.load_selection(targets, selection=PipelineSelection.NONE, load_refs=True)
+        target_objects = self.load_selection(targets, selection=PipelineSelection.NONE,
+                                             load_refs=True, no_scheduler=True)
 
         # Some of the targets may refer to the same key, so first obtain a
         # set of the refs to be removed.
@@ -627,10 +630,12 @@ class Stream():
 
         self._check_location_writable(location, force=force, tar=tar)
 
+        no_scheduler = not fetch
         elements, _ = self._load((target,), (),
                                  selection=deps,
                                  except_targets=except_targets,
-                                 fetch_subprojects=True)
+                                 fetch_subprojects=True,
+                                 no_scheduler=no_scheduler)
 
         # Assert all sources are cached in the source dir
         if fetch:

@@ -549,8 +549,9 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
             if not element:
                 raise AppError('Missing argument "ELEMENT".')
 
+        no_scheduler = False if cli_buildtree != 'never' else True
         dependencies = app.stream.load_selection((element,), selection=PipelineSelection.NONE,
-                                                 use_artifact_config=True)
+                                                 use_artifact_config=True, no_scheduler=no_scheduler)
         element = dependencies[0]
         prompt = app.shell_prompt(element)
         mounts = [
