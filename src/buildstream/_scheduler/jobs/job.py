@@ -349,7 +349,8 @@ class Job():
     #
     # Args:
     #    message_type (str): A string to identify the message type
-    #    message (any): A simple serializable object
+    #    message (any): A simple object (must be pickle-able, i.e. strings,
+    #                   lists, dicts, numbers, but not Element instances).
     #
     # Returns:
     #    (bool): Should return a truthy value if message_type is handled.
@@ -595,7 +596,9 @@ class ChildJob():
     #
     # Args:
     #    message_type (str): The type of message to send.
-    #    message_data (any): A (simple!) object to be sent to the parent Job.
+    #    message_data (any): A simple object (must be pickle-able, i.e.
+    #                        strings, lists, dicts, numbers, but not Element
+    #                        instances). This is sent to the parent Job.
     #
     def send_message(self, message_type, message_data):
         self._queue.put(_Envelope(message_type, message_data))
@@ -610,8 +613,10 @@ class ChildJob():
     # the job's task.
     #
     # Returns:
-    #    (any): A (simple!) object to be returned to the parent Job running
-    #           in the main process. This is taken as the result of the Job.
+    #    (any): A simple object (must be pickle-able, i.e. strings, lists,
+    #           dicts, numbers, but not Element instances). It is returned to
+    #           the parent Job running in the main process. This is taken as
+    #           the result of the Job.
     #
     def child_process(self):
         raise ImplError("ChildJob '{kind}' does not implement child_process()"
@@ -768,7 +773,9 @@ class ChildJob():
     # Sends the serialized result to the main process through the message queue
     #
     # Args:
-    #    result (object): A simple serializable object, or None
+    #    result (any): None, or a simple object (must be pickle-able, i.e.
+    #                  strings, lists, dicts, numbers, but not Element
+    #                  instances).
     #
     # Note: If None is passed here, nothing needs to be sent, the
     #       result member in the parent process will simply remain None.
