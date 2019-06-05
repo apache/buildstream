@@ -27,7 +27,7 @@ from unittest import mock
 import pytest
 
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from buildstream.testing import cli
+from buildstream.testing import cli  # pylint: disable=unused-import
 
 from tests.testutils import create_element_size, update_element_size, wait_for_cache_granularity
 
