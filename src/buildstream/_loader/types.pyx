@@ -120,3 +120,46 @@ cdef class Dependency:
         # Attempt to split name if no junction was specified explicitly
         if not self.junction and self.name.count(':') == 1:
             self.junction, self.name = self.name.split(':')
+
+
+# extract_depends_from_node():
+#
+# Creates an array of Dependency objects from a given dict node 'node',
+# allows both strings and dicts for expressing the dependency and
+# throws a comprehensive LoadError in the case that the node is malformed.
+#
+# After extracting depends, the symbol is deleted from the node
+#
+# Args:
+#    node (dict): A YAML loaded dictionary
+#
+# Returns:
+#    (list): a list of Dependency objects
+#
+def extract_depends_from_node(node, *, key=None):
+    if key is None:
+        build_depends = extract_depends_from_node(node, key=Symbol.BUILD_DEPENDS)
+        runtime_depends = extract_depends_from_node(node, key=Symbol.RUNTIME_DEPENDS)
+        depends = extract_depends_from_node(node, key=Symbol.DEPENDS)
+        return build_depends + runtime_depends + depends
+    elif key == Symbol.BUILD_DEPENDS:
+        default_dep_type = Symbol.BUILD
+    elif key == Symbol.RUNTIME_DEPENDS:
+        default_dep_type = Symbol.RUNTIME
+    elif key == Symbol.DEPENDS:
+        default_dep_type = None
+    else:
+        assert False, "Unexpected value of key '{}'".format(key)
+
+    depends = _yaml.node_get(node, list, key, None, [])
+    output_deps = []
+
+    for index, dep in enumerate(depends):
+        dep_provenance = _yaml.node_get_provenance(node, key=key, indices=[index])
+        dependency = Dependency(dep, dep_provenance, default_dep_type=default_dep_type)
+        output_deps.append(dependency)
+
+    # Now delete the field, we dont want it anymore
+    _yaml.node_del(node, key, safe=True)
+
+    return output_deps

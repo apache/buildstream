@@ -740,7 +740,7 @@ cpdef list node_keys(Node node):
 #    key (str): The key we want to remove
 #    safe (bool): Whether to raise a KeyError if unable
 #
-def node_del(Node node, str key, bint safe=False):
+cpdef void node_del(Node node, str key, bint safe=False) except *:
     try:
         del node.value[key]
     except KeyError:
