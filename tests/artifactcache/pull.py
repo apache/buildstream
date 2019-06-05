@@ -203,7 +203,6 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Load the project and CAS cache
         project = Project(project_dir, context)
         project.ensure_fully_loaded()
-        artifactcache = context.artifactcache
         cas = context.get_cascache()
 
         # Assert that the element's artifact is cached
