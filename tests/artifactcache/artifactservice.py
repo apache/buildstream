@@ -17,20 +17,18 @@
 #  Authors: Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 #
 import os
-import pytest
 import signal
 from urllib.parse import urlparse
 from multiprocessing import Process, Queue
 
 import grpc
+import pytest
 
 from buildstream._protos.buildstream.v2.artifact_pb2 \
     import Artifact, GetArtifactRequest, UpdateArtifactRequest
 from buildstream._protos.buildstream.v2.artifact_pb2_grpc import ArtifactServiceStub
 from buildstream._protos.build.bazel.remote.execution.v2 \
     import remote_execution_pb2 as re_pb2
-from buildstream._protos.build.bazel.remote.execution.v2 \
-    import remote_execution_pb2_grpc as re_pb2_grpc
 from buildstream import utils
 from buildstream import _signals
 
