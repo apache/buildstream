@@ -84,8 +84,12 @@ def bwrap_too_old(major, minor, patch):
 
 
 def check_for_bwrap():
-    platform = os.environ.get('BST_FORCE_BACKEND', '') or sys.platform
+    platform = sys.platform
+
     if platform.startswith('linux'):
+        sandbox = os.environ.get('BST_FORCE_SANDBOX', "bwrap")
+        if sandbox != 'bwrap':
+            return
         bwrap_path = shutil.which('bwrap')
         if not bwrap_path:
             warn_bwrap("Bubblewrap not found")

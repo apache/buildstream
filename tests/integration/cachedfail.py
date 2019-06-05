@@ -1,3 +1,19 @@
+#
+#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2019 Bloomberg Finance LP
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
@@ -7,7 +23,7 @@ import pytest
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_BWRAP, HAVE_SANDBOX, IS_LINUX
+from buildstream.testing._utils.site import HAVE_SANDBOX
 
 from tests.conftest import clean_platform_cache
 from tests.testutils import create_artifact_share
@@ -167,7 +183,7 @@ def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
         assert share.has_artifact(cli.get_artifact_name(project, 'test', 'element.bst'))
 
 
-@pytest.mark.skipif(not (IS_LINUX and HAVE_BWRAP), reason='Only available with bubblewrap on Linux')
+@pytest.mark.skipif(HAVE_SANDBOX != 'bwrap', reason='Only available with bubblewrap on Linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_host_tools_errors_are_not_cached(cli, datafiles):
     project = str(datafiles)
@@ -190,8 +206,10 @@ def test_host_tools_errors_are_not_cached(cli, datafiles):
     }
     _yaml.dump(element, element_path)
 
+    clean_platform_cache()
+
     # Build without access to host tools, this will fail
-    result1 = cli.run(project=project, args=['build', 'element.bst'], env={'PATH': ''})
+    result1 = cli.run(project=project, args=['build', 'element.bst'], env={'PATH': '', 'BST_FORCE_SANDBOX': None})
     result1.assert_task_error(ErrorDomain.SANDBOX, 'unavailable-local-sandbox')
     assert cli.get_element_state(project, 'element.bst') == 'buildable'
 
