@@ -460,11 +460,15 @@ cpdef Node load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_na
 # to output something close to what you read in, consider using the
 # `roundtrip_load` and `roundtrip_dump` function pair instead.
 #
+# If `file` is a string, it is the filename to write to, if `file` has a
+# `write` method, it's treated as a stream, otherwise output is to stdout.
+#
 # Args:
-#    contents (any): Content to write out
-#    filename (str): The (optional) file name to write out to
-def dump(object contents, str filename=None):
-    roundtrip_dump(node_sanitize(contents), file=filename)
+#    contents (Mapping or list): The content to write out as YAML.
+#    file (any): The file to write to.
+#
+def dump(contents, file=None):
+    roundtrip_dump(node_sanitize(contents), file=file)
 
 
 # node_get_provenance()

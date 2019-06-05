@@ -198,11 +198,11 @@ def test_cache_key_fatal_warnings(cli, tmpdir, first_warnings, second_warnings, 
 
         project_dir = tmpdir.mkdir(project_name)
         project_config_file = str(project_dir.join('project.conf'))
-        _yaml.dump(_yaml.node_sanitize(config), filename=project_config_file)
+        _yaml.dump(_yaml.node_sanitize(config), file=project_config_file)
 
         elem_dir = project_dir.mkdir('elements')
         element_file = str(elem_dir.join('stack.bst'))
-        _yaml.dump({'kind': 'stack'}, filename=element_file)
+        _yaml.dump({'kind': 'stack'}, file=element_file)
 
         result = cli.run(project=str(project_dir), args=[
             'show',

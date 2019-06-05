@@ -56,7 +56,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             },
             'cachedir': cache_dir,
         }
-        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        _yaml.dump(_yaml.node_sanitize(user_config), file=user_config_file)
         cli.configure(user_config)
 
         repo = create_repo('git', str(tmpdir))
@@ -131,7 +131,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
             },
             'cachedir': cache_dir,
         }
-        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        _yaml.dump(_yaml.node_sanitize(user_config), file=user_config_file)
         cli.configure(user_config)
 
         repo = create_repo('git', str(tmpdir))
@@ -188,7 +188,7 @@ def test_pull_fail(cli, tmpdir, datafiles):
             },
             'cachedir': cache_dir,
         }
-        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        _yaml.dump(_yaml.node_sanitize(user_config), file=user_config_file)
         cli.configure(user_config)
 
         repo = create_repo('git', str(tmpdir))

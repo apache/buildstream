@@ -56,7 +56,7 @@ def test_source_push(cli, tmpdir, datafiles):
             },
             'cachedir': cache_dir,
         }
-        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        _yaml.dump(_yaml.node_sanitize(user_config), file=user_config_file)
         cli.configure(user_config)
 
         repo = create_repo('git', str(tmpdir))
@@ -116,7 +116,7 @@ def test_push_pull(cli, datafiles, tmpdir):
             },
             'cachedir': cache_dir,
         }
-        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        _yaml.dump(_yaml.node_sanitize(user_config), file=user_config_file)
         cli.configure(user_config)
 
         # create repo to pull from
@@ -162,7 +162,7 @@ def test_push_fail(cli, tmpdir, datafiles):
             },
             'cachedir': cache_dir,
         }
-        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        _yaml.dump(_yaml.node_sanitize(user_config), file=user_config_file)
         cli.configure(user_config)
 
     # create repo to pull from

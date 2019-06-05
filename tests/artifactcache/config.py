@@ -101,11 +101,11 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
     project_config['name'] = 'test'
 
     user_config_file = str(tmpdir.join('buildstream.conf'))
-    _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+    _yaml.dump(_yaml.node_sanitize(user_config), file=user_config_file)
 
     project_dir = tmpdir.mkdir('project')
     project_config_file = str(project_dir.join('project.conf'))
-    _yaml.dump(_yaml.node_sanitize(project_config), filename=project_config_file)
+    _yaml.dump(_yaml.node_sanitize(project_config), file=project_config_file)
 
     context = Context()
     context.load(config=user_config_file)
