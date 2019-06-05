@@ -679,7 +679,7 @@ class ChildJob():
         # Time, log and and run the action function
         #
         with _signals.suspendable(stop_time, resume_time), \
-            self._scheduler.context.recorded_messages(self._logfile) as filename:
+                self._scheduler.context.recorded_messages(self._logfile) as filename:
 
             self.message(MessageType.START, self.action_name, logfile=filename)
 
@@ -715,7 +715,7 @@ class ChildJob():
                 #
                 self._child_shutdown(RC_FAIL if retry_flag else RC_PERM_FAIL)
 
-            except Exception as e:                        # pylint: disable=broad-except
+            except Exception:                        # pylint: disable=broad-except
 
                 # If an unhandled (not normalized to BstError) occurs, that's a bug,
                 # send the traceback and formatted exception back to the frontend
