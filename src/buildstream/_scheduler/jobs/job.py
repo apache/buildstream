@@ -344,19 +344,19 @@ class Job():
     # handle_message()
     #
     # Handle a custom message. This will be called in the main process in
-    # response to any messages sent to the main proces using the
-    # Job.send_message() API from inside a Job.child_process() implementation
+    # response to any messages sent to the main process using the
+    # Job.send_message() API from inside a Job.child_process() implementation.
+    #
+    # There is no need to implement this function if no custom messages are
+    # expected.
     #
     # Args:
-    #    message_type (str): A string to identify the message type
     #    message (any): A simple object (must be pickle-able, i.e. strings,
     #                   lists, dicts, numbers, but not Element instances).
     #
-    # Returns:
-    #    (bool): Should return a truthy value if message_type is handled.
-    #
-    def handle_message(self, message_type, message):
-        return False
+    def handle_message(self, message):
+        raise ImplError("Job '{kind}' does not implement handle_message()"
+                        .format(kind=type(self).__name__))
 
     # parent_complete()
     #
@@ -470,12 +470,11 @@ class Job():
         elif envelope.message_type == 'child_data':
             # If we retry a job, we assign a new value to this
             self.child_data = envelope.message
-
-        # Try Job subclass specific messages now
-        elif not self.handle_message(envelope.message_type,
-                                     envelope.message):
-            assert 0, "Unhandled message type '{}': {}" \
-                .format(envelope.message_type, envelope.message)
+        elif envelope.message_type == 'subclass_custom_message':
+            self.handle_message(envelope.message)
+        else:
+            assert False, "Unhandled message type '{}': {}".format(
+                envelope.message_type, envelope.message)
 
     # _parent_process_queue()
     #
@@ -595,13 +594,12 @@ class ChildJob():
     # 'message_type's.
     #
     # Args:
-    #    message_type (str): The type of message to send.
     #    message_data (any): A simple object (must be pickle-able, i.e.
     #                        strings, lists, dicts, numbers, but not Element
     #                        instances). This is sent to the parent Job.
     #
-    def send_message(self, message_type, message_data):
-        self._queue.put(_Envelope(message_type, message_data))
+    def send_message(self, message_data):
+        self._send_message('subclass_custom_message', message_data)
 
     #######################################################
     #                  Abstract Methods                   #
@@ -706,7 +704,7 @@ class ChildJob():
                                  elapsed=elapsed, detail=e.detail,
                                  logfile=filename, sandbox=e.sandbox)
 
-                self.send_message('child_data', self.child_process_data())
+                self._send_message('child_data', self.child_process_data())
 
                 # Report the exception to the parent (for internal testing purposes)
                 self._child_send_error(e)
@@ -732,7 +730,7 @@ class ChildJob():
 
             else:
                 # No exception occurred in the action
-                self.send_message('child_data', self.child_process_data())
+                self._send_message('child_data', self.child_process_data())
                 self._child_send_result(result)
 
                 elapsed = datetime.datetime.now() - starttime
@@ -747,6 +745,19 @@ class ChildJob():
     #######################################################
     #                  Local Private Methods              #
     #######################################################
+
+    # _send_message()
+    #
+    # Send data in a message to the parent Job, running in the main process.
+    #
+    # Args:
+    #    message_type (str): The type of message to send.
+    #    message_data (any): A simple object (must be pickle-able, i.e.
+    #                        strings, lists, dicts, numbers, but not Element
+    #                        instances). This is sent to the parent Job.
+    #
+    def _send_message(self, message_type, message_data):
+        self._queue.put(_Envelope(message_type, message_data))
 
     # _child_send_error()
     #
@@ -763,7 +774,7 @@ class ChildJob():
             domain = e.domain
             reason = e.reason
 
-        self.send_message('error', {
+        self._send_message('error', {
             'domain': domain,
             'reason': reason
         })
@@ -782,7 +793,7 @@ class ChildJob():
     #
     def _child_send_result(self, result):
         if result is not None:
-            self.send_message('result', result)
+            self._send_message('result', result)
 
     # _child_shutdown()
     #
@@ -818,4 +829,4 @@ class ChildJob():
         if message.message_type == MessageType.LOG:
             return
 
-        self.send_message('message', message)
+        self._send_message('message', message)
