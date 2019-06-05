@@ -7,7 +7,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -21,6 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='buildstream/v2/buildstream.proto',
   package='buildstream.v2',
   syntax='proto3',
+  serialized_options=None,
   serialized_pb=_b('\n buildstream/v2/buildstream.proto\x12\x0e\x62uildstream.v2\x1a\x36\x62uild/bazel/remote/execution/v2/remote_execution.proto\x1a\x1cgoogle/api/annotations.proto\"9\n\x13GetReferenceRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\"O\n\x14GetReferenceResponse\x12\x37\n\x06\x64igest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"v\n\x16UpdateReferenceRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0c\n\x04keys\x18\x02 \x03(\t\x12\x37\n\x06\x64igest\x18\x03 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\x19\n\x17UpdateReferenceResponse\"&\n\rStatusRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"\'\n\x0eStatusResponse\x12\x15\n\rallow_updates\x18\x01 \x01(\x08\x32\xca\x03\n\x10ReferenceStorage\x12\x90\x01\n\x0cGetReference\x12#.buildstream.v2.GetReferenceRequest\x1a$.buildstream.v2.GetReferenceResponse\"5\x82\xd3\xe4\x93\x02/\x12-/v2/{instance_name=**}/buildstream/refs/{key}\x12\xa1\x01\n\x0fUpdateReference\x12&.buildstream.v2.UpdateReferenceRequest\x1a\'.buildstream.v2.UpdateReferenceResponse\"=\x82\xd3\xe4\x93\x02\x37\x1a-/v2/{instance_name=**}/buildstream/refs/{key}:\x06\x64igest\x12\x7f\n\x06Status\x12\x1d.buildstream.v2.StatusRequest\x1a\x1e.buildstream.v2.StatusResponse\"6\x82\xd3\xe4\x93\x02\x30\x1a./v2/{instance_name=**}/buildstream/refs:statusb\x06proto3')
   ,
   dependencies=[build_dot_bazel_dot_remote_dot_execution_dot_v2_dot_remote__execution__pb2.DESCRIPTOR,google_dot_api_dot_annotations__pb2.DESCRIPTOR,])
@@ -41,21 +41,21 @@ _GETREFERENCEREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='key', full_name='buildstream.v2.GetReferenceRequest.key', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -79,14 +79,14 @@ _GETREFERENCERESPONSE = _descriptor.Descriptor(
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -110,28 +110,28 @@ _UPDATEREFERENCEREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='keys', full_name='buildstream.v2.UpdateReferenceRequest.keys', index=1,
       number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='digest', full_name='buildstream.v2.UpdateReferenceRequest.digest', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -155,7 +155,7 @@ _UPDATEREFERENCERESPONSE = _descriptor.Descriptor(
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -179,14 +179,14 @@ _STATUSREQUEST = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -210,14 +210,14 @@ _STATUSRESPONSE = _descriptor.Descriptor(
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto3',
   extension_ranges=[],
@@ -286,7 +286,7 @@ _REFERENCESTORAGE = _descriptor.ServiceDescriptor(
   full_name='buildstream.v2.ReferenceStorage',
   file=DESCRIPTOR,
   index=0,
-  options=None,
+  serialized_options=None,
   serialized_start=507,
   serialized_end=965,
   methods=[
@@ -297,7 +297,7 @@ _REFERENCESTORAGE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_GETREFERENCEREQUEST,
     output_type=_GETREFERENCERESPONSE,
-    options=_descriptor._ParseOptions(descriptor_pb2.MethodOptions(), _b('\202\323\344\223\002/\022-/v2/{instance_name=**}/buildstream/refs/{key}')),
+    serialized_options=_b('\202\323\344\223\002/\022-/v2/{instance_name=**}/buildstream/refs/{key}'),
   ),
   _descriptor.MethodDescriptor(
     name='UpdateReference',
@@ -306,7 +306,7 @@ _REFERENCESTORAGE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_UPDATEREFERENCEREQUEST,
     output_type=_UPDATEREFERENCERESPONSE,
-    options=_descriptor._ParseOptions(descriptor_pb2.MethodOptions(), _b('\202\323\344\223\0027\032-/v2/{instance_name=**}/buildstream/refs/{key}:\006digest')),
+    serialized_options=_b('\202\323\344\223\0027\032-/v2/{instance_name=**}/buildstream/refs/{key}:\006digest'),
   ),
   _descriptor.MethodDescriptor(
     name='Status',
@@ -315,7 +315,7 @@ _REFERENCESTORAGE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_STATUSREQUEST,
     output_type=_STATUSRESPONSE,
-    options=_descriptor._ParseOptions(descriptor_pb2.MethodOptions(), _b('\202\323\344\223\0020\032./v2/{instance_name=**}/buildstream/refs:status')),
+    serialized_options=_b('\202\323\344\223\0020\032./v2/{instance_name=**}/buildstream/refs:status'),
   ),
 ])
 _sym_db.RegisterServiceDescriptor(_REFERENCESTORAGE)

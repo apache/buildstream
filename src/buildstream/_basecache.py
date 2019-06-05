@@ -37,6 +37,7 @@ class BaseCache():
     spec_name = None
     spec_error = None
     config_node_name = None
+    remote_class = CASRemote
 
     def __init__(self, context):
         self.context = context
@@ -163,18 +164,19 @@ class BaseCache():
         q = multiprocessing.Queue()
         for remote_spec in remote_specs:
 
-            error = CASRemote.check_remote(remote_spec, q)
+            error = self.remote_class.check_remote(remote_spec, q)
 
             if error and on_failure:
                 on_failure(remote_spec.url, error)
+                continue
             elif error:
                 raise self.spec_error(error)  # pylint: disable=not-callable
-            else:
-                self._has_fetch_remotes = True
-                if remote_spec.push:
-                    self._has_push_remotes = True
 
-                remotes[remote_spec.url] = CASRemote(remote_spec)
+            self._has_fetch_remotes = True
+            if remote_spec.push:
+                self._has_push_remotes = True
+
+            remotes[remote_spec.url] = self.remote_class(remote_spec)
 
         for project in self.context.get_projects():
             remote_specs = self.global_remote_specs
