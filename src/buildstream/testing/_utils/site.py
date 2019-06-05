@@ -7,6 +7,7 @@ import sys
 import platform
 
 from buildstream import _site, utils, ProgramNotFoundError
+from buildstream._platform import Platform
 
 
 try:
@@ -73,3 +74,5 @@ elif IS_LINUX and HAVE_BWRAP:
     HAVE_SANDBOX = True
 else:
     HAVE_SANDBOX = False
+
+MACHINE_ARCH = Platform.get_host_arch()
