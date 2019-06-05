@@ -4,7 +4,7 @@
 import os
 import pytest
 
-from buildstream.testing import cli_integration as cli
+from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.testing.integration import assert_contains
 from tests.testutils.site import HAVE_SANDBOX
 

@@ -7,7 +7,7 @@ import shutil
 
 from tests.testutils import create_artifact_share
 from tests.testutils.site import HAVE_SANDBOX
-from buildstream.testing import cli, cli_integration
+from buildstream.testing import cli, cli_integration  # pylint: disable=unused-import
 from buildstream._exceptions import ErrorDomain
 
 

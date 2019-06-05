@@ -6,7 +6,7 @@ import pytest
 
 from buildstream._exceptions import ErrorDomain
 
-from buildstream.testing import cli_integration as cli
+from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from tests.testutils.site import HAVE_BWRAP, HAVE_BWRAP_JSON_STATUS
 
 
