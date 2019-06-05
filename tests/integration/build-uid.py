@@ -5,9 +5,7 @@ import os
 import pytest
 
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_BWRAP, HAVE_SANDBOX
-
-from tests.testutils.site import IS_LINUX
+from buildstream.testing._utils.site import HAVE_BWRAP, HAVE_SANDBOX, IS_LINUX
 
 
 pytestmark = pytest.mark.integration

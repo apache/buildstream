@@ -9,10 +9,10 @@ import subprocess
 import pytest
 
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing._utils.site import IS_WINDOWS
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
-from tests.testutils.site import IS_WINDOWS
 from tests.testutils import generate_junction, yaml_file_get_provenance
 
 from . import configure_project

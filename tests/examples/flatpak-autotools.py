@@ -6,8 +6,8 @@ import pytest
 
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.testing.integration import assert_contains
-from buildstream.testing._utils.site import MACHINE_ARCH
-from tests.testutils.site import HAVE_OSTREE, IS_LINUX
+from buildstream.testing._utils.site import IS_LINUX, MACHINE_ARCH
+from tests.testutils.site import HAVE_OSTREE
 
 
 pytestmark = pytest.mark.integration

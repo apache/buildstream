@@ -7,9 +7,9 @@ import pytest
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
+from buildstream.testing._utils.site import IS_LINUX
 from buildstream.testing import cli  # pylint: disable=unused-import
 
-from tests.testutils.site import IS_LINUX
 
 # Project directory
 DATA_DIR = os.path.join(

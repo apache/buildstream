@@ -1,9 +1,6 @@
 # Some things resolved about the execution site,
 # so we dont have to repeat this everywhere
 #
-import os
-import sys
-import platform
 
 from buildstream import utils, ProgramNotFoundError
 
@@ -19,7 +16,3 @@ try:
     HAVE_OSTREE = True
 except (ImportError, ValueError):
     HAVE_OSTREE = False
-
-IS_LINUX = os.getenv('BST_FORCE_BACKEND', sys.platform).startswith('linux')
-IS_WSL = (IS_LINUX and 'Microsoft' in platform.uname().release)
-IS_WINDOWS = (os.name == 'nt')
