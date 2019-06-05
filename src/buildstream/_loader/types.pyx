@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from .._exceptions import LoadError, LoadErrorReason
-from .. import _yaml
+from .. cimport _yaml
 
 
 # Symbol():
@@ -51,14 +51,14 @@ class Symbol():
 # A simple object describing a dependency
 #
 # Args:
-#    name (str): The element name
+#    name (str or Node): The element name
 #    dep_type (str): The type of dependency, can be
 #                    Symbol.ALL, Symbol.BUILD, or Symbol.RUNTIME
 #    junction (str): The element name of the junction, or None
-#    provenance (Provenance): The YAML node provenance of where this
-#                             dependency was declared
+#    provenance (ProvenanceInformation): The YAML node provenance of where this
+#                                        dependency was declared
 #
-class Dependency():
+class Dependency:
     def __init__(self, dep, provenance, default_dep_type=None):
         self.provenance = provenance
 
@@ -67,7 +67,7 @@ class Dependency():
             self.dep_type = default_dep_type
             self.junction = None
 
-        elif _yaml.is_node(dep):
+        elif type(dep) is _yaml.Node and type(dep.value) is dict:
             if default_dep_type:
                 _yaml.node_validate(dep, ['filename', 'junction'])
                 dep_type = default_dep_type
@@ -75,7 +75,7 @@ class Dependency():
                 _yaml.node_validate(dep, ['filename', 'type', 'junction'])
 
                 # Make type optional, for this we set it to None
-                dep_type = _yaml.node_get(dep, str, Symbol.TYPE, default_value=None)
+                dep_type = _yaml.node_get(dep, str, Symbol.TYPE, None, None)
                 if dep_type is None or dep_type == Symbol.ALL:
                     dep_type = None
                 elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
@@ -86,7 +86,7 @@ class Dependency():
 
             self.name = _yaml.node_get(dep, str, Symbol.FILENAME)
             self.dep_type = dep_type
-            self.junction = _yaml.node_get(dep, str, Symbol.JUNCTION, default_value=None)
+            self.junction = _yaml.node_get(dep, str, Symbol.JUNCTION, None, None)
 
         else:
             raise LoadError(LoadErrorReason.INVALID_DATA,
