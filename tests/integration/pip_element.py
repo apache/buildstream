@@ -9,8 +9,9 @@ from buildstream import _yaml
 
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.testing.integration import assert_contains
+from buildstream.testing._utils.site import HAVE_SANDBOX
+
 from tests.testutils import setup_pypi_repo  # pylint: disable=unused-import
-from tests.testutils.site import HAVE_SANDBOX
 
 
 pytestmark = pytest.mark.integration

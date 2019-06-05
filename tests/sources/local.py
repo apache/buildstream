@@ -7,8 +7,8 @@ import pytest
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing._utils.site import HAVE_SANDBOX
 from tests.testutils import filetypegenerator
-from tests.testutils.site import HAVE_SANDBOX
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
