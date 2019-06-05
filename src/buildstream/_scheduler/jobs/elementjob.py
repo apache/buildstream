@@ -20,7 +20,7 @@ from ruamel import yaml
 
 from ..._message import MessageType
 
-from .job import Job
+from .job import Job, ChildJob
 
 
 # ElementJob()
@@ -80,6 +80,19 @@ class ElementJob(Job):
     def element(self):
         return self._element
 
+    def parent_complete(self, status, result):
+        self._complete_cb(self, self._element, status, self._result)
+
+    def create_child_job(self, *args, **kwargs):
+        return ChildElementJob(*args, element=self._element, action_cb=self._action_cb, **kwargs)
+
+
+class ChildElementJob(ChildJob):
+    def __init__(self, *args, element, action_cb, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._element = element
+        self._action_cb = action_cb
+
     def child_process(self):
 
         # Print the element's environment at the beginning of any element's log file.
@@ -93,9 +106,6 @@ class ElementJob(Job):
 
         # Run the action
         return self._action_cb(self._element)
-
-    def parent_complete(self, status, result):
-        self._complete_cb(self, self._element, status, self._result)
 
     def child_process_data(self):
         data = {}

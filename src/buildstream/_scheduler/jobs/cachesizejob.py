@@ -16,7 +16,7 @@
 #  Author:
 #        Tristan Daniël Maat <tristan.maat@codethink.co.uk>
 #
-from .job import Job, JobStatus
+from .job import Job, JobStatus, ChildJob
 
 
 class CacheSizeJob(Job):
@@ -27,9 +27,6 @@ class CacheSizeJob(Job):
         context = self._scheduler.context
         self._casquota = context.get_casquota()
 
-    def child_process(self):
-        return self._casquota.compute_cache_size()
-
     def parent_complete(self, status, result):
         if status == JobStatus.OK:
             self._casquota.set_cache_size(result)
@@ -37,5 +34,14 @@ class CacheSizeJob(Job):
         if self._complete_cb:
             self._complete_cb(status, result)
 
-    def child_process_data(self):
-        return {}
+    def create_child_job(self, *args, **kwargs):
+        return ChildCacheSizeJob(*args, casquota=self._scheduler.context._casquota, **kwargs)
+
+
+class ChildCacheSizeJob(ChildJob):
+    def __init__(self, *args, casquota, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._casquota = casquota
+
+    def child_process(self):
+        return self._casquota.compute_cache_size()
