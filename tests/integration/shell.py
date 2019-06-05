@@ -242,10 +242,7 @@ def test_host_files_missing(cli, datafiles, optional):
     project = str(datafiles)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'horsy.txt')
 
-    if optional == "optional":
-        option = True
-    else:
-        option = False
+    option = (optional == "optional")
 
     # Assert that we did successfully run something in the shell anyway
     result = execute_shell(cli, project, ['echo', 'Hello'], config={
