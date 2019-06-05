@@ -122,6 +122,41 @@ cdef class Dependency:
             self.junction, self.name = self.name.split(':')
 
 
+# _extract_depends_from_node():
+#
+# Helper for extract_depends_from_node to get dependencies of a particular type
+#
+# Creates an array of Dependency objects from a given dict node 'node',
+# allows both strings and dicts for expressing the dependency and
+# throws a comprehensive LoadError in the case that the node is malformed.
+#
+# After extracting depends, the symbol is deleted from the node
+#
+# Args:
+#    node (Node): A YAML loaded dictionary
+#    key (str): the key on the Node corresponding to the dependency type
+#    default_dep_type (str): type to give to the dependency
+#
+# Returns:
+#    (list): a list of Dependency objects
+#
+cdef _extract_depends_from_node(node, key, default_dep_type):
+    depends = _yaml.node_get(node, list, key, None, [])
+    output_deps = []
+
+    for index, dep in enumerate(depends):
+        # FIXME: the provenance information would be obtainable from the Node directly if we stop
+        #        stripping provenance and have proper nodes for str elements
+        dep_provenance = _yaml.node_get_provenance(node, key=key, indices=[index])
+        dependency = Dependency(dep, dep_provenance, default_dep_type=default_dep_type)
+        output_deps.append(dependency)
+
+    # Now delete the field, we dont want it anymore
+    _yaml.node_del(node, key, safe=True)
+
+    return output_deps
+
+
 # extract_depends_from_node():
 #
 # Creates an array of Dependency objects from a given dict node 'node',
@@ -131,35 +166,13 @@ cdef class Dependency:
 # After extracting depends, the symbol is deleted from the node
 #
 # Args:
-#    node (dict): A YAML loaded dictionary
+#    node (Node): A YAML loaded dictionary
 #
 # Returns:
 #    (list): a list of Dependency objects
 #
-def extract_depends_from_node(node, *, key=None):
-    if key is None:
-        build_depends = extract_depends_from_node(node, key=Symbol.BUILD_DEPENDS)
-        runtime_depends = extract_depends_from_node(node, key=Symbol.RUNTIME_DEPENDS)
-        depends = extract_depends_from_node(node, key=Symbol.DEPENDS)
-        return build_depends + runtime_depends + depends
-    elif key == Symbol.BUILD_DEPENDS:
-        default_dep_type = Symbol.BUILD
-    elif key == Symbol.RUNTIME_DEPENDS:
-        default_dep_type = Symbol.RUNTIME
-    elif key == Symbol.DEPENDS:
-        default_dep_type = None
-    else:
-        assert False, "Unexpected value of key '{}'".format(key)
-
-    depends = _yaml.node_get(node, list, key, None, [])
-    output_deps = []
-
-    for index, dep in enumerate(depends):
-        dep_provenance = _yaml.node_get_provenance(node, key=key, indices=[index])
-        dependency = Dependency(dep, dep_provenance, default_dep_type=default_dep_type)
-        output_deps.append(dependency)
-
-    # Now delete the field, we dont want it anymore
-    _yaml.node_del(node, key, safe=True)
-
-    return output_deps
+def extract_depends_from_node(node):
+    build_depends = _extract_depends_from_node(node, Symbol.BUILD_DEPENDS, Symbol.BUILD)
+    runtime_depends = _extract_depends_from_node(node, Symbol.RUNTIME_DEPENDS, Symbol.RUNTIME)
+    depends = _extract_depends_from_node(node, Symbol.DEPENDS, None)
+    return build_depends + runtime_depends + depends
