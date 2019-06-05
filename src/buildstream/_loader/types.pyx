@@ -135,13 +135,10 @@ cdef class Dependency:
 #    node (Node): A YAML loaded dictionary
 #    key (str): the key on the Node corresponding to the dependency type
 #    default_dep_type (str): type to give to the dependency
+#    acc (list): a list in which to add the loaded dependencies
 #
-# Returns:
-#    (list): a list of Dependency objects
-#
-cdef list _extract_depends_from_node(_yaml.Node node, str key, str default_dep_type):
+cdef void _extract_depends_from_node(_yaml.Node node, str key, str default_dep_type, list acc) except *:
     cdef list depends = <list> _yaml.node_get(node, list, key, None, [])
-    cdef list output_deps = []
     cdef int index
     cdef _yaml.ProvenanceInformation dep_provenance
 
@@ -150,12 +147,10 @@ cdef list _extract_depends_from_node(_yaml.Node node, str key, str default_dep_t
         #        stripping provenance and have proper nodes for str elements
         dep_provenance = <_yaml.ProvenanceInformation> _yaml.node_get_provenance(node, key=key, indices=[index])
         dependency = Dependency(dep, dep_provenance, default_dep_type=default_dep_type)
-        output_deps.append(dependency)
+        acc.append(dependency)
 
     # Now delete the field, we dont want it anymore
     _yaml.node_del(node, key, safe=True)
-
-    return output_deps
 
 
 # extract_depends_from_node():
@@ -173,10 +168,8 @@ cdef list _extract_depends_from_node(_yaml.Node node, str key, str default_dep_t
 #    (list): a list of Dependency objects
 #
 def extract_depends_from_node(_yaml.Node node):
-    cdef list build_depends = <list> _extract_depends_from_node(
-        node, <str> Symbol.BUILD_DEPENDS, <str> Symbol.BUILD)
-    cdef list runtime_depends = <list> _extract_depends_from_node(
-        node, <str> Symbol.RUNTIME_DEPENDS, <str> Symbol.RUNTIME)
-    cdef list depends = <list> _extract_depends_from_node(
-        node, <str> Symbol.DEPENDS, None)
-    return build_depends + runtime_depends + depends
+    cdef list acc = []
+    _extract_depends_from_node(node, <str> Symbol.BUILD_DEPENDS, <str> Symbol.BUILD, acc)
+    _extract_depends_from_node(node, <str> Symbol.RUNTIME_DEPENDS, <str> Symbol.RUNTIME, acc)
+    _extract_depends_from_node(node, <str> Symbol.DEPENDS, None, acc)
+    return acc
