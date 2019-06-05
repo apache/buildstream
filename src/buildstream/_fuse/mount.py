@@ -68,8 +68,8 @@ class FuseMountError(Exception):
 #   to know when the mount is done, there is no callback for that
 #
 #   The solution we use here without digging too deep into the
-#   low level fuse API, is to fork a child process which will
-#   fun the fuse loop in foreground, and we block the parent
+#   low level fuse API, is to start a child process which will
+#   run the fuse loop in foreground, and we block the parent
 #   process until the volume is mounted with a busy loop with timeouts.
 #
 class Mount():
@@ -104,7 +104,7 @@ class Mount():
         self.__mountpoint = mountpoint
         self.__process = Process(target=self.__run_fuse)
 
-        # Ensure the child fork() does not inherit our signal handlers, if the
+        # Ensure the child process does not inherit our signal handlers, if the
         # child wants to handle a signal then it will first set its own
         # handler, and then unblock it.
         with _signals.blocked([signal.SIGTERM, signal.SIGTSTP, signal.SIGINT], ignore=False):

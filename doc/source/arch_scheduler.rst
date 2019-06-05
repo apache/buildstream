@@ -8,13 +8,13 @@ dispatching *Jobs* to complete tasks on behalf of *Queues*.
 
 Jobs
 ~~~~
-The basic functionality of spawning tasks is implemented by the base Job
+The basic functionality of multiprocessing tasks is implemented by the base Job
 class, which is derived in a few ways but for now we'll only talk about the
 ElementJob type since that is the most centric.
 
 The Job class has the following responsibilities:
 
-* Spawning the given job as a subprocess.
+* Starting the given job as a subprocess.
 
 * Offering an abstract method for subclasses to handle the outcome of
   a job when it completes.

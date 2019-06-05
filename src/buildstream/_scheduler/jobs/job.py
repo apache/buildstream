@@ -136,11 +136,11 @@ class Job():
         self._message_unique_id = None
         self._task_id = None
 
-    # spawn()
+    # start()
     #
-    # Spawns the job.
+    # Starts the job.
     #
-    def spawn(self):
+    def start(self):
 
         self._queue = multiprocessing.Queue()
 
@@ -157,7 +157,6 @@ class Job():
             self._task_id,
         )
 
-        # Spawn the process
         self._process = Process(target=child_job.child_action, args=[self._queue])
 
         # Block signals which are handled in the main process such that
@@ -260,13 +259,13 @@ class Job():
 
             try:
                 # Use SIGTSTP so that child processes may handle and propagate
-                # it to processes they spawn that become session leaders
+                # it to processes they start that become session leaders.
                 os.kill(self._process.pid, signal.SIGTSTP)
 
-                # For some reason we receive exactly one suspend event for every
-                # SIGTSTP we send to the child fork(), even though the child forks
-                # are setsid(). We keep a count of these so we can ignore them
-                # in our event loop suspend_event()
+                # For some reason we receive exactly one suspend event for
+                # every SIGTSTP we send to the child process, even though the
+                # child processes are setsid(). We keep a count of these so we
+                # can ignore them in our event loop suspend_event().
                 self._scheduler.internal_stops += 1
                 self._suspended = True
             except ProcessLookupError:
@@ -419,7 +418,7 @@ class Job():
         retry_flag = returncode == RC_FAIL
 
         if retry_flag and (self._tries <= self._max_retries) and not self._scheduler.terminated:
-            self.spawn()
+            self.start()
             return
 
         # Resolve the outward facing overall job completion status
@@ -607,8 +606,8 @@ class ChildJob():
 
     # child_process()
     #
-    # This will be executed after fork(), and is intended to perform
-    # the job's task.
+    # This will be executed after starting the child process, and is intended
+    # to perform the job's task.
     #
     # Returns:
     #    (any): A simple object (must be pickle-able, i.e. strings, lists,

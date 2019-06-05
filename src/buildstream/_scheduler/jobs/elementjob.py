@@ -25,7 +25,7 @@ from .job import Job, ChildJob
 
 # ElementJob()
 #
-# A job to run an element's commands. When this job is spawned
+# A job to run an element's commands. When this job is started
 # `action_cb` will be called, and when it completes `complete_cb` will
 # be called.
 #
