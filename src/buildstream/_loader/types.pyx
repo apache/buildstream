@@ -126,9 +126,8 @@ cdef class Dependency:
 #
 # Helper for extract_depends_from_node to get dependencies of a particular type
 #
-# Creates an array of Dependency objects from a given dict node 'node',
-# allows both strings and dicts for expressing the dependency and
-# throws a comprehensive LoadError in the case that the node is malformed.
+# Adds to an array of Dependency objects from a given dict node 'node',
+# allows both strings and dicts for expressing the dependency.
 #
 # After extracting depends, the symbol is deleted from the node
 #
@@ -140,14 +139,16 @@ cdef class Dependency:
 # Returns:
 #    (list): a list of Dependency objects
 #
-cdef _extract_depends_from_node(node, key, default_dep_type):
-    depends = _yaml.node_get(node, list, key, None, [])
-    output_deps = []
+cdef list _extract_depends_from_node(_yaml.Node node, str key, str default_dep_type):
+    cdef list depends = <list> _yaml.node_get(node, list, key, None, [])
+    cdef list output_deps = []
+    cdef int index
+    cdef _yaml.ProvenanceInformation dep_provenance
 
     for index, dep in enumerate(depends):
         # FIXME: the provenance information would be obtainable from the Node directly if we stop
         #        stripping provenance and have proper nodes for str elements
-        dep_provenance = _yaml.node_get_provenance(node, key=key, indices=[index])
+        dep_provenance = <_yaml.ProvenanceInformation> _yaml.node_get_provenance(node, key=key, indices=[index])
         dependency = Dependency(dep, dep_provenance, default_dep_type=default_dep_type)
         output_deps.append(dependency)
 
@@ -171,8 +172,11 @@ cdef _extract_depends_from_node(node, key, default_dep_type):
 # Returns:
 #    (list): a list of Dependency objects
 #
-def extract_depends_from_node(node):
-    build_depends = _extract_depends_from_node(node, Symbol.BUILD_DEPENDS, Symbol.BUILD)
-    runtime_depends = _extract_depends_from_node(node, Symbol.RUNTIME_DEPENDS, Symbol.RUNTIME)
-    depends = _extract_depends_from_node(node, Symbol.DEPENDS, None)
+def extract_depends_from_node(_yaml.Node node):
+    cdef list build_depends = <list> _extract_depends_from_node(
+        node, <str> Symbol.BUILD_DEPENDS, <str> Symbol.BUILD)
+    cdef list runtime_depends = <list> _extract_depends_from_node(
+        node, <str> Symbol.RUNTIME_DEPENDS, <str> Symbol.RUNTIME)
+    cdef list depends = <list> _extract_depends_from_node(
+        node, <str> Symbol.DEPENDS, None)
     return build_depends + runtime_depends + depends
