@@ -62,7 +62,7 @@ class Dependency():
     def __init__(self, dep, provenance, default_dep_type=None):
         self.provenance = provenance
 
-        if isinstance(dep, str):
+        if type(dep) is str:
             self.name = dep
             self.dep_type = default_dep_type
             self.junction = None
