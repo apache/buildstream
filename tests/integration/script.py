@@ -18,7 +18,13 @@ DATA_DIR = os.path.join(
 )
 
 
-def create_script_element(name, path, config={}, variables={}):
+def create_script_element(name, path, config=None, variables=None):
+    if config is None:
+        config = {}
+
+    if variables is None:
+        variables = {}
+
     element = {
         'kind': 'script',
         'depends': [{

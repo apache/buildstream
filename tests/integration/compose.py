@@ -20,7 +20,10 @@ DATA_DIR = os.path.join(
 )
 
 
-def create_compose_element(name, path, config={}):
+def create_compose_element(name, path, config=None):
+    if config is None:
+        config = {}
+
     element = {
         'kind': 'compose',
         'depends': [{
