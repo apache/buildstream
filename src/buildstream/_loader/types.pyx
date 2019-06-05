@@ -142,11 +142,11 @@ cdef void _extract_depends_from_node(_yaml.Node node, str key, str default_dep_t
     cdef int index
     cdef _yaml.ProvenanceInformation dep_provenance
 
-    for index, dep in enumerate(depends):
+    for index in range(len(depends)):
         # FIXME: the provenance information would be obtainable from the Node directly if we stop
         #        stripping provenance and have proper nodes for str elements
         dep_provenance = <_yaml.ProvenanceInformation> _yaml.node_get_provenance(node, key=key, indices=[index])
-        dependency = Dependency(dep, dep_provenance, default_dep_type=default_dep_type)
+        dependency = Dependency(depends[index], dep_provenance, default_dep_type=default_dep_type)
         acc.append(dependency)
 
     # Now delete the field, we dont want it anymore
