@@ -58,7 +58,12 @@ class Symbol():
 #    provenance (ProvenanceInformation): The YAML node provenance of where this
 #                                        dependency was declared
 #
-class Dependency:
+cdef class Dependency:
+    cdef public _yaml.ProvenanceInformation provenance
+    cdef public str name
+    cdef public str dep_type
+    cdef public str junction
+
     def __init__(self, dep, provenance, default_dep_type=None):
         self.provenance = provenance
 
