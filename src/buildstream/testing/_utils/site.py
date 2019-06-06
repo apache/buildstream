@@ -2,15 +2,22 @@
 # so we dont have to repeat this everywhere
 #
 import os
+import subprocess
 import sys
 import platform
 
 from buildstream import _site, utils, ProgramNotFoundError
+from buildstream._platform import Platform
 
 
 try:
     GIT = utils.get_host_tool('git')
     HAVE_GIT = True
+
+    out = str(subprocess.check_output(['git', '--version']), "utf-8")
+    version = tuple(int(x) for x in out.split(' ')[2].split('.'))
+    HAVE_OLD_GIT = version < (1, 8, 5)
+
     GIT_ENV = {
         'GIT_AUTHOR_DATE': '1320966000 +0200',
         'GIT_AUTHOR_NAME': 'tomjon',
@@ -22,7 +29,18 @@ try:
 except ProgramNotFoundError:
     GIT = None
     HAVE_GIT = False
+    HAVE_OLD_GIT = False
     GIT_ENV = dict()
+
+try:
+    BZR = utils.get_host_tool('bzr')
+    HAVE_BZR = True
+    BZR_ENV = {
+        "BZR_EMAIL": "Testy McTesterson <testy.mctesterson@example.com>"
+    }
+except ProgramNotFoundError:
+    HAVE_BZR = False
+    BZR_ENV = {}
 
 try:
     utils.get_host_tool('bwrap')
@@ -31,6 +49,18 @@ try:
 except ProgramNotFoundError:
     HAVE_BWRAP = False
     HAVE_BWRAP_JSON_STATUS = False
+
+try:
+    utils.get_host_tool('lzip')
+    HAVE_LZIP = True
+except ProgramNotFoundError:
+    HAVE_LZIP = False
+
+try:
+    import arpy  # pylint: disable=unused-import
+    HAVE_ARPY = True
+except ImportError:
+    HAVE_ARPY = False
 
 IS_LINUX = os.getenv('BST_FORCE_BACKEND', sys.platform).startswith('linux')
 IS_WSL = (IS_LINUX and 'Microsoft' in platform.uname().release)
@@ -44,3 +74,5 @@ elif IS_LINUX and HAVE_BWRAP:
     HAVE_SANDBOX = True
 else:
     HAVE_SANDBOX = False
+
+MACHINE_ARCH = Platform.get_host_arch()

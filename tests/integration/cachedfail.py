@@ -7,10 +7,10 @@ import pytest
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream.testing._utils.site import HAVE_BWRAP, HAVE_SANDBOX, IS_LINUX
 
 from tests.conftest import clean_platform_cache
 from tests.testutils import create_artifact_share
-from tests.testutils.site import HAVE_BWRAP, IS_LINUX, HAVE_SANDBOX
 
 
 pytestmark = pytest.mark.integration

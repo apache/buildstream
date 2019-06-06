@@ -9,7 +9,7 @@ import pytest
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
-from tests.testutils.site import HAVE_ARPY
+from buildstream.testing._utils.site import HAVE_ARPY
 from . import list_dir_contents
 
 DATA_DIR = os.path.join(
