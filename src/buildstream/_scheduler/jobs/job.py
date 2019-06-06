@@ -50,7 +50,8 @@ class _ReturnCode(enum.IntEnum):
 # The job completion status, passed back through the
 # complete callbacks.
 #
-class JobStatus():
+@enum.unique
+class JobStatus(enum.Enum):
     # Job succeeded
     OK = 0
 
