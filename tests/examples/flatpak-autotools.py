@@ -19,9 +19,11 @@ DATA_DIR = os.path.join(
 
 try:
     from bst_plugins_experimental.sources import _ostree  # pylint: disable=unused-import
-    HAVE_OSTREE = True
+    # Even when we have the plugin, it might be missing dependencies. This requires
+    # bst_plugins_experimantal to be fully installed, with host ostree dependencies
+    HAVE_OSTREE_PLUGIN = True
 except (ImportError, ValueError):
-    HAVE_OSTREE = False
+    HAVE_OSTREE_PLUGIN = False
 
 
 # FIXME: Workaround a setuptools bug which fails to include symbolic
@@ -44,7 +46,7 @@ def workaround_setuptools_bug(project):
 # amhello project for this.
 @pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
                     reason='Examples are written for x86-64')
-@pytest.mark.skipif(not IS_LINUX or not HAVE_OSTREE, reason='Only available on linux with ostree')
+@pytest.mark.skipif(not IS_LINUX or not HAVE_OSTREE_PLUGIN, reason='Only available on linux with ostree')
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_build(cli, datafiles):
     project = str(datafiles)
@@ -67,7 +69,7 @@ def test_autotools_build(cli, datafiles):
 # Test running an executable built with autotools
 @pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
                     reason='Examples are written for x86-64')
-@pytest.mark.skipif(not IS_LINUX or not HAVE_OSTREE, reason='Only available on linux with ostree')
+@pytest.mark.skipif(not IS_LINUX or not HAVE_OSTREE_PLUGIN, reason='Only available on linux with ostree')
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_run(cli, datafiles):
     project = str(datafiles)
