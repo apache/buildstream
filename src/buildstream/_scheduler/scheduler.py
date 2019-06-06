@@ -28,7 +28,7 @@ from contextlib import contextmanager
 
 # Local imports
 from .resources import Resources, ResourceType
-from .jobs import JobStatus, CacheSizeJob, CleanupJob
+from .jobs import JobStatus, CacheSizeJob
 from .._profile import Topics, PROFILER
 
 
@@ -41,7 +41,6 @@ class SchedStatus():
 
 # Some action names for the internal jobs we launch
 #
-_ACTION_NAME_CLEANUP = 'clean'
 _ACTION_NAME_CACHE_SIZE = 'size'
 
 
@@ -101,8 +100,6 @@ class Scheduler():
         # State of cache management related jobs
         self._cache_size_scheduled = False    # Whether we have a cache size job scheduled
         self._cache_size_running = None       # A running CacheSizeJob, or None
-        self._cleanup_scheduled = False       # Whether we have a cleanup job scheduled
-        self._cleanup_running = None          # A running CleanupJob, or None
 
         # Callbacks to report back to the Scheduler owner
         self._interrupt_callback = interrupt_callback
@@ -340,53 +337,6 @@ class Scheduler():
             [ResourceType.CACHE], 'cache-size'
         )
 
-        # Schedule a cleanup job if we've hit the threshold
-        if status is not JobStatus.OK:
-            return
-
-        context = self.context
-        artifacts = context.artifactcache
-
-        if artifacts.full():
-            self._cleanup_scheduled = True
-
-    # Callback for the cleanup job
-    def _cleanup_job_complete(self, status, cache_size):
-
-        # Deallocate cleanup job resources
-        self._cleanup_running = None
-        self.resources.release([ResourceType.CACHE, ResourceType.PROCESS])
-
-        # Unregister the exclusive interest when we're done with it
-        if not self._cleanup_scheduled:
-            self.resources.unregister_exclusive_interest(
-                [ResourceType.CACHE], 'cache-cleanup'
-            )
-
-    # _sched_cleanup_job()
-    #
-    # Runs a cleanup job if one is scheduled to run now and
-    # sufficient recources are available.
-    #
-    def _sched_cleanup_job(self):
-
-        if self._cleanup_scheduled and self._cleanup_running is None:
-
-            # Ensure we have an exclusive interest in the resources
-            self.resources.register_exclusive_interest(
-                [ResourceType.CACHE], 'cache-cleanup'
-            )
-
-            if self.resources.reserve([ResourceType.CACHE, ResourceType.PROCESS],
-                                      [ResourceType.CACHE]):
-
-                # Update state and launch
-                self._cleanup_scheduled = False
-                self._cleanup_running = \
-                    CleanupJob(self, _ACTION_NAME_CLEANUP, 'cleanup/cleanup',
-                               complete_cb=self._cleanup_job_complete)
-                self._start_job(self._cleanup_running)
-
     # _sched_cache_size_job()
     #
     # Runs a cache size job if one is scheduled to run now and
@@ -492,7 +442,6 @@ class Scheduler():
             #
             # Try the cache management jobs
             #
-            self._sched_cleanup_job()
             self._sched_cache_size_job()
 
             #

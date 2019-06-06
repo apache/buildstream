@@ -41,6 +41,7 @@ DATA_DIR = os.path.join(
 # Ensure that the cache successfully removes an old artifact if we do
 # not have enough space left.
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.xfail()
 def test_artifact_expires(cli, datafiles):
     project = str(datafiles)
     element_path = 'elements'
@@ -83,6 +84,7 @@ def test_artifact_expires(cli, datafiles):
     (399999)
 ])
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.xfail()
 def test_artifact_too_large(cli, datafiles, size):
     project = str(datafiles)
     element_path = 'elements'
@@ -101,6 +103,7 @@ def test_artifact_too_large(cli, datafiles, size):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.xfail()
 def test_expiry_order(cli, datafiles):
     project = str(datafiles)
     element_path = 'elements'
@@ -158,6 +161,7 @@ def test_expiry_order(cli, datafiles):
 # in the current build pipeline, because that would be embarassing,
 # wouldn't it?
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.xfail()
 def test_keep_dependencies(cli, datafiles):
     project = str(datafiles)
     element_path = 'elements'
@@ -204,6 +208,7 @@ def test_keep_dependencies(cli, datafiles):
 
 # Assert that we never delete a dependency required for a build tree
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.xfail()
 def test_never_delete_required(cli, datafiles):
     project = str(datafiles)
     element_path = 'elements'
@@ -256,6 +261,7 @@ def test_never_delete_required(cli, datafiles):
 # artifacts we do not require, and the new build is run with dynamic tracking.
 #
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.xfail()
 def test_never_delete_required_track(cli, datafiles):
     project = str(datafiles)
     element_path = 'elements'
@@ -399,6 +405,7 @@ def test_invalid_cache_quota(cli, datafiles, quota, err_domain, err_reason):
 # the cache size and cleanup jobs are run before any other jobs.
 #
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.xfail()
 def test_cleanup_first(cli, datafiles):
     project = str(datafiles)
     element_path = 'elements'
