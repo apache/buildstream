@@ -693,21 +693,17 @@ def node_extend_list(Node node, str key, Py_ssize_t length, object default):
 # tuples in a dictionary loaded from project YAML.
 #
 # Args:
-#    node (dict): The dictionary node
+#    node (Node): The dictionary node
 #
 # Yields:
 #    (str): The key name
 #    (anything): The value for the key
 #
-def node_items(node):
-    if type(node) is not Node:
-        node = Node(node, _SYNTHETIC_FILE_INDEX, 0, 0)
-
+def node_items(Node node):
     cdef str key
+    cdef Node value
 
     for key, value in node.value.items():
-        if type(value) is not Node:
-            value = Node(value, _SYNTHETIC_FILE_INDEX, 0, 0)
         if type(value.value) is dict:
             yield (key, value)
         elif type(value.value) is list:
@@ -722,15 +718,13 @@ def node_items(node):
 # in a dictionary loaded from project YAML.
 #
 # Args:
-#    node (dict): The dictionary node
+#    node (Node): The dictionary node
 #
 # Yields:
 #    (str): The key name
 #
-cpdef list node_keys(object node):
-    if type(node) is Node:
-        return list((<Node> node).value.keys())
-    return list(node.keys())
+cpdef list node_keys(Node node):
+    return list(node.value.keys())
 
 
 # node_del()

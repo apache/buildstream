@@ -1986,7 +1986,7 @@ class Element(Plugin):
                 flags |= SandboxFlags.NETWORK_ENABLED | SandboxFlags.INHERIT_UID
 
                 # Apply project defined environment vars to set for a shell
-                for key, value in _yaml.node_items(shell_environment):
+                for key, value in shell_environment.items():
                     environment[key] = value
 
                 # Setup any requested bind mounts
