@@ -253,8 +253,10 @@ class LogFile(Widget):
         self._err_profile = err_profile
         self._logdir = context.logdir
 
-    def render(self, message, abbrev=True):
+    def render(self, message):
+        return self.render_abbrev(message)
 
+    def render_abbrev(self, message, abbrev=True):
         if message.logfile and message.scheduler:
             logfile = message.logfile
 
@@ -285,7 +287,7 @@ class MessageOrLogFile(Widget):
     def render(self, message):
         # Show the log file only in the main start/success messages
         if message.logfile and message.scheduler and \
-           message.message_type in [MessageType.START, MessageType.SUCCESS]:
+                message.message_type in [MessageType.START, MessageType.SUCCESS]:
             text = self._logfile_widget.render(message)
         else:
             text = self._message_widget.render(message)
@@ -709,7 +711,7 @@ class LogLine(Widget):
             elif self._log_lines > 0:
                 text += self._indent + self._err_profile.fmt("Printing the last {} lines from log file:"
                                                              .format(self._log_lines)) + '\n'
-                text += self._indent + self._logfile_widget.render(message, abbrev=False) + '\n'
+                text += self._indent + self._logfile_widget.render_abbrev(message, abbrev=False) + '\n'
                 text += self._indent + self._err_profile.fmt("=" * 70) + '\n'
 
                 log_content = self._read_last_lines(message.logfile)
