@@ -34,12 +34,15 @@ from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
 from ... import _signals, utils
 
+
 # Return code values shutdown of job handling child processes
 #
-RC_OK = 0
-RC_FAIL = 1
-RC_PERM_FAIL = 2
-RC_SKIPPED = 3
+@enum.unique
+class _ReturnCode(enum.IntEnum):
+    OK = 0
+    FAIL = 1
+    PERM_FAIL = 2
+    SKIPPED = 3
 
 
 # JobStatus:
@@ -425,7 +428,7 @@ class Job():
         self._parent_shutdown()
 
         # We don't want to retry if we got OK or a permanent fail.
-        retry_flag = returncode == RC_FAIL
+        retry_flag = returncode == _ReturnCode.FAIL
 
         if retry_flag and (self._tries <= self._max_retries) and not self._scheduler.terminated:
             self.start()
@@ -433,11 +436,11 @@ class Job():
 
         # Resolve the outward facing overall job completion status
         #
-        if returncode == RC_OK:
+        if returncode == _ReturnCode.OK:
             status = JobStatus.OK
-        elif returncode == RC_SKIPPED:
+        elif returncode == _ReturnCode.SKIPPED:
             status = JobStatus.SKIPPED
-        elif returncode in (RC_FAIL, RC_PERM_FAIL):
+        elif returncode in (_ReturnCode.FAIL, _ReturnCode.PERM_FAIL):
             status = JobStatus.FAIL
         else:
             status = JobStatus.FAIL
@@ -699,7 +702,7 @@ class ChildJob():
                              elapsed=elapsed, logfile=filename)
 
                 # Alert parent of skip by return code
-                self._child_shutdown(RC_SKIPPED)
+                self._child_shutdown(_ReturnCode.SKIPPED)
             except BstError as e:
                 elapsed = datetime.datetime.now() - starttime
                 retry_flag = e.temporary
@@ -720,7 +723,7 @@ class ChildJob():
 
                 # Set return code based on whether or not the error was temporary.
                 #
-                self._child_shutdown(RC_FAIL if retry_flag else RC_PERM_FAIL)
+                self._child_shutdown(_ReturnCode.FAIL if retry_flag else _ReturnCode.PERM_FAIL)
 
             except Exception:                        # pylint: disable=broad-except
 
@@ -735,7 +738,7 @@ class ChildJob():
                              elapsed=elapsed, detail=detail,
                              logfile=filename)
                 # Unhandled exceptions should permenantly fail
-                self._child_shutdown(RC_PERM_FAIL)
+                self._child_shutdown(_ReturnCode.PERM_FAIL)
 
             else:
                 # No exception occurred in the action
@@ -749,7 +752,7 @@ class ChildJob():
                 # Shutdown needs to stay outside of the above context manager,
                 # make sure we dont try to handle SIGTERM while the process
                 # is already busy in sys.exit()
-                self._child_shutdown(RC_OK)
+                self._child_shutdown(_ReturnCode.OK)
 
     #######################################################
     #                  Local Private Methods              #
@@ -809,11 +812,12 @@ class ChildJob():
     # Shuts down the child process by cleaning up and exiting the process
     #
     # Args:
-    #    exit_code (int): The exit code to exit with
+    #    exit_code (_ReturnCode): The exit code to exit with
     #
     def _child_shutdown(self, exit_code):
         self._queue.close()
-        sys.exit(exit_code)
+        assert isinstance(exit_code, _ReturnCode)
+        sys.exit(int(exit_code))
 
     # _child_message_handler()
     #
