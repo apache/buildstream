@@ -746,7 +746,7 @@ class TestArtifact():
     def _extract_subdirectory(self, tmpdir, digest):
         with tempfile.TemporaryDirectory() as extractdir:
             try:
-                cas = CASCache(str(tmpdir))
+                cas = CASCache(str(tmpdir), casd=False)
                 cas.checkout(extractdir, digest)
                 yield extractdir
             except FileNotFoundError:

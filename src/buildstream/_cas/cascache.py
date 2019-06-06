@@ -24,10 +24,15 @@ import stat
 import errno
 import uuid
 import contextlib
+import shutil
+import subprocess
+import tempfile
+import time
 
 import grpc
 
-from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
+from .._protos.build.buildgrid import local_cas_pb2_grpc
 from .._protos.buildstream.v2 import buildstream_pb2
 
 from .. import utils
@@ -45,16 +50,73 @@ CACHE_SIZE_FILE = "cache_size"
 #
 # Args:
 #     path (str): The root directory for the CAS repository
+#     casd (bool): True to spawn buildbox-casd (default) or False (testing only)
 #     cache_quota (int): User configured cache quota
 #
 class CASCache():
 
-    def __init__(self, path):
+    def __init__(self, path, *, casd=True):
         self.casdir = os.path.join(path, 'cas')
         self.tmpdir = os.path.join(path, 'tmp')
         os.makedirs(os.path.join(self.casdir, 'refs', 'heads'), exist_ok=True)
         os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
+
+        if casd:
+            # Place socket in global/user temporary directory to avoid hitting
+            # the socket path length limit.
+            self._casd_socket_tempdir = tempfile.mkdtemp(prefix='buildstream')
+            self._casd_socket_path = os.path.join(self._casd_socket_tempdir, 'casd.sock')
+
+            casd_args = [utils.get_host_tool('buildbox-casd')]
+            casd_args.append('--bind=unix:' + self._casd_socket_path)
+
+            casd_args.append(path)
+            self._casd_process = subprocess.Popen(casd_args, cwd=path)
+            self._casd_start_time = time.time()
+        else:
+            self._casd_process = None
+
+        self._casd_channel = None
+        self._local_cas = None
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+
+        # Popen objects are not pickle-able, however, child processes only
+        # need the information whether a casd subprocess was started or not.
+        assert '_casd_process' in state
+        state['_casd_process'] = bool(self._casd_process)
+
+        return state
+
+    def _get_local_cas(self):
+        assert self._casd_process, "CASCache was instantiated without buildbox-casd"
+
+        if not self._local_cas:
+            # gRPC doesn't support fork without exec, which is used in the main process.
+            assert not utils._is_main_process()
+
+            self._casd_channel = grpc.insecure_channel('unix:' + self._casd_socket_path)
+            self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
+
+            # Call GetCapabilities() to establish connection to casd
+            capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self._casd_channel)
+            while True:
+                try:
+                    capabilities.GetCapabilities(remote_execution_pb2.GetCapabilitiesRequest())
+                    break
+                except grpc.RpcError as e:
+                    if e.code() == grpc.StatusCode.UNAVAILABLE:
+                        # casd is not ready yet, try again after a 10ms delay,
+                        # but don't wait for more than 15s
+                        if time.time() < self._casd_start_time + 15:
+                            time.sleep(1 / 100)
+                            continue
+
+                    raise
+
+        return self._local_cas
 
     # preflight():
     #
@@ -71,7 +133,25 @@ class CASCache():
     # Release resources used by CASCache.
     #
     def release_resources(self, messenger=None):
-        pass
+        if self._casd_process:
+            self._casd_process.terminate()
+            try:
+                # Don't print anything if buildbox-casd terminates quickly
+                self._casd_process.wait(timeout=0.5)
+            except subprocess.TimeoutExpired:
+                if messenger:
+                    cm = messenger.timed_activity("Terminating buildbox-casd")
+                else:
+                    cm = contextlib.suppress()
+                with cm:
+                    try:
+                        self._casd_process.wait(timeout=15)
+                    except subprocess.TimeoutExpired:
+                        self._casd_process.kill()
+                        self._casd_process.wait(timeout=15)
+            self._casd_process = None
+
+            shutil.rmtree(self._casd_socket_tempdir)
 
     # contains():
     #

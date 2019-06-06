@@ -20,7 +20,7 @@
 import os
 import pytest
 
-from buildstream import _yaml
+from buildstream import utils, _yaml
 from buildstream._exceptions import ErrorDomain
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.testing._utils.site import HAVE_SANDBOX
@@ -185,7 +185,12 @@ def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
 
 @pytest.mark.skipif(HAVE_SANDBOX != 'bwrap', reason='Only available with bubblewrap on Linux')
 @pytest.mark.datafiles(DATA_DIR)
-def test_host_tools_errors_are_not_cached(cli, datafiles):
+def test_host_tools_errors_are_not_cached(cli, datafiles, tmp_path):
+    # Create symlink to buildbox-casd to work with custom PATH
+    buildbox_casd = tmp_path.joinpath('bin/buildbox-casd')
+    buildbox_casd.parent.mkdir()
+    os.symlink(utils.get_host_tool('buildbox-casd'), str(buildbox_casd))
+
     project = str(datafiles)
     element_path = os.path.join(project, 'elements', 'element.bst')
 
@@ -207,7 +212,11 @@ def test_host_tools_errors_are_not_cached(cli, datafiles):
     _yaml.roundtrip_dump(element, element_path)
 
     # Build without access to host tools, this will fail
-    result1 = cli.run(project=project, args=['build', 'element.bst'], env={'PATH': '', 'BST_FORCE_SANDBOX': None})
+    result1 = cli.run(
+        project=project,
+        args=['build', 'element.bst'],
+        env={'PATH': str(tmp_path.joinpath('bin')),
+             'BST_FORCE_SANDBOX': None})
     result1.assert_task_error(ErrorDomain.SANDBOX, 'unavailable-local-sandbox')
     assert cli.get_element_state(project, 'element.bst') == 'buildable'
 
