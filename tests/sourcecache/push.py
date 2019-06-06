@@ -179,8 +179,8 @@ def test_push_fail(cli, tmpdir, datafiles):
     # build and check that it fails to set up the remote
     res = cli.run(project=project_dir, args=['build', 'push.bst'])
     res.assert_success()
-    assert ("Failed to initialize remote {}: Connect Failed"
-            .format(remote)) in res.stderr
+
+    assert "Failed to initialize remote {}".format(remote) in res.stderr
     assert "Pushing" not in res.stderr
     assert "Pushed" not in res.stderr
 
