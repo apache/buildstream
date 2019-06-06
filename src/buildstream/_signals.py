@@ -26,8 +26,8 @@ from collections import deque
 
 
 # Global per process state for handling of sigterm/sigtstp/sigcont,
-# note that it is expected that this only ever be used by processes
-# the scheduler forks off, not the main process
+# note that it is expected that this only ever be used by new processes
+# the scheduler starts, not the main process.
 terminator_stack = deque()
 suspendable_stack = deque()
 
@@ -50,7 +50,7 @@ def terminator_handler(signal_, frame):
                   file=sys.stderr)
 
     # Use special exit here, terminate immediately, recommended
-    # for precisely this situation where child forks are teminated.
+    # for precisely this situation where child processes are teminated.
     os._exit(-1)
 
 
@@ -125,7 +125,7 @@ def suspend_handler(sig, frame):
 #    suspend_callback (callable): A function to call as process suspend time.
 #    resume_callback (callable): A function to call as process resume time.
 #
-# This must be used in code blocks which spawn processes that become
+# This must be used in code blocks which start processes that become
 # their own session leader. In these cases, SIGSTOP and SIGCONT need
 # to be propagated to the child process group.
 #

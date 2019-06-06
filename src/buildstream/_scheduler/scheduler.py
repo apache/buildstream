@@ -303,18 +303,18 @@ class Scheduler():
         if artifacts.full():
             self._sched_cache_size_job(exclusive=True)
 
-    # _spawn_job()
+    # _start_job()
     #
     # Spanws a job
     #
     # Args:
-    #    job (Job): The job to spawn
+    #    job (Job): The job to start
     #
-    def _spawn_job(self, job):
+    def _start_job(self, job):
         self._active_jobs.append(job)
         if self._job_start_callback:
             self._job_start_callback(job)
-        job.spawn()
+        job.start()
 
     # Callback for the cache size job
     def _cache_size_job_complete(self, status, cache_size):
@@ -373,7 +373,7 @@ class Scheduler():
                 self._cleanup_running = \
                     CleanupJob(self, _ACTION_NAME_CLEANUP, 'cleanup/cleanup',
                                complete_cb=self._cleanup_job_complete)
-                self._spawn_job(self._cleanup_running)
+                self._start_job(self._cleanup_running)
 
     # _sched_cache_size_job()
     #
@@ -414,7 +414,7 @@ class Scheduler():
                     CacheSizeJob(self, _ACTION_NAME_CACHE_SIZE,
                                  'cache_size/cache_size',
                                  complete_cb=self._cache_size_job_complete)
-                self._spawn_job(self._cache_size_running)
+                self._start_job(self._cache_size_running)
 
     # _sched_queue_jobs()
     #
@@ -458,10 +458,10 @@ class Scheduler():
             # If that happens, do another round.
             process_queues = any(q.dequeue_ready() for q in self.queues)
 
-        # Spawn the jobs
+        # Start the jobs
         #
         for job in ready:
-            self._spawn_job(job)
+            self._start_job(job)
 
     # _sched()
     #
