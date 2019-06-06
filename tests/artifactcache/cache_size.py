@@ -1,10 +1,13 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 from unittest import mock
 
 from buildstream import _yaml
 from buildstream._cas.cascache import CACHE_SIZE_FILE
 from buildstream._exceptions import ErrorDomain
-from buildstream.testing import cli
+from buildstream.testing import cli  # pylint: disable=unused-import
 
 from tests.testutils import create_element_size
 

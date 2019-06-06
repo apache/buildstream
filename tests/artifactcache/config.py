@@ -1,7 +1,10 @@
-import pytest
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
 
 import itertools
 import os
+
+import pytest
 
 from buildstream._artifactcache import ArtifactCacheSpec, ArtifactCache
 from buildstream._context import Context
@@ -10,7 +13,7 @@ from buildstream.utils import _deduplicate
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
-from buildstream.testing.runcli import cli
+from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 
 
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -24,7 +27,13 @@ cache6 = ArtifactCacheSpec(url='https://example.com/cache6', push=True)
 
 # Generate cache configuration fragments for the user config and project config files.
 #
-def configure_remote_caches(override_caches, project_caches=[], user_caches=[]):
+def configure_remote_caches(override_caches, project_caches=None, user_caches=None):
+    if project_caches is None:
+        project_caches = []
+
+    if user_caches is None:
+        user_caches = []
+
     user_config = {}
     if len(user_caches) == 1:
         user_config['artifacts'] = {
@@ -55,7 +64,7 @@ def configure_remote_caches(override_caches, project_caches=[], user_caches=[]):
         }
 
     project_config = {}
-    if len(project_caches) > 0:
+    if project_caches:
         if len(project_caches) == 1:
             project_config.update({
                 'artifacts': {

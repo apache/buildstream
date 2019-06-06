@@ -17,6 +17,9 @@
 #  Authors: Tristan Maat <tristan.maat@codethink.co.uk>
 #
 
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import re
 from unittest import mock
@@ -24,7 +27,7 @@ from unittest import mock
 import pytest
 
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
-from buildstream.testing import cli
+from buildstream.testing import cli  # pylint: disable=unused-import
 
 from tests.testutils import create_element_size, update_element_size, wait_for_cache_granularity
 
