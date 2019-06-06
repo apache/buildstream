@@ -287,6 +287,7 @@ def test_push_after_pull(cli, tmpdir, datafiles):
 # the least recently pushed artifact is deleted in order to make room for
 # the incoming artifact.
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.xfail()
 def test_artifact_expires(cli, datafiles, tmpdir):
     project = str(datafiles)
     element_path = 'elements'
@@ -342,6 +343,7 @@ def test_artifact_expires(cli, datafiles, tmpdir):
 # Test that a large artifact, whose size exceeds the quota, is not pushed
 # to the remote share
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.xfail()
 def test_artifact_too_large(cli, datafiles, tmpdir):
     project = str(datafiles)
     element_path = 'elements'
@@ -378,6 +380,7 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
 
 # Test that when an element is pulled recently, it is not considered the LRU element.
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.xfail()
 def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
     project = str(datafiles)
     element_path = 'elements'
