@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from .._exceptions import LoadError, LoadErrorReason
-from .. import _yaml
+from .. cimport _yaml
 
 
 # Symbol():
@@ -51,32 +51,42 @@ class Symbol():
 # A simple object describing a dependency
 #
 # Args:
-#    name (str): The element name
+#    name (str or Node): The element name
 #    dep_type (str): The type of dependency, can be
 #                    Symbol.ALL, Symbol.BUILD, or Symbol.RUNTIME
 #    junction (str): The element name of the junction, or None
-#    provenance (Provenance): The YAML node provenance of where this
-#                             dependency was declared
+#    provenance (ProvenanceInformation): The YAML node provenance of where this
+#                                        dependency was declared
 #
-class Dependency():
-    def __init__(self, dep, provenance, default_dep_type=None):
+cdef class Dependency:
+    cdef public _yaml.ProvenanceInformation provenance
+    cdef public str name
+    cdef public str dep_type
+    cdef public str junction
+
+    def __init__(self,
+                 object dep,
+                 _yaml.ProvenanceInformation provenance,
+                 str default_dep_type=None):
+        cdef str dep_type
+
         self.provenance = provenance
 
-        if isinstance(dep, str):
-            self.name = dep
+        if type(dep) is str:
+            self.name = <str> dep
             self.dep_type = default_dep_type
             self.junction = None
 
-        elif _yaml.is_node(dep):
+        elif type(dep) is _yaml.Node and type(dep.value) is dict:
             if default_dep_type:
-                _yaml.node_validate(dep, ['filename', 'junction'])
+                _yaml.node_validate(<_yaml.Node> dep, ['filename', 'junction'])
                 dep_type = default_dep_type
             else:
-                _yaml.node_validate(dep, ['filename', 'type', 'junction'])
+                _yaml.node_validate(<_yaml.Node> dep, ['filename', 'type', 'junction'])
 
                 # Make type optional, for this we set it to None
-                dep_type = _yaml.node_get(dep, str, Symbol.TYPE, default_value=None)
-                if dep_type is None or dep_type == Symbol.ALL:
+                dep_type = <str> _yaml.node_get(<_yaml.Node> dep, str, <str> Symbol.TYPE, None, None)
+                if dep_type is None or dep_type == <str> Symbol.ALL:
                     dep_type = None
                 elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
                     provenance = _yaml.node_get_provenance(dep, key=Symbol.TYPE)
@@ -84,9 +94,9 @@ class Dependency():
                                     "{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
                                     .format(provenance, dep_type))
 
-            self.name = _yaml.node_get(dep, str, Symbol.FILENAME)
+            self.name = <str> _yaml.node_get(<_yaml.Node> dep, str, <str> Symbol.FILENAME)
             self.dep_type = dep_type
-            self.junction = _yaml.node_get(dep, str, Symbol.JUNCTION, default_value=None)
+            self.junction = <str> _yaml.node_get(<_yaml.Node> dep, str, <str> Symbol.JUNCTION, None, None)
 
         else:
             raise LoadError(LoadErrorReason.INVALID_DATA,

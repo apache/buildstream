@@ -1119,16 +1119,17 @@ cpdef object node_sanitize(object node, object dict_type=OrderedDict):
 #    LoadError: In the case that the specified node contained
 #               one or more invalid keys
 #
-def node_validate(Node node, list valid_keys):
+cpdef void node_validate(Node node, list valid_keys) except *:
 
     # Probably the fastest way to do this: https://stackoverflow.com/a/23062482
     cdef set valid_keys_set = set(valid_keys)
-    invalid = next((key for key in node.value if key not in valid_keys_set), None)
+    cdef str key
 
-    if invalid:
-        provenance = node_get_provenance(node, key=invalid)
-        raise LoadError(LoadErrorReason.INVALID_DATA,
-                        "{}: Unexpected key: {}".format(provenance, invalid))
+    for key in node.value:
+        if key not in valid_keys_set:
+            provenance = node_get_provenance(node, key=key)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Unexpected key: {}".format(provenance, key))
 
 
 # Node copying

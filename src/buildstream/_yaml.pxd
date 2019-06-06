@@ -39,6 +39,7 @@ cdef class ProvenanceInformation:
 
 
 cpdef object node_get(Node node, object expected_type, str key, list indices=*, object default_value=*, bint allow_none=*)
+cpdef void node_validate(Node node, list valid_keys) except *
 cpdef void node_set(Node node, object key, object value, list indices=*) except *
 cpdef list node_keys(object node)
 cpdef ProvenanceInformation node_get_provenance(Node node, str key=*, list indices=*)
