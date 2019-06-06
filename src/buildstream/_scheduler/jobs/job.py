@@ -20,6 +20,7 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 # System imports
+import enum
 import os
 import sys
 import signal
@@ -71,6 +72,15 @@ class Process(multiprocessing.Process):
     def start(self):
         self._popen = self._Popen(self)
         self._sentinel = self._popen.sentinel
+
+
+@enum.unique
+class _MessageType(enum.Enum):
+    LOG_MESSAGE = 1
+    ERROR = 2
+    RESULT = 3
+    CHILD_DATA = 4
+    SUBCLASS_CUSTOM_MESSAGE = 5
 
 
 # Job()
@@ -453,23 +463,23 @@ class Job():
         if not self._listening:
             return
 
-        if envelope.message_type == 'message':
+        if envelope.message_type is _MessageType.LOG_MESSAGE:
             # Propagate received messages from children
             # back through the context.
             self._scheduler.context.message(envelope.message)
-        elif envelope.message_type == 'error':
+        elif envelope.message_type is _MessageType.ERROR:
             # For regression tests only, save the last error domain / reason
             # reported from a child task in the main process, this global state
             # is currently managed in _exceptions.py
             set_last_task_error(envelope.message['domain'],
                                 envelope.message['reason'])
-        elif envelope.message_type == 'result':
+        elif envelope.message_type is _MessageType.RESULT:
             assert self._result is None
             self._result = envelope.message
-        elif envelope.message_type == 'child_data':
+        elif envelope.message_type is _MessageType.CHILD_DATA:
             # If we retry a job, we assign a new value to this
             self.child_data = envelope.message
-        elif envelope.message_type == 'subclass_custom_message':
+        elif envelope.message_type is _MessageType.SUBCLASS_CUSTOM_MESSAGE:
             self.handle_message(envelope.message)
         else:
             assert False, "Unhandled message type '{}': {}".format(
@@ -598,7 +608,7 @@ class ChildJob():
     #                        instances). This is sent to the parent Job.
     #
     def send_message(self, message_data):
-        self._send_message('subclass_custom_message', message_data)
+        self._send_message(_MessageType.SUBCLASS_CUSTOM_MESSAGE, message_data)
 
     #######################################################
     #                  Abstract Methods                   #
@@ -703,7 +713,7 @@ class ChildJob():
                                  elapsed=elapsed, detail=e.detail,
                                  logfile=filename, sandbox=e.sandbox)
 
-                self._send_message('child_data', self.child_process_data())
+                self._send_message(_MessageType.CHILD_DATA, self.child_process_data())
 
                 # Report the exception to the parent (for internal testing purposes)
                 self._child_send_error(e)
@@ -729,7 +739,7 @@ class ChildJob():
 
             else:
                 # No exception occurred in the action
-                self._send_message('child_data', self.child_process_data())
+                self._send_message(_MessageType.CHILD_DATA, self.child_process_data())
                 self._child_send_result(result)
 
                 elapsed = datetime.datetime.now() - starttime
@@ -773,7 +783,7 @@ class ChildJob():
             domain = e.domain
             reason = e.reason
 
-        self._send_message('error', {
+        self._send_message(_MessageType.ERROR, {
             'domain': domain,
             'reason': reason
         })
@@ -792,7 +802,7 @@ class ChildJob():
     #
     def _child_send_result(self, result):
         if result is not None:
-            self._send_message('result', result)
+            self._send_message(_MessageType.RESULT, result)
 
     # _child_shutdown()
     #
@@ -828,4 +838,4 @@ class ChildJob():
         if message.message_type == MessageType.LOG:
             return
 
-        self._send_message('message', message)
+        self._send_message(_MessageType.LOG_MESSAGE, message)
