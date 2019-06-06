@@ -54,7 +54,7 @@ class PullQueue(Queue):
 
     def done(self, _, element, result, status):
 
-        if status == JobStatus.FAIL:
+        if status is JobStatus.FAIL:
             return
 
         element._pull_done()
@@ -62,5 +62,5 @@ class PullQueue(Queue):
         # Build jobs will check the "approximate" size first. Since we
         # do not get an artifact size from pull jobs, we have to
         # actually check the cache size.
-        if status == JobStatus.OK:
+        if status is JobStatus.OK:
             self._scheduler.check_cache_size()

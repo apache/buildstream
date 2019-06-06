@@ -33,7 +33,7 @@ class CleanupJob(Job):
         self._casquota.set_cache_size(message, write_to_disk=False)
 
     def parent_complete(self, status, result):
-        if status == JobStatus.OK:
+        if status is JobStatus.OK:
             self._casquota.set_cache_size(result, write_to_disk=False)
 
         if self._complete_cb:

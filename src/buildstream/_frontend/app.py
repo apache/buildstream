@@ -526,7 +526,7 @@ class App():
 
         # Dont attempt to handle a failure if the user has already opted to
         # terminate
-        if status == JobStatus.FAIL and not self.stream.terminated:
+        if status is JobStatus.FAIL and not self.stream.terminated:
 
             if isinstance(job, ElementJob):
                 element = job.element

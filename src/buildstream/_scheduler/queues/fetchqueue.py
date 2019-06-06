@@ -68,7 +68,7 @@ class FetchQueue(Queue):
 
     def done(self, _, element, result, status):
 
-        if status == JobStatus.FAIL:
+        if status is JobStatus.FAIL:
             return
 
         element._fetch_done()

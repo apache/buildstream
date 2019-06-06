@@ -329,7 +329,7 @@ class Scheduler():
         )
 
         # Schedule a cleanup job if we've hit the threshold
-        if status != JobStatus.OK:
+        if status is not JobStatus.OK:
             return
 
         context = self.context
