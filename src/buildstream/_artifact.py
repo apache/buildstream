@@ -29,7 +29,6 @@ artifact composite interaction away from Element class
 """
 
 import os
-import tempfile
 
 from ._protos.buildstream.v2.artifact_pb2 import Artifact as ArtifactProto
 from . import _yaml
@@ -148,9 +147,9 @@ class Artifact():
             size += filesvdir.get_size()
 
         # Store public data
-        with tempfile.NamedTemporaryFile(dir=self._tmpdir) as tmp:
-            _yaml.dump(_yaml.node_sanitize(publicdata), tmp.name)
-            public_data_digest = self._cas.add_object(path=tmp.name, link_directly=True)
+        with utils._TempTextBuffer() as tmp:
+            _yaml.dump(_yaml.node_sanitize(publicdata), tmp.stream)
+            public_data_digest = self._cas.add_object(buffer=tmp.get_bytes_copy())
             artifact.public_data.CopyFrom(public_data_digest)
             size += public_data_digest.size_bytes
 
