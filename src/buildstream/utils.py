@@ -1016,6 +1016,66 @@ def _tempnamedfile(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefi
         yield temp
 
 
+# _tempnamedfile_name()
+#
+# A context manager for doing work on a temporary file, via the filename only.
+#
+# Note that a Windows restriction prevents us from using both the file
+# descriptor and the file name of tempfile.NamedTemporaryFile, the same file
+# cannot be opened twice at the same time. This wrapper makes it easier to
+# operate in a Windows-friendly way when only filenames are needed.
+#
+# Takes care to delete the file even if interrupted by SIGTERM. Note that there
+# is a race-condition, so this is done on a best-effort basis.
+#
+# Args:
+#    dir (str): A path to a parent directory for the temporary file, this is
+#               not optional for security reasons, please see below.
+#
+# Note that 'dir' should not be a directory that may be shared with potential
+# attackers that have rights to affect the directory, e.g. the system temp
+# directory. This is because an attacker can replace the temporary file with
+# e.g. a symlink to another location, that the BuildStream user has rights to
+# but the attacker does not.
+#
+# See here for more information:
+# https://www.owasp.org/index.php/Insecure_Temporary_File
+#
+# Yields:
+#    (str): The temporary file name
+#
+@contextmanager
+def _tempnamedfile_name(dir):  # pylint: disable=redefined-builtin
+    filename = None
+
+    def rm_tempfile():
+        nonlocal filename
+        if filename is not None:
+            # Note that this code is re-entrant - it's possible for us to
+            # "delete while we're deleting" if we are responding to SIGTERM.
+            #
+            # For simplicity, choose to leak the file in this unlikely case,
+            # rather than introducing a scheme for handling the file sometimes
+            # being missing. Note that we will still leak tempfiles on forced
+            # termination anyway.
+            #
+            # Note that we must not try to delete the file more than once. If
+            # we delete the file then another temporary file can be created
+            # with the same name.
+            #
+            filename2 = filename
+            filename = None
+            os.remove(filename2)
+
+    with _signals.terminator(rm_tempfile):
+        fd, filename = tempfile.mkstemp(dir=dir)
+        os.close(fd)
+        try:
+            yield filename
+        finally:
+            rm_tempfile()
+
+
 # _kill_process_tree()
 #
 # Brutally murder a process and all of its children
