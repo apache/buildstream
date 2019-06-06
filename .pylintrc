@@ -97,9 +97,6 @@ disable=#####################################
         # Messages that we would like to enable at some point #
         #######################################################
 
-        # Overriden methods don't actually override but redefine
-        arguments-differ,
-
         duplicate-code,
 
         # Some invalid names are alright, we should configure pylint
