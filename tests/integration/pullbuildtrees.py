@@ -1,16 +1,16 @@
-from contextlib import contextmanager
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
-import pytest
 import shutil
-import tempfile
+
+import pytest
+
+from buildstream.testing import cli, cli_integration as cli2  # pylint: disable=unused-import
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
 from tests.testutils import create_artifact_share
 from tests.testutils.site import HAVE_SANDBOX
-
-from buildstream import utils
-from buildstream.testing import cli, cli_integration as cli2
-from buildstream._cas import CASCache
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
 
 DATA_DIR = os.path.join(

@@ -1,11 +1,16 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
-import pytest
 import shutil
+
+import pytest
+
+from buildstream.testing import cli, cli_integration  # pylint: disable=unused-import
+from buildstream._exceptions import ErrorDomain
 
 from tests.testutils import create_artifact_share
 from tests.testutils.site import HAVE_SANDBOX
-from buildstream.testing import cli, cli_integration
-from buildstream._exceptions import ErrorDomain
 
 
 pytestmark = pytest.mark.integration

@@ -1,8 +1,11 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import pytest
 
 from buildstream import _yaml
-from buildstream.testing import cli_integration as cli
+from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from tests.testutils.site import HAVE_SANDBOX
 
 
@@ -239,10 +242,7 @@ def test_host_files_missing(cli, datafiles, optional):
     project = str(datafiles)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'horsy.txt')
 
-    if optional == "optional":
-        option = True
-    else:
-        option = False
+    option = (optional == "optional")
 
     # Assert that we did successfully run something in the shell anyway
     result = execute_shell(cli, project, ['echo', 'Hello'], config={

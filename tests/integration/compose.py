@@ -1,9 +1,12 @@
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
 import pytest
 
 from buildstream import _yaml
 
-from buildstream.testing import cli_integration as cli
+from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.testing.integration import walk_dir
 from tests.testutils.site import HAVE_SANDBOX
 
@@ -17,7 +20,10 @@ DATA_DIR = os.path.join(
 )
 
 
-def create_compose_element(name, path, config={}):
+def create_compose_element(name, path, config=None):
+    if config is None:
+        config = {}
+
     element = {
         'kind': 'compose',
         'depends': [{
