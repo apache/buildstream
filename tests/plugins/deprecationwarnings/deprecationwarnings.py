@@ -1,6 +1,11 @@
-import pytest
+# Pylint doesn't play well with fixtures and dependency injection from pytest
+# pylint: disable=redefined-outer-name
+
 import os
-from buildstream.testing import cli
+
+import pytest
+
+from buildstream.testing import cli  # pylint: disable=unused-import
 
 
 DATA_DIR = os.path.join(
