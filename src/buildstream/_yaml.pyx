@@ -70,6 +70,15 @@ cdef class Node:
         return what in self.value
 
 
+cdef class ScalarNode(Node):
+
+    def __init__(self, object value, int file_index, int line, int column):
+        self.value = value
+        self.file_index = file_index
+        self.line = line
+        self.column = column
+
+
 # Metadata container for a yaml toplevel node.
 #
 # This class contains metadata around a yaml node in order to be able
@@ -291,7 +300,7 @@ cdef class Representer:
     cdef RepresenterState _handle_wait_value_ScalarEvent(self, object ev):
         key = self.keys.pop()
         (<dict> (<Node> self.output[-1]).value)[key] = \
-            Node(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column)
+            ScalarNode(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column)
         return RepresenterState.wait_key
 
     cdef RepresenterState _handle_wait_value_MappingStartEvent(self, object ev):
@@ -336,7 +345,7 @@ cdef class Representer:
 
     cdef RepresenterState _handle_wait_list_item_ScalarEvent(self, object ev):
         (<Node> self.output[-1]).value.append(
-            Node(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column))
+           ScalarNode(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column))
         return RepresenterState.wait_list_item
 
     cdef RepresenterState _handle_wait_list_item_MappingStartEvent(self, object ev):
@@ -351,6 +360,12 @@ cdef class Representer:
 
     cdef RepresenterState _handle_stream_StreamEndEvent(self, object ev):
         return RepresenterState.init
+
+
+cdef Node _create_node(object value, int file_index, int line, int column):
+    if type(value) in [bool, str, type(None), int]:
+        return ScalarNode(value, file_index, line, column)
+    return Node(value, file_index, line, column)
 
 
 # Loads a dictionary from some YAML
@@ -533,15 +548,16 @@ cpdef object node_get(Node node, object expected_type, str key, list indices=Non
                 raise LoadError(LoadErrorReason.INVALID_DATA,
                                 "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
 
-            value = Node(default_value, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+            value = _create_node(default_value, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
     else:
         # Implied type check of the element itself
         # No need to synthesise useful node content as we destructure it immediately
         value = Node(node_get(node, list, key), _SYNTHETIC_FILE_INDEX, 0, 0)
         for index in indices:
             value = value.value[index]
+            # FIXME: this should always be nodes, we should be able to remove that
             if type(value) is not Node:
-                value = Node(value, _SYNTHETIC_FILE_INDEX, 0, 0)
+                value = _create_node(value, _SYNTHETIC_FILE_INDEX, 0, 0)
 
     # Optionally allow None as a valid value for any type
     if value.value is None and (allow_none or default_value is None):
@@ -556,15 +572,15 @@ cpdef object node_get(Node node, object expected_type, str key, list indices=Non
                 # Dont coerce booleans to string, this makes "False" strings evaluate to True
                 # We don't structure into full nodes since there's no need.
                 if value.value in ('True', 'true'):
-                    value = Node(True, _SYNTHETIC_FILE_INDEX, 0, 0)
+                    value = ScalarNode(True, _SYNTHETIC_FILE_INDEX, 0, 0)
                 elif value.value in ('False', 'false'):
-                    value = Node(False, _SYNTHETIC_FILE_INDEX, 0, 0)
+                    value = ScalarNode(False, _SYNTHETIC_FILE_INDEX, 0, 0)
                 else:
                     raise ValueError()
             elif not (expected_type == list or
                       expected_type == dict or
                       isinstance(value.value, (list, dict))):
-                value = Node(expected_type(value.value), _SYNTHETIC_FILE_INDEX, 0, 0)
+                value = _create_node(expected_type(value.value), _SYNTHETIC_FILE_INDEX, 0, 0)
             else:
                 raise ValueError()
         except (ValueError, TypeError):
@@ -640,10 +656,11 @@ cpdef void node_set(Node node, object key, object value, list indices=None) exce
             old_value = <Node> node.value[key]
         except KeyError:
             old_value = None
+
         if old_value is None:
-            node.value[key] = Node(value, node.file_index, node.line, next_synthetic_counter())
+            node.value[key] = _create_node(value, node.file_index, node.line, next_synthetic_counter())
         else:
-            node.value[key] = Node(value, old_value.file_index, old_value.line, old_value.column)
+            node.value[key] = _create_node(value, old_value.file_index, old_value.line, old_value.column)
 
 
 # node_extend_list()
@@ -687,7 +704,7 @@ def node_extend_list(Node node, str key, Py_ssize_t length, object default):
 
         line_num += 1
 
-        the_list.append(Node(value, file_index, line_num, next_synthetic_counter()))
+        the_list.append(_create_node(value, file_index, line_num, next_synthetic_counter()))
 
 
 # node_items()
@@ -827,7 +844,7 @@ cpdef Node new_node_from_dict(dict indict):
         elif vtype is list:
             ret[k] = __new_node_from_list(v)
         else:
-            ret[k] = Node(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+            ret[k] = ScalarNode(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
     return Node(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
 
 
@@ -841,7 +858,7 @@ cdef Node __new_node_from_list(list inlist):
         elif vtype is list:
             ret.append(__new_node_from_list(v))
         else:
-            ret.append(Node(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
+            ret.append(ScalarNode(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
     return Node(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
 
 
@@ -1067,9 +1084,13 @@ cpdef object node_sanitize(object node, object dict_type=OrderedDict):
     node_type = type(node)
 
     # If we have an unwrappable node, unwrap it
+    # FIXME: we should only ever have Nodes here
     if node_type is Node:
         node = node.value
         node_type = type(node)
+
+    if node_type is ScalarNode:
+        return node.value
 
     # Short-circuit None which occurs ca. twice per element
     if node is None:
