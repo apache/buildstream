@@ -624,6 +624,9 @@ cdef list __trim_list_provenance(list value):
 cpdef void node_set(Node node, object key, object value, list indices=None) except *:
     cdef int idx
 
+    if type(value) is list:
+        value = __new_node_from_list(value)
+
     if indices:
         node = <Node> (<dict> node.value)[key]
         key = indices.pop()
@@ -1176,11 +1179,10 @@ cpdef Node node_copy(Node source):
 # Internal function to help node_copy() but for lists.
 cdef Node _list_copy(Node source):
     cdef list copy = []
+    cdef Node item
+
     for item in source.value:
-        if type(item) is Node:
-            item_type = type(item.value)
-        else:
-            item_type = type(item)
+        item_type = type(item.value)
 
         if item_type is dict:
             copy.append(node_copy(item))
