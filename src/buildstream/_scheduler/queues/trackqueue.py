@@ -50,7 +50,7 @@ class TrackQueue(Queue):
 
     def done(self, _, element, result, status):
 
-        if status == JobStatus.FAIL:
+        if status is JobStatus.FAIL:
             return
 
         # Set the new refs in the main process one by one as they complete,

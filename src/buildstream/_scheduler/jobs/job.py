@@ -20,6 +20,7 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 # System imports
+import enum
 import os
 import sys
 import signal
@@ -33,12 +34,15 @@ from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
 from ... import _signals, utils
 
+
 # Return code values shutdown of job handling child processes
 #
-RC_OK = 0
-RC_FAIL = 1
-RC_PERM_FAIL = 2
-RC_SKIPPED = 3
+@enum.unique
+class _ReturnCode(enum.IntEnum):
+    OK = 0
+    FAIL = 1
+    PERM_FAIL = 2
+    SKIPPED = 3
 
 
 # JobStatus:
@@ -46,7 +50,8 @@ RC_SKIPPED = 3
 # The job completion status, passed back through the
 # complete callbacks.
 #
-class JobStatus():
+@enum.unique
+class JobStatus(enum.Enum):
     # Job succeeded
     OK = 0
 
@@ -71,6 +76,15 @@ class Process(multiprocessing.Process):
     def start(self):
         self._popen = self._Popen(self)
         self._sentinel = self._popen.sentinel
+
+
+@enum.unique
+class _MessageType(enum.Enum):
+    LOG_MESSAGE = 1
+    ERROR = 2
+    RESULT = 3
+    CHILD_DATA = 4
+    SUBCLASS_CUSTOM_MESSAGE = 5
 
 
 # Job()
@@ -415,7 +429,7 @@ class Job():
         self._parent_shutdown()
 
         # We don't want to retry if we got OK or a permanent fail.
-        retry_flag = returncode == RC_FAIL
+        retry_flag = returncode == _ReturnCode.FAIL
 
         if retry_flag and (self._tries <= self._max_retries) and not self._scheduler.terminated:
             self.start()
@@ -423,11 +437,11 @@ class Job():
 
         # Resolve the outward facing overall job completion status
         #
-        if returncode == RC_OK:
+        if returncode == _ReturnCode.OK:
             status = JobStatus.OK
-        elif returncode == RC_SKIPPED:
+        elif returncode == _ReturnCode.SKIPPED:
             status = JobStatus.SKIPPED
-        elif returncode in (RC_FAIL, RC_PERM_FAIL):
+        elif returncode in (_ReturnCode.FAIL, _ReturnCode.PERM_FAIL):
             status = JobStatus.FAIL
         else:
             status = JobStatus.FAIL
@@ -453,23 +467,23 @@ class Job():
         if not self._listening:
             return
 
-        if envelope.message_type == 'message':
+        if envelope.message_type is _MessageType.LOG_MESSAGE:
             # Propagate received messages from children
             # back through the context.
             self._scheduler.context.message(envelope.message)
-        elif envelope.message_type == 'error':
+        elif envelope.message_type is _MessageType.ERROR:
             # For regression tests only, save the last error domain / reason
             # reported from a child task in the main process, this global state
             # is currently managed in _exceptions.py
             set_last_task_error(envelope.message['domain'],
                                 envelope.message['reason'])
-        elif envelope.message_type == 'result':
+        elif envelope.message_type is _MessageType.RESULT:
             assert self._result is None
             self._result = envelope.message
-        elif envelope.message_type == 'child_data':
+        elif envelope.message_type is _MessageType.CHILD_DATA:
             # If we retry a job, we assign a new value to this
             self.child_data = envelope.message
-        elif envelope.message_type == 'subclass_custom_message':
+        elif envelope.message_type is _MessageType.SUBCLASS_CUSTOM_MESSAGE:
             self.handle_message(envelope.message)
         else:
             assert False, "Unhandled message type '{}': {}".format(
@@ -598,7 +612,7 @@ class ChildJob():
     #                        instances). This is sent to the parent Job.
     #
     def send_message(self, message_data):
-        self._send_message('subclass_custom_message', message_data)
+        self._send_message(_MessageType.SUBCLASS_CUSTOM_MESSAGE, message_data)
 
     #######################################################
     #                  Abstract Methods                   #
@@ -689,7 +703,7 @@ class ChildJob():
                              elapsed=elapsed, logfile=filename)
 
                 # Alert parent of skip by return code
-                self._child_shutdown(RC_SKIPPED)
+                self._child_shutdown(_ReturnCode.SKIPPED)
             except BstError as e:
                 elapsed = datetime.datetime.now() - starttime
                 retry_flag = e.temporary
@@ -703,14 +717,14 @@ class ChildJob():
                                  elapsed=elapsed, detail=e.detail,
                                  logfile=filename, sandbox=e.sandbox)
 
-                self._send_message('child_data', self.child_process_data())
+                self._send_message(_MessageType.CHILD_DATA, self.child_process_data())
 
                 # Report the exception to the parent (for internal testing purposes)
                 self._child_send_error(e)
 
                 # Set return code based on whether or not the error was temporary.
                 #
-                self._child_shutdown(RC_FAIL if retry_flag else RC_PERM_FAIL)
+                self._child_shutdown(_ReturnCode.FAIL if retry_flag else _ReturnCode.PERM_FAIL)
 
             except Exception:                        # pylint: disable=broad-except
 
@@ -725,11 +739,11 @@ class ChildJob():
                              elapsed=elapsed, detail=detail,
                              logfile=filename)
                 # Unhandled exceptions should permenantly fail
-                self._child_shutdown(RC_PERM_FAIL)
+                self._child_shutdown(_ReturnCode.PERM_FAIL)
 
             else:
                 # No exception occurred in the action
-                self._send_message('child_data', self.child_process_data())
+                self._send_message(_MessageType.CHILD_DATA, self.child_process_data())
                 self._child_send_result(result)
 
                 elapsed = datetime.datetime.now() - starttime
@@ -739,7 +753,7 @@ class ChildJob():
                 # Shutdown needs to stay outside of the above context manager,
                 # make sure we dont try to handle SIGTERM while the process
                 # is already busy in sys.exit()
-                self._child_shutdown(RC_OK)
+                self._child_shutdown(_ReturnCode.OK)
 
     #######################################################
     #                  Local Private Methods              #
@@ -773,7 +787,7 @@ class ChildJob():
             domain = e.domain
             reason = e.reason
 
-        self._send_message('error', {
+        self._send_message(_MessageType.ERROR, {
             'domain': domain,
             'reason': reason
         })
@@ -792,18 +806,19 @@ class ChildJob():
     #
     def _child_send_result(self, result):
         if result is not None:
-            self._send_message('result', result)
+            self._send_message(_MessageType.RESULT, result)
 
     # _child_shutdown()
     #
     # Shuts down the child process by cleaning up and exiting the process
     #
     # Args:
-    #    exit_code (int): The exit code to exit with
+    #    exit_code (_ReturnCode): The exit code to exit with
     #
     def _child_shutdown(self, exit_code):
         self._queue.close()
-        sys.exit(exit_code)
+        assert isinstance(exit_code, _ReturnCode)
+        sys.exit(int(exit_code))
 
     # _child_message_handler()
     #
@@ -828,4 +843,4 @@ class ChildJob():
         if message.message_type == MessageType.LOG:
             return
 
-        self._send_message('message', message)
+        self._send_message(_MessageType.LOG_MESSAGE, message)
