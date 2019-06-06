@@ -596,9 +596,9 @@ cpdef object node_get(Node node, object expected_type, str key, list indices=Non
 
 cdef list __trim_list_provenance(list value):
     cdef list ret = []
+    cdef Node entry
+
     for entry in value:
-        if type(entry) is not Node:
-            entry = Node(entry, _SYNTHETIC_FILE_INDEX, 0, 0)
         if type(entry.value) is list:
             ret.append(__trim_list_provenance(entry.value))
         elif type(entry.value) is dict:
