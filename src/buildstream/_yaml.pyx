@@ -596,9 +596,9 @@ cpdef object node_get(Node node, object expected_type, str key, list indices=Non
 
 cdef list __trim_list_provenance(list value):
     cdef list ret = []
+    cdef Node entry
+
     for entry in value:
-        if type(entry) is not Node:
-            entry = Node(entry, _SYNTHETIC_FILE_INDEX, 0, 0)
         if type(entry.value) is list:
             ret.append(__trim_list_provenance(entry.value))
         elif type(entry.value) is dict:
@@ -623,6 +623,9 @@ cdef list __trim_list_provenance(list value):
 #
 cpdef void node_set(Node node, object key, object value, list indices=None) except *:
     cdef int idx
+
+    if type(value) is list:
+        value = __new_node_from_list(value)
 
     if indices:
         node = <Node> (<dict> node.value)[key]
@@ -693,21 +696,17 @@ def node_extend_list(Node node, str key, Py_ssize_t length, object default):
 # tuples in a dictionary loaded from project YAML.
 #
 # Args:
-#    node (dict): The dictionary node
+#    node (Node): The dictionary node
 #
 # Yields:
 #    (str): The key name
 #    (anything): The value for the key
 #
-def node_items(node):
-    if type(node) is not Node:
-        node = Node(node, _SYNTHETIC_FILE_INDEX, 0, 0)
-
+def node_items(Node node):
     cdef str key
+    cdef Node value
 
     for key, value in node.value.items():
-        if type(value) is not Node:
-            value = Node(value, _SYNTHETIC_FILE_INDEX, 0, 0)
         if type(value.value) is dict:
             yield (key, value)
         elif type(value.value) is list:
@@ -722,15 +721,13 @@ def node_items(node):
 # in a dictionary loaded from project YAML.
 #
 # Args:
-#    node (dict): The dictionary node
+#    node (Node): The dictionary node
 #
 # Yields:
 #    (str): The key name
 #
-cpdef list node_keys(object node):
-    if type(node) is Node:
-        return list((<Node> node).value.keys())
-    return list(node.keys())
+cpdef list node_keys(Node node):
+    return list(node.value.keys())
 
 
 # node_del()
@@ -1182,11 +1179,10 @@ cpdef Node node_copy(Node source):
 # Internal function to help node_copy() but for lists.
 cdef Node _list_copy(Node source):
     cdef list copy = []
+    cdef Node item
+
     for item in source.value:
-        if type(item) is Node:
-            item_type = type(item.value)
-        else:
-            item_type = type(item)
+        item_type = type(item.value)
 
         if item_type is dict:
             copy.append(node_copy(item))

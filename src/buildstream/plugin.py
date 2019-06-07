@@ -358,7 +358,7 @@ class Plugin():
         """Iterate over a dictionary loaded from YAML
 
         Args:
-            node (dict): The YAML loaded dictionary object
+            node (Node): The YAML loaded dictionary object
 
         Returns:
            list: List of key/value tuples to iterate over
@@ -378,7 +378,7 @@ class Plugin():
         for reporting an error or warning.
 
         Args:
-            node (dict): The YAML loaded dictionary object
+            node (Node): The YAML loaded dictionary object
             member_name (str): The name of the member to check, or None for the node itself
 
         Returns:
@@ -392,7 +392,7 @@ class Plugin():
         missing or incorrectly typed.
 
         Args:
-           node (dict): A dictionary loaded from YAML
+           node (Node): A dictionary loaded from YAML
            expected_type (type): The expected type of the node member
            member_name (str): The name of the member to fetch
            default (expected_type): A value to return when *member_name* is not specified in *node*
