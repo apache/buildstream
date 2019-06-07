@@ -28,6 +28,10 @@ cdef class Node:
     cdef public int column
 
 
+cdef class MappingNode(Node):
+    pass
+
+
 cdef class ProvenanceInformation:
 
     cdef public Node node
