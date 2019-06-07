@@ -77,7 +77,7 @@ cdef class Dependency:
             self.dep_type = default_dep_type
             self.junction = None
 
-        elif type(dep) is _yaml.Node and type(dep.value) is dict:
+        elif type(dep) is _yaml.MappingNode:
             if default_dep_type:
                 _yaml.node_validate(<_yaml.Node> dep, ['filename', 'junction'])
                 dep_type = default_dep_type
