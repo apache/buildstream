@@ -39,6 +39,7 @@ try:
         "BZR_EMAIL": "Testy McTesterson <testy.mctesterson@example.com>"
     }
 except ProgramNotFoundError:
+    BZR = None
     HAVE_BZR = False
     BZR_ENV = {}
 
