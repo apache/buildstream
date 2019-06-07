@@ -79,6 +79,15 @@ cdef class ScalarNode(Node):
         self.column = column
 
 
+cdef class MappingNode(Node):
+
+    def __init__(self, dict value, int file_index, int line, int column):
+        self.value = value
+        self.file_index = file_index
+        self.line = line
+        self.column = column
+
+
 # Metadata container for a yaml toplevel node.
 #
 # This class contains metadata around a yaml node in order to be able
@@ -289,7 +298,7 @@ cdef class Representer:
         return RepresenterState.doc
 
     cdef RepresenterState _handle_doc_MappingStartEvent(self, object ev):
-        newmap = Node({}, self._file_index, ev.start_mark.line, ev.start_mark.column)
+        newmap = MappingNode({}, self._file_index, ev.start_mark.line, ev.start_mark.column)
         self.output.append(newmap)
         return RepresenterState.wait_key
 
@@ -306,7 +315,7 @@ cdef class Representer:
     cdef RepresenterState _handle_wait_value_MappingStartEvent(self, object ev):
         cdef RepresenterState new_state = self._handle_doc_MappingStartEvent(ev)
         key = self.keys.pop()
-        (<dict> (<Node> self.output[-2]).value)[key] = self.output[-1]
+        (<dict> (<MappingNode> self.output[-2]).value)[key] = self.output[-1]
         return new_state
 
     cdef RepresenterState _handle_wait_key_MappingEndEvent(self, object ev):
@@ -365,6 +374,8 @@ cdef class Representer:
 cdef Node _create_node(object value, int file_index, int line, int column):
     if type(value) in [bool, str, type(None), int]:
         return ScalarNode(value, file_index, line, column)
+    elif type(value) is dict:
+        return MappingNode(value, file_index, line, column)
     return Node(value, file_index, line, column)
 
 
@@ -441,10 +452,10 @@ cpdef Node load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_na
         raise LoadError(LoadErrorReason.INVALID_YAML,
                         "Severely malformed YAML:\n\n{}\n\n".format(e)) from e
 
-    if type(contents) != Node:
+    if type(contents) != MappingNode:
         # Special case allowance for None, when the loaded file has only comments in it.
         if contents is None:
-            contents = Node({}, file_index, 0, 0)
+            contents = MappingNode({}, file_index, 0, 0)
         else:
             raise LoadError(LoadErrorReason.INVALID_YAML,
                             "YAML file has content of type '{}' instead of expected type 'dict': {}"
@@ -556,7 +567,7 @@ cpdef object node_get(Node node, object expected_type, str key, list indices=Non
         for index in indices:
             value = value.value[index]
             # FIXME: this should always be nodes, we should be able to remove that
-            if type(value) is not Node:
+            if type(value) not in [Node, MappingNode]:
                 value = _create_node(value, _SYNTHETIC_FILE_INDEX, 0, 0)
 
     # Optionally allow None as a valid value for any type
@@ -648,7 +659,7 @@ cpdef void node_set(Node node, object key, object value, list indices=None) exce
         key = indices.pop()
         for idx in indices:
             node = <Node> (<list> node.value)[idx]
-    if type(value) is Node:
+    if type(value) in [Node, MappingNode]:
         node.value[key] = value
     else:
         try:
@@ -780,9 +791,9 @@ cpdef void node_del(Node node, str key, bint safe=False) except *:
 def is_node(maybenode):
     # It's a programming error to give this a Node which isn't a mapping
     # so assert that.
-    assert (type(maybenode) is not Node) or (type(maybenode.value) is dict)
+    assert (type(maybenode) not in [Node, ScalarNode])
     # Now return the type check
-    return type(maybenode) is Node
+    return type(maybenode) is MappingNode
 
 
 # new_synthetic_file()
@@ -801,7 +812,7 @@ def is_node(maybenode):
 #
 def new_synthetic_file(str filename, object project=None):
     cdef Py_ssize_t file_index = len(_FILE_LIST)
-    cdef Node node = Node({}, file_index, 0, 0)
+    cdef Node node = MappingNode({}, file_index, 0, 0)
 
     _FILE_LIST.append(FileInfo(filename,
                        filename,
@@ -821,9 +832,9 @@ def new_synthetic_file(str filename, object project=None):
 #
 def new_empty_node(Node ref_node=None):
     if ref_node is not None:
-        return Node({}, ref_node.file_index, ref_node.line, next_synthetic_counter())
+        return MappingNode({}, ref_node.file_index, ref_node.line, next_synthetic_counter())
     else:
-        return Node({}, _SYNTHETIC_FILE_INDEX, 0, 0)
+        return MappingNode({}, _SYNTHETIC_FILE_INDEX, 0, 0)
 
 
 # new_node_from_dict()
@@ -845,7 +856,7 @@ cpdef Node new_node_from_dict(dict indict):
             ret[k] = __new_node_from_list(v)
         else:
             ret[k] = ScalarNode(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
-    return Node(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+    return MappingNode(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
 
 
 # Internal function to help new_node_from_dict() to handle lists
@@ -1017,7 +1028,7 @@ cpdef void composite_dict(Node target, Node source, list path=None) except *:
             if k not in target.value:
                 # Target lacks a dict at that point, make a fresh one with
                 # the same provenance as the incoming dict
-                target.value[k] = Node({}, v.file_index, v.line, v.column)
+                target.value[k] = MappingNode({}, v.file_index, v.line, v.column)
             if type(target.value) is not dict:
                 raise CompositeError(path,
                                      "{}: Cannot compose dictionary onto {}".format(
@@ -1037,7 +1048,7 @@ cpdef void composite_dict(Node target, Node source, list path=None) except *:
 
 # Like composite_dict(), but raises an all purpose LoadError for convenience
 #
-cpdef void composite(Node target, Node source) except *:
+cpdef void composite(MappingNode target, MappingNode source) except *:
     assert type(source.value) is dict
     assert type(target.value) is dict
 
@@ -1057,7 +1068,7 @@ cpdef void composite(Node target, Node source) except *:
 
 # Like composite(target, source), but where target overrides source instead.
 #
-def composite_and_move(Node target, Node source):
+def composite_and_move(MappingNode target, MappingNode source):
     composite(source, target)
 
     cdef str key
@@ -1085,7 +1096,7 @@ cpdef object node_sanitize(object node, object dict_type=OrderedDict):
 
     # If we have an unwrappable node, unwrap it
     # FIXME: we should only ever have Nodes here
-    if node_type is Node:
+    if node_type in [Node, MappingNode]:
         node = node.value
         node_type = type(node)
 
@@ -1178,7 +1189,7 @@ __NODE_ASSERT_COMPOSITION_DIRECTIVES = ('(>)', '(<)', '(=)')
 # Returns:
 #    (Node): A deep copy of source with provenance preserved.
 #
-cpdef Node node_copy(Node source):
+cpdef MappingNode node_copy(MappingNode source):
     cdef dict copy = {}
     cdef str key
     cdef Node value
@@ -1194,7 +1205,7 @@ cpdef Node node_copy(Node source):
         else:
             raise ValueError("Unable to be quick about node_copy of {}".format(value_type))
 
-    return Node(copy, source.file_index, source.line, source.column)
+    return MappingNode(copy, source.file_index, source.line, source.column)
 
 
 # Internal function to help node_copy() but for lists.
@@ -1228,7 +1239,7 @@ cdef Node _list_copy(Node source):
 # Raises:
 #    (LoadError): If any assertions fail
 #
-cpdef void node_final_assertions(Node node) except *:
+cpdef void node_final_assertions(MappingNode node) except *:
     cdef str key
     cdef Node value
 
@@ -1324,7 +1335,7 @@ def assert_symbol_name(ProvenanceInformation provenance, str symbol_name, str pu
 #
 # Returns:
 #    (list): A path from `node` to `target` or None if `target` is not in the subtree
-cpdef list node_find_target(Node node, Node target, str key=None):
+cpdef list node_find_target(MappingNode node, Node target, str key=None):
     if key is not None:
         target = target.value[key]
 
@@ -1338,7 +1349,7 @@ cpdef list node_find_target(Node node, Node target, str key=None):
 
 
 # Helper for node_find_target() which walks a value
-cdef bint _walk_find_target(Node node, list path, Node target):
+cdef bint _walk_find_target(Node node, list path, Node target) except *:
     if node.file_index == target.file_index and node.line == target.line and node.column == target.column:
         return True
     elif type(node.value) is dict:
@@ -1362,7 +1373,7 @@ cdef bint _walk_list_node(Node node, list path, Node target):
 
 
 # Helper for node_find_target() which walks a mapping
-cdef bint _walk_dict_node(Node node, list path, Node target):
+cdef bint _walk_dict_node(MappingNode node, list path, Node target):
     cdef str k
     cdef Node v
 
