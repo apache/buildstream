@@ -207,7 +207,8 @@ class Element(Plugin):
         self.__runtime_dependencies = []        # Direct runtime dependency Elements
         self.__build_dependencies = []          # Direct build dependency Elements
         self.__reverse_dependencies = set()     # Direct reverse dependency Elements
-        self.__ready_for_runtime = False        # Wether the element has all its dependencies ready and has a cache key
+        self.__ready_for_runtime = False        # Whether the element has all dependencies ready and has a cache key
+        self.__ready_for_runtime_and_cached = False  # Whether the element has all deps ready for runtime and cached
         self.__sources = []                     # List of Sources
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
@@ -237,6 +238,13 @@ class Element(Plugin):
         self.__batch_prepare_assemble = False         # Whether batching across prepare()/assemble() is configured
         self.__batch_prepare_assemble_flags = 0       # Sandbox flags for batching across prepare()/assemble()
         self.__batch_prepare_assemble_collect = None  # Collect dir for batching across prepare()/assemble()
+
+        # Callbacks
+        self.__required_callback = None               # Callback to Queues
+        self.__can_query_cache_callback = None        # Callback to PullQueue/FetchQueue
+        self.__buildable_callback = None              # Callback to BuildQueue
+
+        self._depth = None                            # Depth of Element in its current dependency graph
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults(project, plugin_conf, meta.kind, meta.is_junction)
@@ -1120,19 +1128,10 @@ class Element(Plugin):
                 not self._source_cached():
             return False
 
-        for dependency in self.dependencies(Scope.BUILD):
-            # In non-strict mode an element's strong cache key may not be available yet
-            # even though an artifact is available in the local cache. This can happen
-            # if the pull job is still pending as the remote cache may have an artifact
-            # that matches the strict cache key, which is preferred over a locally
-            # cached artifact with a weak cache key match.
-            if not dependency._cached_success() or not dependency._get_cache_key(strength=_KeyStrength.STRONG):
-                return False
-
         if not self.__assemble_scheduled:
             return False
 
-        return True
+        return all(dep.__ready_for_runtime_and_cached for dep in self.dependencies(Scope.BUILD, recurse=False))
 
     # _get_cache_key():
     #
@@ -1190,9 +1189,14 @@ class Element(Plugin):
 
         if self._get_workspace() and self.__assemble_scheduled:
             # If we have an active workspace and are going to build, then
-            # discard current cache key values as their correct values can only
-            # be calculated once the build is complete
+            # discard current cache key values and invoke the buildable callback.
+            # The correct keys can only be calculated once the build is complete
             self.__reset_cache_data()
+
+            if self.__buildable_callback is not None and self._buildable():
+                self.__buildable_callback(self)
+                self.__buildable_callback = None
+
             return
 
         self.__update_cache_keys()
@@ -1210,6 +1214,13 @@ class Element(Plugin):
                 not self._cached_success() and
                 not self._pull_pending()):
             self._schedule_assemble()
+
+            # If a build has been scheduled, we know that the element
+            # is not cached and can allow cache query even if the strict cache
+            # key is not available yet.
+            if self.__can_query_cache_callback is not None:
+                self.__can_query_cache_callback(self)
+
             return
 
         if not context.get_strict():
@@ -1218,6 +1229,17 @@ class Element(Plugin):
         if not self.__ready_for_runtime and self.__cache_key is not None:
             self.__ready_for_runtime = all(
                 dep.__ready_for_runtime for dep in self.__runtime_dependencies)
+
+        if self.__ready_for_runtime:
+            # ready_for_runtime_and_cached is stronger than ready_for_runtime, so don't
+            # check the former if the latter is False
+            if not self.__ready_for_runtime_and_cached and self._cached_success():
+                self.__ready_for_runtime_and_cached = all(
+                    dep.__ready_for_runtime_and_cached for dep in self.__runtime_dependencies)
+
+        if self.__buildable_callback is not None and self._buildable():
+            self.__buildable_callback(self)
+            self.__buildable_callback = None
 
     # _get_display_key():
     #
@@ -1500,6 +1522,11 @@ class Element(Plugin):
             dep._set_required()
 
         self._update_state()
+
+        # Callback to the Queue
+        if self.__required_callback is not None:
+            self.__required_callback(self)
+            self.__required_callback = None
 
     # _is_required():
     #
@@ -2235,6 +2262,66 @@ class Element(Plugin):
         else:
             return True
 
+    # _set_required_callback()
+    #
+    #
+    # Notify the pull/fetch/build queue that the element is potentially
+    # ready to be processed.
+    #
+    # _Set the _required_callback - the _required_callback is invoked when an
+    # element is marked as required. This informs us that the element needs to
+    # either be pulled or fetched + built.
+    #
+    # Args:
+    #    callback (callable) - The callback function
+    #
+    def _set_required_callback(self, callback):
+        self.__required_callback = callback
+
+    # _set_can_query_cache_callback()
+    #
+    # Notify the pull/fetch queue that the element is potentially
+    # ready to be processed.
+    #
+    # Set the _can_query_cache_callback - the _can_query_cache_callback is
+    # invoked when an element becomes able to query the cache. That is,
+    # the (non-workspaced) element's strict cache key has been calculated.
+    # However, if the element is workspaced, we also invoke this callback
+    # once its build has been scheduled - this ensures that the workspaced
+    # element does not get blocked in the pull queue.
+    #
+    # Args:
+    #    callback (callable) - The callback function
+    #
+    def _set_can_query_cache_callback(self, callback):
+        self.__can_query_cache_callback = callback
+
+    # _set_buildable_callback()
+    #
+    # Notifiy the build queue that the element is potentially ready
+    # to be processed
+    #
+    # Set the _buildable_callback - the _buildable_callback is invoked when
+    # an element is marked as "buildable". That is, its sources are consistent,
+    # its been scheduled to be built and all of its build dependencies have
+    # had their cache key's calculated and are cached.
+    #
+    # Args:
+    #    callback (callable) - The callback function
+    #
+    def _set_buildable_callback(self, callback):
+        self.__buildable_callback = callback
+
+    # _set_depth()
+    #
+    # Set the depth of the Element.
+    #
+    # The depth represents the position of the Element within the current
+    # session's dependency graph. A depth of zero represents the bottommost element.
+    #
+    def _set_depth(self, depth):
+        self._depth = depth
+
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
@@ -2873,10 +2960,12 @@ class Element(Plugin):
             element = queue.pop()
 
             old_ready_for_runtime = element.__ready_for_runtime
+            old_ready_for_runtime_and_cached = element.__ready_for_runtime_and_cached
             old_strict_cache_key = element.__strict_cache_key
             element._update_state()
 
             if element.__ready_for_runtime != old_ready_for_runtime or \
+               element.__ready_for_runtime_and_cached != old_ready_for_runtime_and_cached or \
                element.__strict_cache_key != old_strict_cache_key:
                 for rdep in element.__reverse_dependencies:
                     queue.push(rdep._unique_id, rdep)
@@ -2943,6 +3032,10 @@ class Element(Plugin):
                 e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
             ]
             self.__strict_cache_key = self._calculate_cache_key(dependencies)
+
+        if self.__strict_cache_key is not None and self.__can_query_cache_callback is not None:
+            self.__can_query_cache_callback(self)
+            self.__can_query_cache_callback = None
 
     # __update_artifact_state()
     #

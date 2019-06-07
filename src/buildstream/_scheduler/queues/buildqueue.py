@@ -70,16 +70,11 @@ class BuildQueue(Queue):
         return element._assemble()
 
     def status(self, element):
-        if not element._is_required():
-            # Artifact is not currently required but it may be requested later.
-            # Keep it in the queue.
-            return QueueStatus.WAIT
-
         if element._cached_success():
             return QueueStatus.SKIP
 
         if not element._buildable():
-            return QueueStatus.WAIT
+            return QueueStatus.PENDING
 
         return QueueStatus.READY
 
@@ -115,3 +110,8 @@ class BuildQueue(Queue):
         #
         if status is JobStatus.OK:
             self._check_cache_size(job, element, result)
+
+    def register_pending_element(self, element):
+        # Set a "buildable" callback for an element not yet ready
+        # to be processed in the build queue.
+        element._set_buildable_callback(self._enqueue_element)

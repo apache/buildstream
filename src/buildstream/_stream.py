@@ -1180,6 +1180,7 @@ class Stream():
 
         if not (track or self._first_non_track_queue):
             self._first_non_track_queue = queue
+            self._first_non_track_queue.set_required_element_check()
 
     # _enqueue_plan()
     #

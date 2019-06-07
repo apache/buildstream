@@ -22,6 +22,7 @@
 import os
 from collections import deque
 from enum import Enum
+import heapq
 import traceback
 
 # Local imports
@@ -29,7 +30,7 @@ from ..jobs import ElementJob, JobStatus
 from ..resources import ResourceType
 
 # BuildStream toplevel imports
-from ..._exceptions import BstError, set_last_task_error
+from ..._exceptions import BstError, ImplError, set_last_task_error
 from ..._message import Message, MessageType
 
 
@@ -37,8 +38,8 @@ from ..._message import Message, MessageType
 #
 #
 class QueueStatus(Enum):
-    # The element is waiting for dependencies.
-    WAIT = 1
+    # The element is not yet ready to be processed in the queue.
+    PENDING = 1
 
     # The element can skip this queue.
     SKIP = 2
@@ -73,9 +74,11 @@ class Queue():
         #
         self._scheduler = scheduler
         self._resources = scheduler.resources  # Shared resource pool
-        self._wait_queue = deque()             # Ready / Waiting elements
+        self._ready_queue = []                 # Ready elements
         self._done_queue = deque()             # Processed / Skipped elements
         self._max_retries = 0
+
+        self._required_element_check = False   # Whether we should check that elements are required before enqueuing
 
         # Assert the subclass has setup class data
         assert self.action_name is not None
@@ -105,7 +108,9 @@ class Queue():
 
     # status()
     #
-    # Abstract method for reporting the status of an element.
+    # Abstract method for reporting the immediate status of an element. The status
+    # determines whether an element can/cannot be pushed into the queue, or even
+    # skip the queue entirely, when called.
     #
     # Args:
     #    element (Element): An element to process
@@ -130,6 +135,23 @@ class Queue():
         pass
 
     #####################################################
+    #      Virtual Methods for Queue implementations    #
+    #####################################################
+
+    # register_pending_element()
+    #
+    # Virtual method for registering a queue specific callback
+    # to an Element which is not immediately ready to advance
+    # to the next queue
+    #
+    # Args:
+    #    element (Element): The element waiting to be pushed into the queue
+    #
+    def register_pending_element(self, element):
+        raise ImplError("Queue type: {} does not implement register_pending_element()"
+                        .format(self.action_name))
+
+    #####################################################
     #          Scheduler / Pipeline facing APIs         #
     #####################################################
 
@@ -144,18 +166,12 @@ class Queue():
         if not elts:
             return
 
-        # Place skipped elements on the done queue right away.
-        #
-        # The remaining ready and waiting elements must remain in the
-        # same queue, and ready status must be determined at the moment
-        # which the scheduler is asking for the next job.
-        #
-        skip = [elt for elt in elts if self.status(elt) == QueueStatus.SKIP]
-        wait = [elt for elt in elts if elt not in skip]
-
-        self.skipped_elements.extend(skip)  # Public record of skipped elements
-        self._done_queue.extend(skip)       # Elements to be processed
-        self._wait_queue.extend(wait)       # Elements eligible to be dequeued
+        # Obtain immediate element status
+        for elt in elts:
+            if self._required_element_check and not elt._is_required():
+                elt._set_required_callback(self._enqueue_element)
+            else:
+                self._enqueue_element(elt)
 
     # dequeue()
     #
@@ -181,35 +197,22 @@ class Queue():
 
     # harvest_jobs()
     #
-    # Process elements in the queue, moving elements which were enqueued
-    # into the dequeue pool, and creating as many jobs for which resources
+    # Spawn as many jobs from the ready queue for which resources
     # can be reserved.
     #
     # Returns:
     #     ([Job]): A list of jobs which can be run now
     #
     def harvest_jobs(self):
-        unready = []
         ready = []
-
-        while self._wait_queue:
-            if not self._resources.reserve(self.resources, peek=True):
+        while self._ready_queue:
+            # Now reserve them
+            reserved = self._resources.reserve(self.resources)
+            if not reserved:
                 break
 
-            element = self._wait_queue.popleft()
-            status = self.status(element)
-
-            if status == QueueStatus.WAIT:
-                unready.append(element)
-            elif status == QueueStatus.SKIP:
-                self._done_queue.append(element)
-                self.skipped_elements.append(element)
-            else:
-                reserved = self._resources.reserve(self.resources)
-                assert reserved
-                ready.append(element)
-
-        self._wait_queue.extendleft(unready)
+            _, element = heapq.heappop(self._ready_queue)
+            ready.append(element)
 
         return [
             ElementJob(self._scheduler, self.action_name,
@@ -220,6 +223,13 @@ class Queue():
                        max_retries=self._max_retries)
             for element in ready
         ]
+
+    # set_required_element_check()
+    #
+    # This ensures that, for the first non-track queue, we must check
+    # whether elements are required before enqueuing them
+    def set_required_element_check(self):
+        self._required_element_check = True
 
     #####################################################
     #                 Private Methods                   #
@@ -326,3 +336,27 @@ class Queue():
         logfile = "{key}-{action}".format(key=key, action=action)
 
         return os.path.join(project.name, element.normal_name, logfile)
+
+    # _enqueue_element()
+    #
+    # Enqueue an Element upon a callback to a specific queue
+    # Here we check whether an element is either immediately ready to be processed
+    # in the current queue or whether it can skip the queue. Element's which are
+    # not yet ready to be processed or cannot skip will have the appropriate
+    # callback registered
+    #
+    # Args:
+    #    element (Element): The Element to enqueue
+    #
+    def _enqueue_element(self, element):
+        status = self.status(element)
+        if status == QueueStatus.SKIP:
+            # Place skipped elements into the done queue immediately
+            self.skipped_elements.append(element)       # Public record of skipped elements
+            self._done_queue.append(element)            # Elements to proceed to the next queue
+        elif status == QueueStatus.READY:
+            # Push elements which are ready to be processed immediately into the queue
+            heapq.heappush(self._ready_queue, (element._depth, element))
+        else:
+            # Register a queue specific callback for pending elements
+            self.register_pending_element(element)
