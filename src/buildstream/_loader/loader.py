@@ -28,8 +28,8 @@ from .._profile import Topics, PROFILER
 from .._includes import Includes
 
 from ._loader import valid_chars_name
-from .types import Symbol
-from .loadelement import LoadElement, _extract_depends_from_node
+from .types import Symbol, extract_depends_from_node
+from .loadelement import LoadElement
 from .metaelement import MetaElement
 from .metasource import MetaSource
 from ..types import CoreWarnings
@@ -272,7 +272,7 @@ class Loader():
             ticker(filename)
 
         top_element = self._load_file_no_deps(filename, rewritable, provenance)
-        dependencies = _extract_depends_from_node(top_element.node)
+        dependencies = extract_depends_from_node(top_element.node)
         # The loader queue is a stack of tuples
         # [0] is the LoadElement instance
         # [1] is a stack of dependencies to load
@@ -306,7 +306,7 @@ class Loader():
                         # either recursively cause it to be loaded, or else we
                         # need to push this onto the loader queue in this loader
                         dep_element = self._load_file_no_deps(dep.name, rewritable, dep.provenance)
-                        dep_deps = _extract_depends_from_node(dep_element.node)
+                        dep_deps = extract_depends_from_node(dep_element.node)
                         loader_queue.append((dep_element, list(reversed(dep_deps)), []))
 
                         if _yaml.node_get(dep_element.node, str, Symbol.KIND) == 'junction':

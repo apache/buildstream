@@ -120,3 +120,56 @@ cdef class Dependency:
         # Attempt to split name if no junction was specified explicitly
         if not self.junction and self.name.count(':') == 1:
             self.junction, self.name = self.name.split(':')
+
+
+# _extract_depends_from_node():
+#
+# Helper for extract_depends_from_node to get dependencies of a particular type
+#
+# Adds to an array of Dependency objects from a given dict node 'node',
+# allows both strings and dicts for expressing the dependency.
+#
+# After extracting depends, the symbol is deleted from the node
+#
+# Args:
+#    node (Node): A YAML loaded dictionary
+#    key (str): the key on the Node corresponding to the dependency type
+#    default_dep_type (str): type to give to the dependency
+#    acc (list): a list in which to add the loaded dependencies
+#
+cdef void _extract_depends_from_node(_yaml.Node node, str key, str default_dep_type, list acc) except *:
+    cdef list depends = <list> _yaml.node_get(node, list, key, None, [])
+    cdef int index
+    cdef _yaml.ProvenanceInformation dep_provenance
+
+    for index in range(len(depends)):
+        # FIXME: the provenance information would be obtainable from the Node directly if we stop
+        #        stripping provenance and have proper nodes for str elements
+        dep_provenance = <_yaml.ProvenanceInformation> _yaml.node_get_provenance(node, key=key, indices=[index])
+        dependency = Dependency(depends[index], dep_provenance, default_dep_type=default_dep_type)
+        acc.append(dependency)
+
+    # Now delete the field, we dont want it anymore
+    _yaml.node_del(node, key, safe=True)
+
+
+# extract_depends_from_node():
+#
+# Creates an array of Dependency objects from a given dict node 'node',
+# allows both strings and dicts for expressing the dependency and
+# throws a comprehensive LoadError in the case that the node is malformed.
+#
+# After extracting depends, the symbol is deleted from the node
+#
+# Args:
+#    node (Node): A YAML loaded dictionary
+#
+# Returns:
+#    (list): a list of Dependency objects
+#
+def extract_depends_from_node(_yaml.Node node):
+    cdef list acc = []
+    _extract_depends_from_node(node, <str> Symbol.BUILD_DEPENDS, <str> Symbol.BUILD, acc)
+    _extract_depends_from_node(node, <str> Symbol.RUNTIME_DEPENDS, <str> Symbol.RUNTIME, acc)
+    _extract_depends_from_node(node, <str> Symbol.DEPENDS, None, acc)
+    return acc

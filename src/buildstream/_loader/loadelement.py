@@ -22,11 +22,7 @@ from itertools import count
 
 from pyroaring import BitMap, FrozenBitMap  # pylint: disable=no-name-in-module
 
-# BuildStream toplevel imports
 from .. import _yaml
-
-# Local package imports
-from .types import Symbol, Dependency
 
 
 # LoadElement():
@@ -137,46 +133,3 @@ class LoadElement():
             self._dep_cache.update(elt._dep_cache)
 
         self._dep_cache = FrozenBitMap(self._dep_cache)
-
-
-# _extract_depends_from_node():
-#
-# Creates an array of Dependency objects from a given dict node 'node',
-# allows both strings and dicts for expressing the dependency and
-# throws a comprehensive LoadError in the case that the node is malformed.
-#
-# After extracting depends, the symbol is deleted from the node
-#
-# Args:
-#    node (dict): A YAML loaded dictionary
-#
-# Returns:
-#    (list): a list of Dependency objects
-#
-def _extract_depends_from_node(node, *, key=None):
-    if key is None:
-        build_depends = _extract_depends_from_node(node, key=Symbol.BUILD_DEPENDS)
-        runtime_depends = _extract_depends_from_node(node, key=Symbol.RUNTIME_DEPENDS)
-        depends = _extract_depends_from_node(node, key=Symbol.DEPENDS)
-        return build_depends + runtime_depends + depends
-    elif key == Symbol.BUILD_DEPENDS:
-        default_dep_type = Symbol.BUILD
-    elif key == Symbol.RUNTIME_DEPENDS:
-        default_dep_type = Symbol.RUNTIME
-    elif key == Symbol.DEPENDS:
-        default_dep_type = None
-    else:
-        assert False, "Unexpected value of key '{}'".format(key)
-
-    depends = _yaml.node_get(node, list, key, default_value=[])
-    output_deps = []
-
-    for index, dep in enumerate(depends):
-        dep_provenance = _yaml.node_get_provenance(node, key=key, indices=[index])
-        dependency = Dependency(dep, dep_provenance, default_dep_type=default_dep_type)
-        output_deps.append(dependency)
-
-    # Now delete the field, we dont want it anymore
-    _yaml.node_del(node, key, safe=True)
-
-    return output_deps

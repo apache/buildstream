@@ -38,6 +38,7 @@ cdef class ProvenanceInformation:
     cdef public bint is_synthetic
 
 
+cpdef void node_del(Node node, str key, bint safe=*) except *
 cpdef object node_get(Node node, object expected_type, str key, list indices=*, object default_value=*, bint allow_none=*)
 cpdef void node_validate(Node node, list valid_keys) except *
 cpdef void node_set(Node node, object key, object value, list indices=*) except *
