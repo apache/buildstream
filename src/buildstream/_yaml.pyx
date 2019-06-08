@@ -88,6 +88,14 @@ cdef class MappingNode(Node):
         self.column = column
 
 
+class SequenceNode(Node):
+    def __init__(self, list value, int file_index, int line, int column):
+        self.value = value
+        self.file_index = file_index
+        self.line = line
+        self.column = column
+
+
 # Metadata container for a yaml toplevel node.
 #
 # This class contains metadata around a yaml node in order to be able
@@ -331,13 +339,13 @@ cdef class Representer:
             return RepresenterState.doc
 
     cdef RepresenterState _handle_wait_value_SequenceStartEvent(self, object ev):
-        self.output.append(Node([], self._file_index, ev.start_mark.line, ev.start_mark.column))
+        self.output.append(SequenceNode([], self._file_index, ev.start_mark.line, ev.start_mark.column))
         (<dict> (<Node> self.output[-2]).value)[self.keys[-1]] = self.output[-1]
         return RepresenterState.wait_list_item
 
     cdef RepresenterState _handle_wait_list_item_SequenceStartEvent(self, object ev):
         self.keys.append(len((<Node> self.output[-1]).value))
-        self.output.append(Node([], self._file_index, ev.start_mark.line, ev.start_mark.column))
+        self.output.append(SequenceNode([], self._file_index, ev.start_mark.line, ev.start_mark.column))
         (<list> (<Node> self.output[-2]).value).append(self.output[-1])
         return RepresenterState.wait_list_item
 
@@ -376,6 +384,8 @@ cdef Node _create_node(object value, int file_index, int line, int column):
         return ScalarNode(value, file_index, line, column)
     elif type(value) is dict:
         return MappingNode(value, file_index, line, column)
+    elif type(value) is list:
+        return SequenceNode(value, file_index, line, column)
     return Node(value, file_index, line, column)
 
 
@@ -563,11 +573,11 @@ cpdef object node_get(Node node, object expected_type, str key, list indices=Non
     else:
         # Implied type check of the element itself
         # No need to synthesise useful node content as we destructure it immediately
-        value = Node(node_get(node, list, key), _SYNTHETIC_FILE_INDEX, 0, 0)
+        value = SequenceNode(node_get(node, list, key), _SYNTHETIC_FILE_INDEX, 0, 0)
         for index in indices:
             value = value.value[index]
             # FIXME: this should always be nodes, we should be able to remove that
-            if type(value) not in [Node, MappingNode]:
+            if type(value) not in [Node, MappingNode, SequenceNode]:
                 value = _create_node(value, _SYNTHETIC_FILE_INDEX, 0, 0)
 
     # Optionally allow None as a valid value for any type
@@ -659,7 +669,7 @@ cpdef void node_set(Node node, object key, object value, list indices=None) exce
         key = indices.pop()
         for idx in indices:
             node = <Node> (<list> node.value)[idx]
-    if type(value) in [Node, MappingNode]:
+    if type(value) in [Node, MappingNode, ScalarNode, SequenceNode]:
         node.value[key] = value
     else:
         try:
@@ -694,7 +704,7 @@ def node_extend_list(Node node, str key, Py_ssize_t length, object default):
 
     cdef Node list_node = <Node> node.value.get(key)
     if list_node is None:
-        list_node = node.value[key] = Node([], node.file_index, node.line, next_synthetic_counter())
+        list_node = node.value[key] = SequenceNode([], node.file_index, node.line, next_synthetic_counter())
 
     cdef list the_list = list_node.value
     def_type = type(default)
@@ -791,7 +801,7 @@ cpdef void node_del(Node node, str key, bint safe=False) except *:
 def is_node(maybenode):
     # It's a programming error to give this a Node which isn't a mapping
     # so assert that.
-    assert (type(maybenode) not in [Node, ScalarNode])
+    assert (type(maybenode) not in [ScalarNode, SequenceNode])
     # Now return the type check
     return type(maybenode) is MappingNode
 
@@ -870,7 +880,7 @@ cdef Node __new_node_from_list(list inlist):
             ret.append(__new_node_from_list(v))
         else:
             ret.append(ScalarNode(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
-    return Node(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+    return SequenceNode(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
 
 
 # _is_composite_list
@@ -1096,7 +1106,7 @@ cpdef object node_sanitize(object node, object dict_type=OrderedDict):
 
     # If we have an unwrappable node, unwrap it
     # FIXME: we should only ever have Nodes here
-    if node_type in [Node, MappingNode]:
+    if node_type in [MappingNode, SequenceNode]:
         node = node.value
         node_type = type(node)
 
@@ -1225,7 +1235,7 @@ cdef Node _list_copy(Node source):
         else:
             raise ValueError("Unable to be quick about list_copy of {}".format(item_type))
 
-    return Node(copy, source.file_index, source.line, source.column)
+    return SequenceNode(copy, source.file_index, source.line, source.column)
 
 
 # node_final_assertions()
