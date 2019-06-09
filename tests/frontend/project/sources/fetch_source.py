@@ -42,7 +42,7 @@ class FetchSource(Source):
         self.output_file = self.node_get_member(node, str, 'output-text')
         self.fetch_succeeds = {}
         if 'fetch-succeeds' in node:
-            fetch_succeeds_node = self.node_get_member(node, dict, 'fetch-succeeds')
+            fetch_succeeds_node = node.get_mapping('fetch-succeeds')
             for key, value in self.node_items(fetch_succeeds_node):
                 self.fetch_succeeds[key] = value in ('True', 'true')
 

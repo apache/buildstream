@@ -112,7 +112,7 @@ class SandboxRemote(Sandbox):
     def specs_from_config_node(config_node, basedir=None):
 
         def require_node(config, keyname):
-            val = _yaml.node_get(config, dict, keyname, default_value=None)
+            val = config.get_mapping(keyname, default=None)
             if val is None:
                 provenance = _yaml.node_get_provenance(remote_config, key=keyname)
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
@@ -121,7 +121,7 @@ class SandboxRemote(Sandbox):
                                       .format(str(provenance), keyname))
             return val
 
-        remote_config = _yaml.node_get(config_node, dict, 'remote-execution', default_value=None)
+        remote_config = config_node.get_mapping('remote-execution', default=None)
         if remote_config is None:
             return None
 
@@ -131,7 +131,7 @@ class SandboxRemote(Sandbox):
 
         exec_config = require_node(remote_config, 'execution-service')
         storage_config = require_node(remote_config, 'storage-service')
-        action_config = _yaml.node_get(remote_config, dict, 'action-cache-service', default_value={})
+        action_config = remote_config.get_mapping('action-cache-service', default={})
 
         tls_keys = ['client-key', 'client-cert', 'server-cert']
 
