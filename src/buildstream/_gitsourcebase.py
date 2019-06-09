@@ -412,9 +412,9 @@ class _GitSourceBase(Source):
         # and submodule_checkout_overrides dictionaries.
         self.submodule_overrides = {}
         self.submodule_checkout_overrides = {}
-        modules = self.node_get_member(node, dict, 'submodules', {})
+        modules = node.get_mapping('submodules', {})
         for path, _ in self.node_items(modules):
-            submodule = self.node_get_member(modules, dict, path)
+            submodule = modules.get_mapping(path)
             url = self.node_get_member(submodule, str, 'url', None)
 
             # Make sure to mark all URLs that are specified in the configuration

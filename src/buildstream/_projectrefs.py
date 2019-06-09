@@ -123,8 +123,8 @@ class ProjectRefs():
     def _lookup(self, toplevel, project, element, source_index, *, ensure=False):
         # Fetch the project
         try:
-            projects = _yaml.node_get(toplevel, dict, 'projects')
-            project_node = _yaml.node_get(projects, dict, project)
+            projects = toplevel.get_mapping('projects')
+            project_node = projects.get_mapping(project)
         except LoadError:
             if not ensure:
                 return None

@@ -606,8 +606,7 @@ class Workspaces():
             }
 
         elif 1 <= version <= BST_WORKSPACE_FORMAT_VERSION:
-            workspaces = _yaml.node_get(workspaces, dict, "workspaces",
-                                        default_value=_yaml.new_empty_node())
+            workspaces = workspaces.get_mapping("workspaces", default={})
             res = {element: self._load_workspace(node)
                    for element, node in _yaml.node_items(workspaces)}
 
@@ -635,7 +634,7 @@ class Workspaces():
             'path': _yaml.node_get(node, str, 'path'),
             'last_successful': _yaml.node_get(node, str, 'last_successful', default_value=None),
             'running_files': _yaml.node_sanitize(
-                _yaml.node_get(node, dict, 'running_files', default_value=None),
+                node.get_mapping('running_files', default=None),
                 dict_type=dict),
         }
         return Workspace.from_dict(self._toplevel_project, dictionary)
