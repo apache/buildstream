@@ -258,8 +258,7 @@ class Source(Plugin):
     All Sources derive from this class, this interface defines how
     the core will be interacting with Sources.
     """
-    __defaults = {}          # The defaults from the project
-    __defaults_set = False   # Flag, in case there are not defaults at all
+    __defaults = None        # The defaults from the project
 
     BST_REQUIRES_PREVIOUS_SOURCES_TRACK = False
     """Whether access to previous sources is required during track
@@ -1273,20 +1272,19 @@ class Source(Plugin):
 
     @classmethod
     def __init_defaults(cls, project, meta):
-        if not cls.__defaults_set:
+        if cls.__defaults is None:
             if meta.first_pass:
                 sources = project.first_pass_config.source_overrides
             else:
                 sources = project.source_overrides
-            cls.__defaults = _yaml.node_get(sources, dict, meta.kind, default_value={})
-            cls.__defaults_set = True
+            cls.__defaults = sources.get_mapping(meta.kind, default={})
 
     # This will resolve the final configuration to be handed
     # off to source.configure()
     #
     @classmethod
     def __extract_config(cls, meta):
-        config = _yaml.node_get(cls.__defaults, dict, 'config', default_value={})
+        config = cls.__defaults.get_mapping('config', default={})
         config = _yaml.node_copy(config)
 
         _yaml.composite(config, meta.config)
