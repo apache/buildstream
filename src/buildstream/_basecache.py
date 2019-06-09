@@ -74,7 +74,7 @@ class BaseCache():
         cache_specs = []
 
         try:
-            artifacts = [_yaml.node_get(config_node, dict, cls.config_node_name)]
+            artifacts = [config_node.get_mapping(cls.config_node_name)]
         except LoadError:
             try:
                 artifacts = _yaml.node_get(config_node, list, cls.config_node_name, default_value=[])
