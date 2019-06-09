@@ -40,6 +40,11 @@ from ._exceptions import LoadError, LoadErrorReason
 # pylint: disable=unidiomatic-typecheck
 
 
+# A sentinel to be used as a default argument for functions that need
+# to distinguish between a kwarg set to None and an unset kwarg.
+_sentinel = object()
+
+
 # Node()
 #
 # Container for YAML loaded data and its provenance
@@ -86,6 +91,33 @@ cdef class MappingNode(Node):
         self.file_index = file_index
         self.line = line
         self.column = column
+
+    cdef Node get(self, str key, object default, object default_constructor):
+        value = self.value.get(key, _sentinel)
+
+        if value is _sentinel:
+            if default is _sentinel:
+                provenance = node_get_provenance(self)
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
+
+            if default is None:
+                value = None
+            else:
+                value = default_constructor(default, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+
+        return value
+
+    cpdef MappingNode get_mapping(self, str key, object default=_sentinel):
+        value = self.get(key, default, MappingNode)
+
+        if type(value) is not MappingNode and value is not None:
+            provenance = node_get_provenance(value)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Value of '{}' is not of the expected type 'Mapping'"
+                            .format(provenance, key))
+
+        return value
 
 
 class SequenceNode(Node):
@@ -529,11 +561,6 @@ cpdef ProvenanceInformation node_get_provenance(Node node, str key=None, list in
         nodeish = <Node> nodeish.value[idx]
 
     return ProvenanceInformation(nodeish)
-
-
-# A sentinel to be used as a default argument for functions that need
-# to distinguish between a kwarg set to None and an unset kwarg.
-_sentinel = object()
 
 
 # node_get()
