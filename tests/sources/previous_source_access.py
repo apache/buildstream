@@ -24,7 +24,7 @@ def test_custom_transform_source(cli, datafiles):
     # Set the project_dir alias in project.conf to the path to the tested project
     project_config_path = os.path.join(project, "project.conf")
     project_config = _yaml.load(project_config_path)
-    aliases = _yaml.node_get(project_config, dict, "aliases")
+    aliases = project_config.get_mapping("aliases")
     _yaml.node_set(aliases, "project_dir", "file://{}".format(project))
     _yaml.dump(project_config, project_config_path)
 

@@ -213,7 +213,7 @@ def test_list_overide_does_not_fail_upon_first_composition(cli, datafiles):
     loaded = _yaml.load_data(result.output)
 
     # Assert that the explicitly overwritten public data is present
-    bst = _yaml.node_get(loaded, dict, 'bst')
+    bst = loaded.get_mapping('bst')
     assert 'foo-commands' in bst
     assert _yaml.node_get(bst, list, 'foo-commands') == ['need', 'this']
 
