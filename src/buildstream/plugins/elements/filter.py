@@ -217,7 +217,7 @@ class FilterElement(Element):
             for dep in self.dependencies(Scope.BUILD, recurse=False):
                 # Check that all the included/excluded domains exist
                 pub_data = dep.get_public_data('bst')
-                split_rules = self.node_get_member(pub_data, dict, 'split-rules', {})
+                split_rules = pub_data.get_mapping('split-rules', {})
                 unfound_includes = []
                 for domain in self.include:
                     if domain not in split_rules:

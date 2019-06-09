@@ -239,7 +239,7 @@ class Context():
         # Load quota configuration
         # We need to find the first existing directory in the path of our
         # cachedir - the cachedir may not have been created yet.
-        cache = _yaml.node_get(defaults, dict, 'cache')
+        cache = defaults.get_mapping('cache')
         _yaml.node_validate(cache, ['quota', 'pull-buildtrees', 'cache-buildtrees'])
 
         self.config_cache_quota_string = _yaml.node_get(cache, str, 'quota')
@@ -268,7 +268,7 @@ class Context():
             cache, 'cache-buildtrees', ['always', 'auto', 'never'])
 
         # Load logging config
-        logging = _yaml.node_get(defaults, dict, 'logging')
+        logging = defaults.get_mapping('logging')
         _yaml.node_validate(logging, [
             'key-length', 'verbose',
             'error-lines', 'message-lines',
@@ -283,7 +283,7 @@ class Context():
         self.log_message_format = _yaml.node_get(logging, str, 'message-format')
 
         # Load scheduler config
-        scheduler = _yaml.node_get(defaults, dict, 'scheduler')
+        scheduler = defaults.get_mapping('scheduler')
         _yaml.node_validate(scheduler, [
             'on-error', 'fetchers', 'builders',
             'pushers', 'network-retries'
@@ -296,7 +296,7 @@ class Context():
         self.sched_network_retries = _yaml.node_get(scheduler, int, 'network-retries')
 
         # Load per-projects overrides
-        self._project_overrides = _yaml.node_get(defaults, dict, 'projects', default_value={})
+        self._project_overrides = defaults.get_mapping('projects', default={})
 
         # Shallow validation of overrides, parts of buildstream which rely
         # on the overrides are expected to validate elsewhere.
@@ -396,7 +396,7 @@ class Context():
     #    (dict): The overrides dictionary for the specified project
     #
     def get_overrides(self, project_name):
-        return _yaml.node_get(self._project_overrides, dict, project_name, default_value={})
+        return self._project_overrides.get_mapping(project_name, default={})
 
     # get_strict():
     #
