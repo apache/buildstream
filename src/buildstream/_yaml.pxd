@@ -29,7 +29,8 @@ cdef class Node:
 
 
 cdef class MappingNode(Node):
-    pass
+    cdef Node get(self, str key, default, default_constructor)
+    cpdef MappingNode get_mapping(self, str key, default=*)
 
 
 cdef class ProvenanceInformation:

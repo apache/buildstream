@@ -5,7 +5,7 @@ from buildstream import Element, Scope
 class DynamicElement(Element):
     def configure(self, node):
         self.node_validate(node, ['split-rules'])
-        self.split_rules = self.node_get_member(node, dict, 'split-rules')
+        self.split_rules = node.get_mapping('split-rules')
 
     def preflight(self):
         pass
