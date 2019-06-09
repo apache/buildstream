@@ -110,9 +110,9 @@ def test_node_get(datafiles):
     child = _yaml.node_get(base, dict, 'children', indices=[6])
     assert_provenance(filename, 20, 8, child, 'mood')
 
-    extra = _yaml.node_get(base, dict, 'extra')
+    extra = base.get_mapping('extra')
     with pytest.raises(LoadError) as exc:
-        _yaml.node_get(extra, dict, 'old')
+        extra.get_mapping('old')
 
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
@@ -188,8 +188,8 @@ def test_composite_preserve_originals(datafiles):
     base_copy = _yaml.node_copy(base)
     _yaml.composite_dict(base_copy, overlay)
 
-    copy_extra = _yaml.node_get(base_copy, dict, 'extra')
-    orig_extra = _yaml.node_get(base, dict, 'extra')
+    copy_extra = base_copy.get_mapping('extra')
+    orig_extra = base.get_mapping('extra')
 
     # Test that the node copy has the overridden value...
     assert _yaml.node_get(copy_extra, str, 'old') == 'override'
