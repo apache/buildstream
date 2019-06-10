@@ -376,7 +376,7 @@ class _GitSourceBase(Source):
     BST_MIRROR_CLASS = _GitMirror
 
     def configure(self, node):
-        ref = self.node_get_member(node, str, 'ref', None)
+        ref = node.get_str('ref', None)
 
         config_keys = ['url', 'track', 'ref', 'submodules',
                        'checkout-submodules', 'ref-format',
@@ -390,11 +390,11 @@ class _GitSourceBase(Source):
         tags = self._load_tags(node)
         self.track_tags = self.node_get_member(node, bool, 'track-tags', False)
 
-        self.original_url = self.node_get_member(node, str, 'url')
+        self.original_url = node.get_str('url')
         self.mirror = self.BST_MIRROR_CLASS(self, '', self.original_url, ref, tags=tags, primary=True)
-        self.tracking = self.node_get_member(node, str, 'track', None)
+        self.tracking = node.get_str('track', None)
 
-        self.ref_format = self.node_get_member(node, str, 'ref-format', 'sha1')
+        self.ref_format = node.get_str('ref-format', 'sha1')
         if self.ref_format not in ['sha1', 'git-describe']:
             provenance = self.node_provenance(node, member_name='ref-format')
             raise SourceError("{}: Unexpected value for ref-format: {}".format(provenance, self.ref_format))
@@ -415,7 +415,7 @@ class _GitSourceBase(Source):
         modules = node.get_mapping('submodules', {})
         for path, _ in self.node_items(modules):
             submodule = modules.get_mapping(path)
-            url = self.node_get_member(submodule, str, 'url', None)
+            url = submodule.get_str('url', None)
 
             # Make sure to mark all URLs that are specified in the configuration
             if url:
@@ -464,7 +464,7 @@ class _GitSourceBase(Source):
         return Consistency.INCONSISTENT
 
     def load_ref(self, node):
-        self.mirror.ref = self.node_get_member(node, str, 'ref', None)
+        self.mirror.ref = node.get_str('ref', None)
         self.mirror.tags = self._load_tags(node)
 
     def get_ref(self):
@@ -665,8 +665,8 @@ class _GitSourceBase(Source):
         tags = []
         tags_node = self.node_get_member(node, list, 'tags', [])
         for tag_node in tags_node:
-            tag = self.node_get_member(tag_node, str, 'tag')
-            commit_ref = self.node_get_member(tag_node, str, 'commit')
+            tag = tag_node.get_str('tag')
+            commit_ref = tag_node.get_str('commit')
             annotated = self.node_get_member(tag_node, bool, 'annotated')
             tags.append((tag, commit_ref, annotated))
         return tags

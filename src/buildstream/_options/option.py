@@ -60,8 +60,9 @@ class Option():
     #    node (dict): The loaded YAML dictionary describing
     #                 the option
     def load(self, node):
-        self.description = _yaml.node_get(node, str, 'description')
-        self.variable = _yaml.node_get(node, str, 'variable', default_value=None)
+        self.description = node.get_str('description')
+        variable_node = node.get_str('variable', default=None)
+        self.variable = variable_node
 
         # Assert valid symbol name for variable name
         if self.variable is not None:

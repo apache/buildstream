@@ -85,7 +85,7 @@ cdef class Dependency:
                 _yaml.node_validate(<_yaml.Node> dep, ['filename', 'type', 'junction'])
 
                 # Make type optional, for this we set it to None
-                dep_type = <str> _yaml.node_get(<_yaml.Node> dep, str, <str> Symbol.TYPE, None, None)
+                dep_type = (<_yaml.MappingNode> dep).get_str(<str> Symbol.TYPE, None)
                 if dep_type is None or dep_type == <str> Symbol.ALL:
                     dep_type = None
                 elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
@@ -94,9 +94,9 @@ cdef class Dependency:
                                     "{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
                                     .format(provenance, dep_type))
 
-            self.name = <str> _yaml.node_get(<_yaml.Node> dep, str, <str> Symbol.FILENAME)
+            self.name = (<_yaml.MappingNode> dep).get_str(<str> Symbol.FILENAME)
             self.dep_type = dep_type
-            self.junction = <str> _yaml.node_get(<_yaml.Node> dep, str, <str> Symbol.JUNCTION, None, None)
+            self.junction = (<_yaml.MappingNode> dep).get_str(<str> Symbol.JUNCTION, None)
 
         else:
             raise LoadError(LoadErrorReason.INVALID_DATA,

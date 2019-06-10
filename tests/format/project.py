@@ -82,8 +82,8 @@ def test_load_default_project(cli, datafiles):
 
     # Read back some of our project defaults from the env
     env = _yaml.load_data(result.output)
-    assert _yaml.node_get(env, str, 'USER') == "tomjon"
-    assert _yaml.node_get(env, str, 'TERM') == "dumb"
+    assert env.get_str('USER') == "tomjon"
+    assert env.get_str('TERM') == "dumb"
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -97,8 +97,8 @@ def test_load_project_from_subdir(cli, datafiles):
 
     # Read back some of our project defaults from the env
     env = _yaml.load_data(result.output)
-    assert _yaml.node_get(env, str, 'USER') == "tomjon"
-    assert _yaml.node_get(env, str, 'TERM') == "dumb"
+    assert env.get_str('USER') == "tomjon"
+    assert env.get_str('TERM') == "dumb"
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -111,7 +111,7 @@ def test_override_project_path(cli, datafiles):
 
     # Read back the overridden path
     env = _yaml.load_data(result.output)
-    assert _yaml.node_get(env, str, 'PATH') == "/bin:/sbin"
+    assert env.get_str('PATH') == "/bin:/sbin"
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
