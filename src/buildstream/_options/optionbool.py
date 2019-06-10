@@ -34,13 +34,13 @@ class OptionBool(Option):
 
         super().load(node)
         _yaml.node_validate(node, OPTION_SYMBOLS + ['default'])
-        self.value = _yaml.node_get(node, bool, 'default')
+        self.value = node.get_bool('default')
 
     def load_value(self, node, *, transform=None):
         if transform:
             self.set_value(transform(node.get_str(self.name)))
         else:
-            self.value = _yaml.node_get(node, bool, self.name)
+            self.value = node.get_bool(self.name)
 
     def set_value(self, value):
         if value in ('True', 'true'):
