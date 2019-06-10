@@ -1170,6 +1170,32 @@ class Element(Plugin):
         # cache cannot be queried until strict cache key is available
         return self.__strict_cache_key is not None
 
+    def _resolve_cache_keys_and_state(self):
+        context = self._get_context()
+
+        # Ensure the element's sources are resolved
+        self.__update_source_state()
+        if self._get_consistency() == Consistency.INCONSISTENT:
+            return
+
+        # Update the cache keys
+        # Note that for non-strict mode, the strong cache key cannot be
+        # calculated until we have updated the artifact state
+        self.__update_cache_keys()
+
+        # update the artifact state
+        self.__update_artifact_state()
+
+        if not context.get_strict():
+            self.__update_cache_key_non_strict()
+
+        # If the element is workspaced, it could potentially already be cached,
+        # therefore, determine the artifact data of the workspaced element
+        # immediately and check if it's cached.
+        # If not, reset the data
+        if self._get_workspace() and not self._cached_success():
+            self.__reset_cache_data()
+
     # _update_state()
     #
     # Keep track of element state. Calculate cache keys if possible and

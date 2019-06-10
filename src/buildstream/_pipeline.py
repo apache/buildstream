@@ -135,8 +135,11 @@ class Pipeline():
                 # Preflight
                 element._preflight()
 
-                # Determine initial element state.
-                element._update_state()
+                element._resolve_cache_keys_and_state()
+
+                # EWWW
+                if element._get_workspace() and not element._cached_success():
+                    element._set_required()
 
     # dependencies()
     #
