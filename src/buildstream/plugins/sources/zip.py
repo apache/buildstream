@@ -72,7 +72,7 @@ class ZipSource(DownloadableFileSource):
     def configure(self, node):
         super().configure(node)
 
-        self.base_dir = self.node_get_member(node, str, 'base-dir', '*') or None
+        self.base_dir = self.node_get_member(node, str, 'base-dir', '*')
 
         self.node_validate(node, DownloadableFileSource.COMMON_CONFIG_KEYS + ['base-dir'])
 
