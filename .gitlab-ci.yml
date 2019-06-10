@@ -247,8 +247,6 @@ docs:
   artifacts:
     paths:
     - "${HOME}/.cache/buildstream/logs"
-  only:
-  - schedules
 
 overnight-tests:
   <<: *overnight-tests-template
