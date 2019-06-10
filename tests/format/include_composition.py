@@ -128,7 +128,7 @@ def test_main_keeps_keys(tmpdir):
     includes.process(main)
 
     assert _yaml.node_get(main, list, 'test') == ['a']
-    assert _yaml.node_get(main, str, 'something') == 'else'
+    assert main.get_str('something') == 'else'
 
 
 def test_overwrite_directive_on_later_composite(tmpdir):
@@ -152,4 +152,4 @@ def test_overwrite_directive_on_later_composite(tmpdir):
     includes.process(main)
 
     assert _yaml.node_get(main, list, 'test') == ['Overwritten']
-    assert _yaml.node_get(main, str, 'foo') == 'should be present'
+    assert main.get_str('foo') == 'should be present'
