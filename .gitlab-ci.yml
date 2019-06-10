@@ -239,7 +239,8 @@ docs:
     EOF
   - dnf install -y ostree python3-gobject-base
   - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
-  - pip3 install --no-index .
+  - pip3 wheel --wheel-dir wheels/ --no-deps .
+  - pip3 install --no-index wheels/*
   - pip3 install --user -e ${BST_EXT_URL}@${BST_EXT_REF}#egg=bst_ext
   - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
   - git -C freedesktop-sdk checkout ${FD_SDK_REF}
