@@ -71,7 +71,7 @@ class OptionPool():
             p = _yaml.node_get_provenance(options, option_name)
             _yaml.assert_symbol_name(p, option_name, "option name", allow_dashes=False)
 
-            opt_type_name = _yaml.node_get(option_definition, str, 'type')
+            opt_type_name = option_definition.get_str('type')
             try:
                 opt_type = _OPTION_TYPES[opt_type_name]
             except KeyError:
@@ -249,7 +249,7 @@ class OptionPool():
     #
     def _process_one_node(self, node):
         conditions = _yaml.node_get(node, list, '(?)', default_value=None)
-        assertion = _yaml.node_get(node, str, '(!)', default_value=None)
+        assertion = node.get_str('(!)', default=None)
 
         # Process assersions first, we want to abort on the first encountered
         # assertion in a given dictionary, and not lose an assertion due to

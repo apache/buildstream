@@ -101,7 +101,7 @@ def complete_target(args, incomplete):
             return []
 
     # The project is not required to have an element-path
-    element_directory = _yaml.node_get(project, str, 'element-path', default_value='')
+    element_directory = project.get_str('element-path', default='')
 
     # If a project was loaded, use its element-path to
     # adjust our completion's base directory

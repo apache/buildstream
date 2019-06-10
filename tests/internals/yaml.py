@@ -128,7 +128,7 @@ def test_node_set(datafiles):
 
     assert 'mother' not in base
     _yaml.node_set(base, 'mother', 'snow white')
-    assert _yaml.node_get(base, str, 'mother') == 'snow white'
+    assert base.get_str('mother') == 'snow white'
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -141,14 +141,14 @@ def test_node_set_overwrite(datafiles):
     base = _yaml.load(filename)
 
     # Overwrite a string
-    assert _yaml.node_get(base, str, 'kind') == 'pony'
+    assert base.get_str('kind') == 'pony'
     _yaml.node_set(base, 'kind', 'cow')
-    assert _yaml.node_get(base, str, 'kind') == 'cow'
+    assert base.get_str('kind') == 'cow'
 
     # Overwrite a list as a string
     assert _yaml.node_get(base, list, 'moods') == ['happy', 'sad']
     _yaml.node_set(base, 'moods', 'unemotional')
-    assert _yaml.node_get(base, str, 'moods') == 'unemotional'
+    assert base.get_str('moods') == 'unemotional'
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -192,10 +192,10 @@ def test_composite_preserve_originals(datafiles):
     orig_extra = base.get_mapping('extra')
 
     # Test that the node copy has the overridden value...
-    assert _yaml.node_get(copy_extra, str, 'old') == 'override'
+    assert copy_extra.get_str('old') == 'override'
 
     # But the original node is not effected by the override.
-    assert _yaml.node_get(orig_extra, str, 'old') == 'new'
+    assert orig_extra.get_str('old') == 'new'
 
 
 # Tests for list composition
@@ -258,7 +258,7 @@ def test_list_composition(datafiles, filename, tmpdir,
     assert len(children) == length
     child = children[index]
 
-    assert _yaml.node_get(child, str, 'mood') == mood
+    assert child.get_str('mood') == mood
     assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
 
 
@@ -394,7 +394,7 @@ def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
     assert len(children) == length
     child = children[index]
 
-    assert _yaml.node_get(child, str, 'mood') == mood
+    assert child.get_str('mood') == mood
     assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
 
     #####################
@@ -411,7 +411,7 @@ def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
     assert len(children) == length
     child = children[index]
 
-    assert _yaml.node_get(child, str, 'mood') == mood
+    assert child.get_str('mood') == mood
     assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
 
 
@@ -424,19 +424,19 @@ def test_convert_value_to_string(datafiles):
     # Run file through yaml to convert it
     test_dict = _yaml.load(conf_file)
 
-    user_config = _yaml.node_get(test_dict, str, "Test1")
+    user_config = test_dict.get_str("Test1")
     assert isinstance(user_config, str)
     assert user_config == "1_23_4"
 
-    user_config = _yaml.node_get(test_dict, str, "Test2")
+    user_config = test_dict.get_str("Test2")
     assert isinstance(user_config, str)
     assert user_config == "1.23.4"
 
-    user_config = _yaml.node_get(test_dict, str, "Test3")
+    user_config = test_dict.get_str("Test3")
     assert isinstance(user_config, str)
     assert user_config == "1.20"
 
-    user_config = _yaml.node_get(test_dict, str, "Test4")
+    user_config = test_dict.get_str("Test4")
     assert isinstance(user_config, str)
     assert user_config == "OneTwoThree"
 

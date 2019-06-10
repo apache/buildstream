@@ -186,9 +186,9 @@ def test_open_bzr_customize(cli, tmpdir, datafiles):
     element_config = _yaml.load(os.path.join(project, "elements", element_name))
     source_config = _yaml.node_get(element_config, dict, 'sources', [0])
     output = subprocess.check_output(["bzr", "info"], cwd=workspace)
-    stripped_url = _yaml.node_get(source_config, str, 'url').lstrip("file:///")
+    stripped_url = source_config.get_str('url').lstrip("file:///")
     expected_output_str = ("checkout of branch: /{}/{}"
-                           .format(stripped_url, _yaml.node_get(source_config, str, 'track')))
+                           .format(stripped_url, source_config.get_str('track')))
     assert expected_output_str in str(output)
 
 
@@ -613,8 +613,8 @@ def test_list(cli, tmpdir, datafiles):
     assert len(workspaces) == 1
 
     space = workspaces[0]
-    assert _yaml.node_get(space, str, 'element') == element_name
-    assert _yaml.node_get(space, str, 'directory') == workspace
+    assert space.get_str('element') == element_name
+    assert space.get_str('directory') == workspace
 
 
 @pytest.mark.datafiles(DATA_DIR)
