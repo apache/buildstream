@@ -894,10 +894,10 @@ class Plugin():
             project = self.__project
 
             for key, value in self.node_items(project.element_overrides):
-                if _yaml.node_get(value, bool, 'suppress-deprecation-warnings', default_value=False):
+                if value.get_bool('suppress-deprecation-warnings', default=False):
                     silenced_warnings.add(key)
             for key, value in self.node_items(project.source_overrides):
-                if _yaml.node_get(value, bool, 'suppress-deprecation-warnings', default_value=False):
+                if value.get_bool('suppress-deprecation-warnings', default=False):
                     silenced_warnings.add(key)
 
             return self.get_kind() in silenced_warnings

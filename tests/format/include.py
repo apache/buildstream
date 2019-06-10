@@ -28,7 +28,7 @@ def test_include_project_file(cli, datafiles):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, bool, 'included')
+    assert loaded.get_bool('included')
 
 
 def test_include_missing_file(cli, tmpdir):
@@ -87,7 +87,7 @@ def test_include_junction_file(cli, tmpdir, datafiles):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, bool, 'included')
+    assert loaded.get_bool('included')
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -310,4 +310,4 @@ def test_local_to_junction(cli, tmpdir, datafiles):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, bool, 'included')
+    assert loaded.get_bool('included')
