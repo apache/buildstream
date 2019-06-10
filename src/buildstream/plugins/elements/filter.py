@@ -173,7 +173,7 @@ class FilterElement(Element):
 
         self.include = self.node_get_member(node, list, 'include')
         self.exclude = self.node_get_member(node, list, 'exclude')
-        self.include_orphans = self.node_get_member(node, bool, 'include-orphans')
+        self.include_orphans = node.get_bool('include-orphans')
         self.include_provenance = self.node_provenance(node, member_name='include')
         self.exclude_provenance = self.node_provenance(node, member_name='exclude')
 

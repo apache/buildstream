@@ -33,7 +33,7 @@ class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key
     def _new_from_config_node(spec_node, basedir=None):
         _yaml.node_validate(spec_node, ['url', 'push', 'server-cert', 'client-key', 'client-cert', 'instance-name'])
         url = spec_node.get_str('url')
-        push = _yaml.node_get(spec_node, bool, 'push', default_value=False)
+        push = spec_node.get_bool('push', default=False)
         if not url:
             provenance = _yaml.node_get_provenance(spec_node, 'url')
             raise LoadError(LoadErrorReason.INVALID_DATA,
