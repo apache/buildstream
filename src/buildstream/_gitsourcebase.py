@@ -388,7 +388,7 @@ class _GitSourceBase(Source):
             self.node_validate(tag_node, ['tag', 'commit', 'annotated'])
 
         tags = self._load_tags(node)
-        self.track_tags = self.node_get_member(node, bool, 'track-tags', False)
+        self.track_tags = node.get_bool('track-tags', default=False)
 
         self.original_url = node.get_str('url')
         self.mirror = self.BST_MIRROR_CLASS(self, '', self.original_url, ref, tags=tags, primary=True)
@@ -405,7 +405,7 @@ class _GitSourceBase(Source):
             raise SourceError("{}: Git sources require a ref and/or track".format(self),
                               reason="missing-track-and-ref")
 
-        self.checkout_submodules = self.node_get_member(node, bool, 'checkout-submodules', True)
+        self.checkout_submodules = node.get_bool('checkout-submodules', default=True)
         self.submodules = []
 
         # Parse a dict of submodule overrides, stored in the submodule_overrides
@@ -423,7 +423,7 @@ class _GitSourceBase(Source):
 
             self.submodule_overrides[path] = url
             if 'checkout' in submodule:
-                checkout = self.node_get_member(submodule, bool, 'checkout')
+                checkout = submodule.get_bool('checkout')
                 self.submodule_checkout_overrides[path] = checkout
 
         self.mark_download_url(self.original_url)
@@ -667,7 +667,7 @@ class _GitSourceBase(Source):
         for tag_node in tags_node:
             tag = tag_node.get_str('tag')
             commit_ref = tag_node.get_str('commit')
-            annotated = self.node_get_member(tag_node, bool, 'annotated')
+            annotated = tag_node.get_bool('annotated')
             tags.append((tag, commit_ref, annotated))
         return tags
 

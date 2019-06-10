@@ -687,13 +687,10 @@ class Project():
         self._splits = config.get_mapping('split-rules')
 
         # Support backwards compatibility for fail-on-overlap
-        fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap', default_value=None)
-
-        if (CoreWarnings.OVERLAPS not in self._fatal_warnings) and fail_on_overlap:
-            self._fatal_warnings.append(CoreWarnings.OVERLAPS)
+        fail_on_overlap = config.get_scalar('fail-on-overlap', None)
 
         # Deprecation check
-        if fail_on_overlap is not None:
+        if not fail_on_overlap.is_none():
             self._context.messenger.message(
                 Message(
                     None,
@@ -702,6 +699,9 @@ class Project():
                     "is deprecated. Consider using fatal-warnings instead."
                 )
             )
+
+            if (CoreWarnings.OVERLAPS not in self._fatal_warnings) and fail_on_overlap.as_bool():
+                self._fatal_warnings.append(CoreWarnings.OVERLAPS)
 
         # Load project.refs if it exists, this may be ignored.
         if self.ref_storage == ProjectRefStorage.PROJECT_REFS:

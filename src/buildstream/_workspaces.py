@@ -630,7 +630,7 @@ class Workspaces():
     #
     def _load_workspace(self, node):
         dictionary = {
-            'prepared': _yaml.node_get(node, bool, 'prepared', default_value=False),
+            'prepared': node.get_bool('prepared', default=False),
             'path': node.get_str('path'),
             'last_successful': node.get_str('last_successful', default=None),
             'running_files': _yaml.node_sanitize(
