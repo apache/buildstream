@@ -23,7 +23,6 @@ import click
 
 # Import a widget internal for formatting time codes
 from .widget import TimeCode
-from .._scheduler import ElementJob
 
 
 # Status()
@@ -36,6 +35,7 @@ from .._scheduler import ElementJob
 #
 # Args:
 #    context (Context): The Context
+#    state (State): The state data from the Core
 #    content_profile (Profile): Formatting profile for content text
 #    format_profile (Profile): Formatting profile for formatting text
 #    success_profile (Profile): Formatting profile for success text
@@ -52,12 +52,13 @@ class Status():
         'clear_eol': 'el'
     }
 
-    def __init__(self, context,
+    def __init__(self, context, state,
                  content_profile, format_profile,
                  success_profile, error_profile,
                  stream, colors=False):
 
         self._context = context
+        self._state = state
         self._content_profile = content_profile
         self._format_profile = format_profile
         self._success_profile = success_profile
@@ -67,7 +68,7 @@ class Status():
         self._last_lines = 0  # Number of status lines we last printed to console
         self._spacing = 1
         self._colors = colors
-        self._header = _StatusHeader(context,
+        self._header = _StatusHeader(context, state,
                                      content_profile, format_profile,
                                      success_profile, error_profile,
                                      stream)
@@ -79,41 +80,8 @@ class Status():
         self._need_alloc = True
         self._term_caps = self._init_terminal()
 
-    # add_job()
-    #
-    # Adds a job to track in the status area
-    #
-    # Args:
-    #    element (Element): The element of the job to track
-    #    action_name (str): The action name for this job
-    #
-    def add_job(self, job):
-        elapsed = self._stream.elapsed_time
-        job = _StatusJob(self._context, job, self._content_profile, self._format_profile, elapsed)
-        self._jobs.append(job)
-        self._need_alloc = True
-
-    # remove_job()
-    #
-    # Removes a job currently being tracked in the status area
-    #
-    # Args:
-    #    element (Element): The element of the job to track
-    #    action_name (str): The action name for this job
-    #
-    def remove_job(self, job):
-        action_name = job.action_name
-        if not isinstance(job, ElementJob):
-            element = None
-        else:
-            element = job.element
-
-        self._jobs = [
-            job for job in self._jobs
-            if not (job.element is element and
-                    job.action_name == action_name)
-        ]
-        self._need_alloc = True
+        state.register_task_added_callback(self._add_job)
+        state.register_task_removed_callback(self._remove_job)
 
     # clear()
     #
@@ -314,6 +282,39 @@ class Status():
 
         return lines, column_widths
 
+    # _add_job()
+    #
+    # Adds a job to track in the status area
+    #
+    # Args:
+    #    action_name (str): The action name for this job
+    #    full_name (str): The name of this specific job (e.g. element name)
+    #
+    def _add_job(self, action_name, full_name):
+        task = self._state.tasks[(action_name, full_name)]
+        start_time = task.start_time
+        job = _StatusJob(self._context, action_name, full_name,
+                         self._content_profile, self._format_profile,
+                         start_time)
+        self._jobs.append(job)
+        self._need_alloc = True
+
+    # _remove_job()
+    #
+    # Removes a job currently being tracked in the status area
+    #
+    # Args:
+    #    action_name (str): The action name for this job
+    #    full_name (str): The name of this specific job (e.g. element name)
+    #
+    def _remove_job(self, action_name, full_name):
+        self._jobs = [
+            job for job in self._jobs
+            if not (job.full_name == full_name and
+                    job.action_name == action_name)
+        ]
+        self._need_alloc = True
+
 
 # _StatusHeader()
 #
@@ -329,7 +330,7 @@ class Status():
 #
 class _StatusHeader():
 
-    def __init__(self, context,
+    def __init__(self, context, state,
                  content_profile, format_profile,
                  success_profile, error_profile,
                  stream):
@@ -347,6 +348,7 @@ class _StatusHeader():
         self._success_profile = success_profile
         self._error_profile = error_profile
         self._stream = stream
+        self._state = state
         self._time_code = TimeCode(context, content_profile, format_profile)
         self._context = context
 
@@ -386,16 +388,16 @@ class _StatusHeader():
         text = ''
 
         # Format and calculate size for each queue progress
-        for queue in self._stream.queues:
+        for index, task_group in enumerate(self._state.task_groups.values()):
 
             # Add spacing
-            if self._stream.queues.index(queue) > 0:
+            if index > 0:
                 size += 2
                 text += self._format_profile.fmt('→ ')
 
-            queue_text, queue_size = self._render_queue(queue)
-            size += queue_size
-            text += queue_text
+            group_text, group_size = self._render_task_group(task_group)
+            size += group_size
+            text += group_text
 
         line2 = self._centered(text, size, line_length, ' ')
 
@@ -428,16 +430,16 @@ class _StatusHeader():
     ###################################################
     #                 Private Methods                 #
     ###################################################
-    def _render_queue(self, queue):
-        processed = str(queue.processed_elements_count)
-        skipped = str(queue.skipped_elements_count)
-        failed = str(len(queue.failed_elements))
+    def _render_task_group(self, group):
+        processed = str(group.processed_tasks)
+        skipped = str(group.skipped_tasks)
+        failed = str(len(group.failed_tasks))
 
         size = 5  # Space for the formatting '[', ':', ' ', ' ' and ']'
-        size += len(queue.complete_name)
+        size += len(group.name)
         size += len(processed) + len(skipped) + len(failed)
         text = self._format_profile.fmt("(") + \
-            self._content_profile.fmt(queue.complete_name) + \
+            self._content_profile.fmt(group.name) + \
             self._format_profile.fmt(":") + \
             self._success_profile.fmt(processed) + ' ' + \
             self._content_profile.fmt(skipped) + ' ' + \
@@ -463,27 +465,21 @@ class _StatusHeader():
 #
 # Args:
 #    context (Context): The Context
-#    job (Job): The job being processed
+#    action_name (str): The action performed
+#    full_name (str): The name of the job
 #    content_profile (Profile): Formatting profile for content text
 #    format_profile (Profile): Formatting profile for formatting text
 #    elapsed (datetime): The offset into the session when this job is created
 #
 class _StatusJob():
 
-    def __init__(self, context, job, content_profile, format_profile, elapsed):
-        action_name = job.action_name
-        if not isinstance(job, ElementJob):
-            element = None
-        else:
-            element = job.element
-
+    def __init__(self, context, action_name, full_name, content_profile, format_profile, elapsed):
         #
         # Public members
         #
-        self.element = element            # The Element
         self.action_name = action_name    # The action name
         self.size = None                  # The number of characters required to render
-        self.full_name = element._get_full_name() if element else action_name
+        self.full_name = full_name
 
         #
         # Private members

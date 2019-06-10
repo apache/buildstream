@@ -67,6 +67,7 @@ from .job import Job, ChildJob
 class ElementJob(Job):
     def __init__(self, *args, element, queue, action_cb, complete_cb, **kwargs):
         super().__init__(*args, **kwargs)
+        self.set_name(element._get_full_name())
         self.queue = queue
         self._element = element
         self._action_cb = action_cb            # The action callable function

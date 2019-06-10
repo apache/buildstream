@@ -129,6 +129,7 @@ class Job():
         #
         # Public members
         #
+        self.name = None                 # The name of the job, set by the job's subclass
         self.action_name = action_name   # The action name for the Queue
         self.child_data = None           # Data to be sent to the main process
 
@@ -149,6 +150,12 @@ class Job():
         self._logfile = logfile
         self._message_unique_id = None
         self._task_id = None
+
+    # set_name()
+    #
+    # Sets the name of this job
+    def set_name(self, name):
+        self.name = name
 
     # start()
     #
