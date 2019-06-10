@@ -760,7 +760,7 @@ def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
     result.assert_success()
 
     element = _yaml.load(element_path)
-    new_ref = _yaml.node_get(_yaml.node_get(element, dict, 'sources', [0]), str, 'ref')
+    new_ref = _yaml.node_get(element, dict, 'sources', [0]).get_str('ref')
 
     if ref_format == 'git-describe' and tag:
         # Check and strip prefix
@@ -857,8 +857,8 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
             assert 'annotated' in tag
             assert _yaml.node_get(tag, bool, 'annotated') == (tag_type == 'annotated')
 
-        assert {(_yaml.node_get(tag, str, 'tag'),
-                 _yaml.node_get(tag, str, 'commit'))
+        assert {(tag.get_str('tag'),
+                 tag.get_str('commit'))
                 for tag in tags} == {('tag1', repo.rev_parse('tag1^{commit}')),
                                      ('tag2', repo.rev_parse('tag2^{commit}'))}
 
@@ -972,8 +972,8 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
         assert 'annotated' in tag
         assert _yaml.node_get(tag, bool, 'annotated') == (tag_type == 'annotated')
 
-        tag_name = _yaml.node_get(tag, str, 'tag')
-        commit = _yaml.node_get(tag, str, 'commit')
+        tag_name = tag.get_str('tag')
+        commit = tag.get_str('commit')
         assert (tag_name, commit) == ('tag', repo.rev_parse('tag^{commit}'))
 
     checkout = os.path.join(str(tmpdir), 'checkout')
