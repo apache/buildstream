@@ -31,6 +31,12 @@ cdef class Node:
 cdef class MappingNode(Node):
     cdef Node get(self, str key, default, default_constructor)
     cpdef MappingNode get_mapping(self, str key, default=*)
+    cpdef ScalarNode get_scalar(self, str key, default=*)
+    cpdef str get_str(self, str key, object default=*)
+
+
+cdef class ScalarNode(Node):
+    cpdef str as_str(self)
 
 
 cdef class ProvenanceInformation:
