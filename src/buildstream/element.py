@@ -3006,6 +3006,8 @@ class Element(Plugin):
     # has changed.
     #
     def __update_cache_keys(self):
+        context = self._get_context()
+
         if self.__weak_cache_key is None:
             # Calculate weak cache key
             # Weak cache key includes names of direct build dependencies
@@ -3032,6 +3034,10 @@ class Element(Plugin):
                 e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
             ]
             self.__strict_cache_key = self._calculate_cache_key(dependencies)
+
+        # In strict mode, the strong cache key always matches the strict cache key
+        if self.__strict_cache_key is not None and context.get_strict():
+            self.__cache_key = self.__strict_cache_key
 
         if self.__strict_cache_key is not None and self.__can_query_cache_callback is not None:
             self.__can_query_cache_callback(self)
@@ -3068,7 +3074,6 @@ class Element(Plugin):
 
             # In strict mode, the strong cache key always matches the strict cache key
             if context.get_strict():
-                self.__cache_key = self.__strict_cache_key
                 self.__artifact = self.__strict_artifact
 
     # __update_cache_key_non_strict()
