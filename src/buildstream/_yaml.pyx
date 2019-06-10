@@ -85,6 +85,25 @@ cdef class ScalarNode(Node):
         self.line = line
         self.column = column
 
+    cpdef bint is_none(self):
+        return self.value is None
+
+    cpdef bint as_bool(self) except *:
+        if type(self.value) is bool:
+            return self.value
+
+        # Don't coerce booleans to string, this makes "False" strings evaluate to True
+        if self.value in ('True', 'true'):
+            return True
+        elif self.value in ('False', 'false'):
+            return False
+        else:
+            provenance = node_get_provenance(self)
+            path = node_find_target(provenance.toplevel, self)[-1]
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                "{}: Value of '{}' is not of the expected type '{}'"
+                .format(provenance, path, bool.__name__, self.value))
+
     cpdef str as_str(self):
         # We keep 'None' as 'None' to simplify the API's usage and allow chaining for users
         if self.value is None:
@@ -132,7 +151,7 @@ cdef class MappingNode(Node):
 
         if type(value) is not ScalarNode:
             if value is None:
-                value = ScalarNode(None, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+                value = ScalarNode(None, self.file_index, 0, next_synthetic_counter())
             else:
                 provenance = node_get_provenance(value)
                 raise LoadError(LoadErrorReason.INVALID_DATA,
@@ -140,6 +159,10 @@ cdef class MappingNode(Node):
                                 .format(provenance, key))
 
         return value
+
+    cpdef bint get_bool(self, str key, object default=_sentinel) except *:
+        cdef ScalarNode scalar = self.get_scalar(key, default)
+        return scalar.as_bool()
 
     cpdef str get_str(self, str key, object default=_sentinel):
         cdef ScalarNode scalar = self.get_scalar(key, default)
@@ -573,8 +596,6 @@ def dump(object contents, str filename=None):
 # Returns: The Provenance of the dict, member or list element
 #
 cpdef ProvenanceInformation node_get_provenance(Node node, str key=None, list indices=None):
-    assert type(node.value) is dict
-
     if key is None:
         # Retrieving the provenance for this node directly
         return ProvenanceInformation(node)
