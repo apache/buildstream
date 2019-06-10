@@ -583,13 +583,13 @@ class LogLine(Widget):
         skipped_maxlen = 1
         failed_maxlen = 1
         for queue in stream.queues:
-            processed_maxlen = max(len(str(len(queue.processed_elements))), processed_maxlen)
-            skipped_maxlen = max(len(str(len(queue.skipped_elements))), skipped_maxlen)
+            processed_maxlen = max(len(str(queue.processed_elements_count)), processed_maxlen)
+            skipped_maxlen = max(len(str(queue.skipped_elements_count)), skipped_maxlen)
             failed_maxlen = max(len(str(len(queue.failed_elements))), failed_maxlen)
 
         for queue in stream.queues:
-            processed = str(len(queue.processed_elements))
-            skipped = str(len(queue.skipped_elements))
+            processed = str(queue.processed_elements_count)
+            skipped = str(queue.skipped_elements_count)
             failed = str(len(queue.failed_elements))
 
             processed_align = ' ' * (processed_maxlen - len(processed))

@@ -65,9 +65,9 @@ class Queue():
         #
         # Public members
         #
-        self.failed_elements = []      # List of failed elements, for the frontend
-        self.processed_elements = []   # List of processed elements, for the frontend
-        self.skipped_elements = []     # List of skipped elements, for the frontend
+        self.failed_elements = []           # List of failed elements, for the frontend
+        self.processed_elements_count = 0   # Number of processed elements, for the frontend
+        self.skipped_elements_count = 0     # Number of skipped elements, for the frontend
 
         #
         # Private members
@@ -320,10 +320,10 @@ class Queue():
             self._done_queue.append(element)
 
             # These lists are for bookkeeping purposes for the UI and logging.
-            if status is JobStatus.SKIPPED or job.get_terminated():
-                self.skipped_elements.append(element)
-            elif status is JobStatus.OK:
-                self.processed_elements.append(element)
+            if status == JobStatus.SKIPPED or job.get_terminated():
+                self.skipped_elements_count += 1
+            elif status == JobStatus.OK:
+                self.processed_elements_count += 1
             else:
                 self.failed_elements.append(element)
 
@@ -357,8 +357,8 @@ class Queue():
         status = self.status(element)
         if status == QueueStatus.SKIP:
             # Place skipped elements into the done queue immediately
-            self.skipped_elements.append(element)       # Public record of skipped elements
-            self._done_queue.append(element)            # Elements to proceed to the next queue
+            self.skipped_elements_count += 1   # Public record of skipped elements
+            self._done_queue.append(element)   # Elements to proceed to the next queue
         elif status == QueueStatus.READY:
             # Push elements which are ready to be processed immediately into the queue
             heapq.heappush(self._ready_queue, (element._depth, element))

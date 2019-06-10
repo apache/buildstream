@@ -429,8 +429,8 @@ class _StatusHeader():
     #                 Private Methods                 #
     ###################################################
     def _render_queue(self, queue):
-        processed = str(len(queue.processed_elements))
-        skipped = str(len(queue.skipped_elements))
+        processed = str(queue.processed_elements_count)
+        skipped = str(queue.skipped_elements_count)
         failed = str(len(queue.failed_elements))
 
         size = 5  # Space for the formatting '[', ':', ' ', ' ' and ']'
