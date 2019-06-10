@@ -512,7 +512,7 @@ class Element(Plugin):
           # variables in the returned string
           name = self.node_subst_member(node, 'name')
         """
-        value = self.node_get_member(node, str, member_name, default)
+        value = node.get_str(member_name, default)
         try:
             return self.__variables.subst(value)
         except LoadError as e:
@@ -2702,7 +2702,7 @@ class Element(Plugin):
         # Sandbox config, unlike others, has fixed members so we should validate them
         _yaml.node_validate(sandbox_config, ['build-uid', 'build-gid', 'build-os', 'build-arch'])
 
-        build_arch = _yaml.node_get(sandbox_config, str, 'build-arch', default_value=None)
+        build_arch = sandbox_config.get_str('build-arch', default=None)
         if build_arch:
             build_arch = Platform.canonicalize_arch(build_arch)
         else:
@@ -2711,7 +2711,7 @@ class Element(Plugin):
         return SandboxConfig(
             _yaml.node_get(sandbox_config, int, 'build-uid'),
             _yaml.node_get(sandbox_config, int, 'build-gid'),
-            _yaml.node_get(sandbox_config, str, 'build-os', default_value=host_os),
+            sandbox_config.get_str('build-os', default=host_os),
             build_arch)
 
     # This makes a special exception for the split rules, which

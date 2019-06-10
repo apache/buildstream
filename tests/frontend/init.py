@@ -19,9 +19,9 @@ def test_defaults(cli, tmpdir):
     result.assert_success()
 
     project_conf = _yaml.load(project_path)
-    assert _yaml.node_get(project_conf, str, 'name') == 'foo'
-    assert _yaml.node_get(project_conf, str, 'format-version') == str(BST_FORMAT_VERSION)
-    assert _yaml.node_get(project_conf, str, 'element-path') == 'elements'
+    assert project_conf.get_str('name') == 'foo'
+    assert project_conf.get_str('format-version') == str(BST_FORMAT_VERSION)
+    assert project_conf.get_str('element-path') == 'elements'
 
 
 def test_all_options(cli, tmpdir):
@@ -37,9 +37,9 @@ def test_all_options(cli, tmpdir):
     result.assert_success()
 
     project_conf = _yaml.load(project_path)
-    assert _yaml.node_get(project_conf, str, 'name') == 'foo'
-    assert _yaml.node_get(project_conf, str, 'format-version') == str(2)
-    assert _yaml.node_get(project_conf, str, 'element-path') == 'ponies'
+    assert project_conf.get_str('name') == 'foo'
+    assert project_conf.get_str('format-version') == str(2)
+    assert project_conf.get_str('element-path') == 'ponies'
 
     elements_dir = os.path.join(project, 'ponies')
     assert os.path.isdir(elements_dir)
@@ -70,8 +70,8 @@ def test_force_overwrite_project(cli, tmpdir):
     result.assert_success()
 
     project_conf = _yaml.load(project_path)
-    assert _yaml.node_get(project_conf, str, 'name') == 'foo'
-    assert _yaml.node_get(project_conf, str, 'format-version') == str(BST_FORMAT_VERSION)
+    assert project_conf.get_str('name') == 'foo'
+    assert project_conf.get_str('format-version') == str(BST_FORMAT_VERSION)
 
 
 @pytest.mark.parametrize("project_name", [('Micheal Jackson'), ('one+one')])
@@ -122,6 +122,6 @@ def test_element_path_interactive(cli, tmp_path, monkeypatch, element_path):
     assert full_element_path.exists()
 
     project_conf = _yaml.load(str(project_conf_path))
-    assert _yaml.node_get(project_conf, str, 'name') == 'project_name'
-    assert _yaml.node_get(project_conf, str, 'format-version') == '0'
-    assert _yaml.node_get(project_conf, str, 'element-path') == element_path
+    assert project_conf.get_str('name') == 'project_name'
+    assert project_conf.get_str('format-version') == '0'
+    assert project_conf.get_str('element-path') == element_path

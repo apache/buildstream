@@ -111,8 +111,8 @@ class PipSource(Source):
     def configure(self, node):
         self.node_validate(node, ['url', 'packages', 'ref', 'requirements-files'] +
                            Source.COMMON_CONFIG_KEYS)
-        self.ref = self.node_get_member(node, str, 'ref', None)
-        self.original_url = self.node_get_member(node, str, 'url', _PYPI_INDEX_URL)
+        self.ref = node.get_str('ref', None)
+        self.original_url = node.get_str('url', _PYPI_INDEX_URL)
         self.index_url = self.translate_url(self.original_url)
         self.packages = self.node_get_member(node, list, 'packages', [])
         self.requirements_files = self.node_get_member(node, list, 'requirements-files', [])
