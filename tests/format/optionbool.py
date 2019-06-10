@@ -42,7 +42,7 @@ def test_conditional_cli(cli, datafiles, target, option, expected):
     result.assert_success()
 
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'thepony') == expected
+    assert loaded.get_str('thepony') == expected
 
 
 # Test configuration of boolean option in the config file
@@ -71,7 +71,7 @@ def test_conditional_config(cli, datafiles, target, option, expected):
     result.assert_success()
 
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'thepony') == expected
+    assert loaded.get_str('thepony') == expected
 
 
 @pytest.mark.datafiles(DATA_DIR)

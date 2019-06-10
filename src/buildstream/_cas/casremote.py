@@ -32,24 +32,24 @@ class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key
     @staticmethod
     def _new_from_config_node(spec_node, basedir=None):
         _yaml.node_validate(spec_node, ['url', 'push', 'server-cert', 'client-key', 'client-cert', 'instance-name'])
-        url = _yaml.node_get(spec_node, str, 'url')
+        url = spec_node.get_str('url')
         push = _yaml.node_get(spec_node, bool, 'push', default_value=False)
         if not url:
             provenance = _yaml.node_get_provenance(spec_node, 'url')
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: empty artifact cache URL".format(provenance))
 
-        instance_name = _yaml.node_get(spec_node, str, 'instance-name', default_value=None)
+        instance_name = spec_node.get_str('instance-name', default=None)
 
-        server_cert = _yaml.node_get(spec_node, str, 'server-cert', default_value=None)
+        server_cert = spec_node.get_str('server-cert', default=None)
         if server_cert and basedir:
             server_cert = os.path.join(basedir, server_cert)
 
-        client_key = _yaml.node_get(spec_node, str, 'client-key', default_value=None)
+        client_key = spec_node.get_str('client-key', default=None)
         if client_key and basedir:
             client_key = os.path.join(basedir, client_key)
 
-        client_cert = _yaml.node_get(spec_node, str, 'client-cert', default_value=None)
+        client_cert = spec_node.get_str('client-cert', default=None)
         if client_cert and basedir:
             client_cert = os.path.join(basedir, client_cert)
 

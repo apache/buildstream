@@ -56,7 +56,7 @@ class OptionEnum(Option):
         self.value = self.load_default_value(node)
 
     def load_value(self, node, *, transform=None):
-        self.value = _yaml.node_get(node, str, self.name)
+        self.value = node.get_str(self.name)
         if transform:
             self.value = transform(self.value)
         self.validate(self.value, _yaml.node_get_provenance(node, self.name))
@@ -79,6 +79,6 @@ class OptionEnum(Option):
                             "Valid values: {}".format(", ".join(self.values)))
 
     def load_default_value(self, node):
-        value = _yaml.node_get(node, str, 'default')
+        value = node.get_str('default')
         self.validate(value, _yaml.node_get_provenance(node, 'default'))
         return value

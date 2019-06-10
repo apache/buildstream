@@ -227,7 +227,7 @@ class Loader():
                                 message, detail=detail) from e
             else:
                 raise
-        kind = _yaml.node_get(node, str, Symbol.KIND)
+        kind = node.get_str(Symbol.KIND)
         if kind == "junction":
             self._first_pass_options.process_node(node)
         else:
@@ -306,7 +306,7 @@ class Loader():
                         dep_deps = extract_depends_from_node(dep_element.node)
                         loader_queue.append((dep_element, list(reversed(dep_deps)), []))
 
-                        if _yaml.node_get(dep_element.node, str, Symbol.KIND) == 'junction':
+                        if dep_element.node.get_str(Symbol.KIND) == 'junction':
                             raise LoadError(LoadErrorReason.INVALID_DATA,
                                             "{}: Cannot depend on junction"
                                             .format(dep.provenance))
@@ -467,17 +467,17 @@ class Loader():
         meta_sources = []
 
         sources = _yaml.node_get(node, list, Symbol.SOURCES, default_value=[])
-        element_kind = _yaml.node_get(node, str, Symbol.KIND)
+        element_kind = node.get_str(Symbol.KIND)
 
         # Safe loop calling into _yaml.node_get() for each element ensures
         # we have good error reporting
         for i in range(len(sources)):
             source = _yaml.node_get(node, dict, Symbol.SOURCES, indices=[i])
-            kind = _yaml.node_get(source, str, Symbol.KIND)
+            kind = source.get_str(Symbol.KIND)
             _yaml.node_del(source, Symbol.KIND)
 
             # Directory is optional
-            directory = _yaml.node_get(source, str, Symbol.DIRECTORY, default_value=None)
+            directory = source.get_str(Symbol.DIRECTORY, default=None)
             if directory:
                 _yaml.node_del(source, Symbol.DIRECTORY)
 
