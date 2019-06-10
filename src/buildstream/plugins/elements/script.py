@@ -60,8 +60,7 @@ class ScriptElement(buildstream.ScriptElement):
 
         self.set_work_dir()
         self.set_install_root()
-        self.set_root_read_only(self.node_get_member(node, bool,
-                                                     'root-read-only', False))
+        self.set_root_read_only(node.get_bool('root-read-only', default=False))
 
 
 # Plugin entry point

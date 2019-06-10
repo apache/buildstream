@@ -855,7 +855,7 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
             assert 'tag' in tag
             assert 'commit' in tag
             assert 'annotated' in tag
-            assert _yaml.node_get(tag, bool, 'annotated') == (tag_type == 'annotated')
+            assert tag.get_bool('annotated') == (tag_type == 'annotated')
 
         assert {(tag.get_str('tag'),
                  tag.get_str('commit'))
@@ -970,7 +970,7 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
         assert 'tag' in tag
         assert 'commit' in tag
         assert 'annotated' in tag
-        assert _yaml.node_get(tag, bool, 'annotated') == (tag_type == 'annotated')
+        assert tag.get_bool('annotated') == (tag_type == 'annotated')
 
         tag_name = tag.get_str('tag')
         commit = tag.get_str('commit')
