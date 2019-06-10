@@ -261,7 +261,7 @@ class Context():
         self.remote_execution_specs = SandboxRemote.specs_from_config_node(defaults)
 
         # Load pull build trees configuration
-        self.pull_buildtrees = _yaml.node_get(cache, bool, 'pull-buildtrees')
+        self.pull_buildtrees = cache.get_bool('pull-buildtrees')
 
         # Load cache build trees configuration
         self.cache_buildtrees = _node_get_option_str(
@@ -275,8 +275,8 @@ class Context():
             'debug', 'element-format', 'message-format'
         ])
         self.log_key_length = _yaml.node_get(logging, int, 'key-length')
-        self.log_debug = _yaml.node_get(logging, bool, 'debug')
-        self.log_verbose = _yaml.node_get(logging, bool, 'verbose')
+        self.log_debug = logging.get_bool('debug')
+        self.log_verbose = logging.get_bool('verbose')
         self.log_error_lines = _yaml.node_get(logging, int, 'error-lines')
         self.log_message_lines = _yaml.node_get(logging, int, 'message-lines')
         self.log_element_format = logging.get_str('element-format')
@@ -411,7 +411,7 @@ class Context():
             # so work out if we should be strict, and then cache the result
             toplevel = self.get_toplevel_project()
             overrides = self.get_overrides(toplevel.name)
-            self._strict_build_plan = _yaml.node_get(overrides, bool, 'strict', default_value=True)
+            self._strict_build_plan = overrides.get_bool('strict', default=True)
 
         # If it was set by the CLI, it overrides any config
         # Ditto if we've already computed this, then we return the computed
