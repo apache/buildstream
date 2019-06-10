@@ -210,7 +210,7 @@ class Context():
             # Allow the ~ tilde expansion and any environment variables in
             # path specification in the config files.
             #
-            path = _yaml.node_get(defaults, str, directory)
+            path = defaults.get_str(directory)
             path = os.path.expanduser(path)
             path = os.path.expandvars(path)
             path = os.path.normpath(path)
@@ -242,7 +242,7 @@ class Context():
         cache = defaults.get_mapping('cache')
         _yaml.node_validate(cache, ['quota', 'pull-buildtrees', 'cache-buildtrees'])
 
-        self.config_cache_quota_string = _yaml.node_get(cache, str, 'quota')
+        self.config_cache_quota_string = cache.get_str('quota')
         try:
             self.config_cache_quota = utils._parse_size(self.config_cache_quota_string,
                                                         self.casdir)
@@ -279,8 +279,8 @@ class Context():
         self.log_verbose = _yaml.node_get(logging, bool, 'verbose')
         self.log_error_lines = _yaml.node_get(logging, int, 'error-lines')
         self.log_message_lines = _yaml.node_get(logging, int, 'message-lines')
-        self.log_element_format = _yaml.node_get(logging, str, 'element-format')
-        self.log_message_format = _yaml.node_get(logging, str, 'message-format')
+        self.log_element_format = logging.get_str('element-format')
+        self.log_message_format = logging.get_str('message-format')
 
         # Load scheduler config
         scheduler = defaults.get_mapping('scheduler')
@@ -493,7 +493,7 @@ class Context():
 #    LoadError, when the value is not of the expected type, or is not found.
 #
 def _node_get_option_str(node, key, allowed_options):
-    result = _yaml.node_get(node, str, key)
+    result = node.get_str(key)
     if result not in allowed_options:
         provenance = _yaml.node_get_provenance(node, key)
         raise LoadError(LoadErrorReason.INVALID_DATA,

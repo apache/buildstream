@@ -78,10 +78,18 @@ cdef class Node:
 cdef class ScalarNode(Node):
 
     def __init__(self, object value, int file_index, int line, int column):
+        if type(value) is str:
+            value = value.strip()
         self.value = value
         self.file_index = file_index
         self.line = line
         self.column = column
+
+    cpdef str as_str(self):
+        # We keep 'None' as 'None' to simplify the API's usage and allow chaining for users
+        if self.value is None:
+            return None
+        return str(self.value)
 
 
 cdef class MappingNode(Node):
@@ -118,6 +126,25 @@ cdef class MappingNode(Node):
                             .format(provenance, key))
 
         return value
+
+    cpdef ScalarNode get_scalar(self, str key, object default=_sentinel):
+        value = self.get(key, default, ScalarNode)
+
+        if type(value) is not ScalarNode:
+            if value is None:
+                value = ScalarNode(None, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+            else:
+                provenance = node_get_provenance(value)
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Value of '{}' is not of the expected type 'Scalar'"
+                                .format(provenance, key))
+
+        return value
+
+    cpdef str get_str(self, str key, object default=_sentinel):
+        # TODO: don't go through 'get_scalar', we can directly get everything and optimize
+        cdef ScalarNode scalar = self.get_scalar(key, default)
+        return scalar.as_str()
 
 
 class SequenceNode(Node):
