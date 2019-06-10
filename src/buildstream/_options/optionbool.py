@@ -38,7 +38,7 @@ class OptionBool(Option):
 
     def load_value(self, node, *, transform=None):
         if transform:
-            self.set_value(transform(_yaml.node_get(node, str, self.name)))
+            self.set_value(transform(node.get_str(self.name)))
         else:
             self.value = _yaml.node_get(node, bool, self.name)
 
