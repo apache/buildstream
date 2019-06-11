@@ -161,7 +161,7 @@ class SafeHardlinkOps(Operations):
             'f_ffree', 'f_files', 'f_flag', 'f_frsize', 'f_namemax'))
 
     def unlink(self, path):
-        return os.unlink(self._full_path(path))
+        os.unlink(self._full_path(path))
 
     def symlink(self, target, source):
         'creates a symlink `target -> source` (e.g. ln -s source target)'
