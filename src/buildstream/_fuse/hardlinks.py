@@ -163,18 +163,20 @@ class SafeHardlinkOps(Operations):
     def unlink(self, path):
         return os.unlink(self._full_path(path))
 
-    def symlink(self, name, target):
-        return os.symlink(target, self._full_path(name))
+    def symlink(self, target, source):
+        'creates a symlink `target -> source` (e.g. ln -s source target)'
+        return os.symlink(source, self._full_path(target))
 
     def rename(self, old, new):
         return os.rename(self._full_path(old), self._full_path(new))
 
-    def link(self, target, name):
+    def link(self, target, source):
+        'creates a hard link `target -> source` (e.g. ln source target)'
 
         # When creating a hard link here, should we ensure the original
         # file is not a hardlink itself first ?
         #
-        return os.link(self._full_path(name), self._full_path(target))
+        return os.link(self._full_path(source), self._full_path(target))
 
     def utimens(self, path, times=None):
         return os.utime(self._full_path(path), times)
