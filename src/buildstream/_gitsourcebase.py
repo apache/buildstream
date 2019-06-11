@@ -383,7 +383,7 @@ class _GitSourceBase(Source):
                        'track-tags', 'tags']
         self.node_validate(node, config_keys + Source.COMMON_CONFIG_KEYS)
 
-        tags_node = self.node_get_member(node, list, 'tags', [])
+        tags_node = node.get_sequence('tags', [])
         for tag_node in tags_node:
             self.node_validate(tag_node, ['tag', 'commit', 'annotated'])
 
@@ -663,7 +663,7 @@ class _GitSourceBase(Source):
 
     def _load_tags(self, node):
         tags = []
-        tags_node = self.node_get_member(node, list, 'tags', [])
+        tags_node = node.get_sequence('tags', [])
         for tag_node in tags_node:
             tag = tag_node.get_str('tag')
             commit_ref = tag_node.get_str('commit')
