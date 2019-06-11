@@ -466,13 +466,12 @@ class Loader():
         elt_provenance = _yaml.node_get_provenance(node)
         meta_sources = []
 
-        sources = _yaml.node_get(node, list, Symbol.SOURCES, default_value=[])
+        sources = node.get_sequence(Symbol.SOURCES, default=[])
         element_kind = node.get_str(Symbol.KIND)
 
         # Safe loop calling into _yaml.node_get() for each element ensures
         # we have good error reporting
-        for i in range(len(sources)):
-            source = _yaml.node_get(node, dict, Symbol.SOURCES, indices=[i])
+        for index, source in enumerate(sources):
             kind = source.get_str(Symbol.KIND)
             _yaml.node_del(source, Symbol.KIND)
 
@@ -481,7 +480,6 @@ class Loader():
             if directory:
                 _yaml.node_del(source, Symbol.DIRECTORY)
 
-            index = sources.index(source)
             meta_source = MetaSource(element.name, index, element_kind, kind, source, directory)
             meta_sources.append(meta_source)
 
@@ -490,7 +488,7 @@ class Loader():
                                    node.get_mapping(Symbol.CONFIG, default={}),
                                    node.get_mapping(Symbol.VARIABLES, default={}),
                                    node.get_mapping(Symbol.ENVIRONMENT, default={}),
-                                   _yaml.node_get(node, list, Symbol.ENV_NOCACHE, default_value=[]),
+                                   node.get_sequence(Symbol.ENV_NOCACHE, default=[]).as_str_list(),
                                    node.get_mapping(Symbol.PUBLIC, default={}),
                                    node.get_mapping(Symbol.SANDBOX, default={}),
                                    element_kind == 'junction')

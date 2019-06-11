@@ -14,7 +14,7 @@ def make_includes(basedir):
     return Includes(loader)
 
 
-def test_main_has_prority(tmpdir):
+def test_main_has_priority(tmpdir):
     includes = make_includes(str(tmpdir))
 
     _yaml.dump({'(@)': ['a.yml'],
@@ -28,7 +28,7 @@ def test_main_has_prority(tmpdir):
 
     includes.process(main)
 
-    assert _yaml.node_get(main, list, 'test') == ['main']
+    assert main.get_sequence('test').as_str_list() == ['main']
 
 
 def test_include_cannot_append(tmpdir):
@@ -44,7 +44,7 @@ def test_include_cannot_append(tmpdir):
 
     includes.process(main)
 
-    assert _yaml.node_get(main, list, 'test') == ['main']
+    assert main.get_sequence('test').as_str_list() == ['main']
 
 
 def test_main_can_append(tmpdir):
@@ -60,7 +60,7 @@ def test_main_can_append(tmpdir):
 
     includes.process(main)
 
-    assert _yaml.node_get(main, list, 'test') == ['a', 'main']
+    assert main.get_sequence('test').as_str_list() == ['a', 'main']
 
 
 def test_sibling_cannot_append_backward(tmpdir):
@@ -77,7 +77,7 @@ def test_sibling_cannot_append_backward(tmpdir):
 
     includes.process(main)
 
-    assert _yaml.node_get(main, list, 'test') == ['b']
+    assert main.get_sequence('test').as_str_list() == ['b']
 
 
 def test_sibling_can_append_forward(tmpdir):
@@ -94,7 +94,7 @@ def test_sibling_can_append_forward(tmpdir):
 
     includes.process(main)
 
-    assert _yaml.node_get(main, list, 'test') == ['a', 'b']
+    assert main.get_sequence('test').as_str_list() == ['a', 'b']
 
 
 def test_lastest_sibling_has_priority(tmpdir):
@@ -111,7 +111,7 @@ def test_lastest_sibling_has_priority(tmpdir):
 
     includes.process(main)
 
-    assert _yaml.node_get(main, list, 'test') == ['b']
+    assert main.get_sequence('test').as_str_list() == ['b']
 
 
 def test_main_keeps_keys(tmpdir):
@@ -127,7 +127,7 @@ def test_main_keeps_keys(tmpdir):
 
     includes.process(main)
 
-    assert _yaml.node_get(main, list, 'test') == ['a']
+    assert main.get_sequence('test').as_str_list() == ['a']
     assert main.get_str('something') == 'else'
 
 
@@ -151,5 +151,5 @@ def test_overwrite_directive_on_later_composite(tmpdir):
 
     includes.process(main)
 
-    assert _yaml.node_get(main, list, 'test') == ['Overwritten']
+    assert main.get_sequence('test').as_str_list() == ['Overwritten']
     assert main.get_str('foo') == 'should be present'
