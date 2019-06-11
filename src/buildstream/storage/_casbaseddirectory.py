@@ -394,16 +394,16 @@ class CasBasedDirectory(Directory):
 
         return result
 
-    def import_single_file(self, srcpath):
+    def import_single_file(self, external_pathspec):
         result = FileListResult()
-        if self._check_replacement(os.path.basename(srcpath),
-                                   os.path.dirname(srcpath),
+        if self._check_replacement(os.path.basename(external_pathspec),
+                                   os.path.dirname(external_pathspec),
                                    result):
-            self._add_file(os.path.dirname(srcpath),
-                           os.path.basename(srcpath),
-                           modified=os.path.basename(srcpath)
+            self._add_file(os.path.dirname(external_pathspec),
+                           os.path.basename(external_pathspec),
+                           modified=os.path.basename(external_pathspec)
                            in result.overwritten)
-            result.files_written.append(srcpath)
+            result.files_written.append(external_pathspec)
         return result
 
     def set_deterministic_mtime(self):
@@ -507,10 +507,25 @@ class CasBasedDirectory(Directory):
             if i and i.modified:
                 yield p
 
-    def list_relative_paths(self, relpath=""):
+    def list_relative_paths(self):
         """Provide a list of all relative paths.
 
-        Return value: List(str) - list of all paths
+        Yields:
+          (List(str)) - list of all files with relative paths.
+
+        """
+        yield from self._list_prefixed_relative_paths()
+
+    def _list_prefixed_relative_paths(self, prefix=""):
+        """Provide a list of all relative paths.
+
+        Arguments:
+          prefix (str): an optional prefix to the relative paths, this is
+                        also emitted by itself.
+
+        Yields:
+          (List(str)) - list of all files with relative paths.
+
         """
 
         file_list = list(filter(lambda i: i[1].type != _FileType.DIRECTORY,
@@ -518,15 +533,15 @@ class CasBasedDirectory(Directory):
         directory_list = filter(lambda i: i[1].type == _FileType.DIRECTORY,
                                 self.index.items())
 
-        if relpath != "":
-            yield relpath
+        if prefix != "":
+            yield prefix
 
         for (k, v) in sorted(file_list):
-            yield os.path.join(relpath, k)
+            yield os.path.join(prefix, k)
 
         for (k, v) in sorted(directory_list):
             subdir = v.get_directory(self)
-            yield from subdir.list_relative_paths(relpath=os.path.join(relpath, k))
+            yield from subdir._list_prefixed_relative_paths(prefix=os.path.join(prefix, k))
 
     def get_size(self):
         digest = self._get_digest()
