@@ -133,16 +133,16 @@ class ProjectRefs():
 
         # Fetch the element
         try:
-            element_list = _yaml.node_get(project_node, list, element)
+            element_list = project_node.get_sequence(element)
         except LoadError:
             if not ensure:
                 return None
-            element_list = []
+            element_list = _yaml.new_empty_list_node()
             _yaml.node_set(project_node, element, element_list)
 
         # Fetch the source index
         try:
-            node = element_list[source_index]
+            node = element_list.mapping_at(source_index)
         except IndexError:
             if not ensure:
                 return None

@@ -32,6 +32,7 @@ cdef class MappingNode(Node):
     cdef Node get(self, str key, default, default_constructor)
     cpdef MappingNode get_mapping(self, str key, default=*)
     cpdef ScalarNode get_scalar(self, str key, default=*)
+    cpdef SequenceNode get_sequence(self, str key, object default=*)
     cpdef bint get_bool(self, str key, default=*) except *
     cpdef int get_int(self, str key, default=*) except *
     cpdef str get_str(self, str key, object default=*)
@@ -42,6 +43,12 @@ cdef class ScalarNode(Node):
     cpdef int as_int(self) except *
     cpdef str as_str(self)
     cpdef bint is_none(self)
+
+
+cdef class SequenceNode(Node):
+    cpdef MappingNode mapping_at(self, int index)
+    cpdef SequenceNode sequence_at(self, int index)
+    cpdef list as_str_list(self)
 
 
 cdef class ProvenanceInformation:
