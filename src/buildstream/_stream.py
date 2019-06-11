@@ -474,6 +474,8 @@ class Stream():
     #                will be placed at the given location. If true and
     #                location is '-', the tarball will be dumped on the
     #                standard output.
+    #    pull (bool): If true will attempt to pull any missing or incomplete
+    #                 artifacts.
     #
     def checkout(self, target, *,
                  location=None,
@@ -481,13 +483,25 @@ class Stream():
                  scope=Scope.RUN,
                  integrate=True,
                  hardlinks=False,
-                 tar=False):
+                 tar=False,
+                 pull=False):
 
-        # We only have one target in a checkout command
-        elements, _ = self._load((target,), (), fetch_subprojects=True)
-        target = elements[0]
+        # if pulling we need to ensure dependency artifacts are also pulled
+        selection = PipelineSelection.RUN if pull else PipelineSelection.NONE
+        elements, _ = self._load(
+            (target,), (), selection=selection,
+            fetch_subprojects=True, use_artifact_config=True)
+
+        target = elements[-1]
 
         self._check_location_writable(location, force=force, tar=tar)
+
+        uncached_elts = [elt for elt in elements if not elt._cached()]
+        if uncached_elts and pull:
+            self._message(MessageType.INFO, "Attempting to fetch missing or incomplete artifact")
+            self._add_queue(PullQueue(self._scheduler))
+            self._enqueue_plan(uncached_elts)
+            self._run()
 
         # Stage deps into a temporary sandbox first
         try:

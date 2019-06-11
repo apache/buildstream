@@ -950,13 +950,16 @@ def artifact():
               help="Create a tarball from the artifact contents instead "
                    "of a file tree. If LOCATION is '-', the tarball "
                    "will be dumped to the standard output.")
+@click.option('--pull', 'pull_', default=False, is_flag=True,
+              help="Whether to pull the artifact if it's missing or "
+                   "incomplete.")
 @click.option('--directory', default=None,
               type=click.Path(file_okay=False),
               help="The directory to checkout the artifact to")
 @click.argument('element', required=False,
                 type=click.Path(readable=False))
 @click.pass_obj
-def artifact_checkout(app, force, deps, integrate, hardlinks, tar, directory, element):
+def artifact_checkout(app, force, deps, integrate, hardlinks, tar, pull_, directory, element):
     """Checkout contents of an artifact
 
     When this command is executed from a workspace directory, the default
@@ -1002,7 +1005,8 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, directory, el
                             scope=scope,
                             integrate=True if integrate is None else integrate,
                             hardlinks=hardlinks,
-                            tar=tar)
+                            tar=tar,
+                            pull=pull_)
 
 
 ################################################################
