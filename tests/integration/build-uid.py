@@ -30,7 +30,8 @@ def test_build_uid_overridden(cli, datafiles):
         }
     }
 
-    result = cli.run(project=project, project_config=project_config, args=['build', element_name])
+    result = cli.run_project_config(
+        project=project, project_config=project_config, args=['build', element_name])
     assert result.exit_code == 0
 
 
@@ -48,7 +49,8 @@ def test_build_uid_in_project(cli, datafiles):
         }
     }
 
-    result = cli.run(project=project, project_config=project_config, args=['build', element_name])
+    result = cli.run_project_config(
+        project=project, project_config=project_config, args=['build', element_name])
     assert result.exit_code == 0
 
 
