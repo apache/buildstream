@@ -513,6 +513,16 @@ class CliIntegration(Cli):
 
     # run()
     #
+    # This supports the same arguments as Cli.run(), see run_project_config().
+    #
+    def run(self, configure=True, project=None, silent=False, env=None,
+            cwd=None, options=None, args=None, binary_capture=False):
+        return self.run_project_config(
+            configure=configure, project=project, silent=silent, env=env,
+            cwd=cwd, options=options, args=args, binary_capture=binary_capture)
+
+    # run_project_config()
+    #
     # This supports the same arguments as Cli.run() and additionally
     # it supports the project_config keyword argument.
     #
@@ -524,7 +534,7 @@ class CliIntegration(Cli):
     # be a dictionary of additional project configuration options, and
     # will be composited on top of the already loaded project.conf
     #
-    def run(self, *args, project_config=None, **kwargs):
+    def run_project_config(self, *, project_config=None, **kwargs):
 
         # First load the project.conf and substitute {project_dir}
         #
@@ -575,7 +585,7 @@ class CliIntegration(Cli):
             with open(project_filename, 'w') as f:
                 f.write(config)
 
-        return super().run(*args, **kwargs)
+        return super().run(**kwargs)
 
 
 class CliRemote(CliIntegration):

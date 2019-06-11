@@ -72,7 +72,10 @@ class Git(Repo):
         self._run_git('commit', '-m', 'Removing {}'.format(path))
         return self.latest_commit()
 
-    def source_config(self, ref=None, checkout_submodules=None):
+    def source_config(self, ref=None):
+        return self.source_config_extra(ref)
+
+    def source_config_extra(self, ref=None, checkout_submodules=None):
         config = {
             'kind': 'git',
             'url': 'file://' + self.repo,

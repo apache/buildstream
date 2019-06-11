@@ -33,7 +33,8 @@ DATA_DIR = os.path.join(
 #
 def execute_shell(cli, project, command, *, config=None, mount=None, element='base.bst', isolate=False):
     # Ensure the element is built
-    result = cli.run(project=project, project_config=config, args=['build', element])
+    result = cli.run_project_config(
+        project=project, project_config=config, args=['build', element])
     assert result.exit_code == 0
 
     args = ['shell']
@@ -44,7 +45,8 @@ def execute_shell(cli, project, command, *, config=None, mount=None, element='ba
         args += ['--mount', host_path, target_path]
     args += [element, '--', *command]
 
-    return cli.run(project=project, project_config=config, args=args)
+    return cli.run_project_config(
+        project=project, project_config=config, args=args)
 
 
 # Test running something through a shell, allowing it to find the

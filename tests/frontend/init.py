@@ -110,7 +110,7 @@ def test_element_path_interactive(cli, tmp_path, monkeypatch, element_path):
         def create(cls, *args, **kwargs):
             return DummyInteractiveApp(*args, **kwargs)
 
-        def _init_project_interactive(self, *args, **kwargs):
+        def _init_project_interactive(self, *args, **kwargs):  # pylint: disable=arguments-differ
             return ('project_name', '0', element_path)
 
     monkeypatch.setattr(App, 'create', DummyInteractiveApp.create)

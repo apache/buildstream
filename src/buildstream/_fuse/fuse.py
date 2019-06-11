@@ -453,6 +453,9 @@ class FUSE(object):
         This gives you access to direct_io, keep_cache, etc.
         '''
 
+        # Note that in BuildStream we're assuming that raw_fi is always False.
+        assert not raw_fi, "raw_fi is not supported in BuildStream."
+
         self.operations = operations
         self.raw_fi = raw_fi
         self.encoding = encoding
@@ -754,15 +757,14 @@ class FUSE(object):
         fi = fip.contents
         path = path.decode(self.encoding)
 
-        if self.raw_fi:
-            return self.operations('create', path, mode, fi)
-        else:
-            # This line is different from upstream to fix issues
-            # reading file opened with O_CREAT|O_RDWR.
-            # See issue #143.
-            fi.fh = self.operations('create', path, mode, fi.flags)
-            # END OF MODIFICATION
-            return 0
+        assert not self.raw_fi
+
+        # This line is different from upstream to fix issues
+        # reading file opened with O_CREAT|O_RDWR.
+        # See issue #143.
+        fi.fh = self.operations('create', path, mode, fi.flags)
+        # END OF MODIFICATION
+        return 0
 
     def ftruncate(self, path, length, fip):
         if self.raw_fi:
@@ -838,14 +840,7 @@ class Operations(object):
     def chown(self, path, uid, gid):
         raise FuseOSError(EROFS)
 
-    def create(self, path, mode, fi=None):
-        '''
-        When raw_fi is False (default case), fi is None and create should
-        return a numerical file handle.
-
-        When raw_fi is True the file handle should be set directly by create
-        and return 0.
-        '''
+    def create(self, path, mode, flags):
 
         raise FuseOSError(EROFS)
 
