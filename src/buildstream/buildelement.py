@@ -281,14 +281,11 @@ class BuildElement(Element):
     #                   Private Local Methods                   #
     #############################################################
     def __get_commands(self, node, name):
-        list_node = self.node_get_member(node, list, name, [])
-        commands = []
-
-        for i in range(len(list_node)):
-            command = self.node_subst_list_element(node, name, [i])
-            commands.append(command)
-
-        return commands
+        raw_commands = node.get_sequence(name, []).as_str_list()
+        return [
+            self.substitute_variables(command)
+            for command in raw_commands
+        ]
 
     def __run_command(self, sandbox, cmd):
         # Note the -e switch to 'sh' means to exit with an error

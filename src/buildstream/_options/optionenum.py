@@ -46,7 +46,7 @@ class OptionEnum(Option):
 
         _yaml.node_validate(node, valid_symbols)
 
-        self.values = _yaml.node_get(node, list, 'values', default_value=[])
+        self.values = node.get_sequence('values', default=[]).as_str_list()
         if not self.values:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: No values specified for {} option '{}'"
