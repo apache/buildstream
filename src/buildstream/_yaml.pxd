@@ -33,11 +33,13 @@ cdef class MappingNode(Node):
     cpdef MappingNode get_mapping(self, str key, default=*)
     cpdef ScalarNode get_scalar(self, str key, default=*)
     cpdef bint get_bool(self, str key, default=*) except *
+    cpdef int get_int(self, str key, default=*) except *
     cpdef str get_str(self, str key, object default=*)
 
 
 cdef class ScalarNode(Node):
     cpdef bint as_bool(self) except *
+    cpdef int as_int(self) except *
     cpdef str as_str(self)
     cpdef bint is_none(self)
 
