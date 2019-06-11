@@ -274,11 +274,12 @@ class Context():
             'error-lines', 'message-lines',
             'debug', 'element-format', 'message-format'
         ])
-        self.log_key_length = _yaml.node_get(logging, int, 'key-length')
+        self.log_key_length = logging.get_int('key-length')
         self.log_debug = logging.get_bool('debug')
         self.log_verbose = logging.get_bool('verbose')
-        self.log_error_lines = _yaml.node_get(logging, int, 'error-lines')
-        self.log_message_lines = _yaml.node_get(logging, int, 'message-lines')
+        self.log_error_lines = logging.get_int('error-lines')
+        self.log_message_lines = logging.get_int('message-lines')
+        self.log_message_lines = logging.get_int('message-lines')
         self.log_element_format = logging.get_str('element-format')
         self.log_message_format = logging.get_str('message-format')
 
@@ -290,10 +291,10 @@ class Context():
         ])
         self.sched_error_action = _node_get_option_str(
             scheduler, 'on-error', ['continue', 'quit', 'terminate'])
-        self.sched_fetchers = _yaml.node_get(scheduler, int, 'fetchers')
-        self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
-        self.sched_pushers = _yaml.node_get(scheduler, int, 'pushers')
-        self.sched_network_retries = _yaml.node_get(scheduler, int, 'network-retries')
+        self.sched_fetchers = scheduler.get_int('fetchers')
+        self.sched_builders = scheduler.get_int('builders')
+        self.sched_pushers = scheduler.get_int('pushers')
+        self.sched_network_retries = scheduler.get_int('network-retries')
 
         # Load per-projects overrides
         self._project_overrides = defaults.get_mapping('projects', default={})
