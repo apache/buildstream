@@ -367,6 +367,9 @@ class CASCache():
         # Exactly one of the two parameters has to be specified
         assert (path is None) != (buffer is None)
 
+        # If we're linking directly, then path must be specified.
+        assert (not link_directly) or (link_directly and path)
+
         if digest is None:
             digest = remote_execution_pb2.Digest()
 
