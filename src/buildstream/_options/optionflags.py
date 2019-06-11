@@ -30,8 +30,15 @@ class OptionFlags(Option):
 
     OPTION_TYPE = 'flags'
 
-    def load(self, node, allow_value_definitions=True):
-        super(OptionFlags, self).load(node)
+    def __init__(self, name, definition, pool):
+        self.values = None
+        super().__init__(name, definition, pool)
+
+    def load(self, node):
+        self.load_special(node)
+
+    def load_special(self, node, allow_value_definitions=True):
+        super().load(node)
 
         valid_symbols = OPTION_SYMBOLS + ['default']
         if allow_value_definitions:
