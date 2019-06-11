@@ -484,6 +484,9 @@ class Element(Plugin):
 
         return None
 
+    def substitute_variables(self, value):
+        return self.__variables.subst(value)
+
     def node_subst_member(self, node, member_name, default=_yaml._sentinel):
         """Fetch the value of a string node member, substituting any variables
         in the loaded value with the element contextual variables.
@@ -853,9 +856,9 @@ class Element(Plugin):
 
         if bstdata is not None:
             with sandbox.batch(SandboxFlags.NONE):
-                commands = self.node_get_member(bstdata, list, 'integration-commands', [])
-                for i in range(len(commands)):
-                    cmd = self.node_subst_list_element(bstdata, 'integration-commands', [i])
+                commands = bstdata.get_sequence('integration-commands', []).as_str_list()
+                for command in commands:
+                    cmd = self.substitute_variables(command)
 
                     sandbox.run(['sh', '-e', '-c', cmd], 0, env=environment, cwd='/',
                                 label=cmd)
@@ -2619,7 +2622,7 @@ class Element(Plugin):
         else:
             project_nocache = project.base_env_nocache
 
-        default_nocache = _yaml.node_get(cls.__defaults, list, 'environment-nocache', default_value=[])
+        default_nocache = cls.__defaults.get_sequence('environment-nocache', default=[]).as_str_list()
         element_nocache = meta.env_nocache
 
         # Accumulate values from the element default, the project and the element

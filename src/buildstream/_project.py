@@ -602,10 +602,10 @@ class Project():
 
         defaults = pre_config_node.get_mapping('defaults')
         _yaml.node_validate(defaults, ['targets'])
-        self._default_targets = _yaml.node_get(defaults, list, "targets")
+        self._default_targets = defaults.get_sequence("targets").as_str_list()
 
         # Fatal warnings
-        self._fatal_warnings = _yaml.node_get(pre_config_node, list, 'fatal-warnings', default_value=[])
+        self._fatal_warnings = pre_config_node.get_sequence('fatal-warnings', default=[]).as_str_list()
 
         self.loader = Loader(self._context, self,
                              parent=parent_loader, fetch_subprojects=fetch_subprojects)
@@ -678,7 +678,7 @@ class Project():
 
         # Load sandbox environment variables
         self.base_environment = config.get_mapping('environment')
-        self.base_env_nocache = _yaml.node_get(config, list, 'environment-nocache')
+        self.base_env_nocache = config.get_sequence('environment-nocache').as_str_list()
 
         # Load sandbox configuration
         self._sandbox = config.get_mapping('sandbox')
@@ -710,7 +710,7 @@ class Project():
         # Parse shell options
         shell_options = config.get_mapping('shell')
         _yaml.node_validate(shell_options, ['command', 'environment', 'host-files'])
-        self._shell_command = _yaml.node_get(shell_options, list, 'command')
+        self._shell_command = shell_options.get_sequence('command').as_str_list()
 
         # Perform environment expansion right away
         shell_environment = shell_options.get_mapping('environment', default={})
@@ -719,20 +719,18 @@ class Project():
             self._shell_environment[key] = os.path.expandvars(value)
 
         # Host files is parsed as a list for convenience
-        host_files = _yaml.node_get(shell_options, list, 'host-files', default_value=[])
+        host_files = shell_options.get_sequence('host-files', default=[])
         for host_file in host_files:
-            if isinstance(host_file, str):
+            if isinstance(host_file, _yaml.ScalarNode):
                 mount = HostMount(host_file)
             else:
                 # Some validation
-                index = host_files.index(host_file)
-                host_file_desc = _yaml.node_get(shell_options, dict, 'host-files', indices=[index])
-                _yaml.node_validate(host_file_desc, ['path', 'host_path', 'optional'])
+                _yaml.node_validate(host_file, ['path', 'host_path', 'optional'])
 
                 # Parse the host mount
-                path = host_file_desc.get_str('path')
-                host_path = host_file_desc.get_str('host_path', default=None)
-                optional = _yaml.node_get(host_file_desc, bool, 'optional', default_value=False)
+                path = host_file.get_str('path')
+                host_path = host_file.get_str('host_path', default=None)
+                optional = host_file.get_bool('optional', default=False)
                 mount = HostMount(path, host_path, optional)
 
             self._shell_host_files.append(mount)
@@ -809,7 +807,7 @@ class Project():
         output.default_mirror = self._default_mirror or overrides.get_str(
             'default-mirror', default=None)
 
-        mirrors = _yaml.node_get(config, list, 'mirrors', default_value=[])
+        mirrors = config.get_sequence('mirrors', default=[])
         for mirror in mirrors:
             allowed_mirror_fields = [
                 'name', 'aliases'
@@ -869,7 +867,7 @@ class Project():
         plugin_element_origins = []  # Origins of custom elements
 
         # Plugin origins and versions
-        origins = _yaml.node_get(config, list, 'plugins', default_value=[])
+        origins = config.get_sequence('plugins', default=[])
         source_format_versions = {}
         element_format_versions = {}
         for origin in origins:
