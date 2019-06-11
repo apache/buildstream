@@ -1015,7 +1015,7 @@ def _tempnamedfile(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefi
             temp.close()
 
     with _signals.terminator(close_tempfile), \
-        tempfile.NamedTemporaryFile(suffix=suffix, prefix=prefix, dir=dir) as temp:
+            tempfile.NamedTemporaryFile(suffix=suffix, prefix=prefix, dir=dir) as temp:
         yield temp
 
 
