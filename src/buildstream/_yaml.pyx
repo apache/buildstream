@@ -170,6 +170,17 @@ cdef class MappingNode(Node):
 
         return value
 
+    cpdef SequenceNode get_sequence(self, str key, object default=_sentinel):
+        value = self.get(key, default, SequenceNode)
+
+        if type(value) is not SequenceNode and value is not None:
+            provenance = node_get_provenance(value)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Value of '{}' is not of the expected type 'Sequence'"
+                            .format(provenance, key))
+
+        return value
+
     cpdef bint get_bool(self, str key, object default=_sentinel) except *:
         cdef ScalarNode scalar = self.get_scalar(key, default)
         return scalar.as_bool()
@@ -183,12 +194,47 @@ cdef class MappingNode(Node):
         return scalar.as_str()
 
 
-class SequenceNode(Node):
+cdef class SequenceNode(Node):
     def __init__(self, list value, int file_index, int line, int column):
         self.value = value
         self.file_index = file_index
         self.line = line
         self.column = column
+
+    cpdef MappingNode mapping_at(self, int index):
+        value = self.value[index]
+
+        if type(value) is not MappingNode:
+            provenance = node_get_provenance(self)
+            path = ["[{}]".format(p) for p in node_find_target(provenance, self)] + ["[{}]".format(index)]
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Value of '{}' is not of the expected type '{}'"
+                            .format(provenance, path, MappingNode.__name__))
+        return value
+
+    cpdef SequenceNode sequence_at(self, int index):
+        value = self.value[index]
+
+        if type(value) is not SequenceNode:
+            provenance = node_get_provenance(self)
+            path = ["[{}]".format(p) for p in node_find_target(provenance, self)] + ["[{}]".format(index)]
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Value of '{}' is not of the expected type '{}'"
+                            .format(provenance, path, SequenceNode.__name__))
+
+        return value
+
+    cpdef list as_str_list(self):
+        return [node.as_str() for node in self.value]
+
+    def __iter__(self):
+        return iter(self.value)
+
+    def __len__(self):
+        return len(self.value)
+
+    def __reversed__(self):
+        return reversed(self.value)
 
 
 # Metadata container for a yaml toplevel node.
@@ -933,6 +979,11 @@ def new_empty_node(Node ref_node=None):
         return MappingNode({}, ref_node.file_index, ref_node.line, next_synthetic_counter())
     else:
         return MappingNode({}, _SYNTHETIC_FILE_INDEX, 0, 0)
+
+
+# FIXME: we should never need that
+def new_empty_list_node():
+    return SequenceNode([], _SYNTHETIC_FILE_INDEX, 0, 0)
 
 
 # new_node_from_dict()
