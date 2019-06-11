@@ -53,11 +53,11 @@ class OptionFlags(Option):
                             "{}: No values specified for {} option '{}'"
                             .format(_yaml.node_get_provenance(node), self.OPTION_TYPE, self.name))
 
-        self.value = _yaml.node_get(node, list, 'default', default_value=[])
+        self.value = node.get_sequence('default', default=[]).as_str_list()
         self.validate(self.value, _yaml.node_get_provenance(node, 'default'))
 
     def load_value(self, node, *, transform=None):
-        self.value = _yaml.node_get(node, list, self.name)
+        self.value = node.get_sequence(self.name).as_str_list()
         if transform:
             self.value = [transform(x) for x in self.value]
         self.value = sorted(self.value)
@@ -90,4 +90,4 @@ class OptionFlags(Option):
     def load_valid_values(self, node):
         # Allow the more descriptive error to raise when no values
         # exist rather than bailing out here (by specifying default_value)
-        return _yaml.node_get(node, list, 'values', default_value=[])
+        return node.get_sequence('values', default=[]).as_str_list()

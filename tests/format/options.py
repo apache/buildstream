@@ -223,8 +223,8 @@ def test_deep_nesting_level1(cli, datafiles, option, expected):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    shallow_list = _yaml.node_get(loaded, list, 'shallow-nest')
-    first_dict = shallow_list[0]
+    shallow_list = loaded.get_sequence('shallow-nest')
+    first_dict = shallow_list.mapping_at(0)
 
     assert first_dict.get_str('animal') == expected
 
@@ -244,8 +244,8 @@ def test_deep_nesting_level2(cli, datafiles, option, expected):
         'element-deeper.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    shallow_list = _yaml.node_get(loaded, list, 'deep-nest')
-    deeper_list = shallow_list[0]
-    first_dict = deeper_list[0]
+    shallow_list = loaded.get_sequence('deep-nest')
+    deeper_list = shallow_list.sequence_at(0)
+    first_dict = deeper_list.mapping_at(0)
 
     assert first_dict.get_str('animal') == expected
