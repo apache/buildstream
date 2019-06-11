@@ -35,16 +35,18 @@ class Includes:
         if current_loader is None:
             current_loader = self._loader
 
-        includes = _yaml.node_get(node, None, '(@)', default_value=None)
-        if isinstance(includes, str):
-            includes = [includes]
+        try:
+            includes = node.get_str('(@)', default=None)
+            if includes is not None:
+                includes = [includes]
+        except LoadError:
+            try:
+                includes = _yaml.node_get(node, list, '(@)')
+            except LoadError:
+                provenance = _yaml.node_get_provenance(node, key='(@)')
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: {} must either be list or str".format(provenance, _yaml.node_sanitize(node)))
 
-        if not isinstance(includes, list) and includes is not None:
-            provenance = _yaml.node_get_provenance(node, key='(@)')
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: {} must either be list or str".format(provenance, includes))
-
-        include_provenance = None
         if includes:
             include_provenance = _yaml.node_get_provenance(node, key='(@)')
             _yaml.node_del(node, '(@)')
