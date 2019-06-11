@@ -180,11 +180,7 @@ class Stream():
                         buildtree = True
 
                 if not buildtree:
-                    if element._buildtree_exists():
-                        message = "Buildtree is not cached locally or in available remotes"
-                    else:
-                        message = "Artifact was created without buildtree"
-
+                    message = "Buildtree is not cached locally or in available remotes"
                     if usebuildtree == "always":
                         raise StreamError(message)
                     else:

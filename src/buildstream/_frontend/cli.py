@@ -559,11 +559,20 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
 
         cached = element._cached_buildtree()
         buildtree_exists = element._buildtree_exists()
+
         if cli_buildtree in ("always", "try"):
-            use_buildtree = cli_buildtree
-            if not cached and buildtree_exists and use_buildtree == "always":
-                click.echo("WARNING: buildtree is not cached locally, will attempt to pull from available remotes",
-                           err=True)
+            if buildtree_exists:
+                use_buildtree = cli_buildtree
+                if not cached and use_buildtree == "always":
+                    click.echo("WARNING: buildtree is not cached locally, will attempt to pull from available remotes",
+                               err=True)
+            else:
+                if cli_buildtree == "always":
+                    # Exit early if it won't be possible to even fetch a buildtree with always option
+                    raise AppError("Artifact was created without buildtree, unable to launch shell with it")
+                else:
+                    click.echo("WARNING: Artifact created without buildtree, shell will be loaded without it",
+                               err=True)
         else:
             # If the value has defaulted to ask and in non interactive mode, don't consider the buildtree, this
             # being the default behaviour of the command
