@@ -23,7 +23,7 @@ class ConsistencyBugSource(Source):
     def set_ref(self, ref, node):
         pass
 
-    def fetch(self):
+    def fetch(self, **kwargs):
         pass
 
     def stage(self, directory):
