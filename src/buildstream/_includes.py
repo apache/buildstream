@@ -41,7 +41,7 @@ class Includes:
                 includes = [includes]
         except LoadError:
             try:
-                includes = _yaml.node_get(node, list, '(@)')
+                includes = node.get_sequence('(@)').as_str_list()
             except LoadError:
                 provenance = _yaml.node_get_provenance(node, key='(@)')
                 raise LoadError(LoadErrorReason.INVALID_DATA,

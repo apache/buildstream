@@ -22,7 +22,6 @@ import inspect
 
 from ._exceptions import PluginError, LoadError, LoadErrorReason
 from . import utils
-from . import _yaml
 
 
 # A Context for loading plugin types
@@ -138,7 +137,7 @@ class PluginContext():
             loaded_dependency = False
 
             for origin in self._plugin_origins:
-                if kind not in _yaml.node_get(origin, list, 'plugins'):
+                if kind not in origin.get_sequence('plugins').as_str_list():
                     continue
 
                 if origin.get_str('origin') == 'local':
