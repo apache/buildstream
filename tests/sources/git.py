@@ -128,7 +128,7 @@ def test_submodule_fetch_source_enable_explicit(cli, tmpdir, datafiles):
     element = {
         'kind': 'import',
         'sources': [
-            repo.source_config(ref=ref, checkout_submodules=True)
+            repo.source_config_extra(ref=ref, checkout_submodules=True)
         ]
     }
     _yaml.dump(element, os.path.join(project, 'target.bst'))
@@ -167,7 +167,7 @@ def test_submodule_fetch_source_disable(cli, tmpdir, datafiles):
     element = {
         'kind': 'import',
         'sources': [
-            repo.source_config(ref=ref, checkout_submodules=False)
+            repo.source_config_extra(ref=ref, checkout_submodules=False)
         ]
     }
     _yaml.dump(element, os.path.join(project, 'target.bst'))
@@ -206,7 +206,7 @@ def test_submodule_fetch_submodule_does_override(cli, tmpdir, datafiles):
     element = {
         'kind': 'import',
         'sources': [
-            repo.source_config(ref=ref, checkout_submodules=False)
+            repo.source_config_extra(ref=ref, checkout_submodules=False)
         ]
     }
     _yaml.dump(element, os.path.join(project, 'target.bst'))
@@ -250,7 +250,7 @@ def test_submodule_fetch_submodule_individual_checkout(cli, tmpdir, datafiles):
     element = {
         'kind': 'import',
         'sources': [
-            repo.source_config(ref=ref, checkout_submodules=True)
+            repo.source_config_extra(ref=ref, checkout_submodules=True)
         ]
     }
     _yaml.dump(element, os.path.join(project, 'target.bst'))
@@ -295,7 +295,7 @@ def test_submodule_fetch_submodule_individual_checkout_explicit(cli, tmpdir, dat
     element = {
         'kind': 'import',
         'sources': [
-            repo.source_config(ref=ref, checkout_submodules=True)
+            repo.source_config_extra(ref=ref, checkout_submodules=True)
         ]
     }
     _yaml.dump(element, os.path.join(project, 'target.bst'))
