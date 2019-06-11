@@ -11,7 +11,7 @@ class Bzr(Repo):
     def __init__(self, directory, subdir):
         if not HAVE_BZR:
             pytest.skip("bzr is not available")
-        super(Bzr, self).__init__(directory, subdir)
+        super().__init__(directory, subdir)
         self.bzr = BZR
 
     def create(self, directory):

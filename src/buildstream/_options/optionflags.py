@@ -31,7 +31,7 @@ class OptionFlags(Option):
     OPTION_TYPE = 'flags'
 
     def load(self, node, allow_value_definitions=True):
-        super(OptionFlags, self).load(node)
+        super().load(node)
 
         valid_symbols = OPTION_SYMBOLS + ['default']
         if allow_value_definitions:

@@ -426,7 +426,7 @@ def fuse_get_context():
 
 class FuseOSError(OSError):
     def __init__(self, errno):
-        super(FuseOSError, self).__init__(errno, strerror(errno))
+        super().__init__(errno, strerror(errno))
 
 
 class FUSE(object):

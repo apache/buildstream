@@ -16,7 +16,7 @@ class Git(Repo):
 
         self.submodules = {}
 
-        super(Git, self).__init__(directory, subdir)
+        super().__init__(directory, subdir)
 
     def _run_git(self, *args, **kwargs):
         argv = [GIT]
