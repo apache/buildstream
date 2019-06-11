@@ -573,7 +573,7 @@ class Project():
         _yaml.composite(pre_config_node, self._project_conf)
 
         # Assert project's format version early, before validating toplevel keys
-        format_version = _yaml.node_get(pre_config_node, int, 'format-version')
+        format_version = pre_config_node.get_int('format-version')
         if BST_FORMAT_VERSION < format_version:
             major, minor = utils.get_bst_version()
             raise LoadError(
@@ -894,7 +894,7 @@ class Project():
                     raise LoadError(
                         LoadErrorReason.INVALID_YAML,
                         "Duplicate listing of source '{}'".format(key))
-                source_format_versions[key] = _yaml.node_get(source_versions, int, key)
+                source_format_versions[key] = source_versions.get_int(key)
 
             # Store element versions for checking later
             element_versions = origin.get_mapping('elements', default={})
@@ -903,7 +903,7 @@ class Project():
                     raise LoadError(
                         LoadErrorReason.INVALID_YAML,
                         "Duplicate listing of element '{}'".format(key))
-                element_format_versions[key] = _yaml.node_get(element_versions, int, key)
+                element_format_versions[key] = element_versions.get_int(key)
 
             # Store the origins if they're not 'core'.
             # core elements are loaded by default, so storing is unnecessary.
