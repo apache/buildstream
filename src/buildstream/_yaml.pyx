@@ -104,6 +104,16 @@ cdef class ScalarNode(Node):
                 "{}: Value of '{}' is not of the expected type '{}'"
                 .format(provenance, path, bool.__name__, self.value))
 
+    cpdef int as_int(self) except *:
+        try:
+            return int(self.value)
+        except ValueError:
+            provenance = node_get_provenance(self)
+            path = node_find_target(provenance.toplevel, self)[-1]
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                "{}: Value of '{}' is not of the expected type '{}'"
+                .format(provenance, path, int.__name__))
+
     cpdef str as_str(self):
         # We keep 'None' as 'None' to simplify the API's usage and allow chaining for users
         if self.value is None:
@@ -163,6 +173,10 @@ cdef class MappingNode(Node):
     cpdef bint get_bool(self, str key, object default=_sentinel) except *:
         cdef ScalarNode scalar = self.get_scalar(key, default)
         return scalar.as_bool()
+
+    cpdef int get_int(self, str key, object default=_sentinel) except *:
+        cdef ScalarNode scalar = self.get_scalar(key, default)
+        return scalar.as_int()
 
     cpdef str get_str(self, str key, object default=_sentinel):
         cdef ScalarNode scalar = self.get_scalar(key, default)

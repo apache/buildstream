@@ -570,7 +570,7 @@ class Workspaces():
     #
     def _parse_workspace_config(self, workspaces):
         try:
-            version = _yaml.node_get(workspaces, int, 'format-version', default_value=0)
+            version = workspaces.get_int('format-version', default=0)
         except ValueError:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "Format version is not an integer in workspace configuration")
