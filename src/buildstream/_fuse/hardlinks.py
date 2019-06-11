@@ -100,9 +100,9 @@ class SafeHardlinkOps(Operations):
     ###########################################################
     #                     Fuse Methods                        #
     ###########################################################
-    def access(self, path, mode):
+    def access(self, path, amode):
         full_path = self._full_path(path)
-        if not os.access(full_path, mode):
+        if not os.access(full_path, amode):
             raise FuseOSError(errno.EACCES)
 
     def chmod(self, path, mode):
@@ -197,13 +197,13 @@ class SafeHardlinkOps(Operations):
         self._ensure_copy(full_path)
         return os.open(full_path, flags, mode)
 
-    def read(self, path, length, offset, fh):
+    def read(self, path, size, offset, fh):
         os.lseek(fh, offset, os.SEEK_SET)
-        return os.read(fh, length)
+        return os.read(fh, size)
 
-    def write(self, path, buf, offset, fh):
+    def write(self, path, data, offset, fh):
         os.lseek(fh, offset, os.SEEK_SET)
-        return os.write(fh, buf)
+        return os.write(fh, data)
 
     def truncate(self, path, length, fh=None):
         full_path = self._full_path(path)
@@ -216,5 +216,5 @@ class SafeHardlinkOps(Operations):
     def release(self, path, fh):
         return os.close(fh)
 
-    def fsync(self, path, fdatasync, fh):
+    def fsync(self, path, datasync, fh):
         return self.flush(path, fh)
