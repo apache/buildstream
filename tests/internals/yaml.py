@@ -451,7 +451,7 @@ def test_value_doesnt_match_expected(datafiles):
     test_dict = _yaml.load(conf_file)
 
     with pytest.raises(LoadError) as exc:
-        _yaml.node_get(test_dict, int, "Test4")
+        test_dict.get_int("Test4")
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
 
