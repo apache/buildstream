@@ -2707,8 +2707,8 @@ class Element(Plugin):
             build_arch = host_arch
 
         return SandboxConfig(
-            _yaml.node_get(sandbox_config, int, 'build-uid'),
-            _yaml.node_get(sandbox_config, int, 'build-gid'),
+            sandbox_config.get_int('build-uid'),
+            sandbox_config.get_int('build-gid'),
             sandbox_config.get_str('build-os', default=host_os),
             build_arch)
 
