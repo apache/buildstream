@@ -260,7 +260,7 @@ class CASCache():
                 raise CASCacheError("Failed to pull ref {}: {}".format(ref, e)) from e
             else:
                 return False
-        except BlobNotFound as e:
+        except BlobNotFound:
             return False
 
     # pull_tree():
@@ -414,7 +414,7 @@ class CASCache():
                 os.makedirs(os.path.dirname(objpath), exist_ok=True)
                 os.link(tmp.name, objpath)
 
-        except FileExistsError as e:
+        except FileExistsError:
             # We can ignore the failed link() if the object is already in the repo.
             pass
 
