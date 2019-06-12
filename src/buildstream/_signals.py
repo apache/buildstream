@@ -135,6 +135,8 @@ def suspend_handler(sig, frame):
 #
 @contextmanager
 def suspendable(suspend_callback, resume_callback):
+    yield
+    return
     global suspendable_stack                  # pylint: disable=global-statement
 
     outermost = bool(not suspendable_stack)
@@ -164,6 +166,8 @@ def suspendable(suspend_callback, resume_callback):
 #
 @contextmanager
 def blocked(signal_list, ignore=True):
+    yield
+    return
 
     with ExitStack() as stack:
 
