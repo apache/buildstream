@@ -186,20 +186,6 @@ class CASCache():
             fullpath = os.path.join(dest, symlinknode.name)
             os.symlink(symlinknode.target, fullpath)
 
-    # commit():
-    #
-    # Commit directory to cache.
-    #
-    # Args:
-    #     refs (list): The refs to set
-    #     path (str): The directory to import
-    #
-    def commit(self, refs, path):
-        tree = self._commit_directory(path)
-
-        for ref in refs:
-            self.set_ref(ref, tree)
-
     # diff():
     #
     # Return a list of files that have been added or modified between
@@ -784,48 +770,6 @@ class CASCache():
 
                 # Something went wrong here
                 raise CASCacheError("System error while removing ref '{}': {}".format(ref, e)) from e
-
-    # _commit_directory():
-    #
-    # Adds local directory to content addressable store.
-    #
-    # Adds files, symbolic links and recursively other directories in
-    # a local directory to the content addressable store.
-    #
-    # Args:
-    #     path (str): Path to the directory to add.
-    #     dir_digest (Digest): An optional Digest object to use.
-    #
-    # Returns:
-    #     (Digest): Digest object for the directory added.
-    #
-    def _commit_directory(self, path, *, dir_digest=None):
-        directory = remote_execution_pb2.Directory()
-
-        for name in sorted(os.listdir(path)):
-            full_path = os.path.join(path, name)
-            mode = os.lstat(full_path).st_mode
-            if stat.S_ISDIR(mode):
-                dirnode = directory.directories.add()
-                dirnode.name = name
-                self._commit_directory(full_path, dir_digest=dirnode.digest)
-            elif stat.S_ISREG(mode):
-                filenode = directory.files.add()
-                filenode.name = name
-                self.add_object(path=full_path, digest=filenode.digest)
-                filenode.is_executable = (mode & stat.S_IXUSR) == stat.S_IXUSR
-            elif stat.S_ISLNK(mode):
-                symlinknode = directory.symlinks.add()
-                symlinknode.name = name
-                symlinknode.target = os.readlink(full_path)
-            elif stat.S_ISSOCK(mode):
-                # The process serving the socket can't be cached anyway
-                pass
-            else:
-                raise CASCacheError("Unsupported file type for {}".format(full_path))
-
-        return self.add_object(digest=dir_digest,
-                               buffer=directory.SerializeToString())
 
     def _get_subdir(self, tree, subdir):
         head, name = os.path.split(subdir)
