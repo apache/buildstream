@@ -623,18 +623,21 @@ cdef list __trim_list_provenance(list value):
 #
 cpdef void node_set(Node node, object key, object value, list indices=None) except *:
     cdef int idx
-
-    if type(value) is list:
-        value = __new_node_from_list(value)
+    cdef value_type = type(value)
 
     if indices:
         node = <Node> (<dict> node.value)[key]
         key = indices.pop()
         for idx in indices:
             node = <Node> (<list> node.value)[idx]
-    if type(value) is Node:
+    if value_type is Node:
         node.value[key] = value
     else:
+        if value_type is list:
+            value = __new_node_from_list(value).value
+        elif value_type is dict:
+            value = new_node_from_dict(value).value
+
         try:
             # Need to do this just in case we're modifying a list
             old_value = <Node> node.value[key]
