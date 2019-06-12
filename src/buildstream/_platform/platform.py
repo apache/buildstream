@@ -22,6 +22,8 @@ import platform
 import sys
 import resource
 
+import psutil
+
 from .._exceptions import PlatformError, ImplError
 
 
@@ -68,7 +70,7 @@ class Platform():
         return cls._instance
 
     def get_cpu_count(self, cap=None):
-        cpu_count = len(os.sched_getaffinity(0))
+        cpu_count = len(psutil.Process().cpu_affinity())
         if cap is None:
             return cpu_count
         else:
