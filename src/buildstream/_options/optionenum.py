@@ -31,7 +31,7 @@ class OptionEnum(Option):
     OPTION_TYPE = 'enum'
 
     def load(self, node, allow_default_definition=True):
-        super(OptionEnum, self).load(node)
+        super().load(node)
 
         valid_symbols = OPTION_SYMBOLS + ['values']
         if allow_default_definition:

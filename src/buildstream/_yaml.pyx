@@ -147,7 +147,7 @@ cdef class ProvenanceInformation:
 # public exceptions.py
 class CompositeError(Exception):
     def __init__(self, path, message):
-        super(CompositeError, self).__init__(message)
+        super().__init__(message)
         self.path = path
         self.message = message
 

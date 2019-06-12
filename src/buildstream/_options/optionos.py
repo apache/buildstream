@@ -29,7 +29,7 @@ class OptionOS(OptionEnum):
     OPTION_TYPE = 'os'
 
     def load(self, node):
-        super(OptionOS, self).load(node, allow_default_definition=False)
+        super().load(node, allow_default_definition=False)
 
     def load_default_value(self, node):
         return platform.uname().system

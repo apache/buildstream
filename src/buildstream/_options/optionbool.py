@@ -32,7 +32,7 @@ class OptionBool(Option):
 
     def load(self, node):
 
-        super(OptionBool, self).load(node)
+        super().load(node)
         _yaml.node_validate(node, OPTION_SYMBOLS + ['default'])
         self.value = _yaml.node_get(node, bool, 'default')
 
