@@ -642,12 +642,11 @@ def _get_dir_size(path):
 #
 def _get_volume_size(path):
     try:
-        stat_ = os.statvfs(path)
+        usage = shutil.disk_usage(path)
     except OSError as e:
         raise UtilError("Failed to retrieve stats on volume for path '{}': {}"
                         .format(path, e)) from e
-
-    return stat_.f_bsize * stat_.f_blocks, stat_.f_bsize * stat_.f_bavail
+    return usage.total, usage.free
 
 
 # _parse_size():
