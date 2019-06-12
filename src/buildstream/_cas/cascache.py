@@ -440,16 +440,6 @@ class CASCache():
         except FileNotFoundError as e:
             raise CASCacheError("Attempt to access unavailable ref: {}".format(e)) from e
 
-    def clean_up_refs_until(self, time):
-        ref_heads = os.path.join(self.casdir, 'refs', 'heads')
-
-        for root, _, files in os.walk(ref_heads):
-            for filename in files:
-                ref_path = os.path.join(root, filename)
-                # Obtain the mtime (the time a file was last modified)
-                if os.path.getmtime(ref_path) < time:
-                    os.unlink(ref_path)
-
     # remove():
     #
     # Removes the given symbolic ref from the repo.
