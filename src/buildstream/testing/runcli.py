@@ -524,7 +524,7 @@ class CliIntegration(Cli):
     # be a dictionary of additional project configuration options, and
     # will be composited on top of the already loaded project.conf
     #
-    def run(self, *args, project_config=None, **kwargs):
+    def run(self, *args, project_config=None, **kwargs):  # pylint: disable=arguments-differ
 
         # First load the project.conf and substitute {project_dir}
         #

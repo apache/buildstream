@@ -100,7 +100,7 @@ class SafeHardlinkOps(Operations):
     ###########################################################
     #                     Fuse Methods                        #
     ###########################################################
-    def access(self, path, mode):
+    def access(self, path, mode):  # pylint: disable=arguments-differ
         full_path = self._full_path(path)
         if not os.access(full_path, mode):
             raise FuseOSError(errno.EACCES)
@@ -163,13 +163,13 @@ class SafeHardlinkOps(Operations):
     def unlink(self, path):
         return os.unlink(self._full_path(path))
 
-    def symlink(self, name, target):
+    def symlink(self, name, target):  # pylint: disable=arguments-differ
         return os.symlink(target, self._full_path(name))
 
     def rename(self, old, new):
         return os.rename(self._full_path(old), self._full_path(new))
 
-    def link(self, target, name):
+    def link(self, target, name):  # pylint: disable=arguments-differ
 
         # When creating a hard link here, should we ensure the original
         # file is not a hardlink itself first ?
@@ -188,18 +188,18 @@ class SafeHardlinkOps(Operations):
 
         return os.open(full_path, flags)
 
-    def create(self, path, mode, flags):
+    def create(self, path, mode, flags):  # pylint: disable=arguments-differ
         full_path = self._full_path(path)
 
         # If it already exists, ensure it's a copy first
         self._ensure_copy(full_path)
         return os.open(full_path, flags, mode)
 
-    def read(self, path, length, offset, fh):
+    def read(self, path, length, offset, fh):  # pylint: disable=arguments-differ
         os.lseek(fh, offset, os.SEEK_SET)
         return os.read(fh, length)
 
-    def write(self, path, buf, offset, fh):
+    def write(self, path, buf, offset, fh):  # pylint: disable=arguments-differ
         os.lseek(fh, offset, os.SEEK_SET)
         return os.write(fh, buf)
 
@@ -214,5 +214,5 @@ class SafeHardlinkOps(Operations):
     def release(self, path, fh):
         return os.close(fh)
 
-    def fsync(self, path, fdatasync, fh):
+    def fsync(self, path, fdatasync, fh):  # pylint: disable=arguments-differ
         return self.flush(path, fh)

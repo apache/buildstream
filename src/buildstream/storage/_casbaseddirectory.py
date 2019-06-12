@@ -394,7 +394,7 @@ class CasBasedDirectory(Directory):
 
         return result
 
-    def import_single_file(self, srcpath):
+    def import_single_file(self, srcpath):  # pylint: disable=arguments-differ
         result = FileListResult()
         if self._check_replacement(os.path.basename(srcpath),
                                    os.path.dirname(srcpath),
@@ -507,7 +507,7 @@ class CasBasedDirectory(Directory):
             if i and i.modified:
                 yield p
 
-    def list_relative_paths(self, relpath=""):
+    def list_relative_paths(self, relpath=""):  # pylint: disable=arguments-differ
         """Provide a list of all relative paths.
 
         Return value: List(str) - list of all paths

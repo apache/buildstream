@@ -118,7 +118,7 @@ class _GitMirror(SourceFetcher):
                          fail_temporarily=True,
                          cwd=self.mirror)
 
-    def fetch(self, alias_override=None):
+    def fetch(self, alias_override=None):  # pylint: disable=arguments-differ
         # Resolve the URL for the message
         resolved_url = self.source.translate_url(self.url,
                                                  alias_override=alias_override,
@@ -470,7 +470,7 @@ class _GitSourceBase(Source):
     def get_ref(self):
         return self.mirror.ref, self.mirror.tags
 
-    def set_ref(self, ref_data, node):
+    def set_ref(self, ref_data, node):  # pylint: disable=arguments-differ
         if not ref_data:
             self.mirror.ref = None
             if 'ref' in node:
@@ -493,7 +493,7 @@ class _GitSourceBase(Source):
                 if 'tags' in node:
                     del node['tags']
 
-    def track(self):
+    def track(self):  # pylint: disable=arguments-differ
 
         # If self.tracking is not specified it's not an error, just silently return
         if not self.tracking:

@@ -30,7 +30,7 @@ class OptionEnum(Option):
 
     OPTION_TYPE = 'enum'
 
-    def load(self, node, allow_default_definition=True):
+    def load(self, node, allow_default_definition=True):  # pylint: disable=arguments-differ
         super().load(node)
 
         valid_symbols = OPTION_SYMBOLS + ['values']

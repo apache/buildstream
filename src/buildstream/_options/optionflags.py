@@ -30,7 +30,7 @@ class OptionFlags(Option):
 
     OPTION_TYPE = 'flags'
 
-    def load(self, node, allow_value_definitions=True):
+    def load(self, node, allow_value_definitions=True):  # pylint: disable=arguments-differ
         super().load(node)
 
         valid_symbols = OPTION_SYMBOLS + ['default']

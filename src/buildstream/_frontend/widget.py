@@ -253,7 +253,7 @@ class LogFile(Widget):
         self._err_profile = err_profile
         self._logdir = context.logdir
 
-    def render(self, message, abbrev=True):
+    def render(self, message, abbrev=True):  # pylint: disable=arguments-differ
 
         if message.logfile and message.scheduler:
             logfile = message.logfile

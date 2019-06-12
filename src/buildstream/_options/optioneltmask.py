@@ -30,7 +30,7 @@ class OptionEltMask(OptionFlags):
 
     OPTION_TYPE = 'element-mask'
 
-    def load(self, node):
+    def load(self, node):  # pylint: disable=arguments-differ
         # Ask the parent constructor to disallow value definitions,
         # we define those automatically only.
         super().load(node, allow_value_definitions=False)

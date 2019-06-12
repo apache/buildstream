@@ -60,7 +60,7 @@ class _SimpleGit(Repo):
             universal_newlines=True,
         ).stdout.strip()
 
-    def source_config(self, ref=None, checkout_submodules=None):
+    def source_config(self, ref=None, checkout_submodules=None):  # pylint: disable=arguments-differ
         config = {
             'kind': 'git',
             'url': 'file://' + self.repo,

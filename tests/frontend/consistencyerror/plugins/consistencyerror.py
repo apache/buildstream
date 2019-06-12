@@ -24,7 +24,7 @@ class ConsistencyErrorSource(Source):
     def set_ref(self, ref, node):
         pass
 
-    def fetch(self):
+    def fetch(self):  # pylint: disable=arguments-differ
         pass
 
     def stage(self, directory):

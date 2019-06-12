@@ -72,7 +72,7 @@ class Git(Repo):
         self._run_git('commit', '-m', 'Removing {}'.format(path))
         return self.latest_commit()
 
-    def source_config(self, ref=None, checkout_submodules=None):
+    def source_config(self, ref=None, checkout_submodules=None):  # pylint: disable=arguments-differ
         config = {
             'kind': 'git',
             'url': 'file://' + self.repo,
