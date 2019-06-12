@@ -17,7 +17,6 @@
 #  Authors:
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-import hashlib
 import itertools
 import os
 import stat
@@ -31,8 +30,9 @@ import time
 
 import grpc
 
+from .._protos.google.rpc import code_pb2
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
-from .._protos.build.buildgrid import local_cas_pb2_grpc
+from .._protos.build.buildgrid import local_cas_pb2, local_cas_pb2_grpc
 from .._protos.buildstream.v2 import buildstream_pb2
 
 from .. import utils
@@ -442,42 +442,29 @@ class CASCache():
         if digest is None:
             digest = remote_execution_pb2.Digest()
 
-        try:
-            h = hashlib.sha256()
-            # Always write out new file to avoid corruption if input file is modified
-            with contextlib.ExitStack() as stack:
-                if path is not None and link_directly:
-                    tmp = stack.enter_context(open(path, 'rb'))
-                    for chunk in iter(lambda: tmp.read(_BUFFER_SIZE), b""):
-                        h.update(chunk)
-                else:
-                    tmp = stack.enter_context(self._temporary_object())
+        with contextlib.ExitStack() as stack:
+            if path is None:
+                tmp = stack.enter_context(self._temporary_object())
+                tmp.write(buffer)
+                tmp.flush()
+                path = tmp.name
 
-                    if path:
-                        with open(path, 'rb') as f:
-                            for chunk in iter(lambda: f.read(_BUFFER_SIZE), b""):
-                                h.update(chunk)
-                                tmp.write(chunk)
-                    else:
-                        h.update(buffer)
-                        tmp.write(buffer)
+            request = local_cas_pb2.CaptureFilesRequest()
+            request.path.append(path)
 
-                    tmp.flush()
+            local_cas = self._get_local_cas()
 
-                digest.hash = h.hexdigest()
-                digest.size_bytes = os.fstat(tmp.fileno()).st_size
+            response = local_cas.CaptureFiles(request)
 
-                # Place file at final location
-                objpath = self.objpath(digest)
-                os.makedirs(os.path.dirname(objpath), exist_ok=True)
-                os.link(tmp.name, objpath)
+            if len(response.responses) != 1:
+                raise CASCacheError("Expected 1 response from CaptureFiles, got {}".format(len(response.responses)))
 
-        except FileExistsError:
-            # We can ignore the failed link() if the object is already in the repo.
-            pass
-
-        except OSError as e:
-            raise CASCacheError("Failed to hash object: {}".format(e)) from e
+            blob_response = response.responses[0]
+            if blob_response.status.code == code_pb2.RESOURCE_EXHAUSTED:
+                raise CASCacheError("Cache too full", reason="cache-too-full")
+            elif blob_response.status.code != code_pb2.OK:
+                raise CASCacheError("Failed to capture blob {}: {}".format(path, blob_response.status.code))
+            digest.CopyFrom(blob_response.digest)
 
         return digest
 
