@@ -15,7 +15,7 @@ from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream import utils
 
-from tests.testutils import generate_junction, yaml_file_get_provenance, create_artifact_share
+from tests.testutils import generate_junction, create_artifact_share
 
 from . import configure_project
 
@@ -460,8 +460,9 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
 
     # Assert that we have the expected provenance encoded into the error
-    provenance = yaml_file_get_provenance(
-        element_path, 'junction-dep.bst', key='depends', indices=[0])
+    element_node = _yaml.load(element_path, shortname='junction-dep.bst')
+    ref_node = element_node.get_sequence('depends').mapping_at(0)
+    provenance = _yaml.node_get_provenance(ref_node)
     assert str(provenance) in result.stderr
 
 
