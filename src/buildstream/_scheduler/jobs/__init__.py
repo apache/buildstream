@@ -18,5 +18,4 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 from .elementjob import ElementJob
-from .cachesizejob import CacheSizeJob
 from .job import JobStatus

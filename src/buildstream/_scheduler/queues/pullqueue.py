@@ -52,12 +52,6 @@ class PullQueue(Queue):
 
         element._pull_done()
 
-        # Build jobs will check the "approximate" size first. Since we
-        # do not get an artifact size from pull jobs, we have to
-        # actually check the cache size.
-        if status is JobStatus.OK:
-            self._scheduler.check_cache_size()
-
     def register_pending_element(self, element):
         # Set a "can_query_cache"_callback for an element which is not
         # immediately ready to query the artifact cache so that it

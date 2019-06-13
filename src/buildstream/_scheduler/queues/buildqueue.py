@@ -21,7 +21,6 @@
 from datetime import timedelta
 
 from . import Queue, QueueStatus
-from ..jobs import JobStatus
 from ..resources import ResourceType
 from ..._message import MessageType
 
@@ -73,38 +72,10 @@ class BuildQueue(Queue):
 
         return QueueStatus.READY
 
-    def _check_cache_size(self, job, element, artifact_size):
-
-        # After completing a build job, add the artifact size
-        # as returned from Element._assemble() to the estimated
-        # artifact cache size
-        #
-        context = self._scheduler.context
-        artifacts = context.artifactcache
-
-        artifacts.add_artifact_size(artifact_size)
-
-        # If the estimated size outgrows the quota, ask the scheduler
-        # to queue a job to actually check the real cache size.
-        #
-        if artifacts.full():
-            self._scheduler.check_cache_size()
-
     def done(self, job, element, result, status):
 
         # Inform element in main process that assembly is done
         element._assemble_done()
-
-        # This has to be done after _assemble_done, such that the
-        # element may register its cache key as required
-        #
-        # FIXME: Element._assemble() does not report both the failure state and the
-        #        size of the newly cached failed artifact, so we can only adjust the
-        #        artifact cache size for a successful build even though we know a
-        #        failed build also grows the artifact cache size.
-        #
-        if status is JobStatus.OK:
-            self._check_cache_size(job, element, result)
 
     def register_pending_element(self, element):
         # Set a "buildable" callback for an element not yet ready
