@@ -102,9 +102,6 @@ class ArtifactCache(BaseCache):
         self.artifactdir = context.artifactdir
         os.makedirs(self.artifactdir, exist_ok=True)
 
-        self.casquota.add_remove_callbacks(self.unrequired_artifacts, self.remove)
-        self.casquota.add_list_refs_callback(self.list_artifacts)
-
         self.cas.add_reachable_directories_callback(self._reachable_directories)
         self.cas.add_reachable_digests_callback(self._reachable_digests)
 
@@ -179,23 +176,6 @@ class ArtifactCache(BaseCache):
         for element in self._required_elements:
             yield element._get_cache_key(strength=_KeyStrength.STRONG)
             yield element._get_cache_key(strength=_KeyStrength.WEAK)
-
-    def full(self):
-        return self.casquota.full()
-
-    # add_artifact_size()
-    #
-    # Adds the reported size of a newly cached artifact to the
-    # overall estimated size.
-    #
-    # Args:
-    #     artifact_size (int): The size to add.
-    #
-    def add_artifact_size(self, artifact_size):
-        cache_size = self.casquota.get_cache_size()
-        cache_size += artifact_size
-
-        self.casquota.set_cache_size(cache_size)
 
     # preflight():
     #

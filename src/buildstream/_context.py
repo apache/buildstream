@@ -28,7 +28,7 @@ from ._profile import Topics, PROFILER
 from ._platform import Platform
 from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
-from ._cas import CASCache, CASQuota, CASCacheUsage
+from ._cas import CASCache
 from .types import _CacheBuildTrees, _SchedulerErrorAction
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .node import Node
@@ -167,7 +167,6 @@ class Context():
         self._workspaces = None
         self._workspace_project_cache = WorkspaceProjectCache()
         self._cascache = None
-        self._casquota = None
 
     # __enter__()
     #
@@ -358,16 +357,6 @@ class Context():
 
         return self._artifactcache
 
-    # get_cache_usage()
-    #
-    # Fetches the current usage of the artifact cache
-    #
-    # Returns:
-    #     (CASCacheUsage): The current status
-    #
-    def get_cache_usage(self):
-        return CASCacheUsage(self.get_casquota())
-
     @property
     def sourcecache(self):
         if not self._sourcecache:
@@ -497,8 +486,3 @@ class Context():
         if self._cascache is None:
             self._cascache = CASCache(self.cachedir)
         return self._cascache
-
-    def get_casquota(self):
-        if self._casquota is None:
-            self._casquota = CASQuota(self)
-        return self._casquota

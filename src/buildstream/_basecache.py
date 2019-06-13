@@ -42,8 +42,6 @@ class BaseCache():
     def __init__(self, context):
         self.context = context
         self.cas = context.get_cascache()
-        self.casquota = context.get_casquota()
-        self.casquota._calculate_cache_quota()
 
         self._remotes_setup = False           # Check to prevent double-setup of remotes
         # Per-project list of _CASRemote instances.

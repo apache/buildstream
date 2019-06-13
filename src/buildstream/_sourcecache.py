@@ -98,9 +98,6 @@ class SourceCache(BaseCache):
         self.sourcerefdir = os.path.join(context.cachedir, 'source_protos')
         os.makedirs(self.sourcerefdir, exist_ok=True)
 
-        self.casquota.add_remove_callbacks(self.unrequired_sources, self._remove_source)
-        self.casquota.add_list_refs_callback(self.list_sources)
-
         self.cas.add_reachable_directories_callback(self._reachable_directories)
 
     # mark_required_sources()

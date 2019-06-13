@@ -354,6 +354,7 @@ def test_never_delete_required_track(cli, datafiles):
     ("70%", 'warning', 'Your system does not have enough available')
 ])
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.xfail()
 def test_invalid_cache_quota(cli, datafiles, quota, err_domain, err_reason):
     project = str(datafiles)
     os.makedirs(os.path.join(project, 'elements'))
