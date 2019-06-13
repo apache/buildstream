@@ -239,7 +239,7 @@ def test_filter_track(datafiles, cli, tmpdir):
 
     # Now check that a ref field exists
     new_input = _yaml.load(input_file)
-    source_node = _yaml.node_get(new_input, dict, 'sources', indices=[0])
+    source_node = new_input.get_sequence('sources').mapping_at(0)
     new_input_ref = source_node.get_str('ref')
     assert new_input_ref == ref
 
@@ -294,7 +294,7 @@ def test_filter_track_excepted(datafiles, cli, tmpdir):
 
     # Now check that a ref field exists
     new_input = _yaml.load(input_file)
-    source_node = _yaml.node_get(new_input, dict, 'sources', indices=[0])
+    source_node = new_input.get_sequence('sources').mapping_at(0)
     assert 'ref' not in source_node
 
 
@@ -348,7 +348,7 @@ def test_filter_track_multi_to_one(datafiles, cli, tmpdir):
 
     # Now check that a ref field exists
     new_input = _yaml.load(input_file)
-    source_node = _yaml.node_get(new_input, dict, 'sources', indices=[0])
+    source_node = new_input.get_sequence('sources').mapping_at(0)
     new_ref = source_node.get_str('ref')
     assert new_ref == ref
 
@@ -413,12 +413,12 @@ def test_filter_track_multi(datafiles, cli, tmpdir):
 
     # Now check that a ref field exists
     new_input = _yaml.load(input_file)
-    source_node = _yaml.node_get(new_input, dict, 'sources', indices=[0])
+    source_node = new_input.get_sequence('sources').mapping_at(0)
     new_ref = source_node.get_str('ref')
     assert new_ref == ref
 
     new_input2 = _yaml.load(input2_file)
-    source_node2 = _yaml.node_get(new_input2, dict, 'sources', indices=[0])
+    source_node2 = new_input2.get_sequence('sources').mapping_at(0)
     new_ref2 = source_node2.get_str('ref')
     assert new_ref2 == ref
 
@@ -482,11 +482,11 @@ def test_filter_track_multi_exclude(datafiles, cli, tmpdir):
 
     # Now check that a ref field exists
     new_input = _yaml.load(input_file)
-    source_node = _yaml.node_get(new_input, dict, 'sources', indices=[0])
+    source_node = new_input.get_sequence('sources').mapping_at(0)
     assert 'ref' not in source_node
 
     new_input2 = _yaml.load(input2_file)
-    source_node2 = _yaml.node_get(new_input2, dict, 'sources', indices=[0])
+    source_node2 = new_input2.get_sequence('sources').mapping_at(0)
     new_ref2 = source_node2.get_str('ref')
     assert new_ref2 == ref
 
