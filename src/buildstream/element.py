@@ -549,47 +549,6 @@ class Element(Plugin):
                 raise LoadError(e.reason, '{}: {}'.format(provenance, e), detail=e.detail) from e
         return ret
 
-    def node_subst_list_element(self, node, member_name, indices):
-        """Fetch the value of a list element from a node member, substituting any variables
-        in the loaded value with the element contextual variables.
-
-        Args:
-           node (dict): A dictionary loaded from YAML
-           member_name (str): The name of the member to fetch
-           indices (list of int): List of indices to search, in case of nested lists
-
-        Returns:
-           The value of the list element in *member_name* at the specified *indices*
-
-        Raises:
-           :class:`.LoadError`
-
-        This is essentially the same as :func:`~buildstream.plugin.Plugin.node_get_list_element`
-        except that it assumes the expected type is a string and will also perform variable
-        substitutions.
-
-        **Example:**
-
-        .. code:: python
-
-          # Fetch the list itself
-          strings = self.node_get_member(node, list, 'strings')
-
-          # Iterate over the list indices
-          for i in range(len(strings)):
-
-              # Fetch the strings in this list, substituting content
-              # with our element's variables if needed
-              string = self.node_subst_list_element(
-                  node, 'strings', [ i ])
-        """
-        value = self.node_get_list_element(node, str, member_name, indices)
-        try:
-            return self.__variables.subst(value)
-        except LoadError as e:
-            provenance = _yaml.node_get_provenance(node, key=member_name, indices=indices)
-            raise LoadError(e.reason, '{}: {}'.format(provenance, e), detail=e.detail) from e
-
     def compute_manifest(self, *, include=None, exclude=None, orphans=True):
         """Compute and return this element's selective manifest
 
