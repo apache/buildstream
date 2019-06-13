@@ -36,7 +36,7 @@ from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, \
-    SourcePushQueue, BuildQueue, PullQueue, ArtifactPushQueue
+    SourcePushQueue, BuildQueue, PullQueue, ArtifactPushQueue, NotificationType, JobStatus
 from ._pipeline import Pipeline, PipelineSelection
 from ._profile import Topics, PROFILER
 from ._state import State
@@ -85,12 +85,14 @@ class Stream():
 
         context.messenger.set_state(self._state)
 
-        self._scheduler = Scheduler(context, session_start, self._state,
+        self._scheduler = Scheduler(context, session_start, self._state, self._scheduler_notification_handler,
                                     interrupt_callback=interrupt_callback,
                                     ticker_callback=ticker_callback,
                                     interactive_failure=interactive_failure)
         self._first_non_track_queue = None
         self._session_start_callback = session_start_callback
+        self._ticker_callback = ticker_callback
+        self._interrupt_callback = interrupt_callback
 
     # init()
     #
@@ -1571,6 +1573,25 @@ class Stream():
                 self._message(MessageType.WARN, "No artifacts found for globs: {}".format(', '.join(artifact_globs)))
 
         return element_targets, artifact_refs
+
+    def _scheduler_notification_handler(self, notification):
+        if notification.notification_type == NotificationType.INTERRUPT:
+            self._interrupt_callback()
+        elif notification.notification_type == NotificationType.TICK:
+            self._ticker_callback()
+        elif notification.notification_type == NotificationType.JOB_START:
+            self._state.add_task(notification.job_action, notification.full_name, notification.elapsed_time)
+
+        elif notification.notification_type == NotificationType.JOB_COMPLETE:
+            self._state.remove_task(notification.job_action, notification.full_name)
+            if notification.job_status == JobStatus.FAIL:
+                if notification.failed_element:
+                    unique_id = notification.full_name
+                else:
+                    unique_id = None
+                self._state.fail_task(notification.job_action, notification.full_name, unique_id)
+        else:
+            raise StreamError("Unreccognised notification type recieved")
 
     def __getstate__(self):
         # The only use-cases for pickling in BuildStream at the time of writing
