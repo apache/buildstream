@@ -669,9 +669,8 @@ class Stream():
     #
     # Args:
     #    targets (str): Targets to remove
-    #    no_prune (bool): Whether to prune the unreachable refs, default False
     #
-    def artifact_delete(self, targets, no_prune):
+    def artifact_delete(self, targets):
         # Return list of Element and/or ArtifactElement objects
         target_objects = self.load_selection(targets, selection=PipelineSelection.NONE, load_refs=True)
 
@@ -686,18 +685,13 @@ class Stream():
         ref_removed = False
         for ref in remove_refs:
             try:
-                self._artifacts.remove(ref, defer_prune=True)
+                self._artifacts.remove(ref)
             except ArtifactError as e:
                 self._message(MessageType.WARN, str(e))
                 continue
 
             self._message(MessageType.INFO, "Removed: {}".format(ref))
             ref_removed = True
-
-        # Prune the artifact cache
-        if ref_removed and not no_prune:
-            with self._context.messenger.timed_activity("Pruning artifact cache"):
-                self._artifacts.prune()
 
         if not ref_removed:
             self._message(MessageType.INFO, "No artifacts were removed")

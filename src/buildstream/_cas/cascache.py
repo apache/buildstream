@@ -483,26 +483,13 @@ class CASCache():
     #    ref (str): A symbolic ref
     #    basedir (str): Path of base directory the ref is in, defaults to
     #                   CAS refs heads
-    #    defer_prune (bool): Whether to defer pruning to the caller. NOTE:
-    #                        The space won't be freed until you manually
-    #                        call prune.
     #
-    # Returns:
-    #    (int|None) The amount of space pruned from the repository in
-    #               Bytes, or None if defer_prune is True
-    #
-    def remove(self, ref, *, basedir=None, defer_prune=False):
+    def remove(self, ref, *, basedir=None):
 
         if basedir is None:
             basedir = os.path.join(self.casdir, 'refs', 'heads')
         # Remove cache ref
         self._remove_ref(ref, basedir)
-
-        if not defer_prune:
-            pruned = self.prune()
-            return pruned
-
-        return None
 
     # adds callback of iterator over reachable directory digests
     def add_reachable_directories_callback(self, callback):
@@ -511,46 +498,6 @@ class CASCache():
     # adds callbacks of iterator over reachable file digests
     def add_reachable_digests_callback(self, callback):
         self.__reachable_digest_callbacks.append(callback)
-
-    # prune():
-    #
-    # Prune unreachable objects from the repo.
-    #
-    def prune(self):
-        ref_heads = os.path.join(self.casdir, 'refs', 'heads')
-
-        pruned = 0
-        reachable = set()
-
-        # Check which objects are reachable
-        for root, _, files in os.walk(ref_heads):
-            for filename in files:
-                ref_path = os.path.join(root, filename)
-                ref = os.path.relpath(ref_path, ref_heads)
-
-                tree = self.resolve_ref(ref)
-                self._reachable_refs_dir(reachable, tree)
-
-        # check callback directory digests that are reachable
-        for digest_callback in self.__reachable_directory_callbacks:
-            for digest in digest_callback():
-                self._reachable_refs_dir(reachable, digest)
-
-        # check callback file digests that are reachable
-        for digest_callback in self.__reachable_digest_callbacks:
-            for digest in digest_callback():
-                reachable.add(digest.hash)
-
-        # Prune unreachable objects
-        for root, _, files in os.walk(os.path.join(self.casdir, 'objects')):
-            for filename in files:
-                objhash = os.path.basename(root) + filename
-                if objhash not in reachable:
-                    obj_path = os.path.join(root, filename)
-                    pruned += os.stat(obj_path).st_size
-                    os.unlink(obj_path)
-
-        return pruned
 
     def update_tree_mtime(self, tree):
         reachable = set()
