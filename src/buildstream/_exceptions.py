@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
-from enum import Enum
+from enum import Enum, unique
 import os
 
 # Disable pylint warnings for whole file here:
@@ -79,6 +79,7 @@ def set_last_task_error(domain, reason):
         _last_task_error_reason = reason
 
 
+@unique
 class ErrorDomain(Enum):
     PLUGIN = 1
     LOAD = 2
@@ -89,13 +90,13 @@ class ErrorDomain(Enum):
     PIPELINE = 7
     OSTREE = 8
     UTIL = 9
-    PROG_NOT_FOUND = 12
     SOURCE = 10
     ELEMENT = 11
     APP = 12
     STREAM = 13
     VIRTUAL_FS = 14
     CAS = 15
+    PROG_NOT_FOUND = 16
 
 
 # BstError is an internal base exception class for BuildSream
