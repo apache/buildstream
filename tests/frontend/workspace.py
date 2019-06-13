@@ -184,7 +184,7 @@ def test_open_bzr_customize(cli, tmpdir, datafiles):
 
     # Check that the correct origin branch is set
     element_config = _yaml.load(os.path.join(project, "elements", element_name))
-    source_config = _yaml.node_get(element_config, dict, 'sources', [0])
+    source_config = element_config.get_sequence('sources').mapping_at(0)
     output = subprocess.check_output(["bzr", "info"], cwd=workspace)
     stripped_url = source_config.get_str('url').lstrip("file:///")
     expected_output_str = ("checkout of branch: /{}/{}"
@@ -608,10 +608,10 @@ def test_list(cli, tmpdir, datafiles):
     result.assert_success()
 
     loaded = _yaml.load_data(result.output)
-    workspaces = _yaml.node_get(loaded, list, 'workspaces')
+    workspaces = loaded.get_sequence('workspaces')
     assert len(workspaces) == 1
 
-    space = workspaces[0]
+    space = workspaces.mapping_at(0)
     assert space.get_str('element') == element_name
     assert space.get_str('directory') == workspace
 
@@ -1132,7 +1132,7 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
     # Delete the ref from the source so that we can detect if the
     # element has been tracked
     element_contents = _yaml.load(element_file)
-    _yaml.node_del(_yaml.node_get(element_contents, dict, 'sources', [0]), 'ref')
+    _yaml.node_del(element_contents.get_sequence('sources').mapping_at(0), 'ref')
     _yaml.dump(element_contents, element_file)
 
     result = cli.run(project=project, args=['-C', workspace, 'source', 'track', *arg_elm])
@@ -1140,7 +1140,7 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
 
     # Element is tracked now
     element_contents = _yaml.load(element_file)
-    assert 'ref' in _yaml.node_get(element_contents, dict, 'sources', [0])
+    assert 'ref' in element_contents.get_sequence('sources').mapping_at(0)
 
 
 @pytest.mark.datafiles(DATA_DIR)
