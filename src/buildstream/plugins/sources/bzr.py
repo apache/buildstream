@@ -93,7 +93,7 @@ class BzrSource(Source):
                 return Consistency.RESOLVED
 
     def load_ref(self, node):
-        self.ref = self.node_get_member(node, str, 'ref', None)
+        self.ref = node.get_str('ref', None)
 
     def get_ref(self):
         return self.ref
