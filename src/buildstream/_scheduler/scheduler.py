@@ -29,14 +29,57 @@ from contextlib import contextmanager
 # Local imports
 from .resources import Resources
 from .jobs import JobStatus
+from ..types import FastEnum
 from .._profile import Topics, PROFILER
 
 
 # A decent return code for Scheduler.run()
-class SchedStatus():
+class SchedStatus(FastEnum):
     SUCCESS = 0
     ERROR = -1
     TERMINATED = 1
+
+
+# NotificationType()
+#
+# Type of notification for inter-process communication
+# between 'front' & 'back' end when a scheduler is executing.
+# This is used as a parameter for a Notification object,
+# to be used as a conditional for control or state handling.
+#
+class NotificationType(FastEnum):
+    INTERRUPT = "interrupt"
+    JOB_START = "job_start"
+    JOB_COMPLETE = "job_complete"
+    TICK = "tick"
+    TERMINATE = "terminate"
+    QUIT = "quit"
+
+
+# Notification()
+#
+# An object to be passed across a bidirectional queue between
+# Stream & Scheduler. A required NotificationType() parameter
+# with accompanying information can be added as a member if
+# required. NOTE: The notification object should be lightweight
+# and all attributes must be picklable.
+#
+class Notification():
+
+    def __init__(self,
+                 notification_type,
+                 *,
+                 full_name=None,
+                 job_action=None,
+                 job_status=None,
+                 elapsed_time=None,
+                 element=None):
+        self.notification_type = notification_type
+        self.full_name = full_name
+        self.job_action = job_action
+        self.job_status = job_status
+        self.elapsed_time = elapsed_time
+        self.element = element
 
 
 # Scheduler()
@@ -62,9 +105,7 @@ class SchedStatus():
 class Scheduler():
 
     def __init__(self, context,
-                 start_time, state,
-                 interrupt_callback=None,
-                 ticker_callback=None):
+                 start_time, state, notification_queue, notifier):
 
         #
         # Public members
@@ -87,9 +128,9 @@ class Scheduler():
         self._queue_jobs = True               # Whether we should continue to queue jobs
         self._state = state
 
-        # Callbacks to report back to the Scheduler owner
-        self._interrupt_callback = interrupt_callback
-        self._ticker_callback = ticker_callback
+        # Bidirectional queue to send notifications back to the Scheduler's owner
+        self._notification_queue = notification_queue
+        self._notifier = notifier
 
         self.resources = Resources(context.sched_builders,
                                    context.sched_fetchers,
@@ -121,8 +162,7 @@ class Scheduler():
         asyncio.set_event_loop(self.loop)
 
         # Add timeouts
-        if self._ticker_callback:
-            self.loop.call_later(1, self._tick)
+        self.loop.call_later(1, self._tick)
 
         # Handle unix signals while running
         self._connect_signals()
@@ -234,11 +274,10 @@ class Scheduler():
     #    status (JobStatus): The status of the completed job
     #
     def job_completed(self, job, status):
-
         # Remove from the active jobs list
         self._active_jobs.remove(job)
 
-        self._state.remove_task(job.action_name, job.name)
+        element_info = None
         if status == JobStatus.FAIL:
             # If it's an elementjob, we want to compare against the failure messages
             # and send the unique_id and display key tuple of the Element. This can then
@@ -248,9 +287,14 @@ class Scheduler():
                 element_info = element._unique_id, element._get_display_key()
             else:
                 element_info = None
-            self._state.fail_task(job.action_name, job.name, element=element_info)
 
         # Now check for more jobs
+        notification = Notification(NotificationType.JOB_COMPLETE,
+                                    full_name=job.name,
+                                    job_action=job.action_name,
+                                    job_status=status,
+                                    element=element_info)
+        self._notify(notification)
         self._sched()
 
     #######################################################
@@ -266,7 +310,11 @@ class Scheduler():
     #
     def _start_job(self, job):
         self._active_jobs.append(job)
-        self._state.add_task(job.action_name, job.name, self.elapsed_time())
+        notification = Notification(NotificationType.JOB_START,
+                                    full_name=job.name,
+                                    job_action=job.action_name,
+                                    elapsed_time=self.elapsed_time())
+        self._notify(notification)
         job.start()
 
     # _sched_queue_jobs()
@@ -379,13 +427,8 @@ class Scheduler():
         if self.terminated:
             return
 
-        # Leave this to the frontend to decide, if no
-        # interrrupt callback was specified, then just terminate.
-        if self._interrupt_callback:
-            self._interrupt_callback()
-        else:
-            # Default without a frontend is just terminate
-            self.terminate_jobs()
+        notification = Notification(NotificationType.INTERRUPT)
+        self._notify(notification)
 
     # _terminate_event():
     #
@@ -444,8 +487,24 @@ class Scheduler():
 
     # Regular timeout for driving status in the UI
     def _tick(self):
-        self._ticker_callback()
+        self._notify(Notification(NotificationType.TICK))
         self.loop.call_later(1, self._tick)
+
+    def _notify(self, notification):
+        # Scheduler to Stream notifcations on right side
+        self._notification_queue.append(notification)
+        self._notifier()
+
+    def _stream_notification_handler(self):
+        notification = self._notification_queue.popleft()
+        if notification.notification_type == NotificationType.TERMINATE:
+            self.terminate_jobs()
+        elif notification.notification_type == NotificationType.QUIT:
+            self.stop_queueing()
+        else:
+            # Do not raise exception once scheduler process is separated
+            # as we don't want to pickle exceptions between processes
+            raise ValueError("Unrecognised notification type received")
 
     def __getstate__(self):
         # The only use-cases for pickling in BuildStream at the time of writing
