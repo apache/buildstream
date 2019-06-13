@@ -46,7 +46,7 @@ class ScriptElement(buildstream.ScriptElement):
     BST_VIRTUAL_DIRECTORY = True
 
     def configure(self, node):
-        for n in self.node_get_member(node, list, 'layout', []):
+        for n in node.get_sequence('layout', []):
             dst = self.node_subst_member(n, 'destination')
             elm = self.node_subst_member(n, 'element', None)
             self.layout_add(elm, dst)
