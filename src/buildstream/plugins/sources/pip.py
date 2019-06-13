@@ -150,7 +150,7 @@ class PipSource(Source):
         return self.ref
 
     def load_ref(self, node):
-        self.ref = self.node_get_member(node, str, 'ref', None)
+        self.ref = node.get_str('ref', None)
 
     def set_ref(self, ref, node):
         node['ref'] = self.ref = ref
