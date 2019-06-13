@@ -503,10 +503,6 @@ class Element(Plugin):
         Raises:
            :class:`.LoadError`: When *member_name* is not found and no *default* was provided
 
-        This is essentially the same as :func:`~buildstream.plugin.Plugin.node_get_member`
-        except that it assumes the expected type is a string and will also perform variable
-        substitutions.
-
         **Example:**
 
         .. code:: python
@@ -535,9 +531,6 @@ class Element(Plugin):
         Raises:
           :class:`.LoadError`
 
-        This is essentially the same as :func:`~buildstream.plugin.Plugin.node_get_member`
-        except that it assumes the expected type is a list of strings and will also
-        perform variable substitutions.
         """
         value = self.node_get_member(node, list, member_name)
         ret = []

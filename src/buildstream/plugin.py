@@ -280,12 +280,7 @@ class Plugin():
         Plugin implementors should implement this method to read configuration
         data and store it.
 
-        Plugins should use the :func:`Plugin.node_get_member() <buildstream.plugin.Plugin.node_get_member>`
-        method to fetch values from the passed `node`. This will ensure that a nice human readable error
-        message will be raised if the expected configuration is not found, indicating the filename,
-        line and column numbers.
-
-        Further the :func:`Plugin.node_validate() <buildstream.plugin.Plugin.node_validate>` method
+        The :func:`Plugin.node_validate() <buildstream.plugin.Plugin.node_validate>` method
         should be used to ensure that the user has not specified keys in `node` which are unsupported
         by the plugin.
 
@@ -384,38 +379,6 @@ class Plugin():
         """
         provenance = _yaml.node_get_provenance(node, key=member_name)
         return str(provenance)
-
-    def node_get_member(self, node, expected_type, member_name, default=_yaml._sentinel, *, allow_none=False):
-        """Fetch the value of a node member, raising an error if the value is
-        missing or incorrectly typed.
-
-        Args:
-           node (Node): A dictionary loaded from YAML
-           expected_type (type): The expected type of the node member
-           member_name (str): The name of the member to fetch
-           default (expected_type): A value to return when *member_name* is not specified in *node*
-           allow_none (bool): Allow explicitly set None values in the YAML (*Since: 1.4*)
-
-        Returns:
-           The value of *member_name* in *node*, otherwise *default*
-
-        Raises:
-           :class:`.LoadError`: When *member_name* is not found and no *default* was provided
-
-        Note:
-           Returned strings are stripped of leading and trailing whitespace
-
-        **Example:**
-
-        .. code:: python
-
-          # Expect a string 'name' in 'node'
-          name = self.node_get_member(node, str, 'name')
-
-          # Fetch an optional integer
-          level = self.node_get_member(node, int, 'level', -1)
-        """
-        return _yaml.node_get(node, expected_type, member_name, default_value=default, allow_none=allow_none)
 
     def node_set_member(self, node, key, value):
         """Set the value of a node member
