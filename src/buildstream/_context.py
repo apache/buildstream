@@ -399,14 +399,13 @@ class Context():
     # get_overrides():
     #
     # Fetch the override dictionary for the active project. This returns
-    # a node loaded from YAML and as such, values loaded from the returned
-    # node should be loaded using the _yaml.node_get() family of functions.
+    # a node loaded from YAML.
     #
     # Args:
     #    project_name (str): The project name
     #
     # Returns:
-    #    (dict): The overrides dictionary for the specified project
+    #    (MappingNode): The overrides dictionary for the specified project
     #
     def get_overrides(self, project_name):
         return self._project_overrides.get_mapping(project_name, default={})
@@ -741,7 +740,7 @@ class Context():
 
 # _node_get_option_str()
 #
-# Like _yaml.node_get(), but also checks value is one of the allowed option
+# Like Node.get_scalar().as_str(), but also checks value is one of the allowed option
 # strings. Fetches a value from a dictionary node, and makes sure it's one of
 # the pre-defined options.
 #

@@ -209,7 +209,7 @@ cdef class SequenceNode(Node):
 
         if type(value) is not MappingNode:
             provenance = node_get_provenance(self)
-            path = ["[{}]".format(p) for p in node_find_target(provenance, self)] + ["[{}]".format(index)]
+            path = ["[{}]".format(p) for p in node_find_target(provenance.toplevel, self)] + ["[{}]".format(index)]
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Value of '{}' is not of the expected type '{}'"
                             .format(provenance, path, MappingNode.__name__))
@@ -220,7 +220,7 @@ cdef class SequenceNode(Node):
 
         if type(value) is not SequenceNode:
             provenance = node_get_provenance(self)
-            path = ["[{}]".format(p) for p in node_find_target(provenance, self)] + ["[{}]".format(index)]
+            path = ["[{}]".format(p) for p in node_find_target(provenance.toplevel, self)] + ["[{}]".format(index)]
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Value of '{}' is not of the expected type '{}'"
                             .format(provenance, path, SequenceNode.__name__))
@@ -671,101 +671,6 @@ cpdef ProvenanceInformation node_get_provenance(Node node, str key=None, list in
         nodeish = <Node> nodeish.value[idx]
 
     return ProvenanceInformation(nodeish)
-
-
-# node_get()
-#
-# Fetches a value from a dictionary node and checks it for
-# an expected value. Use default_value when parsing a value
-# which is only optionally supplied.
-#
-# Args:
-#    node (dict): The dictionary node
-#    expected_type (type): The expected type for the value being searched
-#    key (str): The key to get a value for in node
-#    indices (list of ints): Optionally decend into lists of lists
-#    default_value: Optionally return this value if the key is not found
-#    allow_none: (bool): Allow None to be a valid value
-#
-# Returns:
-#    The value if found in node, otherwise default_value is returned
-#
-# Raises:
-#    LoadError, when the value found is not of the expected type
-#
-# Note:
-#    Returned strings are stripped of leading and trailing whitespace
-#
-cpdef object node_get(Node node, object expected_type, str key, list indices=None, object default_value=_sentinel, bint allow_none=False):
-    if indices is None:
-        value = node.value.get(key, _sentinel)
-
-        if value is _sentinel:
-            if default_value is _sentinel:
-                provenance = node_get_provenance(node)
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
-
-            value = _create_node(default_value, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
-    else:
-        # Implied type check of the element itself
-        # No need to synthesise useful node content as we destructure it immediately
-        value = SequenceNode(node_get(node, list, key), _SYNTHETIC_FILE_INDEX, 0, 0)
-        for index in indices:
-            value = value.value[index]
-            # FIXME: this should always be nodes, we should be able to remove that
-            if type(value) not in [Node, MappingNode, SequenceNode]:
-                value = _create_node(value, _SYNTHETIC_FILE_INDEX, 0, 0)
-
-    # Optionally allow None as a valid value for any type
-    if value.value is None and (allow_none or default_value is None):
-        return None
-
-    if (expected_type is not None) and (type(value.value) is not expected_type):
-        # Attempt basic conversions if possible, typically we want to
-        # be able to specify numeric values and convert them to strings,
-        # but we dont want to try converting dicts/lists
-        try:
-            if expected_type == bool and type(value.value) is str:
-                # Dont coerce booleans to string, this makes "False" strings evaluate to True
-                # We don't structure into full nodes since there's no need.
-                if value.value in ('True', 'true'):
-                    value = ScalarNode(True, _SYNTHETIC_FILE_INDEX, 0, 0)
-                elif value.value in ('False', 'false'):
-                    value = ScalarNode(False, _SYNTHETIC_FILE_INDEX, 0, 0)
-                else:
-                    raise ValueError()
-            elif not (expected_type == list or
-                      expected_type == dict or
-                      isinstance(value.value, (list, dict))):
-                value = _create_node(expected_type(value.value), _SYNTHETIC_FILE_INDEX, 0, 0)
-            else:
-                raise ValueError()
-        except (ValueError, TypeError):
-            provenance = node_get_provenance(node, key=key, indices=indices)
-            if indices:
-                path = [key, *["[{:d}]".format(i) for i in indices]]
-                path = "".join(path)
-            else:
-                path = key
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Value of '{}' is not of the expected type '{}'"
-                            .format(provenance, path, expected_type.__name__))
-
-    # Now collapse lists, and scalars, to their value, leaving nodes as-is
-    if type(value.value) is not dict:
-        value = value.value
-
-    # Trim it at the bud, let all loaded strings from yaml be stripped of whitespace
-    if type(value) is str:
-        value = value.strip()
-
-    elif type(value) is list:
-        # Now we create a fresh list which unwraps the str and list types
-        # semi-recursively.
-        value = __trim_list_provenance(value)
-
-    return value
 
 
 cdef list __trim_list_provenance(list value):

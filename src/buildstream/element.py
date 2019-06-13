@@ -532,13 +532,12 @@ class Element(Plugin):
           :class:`.LoadError`
 
         """
-        value = self.node_get_member(node, list, member_name)
         ret = []
-        for index, x in enumerate(value):
+        for value in node.get_sequence(member_name):
             try:
-                ret.append(self.__variables.subst(x))
+                ret.append(self.__variables.subst(value.as_str()))
             except LoadError as e:
-                provenance = _yaml.node_get_provenance(node, key=member_name, indices=[index])
+                provenance = _yaml.node_get_provenance(value)
                 raise LoadError(e.reason, '{}: {}'.format(provenance, e), detail=e.detail) from e
         return ret
 
@@ -2816,7 +2815,7 @@ class Element(Plugin):
         # If this ever changes, things will go wrong unexpectedly.
         if not self.__whitelist_regex:
             bstdata = self.get_public_data('bst')
-            whitelist = _yaml.node_get(bstdata, list, 'overlap-whitelist', default_value=[])
+            whitelist = bstdata.get_sequence('overlap-whitelist', default=[]).as_str_list()
             whitelist_expressions = [utils._glob2re(self.__variables.subst(exp.strip())) for exp in whitelist]
             expression = ('^(?:' + '|'.join(whitelist_expressions) + ')$')
             self.__whitelist_regex = re.compile(expression)
