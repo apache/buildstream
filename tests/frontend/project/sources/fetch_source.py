@@ -38,7 +38,7 @@ class FetchFetcher(SourceFetcher):
 class FetchSource(Source):
     # Read config to know which URLs to fetch
     def configure(self, node):
-        self.original_urls = self.node_get_member(node, list, 'urls')
+        self.original_urls = node.get_sequence('urls').as_str_list()
         self.output_file = node.get_str('output-text')
         self.fetch_succeeds = {}
         if 'fetch-succeeds' in node:
