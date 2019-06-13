@@ -469,8 +469,6 @@ class Loader():
         sources = node.get_sequence(Symbol.SOURCES, default=[])
         element_kind = node.get_str(Symbol.KIND)
 
-        # Safe loop calling into _yaml.node_get() for each element ensures
-        # we have good error reporting
         for index, source in enumerate(sources):
             kind = source.get_str(Symbol.KIND)
             _yaml.node_del(source, Symbol.KIND)

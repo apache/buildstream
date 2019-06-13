@@ -171,8 +171,8 @@ class FilterElement(Element):
             'include', 'exclude', 'include-orphans'
         ])
 
-        self.include = self.node_get_member(node, list, 'include')
-        self.exclude = self.node_get_member(node, list, 'exclude')
+        self.include = node.get_sequence('include').as_str_list()
+        self.exclude = node.get_sequence('exclude').as_str_list()
         self.include_orphans = node.get_bool('include-orphans')
         self.include_provenance = self.node_provenance(node, member_name='include')
         self.exclude_provenance = self.node_provenance(node, member_name='exclude')
