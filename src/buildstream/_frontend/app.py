@@ -603,6 +603,7 @@ class App():
                 pass
             return
 
+        assert False
         # Interactive mode for element failures
         with self._interrupted():
 
@@ -642,6 +643,7 @@ class App():
 
                 # Handle choices which you can come back from
                 #
+                assert choice != 'shell'  # This won't work for now
                 if choice == 'shell':
                     click.echo("\nDropping into an interactive shell in the failed build sandbox\n", err=True)
                     try:

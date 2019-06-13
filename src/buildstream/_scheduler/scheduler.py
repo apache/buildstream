@@ -21,6 +21,7 @@
 # System imports
 import os
 import asyncio
+import enum
 from itertools import chain
 import signal
 import datetime
@@ -43,6 +44,32 @@ class SchedStatus():
 #
 _ACTION_NAME_CLEANUP = 'clean'
 _ACTION_NAME_CACHE_SIZE = 'size'
+
+
+@enum.unique
+class NotificationType(enum.Enum):
+    INTERRUPT = "interrupt"
+    JOB_START = "job_start"
+    JOB_COMPLETE = "job_complete"
+    TICK = "tick"
+
+
+class Notification:
+
+    def __init__(self,
+                 notification_type,
+                 *,
+                 full_name=None,
+                 job_action=None,
+                 job_status=None,
+                 elapsed_time=None,
+                 element=None):
+        self.notification_type = notification_type
+        self.full_name = full_name
+        self.job_action = job_action
+        self.job_status = job_status
+        self.elapsed_time = elapsed_time
+        self.element = element
 
 
 # Scheduler()
@@ -68,7 +95,7 @@ _ACTION_NAME_CACHE_SIZE = 'size'
 class Scheduler():
 
     def __init__(self, context,
-                 start_time, state,
+                 start_time, state, message_handler,
                  interrupt_callback=None,
                  ticker_callback=None):
 
@@ -99,9 +126,17 @@ class Scheduler():
         self._cleanup_scheduled = False       # Whether we have a cleanup job scheduled
         self._cleanup_running = None          # A running CleanupJob, or None
 
-        # Callbacks to report back to the Scheduler owner
-        self._interrupt_callback = interrupt_callback
-        self._ticker_callback = ticker_callback
+        # Callback to send messages to report back to the Scheduler's owner
+        self.message = message_handler
+
+        # Whether our exclusive jobs, like 'cleanup' are currently already
+        # waiting or active.
+        #
+        # This is just a bit quicker than scanning the wait queue and active
+        # queue and comparing job action names.
+        #
+        self._exclusive_waiting = set()
+        self._exclusive_active = set()
 
         self.resources = Resources(context.sched_builders,
                                    context.sched_fetchers,
@@ -131,8 +166,7 @@ class Scheduler():
         asyncio.set_event_loop(self.loop)
 
         # Add timeouts
-        if self._ticker_callback:
-            self.loop.call_later(1, self._tick)
+        self.loop.call_later(1, self._tick)
 
         # Handle unix signals while running
         self._connect_signals()
@@ -251,13 +285,17 @@ class Scheduler():
         # Remove from the active jobs list
         self._active_jobs.remove(job)
 
-        self._state.remove_task(job.action_name, job.name)
         if status == JobStatus.FAIL:
             # If it's an elementjob, we want to compare against the failure messages
             # and send the Element() instance. Note this will change if the frontend
             # is run in a separate process for pickling
             element = job.get_element()
-            self._state.fail_task(job.action_name, job.name, element=element)
+            message = Notification(NotificationType.JOB_COMPLETE,
+                                   full_name=job.name,
+                                   job_action=job.action_name,
+                                   job_status=status,
+                                   element=element)
+            self.message(message)
 
         # Now check for more jobs
         self._sched()
@@ -316,7 +354,11 @@ class Scheduler():
     #
     def _start_job(self, job):
         self._active_jobs.append(job)
-        self._state.add_task(job.action_name, job.name, self.elapsed_time())
+        message = Notification(NotificationType.JOB_START,
+                               full_name=job.name,
+                               job_action=job.action_name,
+                               elapsed_time=self.elapsed_time())
+        self.message(message)
         job.start()
 
     # Callback for the cache size job
@@ -535,13 +577,8 @@ class Scheduler():
         if self.terminated:
             return
 
-        # Leave this to the frontend to decide, if no
-        # interrrupt callback was specified, then just terminate.
-        if self._interrupt_callback:
-            self._interrupt_callback()
-        else:
-            # Default without a frontend is just terminate
-            self.terminate_jobs()
+        message = Notification(NotificationType.INTERRUPT)
+        self.message(message)
 
     # _terminate_event():
     #
@@ -600,7 +637,8 @@ class Scheduler():
 
     # Regular timeout for driving status in the UI
     def _tick(self):
-        self._ticker_callback()
+        message = Notification(NotificationType.TICK)
+        self.message(message)
         self.loop.call_later(1, self._tick)
 
     def __getstate__(self):
