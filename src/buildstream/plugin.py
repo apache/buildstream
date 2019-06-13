@@ -294,8 +294,7 @@ class Plugin():
 
            For Elements, when variable substitution is desirable, the
            :func:`Element.node_subst_member() <buildstream.element.Element.node_subst_member>`
-           and :func:`Element.node_subst_list_element() <buildstream.element.Element.node_subst_list_element>`
-           methods can be used.
+           method can be used.
         """
         raise ImplError("{tag} plugin '{kind}' does not implement configure()".format(
             tag=self.__type_tag, kind=self.get_kind()))
