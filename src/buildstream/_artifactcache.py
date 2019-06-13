@@ -102,9 +102,6 @@ class ArtifactCache(BaseCache):
         self.artifactdir = context.artifactdir
         os.makedirs(self.artifactdir, exist_ok=True)
 
-        self.cas.add_reachable_directories_callback(self._reachable_directories)
-        self.cas.add_reachable_digests_callback(self._reachable_digests)
-
     # mark_required_elements():
     #
     # Mark elements whose artifacts are required for the current run.
@@ -458,42 +455,6 @@ class ArtifactCache(BaseCache):
     ################################################
     #             Local Private Methods            #
     ################################################
-
-    # _reachable_directories()
-    #
-    # Returns:
-    #     (iter): Iterator over directories digests available from artifacts.
-    #
-    def _reachable_directories(self):
-        for root, _, files in os.walk(self.artifactdir):
-            for artifact_file in files:
-                artifact = artifact_pb2.Artifact()
-                with open(os.path.join(root, artifact_file), 'r+b') as f:
-                    artifact.ParseFromString(f.read())
-
-                if str(artifact.files):
-                    yield artifact.files
-
-                if str(artifact.buildtree):
-                    yield artifact.buildtree
-
-    # _reachable_digests()
-    #
-    # Returns:
-    #     (iter): Iterator over single file digests in artifacts
-    #
-    def _reachable_digests(self):
-        for root, _, files in os.walk(self.artifactdir):
-            for artifact_file in files:
-                artifact = artifact_pb2.Artifact()
-                with open(os.path.join(root, artifact_file), 'r+b') as f:
-                    artifact.ParseFromString(f.read())
-
-                if str(artifact.public_data):
-                    yield artifact.public_data
-
-                for log_file in artifact.logs:
-                    yield log_file.digest
 
     # _push_artifact()
     #

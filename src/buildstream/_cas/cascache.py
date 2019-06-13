@@ -56,9 +56,6 @@ class CASCache():
         os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
 
-        self.__reachable_directory_callbacks = []
-        self.__reachable_digest_callbacks = []
-
     # preflight():
     #
     # Preflight check.
@@ -455,14 +452,6 @@ class CASCache():
             basedir = os.path.join(self.casdir, 'refs', 'heads')
         # Remove cache ref
         self._remove_ref(ref, basedir)
-
-    # adds callback of iterator over reachable directory digests
-    def add_reachable_directories_callback(self, callback):
-        self.__reachable_directory_callbacks.append(callback)
-
-    # adds callbacks of iterator over reachable file digests
-    def add_reachable_digests_callback(self, callback):
-        self.__reachable_digest_callbacks.append(callback)
 
     def update_tree_mtime(self, tree):
         reachable = set()
