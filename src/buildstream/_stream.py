@@ -1210,7 +1210,7 @@ class Stream():
         if self._session_start_callback is not None:
             self._session_start_callback()
 
-        _, status = self._scheduler.run(self.queues)
+        status = self._scheduler.run(self.queues)
 
         if status == SchedStatus.ERROR:
             raise StreamError()

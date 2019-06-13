@@ -126,8 +126,6 @@ class Scheduler():
     #    queues (list): A list of Queue objects
     #
     # Returns:
-    #    (timedelta): The amount of time since the start of the session,
-    #                 discounting any time spent while jobs were suspended
     #    (SchedStatus): How the scheduling terminated
     #
     # Elements in the 'plan' will be processed by each
@@ -175,7 +173,7 @@ class Scheduler():
         else:
             status = SchedStatus.SUCCESS
 
-        return self.elapsed_time(), status
+        return status
 
     # terminate_jobs()
     #
@@ -597,6 +595,5 @@ class Scheduler():
 
     # Regular timeout for driving status in the UI
     def _tick(self):
-        elapsed = self.elapsed_time()
-        self._ticker_callback(elapsed)
+        self._ticker_callback()
         self.loop.call_later(1, self._tick)

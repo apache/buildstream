@@ -513,7 +513,7 @@ class App():
                 elif choice == 'continue':
                     click.echo("\nContinuing\n", err=True)
 
-    def _tick(self, elapsed):
+    def _tick(self):
         self._maybe_render_status()
 
     def _job_started(self, job):
