@@ -150,6 +150,6 @@ class ProjectRefs():
             # Pad the list with empty newly created dictionaries
             _yaml.node_extend_list(project_node, element, source_index + 1, {})
 
-            node = _yaml.node_get(project_node, dict, element, indices=[source_index])
+            node = project_node.get_sequence(element).mapping_at(source_index)
 
         return node

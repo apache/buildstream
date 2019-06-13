@@ -114,14 +114,14 @@ class PipSource(Source):
         self.ref = node.get_str('ref', None)
         self.original_url = node.get_str('url', _PYPI_INDEX_URL)
         self.index_url = self.translate_url(self.original_url)
-        self.packages = self.node_get_member(node, list, 'packages', [])
-        self.requirements_files = self.node_get_member(node, list, 'requirements-files', [])
+        self.packages = node.get_sequence('packages', []).as_str_list()
+        self.requirements_files = node.get_sequence('requirements-files', []).as_str_list()
 
         if not (self.packages or self.requirements_files):
             raise SourceError("{}: Either 'packages' or 'requirements-files' must be specified". format(self))
 
     def preflight(self):
-        # Try to find a pip version that supports download command
+        # Try to find a pip version that spports download command
         self.host_pip = None
         for python in reversed(_PYTHON_VERSIONS):
             try:
