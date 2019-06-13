@@ -103,11 +103,11 @@ def test_node_get(datafiles):
     base = _yaml.load(filename)
     assert base.value.get('kind').value == 'pony'
 
-    children = _yaml.node_get(base, list, 'children')
-    assert isinstance(children, list)
+    children = base.get_sequence('children')
+    assert isinstance(children, _yaml.SequenceNode)
     assert len(children) == 7
 
-    child = _yaml.node_get(base, dict, 'children', indices=[6])
+    child = base.get_sequence('children').mapping_at(6)
     assert_provenance(filename, 20, 8, child, 'mood')
 
     extra = base.get_mapping('extra')
@@ -146,7 +146,7 @@ def test_node_set_overwrite(datafiles):
     assert base.get_str('kind') == 'cow'
 
     # Overwrite a list as a string
-    assert _yaml.node_get(base, list, 'moods') == ['happy', 'sad']
+    assert base.get_sequence('moods').as_str_list() == ['happy', 'sad']
     _yaml.node_set(base, 'moods', 'unemotional')
     assert base.get_str('moods') == 'unemotional'
 
@@ -160,13 +160,11 @@ def test_node_set_list_element(datafiles):
 
     base = _yaml.load(filename)
 
-    assert _yaml.node_get(base, list, 'moods') == ['happy', 'sad']
-    assert _yaml.node_get(base, str, 'moods', indices=[0]) == 'happy'
+    assert base.get_sequence('moods').as_str_list() == ['happy', 'sad']
 
     _yaml.node_set(base, 'moods', 'confused', indices=[0])
 
-    assert _yaml.node_get(base, list, 'moods') == ['confused', 'sad']
-    assert _yaml.node_get(base, str, 'moods', indices=[0]) == 'confused'
+    assert base.get_sequence('moods').as_str_list() == ['confused', 'sad']
 
 
 # Really this is testing _yaml.node_copy(), we want to
@@ -254,9 +252,9 @@ def test_list_composition(datafiles, filename, tmpdir,
 
     _yaml.composite_dict(base, overlay)
 
-    children = _yaml.node_get(base, list, 'children')
+    children = base.get_sequence('children')
     assert len(children) == length
-    child = children[index]
+    child = children.mapping_at(index)
 
     assert child.get_str('mood') == mood
     assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
@@ -272,7 +270,7 @@ def test_list_deletion(datafiles):
     overlay = _yaml.load(overlay, shortname='listoverwriteempty.yaml')
     _yaml.composite_dict(base, overlay)
 
-    children = _yaml.node_get(base, list, 'children')
+    children = base.get_sequence('children')
     assert not children
 
 
@@ -286,8 +284,8 @@ def test_nonexistent_list_extension(datafiles):
 
     _yaml.node_extend_list(base, 'todo', 3, 'empty')
 
-    assert len(_yaml.node_get(base, list, 'todo')) == 3
-    assert _yaml.node_get(base, list, 'todo') == ['empty', 'empty', 'empty']
+    assert len(base.get_sequence('todo')) == 3
+    assert base.get_sequence('todo').as_str_list() == ['empty', 'empty', 'empty']
 
 
 # Tests for deep list composition
@@ -390,9 +388,9 @@ def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
     _yaml.composite_dict(base, overlay1)
     _yaml.composite_dict(base, overlay2)
 
-    children = _yaml.node_get(base, list, 'children')
+    children = base.get_sequence('children')
     assert len(children) == length
-    child = children[index]
+    child = children.mapping_at(index)
 
     assert child.get_str('mood') == mood
     assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
@@ -407,9 +405,9 @@ def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
     _yaml.composite_dict(overlay1, overlay2)
     _yaml.composite_dict(base, overlay1)
 
-    children = _yaml.node_get(base, list, 'children')
+    children = base.get_sequence('children')
     assert len(children) == length
-    child = children[index]
+    child = children.mapping_at(index)
 
     assert child.get_str('mood') == mood
     assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
