@@ -332,9 +332,9 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
     #
     if not force:
         needs_build = False
-        commands = _yaml.node_get(desc, list, 'commands')
+        commands = desc.get_sequence('commands')
         for command in commands:
-            output = _yaml.node_get(command, str, 'output', default_value=None)
+            output = command.get_str('output', default=None)
             if output is not None and check_needs_build(desc_dir, output, force=False):
                 needs_build = True
                 break
@@ -347,7 +347,7 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
     #        tarball. This workaround lets us build docs from
     #        a source distribution tarball.
     #
-    symlinks = _yaml.node_get(desc, dict, 'workaround-symlinks', default_value={})
+    symlinks = desc.get_mapping('workaround-symlinks', default={})
     for symlink, target in _yaml.node_items(symlinks):
 
         # Resolve real path to where symlink should be
@@ -367,7 +367,7 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
             # not a source distribution, no need to complain
             pass
 
-    remove_files = _yaml.node_get(desc, list, 'remove-files', default_value=[])
+    remove_files = desc.get_sequence('remove-files', default=[]).as_str_list()
     for remove_file in remove_files:
         remove_file = os.path.join(desc_dir, remove_file)
         remove_file = os.path.realpath(remove_file)
@@ -379,23 +379,21 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
 
     # Run commands
     #
-    commands = _yaml.node_get(desc, list, 'commands')
-    for c in commands:
-        command = _yaml.node_get(desc, dict, 'commands', indices=[commands.index(c)])
-
+    commands = desc.get_sequence('commands')
+    for command in commands:
         # Get the directory where this command should be run
-        directory = _yaml.node_get(command, str, 'directory')
+        directory = command.get_str('directory')
         directory = os.path.join(desc_dir, directory)
         directory = os.path.realpath(directory)
 
         # Get the command string
-        command_str = _yaml.node_get(command, str, 'command')
+        command_str = command.get_str('command')
 
         # Check whether this is a shell command and not a bst command
-        is_shell = _yaml.node_get(command, bool, 'shell', default_value=False)
+        is_shell = command.get_bool('shell', default=False)
 
         # Check if there is fake output
-        command_fake_output = _yaml.node_get(command, str, 'fake-output', default_value=None)
+        command_fake_output = command.get_str('fake-output', default=None)
 
         # Run the command, or just use the fake output
         if command_fake_output is None:
@@ -407,7 +405,7 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
             command_out = command_fake_output
 
         # Encode and save the output if that was asked for
-        output = _yaml.node_get(command, str, 'output', default_value=None)
+        output = command.get_str('output', default=None)
         if output is not None:
             # Convert / Generate a nice <div>
             converted = generate_html(command_out, directory, config_file,
