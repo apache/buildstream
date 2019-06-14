@@ -327,7 +327,7 @@ def test_track_include(cli, tmpdir, datafiles, ref_storage, kind):
         # Get the first source from the sources list
         new_source = sources_list.mapping_at(0)
         assert 'ref' in new_source
-        assert ref == new_source.get_scalar('ref').as_str()
+        assert ref == new_source.get_str('ref')
 
 
 @pytest.mark.datafiles(DATA_DIR)

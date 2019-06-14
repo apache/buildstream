@@ -524,13 +524,16 @@ cdef class Representer:
 
 
 cdef Node _create_node(object value, int file_index, int line, int column):
-    if type(value) in [bool, str, type(None), int]:
+    cdef type_value = type(value)
+
+    if type_value in [bool, str, type(None), int]:
         return ScalarNode(value, file_index, line, column)
-    elif type(value) is dict:
+    elif type_value is dict:
         return MappingNode(value, file_index, line, column)
-    elif type(value) is list:
+    elif type_value is list:
         return SequenceNode(value, file_index, line, column)
-    return Node(value, file_index, line, column)
+    raise ValueError(
+        "Node values can only be 'list', 'dict', 'bool', 'str', 'int' or None. Not {}".format(type_value))
 
 
 # Loads a dictionary from some YAML
