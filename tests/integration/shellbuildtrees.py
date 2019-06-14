@@ -286,7 +286,7 @@ def test_buildtree_options(cli, tmpdir, datafiles):
         res = cli.run(project=project, args=[
             'shell', '--build', element_name, '--use-buildtree', 'always', '--', 'cat', 'test'
         ])
-        res.assert_main_error(ErrorDomain.PROG_NOT_FOUND, None)
+        res.assert_main_error(ErrorDomain.APP, None)
         assert 'Buildtree is not cached locally or in available remotes' in res.stderr
         assert 'Hi' not in res.output
         assert 'Attempting to fetch missing artifact buildtree' not in res.stderr
