@@ -129,6 +129,9 @@ class Context():
         # Whether or not to attempt to pull build trees globally
         self.pull_buildtrees = None
 
+        # Whether to pull the files of an artifact when doing remote execution
+        self.pull_artifact_files = None
+
         # Whether or not to cache build trees on artifact creation
         self.cache_buildtrees = None
 
@@ -257,6 +260,19 @@ class Context():
 
         # Load source cache config
         self.source_cache_specs = SourceCache.specs_from_config_node(defaults)
+
+        # Load remote execution config getting pull-artifact-files from it
+        remote_execution = _yaml.node_get(defaults, dict, 'remote-execution', default_value=None)
+        if remote_execution:
+            self.pull_artifact_files = _yaml.node_get(
+                remote_execution, bool, 'pull-artifact-files', default_value=True)
+            # This stops it being used in the remote service set up
+            _yaml.node_del(remote_execution, 'pull-artifact-files', safe=True)
+            # Don't pass the remote execution settings if that was the only option
+            if _yaml.node_keys(remote_execution) == []:
+                _yaml.node_del(defaults, 'remote-execution')
+        else:
+            self.pull_artifact_files = True
 
         self.remote_execution_specs = SandboxRemote.specs_from_config_node(defaults)
 
