@@ -28,7 +28,8 @@ import pytest
 
 from buildstream._exceptions import ErrorDomain
 from buildstream.testing import cli  # pylint: disable=unused-import
-from tests.testutils import create_artifact_share, create_element_size, generate_junction, wait_for_cache_granularity
+from tests.testutils import create_artifact_share, create_element_size, generate_junction, \
+    wait_for_cache_granularity, assert_shared, assert_not_shared
 
 
 # Project directory
@@ -36,28 +37,6 @@ DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "project",
 )
-
-
-# Assert that a given artifact is in the share
-#
-def assert_shared(cli, share, project, element_name):
-    # NOTE: 'test' here is the name of the project
-    # specified in the project.conf we are testing with.
-    #
-    if not share.has_artifact(cli.get_artifact_name(project, 'test', element_name)):
-        raise AssertionError("Artifact share at {} does not contain the expected element {}"
-                             .format(share.repo, element_name))
-
-
-# Assert that a given artifact is NOT in the share
-#
-def assert_not_shared(cli, share, project, element_name):
-    # NOTE: 'test' here is the name of the project
-    # specified in the project.conf we are testing with.
-    #
-    if share.has_artifact(cli.get_artifact_name(project, 'test', element_name)):
-        raise AssertionError("Artifact share at {} unexpectedly contains the element {}"
-                             .format(share.repo, element_name))
 
 
 # Tests that:

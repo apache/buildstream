@@ -8,24 +8,13 @@ import pytest
 from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
 
-from tests.testutils import create_artifact_share
+from tests.testutils import create_artifact_share, assert_shared
 
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "junctions",
 )
-
-
-# Assert that a given artifact is in the share
-#
-def assert_shared(cli, share, project_name, project, element_name):
-    # NOTE: 'test' here is the name of the project
-    # specified in the project.conf we are testing with.
-    #
-    if not share.has_artifact(cli.get_artifact_name(project, project_name, element_name)):
-        raise AssertionError("Artifact share at {} does not contain the expected element {}"
-                             .format(share.repo, element_name))
 
 
 def project_set_artifacts(project, url):
@@ -64,8 +53,8 @@ def test_push_pull(cli, tmpdir, datafiles):
         assert result.exit_code == 0
 
         # And finally assert that the artifacts are in the right shares
-        assert_shared(cli, share, 'parent', project, 'target.bst')
-        assert_shared(cli, base_share, 'base', base_project, 'base-element.bst')
+        assert_shared(cli, share, project, 'target.bst', project_name='parent')
+        assert_shared(cli, base_share, base_project, 'base-element.bst', project_name='base')
 
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the share
