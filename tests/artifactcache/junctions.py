@@ -40,10 +40,10 @@ def project_set_artifacts(project, url):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull(cli, tmpdir, datafiles):
-    project = os.path.join(str(datafiles), 'foo')
+    project = os.path.join(str(datafiles), 'parent')
     base_project = os.path.join(str(project), 'base')
 
-    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare-foo')) as share,\
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare-parent')) as share,\
         create_artifact_share(os.path.join(str(tmpdir), 'artifactshare-base')) as base_share:
 
         # First build it without the artifact cache configured
@@ -64,7 +64,7 @@ def test_push_pull(cli, tmpdir, datafiles):
         assert result.exit_code == 0
 
         # And finally assert that the artifacts are in the right shares
-        assert_shared(cli, share, 'foo', project, 'target.bst')
+        assert_shared(cli, share, 'parent', project, 'target.bst')
         assert_shared(cli, base_share, 'base', base_project, 'base-element.bst')
 
         # Now we've pushed, delete the user's local artifact cache
