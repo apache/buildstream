@@ -251,7 +251,7 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
         result.assert_success()
         assert cli.get_element_state(project, 'target.bst') == 'cached'
 
-        # Assert that everything is now cached in the reote.
+        # Assert that everything is now cached in the remote.
         all_elements = ['target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst']
         for element_name in all_elements:
             assert_shared(cli, share, project, element_name)
