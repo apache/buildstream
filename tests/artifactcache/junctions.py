@@ -8,7 +8,7 @@ import pytest
 from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
 
-from tests.testutils import create_artifact_share, assert_shared
+from tests.testutils import create_artifact_share, assert_shared, assert_not_shared
 
 
 DATA_DIR = os.path.join(
@@ -53,7 +53,15 @@ def test_push_pull(cli, tmpdir, datafiles):
         assert result.exit_code == 0
 
         # And finally assert that the artifacts are in the right shares
+        #
+        # In the parent project's cache
         assert_shared(cli, share, project, 'target.bst', project_name='parent')
+        assert_shared(cli, share, project, 'app.bst', project_name='parent')
+        assert_shared(cli, share, base_project, 'base-element.bst', project_name='base')
+
+        # In the junction project's cache
+        assert_not_shared(cli, base_share, project, 'target.bst', project_name='parent')
+        assert_not_shared(cli, base_share, project, 'app.bst', project_name='parent')
         assert_shared(cli, base_share, base_project, 'base-element.bst', project_name='base')
 
         # Now we've pushed, delete the user's local artifact cache
