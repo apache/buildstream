@@ -60,6 +60,9 @@ class SandboxRemote(Sandbox):
         if config is None:
             return
 
+        # gRPC doesn't support fork without exec, which is used in the main process.
+        assert not utils._is_main_process()
+
         self.storage_url = config.storage_service['url']
         self.exec_url = config.exec_service['url']
 
