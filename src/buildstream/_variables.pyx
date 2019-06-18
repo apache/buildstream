@@ -121,7 +121,7 @@ cdef class Variables:
         # Initialize it as a string as all variables are processed as strings.
         #
         if node.get_bool('notparallel', False):
-            _yaml.node_set(node, 'max-jobs', str(1))
+            node['max-jobs'] = str(1)
 
         cdef dict ret = {}
         cdef str key

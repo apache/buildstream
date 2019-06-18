@@ -87,7 +87,7 @@ class ProjectRefs():
         # Ensure we create our toplevel entry point on the fly here
         for node in [self._toplevel_node, self._toplevel_save]:
             if 'projects' not in node:
-                _yaml.node_set(node, 'projects', _yaml.new_empty_node(ref_node=node))
+                node['projects'] = _yaml.new_empty_node(ref_node=node)
 
     # lookup_ref()
     #
@@ -129,7 +129,7 @@ class ProjectRefs():
             if not ensure:
                 return None
             project_node = _yaml.new_empty_node(ref_node=projects)
-            _yaml.node_set(projects, project, project_node)
+            projects[project] = project_node
 
         # Fetch the element
         try:
@@ -138,7 +138,7 @@ class ProjectRefs():
             if not ensure:
                 return None
             element_list = _yaml.new_empty_list_node()
-            _yaml.node_set(project_node, element, element_list)
+            project_node[element] = element_list
 
         # Fetch the source index
         try:

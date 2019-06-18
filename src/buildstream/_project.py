@@ -585,6 +585,7 @@ class Project():
 
         # The project name, element path and option declarations
         # are constant and cannot be overridden by option conditional statements
+        # FIXME: we should be keeping node information for further composition here
         self.name = self._project_conf.get_str('name')
 
         # Validate that project name is a valid symbol name
@@ -790,7 +791,7 @@ class Project():
         output.base_variables = config.get_mapping('variables')
 
         # Add the project name as a default variable
-        _yaml.node_set(output.base_variables, 'project-name', self.name)
+        output.base_variables['project-name'] = self.name
 
         # Extend variables with automatic variables and option exports
         # Initialize it as a string as all variables are processed as strings.
@@ -798,7 +799,7 @@ class Project():
         # max-jobs value seems to be around 8-10 if we have enough cores
         # users should set values based on workload and build infrastructure
         platform = Platform.get_platform()
-        _yaml.node_set(output.base_variables, 'max-jobs', str(platform.get_cpu_count(8)))
+        output.base_variables['max-jobs'] = str(platform.get_cpu_count(8))
 
         # Export options into variables, if that was requested
         output.options.export_variables(output.base_variables)
@@ -939,7 +940,8 @@ class Project():
         if plugin_group in origin.keys():
             origin_node = origin.copy()
             plugins = origin.get_mapping(plugin_group, default={})
-            _yaml.node_set(origin_node, 'plugins', plugins.keys())
+            origin_node['plugins'] = plugins.keys()
+
             for group in expected_groups:
                 if group in origin_node:
                     del origin_node[group]
@@ -948,7 +950,7 @@ class Project():
                 path = self.get_path_from_node(origin, 'path',
                                                check_is_dir=True)
                 # paths are passed in relative to the project, but must be absolute
-                _yaml.node_set(origin_node, 'path', os.path.join(self.directory, path))
+                origin_node['path'] = os.path.join(self.directory, path)
             destination.append(origin_node)
 
     # _warning_is_fatal():
