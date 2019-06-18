@@ -40,7 +40,7 @@ class OptionArch(OptionEnum):
     OPTION_TYPE = 'arch'
 
     def load(self, node):
-        super().load(node, allow_default_definition=False)
+        super().load_special(node, allow_default_definition=False)
 
     def load_default_value(self, node):
         arch = Platform.get_host_arch()

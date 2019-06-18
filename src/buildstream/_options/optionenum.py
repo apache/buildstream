@@ -30,7 +30,14 @@ class OptionEnum(Option):
 
     OPTION_TYPE = 'enum'
 
-    def load(self, node, allow_default_definition=True):
+    def __init__(self, name, definition, pool):
+        self.values = None
+        super().__init__(name, definition, pool)
+
+    def load(self, node):
+        self.load_special(node)
+
+    def load_special(self, node, allow_default_definition=True):
         super().load(node)
 
         valid_symbols = OPTION_SYMBOLS + ['values']

@@ -112,13 +112,13 @@ class FileBasedDirectory(Directory):
                 os.utime(os.path.join(self.external_directory, f), times=(cur_time, cur_time))
         return import_result
 
-    def import_single_file(self, srcpath):
-        dstpath = os.path.join(self.external_directory, os.path.basename(srcpath))
+    def import_single_file(self, external_pathspec):
+        dstpath = os.path.join(self.external_directory, os.path.basename(external_pathspec))
         result = FileListResult()
         if os.path.exists(dstpath):
             result.ignored.append(dstpath)
         else:
-            shutil.copyfile(srcpath, dstpath, follow_symlinks=False)
+            shutil.copyfile(external_pathspec, dstpath, follow_symlinks=False)
         return result
 
     def _mark_changed(self):
@@ -153,23 +153,23 @@ class FileBasedDirectory(Directory):
     # First, it sorts the results of os.listdir() to ensure the ordering of
     # the files in the archive is the same.  Second, it sets a fixed
     # timestamp for each entry. See also https://bugs.python.org/issue24465.
-    def export_to_tar(self, tf, dir_arcname, mtime=_magic_timestamp):
+    def export_to_tar(self, tarfile, destination_dir, mtime=_magic_timestamp):
         # We need directories here, including non-empty ones,
         # so list_relative_paths is not used.
         for filename in sorted(os.listdir(self.external_directory)):
             source_name = os.path.join(self.external_directory, filename)
-            arcname = os.path.join(dir_arcname, filename)
-            tarinfo = tf.gettarinfo(source_name, arcname)
+            arcname = os.path.join(destination_dir, filename)
+            tarinfo = tarfile.gettarinfo(source_name, arcname)
             tarinfo.mtime = mtime
 
             if tarinfo.isreg():
                 with open(source_name, "rb") as f:
-                    tf.addfile(tarinfo, f)
+                    tarfile.addfile(tarinfo, f)
             elif tarinfo.isdir():
-                tf.addfile(tarinfo)
-                self.descend(*filename.split(os.path.sep)).export_to_tar(tf, arcname, mtime)
+                tarfile.addfile(tarinfo)
+                self.descend(*filename.split(os.path.sep)).export_to_tar(tarfile, arcname, mtime)
             else:
-                tf.addfile(tarinfo)
+                tarfile.addfile(tarinfo)
 
     def is_empty(self):
         it = os.scandir(self.external_directory)

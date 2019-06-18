@@ -427,7 +427,7 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
     element = {
         'kind': 'import',
         'sources': [
-            main_repo.source_config(ref=main_ref, checkout_submodules=True)
+            main_repo.source_config_extra(ref=main_ref, checkout_submodules=True)
         ]
     }
     element_name = 'test.bst'
@@ -522,7 +522,7 @@ def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
     element = {
         'kind': 'import',
         'sources': [
-            upstream_main_repo.source_config(ref=upstream_main_ref, checkout_submodules=True)
+            upstream_main_repo.source_config_extra(ref=upstream_main_ref, checkout_submodules=True)
         ]
     }
     element['sources'][0]['url'] = aliased_repo
