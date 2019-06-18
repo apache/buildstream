@@ -284,11 +284,14 @@ class Scheduler():
     #    queue (Queue): The Queue holding a complete job
     #    job (Job): The completed Job
     #    status (JobStatus): The status of the completed job
+    #    process_jobs (bool): If the scheduler should also process the
+    #                         job, else just generate the notification
     #
-    def job_completed(self, job, status):
+    def job_completed(self, job, status, process_jobs=True):
 
-        # Remove from the active jobs list
-        self._active_jobs.remove(job)
+        if process_jobs:
+            # Remove from the active jobs list
+            self._active_jobs.remove(job)
 
         if status == JobStatus.FAIL:
             # If it's an elementjob, we want to compare against the failure messages
@@ -304,8 +307,9 @@ class Scheduler():
                                    element=element)
             self.message(message)
 
-        # Now check for more jobs
-        self._sched()
+        if process_jobs:
+            # Now check for more jobs
+            self._sched()
 
     # check_cache_size():
     #
