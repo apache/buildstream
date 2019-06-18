@@ -95,7 +95,7 @@ class Notification:
 class Scheduler():
 
     def __init__(self, context,
-                 start_time, state, message_handler,
+                 start_time, state, notification_handler,
                  interrupt_callback=None,
                  ticker_callback=None):
 
@@ -126,8 +126,8 @@ class Scheduler():
         self._cleanup_scheduled = False       # Whether we have a cleanup job scheduled
         self._cleanup_running = None          # A running CleanupJob, or None
 
-        # Callback to send messages to report back to the Scheduler's owner
-        self.message = message_handler
+        # Callback to send notifications to report back to the Scheduler's owner
+        self.notify = notification_handler
 
         # Whether our exclusive jobs, like 'cleanup' are currently already
         # waiting or active.
@@ -293,12 +293,12 @@ class Scheduler():
             # and send the Element() instance. Note this will change if the frontend
             # is run in a separate process for pickling
             element = job.get_element()
-            message = Notification(NotificationType.JOB_COMPLETE,
+        message = Notification(NotificationType.JOB_COMPLETE,
                                    full_name=job.name,
                                    job_action=job.action_name,
                                    job_status=status,
                                    element=element)
-            self.message(message)
+        self.message(message)
 
         if process_jobs:
             # Now check for more jobs
@@ -358,11 +358,11 @@ class Scheduler():
     #
     def _start_job(self, job):
         self._active_jobs.append(job)
-        message = Notification(NotificationType.JOB_START,
-                               full_name=job.name,
-                               job_action=job.action_name,
-                               elapsed_time=self.elapsed_time())
-        self.message(message)
+        notification = Notification(NotificationType.JOB_START,
+                                    full_name=job.name,
+                                    job_action=job.action_name,
+                                    elapsed_time=self.elapsed_time())
+        self.notify(notification)
         job.start()
 
     # Callback for the cache size job
@@ -581,8 +581,8 @@ class Scheduler():
         if self.terminated:
             return
 
-        message = Notification(NotificationType.INTERRUPT)
-        self.message(message)
+        notification = Notification(NotificationType.INTERRUPT)
+        self.notify(notification)
 
     # _terminate_event():
     #
@@ -641,8 +641,8 @@ class Scheduler():
 
     # Regular timeout for driving status in the UI
     def _tick(self):
-        message = Notification(NotificationType.TICK)
-        self.message(message)
+        notification = Notification(NotificationType.TICK)
+        self.notify(notification)
         self.loop.call_later(1, self._tick)
 
     def __getstate__(self):
