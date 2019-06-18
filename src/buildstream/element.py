@@ -1529,7 +1529,7 @@ class Element(Plugin):
     # Mark artifact files for this element and its runtime dependencies as
     # required in the local cache.
     #
-    def _set_artifact_files_required(self):
+    def _set_artifact_files_required(self, scope=Scope.RUN):
         if self.__artifact_files_required:
             # Already done
             return
@@ -1537,8 +1537,8 @@ class Element(Plugin):
         self.__artifact_files_required = True
 
         # Request artifact files of runtime dependencies
-        for dep in self.dependencies(Scope.RUN, recurse=False):
-            dep._set_artifact_files_required()
+        for dep in self.dependencies(scope, recurse=False):
+            dep._set_artifact_files_required(scope=scope)
 
     # _artifact_files_required():
     #
