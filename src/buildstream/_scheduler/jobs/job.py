@@ -21,7 +21,10 @@
 
 # System imports
 import enum
+import copyreg
+import io
 import os
+import pickle
 import sys
 import signal
 import datetime
@@ -32,7 +35,7 @@ import multiprocessing
 # BuildStream toplevel imports
 from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
-from ... import _signals, utils
+from ... import _signals, utils, Plugin, Element, Source
 
 
 # Return code values shutdown of job handling child processes
@@ -85,6 +88,80 @@ class _MessageType(enum.Enum):
     RESULT = 3
     CHILD_DATA = 4
     SUBCLASS_CUSTOM_MESSAGE = 5
+
+
+def _reduce_element(element):
+    assert isinstance(element, Element)
+    meta_kind = element._meta_kind
+    project = element._get_project()
+    factory = project.config.element_factory
+    args = (factory, meta_kind)
+    state = element.__dict__.copy()
+    del state["_Element__reverse_dependencies"]
+    return (_unreduce_plugin, args, state)
+
+
+def _reduce_source(source):
+    assert isinstance(source, Source)
+    meta_kind = source._meta_kind
+    project = source._get_project()
+    factory = project.config.source_factory
+    args = (factory, meta_kind)
+    return (_unreduce_plugin, args, source.__dict__.copy())
+
+
+def _unreduce_plugin(factory, meta_kind):
+    cls, _ = factory.lookup(meta_kind)
+    plugin = cls.__new__(cls)
+
+    # TODO: find a better way of persisting this factory, otherwise the plugin
+    # will become invalid.
+    plugin.factory = factory
+
+    return plugin
+
+
+def _pickle_child_job(child_job, context):
+
+    # Note: Another way of doing this would be to let PluginBase do it's
+    # import-magic. We would achieve this by first pickling the factories, and
+    # the string names of their plugins. Unpickling the plugins in the child
+    # process would then "just work". There would be an additional cost of
+    # having to load every plugin kind, regardless of which ones are used.
+
+    projects = context.get_projects()
+    element_classes = [
+        cls
+        for p in projects
+        for cls, _ in p.config.element_factory._types.values()
+    ]
+    source_classes = [
+        cls
+        for p in projects
+        for cls, _ in p.config.source_factory._types.values()
+    ]
+
+    data = io.BytesIO()
+    pickler = pickle.Pickler(data)
+    pickler.dispatch_table = copyreg.dispatch_table.copy()
+    for cls in element_classes:
+        pickler.dispatch_table[cls] = _reduce_element
+    for cls in source_classes:
+        pickler.dispatch_table[cls] = _reduce_source
+    pickler.dump(child_job)
+    data.seek(0)
+
+    return data
+
+
+def _unpickle_child_job(pickled):
+    child_job = pickle.load(pickled)
+    return child_job
+
+
+def _do_pickled_child_job(pickled, *child_args):
+    child_job = _unpickle_child_job(pickled)
+    return child_job.child_action(*child_args)
 
 
 # Job()

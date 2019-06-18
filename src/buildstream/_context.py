@@ -168,6 +168,11 @@ class Context():
         self._casquota = None
         self._directory = directory
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['_message_handler']
+        return state
+
     # load()
     #
     # Loads the configuration files

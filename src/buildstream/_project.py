@@ -86,6 +86,12 @@ class ProjectConfig:
         self.default_mirror = None               # The name of the preferred mirror.
         self._aliases = {}                       # Aliases dictionary
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state["element_factory"]
+        del state["source_factory"]
+        return state
+
 
 # Project()
 #
@@ -96,6 +102,8 @@ class Project():
     def __init__(self, directory, context, *, junction=None, cli_options=None,
                  default_mirror=None, parent_loader=None,
                  search_for_project=True):
+
+        self._pass = None
 
         # The project name
         self.name = None
@@ -622,6 +630,8 @@ class Project():
         config_no_include = _yaml.node_copy(self._default_config_node)
         _yaml.composite(config_no_include, project_conf_first_pass)
 
+        assert self._pass is None
+        self._pass = 1
         self._load_pass(config_no_include, self.first_pass_config,
                         ignore_unknown=True)
 
@@ -646,6 +656,8 @@ class Project():
         config = _yaml.node_copy(self._default_config_node)
         _yaml.composite(config, project_conf_second_pass)
 
+        assert self._pass == 1
+        self._pass = 2
         self._load_pass(config, self.config)
 
         self._validate_node(config)
@@ -919,10 +931,12 @@ class Project():
         pluginbase = PluginBase(package='buildstream.plugins')
         output.element_factory = ElementFactory(pluginbase,
                                                 plugin_origins=plugin_element_origins,
-                                                format_versions=element_format_versions)
+                                                format_versions=element_format_versions,
+                                                pass_=self._pass)
         output.source_factory = SourceFactory(pluginbase,
                                               plugin_origins=plugin_source_origins,
-                                              format_versions=source_format_versions)
+                                              format_versions=source_format_versions,
+                                              pass_=self._pass)
 
     # _store_origin()
     #
