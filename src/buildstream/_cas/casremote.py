@@ -94,6 +94,9 @@ class CASRemote():
 
     def init(self):
         if not self._initialized:
+            # gRPC doesn't support fork without exec, which is used in the main process.
+            assert not utils._is_main_process()
+
             url = urlparse(self.spec.url)
             if url.scheme == 'http':
                 port = url.port or 80
