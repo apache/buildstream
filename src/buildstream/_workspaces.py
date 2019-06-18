@@ -592,7 +592,7 @@ class Workspaces():
                         raise LoadError(LoadErrorReason.INVALID_DATA,
                                         detail.format(element, self._get_filename()))
 
-                    _yaml.node_set(workspaces, element, sources[0])
+                    workspaces[element] = sources[0]
 
                 else:
                     raise LoadError(LoadErrorReason.INVALID_DATA,

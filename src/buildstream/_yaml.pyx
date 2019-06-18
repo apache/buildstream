@@ -247,6 +247,36 @@ cdef class MappingNode(Node):
     def __delitem__(self, str key):
         del self.value[key]
 
+    def __setitem__(self, str key, object value):
+        if type(value) in [MappingNode, ScalarNode, SequenceNode]:
+            self.value[key] = value
+        else:
+            node = _create_node_recursive(value)
+
+            # FIXME: Do we really want to override provenance?
+            #
+            # Related to https://gitlab.com/BuildStream/buildstream/issues/1058
+            #
+            # There are only two cases were nodes are set in the code (hence without provenance):
+            #   - When automatic variables are set by the core (e-g: max-jobs)
+            #   - when plugins call Element.set_public_data
+            #
+            # The first case should never throw errors, so it is of limited interests.
+            #
+            # The second is more important. What should probably be done here is to have 'set_public_data'
+            # able of creating a fake provenance with the name of the plugin, the project and probably the
+            # element name.
+            #
+            # We would therefore have much better error messages, and would be able to get rid of most synthetic
+            # nodes.
+            old_value = self.value.get(key)
+            if old_value:
+                node.file_index = old_value.file_index
+                node.line = old_value.line
+                node.column = old_value.column
+
+            self.value[key] = node
+
 
 cdef class SequenceNode(Node):
     def __init__(self, list value, int file_index, int line, int column):
@@ -299,6 +329,21 @@ cdef class SequenceNode(Node):
     def __reversed__(self):
         return reversed(self.value)
 
+    def __setitem__(self, int key, object value):
+        if type(value) in [MappingNode, ScalarNode, SequenceNode]:
+            self.value[key] = value
+        else:
+            node = _create_node_recursive(value)
+
+            # FIXME: Do we really want to override provenance?
+            # See __setitem__ on 'MappingNode' for more context
+            old_value = self.value[key]
+            if old_value:
+                node.file_index = old_value.file_index
+                node.line = old_value.line
+                node.column = old_value.column
+
+            self.value[key] = node
 
 # Metadata container for a yaml toplevel node.
 #
@@ -596,6 +641,22 @@ cdef Node _create_node(object value, int file_index, int line, int column):
         "Node values can only be 'list', 'dict', 'bool', 'str', 'int' or None. Not {}".format(type_value))
 
 
+cdef Node _create_node_recursive(object value):
+    cdef value_type = type(value)
+
+    if value_type is list:
+        node = __new_node_from_list(value)
+    elif value_type is str:
+        node = ScalarNode(value, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+    elif value_type is dict:
+        node = new_node_from_dict(value)
+    else:
+        raise ValueError(
+            "Unable to assign a value of type {} to a Node.".format(value_type))
+
+    return node
+
+
 # Loads a dictionary from some YAML
 #
 # Args:
@@ -734,45 +795,6 @@ cpdef ProvenanceInformation node_get_provenance(Node node, str key=None, list in
         nodeish = <Node> nodeish.value[idx]
 
     return ProvenanceInformation(nodeish)
-
-
-# node_set()
-#
-# Set an item within the node.  If using `indices` be aware that the entry must
-# already exist, or else a KeyError will be raised.  Use `node_extend_list` to
-# create entries before using `node_set`
-#
-# Args:
-#    node (Node): The node
-#    key (str): The key name
-#    value: The value
-#    indices: Any indices to index into the list referenced by key, like in
-#             `node_get` (must be a list of integers)
-#
-cpdef void node_set(Node node, object key, object value, list indices=None) except *:
-    cdef int idx
-
-    if type(value) is list:
-        value = __new_node_from_list(value)
-
-    if indices:
-        node = <Node> (<dict> node.value)[key]
-        key = indices.pop()
-        for idx in indices:
-            node = <Node> (<list> node.value)[idx]
-    if type(value) in [Node, MappingNode, ScalarNode, SequenceNode]:
-        node.value[key] = value
-    else:
-        try:
-            # Need to do this just in case we're modifying a list
-            old_value = <Node> node.value[key]
-        except KeyError:
-            old_value = None
-
-        if old_value is None:
-            node.value[key] = _create_node(value, node.file_index, node.line, next_synthetic_counter())
-        else:
-            node.value[key] = _create_node(value, old_value.file_index, old_value.line, old_value.column)
 
 
 # node_extend_list()

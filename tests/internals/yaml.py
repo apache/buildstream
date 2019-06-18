@@ -127,7 +127,7 @@ def test_node_set(datafiles):
     base = _yaml.load(filename)
 
     assert 'mother' not in base
-    _yaml.node_set(base, 'mother', 'snow white')
+    base['mother'] = 'snow white'
     assert base.get_str('mother') == 'snow white'
 
 
@@ -142,12 +142,12 @@ def test_node_set_overwrite(datafiles):
 
     # Overwrite a string
     assert base.get_str('kind') == 'pony'
-    _yaml.node_set(base, 'kind', 'cow')
+    base['kind'] = 'cow'
     assert base.get_str('kind') == 'cow'
 
     # Overwrite a list as a string
     assert base.get_sequence('moods').as_str_list() == ['happy', 'sad']
-    _yaml.node_set(base, 'moods', 'unemotional')
+    base['moods'] = 'unemotional'
     assert base.get_str('moods') == 'unemotional'
 
 
@@ -161,8 +161,7 @@ def test_node_set_list_element(datafiles):
     base = _yaml.load(filename)
 
     assert base.get_sequence('moods').as_str_list() == ['happy', 'sad']
-
-    _yaml.node_set(base, 'moods', 'confused', indices=[0])
+    base.get_sequence('moods')[0] = 'confused'
 
     assert base.get_sequence('moods').as_str_list() == ['confused', 'sad']
 
