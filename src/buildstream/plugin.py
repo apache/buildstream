@@ -363,28 +363,6 @@ class Plugin():
         provenance = _yaml.node_get_provenance(node, key=member_name)
         return str(provenance)
 
-    def node_set_member(self, node, key, value):
-        """Set the value of a node member
-        Args:
-           node (node): A dictionary loaded from YAML
-           key (str): The key name
-           value: The value
-
-        Returns:
-           None
-
-        Raises:
-           None
-
-        **Example:**
-
-        .. code:: python
-
-          # Set a string 'tomjon' in node[name]
-          self.node_set_member(node, 'name', 'tomjon')
-        """
-        _yaml.node_set(node, key, value)
-
     def new_empty_node(self):
         """Create an empty 'Node' object to be handled by BuildStream's core
         Args:
