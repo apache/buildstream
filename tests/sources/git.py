@@ -785,7 +785,7 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
     project = str(datafiles)
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    _yaml.node_set(project_config, 'ref-storage', ref_storage)
+    project_config['ref-storage'] = ref_storage
     _yaml.dump(project_config, os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
@@ -899,7 +899,7 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
     project = str(datafiles)
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    _yaml.node_set(project_config, 'ref-storage', ref_storage)
+    project_config['ref-storage'] = ref_storage
     _yaml.dump(project_config, os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
@@ -1014,7 +1014,7 @@ def test_git_describe_relevant_history(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    _yaml.node_set(project_config, 'ref-storage', 'project.refs')
+    project_config['ref-storage'] = 'project.refs'
     _yaml.dump(project_config, os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
@@ -1094,7 +1094,7 @@ def test_default_do_not_track_tags(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    _yaml.node_set(project_config, 'ref-storage', 'inline')
+    project_config['ref-storage'] = 'inline'
     _yaml.dump(project_config, os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
@@ -1151,17 +1151,17 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
 
     repodir, reponame = os.path.split(repo.repo)
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    _yaml.node_set(project_config, 'aliases', _yaml.new_node_from_dict({
+    project_config['aliases'] = _yaml.new_node_from_dict({
         'repo': 'http://example.com/'
-    }))
-    _yaml.node_set(project_config, 'mirrors', [
+    })
+    project_config['mirrors'] = [
         {
             'name': 'middle-earth',
             'aliases': {
                 'repo': ['file://{}/'.format(repodir)]
             }
         }
-    ])
+    ]
     _yaml.dump(project_config, os.path.join(project, 'project.conf'))
 
     repo.add_annotated_tag('tag', 'tag')
