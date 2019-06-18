@@ -173,7 +173,7 @@ class SandboxRemote(Sandbox):
 
             for tls_key in tls_keys:
                 if tls_key in config:
-                    _yaml.node_set(config, tls_key, resolve_path(config.get_str(tls_key)))
+                    config[tls_key] = resolve_path(config.get_str(tls_key))
 
         return RemoteExecutionSpec(*[_yaml.node_sanitize(conf) for conf in service_configs])
 

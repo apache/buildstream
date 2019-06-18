@@ -253,7 +253,7 @@ class Element(Plugin):
 
         # Collect the composited variables and resolve them
         variables = self.__extract_variables(project, meta)
-        _yaml.node_set(variables, 'element-name', self.name)
+        variables['element-name'] = self.name
         self.__variables = Variables(variables)
 
         # Collect the composited environment now that we have variables
@@ -873,7 +873,7 @@ class Element(Plugin):
         if data is not None:
             data = data.copy()
 
-        _yaml.node_set(self.__dynamic_public, domain, data)
+        self.__dynamic_public[domain] = data
 
     def get_environment(self):
         """Fetch the environment suitable for running in the sandbox
@@ -2504,9 +2504,9 @@ class Element(Plugin):
             # Extend project wide split rules with any split rules defined by the element
             _yaml.composite(splits, element_splits)
 
-        _yaml.node_set(element_bst, 'split-rules', splits)
-        _yaml.node_set(element_public, 'bst', element_bst)
-        _yaml.node_set(defaults, 'public', element_public)
+        element_bst['split-rules'] = splits
+        element_public['bst'] = element_bst
+        defaults['public'] = element_public
 
     @classmethod
     def __init_defaults(cls, project, plugin_conf, kind, is_junction):
@@ -2685,8 +2685,8 @@ class Element(Plugin):
         # element specific defaults
         _yaml.composite(base_splits, element_splits)
 
-        _yaml.node_set(element_bst, 'split-rules', base_splits)
-        _yaml.node_set(element_public, 'bst', element_bst)
+        element_bst['split-rules'] = base_splits
+        element_public['bst'] = element_bst
 
         _yaml.node_final_assertions(element_public)
 
@@ -2703,7 +2703,7 @@ class Element(Plugin):
                 self.__variables.subst(split.strip())
                 for split in splits.as_str_list()
             ]
-            _yaml.node_set(element_splits, domain, splits)
+            element_splits[domain] = splits
 
         return element_public
 
