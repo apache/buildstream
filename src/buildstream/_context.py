@@ -584,7 +584,9 @@ class Context():
         # we also do not allow it in the main process.
         assert self._log_handle is None
         assert self._log_filename is None
-        assert not utils._is_main_process()
+
+        # Need to deal with global _main_pid var.
+        # assert not utils._is_main_process()
 
         # Create the fully qualified logfile in the log directory,
         # appending the pid and .log extension at the end.
@@ -679,10 +681,10 @@ class Context():
         # If this message is associated with a plugin, print what
         # we know about the plugin.
         plugin_name = ""
-        if message.unique_id:
-            template += " {plugin}"
-            plugin = Plugin._lookup(message.unique_id)
-            plugin_name = plugin.name
+        # if message.unique_id:
+        #     template += " {plugin}"
+        #     plugin = Plugin._lookup(message.unique_id)
+        #     plugin_name = plugin.name
 
         template += ": {message}"
 

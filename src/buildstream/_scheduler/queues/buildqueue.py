@@ -108,8 +108,9 @@ class BuildQueue(Queue):
         #        artifact cache size for a successful build even though we know a
         #        failed build also grows the artifact cache size.
         #
-        if status is JobStatus.OK:
-            self._check_cache_size(job, element, result)
+
+        # if status is JobStatus.OK:
+        #     self._check_cache_size(job, element, result)
 
     def register_pending_element(self, element):
         # Set a "buildable" callback for an element not yet ready

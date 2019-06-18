@@ -244,7 +244,7 @@ class Job():
     #
     def start(self):
 
-        self._queue = multiprocessing.Queue()
+        self._queue = self._scheduler.manager.Queue()
 
         self._tries += 1
         self._parent_start_listening()
@@ -259,32 +259,18 @@ class Job():
             self._task_id,
         )
 
-        self._process = Process(target=child_job.child_action, args=[self._queue])
-
-        import contextlib
-        import time
-        @contextlib.contextmanager
-        def timer(message):
-            then = time.time()
-            yield
-            now = time.time()
-            print(f"({now - then:,.2}s):", message)
-
-        import buildstream.testpickle
-        with timer(f"Pickle {self._child_action}"):
-            pickled_process = buildstream.testpickle.test_pickle_direct(self._child_action)
-        print(f"Size of pickled data: {len(pickled_process.getbuffer()):,}")
-        import pickle
-        pickled_process.seek(0)
-        # unpickled_process = pickle.load(pickled_process)
+        pickled = _pickle_child_job(child_job, self._scheduler.context)
+        self._process = Process(
+            target=_do_pickled_child_job,
+            args=[pickled, self._queue],
+        )
 
         # Block signals which are handled in the main process such that
         # the child process does not inherit the parent's state, but the main
         # process will be notified of any signal after we launch the child.
         #
-        with timer(f"process.start {self}"):
-            with _signals.blocked([signal.SIGINT, signal.SIGTSTP, signal.SIGTERM], ignore=False):
-                self._process.start()
+        with _signals.blocked([signal.SIGINT, signal.SIGTSTP, signal.SIGTERM], ignore=False):
+            self._process.start()
 
         # Wait for the child task to complete.
         #
@@ -629,19 +615,22 @@ class Job():
         #
         #      http://bugs.python.org/issue3831
         #
-        if not self._listening:
-            self._scheduler.loop.add_reader(
-                self._queue._reader.fileno(), self._parent_recv)
-            self._listening = True
+
+        # if not self._listening:
+        #     self._scheduler.loop.add_reader(
+        #         self._queue._reader.fileno(), self._parent_recv)
+        #     self._listening = True
+        pass
 
     # _parent_stop_listening()
     #
     # Stops listening on the message queue
     #
     def _parent_stop_listening(self):
-        if self._listening:
-            self._scheduler.loop.remove_reader(self._queue._reader.fileno())
-            self._listening = False
+        # if self._listening:
+        #     self._scheduler.loop.remove_reader(self._queue._reader.fileno())
+        #     self._listening = False
+        pass
 
 
 # ChildJob()
@@ -922,7 +911,7 @@ class ChildJob():
     #    exit_code (_ReturnCode): The exit code to exit with
     #
     def _child_shutdown(self, exit_code):
-        self._queue.close()
+        # self._queue.close()
         assert isinstance(exit_code, _ReturnCode)
         sys.exit(int(exit_code))
 
