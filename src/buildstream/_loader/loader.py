@@ -45,11 +45,12 @@ from .._message import Message, MessageType
 # Args:
 #    context (Context): The Context object
 #    project (Project): The toplevel Project object
+#    fetch_subprojects (callable): A function to fetch subprojects
 #    parent (Loader): A parent Loader object, in the case this is a junctioned Loader
 #
 class Loader():
 
-    def __init__(self, context, project, *, parent=None):
+    def __init__(self, context, project, *, fetch_subprojects, parent=None):
 
         # Ensure we have an absolute path for the base directory
         basedir = project.element_path
@@ -69,6 +70,7 @@ class Loader():
         self._basedir = basedir              # Base project directory
         self._first_pass_options = project.first_pass_config.options  # Project options (OptionPool)
         self._parent = parent                # The parent loader
+        self._fetch_subprojects = fetch_subprojects
 
         self._meta_elements = {}  # Dict of resolved meta elements by name
         self._elements = {}       # Dict of elements
@@ -623,7 +625,7 @@ class Loader():
         if element._get_consistency() == Consistency.RESOLVED:
             if ticker:
                 ticker(filename, 'Fetching subproject')
-            element._fetch()
+            self._fetch_subprojects([element])
 
         # Handle the case where a subproject has no ref
         #
@@ -655,7 +657,8 @@ class Loader():
         try:
             from .._project import Project  # pylint: disable=cyclic-import
             project = Project(project_dir, self._context, junction=element,
-                              parent_loader=self, search_for_project=False)
+                              parent_loader=self, search_for_project=False,
+                              fetch_subprojects=self._fetch_subprojects)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
                 message = (

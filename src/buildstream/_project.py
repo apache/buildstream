@@ -95,7 +95,7 @@ class Project():
 
     def __init__(self, directory, context, *, junction=None, cli_options=None,
                  default_mirror=None, parent_loader=None,
-                 search_for_project=True):
+                 search_for_project=True, fetch_subprojects=None):
 
         # The project name
         self.name = None
@@ -157,7 +157,7 @@ class Project():
         self._project_includes = None
 
         with PROFILER.profile(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-')):
-            self._load(parent_loader=parent_loader)
+            self._load(parent_loader=parent_loader, fetch_subprojects=fetch_subprojects)
 
         self._partially_loaded = True
 
@@ -553,7 +553,7 @@ class Project():
     #
     # Raises: LoadError if there was a problem with the project.conf
     #
-    def _load(self, parent_loader=None):
+    def _load(self, *, parent_loader=None, fetch_subprojects):
 
         # Load builtin default
         projectfile = os.path.join(self.directory, _PROJECT_CONF_FILE)
@@ -608,7 +608,7 @@ class Project():
         self._fatal_warnings = _yaml.node_get(pre_config_node, list, 'fatal-warnings', default_value=[])
 
         self.loader = Loader(self._context, self,
-                             parent=parent_loader)
+                             parent=parent_loader, fetch_subprojects=fetch_subprojects)
 
         self._project_includes = Includes(self.loader, copy_tree=False)
 

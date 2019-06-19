@@ -953,6 +953,17 @@ class Stream():
 
         return list(output_elements)
 
+    # fetch_subprojects()
+    #
+    # Fetch subprojects as part of the project and element loading process.
+    #
+    # Args:
+    #    junctions (list of Element): The junctions to fetch
+    #
+    def fetch_subprojects(self, junctions):
+        for junction in junctions:
+            junction._fetch()
+
     #############################################################
     #                 Scheduler API forwarding                  #
     #############################################################
