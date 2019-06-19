@@ -59,13 +59,13 @@ def test_buildtree_staged_forced_true(cli_integration, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_buildtree_staged_warn_empty_cached(cli_integration, tmpdir, datafiles):
-    # Test that if we stage a cached and empty buildtree, we warn the user.
+def test_buildtree_staged_warn_non_cached(cli_integration, tmpdir, datafiles):
+    # Test that if we attempt to stage a buildtree that was never cached, we warn the user.
     project = str(datafiles)
     element_name = 'build-shell/buildtree.bst'
 
     # Switch to a temp artifact cache dir to ensure the artifact is rebuilt,
-    # caching an empty buildtree
+    # without caching a buildtree which is the default bst behaviour
     cli_integration.configure({
         'cachedir': str(tmpdir)
     })
@@ -77,7 +77,15 @@ def test_buildtree_staged_warn_empty_cached(cli_integration, tmpdir, datafiles):
         'shell', '--build', '--use-buildtree', 'always', element_name, '--', 'cat', 'test'
     ])
     res.assert_main_error(ErrorDomain.APP, None)
-    assert "Artifact was created without buildtree" in res.stderr
+    assert "Artifact was created without buildtree, unable to launch shell with it" in res.stderr
+
+    # Now attempt the same with the try option, this should not attempt to find a buildtree
+    # and just launch the shell, however the cat should still fail.
+    res = cli_integration.run(project=project, args=[
+        'shell', '--build', '--use-buildtree', 'try', element_name, '--', 'cat', 'test'
+    ])
+    assert "Artifact created without buildtree, shell will be loaded without it" in res.stderr
+    assert 'Hi' not in res.output
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -142,7 +150,7 @@ def test_buildtree_from_failure_option_never(cli_integration, tmpdir, datafiles)
     element_name = 'build-shell/buildtree-fail.bst'
 
     # Switch to a temp artifact cache dir to ensure the artifact is rebuilt,
-    # caching an empty buildtree
+    # without caching a buildtree explicitly
     cli_integration.configure({
         'cachedir': str(tmpdir)
     })
@@ -154,7 +162,7 @@ def test_buildtree_from_failure_option_never(cli_integration, tmpdir, datafiles)
         'shell', '--build', element_name, '--use-buildtree', 'always', '--', 'cat', 'test'
     ])
     res.assert_main_error(ErrorDomain.APP, None)
-    assert "Artifact was created without buildtree" in res.stderr
+    assert "Artifact was created without buildtree, unable to launch shell with it" in res.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -264,8 +272,6 @@ def test_buildtree_options(cli, tmpdir, datafiles):
         ])
         assert 'Hi' not in res.output
         assert 'Attempting to fetch missing artifact buildtrees' not in res.stderr
-        assert """Buildtree is not cached locally or in available remotes,
-                shell will be loaded without it"""
 
         # Check correctly handling the lack of buildtree, with 'try' attempting and succeeding
         # to pull the buildtree as the user context allow the pulling of buildtrees and it is
@@ -297,4 +303,5 @@ def test_buildtree_options(cli, tmpdir, datafiles):
             '--pull-buildtrees', 'shell', '--build', element_name, '--use-buildtree', 'always', '--', 'cat', 'test'
         ])
         assert 'Hi' in res.output
+        assert "buildtree is not cached locally, will attempt to pull from available remotes" in res.stderr
         assert 'Attempting to fetch missing artifact buildtree' in res.stderr
