@@ -88,6 +88,13 @@ def create_server(repo, *, enable_push,
     artifact_pb2_grpc.add_ArtifactServiceServicer_to_server(
         _ArtifactServicer(cas, artifactdir), server)
 
+    # Create up reference storage and artifact capabilities
+    artifact_capabilities = buildstream_pb2.ArtifactCapabilities(
+        allow_updates=enable_push)
+    buildstream_pb2_grpc.add_CapabilitiesServicer_to_server(
+        _BuildStreamCapabilitiesServicer(artifact_capabilities),
+        server)
+
     return server
 
 
@@ -499,6 +506,16 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
         if not os.path.exists(self.cas.objpath(digest)):
             context.abort(grpc.StatusCode.FAILED_PRECONDITION,
                           "Artifact {} specified but not found".format(name))
+
+
+class _BuildStreamCapabilitiesServicer(buildstream_pb2_grpc.CapabilitiesServicer):
+    def __init__(self, artifact_capabilities):
+        self.artifact_capabilities = artifact_capabilities
+
+    def GetCapabilities(self, request, context):
+        response = buildstream_pb2.ServerCapabilities()
+        response.artifact_capabilities.CopyFrom(self.artifact_capabilities)
+        return response
 
 
 def _digest_from_download_resource_name(resource_name):
