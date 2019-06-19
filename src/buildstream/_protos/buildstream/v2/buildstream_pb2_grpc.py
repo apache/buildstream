@@ -87,3 +87,45 @@ def add_ReferenceStorageServicer_to_server(servicer, server):
   generic_handler = grpc.method_handlers_generic_handler(
       'buildstream.v2.ReferenceStorage', rpc_method_handlers)
   server.add_generic_rpc_handlers((generic_handler,))
+
+
+class CapabilitiesStub(object):
+  # missing associated documentation comment in .proto file
+  pass
+
+  def __init__(self, channel):
+    """Constructor.
+
+    Args:
+      channel: A grpc.Channel.
+    """
+    self.GetCapabilities = channel.unary_unary(
+        '/buildstream.v2.Capabilities/GetCapabilities',
+        request_serializer=buildstream_dot_v2_dot_buildstream__pb2.GetCapabilitiesRequest.SerializeToString,
+        response_deserializer=buildstream_dot_v2_dot_buildstream__pb2.ServerCapabilities.FromString,
+        )
+
+
+class CapabilitiesServicer(object):
+  # missing associated documentation comment in .proto file
+  pass
+
+  def GetCapabilities(self, request, context):
+    """GetCapabilities mirrors
+    """
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+
+def add_CapabilitiesServicer_to_server(servicer, server):
+  rpc_method_handlers = {
+      'GetCapabilities': grpc.unary_unary_rpc_method_handler(
+          servicer.GetCapabilities,
+          request_deserializer=buildstream_dot_v2_dot_buildstream__pb2.GetCapabilitiesRequest.FromString,
+          response_serializer=buildstream_dot_v2_dot_buildstream__pb2.ServerCapabilities.SerializeToString,
+      ),
+  }
+  generic_handler = grpc.method_handlers_generic_handler(
+      'buildstream.v2.Capabilities', rpc_method_handlers)
+  server.add_generic_rpc_handlers((generic_handler,))
