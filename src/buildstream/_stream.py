@@ -961,8 +961,14 @@ class Stream():
     #    junctions (list of Element): The junctions to fetch
     #
     def fetch_subprojects(self, junctions):
-        for junction in junctions:
-            junction._fetch()
+        old_queues = self.queues
+        try:
+            queue = FetchQueue(self._scheduler)
+            queue.enqueue(junctions)
+            self.queues = [queue]
+            self._run()
+        finally:
+            self.queues = old_queues
 
     #############################################################
     #                 Scheduler API forwarding                  #
