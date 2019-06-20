@@ -440,18 +440,13 @@ class Project():
     #    targets (list): Target names
     #    rewritable (bool): Whether the loaded files should be rewritable
     #                       this is a bit more expensive due to deep copies
-    #    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
-    #                              loading process, if they are not yet locally cached
     #
     # Returns:
     #    (list): A list of loaded Element
     #
-    def load_elements(self, targets, *,
-                      rewritable=False, fetch_subprojects=False):
+    def load_elements(self, targets, *, rewritable=False):
         with self._context.timed_activity("Loading elements", silent_nested=True):
-            meta_elements = self.loader.load(targets, rewritable=rewritable,
-                                             ticker=None,
-                                             fetch_subprojects=fetch_subprojects)
+            meta_elements = self.loader.load(targets, rewritable=rewritable, ticker=None)
 
         with self._context.timed_activity("Resolving elements"):
             elements = [

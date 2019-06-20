@@ -277,15 +277,10 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name, w
         ])
         result.assert_success()
 
-    # Assert the correct error when trying to show the pipeline
+    # Assert successful bst show (requires implicit subproject fetching)
     result = cli.run(project=project, silent=True, args=[
         'show', element_name])
-
-    # If a workspace is open, no fetch is needed
-    if workspaced:
-        result.assert_success()
-    else:
-        result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_FETCH_NEEDED)
+    result.assert_success()
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))

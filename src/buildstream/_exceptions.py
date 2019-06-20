@@ -198,9 +198,6 @@ class LoadErrorReason(Enum):
     # Failure to load a project from a specified junction
     INVALID_JUNCTION = 13
 
-    # Subproject needs to be fetched
-    SUBPROJECT_FETCH_NEEDED = 14
-
     # Subproject has no ref
     SUBPROJECT_INCONSISTENT = 15
 
