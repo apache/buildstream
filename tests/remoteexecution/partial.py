@@ -8,6 +8,8 @@ from buildstream._exceptions import ErrorDomain
 from buildstream.testing import cli_remote_execution as cli  # pylint: disable=unused-import
 from buildstream.testing.integration import assert_contains
 
+from tests.testutils.artifactshare import create_artifact_share
+
 
 pytestmark = pytest.mark.remoteexecution
 
@@ -44,3 +46,26 @@ def test_build_dependency_partial_local_cas(cli, datafiles):
     result = cli.run(project=project, args=['artifact', 'checkout', builddep_element_name,
                                             '--directory', builddep_checkout])
     result.assert_main_error(ErrorDomain.STREAM, 'uncached-checkout-attempt')
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_partial_push(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    share_dir = os.path.join(str(tmpdir), "artifactshare")
+    element_name = 'no-runtime-deps.bst'
+    builddep_element_name = 'autotools/amhello.bst'
+
+    with create_artifact_share(share_dir) as share:
+
+        services = cli.ensure_services()
+        assert set(services) == set(['action-cache', 'execution', 'storage'])
+
+        cli.config['artifacts'] = {
+            'url': share.repo,
+            'push': True,
+        }
+
+        res = cli.run(project=project, args=['build', element_name])
+        res.assert_success()
+
+        assert builddep_element_name in res.get_pushed_elements()
