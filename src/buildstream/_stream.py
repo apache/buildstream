@@ -1609,3 +1609,17 @@ class Stream():
         # a new use-case arises.
         #
         raise TypeError("Stream objects should not be pickled.")
+
+    # TODO
+    # Causes the decorated method to be run in a subprocess
+    @contextmanager
+    def subprocessed(self, func, *args, **kwargs):
+        pass
+        # Set up event loop
+
+        # Start subprocessed work
+
+        # Run event loop. This event loop should exit once the
+        # subprocessed work has completed
+
+        # Return result of subprocessed function
