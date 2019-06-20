@@ -21,6 +21,7 @@
 
 import itertools
 import functools
+import multiprocessing as mp
 import os
 import sys
 import stat
@@ -76,6 +77,7 @@ class Stream():
         #
         # Private members
         #
+        self._notification_queue = mp.Queue()
         self._context = context
         self._artifacts = None
         self._sourcecache = None
@@ -85,7 +87,7 @@ class Stream():
 
         context.messenger.set_state(self._state)
 
-        self._scheduler = Scheduler(context, session_start, self._state, self._scheduler_notification_handler,
+        self._scheduler = Scheduler(context, session_start, self._state, self._notification_queue,
                                     interrupt_callback=interrupt_callback,
                                     ticker_callback=ticker_callback,
                                     interactive_failure=interactive_failure)
