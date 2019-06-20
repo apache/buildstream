@@ -1623,3 +1623,18 @@ class Stream():
         # subprocessed work has completed
 
         # Return result of subprocessed function
+
+    # The code to be run by the Stream's event loop while delegating
+    # work to a subprocess with the @subprocessed
+    def _loop(self):
+        assert self._notification_queue
+        # Check that the subprocessed work has not finished
+        # TODO
+
+        # Check for new messages
+        notification = self._notification_queue.get(block=True, timeout=0.1)
+
+        # Process new messages
+        if notification:
+            self._scheduler_notification_handler(notification)
+
