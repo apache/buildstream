@@ -49,7 +49,6 @@ from . import Scope, Consistency
 #
 # Args:
 #    context (Context): The Context object
-#    project (Project): The Project object
 #    session_start (datetime): The time when the session started
 #    session_start_callback (callable): A callback to invoke when the session starts
 #    interrupt_callback (callable): A callback to invoke when we get interrupted
@@ -59,7 +58,7 @@ from . import Scope, Consistency
 #
 class Stream():
 
-    def __init__(self, context, project, session_start, *,
+    def __init__(self, context, session_start, *,
                  session_start_callback=None,
                  interrupt_callback=None,
                  ticker_callback=None,
@@ -80,8 +79,8 @@ class Stream():
         self._artifacts = context.artifactcache
         self._sourcecache = context.sourcecache
         self._context = context
-        self._project = project
-        self._pipeline = Pipeline(context, project, self._artifacts)
+        self._project = None
+        self._pipeline = None
         self._scheduler = Scheduler(context, session_start,
                                     interrupt_callback=interrupt_callback,
                                     ticker_callback=ticker_callback,
@@ -97,6 +96,18 @@ class Stream():
     def cleanup(self):
         if self._project:
             self._project.cleanup()
+
+    # set_project()
+    #
+    # Set the top-level project.
+    #
+    # Args:
+    #    project (Project): The Project object
+    #
+    def set_project(self, project):
+        assert self._project is None
+        self._project = project
+        self._pipeline = Pipeline(self._context, project, self._artifacts)
 
     # load_selection()
     #
