@@ -95,8 +95,10 @@ def create_server(repo, *, enable_push,
     # Create up reference storage and artifact capabilities
     artifact_capabilities = buildstream_pb2.ArtifactCapabilities(
         allow_updates=enable_push)
+    source_capabilities = buildstream_pb2.SourceCapabilities(
+        allow_updates=enable_push)
     buildstream_pb2_grpc.add_CapabilitiesServicer_to_server(
-        _BuildStreamCapabilitiesServicer(artifact_capabilities),
+        _BuildStreamCapabilitiesServicer(artifact_capabilities, source_capabilities),
         server)
 
     return server
@@ -513,12 +515,14 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
 
 
 class _BuildStreamCapabilitiesServicer(buildstream_pb2_grpc.CapabilitiesServicer):
-    def __init__(self, artifact_capabilities):
+    def __init__(self, artifact_capabilities, source_capabilities):
         self.artifact_capabilities = artifact_capabilities
+        self.source_capabilities = source_capabilities
 
     def GetCapabilities(self, request, context):
         response = buildstream_pb2.ServerCapabilities()
         response.artifact_capabilities.CopyFrom(self.artifact_capabilities)
+        response.source_capabilities.CopyFrom(self.source_capabilities)
         return response
 
 

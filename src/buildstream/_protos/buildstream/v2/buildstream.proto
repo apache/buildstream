@@ -112,7 +112,13 @@ message ArtifactCapabilities {
   bool allow_updates = 1;
 }
 
+// Capabilities of the source service
+message SourceCapabilities {
+  bool allow_updates = 1;
+}
+
 // All capabalities will be unset if the service isn't present
 message ServerCapabilities {
   ArtifactCapabilities artifact_capabilities = 1;
+  SourceCapabilities source_capabilities = 2;
 }
