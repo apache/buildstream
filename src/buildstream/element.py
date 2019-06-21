@@ -1220,6 +1220,7 @@ class Element(Plugin):
             # key is not available yet.
             if self.__can_query_cache_callback is not None:
                 self.__can_query_cache_callback(self)
+                self.__can_query_cache_callback = None
 
             return
 
