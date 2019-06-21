@@ -325,10 +325,10 @@ def test_workspace_visible(cli, datafiles):
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_sysroot(cli, tmpdir, datafiles):
     project = str(datafiles)
-    base_element = "base/base-alpine.bst"
+    base_element = "base.bst"
     # test element only needs to be something lightweight for this test
     test_element = "script/script.bst"
-    checkout_dir = os.path.join(str(tmpdir), 'alpine-sysroot')
+    checkout_dir = os.path.join(str(tmpdir), 'freedesktop-sysroot')
     test_file = 'hello'
 
     # Build and check out a sysroot

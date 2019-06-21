@@ -56,7 +56,7 @@ def test_pip_build(cli, datafiles):
     assert result.exit_code == 0
 
     assert_contains(checkout, ['/usr', '/usr/lib', '/usr/bin',
-                               '/usr/bin/hello', '/usr/lib/python3.6'])
+                               '/usr/bin/hello', '/usr/lib/python3.7'])
 
 
 # Test running an executable built with pip

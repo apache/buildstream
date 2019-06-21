@@ -1,6 +1,6 @@
 kind: manual
 depends:
-  - base/base-alpine.bst
+  - base.bst
 
 public:
   bst:
