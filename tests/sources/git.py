@@ -786,7 +786,7 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
     _yaml.node_set(project_config, 'ref-storage', ref_storage)
-    _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
+    _yaml.dump(project_config, os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
     os.makedirs(repofiles, exist_ok=True)
@@ -900,7 +900,7 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
     _yaml.node_set(project_config, 'ref-storage', ref_storage)
-    _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
+    _yaml.dump(project_config, os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
     os.makedirs(repofiles, exist_ok=True)
@@ -1015,7 +1015,7 @@ def test_git_describe_relevant_history(cli, tmpdir, datafiles):
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
     _yaml.node_set(project_config, 'ref-storage', 'project.refs')
-    _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
+    _yaml.dump(project_config, os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
     os.makedirs(repofiles, exist_ok=True)
@@ -1095,7 +1095,7 @@ def test_default_do_not_track_tags(cli, tmpdir, datafiles):
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
     _yaml.node_set(project_config, 'ref-storage', 'inline')
-    _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
+    _yaml.dump(project_config, os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
     os.makedirs(repofiles, exist_ok=True)
@@ -1162,7 +1162,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
             }
         }
     ])
-    _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
+    _yaml.dump(project_config, os.path.join(project, 'project.conf'))
 
     repo.add_annotated_tag('tag', 'tag')
 
@@ -1208,7 +1208,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
 
     repodir, reponame = os.path.split(repo.repo)
 
-    _yaml.dump(_yaml.node_sanitize(project_config), os.path.join(project, 'project.conf'))
+    _yaml.dump(project_config, os.path.join(project, 'project.conf'))
 
     config = repo.source_config(ref=new_ref)
     del config['track']

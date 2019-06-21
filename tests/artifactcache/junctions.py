@@ -35,7 +35,7 @@ def project_set_artifacts(project, url):
         'url': url,
         'push': True
     })
-    _yaml.dump(_yaml.node_sanitize(project_config), filename=project_conf_file)
+    _yaml.dump(project_config, filename=project_conf_file)
 
 
 @pytest.mark.datafiles(DATA_DIR)

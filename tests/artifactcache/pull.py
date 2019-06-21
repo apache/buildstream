@@ -73,7 +73,7 @@ def test_pull(cli, tmpdir, datafiles):
         }
 
         # Write down the user configuration file
-        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        _yaml.dump(user_config, filename=user_config_file)
         # Ensure CLI calls will use it
         cli.configure(user_config)
 
@@ -182,7 +182,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         }
 
         # Write down the user configuration file
-        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        _yaml.dump(user_config, filename=user_config_file)
         # Ensure CLI calls will use it
         cli.configure(user_config)
 

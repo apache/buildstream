@@ -66,7 +66,7 @@ def test_push(cli, tmpdir, datafiles):
         }
 
         # Write down the user configuration file
-        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        _yaml.dump(user_config, filename=user_config_file)
 
         # Fake minimal context
         context = Context()
@@ -164,7 +164,7 @@ def test_push_message(tmpdir, datafiles):
         }
 
         # Write down the user configuration file
-        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        _yaml.dump(user_config, filename=user_config_file)
 
         queue = multiprocessing.Queue()
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process

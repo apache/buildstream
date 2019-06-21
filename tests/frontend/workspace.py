@@ -1134,7 +1134,7 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
     # element has been tracked
     element_contents = _yaml.load(element_file)
     _yaml.node_del(_yaml.node_get(element_contents, dict, 'sources', [0]), 'ref')
-    _yaml.dump(_yaml.node_sanitize(element_contents), element_file)
+    _yaml.dump(element_contents, element_file)
 
     result = cli.run(project=project, args=['-C', workspace, 'source', 'track', *arg_elm])
     result.assert_success()
