@@ -211,10 +211,12 @@ class Element(Plugin):
         self.__reverse_runtime_deps = set()     # Direct reverse runtime dependency Elements
         self.__build_deps_without_strict_cache_key = None    # Number of build dependencies without a strict key
         self.__runtime_deps_without_strict_cache_key = None  # Number of runtime dependencies without a strict key
+        self.__build_deps_without_cache_key = None    # Number of build dependencies without a cache key
+        self.__runtime_deps_without_cache_key = None  # Number of runtime dependencies without a cache key
         self.__build_deps_uncached = None    # Build dependencies which are not yet cached
         self.__runtime_deps_uncached = None  # Runtime dependencies which are not yet cached
         self.__updated_strict_cache_keys_of_rdeps = False  # Whether we've updated strict cache keys of rdeps
-        self.__ready_for_runtime = False        # Whether the element has all dependencies ready and has a cache key
+        self.__ready_for_runtime = False        # Whether the element and its runtime dependencies have cache keys
         self.__ready_for_runtime_and_cached = False  # Whether all runtime deps are cached, as well as the element
         self.__sources = []                     # List of Sources
         self.__weak_cache_key = None            # Our cached weak cache key
@@ -967,6 +969,7 @@ class Element(Plugin):
             dependency.__reverse_runtime_deps.add(element)
         no_of_runtime_deps = len(element.__runtime_dependencies)
         element.__runtime_deps_without_strict_cache_key = no_of_runtime_deps
+        element.__runtime_deps_without_cache_key = no_of_runtime_deps
         element.__runtime_deps_uncached = no_of_runtime_deps
 
         for meta_dep in meta.build_dependencies:
@@ -975,6 +978,7 @@ class Element(Plugin):
             dependency.__reverse_build_deps.add(element)
         no_of_build_deps = len(element.__build_dependencies)
         element.__build_deps_without_strict_cache_key = no_of_build_deps
+        element.__build_deps_without_cache_key = no_of_build_deps
         element.__build_deps_uncached = no_of_build_deps
 
         element.__preflight()
@@ -3056,6 +3060,10 @@ class Element(Plugin):
             if context.get_strict():
                 self.__cache_key = self.__strict_cache_key
 
+                # The Element may have just become ready for runtime now that the
+                # strong cache key has just been set
+                self.__update_ready_for_runtime()
+
                 # If the element is cached, and has all of its runtime dependencies cached,
                 # now that we have the cache key, we are able to notify reverse dependencies
                 # that the element it ready. This is a likely trigger for workspaced elements.
@@ -3133,6 +3141,10 @@ class Element(Plugin):
                 # Strong cache key could not be calculated yet
                 return
 
+            # The Element may have just become ready for runtime now that the
+            # strong cache key has just been set
+            self.__update_ready_for_runtime()
+
             # If the element is cached, and has all of its runtime dependencies cached,
             # now that we have the strong cache key, we are able to notify reverse dependencies
             # that the element it ready. This is a likely trigger for workspaced elements.
@@ -3166,6 +3178,43 @@ class Element(Plugin):
                     assert not rdep.__build_deps_without_strict_cache_key < 0
 
                     if rdep.__build_deps_without_strict_cache_key == 0:
+                        rdep._update_state()
+
+    # __update_ready_for_runtime()
+    #
+    # An Element becomes ready for runtime when:
+    #
+    #  1. The Element has a strong cache key
+    #  2. The Element's keys are considered stable
+    #  3. The runtime dependencies of the Element are ready for runtime
+    #
+    # These criteria serve as potential trigger points as to when an Element may have
+    # become ready for runtime.
+    #
+    # Once an Element becomes ready for runtime, we notify the reverse
+    # runtime dependencies and the reverse build dependencies of the Element,
+    # decrementing the appropriate counters.
+    #
+    def __update_ready_for_runtime(self):
+        if not self.__ready_for_runtime:
+            if self.__runtime_deps_without_cache_key == 0 and \
+               self.__cache_key is not None and not self.__cache_keys_unstable:
+                self.__ready_for_runtime = True
+
+                # Notify reverse dependencies
+                for rdep in self.__reverse_runtime_deps:
+                    rdep.__runtime_deps_without_cache_key -= 1
+                    assert not rdep.__runtime_deps_without_cache_key < 0
+
+                    # If all of our runtimes have cache keys, we can calculate ours
+                    if rdep.__runtime_deps_without_cache_key == 0:
+                        rdep.__update_ready_for_runtime()
+
+                for rdep in self.__reverse_build_deps:
+                    rdep.__build_deps_without_cache_key -= 1
+                    assert not rdep.__build_deps_without_cache_key < 0
+
+                    if rdep.__build_deps_without_cache_key == 0:
                         rdep._update_state()
 
 
