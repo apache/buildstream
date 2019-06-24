@@ -138,6 +138,11 @@ class Pipeline():
                 # Determine initial element state.
                 element._update_state()
 
+                # We may already have Elements which are cached and have their runtimes
+                # cached, if this is the case, we should immediately notify their reverse
+                # dependencies.
+                element._update_ready_for_runtime_and_cached()
+
     # dependencies()
     #
     # Generator function to iterate over elements and optionally

@@ -206,9 +206,12 @@ class Element(Plugin):
 
         self.__runtime_dependencies = []        # Direct runtime dependency Elements
         self.__build_dependencies = []          # Direct build dependency Elements
-        self.__reverse_dependencies = set()     # Direct reverse dependency Elements
+        self.__reverse_build_deps = set()       # Direct reverse build dependency Elements
+        self.__reverse_runtime_deps = set()     # Direct reverse runtime dependency Elements
+        self.__remaining_build_deps_uncached = None    # Built dependencies which are not yet cached
+        self.__remaining_runtime_deps_uncached = None  # Runtime dependencies which are not yet cached
         self.__ready_for_runtime = False        # Whether the element has all dependencies ready and has a cache key
-        self.__ready_for_runtime_and_cached = False  # Whether the element has all deps ready for runtime and cached
+        self.__ready_for_runtime_and_cached = False  # Whether all runtime deps are cached, as well as the element
         self.__sources = []                     # List of Sources
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
@@ -1003,12 +1006,14 @@ class Element(Plugin):
         for meta_dep in meta.dependencies:
             dependency = Element._new_from_meta(meta_dep)
             element.__runtime_dependencies.append(dependency)
-            dependency.__reverse_dependencies.add(element)
+            dependency.__reverse_runtime_deps.add(element)
+        element.__remaining_runtime_deps_uncached = len(element.__runtime_dependencies)
 
         for meta_dep in meta.build_dependencies:
             dependency = Element._new_from_meta(meta_dep)
             element.__build_dependencies.append(dependency)
-            dependency.__reverse_dependencies.add(element)
+            dependency.__reverse_build_deps.add(element)
+        element.__remaining_build_deps_uncached = len(element.__build_dependencies)
 
         return element
 
@@ -1131,7 +1136,7 @@ class Element(Plugin):
         if not self.__assemble_scheduled:
             return False
 
-        return all(dep.__ready_for_runtime_and_cached for dep in self.dependencies(Scope.BUILD, recurse=False))
+        return self.__remaining_build_deps_uncached == 0
 
     # _get_cache_key():
     #
@@ -1193,10 +1198,6 @@ class Element(Plugin):
             # The correct keys can only be calculated once the build is complete
             self.__reset_cache_data()
 
-            if self.__buildable_callback is not None and self._buildable():
-                self.__buildable_callback(self)
-                self.__buildable_callback = None
-
             return
 
         self.__update_cache_keys()
@@ -1220,6 +1221,7 @@ class Element(Plugin):
             # key is not available yet.
             if self.__can_query_cache_callback is not None:
                 self.__can_query_cache_callback(self)
+                self.__can_query_cache_callback = None
 
             return
 
@@ -1229,17 +1231,6 @@ class Element(Plugin):
         if not self.__ready_for_runtime and self.__cache_key is not None:
             self.__ready_for_runtime = all(
                 dep.__ready_for_runtime for dep in self.__runtime_dependencies)
-
-        if self.__ready_for_runtime:
-            # ready_for_runtime_and_cached is stronger than ready_for_runtime, so don't
-            # check the former if the latter is False
-            if not self.__ready_for_runtime_and_cached and self._cached_success():
-                self.__ready_for_runtime_and_cached = all(
-                    dep.__ready_for_runtime_and_cached for dep in self.__runtime_dependencies)
-
-        if self.__buildable_callback is not None and self._buildable():
-            self.__buildable_callback(self)
-            self.__buildable_callback = None
 
     # _get_display_key():
     #
@@ -1600,6 +1591,7 @@ class Element(Plugin):
             self.__artifact.reset_cached()
 
         self.__update_state_recursively()
+        self._update_ready_for_runtime_and_cached()
 
         if self._get_workspace() and self._cached_success():
             assert utils._is_main_process(), \
@@ -1856,6 +1848,7 @@ class Element(Plugin):
         self.__artifact.reset_cached()
 
         self.__update_state_recursively()
+        self._update_ready_for_runtime_and_cached()
 
     # _pull():
     #
@@ -2321,6 +2314,32 @@ class Element(Plugin):
     #
     def _set_depth(self, depth):
         self._depth = depth
+
+    # _update_ready_for_runtime_and_cached()
+    #
+    # An Element becomes ready for runtime and cached once the following three criteria
+    # are met:
+    #  1. The Element has a strong cache key
+    #  2. The Element is cached (locally)
+    #  3. The runtime dependencies of the Element are ready for runtime and cached.
+    #
+    # These three criteria serve as potential trigger points as to when an Element may have
+    # become ready for runtime and cached.
+    #
+    # Once an Element becomes ready for runtime and cached, we notify the reverse
+    # runtime dependencies and the reverse build dependencies of the element, decrementing
+    # the appropriate counters.
+    #
+    def _update_ready_for_runtime_and_cached(self):
+        if not self.__ready_for_runtime_and_cached:
+            if self.__remaining_runtime_deps_uncached == 0 and self.__cache_key and self._cached_success():
+                self.__ready_for_runtime_and_cached = True
+
+                # Notify reverse dependencies
+                for rdep in self.__reverse_runtime_deps:
+                    rdep.__on_runtime_dependency_ready_for_runtime_and_cached()
+                for rdep in self.__reverse_build_deps:
+                    rdep.__on_build_dependency_ready_for_runtime_and_cached()
 
     #############################################################
     #                   Private Local Methods                   #
@@ -2960,15 +2979,45 @@ class Element(Plugin):
             element = queue.pop()
 
             old_ready_for_runtime = element.__ready_for_runtime
-            old_ready_for_runtime_and_cached = element.__ready_for_runtime_and_cached
             old_strict_cache_key = element.__strict_cache_key
             element._update_state()
 
             if element.__ready_for_runtime != old_ready_for_runtime or \
-               element.__ready_for_runtime_and_cached != old_ready_for_runtime_and_cached or \
                element.__strict_cache_key != old_strict_cache_key:
-                for rdep in element.__reverse_dependencies:
+                for rdep in element.__reverse_build_deps | element.__reverse_runtime_deps:
                     queue.push(rdep._unique_id, rdep)
+
+    # __on_runtime_dependency_ready_for_runtime_and_cached()
+    #
+    # This function is called once one of the Element's runtime dependencies has
+    # become ready for runtime and cached.
+    #
+    # On calling this function, we decrement the Element's remaining runtime deps counter.
+    # If this is zero, we attempt to notify all reverse dependencies of the Element.
+    #
+    def __on_runtime_dependency_ready_for_runtime_and_cached(self):
+        self.__remaining_runtime_deps_uncached -= 1
+        assert not self.__remaining_runtime_deps_uncached < 0
+
+        # Try to notify reverse dependencies if all runtime deps are ready
+        if self.__remaining_runtime_deps_uncached == 0:
+            self._update_ready_for_runtime_and_cached()
+
+    # __on_build_dependency_ready_for_runtime_and_cached()
+    #
+    # This function is called once one of the Element's build dependencies has become
+    # ready for runtime and cached.
+    #
+    # On calling this function, we decrement the Element's remaining build deps counter.
+    # If this is zero, we invoke the buildable callback.
+    #
+    def __on_build_dependency_ready_for_runtime_and_cached(self):
+        self.__remaining_build_deps_uncached -= 1
+        assert not self.__remaining_build_deps_uncached < 0
+
+        if self.__buildable_callback is not None and self._buildable():
+            self.__buildable_callback(self)
+            self.__buildable_callback = None
 
     # __reset_cache_data()
     #
@@ -3006,6 +3055,8 @@ class Element(Plugin):
     # has changed.
     #
     def __update_cache_keys(self):
+        context = self._get_context()
+
         if self.__weak_cache_key is None:
             # Calculate weak cache key
             # Weak cache key includes names of direct build dependencies
@@ -3032,6 +3083,15 @@ class Element(Plugin):
                 e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
             ]
             self.__strict_cache_key = self._calculate_cache_key(dependencies)
+
+            # In strict mode, the strong cache key always matches the strict cache key
+            if context.get_strict():
+                self.__cache_key = self.__strict_cache_key
+
+                # If the element is cached, and has all of its runtime dependencies cached,
+                # now that we have the cache key, we are able to notify reverse dependencies
+                # that the element it ready. This is a likely trigger for workspaced elements.
+                self._update_ready_for_runtime_and_cached()
 
         if self.__strict_cache_key is not None and self.__can_query_cache_callback is not None:
             self.__can_query_cache_callback(self)
@@ -3068,7 +3128,6 @@ class Element(Plugin):
 
             # In strict mode, the strong cache key always matches the strict cache key
             if context.get_strict():
-                self.__cache_key = self.__strict_cache_key
                 self.__artifact = self.__strict_artifact
 
     # __update_cache_key_non_strict()
@@ -3106,6 +3165,11 @@ class Element(Plugin):
             if self.__cache_key is None:
                 # Strong cache key could not be calculated yet
                 return
+
+            # If the element is cached, and has all of its runtime dependencies cached,
+            # now that we have the strong cache key, we are able to notify reverse dependencies
+            # that the element it ready. This is a likely trigger for workspaced elements.
+            self._update_ready_for_runtime_and_cached()
 
             # Now we have the strong cache key, update the Artifact
             self.__artifact._cache_key = self.__cache_key
