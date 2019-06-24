@@ -199,6 +199,48 @@ separately.
 
   This is a part of #123
 
+Committer access
+----------------
+
+Committers in the BuildStream project are those folks to whom the right to 
+directly commit changes to our version controlled resources has been granted. 
+While every contribution is 
+valued regardless of its source, not every person who contributes code to the 
+project will earn commit access. The `COMMITTERS`_ file lists all committers.
+
+.. _COMMITTERS: https://gitlab.com/BuildStream/buildstream/blob/master/COMMITTERS.rst
+
+
+How commit access is granted
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After someone has successfully contributed a few non-trivial patches, some full
+committer, usually whoever has reviewed and applied the most patches from that
+contributor, proposes them for commit access. This proposal is sent only to the
+other full committers -- the ensuing discussion is private, so that everyone can
+feel comfortable speaking their minds. Assuming there are no objections, the
+contributor is granted commit access. The decision is made by consensus; there
+are no formal rules governing the procedure, though generally if someone strongly
+objects the access is not offered, or is offered on a provisional basis.
+
+This of course relies on contributors being responsive and showing willingness
+to address any problems that may arise after landing patches. However, the primary
+criterion for commit access is good judgment.
+
+You do not have to be a technical wizard, or demonstrate deep knowledge of the
+entire codebase to become a committer. You just need to know what you don't
+know. If your patches adhere to the guidelines in this file, adhere to all the usual
+unquantifiable rules of coding (code should be readable, robust, maintainable, etc.),
+and respect the Hippocratic Principle of "first, do no harm", then you will probably
+get commit access pretty quickly. The size, complexity, and quantity of your patches
+do not matter as much as the degree of care you show in avoiding bugs and minimizing
+unnecessary impact on the rest of the code. Many full committers are people who have
+not made major code contributions, but rather lots of small, clean fixes, each of
+which was an unambiguous improvement to the code. (Of course, this does not mean the
+project needs a bunch of very trivial patches whose only purpose is to gain commit
+access; knowing what's worth a patch post and what's not is part of showing good
+judgement.)
+
 
 Coding guidelines
 -----------------
