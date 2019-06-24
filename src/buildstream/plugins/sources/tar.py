@@ -132,18 +132,12 @@ class TarSource(DownloadableFileSource):
             # First, ensure that a member never starts with `./`
             if member.path.startswith('./'):
                 member.path = member.path[2:]
+            if member.islnk() and member.linkname.startswith('./'):
+                member.linkname = member.linkname[2:]
 
             # Now extract only the paths which match the normalized path
             if member.path.startswith(base_dir):
-
-                # If it's got a link name, give it the same treatment, we
-                # need the link targets to match up with what we are staging
-                #
-                # NOTE: Its possible this is not perfect, we may need to
-                #       consider links which point outside of the chosen
-                #       base directory.
-                #
-                if member.type == tarfile.LNKTYPE:
+                if member.islnk() and member.linkname.startswith(base_dir):
                     member.linkname = member.linkname[L:]
 
                 member.path = member.path[L:]
