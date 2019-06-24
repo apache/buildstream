@@ -77,8 +77,12 @@ class TarSource(DownloadableFileSource):
         self.node_validate(node, DownloadableFileSource.COMMON_CONFIG_KEYS + ['base-dir'])
 
     def preflight(self):
+        if self.original_url is not None:
+            file_source = self.url
+        else:
+            file_source = self.path
         self.host_lzip = None
-        if self.url.endswith('.lz'):
+        if file_source.endswith('.lz'):
             self.host_lzip = utils.get_host_tool('lzip')
 
     def get_unique_key(self):
@@ -88,23 +92,40 @@ class TarSource(DownloadableFileSource):
     def _run_lzip(self):
         assert self.host_lzip
         with TemporaryFile() as lzip_stdout:
-            with open(self._get_mirror_file(), 'r') as lzip_file:
-                self.call([self.host_lzip, '-d'],
-                          stdin=lzip_file,
-                          stdout=lzip_stdout)
+            if self.original_url is not None:
+                with open(self._get_mirror_file(), 'r') as lzip_file:
+                    self.call([self.host_lzip, '-d'],
+                              stdin=lzip_file,
+                              stdout=lzip_stdout)
 
-            lzip_stdout.seek(0, 0)
-            yield lzip_stdout
+                lzip_stdout.seek(0, 0)
+                yield lzip_stdout
+            else:
+                with open(self.fullpath, 'r') as lzip_file:
+                    self.call([self.host_lzip, '-d'],
+                              stdin=lzip_file,
+                              stdout=lzip_stdout)
+
+                lzip_stdout.seek(0, 0)
+                yield lzip_stdout
 
     @contextmanager
     def _get_tar(self):
-        if self.url.endswith('.lz'):
+        if self.original_url is not None:
+            file_source = self.url
+        else:
+            file_source = self.path
+        if file_source.endswith('.lz'):
             with self._run_lzip() as lzip_dec:
                 with tarfile.open(fileobj=lzip_dec, mode='r:') as tar:
                     yield tar
         else:
-            with tarfile.open(self._get_mirror_file()) as tar:
-                yield tar
+            if self.original_url is not None:
+                with tarfile.open(self._get_mirror_file()) as tar:
+                    yield tar
+            else:
+                with tarfile.open(self.fullpath) as tar:
+                    yield tar
 
     def stage(self, directory):
         try:

@@ -72,58 +72,100 @@ class _NetrcPasswordManager:
 class DownloadableFileSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
-    COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ['url', 'ref', 'etag']
+    COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ['url', 'ref', 'etag', 'path']
 
     __urlopener = None
 
     def configure(self, node):
-        self.original_url = self.node_get_member(node, str, 'url')
+        self.original_url = self.node_get_member(node, str, 'url', None)
+        self.original_path = self.node_get_member(node, str, 'path', None)
         self.ref = self.node_get_member(node, str, 'ref', None)
-        self.url = self.translate_url(self.original_url)
         self._warn_deprecated_etag(node)
+
+        # XXX: Looks like this should be in preflight but child classes are not calling super()
+        if self.original_url is None and self.original_path is None:
+            raise SourceError("Please specify either a 'path' or a 'url'.")
+        if self.original_url is not None and self.original_path is not None:
+            self.url_provenance = self.node_provenance(node, member_name='url')
+            self.path_provenance = self.node_provenance(node, member_name='path')
+
+            raise SourceError("You cannot specify both 'path' ({}) and 'url' ({})"
+                              .format(self.path_provenance, self.url_provenance))
+
+        # If using a url, use appropriate checks
+        if self.original_url is not None:
+            self.url = self.translate_url(self.original_url)
+
+        # If using path, do checks
+        if self.original_path is not None:
+            self.path = self.node_get_project_path(node, 'path')
+            self.fullpath = os.path.join(self.get_project_directory(), self.path)
+            self.sha = unique_key(self.fullpath)
+        else:
+            self.sha = self.ref
 
     def preflight(self):
         return
 
     def get_unique_key(self):
-        return [self.original_url, self.ref]
+        self.__unique_key = None
+        if self.original_url is not None:
+            return [self.original_url, self.ref]
+        else:
+            return [(os.path.basename(self.original_path)), self.sha]
 
     def get_consistency(self):
-        if self.ref is None:
-            return Consistency.INCONSISTENT
+        if self.original_url is not None:
+            if self.ref is None:
+                return Consistency.INCONSISTENT
 
-        if os.path.isfile(self._get_mirror_file()):
-            return Consistency.CACHED
+            if os.path.isfile(self._get_mirror_file()):
+                return Consistency.CACHED
+
+            else:
+                return Consistency.RESOLVED
 
         else:
-            return Consistency.RESOLVED
+            return Consistency.CACHED
 
     def load_ref(self, node):
-        self.ref = self.node_get_member(node, str, 'ref', None)
-        self._warn_deprecated_etag(node)
+        if self.original_url is not None:
+            self.ref = self.node_get_member(node, str, 'ref', None)
+            self._warn_deprecated_etag(node)
+        else:
+            pass
 
     def get_ref(self):
-        return self.ref
+        if self.original_url is not None:
+            return self.ref
+        else:
+            return None
 
     def set_ref(self, ref, node):
-        node['ref'] = self.ref = ref
+        if self.original_url is not None:
+            node['ref'] = self.ref = self.sha = ref
+        else:
+            pass
 
     def track(self):
         # there is no 'track' field in the source to determine what/whether
         # or not to update refs, because tracking a ref is always a conscious
         # decision by the user.
-        with self.timed_activity("Tracking {}".format(self.url),
-                                 silent_nested=True):
-            new_ref = self._ensure_mirror()
+        if self.original_url is not None:
+            with self.timed_activity("Tracking {}".format(self.url),
+                                     silent_nested=True):
+                new_ref = self._ensure_mirror()
 
-            if self.ref and self.ref != new_ref:
-                detail = "When tracking, new ref differs from current ref:\n" \
-                    + "  Tracked URL: {}\n".format(self.url) \
-                    + "  Current ref: {}\n".format(self.ref) \
-                    + "  New ref: {}\n".format(new_ref)
-                self.warn("Potential man-in-the-middle attack!", detail=detail)
+                if self.ref and self.ref != new_ref:
+                    detail = "When tracking, new ref differs from current ref:\n" \
+                        + "  Tracked URL: {}\n".format(self.url) \
+                        + "  Current ref: {}\n".format(self.ref) \
+                        + "  New ref: {}\n".format(new_ref)
+                    self.warn("Potential man-in-the-middle attack!", detail=detail)
 
-            return new_ref
+                return new_ref
+        else:
+            pass
 
     def fetch(self):
 
@@ -131,16 +173,22 @@ class DownloadableFileSource(Source):
         # file to be already cached because Source.fetch() will
         # not be called if the source is already Consistency.CACHED.
         #
-        if os.path.isfile(self._get_mirror_file()):
-            return  # pragma: nocover
+        if self.original_url is not None:
+            if os.path.isfile(self._get_mirror_file()):
+                return  # pragma: nocover
 
-        # Download the file, raise hell if the sha256sums don't match,
-        # and mirror the file otherwise.
-        with self.timed_activity("Fetching {}".format(self.url), silent_nested=True):
-            sha256 = self._ensure_mirror()
-            if sha256 != self.ref:
-                raise SourceError("File downloaded from {} has sha256sum '{}', not '{}'!"
-                                  .format(self.url, sha256, self.ref))
+            # Download the file, raise hell if the sha256sums don't match,
+            # and mirror the file otherwise.
+            with self.timed_activity("Fetching {}".format(self.url), silent_nested=True):
+                sha256 = self._ensure_mirror()
+                if sha256 != self.ref:
+                    raise SourceError("File downloaded from {} has sha256sum '{}', not '{}'!"
+                                      .format(self.url, sha256, self.ref))
+        else:
+            pass
+
+    def _get_local_path(self):
+        return self.path
 
     def _warn_deprecated_etag(self, node):
         etag = self.node_get_member(node, str, 'etag', None)
@@ -221,8 +269,12 @@ class DownloadableFileSource(Source):
                               .format(self, self.url, e), temporary=True) from e
 
     def _get_mirror_dir(self):
+        if self.original_url is not None:
+            directory_name = utils.url_directory_name(self.original_url)
+        else:
+            directory_name = self.original_path
         return os.path.join(self.get_mirror_directory(),
-                            utils.url_directory_name(self.original_url))
+                            directory_name)
 
     def _get_mirror_file(self, sha=None):
         return os.path.join(self._get_mirror_dir(), sha or self.ref)
@@ -248,3 +300,17 @@ class DownloadableFileSource(Source):
                 ftp_handler = _NetrcFTPOpener(netrc_config)
                 DownloadableFileSource.__urlopener = urllib.request.build_opener(http_auth, ftp_handler)
         return DownloadableFileSource.__urlopener
+
+
+# Create a unique key for a file
+def unique_key(filename):
+
+    # Return some hard coded things for files which
+    # have no content to calculate a key for
+    if os.path.islink(filename):
+        # For a symbolic link, use the link target as its unique identifier
+        return os.readlink(filename)
+    elif os.path.isdir(filename):
+        return "0"
+
+    return utils.sha256sum(filename)
