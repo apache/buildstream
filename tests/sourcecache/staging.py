@@ -78,8 +78,7 @@ def test_source_staged(tmpdir, cli, datafiles):
     assert sourcecache.contains(source)
 
     # Extract the file and check it's the same as the one we imported
-    ref = source._get_source_name()
-    digest = cas.resolve_ref(ref)
+    digest = sourcecache.export(source)._get_digest()
     extractdir = os.path.join(str(tmpdir), "extract")
     cas.checkout(extractdir, digest)
     dir1 = extractdir
@@ -108,6 +107,7 @@ def test_source_fetch(tmpdir, cli, datafiles):
     context.cachedir = cachedir
     context.messenger.set_message_handler(dummy_message_handler)
     cas = context.get_cascache()
+    sourcecache = context.sourcecache
 
     res = cli.run(project=project_dir, args=["source", "fetch", "import-dev.bst"])
     res.assert_success()
@@ -117,8 +117,7 @@ def test_source_fetch(tmpdir, cli, datafiles):
     assert element._source_cached()
 
     # check that the directory structures are idetical
-    ref = source._get_source_name()
-    digest = cas.resolve_ref(ref)
+    digest = sourcecache.export(source)._get_digest()
     extractdir = os.path.join(str(tmpdir), "extract")
     cas.checkout(extractdir, digest)
     dir1 = extractdir
@@ -133,11 +132,11 @@ def test_staged_source_build(tmpdir, datafiles, cli):
     project_dir = os.path.join(datafiles.dirname, datafiles.basename, 'project')
     cachedir = os.path.join(str(tmpdir), 'cache')
     element_path = 'elements'
-    source_refs = os.path.join(str(tmpdir), 'cache', 'cas', 'refs', 'heads', '@sources')
+    source_protos = os.path.join(str(tmpdir), 'cache', 'source_protos')
     source_dir = os.path.join(str(tmpdir), 'cache', 'sources')
 
     cli.configure({
-        'cachedir': os.path.join(str(tmpdir), 'cache')
+        'cachedir': cachedir
     })
 
     create_element_size('target.bst', project_dir, element_path, [], 10000)
@@ -181,7 +180,7 @@ def test_staged_source_build(tmpdir, datafiles, cli):
     assert files == []
 
     # Now remove the source refs and check the state
-    shutil.rmtree(source_refs)
+    shutil.rmtree(source_protos)
     cli.remove_artifact_from_cache(project_dir, 'target.bst')
     states = cli.get_element_states(project_dir, ['target.bst'])
     assert states['target.bst'] == 'fetch needed'

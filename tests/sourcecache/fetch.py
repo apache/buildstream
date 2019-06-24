@@ -89,15 +89,22 @@ def test_source_fetch(cli, tmpdir, datafiles):
 
         assert os.listdir(os.path.join(str(tmpdir), 'cache', 'sources', 'git')) != []
 
+        # get root digest of source
+        sourcecache = context.sourcecache
+        digest = sourcecache.export(source)._get_digest()
+
         # Move source in local cas to repo
         shutil.rmtree(os.path.join(str(tmpdir), 'sourceshare', 'repo', 'cas'))
+        shutil.move(
+            os.path.join(str(tmpdir), 'cache', 'source_protos'),
+            os.path.join(str(tmpdir), 'sourceshare', 'repo'))
         shutil.move(
             os.path.join(str(tmpdir), 'cache', 'cas'),
             os.path.join(str(tmpdir), 'sourceshare', 'repo'))
         shutil.rmtree(os.path.join(str(tmpdir), 'cache', 'sources'))
         shutil.rmtree(os.path.join(str(tmpdir), 'cache', 'artifacts'))
 
-        digest = share.cas.resolve_ref(source._get_source_name())
+        # check the share has the object
         assert share.has_object(digest)
 
         state = cli.get_element_state(project_dir, 'fetch.bst')
@@ -163,7 +170,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
         res = cli.run(project=project_dir, args=['source', 'fetch', 'fetch.bst'])
         res.assert_success()
         brief_key = source._get_brief_display_key()
-        assert ("Remote ({}) does not have source {} cached"
+        assert ("Remote source service ({}) does not have source {} cached"
                 .format(share.repo, brief_key)) in res.stderr
         assert ("SUCCESS Fetching from {}"
                 .format(repo.source_config(ref=ref)['url'])) in res.stderr
@@ -219,5 +226,5 @@ def test_pull_fail(cli, tmpdir, datafiles):
         res = cli.run(project=project_dir, args=['build', 'push.bst'])
         res.assert_main_error(ErrorDomain.STREAM, None)
         res.assert_task_error(ErrorDomain.PLUGIN, None)
-        assert "Remote ({}) does not have source {} cached".format(
+        assert "Remote source service ({}) does not have source {} cached".format(
             share.repo, source._get_brief_display_key()) in res.stderr

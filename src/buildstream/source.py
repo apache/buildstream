@@ -1063,8 +1063,7 @@ class Source(Plugin):
     # Gives a ref path that points to where sources are kept in the CAS
     def _get_source_name(self):
         # @ is used to prevent conflicts with project names
-        return "{}/{}/{}".format(
-            '@sources',
+        return "{}/{}".format(
             self.get_kind(),
             self._key)
 

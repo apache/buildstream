@@ -39,10 +39,10 @@ def test_patch_sources_cached_1(cli, datafiles):
 
     # as we have a local, patch, local config, the first local and patch should
     # be cached together, and the last local on it's own
-    source_dir = os.path.join(project_dir, 'cache', 'cas', 'refs', 'heads', '@sources')
+    source_protos = os.path.join(project_dir, 'cache', 'source_protos')
 
-    assert len(os.listdir(os.path.join(source_dir, 'patch'))) == 1
-    assert len(os.listdir(os.path.join(source_dir, 'local'))) == 2
+    assert len(os.listdir(os.path.join(source_protos, 'patch'))) == 1
+    assert len(os.listdir(os.path.join(source_protos, 'local'))) == 2
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -53,9 +53,9 @@ def test_patch_sources_cached_2(cli, datafiles):
     res.assert_success()
 
     # As everything is before the patch it should all be cached together
-    source_dir = os.path.join(project_dir, 'cache', 'cas', 'refs', 'heads', '@sources')
+    source_protos = os.path.join(project_dir, 'cache', 'source_protos')
 
-    assert len(os.listdir(os.path.join(source_dir, 'patch'))) == 1
+    assert len(os.listdir(os.path.join(source_protos, 'patch'))) == 1
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -66,9 +66,9 @@ def test_sources_without_patch(cli, datafiles):
     res.assert_success()
 
     # No patches so everything should be cached seperately
-    source_dir = os.path.join(project_dir, 'cache', 'cas', 'refs', 'heads', '@sources')
+    source_protos = os.path.join(project_dir, 'cache', 'source_protos')
 
-    assert len(os.listdir(os.path.join(source_dir, 'local'))) == 3
+    assert len(os.listdir(os.path.join(source_protos, 'local'))) == 3
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -105,8 +105,8 @@ def test_source_cache_key(cli, datafiles):
     res.assert_success()
 
     # Should have one source ref
-    patch_refs = os.path.join(project_dir, 'cache', 'cas', 'refs', 'heads', '@sources', 'patch')
-    assert len(os.listdir(patch_refs)) == 1
+    patch_protos = os.path.join(project_dir, 'cache', 'source_protos', 'patch')
+    assert len(os.listdir(patch_protos)) == 1
 
     # modify hello-patch file and check tracking updates refs
     with open(os.path.join(file_path, 'dev-files', 'usr', 'include', 'pony.h'), 'a') as f:
@@ -120,4 +120,4 @@ def test_source_cache_key(cli, datafiles):
     res.assert_success()
 
     # We should have a new source ref
-    assert len(os.listdir(patch_refs)) == 2
+    assert len(os.listdir(patch_protos)) == 2
