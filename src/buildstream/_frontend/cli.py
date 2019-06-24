@@ -501,11 +501,13 @@ def show(app, elements, deps, except_, order, format_):
 @click.option('--use-buildtree', '-t', 'cli_buildtree', type=click.Choice(['ask', 'try', 'always', 'never']),
               default='ask',
               help='Defaults to ask but if set to always the function will fail if a build tree is not available')
+@click.option('--pull', 'pull_', is_flag=True, default=False,
+              help='Attempt to pull missing or incomplete artifacts')
 @click.argument('element', required=False,
                 type=click.Path(readable=False))
 @click.argument('command', type=click.STRING, nargs=-1)
 @click.pass_obj
-def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command):
+def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, pull_, command):
     """Run a command in the target element's sandbox environment
 
     When this command is executed from a workspace directory, the default
@@ -535,11 +537,10 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
     from .._project import HostMount
     from .._pipeline import PipelineSelection
 
-    if build_:
-        scope = Scope.BUILD
-    else:
-        scope = Scope.RUN
+    scope = Scope.BUILD if build_ else Scope.RUN
 
+    # We may need to fetch dependency artifacts if we're pulling the artifact
+    selection = PipelineSelection.ALL if pull_ else PipelineSelection.NONE
     use_buildtree = None
 
     with app.initialized():
@@ -548,9 +549,14 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
             if not element:
                 raise AppError('Missing argument "ELEMENT".')
 
-        dependencies = app.stream.load_selection((element,), selection=PipelineSelection.NONE,
-                                                 use_artifact_config=True)
-        element = dependencies[0]
+        elements = app.stream.load_selection((element,), selection=selection,
+                                             use_artifact_config=True)
+
+        # last one will be the element we want to stage, previous ones are
+        # elements to try and pull
+        element = elements[-1]
+        pull_dependencies = elements[:-1] if pull_ else None
+
         prompt = app.shell_prompt(element)
         mounts = [
             HostMount(path, host_path)
@@ -561,7 +567,7 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
         buildtree_exists = element._buildtree_exists()
 
         if cli_buildtree in ("always", "try"):
-            if buildtree_exists:
+            if buildtree_exists or pull_:
                 use_buildtree = cli_buildtree
                 if not cached and use_buildtree == "always":
                     click.echo("WARNING: buildtree is not cached locally, will attempt to pull from available remotes",
@@ -601,7 +607,8 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, command)
                                         mounts=mounts,
                                         isolate=isolate,
                                         command=command,
-                                        usebuildtree=use_buildtree)
+                                        usebuildtree=use_buildtree,
+                                        pull_dependencies=pull_dependencies)
         except BstError as e:
             raise AppError("Error launching shell: {}".format(e), detail=e.detail) from e
 
@@ -950,13 +957,16 @@ def artifact():
               help="Create a tarball from the artifact contents instead "
                    "of a file tree. If LOCATION is '-', the tarball "
                    "will be dumped to the standard output.")
+@click.option('--pull', 'pull_', default=False, is_flag=True,
+              help="Whether to pull the artifact if it's missing or "
+                   "incomplete.")
 @click.option('--directory', default=None,
               type=click.Path(file_okay=False),
               help="The directory to checkout the artifact to")
 @click.argument('element', required=False,
                 type=click.Path(readable=False))
 @click.pass_obj
-def artifact_checkout(app, force, deps, integrate, hardlinks, tar, directory, element):
+def artifact_checkout(app, force, deps, integrate, hardlinks, tar, pull_, directory, element):
     """Checkout contents of an artifact
 
     When this command is executed from a workspace directory, the default
@@ -1002,7 +1012,8 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, directory, el
                             scope=scope,
                             integrate=True if integrate is None else integrate,
                             hardlinks=hardlinks,
-                            tar=tar)
+                            tar=tar,
+                            pull=pull_)
 
 
 ################################################################

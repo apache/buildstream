@@ -469,15 +469,18 @@ class ArtifactCache(BaseCache):
 
         push_remotes = [r for r in self._remotes[project] if r.spec.push]
 
-        remote_missing_blobs_set = set()
+        remote_missing_blobs_list = []
 
         for remote in push_remotes:
             remote.init()
 
             remote_missing_blobs = self.cas.remote_missing_blobs(remote, missing_blobs)
-            remote_missing_blobs_set.update(remote_missing_blobs)
 
-        return list(remote_missing_blobs_set)
+            for blob in remote_missing_blobs:
+                if blob not in remote_missing_blobs_list:
+                    remote_missing_blobs_list.append(blob)
+
+        return remote_missing_blobs_list
 
     ################################################
     #             Local Private Methods            #

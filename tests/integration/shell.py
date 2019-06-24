@@ -7,6 +7,10 @@ import pytest
 from buildstream import _yaml
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream._exceptions import ErrorDomain
+from buildstream import utils
+
+from tests.testutils import create_artifact_share
 
 
 pytestmark = pytest.mark.integration
@@ -391,3 +395,49 @@ def test_integration_external_workspace(cli, tmpdir_factory, datafiles, build_sh
         command.extend([element_name, '--', 'true'])
     result = cli.run(project=project, cwd=workspace_dir, args=command)
     result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+def test_integration_partial_artifact(cli, datafiles, tmpdir, integration_cache):
+
+    project = str(datafiles)
+    element_name = 'autotools/amhello.bst'
+
+    # push to an artifact server so we can pull from it later.
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+        cli.configure({'artifacts': {
+            'url': share.repo,
+            'push': True
+        }})
+        result = cli.run(project=project, args=['build', element_name])
+        result.assert_success()
+
+        # If the build is cached then it might not push to the artifact cache
+        result = cli.run(project=project, args=['artifact', 'push', element_name])
+        result.assert_success()
+
+        result = cli.run(project=project, args=['shell', element_name])
+        result.assert_success()
+
+        # do a checkout and get the digest of the hello binary.
+        result = cli.run(project=project, args=[
+            'artifact', 'checkout', '--deps', 'none',
+            '--directory', os.path.join(str(tmpdir), 'tmp'),
+            'autotools/amhello.bst'])
+        result.assert_success()
+        digest = utils.sha256sum(os.path.join(str(tmpdir), 'tmp', 'usr', 'bin', 'hello'))
+
+        # Remove the binary from the CAS
+        cachedir = cli.config['cachedir']
+        objpath = os.path.join(cachedir, 'cas', 'objects', digest[:2], digest[2:])
+        os.unlink(objpath)
+
+        # check shell doesn't work
+        result = cli.run(project=project, args=['shell', element_name, '--', 'hello'])
+        result.assert_main_error(ErrorDomain.APP, None)
+
+        # check the artifact gets completed with '--pull' specified
+        result = cli.run(project=project, args=['shell', '--pull', element_name, '--', 'hello'])
+        result.assert_success()
+        assert 'autotools/amhello.bst' in result.get_pulled_elements()
