@@ -6,7 +6,13 @@ Committers
 Full committ access
 -------------------
 
-List of people with full commit access, ie blanket committ access to the BuildStream codebase:
+List of people with full commit access, ie blanket committ access to 
+the BuildStream codebase. Note that this is not a full list of all 
+contributors.
+
+If you have a question or comment, it's probably best to email 
+the BuildStream mailing list, rather than any of these people
+directly.
 
 +-------------------------+------------------------------------------+
 | Full Name               | Email Address                            |
