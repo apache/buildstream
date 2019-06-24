@@ -407,3 +407,86 @@ def test_homeless_environment(cli, tmpdir, datafiles):
     # Use a track, make sure the plugin tries to find a ~/.netrc
     result = cli.run(project=project, args=['source', 'track', 'target.bst'], env={'HOME': None})
     result.assert_success()
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'out-of-basedir-hardlinks'))
+def test_out_of_basedir_hardlinks(cli, tmpdir, datafiles):
+    def ensure_link(member):
+        # By default, python will simply duplicate files - we want
+        # hardlinks!
+        if member.path == "contents/to_extract/a":
+            member.type = tarfile.LNKTYPE
+            member.linkname = "contents/elsewhere/a"
+        return member
+
+    project = str(datafiles)
+    generate_project(project, tmpdir)
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Create a tarball with an odd hardlink
+    src_tar = os.path.join(str(tmpdir), "contents.tar.gz")
+    old_dir = os.getcwd()
+    os.chdir(str(tmpdir))
+    with tarfile.open(src_tar, "w:gz") as tar:
+        tar.add("contents", filter=ensure_link)
+    os.chdir(old_dir)
+
+    # Make sure our tarfile is actually created with the desired
+    # attributes set
+    with tarfile.open(src_tar, "r:gz") as tar:
+        assert any(member.islnk() and
+                   member.path == "contents/to_extract/a" and
+                   member.linkname == "contents/elsewhere/a"
+                   for member in tar.getmembers())
+
+    # Assert that we will actually create a singular copy of the file
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
+    result.assert_success()
+
+    original_dir = os.path.join(str(datafiles), 'contents', 'to_extract')
+    original_contents = list_dir_contents(original_dir)
+    checkout_contents = list_dir_contents(checkoutdir)
+    assert checkout_contents == original_contents
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'out-of-basedir-hardlinks'))
+def test_malicious_out_of_basedir_hardlinks(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    generate_project(project, tmpdir)
+
+    # Create a maliciously-hardlinked tarball
+    def ensure_link(member):
+        # By default, python will simply duplicate files - we want
+        # hardlinks!
+        if member.path == "contents/elsewhere/malicious":
+            member.type = tarfile.LNKTYPE
+            # This should not be allowed
+            member.linkname = "../../../malicious_target.bst"
+        return member
+
+    src_tar = os.path.join(str(tmpdir), "contents.tar.gz")
+    old_dir = os.getcwd()
+    os.chdir(str(tmpdir))
+    with tarfile.open(src_tar, "w:gz") as tar:
+        tar.add("contents", filter=ensure_link)
+    os.chdir(old_dir)
+
+    # Make sure our tarfile is actually created with the desired
+    # attributes set
+    with tarfile.open(src_tar, "r:gz") as tar:
+        assert any(member.islnk() and
+                   member.path == "contents/elsewhere/malicious" and
+                   member.linkname == "../../../malicious_target.bst"
+                   for member in tar.getmembers())
+
+    # Try to execute the exploit
+    result = cli.run(project=project, args=['source', 'track', 'malicious_target.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['source', 'fetch', 'malicious_target.bst'])
+    result.assert_main_error(ErrorDomain.STREAM, None)

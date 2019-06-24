@@ -114,7 +114,7 @@ class TarSource(DownloadableFileSource):
                     base_dir = self._find_base_dir(tar, self.base_dir)
 
                 if base_dir:
-                    tar.extractall(path=directory, members=self._extract_members(tar, base_dir))
+                    tar.extractall(path=directory, members=self._extract_members(tar, base_dir, directory))
                 else:
                     tar.extractall(path=directory)
 
@@ -122,7 +122,28 @@ class TarSource(DownloadableFileSource):
             raise SourceError("{}: Error staging source: {}".format(self, e)) from e
 
     # Override and translate which filenames to extract
-    def _extract_members(self, tar, base_dir):
+    def _extract_members(self, tar, base_dir, target_dir):
+
+        # Assert that a tarfile is safe to extract; specifically, make
+        # sure that we don't do anything outside of the target
+        # directory (this is possible, if, say, someone engineered a
+        # tarfile to contain paths that start with ..).
+        def assert_safe(member):
+            final_path = os.path.abspath(os.path.join(target_dir, member.path))
+            if not final_path.startswith(target_dir):
+                raise SourceError("{}: Tarfile attempts to extract outside the staging area: "
+                                  "{} -> {}".format(self, member.path, final_path))
+
+            if member.islnk():
+                linked_path = os.path.abspath(os.path.join(target_dir, member.linkname))
+                if not linked_path.startswith(target_dir):
+                    raise SourceError("{}: Tarfile attempts to hardlink outside the staging area: "
+                                      "{} -> {}".format(self, member.path, final_path))
+
+            # Don't need to worry about symlinks because they're just
+            # files here and won't be able to do much harm once we are
+            # in a sandbox.
+
         if not base_dir.endswith(os.sep):
             base_dir = base_dir + os.sep
 
@@ -132,21 +153,27 @@ class TarSource(DownloadableFileSource):
             # First, ensure that a member never starts with `./`
             if member.path.startswith('./'):
                 member.path = member.path[2:]
+            if member.islnk() and member.linkname.startswith('./'):
+                member.linkname = member.linkname[2:]
 
             # Now extract only the paths which match the normalized path
             if member.path.startswith(base_dir):
-
-                # If it's got a link name, give it the same treatment, we
-                # need the link targets to match up with what we are staging
+                # Hardlinks are smart and collapse into the "original"
+                # when their counterpart doesn't exist. This means we
+                # only need to modify links to files whose location we
+                # change.
                 #
-                # NOTE: Its possible this is not perfect, we may need to
-                #       consider links which point outside of the chosen
-                #       base directory.
+                # Since we assert that we're not linking to anything
+                # outside the target directory, this should only ever
+                # be able to link to things inside the target
+                # directory, so we should cover all bases doing this.
                 #
-                if member.type == tarfile.LNKTYPE:
+                if member.islnk() and member.linkname.startswith(base_dir):
                     member.linkname = member.linkname[L:]
 
                 member.path = member.path[L:]
+
+                assert_safe(member)
                 yield member
 
     # We want to iterate over all paths of a tarball, but getmembers()
