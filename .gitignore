@@ -1,6 +1,5 @@
 # Compiled python modules.
-src/buildstream/**/*.pyc
-tests/**/*.pyc
+__pycache__
 
 # Generated C files
 src/buildstream/**/*.c
@@ -32,10 +31,6 @@ tmp
 .pytest_cache/
 *.bst/
 .tox/
-
-# Pycache, in case buildstream is ran directly from within the source
-# tree
-__pycache__/
 
 # Generated version file
 src/buildstream/__version__.py
