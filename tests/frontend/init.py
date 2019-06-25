@@ -10,7 +10,6 @@ from buildstream._frontend.app import App
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream._versions import BST_FORMAT_VERSION
 
-
 def test_defaults(cli, tmpdir):
     project = str(tmpdir)
     project_path = os.path.join(project, 'project.conf')
@@ -73,6 +72,55 @@ def test_force_overwrite_project(cli, tmpdir):
     assert _yaml.node_get(project_conf, str, 'name') == 'foo'
     assert _yaml.node_get(project_conf, str, 'format-version') == str(BST_FORMAT_VERSION)
 
+def test_empty_directory_as_argument(cli, tmpdir):
+    project = os.path.join(str(tmpdir), "empty-directory")
+    os.mkdir(project)
+    project_path = os.path.join(project, 'project.conf')
+
+    result = cli.run(project=project, args=['init', '--project-name', 'foo',
+                                            project])
+    result.assert_success()
+
+    project_conf = _yaml.load(project_path)
+    assert _yaml.node_get(project_conf, str, 'name') == 'foo'
+    assert _yaml.node_get(project_conf, str, 'format-version') == str(BST_FORMAT_VERSION)
+    assert _yaml.node_get(project_conf, str, 'element-path') == 'elements'
+
+def test_non_empty_directory_as_argument(cli, tmpdir):
+    project = str(tmpdir)
+    project_path = os.path.join(project, 'project.conf')
+
+    # This should fail because the tmpdir contains a 'cache' directory.
+    result = cli.run(project=project, args=['init', '--project-name', 'foo',
+                                            tmpdir])
+    result.assert_main_error(ErrorDomain.APP, 'directory-not-empty')
+
+def test_non_existing_directory_as_argument(cli, tmpdir):
+    project = str(os.path.join(str(tmpdir), "missing-directory"))
+    project_path = os.path.join(project, 'project.conf')
+
+    result = cli.run(project=project, args=['init', '--project-name', 'foo',
+                                            project])
+    result.assert_success()
+
+    project_conf = _yaml.load(project_path)
+    assert _yaml.node_get(project_conf, str, 'name') == 'foo'
+    assert _yaml.node_get(project_conf, str, 'format-version') == str(BST_FORMAT_VERSION)
+    assert _yaml.node_get(project_conf, str, 'element-path') == 'elements'
+
+def test_relative_path_directory_as_argument(cli, tmpdir):
+    project = os.path.join(str(tmpdir), 'child-directory')
+    os.mkdir(project)
+    project_path = os.path.join(project, 'project.conf')
+
+    result = cli.run(project=project, args=['init', '--project-name', 'foo',
+                                            '../child-directory'])
+    result.assert_success()
+
+    project_conf = _yaml.load(project_path)
+    assert _yaml.node_get(project_conf, str, 'name') == 'foo'
+    assert _yaml.node_get(project_conf, str, 'format-version') == str(BST_FORMAT_VERSION)
+    assert _yaml.node_get(project_conf, str, 'element-path') == 'elements'
 
 @pytest.mark.parametrize("project_name", [('Micheal Jackson'), ('one+one')])
 def test_bad_project_name(cli, tmpdir, project_name):
