@@ -57,7 +57,7 @@ def test_push_pull(cli, tmpdir, datafiles):
         # In the parent project's cache
         assert_shared(cli, share, project, 'target.bst', project_name='parent')
         assert_shared(cli, share, project, 'app.bst', project_name='parent')
-        assert_shared(cli, share, base_project, 'base-element.bst', project_name='base')
+        assert_not_shared(cli, share, base_project, 'base-element.bst', project_name='base')
 
         # In the junction project's cache
         assert_not_shared(cli, base_share, project, 'target.bst', project_name='parent')

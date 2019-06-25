@@ -643,15 +643,7 @@ class Project():
         #
 
         # Load artifacts pull/push configuration for this project
-        project_specs = ArtifactCache.specs_from_config_node(config, self.directory)
-        override_specs = ArtifactCache.specs_from_config_node(
-            self._context.get_overrides(self.name), self.directory)
-
-        self.artifact_cache_specs = override_specs + project_specs
-
-        if self.junction:
-            parent = self.junction._get_project()
-            self.artifact_cache_specs = parent.artifact_cache_specs + self.artifact_cache_specs
+        self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config, self.directory)
 
         # Load source caches with pull/push config
         self.source_cache_specs = SourceCache.specs_from_config_node(config, self.directory)
