@@ -2566,7 +2566,7 @@ class Element(Plugin):
     def __expand_environment(self, environment):
         # Resolve variables in environment value strings
         final_env = {}
-        for key, _ in self.node_items(environment):
+        for key in environment.keys():
             final_env[key] = self.node_subst_member(environment, key)
 
         return final_env
