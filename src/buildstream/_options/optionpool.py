@@ -91,7 +91,7 @@ class OptionPool():
     #    node (dict): The loaded YAML options
     #
     def load_yaml_values(self, node, *, transform=None):
-        for option_name in _yaml.node_keys(node):
+        for option_name in node.keys():
             try:
                 option = self._options[option_name]
             except KeyError as e:
