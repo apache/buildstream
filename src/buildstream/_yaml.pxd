@@ -41,6 +41,7 @@ cdef class MappingNode(Node):
     cpdef str get_str(self, str key, object default=*)
     cpdef list keys(self)
     cpdef void safe_del(self, str key)
+    cpdef object values(self)
 
 
 cdef class ScalarNode(Node):
