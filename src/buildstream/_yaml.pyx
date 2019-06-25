@@ -156,6 +156,25 @@ cdef class MappingNode(Node):
 
         return value
 
+    cpdef Node get_node(self, str key, list allowed_types, bint allow_none = False):
+        cdef value = self.value.get(key, _sentinel)
+
+        if value is _sentinel:
+            if allow_none:
+                return None
+
+            provenance = node_get_provenance(self)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
+
+        if type(value) not in allowed_types:
+            provenance = node_get_provenance(self)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Value of '{}' is not one of the following: {}.".format(
+                                provenance, key, ", ".join(allowed_types)))
+
+        return value
+
     cpdef ScalarNode get_scalar(self, str key, object default=_sentinel):
         value = self.get(key, default, ScalarNode)
 
