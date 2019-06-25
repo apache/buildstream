@@ -238,6 +238,9 @@ cdef class MappingNode(Node):
         except KeyError:
             pass
 
+    cpdef object values(self):
+        return self.value.values()
+
     def __delitem__(self, str key):
         del self.value[key]
 
