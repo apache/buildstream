@@ -232,6 +232,15 @@ cdef class MappingNode(Node):
         cdef ScalarNode scalar = self.get_scalar(key, default)
         return scalar.as_str()
 
+    cpdef void safe_del(self, str key):
+        try:
+            del self.value[key]
+        except KeyError:
+            pass
+
+    def __delitem__(self, str key):
+        del self.value[key]
+
 
 cdef class SequenceNode(Node):
     def __init__(self, list value, int file_index, int line, int column):
@@ -856,24 +865,6 @@ def node_items(Node node):
 #
 cpdef list node_keys(Node node):
     return list(node.value.keys())
-
-
-# node_del()
-#
-# A convenience generator for iterating over loaded key/value
-# tuples in a dictionary loaded from project YAML.
-#
-# Args:
-#    node (dict): The dictionary node
-#    key (str): The key we want to remove
-#    safe (bool): Whether to raise a KeyError if unable
-#
-cpdef void node_del(Node node, str key, bint safe=False) except *:
-    try:
-        del node.value[key]
-    except KeyError:
-        if not safe:
-            raise
 
 
 # is_node()
