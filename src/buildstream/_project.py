@@ -815,9 +815,9 @@ class Project():
             _yaml.node_validate(mirror, allowed_mirror_fields)
             mirror_name = mirror.get_str('name')
             alias_mappings = {}
-            for alias_mapping, uris in _yaml.node_items(mirror.get_mapping('aliases')):
-                assert isinstance(uris, list)
-                alias_mappings[alias_mapping] = list(uris)
+            for alias_mapping, uris in mirror.get_mapping('aliases').items():
+                assert type(uris) is _yaml.SequenceNode  # pylint: disable=unidiomatic-typecheck
+                alias_mappings[alias_mapping] = uris.as_str_list()
             output.mirrors[mirror_name] = alias_mappings
             if not output.default_mirror:
                 output.default_mirror = mirror_name
