@@ -185,10 +185,11 @@ class OptionPool():
         # Now recurse into nested dictionaries and lists
         # and process any indirectly nested conditionals.
         #
-        for _, value in _yaml.node_items(node):
-            if _yaml.is_node(value):
+        for value in node.values():
+            value_type = type(value)
+            if value_type is _yaml.MappingNode:
                 self.process_node(value)
-            elif isinstance(value, list):
+            elif value_type is _yaml.SequenceNode:
                 self._process_list(value)
 
     #######################################################
@@ -237,9 +238,10 @@ class OptionPool():
     #
     def _process_list(self, values):
         for value in values:
-            if _yaml.is_node(value):
+            value_type = type(value)
+            if value_type is _yaml.MappingNode:
                 self.process_node(value)
-            elif isinstance(value, list):
+            elif value_type is _yaml.SequenceNode:
                 self._process_list(value)
 
     # Process a single conditional, resulting in composition

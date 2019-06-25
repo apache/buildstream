@@ -83,7 +83,7 @@ class Includes:
 
                 _yaml.composite_and_move(node, include_node)
 
-        for _, value in _yaml.node_items(node):
+        for value in node.values():
             self._process_value(value,
                                 included=included,
                                 current_loader=current_loader,
@@ -129,12 +129,14 @@ class Includes:
                        included=set(),
                        current_loader=None,
                        only_local=False):
-        if _yaml.is_node(value):
+        value_type = type(value)
+
+        if value_type is _yaml.MappingNode:
             self.process(value,
                          included=included,
                          current_loader=current_loader,
                          only_local=only_local)
-        elif isinstance(value, list):
+        elif value_type is _yaml.SequenceNode:
             for v in value:
                 self._process_value(v,
                                     included=included,
