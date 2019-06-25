@@ -103,14 +103,10 @@ class BaseCache():
     #
     @classmethod
     def _configured_remote_cache_specs(cls, context, project):
-        project_overrides = context.get_overrides(project.name)
-        project_extra_specs = cls.specs_from_config_node(project_overrides)
-
         project_specs = getattr(project, cls.spec_name)
         context_specs = getattr(context, cls.spec_name)
 
-        return list(utils._deduplicate(
-            project_extra_specs + project_specs + context_specs))
+        return list(utils._deduplicate(project_specs + context_specs))
 
     # setup_remotes():
     #
