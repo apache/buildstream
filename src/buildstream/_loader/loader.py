@@ -471,12 +471,12 @@ class Loader():
 
         for index, source in enumerate(sources):
             kind = source.get_str(Symbol.KIND)
-            _yaml.node_del(source, Symbol.KIND)
+            del source[Symbol.KIND]
 
             # Directory is optional
             directory = source.get_str(Symbol.DIRECTORY, default=None)
             if directory:
-                _yaml.node_del(source, Symbol.DIRECTORY)
+                del source[Symbol.DIRECTORY]
 
             meta_source = MetaSource(element.name, index, element_kind, kind, source, directory)
             meta_sources.append(meta_source)

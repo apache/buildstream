@@ -267,7 +267,7 @@ class OptionPool():
                 _yaml.node_get_provenance(node, '(?)', indices=[i])
                 for i in range(len(conditions))
             ]
-            _yaml.node_del(node, '(?)')
+            del node['(?)']
 
             for condition, p in zip(conditions, provenance):
                 tuples = list(_yaml.node_items(condition))
