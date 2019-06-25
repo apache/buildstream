@@ -266,10 +266,10 @@ class Context():
         if remote_execution:
             self.pull_artifact_files = remote_execution.get_bool('pull-artifact-files', default=True)
             # This stops it being used in the remote service set up
-            _yaml.node_del(remote_execution, 'pull-artifact-files', safe=True)
+            remote_execution.safe_del('pull-artifact-files')
             # Don't pass the remote execution settings if that was the only option
             if _yaml.node_keys(remote_execution) == []:
-                _yaml.node_del(defaults, 'remote-execution')
+                del defaults['remote-execution']
         else:
             self.pull_artifact_files = True
 
