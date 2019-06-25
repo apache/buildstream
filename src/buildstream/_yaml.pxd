@@ -39,8 +39,8 @@ cdef class MappingNode(Node):
     cpdef bint get_bool(self, str key, default=*) except *
     cpdef int get_int(self, str key, default=*) except *
     cpdef str get_str(self, str key, object default=*)
+    cpdef list keys(self)
     cpdef void safe_del(self, str key)
-
 
 
 cdef class ScalarNode(Node):
@@ -68,5 +68,4 @@ cdef class ProvenanceInformation:
 
 cpdef void node_validate(Node node, list valid_keys) except *
 cpdef void node_set(Node node, object key, object value, list indices=*) except *
-cpdef list node_keys(Node node)
 cpdef ProvenanceInformation node_get_provenance(Node node, str key=*, list indices=*)
