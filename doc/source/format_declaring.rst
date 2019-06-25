@@ -549,7 +549,7 @@ read-only variables are also dynamically declared by BuildStream:
 
 * ``element-name``
 
-  The name of the element being processed (e.g base/alpine.bst).
+  The name of the element being processed (e.g ``base/freedesktop.bst``).
 
 * ``project-name``
 

@@ -47,10 +47,10 @@ added another :ref:`source alias <project_source_aliases>` for ``gnu``, the loca
 from which we're going to download the ``automake`` tarball.
 
 
-``elements/base/alpine.bst`` and ``elements/base.bst``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The alpine base and base stack element are defined in the
-same way as in the last chapter: :ref:`tutorial_running_commands`.
+``elements/base/freedesktop.bst`` and ``elements/base.bst``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The freedesktop base and base stack element are defined in the same
+way as in the last chapter: :ref:`tutorial_running_commands`.
 
 
 ``elements/hello.bst``

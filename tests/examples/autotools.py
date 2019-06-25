@@ -15,7 +15,7 @@ DATA_DIR = os.path.join(
 )
 
 
-# Tests a build of the autotools amhello project on a alpine-linux base runtime
+# Tests a build of the autotools amhello project on a freedesktop base runtime
 @pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
                     reason='Examples are written for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')

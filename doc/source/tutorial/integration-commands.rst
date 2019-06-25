@@ -37,13 +37,13 @@ The project.conf and base stack :mod:`stack <elements.stack>` element are config
 same way as in the previous chapter: :ref:`tutorial_running_commands`.
 
 
-``elements/base/alpine.bst``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``elements/base/freedesktop.bst``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. literalinclude:: ../../examples/integration-commands/elements/base/alpine.bst
+.. literalinclude:: ../../examples/integration-commands/elements/base/freedesktop.bst
    :language: yaml
 
-This is the same ``base/alpine.bst`` we've seen in previous chapters,
+This is the same ``base/freedesktop.bst`` we've seen in previous chapters,
 except that we've added an :ref:`integration command <public_integration>`.
 
 This informs BuildStream that whenever the output of this element is
@@ -91,10 +91,11 @@ following way:
 .. raw:: html
    :file: ../sessions/integration-commands-build.html
 
-Observe in the build process above, the integration command declared on the
-``base/alpine.bst`` element is run after staging the dependency artifacts
-into the build sandbox and before running any of the build commands, for
-both of the ``libhello.bst`` and ``hello.bst`` elements.
+Observe in the build process above, the integration command declared
+on the ``base/freedesktop.bst`` element is run after staging the
+dependency artifacts into the build sandbox and before running any of
+the build commands, for both of the ``libhello.bst`` and ``hello.bst``
+elements.
 
 BuildStream assumes that commands which are to be run in the build sandbox
 need to be run in an *integrated* sandbox.
