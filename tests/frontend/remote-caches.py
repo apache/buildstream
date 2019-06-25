@@ -57,7 +57,7 @@ def test_source_artifact_caches(cli, tmpdir, datafiles):
             },
             'cachedir': cachedir
         }
-        _yaml.dump(_yaml.node_sanitize(user_config), filename=user_config_file)
+        _yaml.dump(user_config, filename=user_config_file)
         cli.configure(user_config)
 
         create_element_size('repo.bst', project_dir, element_path, [], 10000)

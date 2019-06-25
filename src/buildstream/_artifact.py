@@ -149,7 +149,7 @@ class Artifact():
 
         # Store public data
         with tempfile.NamedTemporaryFile(dir=self._tmpdir) as tmp:
-            _yaml.dump(_yaml.node_sanitize(publicdata), tmp.name)
+            _yaml.dump(publicdata, tmp.name)
             public_data_digest = self._cas.add_object(path=tmp.name, link_directly=True)
             artifact.public_data.CopyFrom(public_data_digest)
             size += public_data_digest.size_bytes
