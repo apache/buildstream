@@ -65,7 +65,7 @@ class OptionPool():
     #
     def load(self, options):
 
-        for option_name, option_definition in _yaml.node_items(options):
+        for option_name, option_definition in options.items():
 
             # Assert that the option name is a valid symbol
             p = _yaml.node_get_provenance(options, option_name)
@@ -272,7 +272,7 @@ class OptionPool():
             del node['(?)']
 
             for condition, p in zip(conditions, provenance):
-                tuples = list(_yaml.node_items(condition))
+                tuples = list(condition.items())
                 if len(tuples) > 1:
                     raise LoadError(LoadErrorReason.INVALID_DATA,
                                     "{}: Conditional statement has more than one key".format(p))
@@ -284,7 +284,7 @@ class OptionPool():
                     # Prepend the provenance of the error
                     raise LoadError(e.reason, "{}: {}".format(p, e)) from e
 
-                if not _yaml.is_node(value):
+                if type(value) is not _yaml.MappingNode:  # pylint: disable=unidiomatic-typecheck
                     raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
                                     "{}: Only values of type 'dict' can be composed.".format(p))
 
