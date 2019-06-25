@@ -216,33 +216,12 @@ class App():
         except BstError as e:
             self._error_exit(e, "Error instantiating artifact cache")
 
-        #
-        # Load the Project
-        #
-        try:
-            self.project = Project(directory, self.context, cli_options=self._main_options['option'],
-                                   default_mirror=self._main_options.get('default_mirror'))
-        except LoadError as e:
-
-            # Help users that are new to BuildStream by suggesting 'init'.
-            # We don't want to slow down users that just made a mistake, so
-            # don't stop them with an offer to create a project for them.
-            if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
-                click.echo("No project found. You can create a new project like so:", err=True)
-                click.echo("", err=True)
-                click.echo("    bst init", err=True)
-
-            self._error_exit(e, "Error loading project")
-
-        except BstError as e:
-            self._error_exit(e, "Error loading project")
-
         # Now that we have a logger and message handler,
         # we can override the global exception hook.
         sys.excepthook = self._global_exception_handler
 
         # Create the stream right away, we'll need to pass it around
-        self.stream = Stream(self.context, self.project, self._session_start,
+        self.stream = Stream(self.context, self._session_start,
                              session_start_callback=self.session_start_cb,
                              interrupt_callback=self._interrupt_handler,
                              ticker_callback=self._tick,
@@ -258,6 +237,30 @@ class App():
         # Mark the beginning of the session
         if session_name:
             self._message(MessageType.START, session_name)
+
+        #
+        # Load the Project
+        #
+        try:
+            self.project = Project(directory, self.context, cli_options=self._main_options['option'],
+                                   default_mirror=self._main_options.get('default_mirror'),
+                                   fetch_subprojects=self.stream.fetch_subprojects)
+
+            self.stream.set_project(self.project)
+        except LoadError as e:
+
+            # Help users that are new to BuildStream by suggesting 'init'.
+            # We don't want to slow down users that just made a mistake, so
+            # don't stop them with an offer to create a project for them.
+            if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
+                click.echo("No project found. You can create a new project like so:", err=True)
+                click.echo("", err=True)
+                click.echo("    bst init", err=True)
+
+            self._error_exit(e, "Error loading project")
+
+        except BstError as e:
+            self._error_exit(e, "Error loading project")
 
         # Run the body of the session here, once everything is loaded
         try:

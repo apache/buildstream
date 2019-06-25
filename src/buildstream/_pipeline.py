@@ -92,25 +92,19 @@ class Pipeline():
     #
     # Args:
     #    target_groups (list of lists): Groups of toplevel targets to load
-    #    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
-    #                              loading process, if they are not yet locally cached
     #    rewritable (bool): Whether the loaded files should be rewritable
     #                       this is a bit more expensive due to deep copies
     #
     # Returns:
     #    (tuple of lists): A tuple of grouped Element objects corresponding to target_groups
     #
-    def load(self, target_groups, *,
-             fetch_subprojects=True,
-             rewritable=False):
+    def load(self, target_groups, *, rewritable=False):
 
         # First concatenate all the lists for the loader's sake
         targets = list(itertools.chain(*target_groups))
 
         with PROFILER.profile(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, "-") for t in targets)):
-            elements = self._project.load_elements(targets,
-                                                   rewritable=rewritable,
-                                                   fetch_subprojects=fetch_subprojects)
+            elements = self._project.load_elements(targets, rewritable=rewritable)
 
             # Now create element groups to match the input target groups
             elt_iter = iter(elements)

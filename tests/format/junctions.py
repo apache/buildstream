@@ -333,18 +333,8 @@ def test_git_show(cli, tmpdir, datafiles):
     }
     _yaml.dump(element, os.path.join(project, 'base.bst'))
 
-    # Verify that bst show does not implicitly fetch subproject
-    result = cli.run(project=project, args=['show', 'target.bst'])
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_FETCH_NEEDED)
-
-    # Assert that we have the expected provenance encoded into the error
-    assert "target.bst [line 3 column 2]" in result.stderr
-
-    # Explicitly fetch subproject
-    result = cli.run(project=project, args=['source', 'fetch', 'base.bst'])
-    result.assert_success()
-
-    # Check that bst show succeeds now and the pipeline includes the subproject element
+    # Check that bst show succeeds with implicit subproject fetching and the
+    # pipeline includes the subproject element
     element_list = cli.get_pipeline(project, ['target.bst'])
     assert 'base.bst:target.bst' in element_list
 
