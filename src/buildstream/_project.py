@@ -753,8 +753,8 @@ class Project():
         # assertion after.
         output.element_overrides = config.get_mapping('elements', default={})
         output.source_overrides = config.get_mapping('sources', default={})
-        _yaml.node_del(config, 'elements', safe=True)
-        _yaml.node_del(config, 'sources', safe=True)
+        config.safe_del('elements')
+        config.safe_del('sources')
         _yaml.node_final_assertions(config)
 
         self._load_plugin_factories(config, output)
@@ -943,7 +943,7 @@ class Project():
             _yaml.node_set(origin_node, 'plugins', [k for k in _yaml.node_keys(plugins)])
             for group in expected_groups:
                 if group in origin_node:
-                    _yaml.node_del(origin_node, group)
+                    del origin_node[group]
 
             if origin_node.get_str('origin') == 'local':
                 path = self.get_path_from_node(origin, 'path',

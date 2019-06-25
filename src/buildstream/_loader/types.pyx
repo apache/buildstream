@@ -150,7 +150,7 @@ cdef void _extract_depends_from_node(_yaml.Node node, str key, str default_dep_t
         acc.append(dependency)
 
     # Now delete the field, we dont want it anymore
-    _yaml.node_del(node, key, safe=True)
+    node.safe_del(key)
 
 
 # extract_depends_from_node():

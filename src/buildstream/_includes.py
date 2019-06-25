@@ -44,7 +44,7 @@ class Includes:
                 includes = includes_node.as_str_list()
 
             include_provenance = _yaml.node_get_provenance(node, key='(@)')
-            _yaml.node_del(node, '(@)')
+            del node['(@)']
 
             for include in reversed(includes):
                 if only_local and ':' in include:
