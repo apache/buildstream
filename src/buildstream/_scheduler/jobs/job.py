@@ -33,6 +33,7 @@ import traceback
 from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
 from ... import _signals, utils
+from ..._platform import Platform
 
 from .jobpickler import pickle_child_job, unpickle_child_job
 
@@ -184,8 +185,8 @@ class Job():
     # Starts the job.
     #
     def start(self):
-
-        self._queue = self._scheduler.manager.Queue()
+        platform = Platform.get_platform()
+        self._queue = platform.make_queue()
 
         self._tries += 1
         self._parent_start_listening()

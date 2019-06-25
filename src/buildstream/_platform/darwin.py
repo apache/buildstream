@@ -15,6 +15,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
+import multiprocessing
 import os
 import resource
 
@@ -27,6 +28,12 @@ class Darwin(Platform):
 
     # This value comes from OPEN_MAX in syslimits.h
     OPEN_MAX = 10240
+
+    def __init__(self):
+        super().__init__()
+        if None is multiprocessing.get_start_method(allow_none=True):
+            multiprocessing.set_start_method('spawn')
+        self._manager = None
 
     def create_sandbox(self, *args, **kwargs):
         kwargs['dummy_reason'] = \
@@ -62,3 +69,8 @@ class Darwin(Platform):
         old_soft_limit, hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
         soft_limit = min(max(self.OPEN_MAX, old_soft_limit), hard_limit)
         resource.setrlimit(resource.RLIMIT_NOFILE, (soft_limit, hard_limit))
+
+    def make_queue(self):
+        if self._manager is None:
+            self._manager = multiprocessing.Manager()
+        return self._manager.Queue()

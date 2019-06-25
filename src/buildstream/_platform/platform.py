@@ -17,6 +17,7 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+import multiprocessing
 import os
 import platform
 import sys
@@ -132,6 +133,9 @@ class Platform():
         # get the hardware identifier from uname
         uname_machine = platform.uname().machine
         return Platform.canonicalize_arch(uname_machine)
+
+    def make_queue(self):
+        return multiprocessing.Queue()
 
     ##################################################################
     #                        Sandbox functions                       #

@@ -1,4 +1,4 @@
-import os
+import multiprocessing
 
 from .._exceptions import PlatformError
 from ..sandbox import SandboxNone
@@ -9,8 +9,10 @@ from . import Platform
 class Win32(Platform):
 
     def __init__(self):
-
         super().__init__()
+        if None is multiprocessing.get_start_method(allow_none=True):
+            multiprocessing.set_start_method('spawn')
+        self._manager = None
 
     def create_sandbox(self, *args, **kwargs):
         kwargs['dummy_reason'] = \
@@ -29,3 +31,8 @@ class Win32(Platform):
 
     def maximize_open_file_limit(self):
         pass
+
+    def make_queue(self):
+        if self._manager is None:
+            self._manager = multiprocessing.Manager()
+        return self._manager.Queue()
