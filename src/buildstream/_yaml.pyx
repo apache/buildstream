@@ -229,6 +229,9 @@ cdef class MappingNode(Node):
         cdef ScalarNode scalar = self.get_scalar(key, default)
         return scalar.as_str()
 
+    cpdef list keys(self):
+        return list(self.value.keys())
+
     cpdef void safe_del(self, str key):
         try:
             del self.value[key]
@@ -849,21 +852,6 @@ def node_items(Node node):
             yield (key, value.value)
 
 
-# node_keys()
-#
-# A convenience generator for iterating over loaded keys
-# in a dictionary loaded from project YAML.
-#
-# Args:
-#    node (Node): The dictionary node
-#
-# Yields:
-#    (str): The key name
-#
-cpdef list node_keys(Node node):
-    return list(node.value.keys())
-
-
 # is_node()
 #
 # A test method which returns whether or not the passed in value
@@ -987,8 +975,8 @@ cdef bint _is_composite_list(Node node):
     cdef bint has_keys = False
     cdef str key
 
-    if type(node.value) is dict:
-        for key in node_keys(node):
+    if type(node) is MappingNode:
+        for key in (<MappingNode> node).keys():
             if key in ['(>)', '(<)', '(=)']:  # pylint: disable=simplifiable-if-statement
                 has_directives = True
             else:
