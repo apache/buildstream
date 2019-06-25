@@ -2,4 +2,4 @@
 
 kind: stack
 depends:
-  - base/base-alpine.bst
+  - base/base-freedesktop.bst
