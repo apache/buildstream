@@ -35,19 +35,14 @@ class Includes:
         if current_loader is None:
             current_loader = self._loader
 
-        try:
-            includes = node.get_str('(@)', default=None)
-            if includes is not None:
-                includes = [includes]
-        except LoadError:
-            try:
-                includes = node.get_sequence('(@)').as_str_list()
-            except LoadError:
-                provenance = _yaml.node_get_provenance(node, key='(@)')
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: {} must either be list or str".format(provenance, _yaml.node_sanitize(node)))
+        includes_node = node.get_node('(@)', allowed_types=[_yaml.ScalarNode, _yaml.SequenceNode], allow_none=True)
 
-        if includes:
+        if includes_node:
+            if type(includes_node) is _yaml.ScalarNode:  # pylint: disable=unidiomatic-typecheck
+                includes = [includes_node.as_str()]
+            else:
+                includes = includes_node.as_str_list()
+
             include_provenance = _yaml.node_get_provenance(node, key='(@)')
             _yaml.node_del(node, '(@)')
 
