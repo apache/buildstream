@@ -313,7 +313,7 @@ class Context():
 
         # Shallow validation of overrides, parts of buildstream which rely
         # on the overrides are expected to validate elsewhere.
-        for _, overrides in _yaml.node_items(self._project_overrides):
+        for overrides in self._project_overrides.values():
             _yaml.node_validate(overrides,
                                 ['artifacts', 'source-caches', 'options',
                                  'strict', 'default-mirror',
