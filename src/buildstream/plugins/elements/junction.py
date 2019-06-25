@@ -188,7 +188,7 @@ class JunctionElement(Element):
         # 3. config['path']
         if self.target and any(self.sources()):
             raise ElementError("junction elements cannot define both 'sources' and 'target' config option")
-        if self.target and any(self.node_items(self.options)):
+        if self.target and any(self.options.items()):
             raise ElementError("junction elements cannot define both 'options' and 'target'")
         if self.target and self.path:
             raise ElementError("junction elements cannot define both 'path' and 'target'")

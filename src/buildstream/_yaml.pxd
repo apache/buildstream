@@ -39,6 +39,7 @@ cdef class MappingNode(Node):
     cpdef bint get_bool(self, str key, default=*) except *
     cpdef int get_int(self, str key, default=*) except *
     cpdef str get_str(self, str key, object default=*)
+    cpdef object items(self)
     cpdef list keys(self)
     cpdef void safe_del(self, str key)
     cpdef object values(self)

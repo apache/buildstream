@@ -348,7 +348,8 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
     #        a source distribution tarball.
     #
     symlinks = desc.get_mapping('workaround-symlinks', default={})
-    for symlink, target in _yaml.node_items(symlinks):
+    for symlink, target in symlinks.items():
+        target = target.as_str()
 
         # Resolve real path to where symlink should be
         symlink = os.path.join(desc_dir, symlink)
