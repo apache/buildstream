@@ -714,7 +714,7 @@ class Project():
 
         # Perform environment expansion right away
         shell_environment = shell_options.get_mapping('environment', default={})
-        for key in _yaml.node_keys(shell_environment):
+        for key in shell_environment.keys():
             value = shell_environment.get_str(key)
             self._shell_environment[key] = os.path.expandvars(value)
 
@@ -887,7 +887,7 @@ class Project():
 
             # Store source versions for checking later
             source_versions = origin.get_mapping('sources', default={})
-            for key in _yaml.node_keys(source_versions):
+            for key in source_versions.keys():
                 if key in source_format_versions:
                     raise LoadError(
                         LoadErrorReason.INVALID_YAML,
@@ -896,7 +896,7 @@ class Project():
 
             # Store element versions for checking later
             element_versions = origin.get_mapping('elements', default={})
-            for key in _yaml.node_keys(element_versions):
+            for key in element_versions.keys():
                 if key in element_format_versions:
                     raise LoadError(
                         LoadErrorReason.INVALID_YAML,
@@ -936,11 +936,10 @@ class Project():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "Unexpected plugin group: {}, expecting {}"
                             .format(plugin_group, expected_groups))
-        node_keys = [key for key in _yaml.node_keys(origin)]
-        if plugin_group in node_keys:
+        if plugin_group in origin.keys():
             origin_node = origin.copy()
             plugins = origin.get_mapping(plugin_group, default={})
-            _yaml.node_set(origin_node, 'plugins', [k for k in _yaml.node_keys(plugins)])
+            _yaml.node_set(origin_node, 'plugins', plugins.keys())
             for group in expected_groups:
                 if group in origin_node:
                     del origin_node[group]
