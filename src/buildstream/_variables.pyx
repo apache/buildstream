@@ -127,7 +127,7 @@ cdef class Variables:
         cdef str key
         cdef str value
 
-        for key in _yaml.node_keys(node):
+        for key in node.keys():
             value = node.get_str(key)
             ret[sys.intern(key)] = _parse_expstr(value)
         return ret

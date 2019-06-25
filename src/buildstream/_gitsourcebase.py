@@ -413,7 +413,7 @@ class _GitSourceBase(Source):
         self.submodule_overrides = {}
         self.submodule_checkout_overrides = {}
         modules = node.get_mapping('submodules', {})
-        for path, _ in self.node_items(modules):
+        for path in modules.keys():
             submodule = modules.get_mapping(path)
             url = submodule.get_str('url', None)
 
