@@ -310,10 +310,15 @@ class App():
     #    format_version (int): The project format version, default is the latest version
     #    element_path (str): The subdirectory to store elements in, default is 'elements'
     #    force (bool): Allow overwriting an existing project.conf
+    #    target_directory (str): The target directory the project should be initialized in
     #
-    def init_project(self, project_name, format_version=BST_FORMAT_VERSION, element_path='elements', force=False):
+    def init_project(self, project_name, format_version=BST_FORMAT_VERSION, element_path='elements',
+                     force=False, target_directory=None):
         directory = self._main_options['directory']
         directory = os.path.abspath(directory)
+        if target_directory:
+            directory = os.path.join(self._main_options['directory'], target_directory)
+
         project_path = os.path.join(directory, 'project.conf')
 
         try:
