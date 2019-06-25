@@ -268,7 +268,7 @@ class Context():
             # This stops it being used in the remote service set up
             remote_execution.safe_del('pull-artifact-files')
             # Don't pass the remote execution settings if that was the only option
-            if _yaml.node_keys(remote_execution) == []:
+            if remote_execution.keys() == []:
                 del defaults['remote-execution']
         else:
             self.pull_artifact_files = True
