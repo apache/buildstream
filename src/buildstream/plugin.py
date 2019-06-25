@@ -347,23 +347,6 @@ class Plugin():
         """
         return self.__kind
 
-    def node_items(self, node):
-        """Iterate over a dictionary loaded from YAML
-
-        Args:
-            node (Node): The YAML loaded dictionary object
-
-        Returns:
-           list: List of key/value tuples to iterate over
-
-        BuildStream holds some private data in dictionaries loaded from
-        the YAML in order to preserve information to report in errors.
-
-        This convenience function should be used instead of the dict.items()
-        builtin function provided by python.
-        """
-        yield from _yaml.node_items(node)
-
     def node_provenance(self, node, member_name=None):
         """Gets the provenance for `node` and `member_name`
 
@@ -819,10 +802,10 @@ class Plugin():
             silenced_warnings = set()
             project = self.__project
 
-            for key, value in self.node_items(project.element_overrides):
+            for key, value in project.element_overrides.items():
                 if value.get_bool('suppress-deprecation-warnings', default=False):
                     silenced_warnings.add(key)
-            for key, value in self.node_items(project.source_overrides):
+            for key, value in project.source_overrides.items():
                 if value.get_bool('suppress-deprecation-warnings', default=False):
                     silenced_warnings.add(key)
 

@@ -2695,10 +2695,10 @@ class Element(Plugin):
         element_splits = element_bst.get_mapping('split-rules', default={})
 
         # Resolve any variables in the public split rules directly
-        for domain, splits in self.node_items(element_splits):
+        for domain, splits in element_splits.items():
             splits = [
                 self.__variables.subst(split.strip())
-                for split in splits
+                for split in splits.as_str_list()
             ]
             _yaml.node_set(element_splits, domain, splits)
 
@@ -2708,8 +2708,8 @@ class Element(Plugin):
         bstdata = self.get_public_data('bst')
         splits = bstdata.get_mapping('split-rules')
         self.__splits = {
-            domain: re.compile('^(?:' + '|'.join([utils._glob2re(r) for r in rules]) + ')$')
-            for domain, rules in self.node_items(splits)
+            domain: re.compile('^(?:' + '|'.join([utils._glob2re(r) for r in rules.as_str_list()]) + ')$')
+            for domain, rules in splits.items()
         }
 
     # __split_filter():
