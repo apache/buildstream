@@ -10,7 +10,7 @@ import urllib.parse
 
 import pytest
 
-from buildstream._exceptions import ErrorDomain
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing._utils.site import HAVE_LZIP
@@ -64,7 +64,6 @@ def generate_project_file_server(base_url, project_dir):
         }
     }, project_file)
 
-
 # Test that without ref, consistency is set appropriately.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-ref'))
 def test_no_ref(cli, tmpdir, datafiles):
@@ -87,6 +86,65 @@ def test_fetch_bad_url(cli, tmpdir, datafiles):
     result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, None)
 
+# Test that when I fetch a nonexistent path, errors are handled gracefully.
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+def test_fetch_bad_path(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    generate_project(project, tmpdir)
+
+    # Try to fetch it
+    result = cli.run(project=project, args=[
+        'source', 'fetch', 'target-path.bst'
+    ])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+
+# Test that when I fetch a non regular path or directory, errors are handled.
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+def test_fetch_non_regular_file_or_directory(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    generate_project(project, tmpdir)
+    localfile = os.path.join(project, 'file.txt')
+
+    # Try to fetch it
+    result = cli.run(project=project, args=[
+        'source', 'fetch', 'target-file.bst'
+    ])
+    if os.path.isdir(localfile) and not os.path.islink(localfile):
+        result.assert_success()
+    elif os.path.isfile(localfile) and not os.path.islink(localfile):
+        result.assert_success()
+    else:
+        result.assert_main_error(ErrorDomain.LOAD,
+                                 LoadErrorReason.PROJ_PATH_INVALID_KIND)
+
+# Test that when I fetch an invalid absolute path, errors are handled.
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+def test_fetch_invalid_absolute_path(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    generate_project(project, tmpdir)
+
+    with open(os.path.join(project, "target-file.bst"), 'r') as f:
+        old_yaml = f.read()
+
+    new_yaml = old_yaml.replace("file.txt", os.path.join(project, "file.txt"))
+    assert old_yaml != new_yaml
+
+    with open(os.path.join(project, "target-file.bst"), 'w') as f:
+        f.write(new_yaml)
+
+    result = cli.run(project=project, args=['show', 'target-file.bst'])
+    result.assert_main_error(ErrorDomain.LOAD,
+                             LoadErrorReason.PROJ_PATH_INVALID)
+
+# Test that when I fetch an invalid relative path, it fails.
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'invalid-rel-path'))
+def test_fetch_invalid_relative_path(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    generate_project(project, tmpdir)
+
+    result = cli.run(project=project, args=['show', 'target.bst'])
+    result.assert_main_error(ErrorDomain.LOAD,
+                             LoadErrorReason.PROJ_PATH_INVALID)
 
 # Test that when I fetch with an invalid ref, it fails.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
@@ -104,6 +162,46 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
     ])
     result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, None)
+
+# Test that when neither url or path are provided, it fails
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'no-url-and-path'))
+@pytest.mark.parametrize("srcdir", ["a", "./a"])
+def test_no_url_and_path(cli, tmpdir, datafiles, srcdir):
+    project = str(datafiles)
+    generate_project(project, tmpdir)
+
+    # Create a local tar
+    src_tar = os.path.join(str(project), "file", "a.tar.lz")
+    os.mkdir(os.path.join(str(project), "file"))
+    _assemble_tar_lz(os.path.join(str(datafiles), "content"), srcdir, src_tar)
+
+    # Try to fetch it
+    result = cli.run(project=project, args=[
+        'source', 'fetch', 'target.bst'
+    ])
+
+    failed_message = "Please specify either a 'path' or a 'url'."
+    result.assert_main_error(ErrorDomain.SOURCE, None, fail_message=failed_message)
+
+# Test that when both url and path are provided, it fails
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'url-and-path'))
+@pytest.mark.parametrize("srcdir", ["a", "./a"])
+def test_url_and_path(cli, tmpdir, datafiles, srcdir):
+    project = str(datafiles)
+    generate_project(project, tmpdir)
+
+    # Create a local tar
+    src_tar = os.path.join(str(project), "file", "a.tar.lz")
+    os.mkdir(os.path.join(str(project), "file"))
+    _assemble_tar_lz(os.path.join(str(datafiles), "content"), srcdir, src_tar)
+
+    # Try to fetch it
+    result = cli.run(project=project, args=[
+        'source', 'fetch', 'target.bst'
+    ])
+    failed_message = "You cannot specify both 'path' (target.bst[line 5 column 8])\
+                      and 'url' (target.bst[line 6 column 7])"
+    result.assert_main_error(ErrorDomain.SOURCE, None, fail_message=failed_message)
 
 
 # Test that when tracking with a ref set, there is a warning
@@ -210,6 +308,37 @@ def test_stage_explicit_basedir(cli, tmpdir, datafiles, srcdir):
     checkout_contents = list_dir_contents(checkoutdir)
     assert checkout_contents == original_contents
 
+# Test that a staged checkout matches what was tarred up, with an explicit basedir
+# for a local source
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'local-source'))
+@pytest.mark.parametrize("srcdir", ["a", "./a"])
+def test_download_local_source(cli, tmpdir, datafiles, srcdir):
+    project = str(datafiles)
+    generate_project(project, tmpdir)
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Create a local tar
+    print(project)
+    src_tar = os.path.join(str(project), "file", "a.tar.gz")
+    os.mkdir(os.path.join(str(project), "file"))
+    _assemble_tar(os.path.join(str(datafiles), "content"), srcdir, src_tar)
+
+    # Track, fetch, build, checkout
+    result = cli.run(project=project, args=['source', 'track', 'target.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target.bst', '--directory', checkoutdir])
+    result.assert_success()
+
+    # Check that the content of the first directory is checked out (base-dir: '*')
+    original_dir = os.path.join(str(project), "content", "a")
+    original_contents = list_dir_contents(original_dir)
+    checkout_contents = list_dir_contents(checkoutdir)
+    assert checkout_contents == original_contents
+
 
 # Test that we succeed to extract tarballs with hardlinks when stripping the
 # leading paths
@@ -271,6 +400,36 @@ def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
 
     # Check that the content of the first directory is checked out (base-dir: '*')
     original_dir = os.path.join(str(datafiles), "content", "a")
+    original_contents = list_dir_contents(original_dir)
+    checkout_contents = list_dir_contents(checkoutdir)
+    assert checkout_contents == original_contents
+
+
+@pytest.mark.skipif(not HAVE_LZIP, reason='lzip is not available')
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch-local'))
+@pytest.mark.parametrize("srcdir", ["a", "./a"])
+def test_stage_default_basedir_lzip_local(cli, tmpdir, datafiles, srcdir):
+    project = str(datafiles)
+    generate_project(project, tmpdir)
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Create a local tar
+    src_tar = os.path.join(str(project), "file", "a.tar.lz")
+    os.mkdir(os.path.join(str(project), "file"))
+    _assemble_tar_lz(os.path.join(str(datafiles), "content"), srcdir, src_tar)
+
+    # Track, fetch, build, checkout
+    result = cli.run(project=project, args=['source', 'track', 'target-lz.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['source', 'fetch', 'target-lz.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['build', 'target-lz.bst'])
+    result.assert_success()
+    result = cli.run(project=project, args=['artifact', 'checkout', 'target-lz.bst', '--directory', checkoutdir])
+    result.assert_success()
+
+    # Check that the content of the first directory is checked out (base-dir: '*')
+    original_dir = os.path.join(str(project), "content", "a")
     original_contents = list_dir_contents(original_dir)
     checkout_contents = list_dir_contents(checkoutdir)
     assert checkout_contents == original_contents
