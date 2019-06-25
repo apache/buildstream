@@ -16,6 +16,7 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import resource
 
 from ..sandbox import SandboxDummy
 
@@ -44,5 +45,20 @@ class Darwin(Platform):
         else:
             return min(cpu_count, cap)
 
-    def set_resource_limits(self, soft_limit=OPEN_MAX, hard_limit=None):
-        super().set_resource_limits(soft_limit)
+    def maximize_open_file_limit(self):
+        # Note that on Mac OSX, you may not be able to simply set the soft
+        # limit to the reported hard limit, as it may not be the only limit in
+        # effect. The output of these commands may be somewhat independent:
+        #
+        #   $ launchctl limit
+        #   $ sysctl -a | grep files
+        #
+        # The OPEN_MAX value from syslimits.h seems to be fairly safe, although
+        # users may tweak their individual systems to have different values.
+        # Without a way to determine what the real limit is, we risk failing to
+        # increase the limit. Perhaps the complication is why psutil does not
+        # support rlimit on Mac.
+        #
+        old_soft_limit, hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+        soft_limit = min(max(self.OPEN_MAX, old_soft_limit), hard_limit)
+        resource.setrlimit(resource.RLIMIT_NOFILE, (soft_limit, hard_limit))
