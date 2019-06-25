@@ -1132,7 +1132,7 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
     # Delete the ref from the source so that we can detect if the
     # element has been tracked
     element_contents = _yaml.load(element_file)
-    _yaml.node_del(element_contents.get_sequence('sources').mapping_at(0), 'ref')
+    del element_contents.get_sequence('sources').mapping_at(0)['ref']
     _yaml.dump(element_contents, element_file)
 
     result = cli.run(project=project, args=['-C', workspace, 'source', 'track', *arg_elm])
