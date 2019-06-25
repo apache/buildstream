@@ -3196,7 +3196,10 @@ def _overlap_error_detail(f, forbidden_overlap_elements, elements):
 #     (str): The normalised element name
 #
 def _get_normal_name(element_name):
-    return os.path.splitext(element_name.replace(os.sep, '-'))[0]
+    name_no_sep = element_name.replace(os.sep, '-')
+    if os.altsep is not None:
+        name_no_sep = name_no_sep.replace(os.altsep, '-')
+    return os.path.splitext(name_no_sep)[0]
 
 
 # _compose_artifact_name():
