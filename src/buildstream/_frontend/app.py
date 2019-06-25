@@ -307,10 +307,28 @@ class App():
     #    format_version (int): The project format version, default is the latest version
     #    element_path (str): The subdirectory to store elements in, default is 'elements'
     #    force (bool): Allow overwriting an existing project.conf
+    #    directory (str): The target directory the project should be initialized in
     #
-    def init_project(self, project_name, format_version=BST_FORMAT_VERSION, element_path='elements', force=False):
-        directory = self._main_options['directory']
-        directory = os.path.abspath(directory)
+    def init_project(self, project_name, format_version=BST_FORMAT_VERSION, element_path='elements', force=False, directory=None):
+        if not directory:
+            directory = self._main_options['directory']
+            directory = os.path.abspath(directory)
+        elif os.path.exists(directory):
+            # If the argument is a file, we should abort.
+            if not os.path.isdir(directory):
+                raise AppError("Target directory can't be a file.",
+                               reason='target-is-file')
+            # If the argument is a non-empty directory, we should abort.
+            elif os.listdir(directory):
+                raise AppError("Target directory {} is not empty.".format(directory),
+                               reason='directory-not-empty')
+        else:
+            # If the target does not exist, we should try creating the directory.
+            try:
+                os.mkdir(directory)
+            except OSError:
+                raise AppError("Could not create target directory {}.".format(directory),
+                               reason='directory-creation-failed')
         project_path = os.path.join(directory, 'project.conf')
 
         try:
