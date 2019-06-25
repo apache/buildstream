@@ -74,6 +74,21 @@ def test_force_overwrite_project(cli, tmpdir):
     assert _yaml.node_get(project_conf, str, 'format-version') == str(BST_FORMAT_VERSION)
 
 
+def test_relative_path_directory_as_argument(cli, tmpdir):
+    project = os.path.join(str(tmpdir), 'child-directory')
+    os.makedirs(project, exist_ok=True)
+    project_path = os.path.join(project, 'project.conf')
+    rel_path = os.path.relpath(project)
+
+    result = cli.run(args=['init', '--project-name', 'foo', rel_path])
+    result.assert_success()
+
+    project_conf = _yaml.load(project_path)
+    assert _yaml.node_get(project_conf, str, 'name') == 'foo'
+    assert _yaml.node_get(project_conf, str, 'format-version') == str(BST_FORMAT_VERSION)
+    assert _yaml.node_get(project_conf, str, 'element-path') == 'elements'
+
+
 @pytest.mark.parametrize("project_name", [('Micheal Jackson'), ('one+one')])
 def test_bad_project_name(cli, tmpdir, project_name):
     result = cli.run(project=str(tmpdir), args=['init', '--project-name', project_name])
