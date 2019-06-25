@@ -577,16 +577,14 @@ class Workspaces():
 
         if version == 0:
             # Pre-versioning format can be of two forms
-            for element, config in _yaml.node_items(workspaces):
-                if _yaml.is_node(config):
-                    # Get a dict
-                    config = _yaml.node_sanitize(config, dict_type=dict)
+            for element, config in workspaces.items():
+                config_type = type(config)
 
-                if isinstance(config, str):
+                if config_type is _yaml.ScalarNode:
                     pass
 
-                elif isinstance(config, dict):
-                    sources = list(config.items())
+                elif config_type is _yaml.MappingNode:
+                    sources = list(config.values())
                     if len(sources) > 1:
                         detail = "There are multiple workspaces open for '{}'.\n" + \
                                  "This is not supported anymore.\n" + \
@@ -594,21 +592,21 @@ class Workspaces():
                         raise LoadError(LoadErrorReason.INVALID_DATA,
                                         detail.format(element, self._get_filename()))
 
-                    _yaml.node_set(workspaces, element, sources[0][1])
+                    _yaml.node_set(workspaces, element, sources[0])
 
                 else:
                     raise LoadError(LoadErrorReason.INVALID_DATA,
                                     "Workspace config is in unexpected format.")
 
             res = {
-                element: Workspace(self._toplevel_project, path=config)
-                for element, config in _yaml.node_items(workspaces)
+                element: Workspace(self._toplevel_project, path=config.as_str())
+                for element, config in workspaces.items()
             }
 
         elif 1 <= version <= BST_WORKSPACE_FORMAT_VERSION:
             workspaces = workspaces.get_mapping("workspaces", default={})
             res = {element: self._load_workspace(node)
-                   for element, node in _yaml.node_items(workspaces)}
+                   for element, node in workspaces.items()}
 
         else:
             raise LoadError(LoadErrorReason.INVALID_DATA,

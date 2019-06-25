@@ -232,6 +232,9 @@ cdef class MappingNode(Node):
         cdef ScalarNode scalar = self.get_scalar(key, default)
         return scalar.as_str()
 
+    cpdef object items(self):
+        return self.value.items()
+
     cpdef list keys(self):
         return list(self.value.keys())
 
@@ -736,20 +739,6 @@ cpdef ProvenanceInformation node_get_provenance(Node node, str key=None, list in
     return ProvenanceInformation(nodeish)
 
 
-cdef list __trim_list_provenance(list value):
-    cdef list ret = []
-    cdef Node entry
-
-    for entry in value:
-        if type(entry.value) is list:
-            ret.append(__trim_list_provenance(entry.value))
-        elif type(entry.value) is dict:
-            ret.append(entry)
-        else:
-            ret.append(entry.value)
-    return ret
-
-
 # node_set()
 #
 # Set an item within the node.  If using `indices` be aware that the entry must
@@ -831,31 +820,6 @@ def node_extend_list(Node node, str key, Py_ssize_t length, object default):
         line_num += 1
 
         the_list.append(_create_node(value, file_index, line_num, next_synthetic_counter()))
-
-
-# node_items()
-#
-# A convenience generator for iterating over loaded key/value
-# tuples in a dictionary loaded from project YAML.
-#
-# Args:
-#    node (Node): The dictionary node
-#
-# Yields:
-#    (str): The key name
-#    (anything): The value for the key
-#
-def node_items(Node node):
-    cdef str key
-    cdef Node value
-
-    for key, value in node.value.items():
-        if type(value.value) is dict:
-            yield (key, value)
-        elif type(value.value) is list:
-            yield (key, __trim_list_provenance(value.value))
-        else:
-            yield (key, value.value)
 
 
 # is_node()
