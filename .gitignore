@@ -18,7 +18,7 @@ build
 pip-wheel-metadata/
 
 # Python egg metadata, regenerated from source files by setuptools.
-/src/*.egg-info
+*.egg-info
 .eggs
 
 # Some testing related things
