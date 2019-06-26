@@ -631,14 +631,12 @@ class Stream():
     #    target (str): The target element whose sources to checkout
     #    location (str): Location to checkout the sources to
     #    deps (str): The dependencies to checkout
-    #    fetch (bool): Whether to fetch missing sources
     #    except_targets (list): List of targets to except from staging
     #
     def source_checkout(self, target, *,
                         location=None,
                         force=False,
                         deps='none',
-                        fetch=False,
                         except_targets=(),
                         tar=False,
                         include_build_scripts=False):
@@ -650,14 +648,13 @@ class Stream():
                                  except_targets=except_targets)
 
         # Assert all sources are cached in the source dir
-        if fetch:
-            self._fetch(elements, fetch_original=True)
+        self._fetch(elements)
         self._pipeline.assert_sources_cached(elements)
 
         # Stage all sources determined by scope
         try:
             self._source_checkout(elements, location, force, deps,
-                                  fetch, tar, include_build_scripts)
+                                  tar, include_build_scripts)
         except BstError as e:
             raise StreamError("Error while writing sources"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
@@ -1340,7 +1337,6 @@ class Stream():
                          location=None,
                          force=False,
                          deps='none',
-                         fetch=False,
                          tar=False,
                          include_build_scripts=False):
         location = os.path.abspath(location)

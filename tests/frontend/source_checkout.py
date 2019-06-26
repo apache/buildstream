@@ -9,7 +9,6 @@ import pytest
 from buildstream.testing import cli  # pylint: disable=unused-import
 
 from buildstream import utils, _yaml
-from buildstream._exceptions import ErrorDomain
 
 # Project directory
 DATA_DIR = os.path.join(
@@ -145,8 +144,7 @@ def test_source_checkout_except(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize('fetch', [(False), (True)])
-def test_source_checkout_fetch(datafiles, cli, fetch):
+def test_source_checkout_fetch(datafiles, cli):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'remote-import-dev.bst'
@@ -158,21 +156,16 @@ def test_source_checkout_fetch(datafiles, cli, fetch):
         'pony.h')
     _yaml.dump(element, target_path)
 
-    # Testing --fetch option requires that we do not have the sources
+    # Testing implicit fetching requires that we do not have the sources
     # cached already
     assert cli.get_element_state(project, target) == 'fetch needed'
 
     args = ['source', 'checkout']
-    if fetch:
-        args += ['--fetch']
     args += [target, checkout]
     result = cli.run(project=project, args=args)
 
-    if fetch:
-        result.assert_success()
-        assert os.path.exists(os.path.join(checkout, 'remote-import-dev', 'pony.h'))
-    else:
-        result.assert_main_error(ErrorDomain.PIPELINE, 'uncached-sources')
+    result.assert_success()
+    assert os.path.exists(os.path.join(checkout, 'remote-import-dev', 'pony.h'))
 
 
 @pytest.mark.datafiles(DATA_DIR)
