@@ -569,7 +569,7 @@ class Project():
             else:
                 raise
 
-        pre_config_node = _yaml.node_copy(self._default_config_node)
+        pre_config_node = self._default_config_node.copy()
         _yaml.composite(pre_config_node, self._project_conf)
 
         # Assert project's format version early, before validating toplevel keys
@@ -612,9 +612,9 @@ class Project():
 
         self._project_includes = Includes(self.loader, copy_tree=False)
 
-        project_conf_first_pass = _yaml.node_copy(self._project_conf)
+        project_conf_first_pass = self._project_conf.copy()
         self._project_includes.process(project_conf_first_pass, only_local=True)
-        config_no_include = _yaml.node_copy(self._default_config_node)
+        config_no_include = self._default_config_node.copy()
         _yaml.composite(config_no_include, project_conf_first_pass)
 
         self._load_pass(config_no_include, self.first_pass_config,
@@ -636,9 +636,9 @@ class Project():
     # Process the second pass of loading the project configuration.
     #
     def _load_second_pass(self):
-        project_conf_second_pass = _yaml.node_copy(self._project_conf)
+        project_conf_second_pass = self._project_conf.copy()
         self._project_includes.process(project_conf_second_pass)
-        config = _yaml.node_copy(self._default_config_node)
+        config = self._default_config_node.copy()
         _yaml.composite(config, project_conf_second_pass)
 
         self._load_pass(config, self.config)
@@ -938,7 +938,7 @@ class Project():
                             .format(plugin_group, expected_groups))
         node_keys = [key for key in _yaml.node_keys(origin)]
         if plugin_group in node_keys:
-            origin_node = _yaml.node_copy(origin)
+            origin_node = origin.copy()
             plugins = origin.get_mapping(plugin_group, default={})
             _yaml.node_set(origin_node, 'plugins', [k for k in _yaml.node_keys(plugins)])
             for group in expected_groups:
