@@ -1279,7 +1279,7 @@ class Source(Plugin):
     @classmethod
     def __extract_config(cls, meta):
         config = cls.__defaults.get_mapping('config', default={})
-        config = _yaml.node_copy(config)
+        config = config.copy()
 
         _yaml.composite(config, meta.config)
         _yaml.node_final_assertions(config)

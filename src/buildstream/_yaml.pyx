@@ -74,6 +74,9 @@ cdef class Node:
         # code which has access to such nodes would do this.
         return what in self.value
 
+    cpdef Node copy(self):
+        raise NotImplementedError()
+
 
 cdef class ScalarNode(Node):
 
@@ -84,6 +87,9 @@ cdef class ScalarNode(Node):
         self.file_index = file_index
         self.line = line
         self.column = column
+
+    cpdef ScalarNode copy(self):
+        return self
 
     cpdef bint is_none(self):
         return self.value is None
@@ -128,6 +134,17 @@ cdef class MappingNode(Node):
         self.file_index = file_index
         self.line = line
         self.column = column
+
+    cpdef MappingNode copy(self):
+        cdef dict copy = {}
+        cdef str key
+        cdef Node value
+
+        for key, value in self.value.items():
+            copy[key] = value.copy()
+
+        return MappingNode(copy, self.file_index, self.line, self.column)
+
 
     cdef Node get(self, str key, object default, object default_constructor):
         value = self.value.get(key, _sentinel)
@@ -219,6 +236,15 @@ cdef class SequenceNode(Node):
         self.file_index = file_index
         self.line = line
         self.column = column
+
+    cpdef SequenceNode copy(self):
+        cdef list copy = []
+        cdef Node entry
+
+        for entry in self.value:
+            copy.append(entry.copy())
+
+        return SequenceNode(copy, self.file_index, self.line, self.column)
 
     cpdef MappingNode mapping_at(self, int index):
         value = self.value[index]
@@ -647,7 +673,7 @@ cpdef Node load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_na
         )
 
     if copy_tree:
-        contents = node_copy(contents)
+        contents = contents.copy()
     return contents
 
 
@@ -1237,71 +1263,9 @@ cpdef void node_validate(Node node, list valid_keys) except *:
                             "{}: Unexpected key: {}".format(provenance, key))
 
 
-# Node copying
-#
-# Unfortunately we copy nodes a *lot* and `isinstance()` is super-slow when
-# things from collections.abc get involved.  The result is the following
-# intricate but substantially faster group of tuples and the use of `in`.
-#
-# If any of the {node,list}_copy routines raise a ValueError
-# then it's likely additional types need adding to these tuples.
-
-
-# These types just have their value copied
-__QUICK_TYPES = (str, bool)
-
 # These are the directives used to compose lists, we need this because it's
 # slightly faster during the node_final_assertions checks
 __NODE_ASSERT_COMPOSITION_DIRECTIVES = ('(>)', '(<)', '(=)')
-
-
-# node_copy()
-#
-# Make a deep copy of the given YAML node, preserving provenance.
-#
-# Args:
-#    source (Node): The YAML node to copy
-#
-# Returns:
-#    (Node): A deep copy of source with provenance preserved.
-#
-cpdef MappingNode node_copy(MappingNode source):
-    cdef dict copy = {}
-    cdef str key
-    cdef Node value
-
-    for key, value in source.value.items():
-        value_type = type(value.value)
-        if value_type is dict:
-            copy[key] = node_copy(value)
-        elif value_type is list:
-            copy[key] = _list_copy(value)
-        elif value_type in __QUICK_TYPES:
-            copy[key] = value
-        else:
-            raise ValueError("Unable to be quick about node_copy of {}".format(value_type))
-
-    return MappingNode(copy, source.file_index, source.line, source.column)
-
-
-# Internal function to help node_copy() but for lists.
-cdef Node _list_copy(Node source):
-    cdef list copy = []
-    cdef Node item
-
-    for item in source.value:
-        item_type = type(item.value)
-
-        if item_type is dict:
-            copy.append(node_copy(item))
-        elif item_type is list:
-            copy.append(_list_copy(item))
-        elif item_type in __QUICK_TYPES:
-            copy.append(item)
-        else:
-            raise ValueError("Unable to be quick about list_copy of {}".format(item_type))
-
-    return SequenceNode(copy, source.file_index, source.line, source.column)
 
 
 # node_final_assertions()
