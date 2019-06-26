@@ -2225,7 +2225,7 @@ class Element(Plugin):
 
     # Check if sources are cached, generating the source key if it hasn't been
     def _source_cached(self):
-        if self.__sources:
+        if self.__sources and not self._get_workspace():
             sourcecache = self._get_context().sourcecache
 
             # Go through sources we'll cache generating keys
