@@ -1466,8 +1466,8 @@ class Element(Plugin):
 
             # No workspace or cached buildtree, stage source from source cache
             else:
-                # Ensure sources are cached
-                self.__cache_sources()
+                # Assert sources are cached
+                assert self._source_cached()
 
                 if self.__sources:
 
