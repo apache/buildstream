@@ -23,7 +23,7 @@
 #           William Salmon <will.salmon@codethink.co.uk>
 #
 
-from .artifactshare import create_artifact_share
+from .artifactshare import create_artifact_share, assert_shared, assert_not_shared
 from .element_generators import create_element_size, update_element_size
 from .junction import generate_junction
 from .runner_integration import wait_for_cache_granularity

@@ -207,3 +207,19 @@ def create_artifact_share(directory, *, total_space=None, free_space=None,
 
 
 statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize f_bavail')
+
+
+# Assert that a given artifact is in the share
+#
+def assert_shared(cli, share, project, element_name, *, project_name='test'):
+    if not share.has_artifact(cli.get_artifact_name(project, project_name, element_name)):
+        raise AssertionError("Artifact share at {} does not contain the expected element {}"
+                             .format(share.repo, element_name))
+
+
+# Assert that a given artifact is not in the share
+#
+def assert_not_shared(cli, share, project, element_name, *, project_name='test'):
+    if share.has_artifact(cli.get_artifact_name(project, project_name, element_name)):
+        raise AssertionError("Artifact share at {} unexpectedly contains the element {}"
+                             .format(share.repo, element_name))

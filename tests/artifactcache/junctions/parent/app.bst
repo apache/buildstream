@@ -4,4 +4,4 @@ sources:
   path: foo.txt
 depends:
 - junction: base.bst
-  filename: target.bst
+  filename: base-element.bst

@@ -8,24 +8,13 @@ import pytest
 from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
 
-from tests.testutils import create_artifact_share
+from tests.testutils import create_artifact_share, assert_shared, assert_not_shared
 
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "junctions",
 )
-
-
-# Assert that a given artifact is in the share
-#
-def assert_shared(cli, share, project_name, project, element_name):
-    # NOTE: 'test' here is the name of the project
-    # specified in the project.conf we are testing with.
-    #
-    if not share.has_artifact(cli.get_artifact_name(project, project_name, element_name)):
-        raise AssertionError("Artifact share at {} does not contain the expected element {}"
-                             .format(share.repo, element_name))
 
 
 def project_set_artifacts(project, url):
@@ -40,10 +29,10 @@ def project_set_artifacts(project, url):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull(cli, tmpdir, datafiles):
-    project = os.path.join(str(datafiles), 'foo')
+    project = os.path.join(str(datafiles), 'parent')
     base_project = os.path.join(str(project), 'base')
 
-    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare-foo')) as share,\
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare-parent')) as share,\
         create_artifact_share(os.path.join(str(tmpdir), 'artifactshare-base')) as base_share:
 
         # First build it without the artifact cache configured
@@ -53,7 +42,7 @@ def test_push_pull(cli, tmpdir, datafiles):
         # Assert that we are now cached locally
         state = cli.get_element_state(project, 'target.bst')
         assert state == 'cached'
-        state = cli.get_element_state(base_project, 'target.bst')
+        state = cli.get_element_state(base_project, 'base-element.bst')
         assert state == 'cached'
 
         project_set_artifacts(project, share.repo)
@@ -64,8 +53,16 @@ def test_push_pull(cli, tmpdir, datafiles):
         assert result.exit_code == 0
 
         # And finally assert that the artifacts are in the right shares
-        assert_shared(cli, share, 'foo', project, 'target.bst')
-        assert_shared(cli, base_share, 'base', base_project, 'target.bst')
+        #
+        # In the parent project's cache
+        assert_shared(cli, share, project, 'target.bst', project_name='parent')
+        assert_shared(cli, share, project, 'app.bst', project_name='parent')
+        assert_shared(cli, share, base_project, 'base-element.bst', project_name='base')
+
+        # In the junction project's cache
+        assert_not_shared(cli, base_share, project, 'target.bst', project_name='parent')
+        assert_not_shared(cli, base_share, project, 'app.bst', project_name='parent')
+        assert_shared(cli, base_share, base_project, 'base-element.bst', project_name='base')
 
         # Now we've pushed, delete the user's local artifact cache
         # directory and try to redownload it from the share
@@ -78,7 +75,7 @@ def test_push_pull(cli, tmpdir, datafiles):
         # Assert that nothing is cached locally anymore
         state = cli.get_element_state(project, 'target.bst')
         assert state != 'cached'
-        state = cli.get_element_state(base_project, 'target.bst')
+        state = cli.get_element_state(base_project, 'base-element.bst')
         assert state != 'cached'
 
         # Now try bst artifact pull
@@ -88,5 +85,5 @@ def test_push_pull(cli, tmpdir, datafiles):
         # And assert that they are again in the local cache, without having built
         state = cli.get_element_state(project, 'target.bst')
         assert state == 'cached'
-        state = cli.get_element_state(base_project, 'target.bst')
+        state = cli.get_element_state(base_project, 'base-element.bst')
         assert state == 'cached'

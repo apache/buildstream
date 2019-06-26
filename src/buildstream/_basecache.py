@@ -103,14 +103,10 @@ class BaseCache():
     #
     @classmethod
     def _configured_remote_cache_specs(cls, context, project):
-        project_overrides = context.get_overrides(project.name)
-        project_extra_specs = cls.specs_from_config_node(project_overrides)
-
         project_specs = getattr(project, cls.spec_name)
         context_specs = getattr(context, cls.spec_name)
 
-        return list(utils._deduplicate(
-            project_extra_specs + project_specs + context_specs))
+        return list(utils._deduplicate(project_specs + context_specs))
 
     # setup_remotes():
     #
@@ -153,10 +149,10 @@ class BaseCache():
     #     on_failure (callable): Called if we fail to contact one of the caches.
     #
     def initialize_remotes(self, *, on_failure=None):
-        remote_specs = self.global_remote_specs
+        remote_specs = self.global_remote_specs.copy()
 
         for project in self.project_remote_specs:
-            remote_specs += self.project_remote_specs[project]
+            remote_specs.extend(self.project_remote_specs[project])
 
         remote_specs = list(utils._deduplicate(remote_specs))
 

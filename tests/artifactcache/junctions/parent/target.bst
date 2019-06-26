@@ -1,5 +1,5 @@
 kind: stack
 depends:
 - junction: base.bst
-  filename: target.bst
+  filename: base-element.bst
 - app.bst
