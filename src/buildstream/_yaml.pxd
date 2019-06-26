@@ -27,6 +27,8 @@ cdef class Node:
     cdef public int line
     cdef public int column
 
+    cpdef Node copy(self)
+
 
 cdef class MappingNode(Node):
     cdef Node get(self, str key, default, default_constructor)
