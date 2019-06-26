@@ -28,6 +28,30 @@ cdef class Node:
     cdef public int column
 
 
+cdef class MappingNode(Node):
+    cdef Node get(self, str key, default, default_constructor)
+    cpdef MappingNode get_mapping(self, str key, default=*)
+    cpdef Node get_node(self, str key, list allowed_types, bint allow_none=*)
+    cpdef ScalarNode get_scalar(self, str key, default=*)
+    cpdef SequenceNode get_sequence(self, str key, object default=*)
+    cpdef bint get_bool(self, str key, default=*) except *
+    cpdef int get_int(self, str key, default=*) except *
+    cpdef str get_str(self, str key, object default=*)
+
+
+cdef class ScalarNode(Node):
+    cpdef bint as_bool(self) except *
+    cpdef int as_int(self) except *
+    cpdef str as_str(self)
+    cpdef bint is_none(self)
+
+
+cdef class SequenceNode(Node):
+    cpdef MappingNode mapping_at(self, int index)
+    cpdef SequenceNode sequence_at(self, int index)
+    cpdef list as_str_list(self)
+
+
 cdef class ProvenanceInformation:
 
     cdef public Node node
@@ -39,7 +63,6 @@ cdef class ProvenanceInformation:
 
 
 cpdef void node_del(Node node, str key, bint safe=*) except *
-cpdef object node_get(Node node, object expected_type, str key, list indices=*, object default_value=*, bint allow_none=*)
 cpdef void node_validate(Node node, list valid_keys) except *
 cpdef void node_set(Node node, object key, object value, list indices=*) except *
 cpdef list node_keys(Node node)

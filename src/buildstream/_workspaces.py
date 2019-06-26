@@ -570,7 +570,7 @@ class Workspaces():
     #
     def _parse_workspace_config(self, workspaces):
         try:
-            version = _yaml.node_get(workspaces, int, 'format-version', default_value=0)
+            version = workspaces.get_int('format-version', default=0)
         except ValueError:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "Format version is not an integer in workspace configuration")
@@ -606,8 +606,7 @@ class Workspaces():
             }
 
         elif 1 <= version <= BST_WORKSPACE_FORMAT_VERSION:
-            workspaces = _yaml.node_get(workspaces, dict, "workspaces",
-                                        default_value=_yaml.new_empty_node())
+            workspaces = workspaces.get_mapping("workspaces", default={})
             res = {element: self._load_workspace(node)
                    for element, node in _yaml.node_items(workspaces)}
 
@@ -631,11 +630,11 @@ class Workspaces():
     #
     def _load_workspace(self, node):
         dictionary = {
-            'prepared': _yaml.node_get(node, bool, 'prepared', default_value=False),
-            'path': _yaml.node_get(node, str, 'path'),
-            'last_successful': _yaml.node_get(node, str, 'last_successful', default_value=None),
+            'prepared': node.get_bool('prepared', default=False),
+            'path': node.get_str('path'),
+            'last_successful': node.get_str('last_successful', default=None),
             'running_files': _yaml.node_sanitize(
-                _yaml.node_get(node, dict, 'running_files', default_value=None),
+                node.get_mapping('running_files', default=None),
                 dict_type=dict),
         }
         return Workspace.from_dict(self._toplevel_project, dictionary)

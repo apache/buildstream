@@ -120,7 +120,7 @@ cdef class Variables:
         # element, then override max-jobs to be 1.
         # Initialize it as a string as all variables are processed as strings.
         #
-        if _yaml.node_get(node, bool, 'notparallel', None, False):
+        if node.get_bool('notparallel', False):
             _yaml.node_set(node, 'max-jobs', str(1))
 
         cdef dict ret = {}
@@ -128,7 +128,7 @@ cdef class Variables:
         cdef str value
 
         for key in _yaml.node_keys(node):
-            value = <str> _yaml.node_get(node, str, key)
+            value = node.get_str(key)
             ret[sys.intern(key)] = _parse_expstr(value)
         return ret
 

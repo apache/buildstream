@@ -321,13 +321,13 @@ def test_track_include(cli, tmpdir, datafiles, ref_storage, kind):
 
         # Get all of the sources
         assert 'sources' in new_sources
-        sources_list = _yaml.node_get(new_sources, list, 'sources')
+        sources_list = new_sources.get_sequence('sources')
         assert len(sources_list) == 1
 
         # Get the first source from the sources list
-        new_source = _yaml.node_get(new_sources, dict, 'sources', indices=[0])
+        new_source = sources_list.mapping_at(0)
         assert 'ref' in new_source
-        assert ref == _yaml.node_get(new_source, str, 'ref')
+        assert ref == new_source.get_str('ref')
 
 
 @pytest.mark.datafiles(DATA_DIR)

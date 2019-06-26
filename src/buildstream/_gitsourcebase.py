@@ -376,25 +376,25 @@ class _GitSourceBase(Source):
     BST_MIRROR_CLASS = _GitMirror
 
     def configure(self, node):
-        ref = self.node_get_member(node, str, 'ref', None)
+        ref = node.get_str('ref', None)
 
         config_keys = ['url', 'track', 'ref', 'submodules',
                        'checkout-submodules', 'ref-format',
                        'track-tags', 'tags']
         self.node_validate(node, config_keys + Source.COMMON_CONFIG_KEYS)
 
-        tags_node = self.node_get_member(node, list, 'tags', [])
+        tags_node = node.get_sequence('tags', [])
         for tag_node in tags_node:
             self.node_validate(tag_node, ['tag', 'commit', 'annotated'])
 
         tags = self._load_tags(node)
-        self.track_tags = self.node_get_member(node, bool, 'track-tags', False)
+        self.track_tags = node.get_bool('track-tags', default=False)
 
-        self.original_url = self.node_get_member(node, str, 'url')
+        self.original_url = node.get_str('url')
         self.mirror = self.BST_MIRROR_CLASS(self, '', self.original_url, ref, tags=tags, primary=True)
-        self.tracking = self.node_get_member(node, str, 'track', None)
+        self.tracking = node.get_str('track', None)
 
-        self.ref_format = self.node_get_member(node, str, 'ref-format', 'sha1')
+        self.ref_format = node.get_str('ref-format', 'sha1')
         if self.ref_format not in ['sha1', 'git-describe']:
             provenance = self.node_provenance(node, member_name='ref-format')
             raise SourceError("{}: Unexpected value for ref-format: {}".format(provenance, self.ref_format))
@@ -405,17 +405,17 @@ class _GitSourceBase(Source):
             raise SourceError("{}: Git sources require a ref and/or track".format(self),
                               reason="missing-track-and-ref")
 
-        self.checkout_submodules = self.node_get_member(node, bool, 'checkout-submodules', True)
+        self.checkout_submodules = node.get_bool('checkout-submodules', default=True)
         self.submodules = []
 
         # Parse a dict of submodule overrides, stored in the submodule_overrides
         # and submodule_checkout_overrides dictionaries.
         self.submodule_overrides = {}
         self.submodule_checkout_overrides = {}
-        modules = self.node_get_member(node, dict, 'submodules', {})
+        modules = node.get_mapping('submodules', {})
         for path, _ in self.node_items(modules):
-            submodule = self.node_get_member(modules, dict, path)
-            url = self.node_get_member(submodule, str, 'url', None)
+            submodule = modules.get_mapping(path)
+            url = submodule.get_str('url', None)
 
             # Make sure to mark all URLs that are specified in the configuration
             if url:
@@ -423,7 +423,7 @@ class _GitSourceBase(Source):
 
             self.submodule_overrides[path] = url
             if 'checkout' in submodule:
-                checkout = self.node_get_member(submodule, bool, 'checkout')
+                checkout = submodule.get_bool('checkout')
                 self.submodule_checkout_overrides[path] = checkout
 
         self.mark_download_url(self.original_url)
@@ -464,7 +464,7 @@ class _GitSourceBase(Source):
         return Consistency.INCONSISTENT
 
     def load_ref(self, node):
-        self.mirror.ref = self.node_get_member(node, str, 'ref', None)
+        self.mirror.ref = node.get_str('ref', None)
         self.mirror.tags = self._load_tags(node)
 
     def get_ref(self):
@@ -663,11 +663,11 @@ class _GitSourceBase(Source):
 
     def _load_tags(self, node):
         tags = []
-        tags_node = self.node_get_member(node, list, 'tags', [])
+        tags_node = node.get_sequence('tags', [])
         for tag_node in tags_node:
-            tag = self.node_get_member(tag_node, str, 'tag')
-            commit_ref = self.node_get_member(tag_node, str, 'commit')
-            annotated = self.node_get_member(tag_node, bool, 'annotated')
+            tag = tag_node.get_str('tag')
+            commit_ref = tag_node.get_str('commit')
+            annotated = tag_node.get_bool('annotated')
             tags.append((tag, commit_ref, annotated))
         return tags
 

@@ -62,8 +62,8 @@ class RemoteSource(DownloadableFileSource):
     def configure(self, node):
         super().configure(node)
 
-        self.filename = self.node_get_member(node, str, 'filename', os.path.basename(self.url))
-        self.executable = self.node_get_member(node, bool, 'executable', False)
+        self.filename = node.get_str('filename', os.path.basename(self.url))
+        self.executable = node.get_bool('executable', default=False)
 
         if os.sep in self.filename:
             raise SourceError('{}: filename parameter cannot contain directories'.format(self),

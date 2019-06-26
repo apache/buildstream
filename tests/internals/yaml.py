@@ -103,16 +103,16 @@ def test_node_get(datafiles):
     base = _yaml.load(filename)
     assert base.value.get('kind').value == 'pony'
 
-    children = _yaml.node_get(base, list, 'children')
-    assert isinstance(children, list)
+    children = base.get_sequence('children')
+    assert isinstance(children, _yaml.SequenceNode)
     assert len(children) == 7
 
-    child = _yaml.node_get(base, dict, 'children', indices=[6])
+    child = base.get_sequence('children').mapping_at(6)
     assert_provenance(filename, 20, 8, child, 'mood')
 
-    extra = _yaml.node_get(base, dict, 'extra')
+    extra = base.get_mapping('extra')
     with pytest.raises(LoadError) as exc:
-        _yaml.node_get(extra, dict, 'old')
+        extra.get_mapping('old')
 
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
@@ -128,7 +128,7 @@ def test_node_set(datafiles):
 
     assert 'mother' not in base
     _yaml.node_set(base, 'mother', 'snow white')
-    assert _yaml.node_get(base, str, 'mother') == 'snow white'
+    assert base.get_str('mother') == 'snow white'
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -141,14 +141,14 @@ def test_node_set_overwrite(datafiles):
     base = _yaml.load(filename)
 
     # Overwrite a string
-    assert _yaml.node_get(base, str, 'kind') == 'pony'
+    assert base.get_str('kind') == 'pony'
     _yaml.node_set(base, 'kind', 'cow')
-    assert _yaml.node_get(base, str, 'kind') == 'cow'
+    assert base.get_str('kind') == 'cow'
 
     # Overwrite a list as a string
-    assert _yaml.node_get(base, list, 'moods') == ['happy', 'sad']
+    assert base.get_sequence('moods').as_str_list() == ['happy', 'sad']
     _yaml.node_set(base, 'moods', 'unemotional')
-    assert _yaml.node_get(base, str, 'moods') == 'unemotional'
+    assert base.get_str('moods') == 'unemotional'
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -160,13 +160,11 @@ def test_node_set_list_element(datafiles):
 
     base = _yaml.load(filename)
 
-    assert _yaml.node_get(base, list, 'moods') == ['happy', 'sad']
-    assert _yaml.node_get(base, str, 'moods', indices=[0]) == 'happy'
+    assert base.get_sequence('moods').as_str_list() == ['happy', 'sad']
 
     _yaml.node_set(base, 'moods', 'confused', indices=[0])
 
-    assert _yaml.node_get(base, list, 'moods') == ['confused', 'sad']
-    assert _yaml.node_get(base, str, 'moods', indices=[0]) == 'confused'
+    assert base.get_sequence('moods').as_str_list() == ['confused', 'sad']
 
 
 # Really this is testing _yaml.node_copy(), we want to
@@ -188,14 +186,14 @@ def test_composite_preserve_originals(datafiles):
     base_copy = _yaml.node_copy(base)
     _yaml.composite_dict(base_copy, overlay)
 
-    copy_extra = _yaml.node_get(base_copy, dict, 'extra')
-    orig_extra = _yaml.node_get(base, dict, 'extra')
+    copy_extra = base_copy.get_mapping('extra')
+    orig_extra = base.get_mapping('extra')
 
     # Test that the node copy has the overridden value...
-    assert _yaml.node_get(copy_extra, str, 'old') == 'override'
+    assert copy_extra.get_str('old') == 'override'
 
     # But the original node is not effected by the override.
-    assert _yaml.node_get(orig_extra, str, 'old') == 'new'
+    assert orig_extra.get_str('old') == 'new'
 
 
 # Tests for list composition
@@ -254,11 +252,11 @@ def test_list_composition(datafiles, filename, tmpdir,
 
     _yaml.composite_dict(base, overlay)
 
-    children = _yaml.node_get(base, list, 'children')
+    children = base.get_sequence('children')
     assert len(children) == length
-    child = children[index]
+    child = children.mapping_at(index)
 
-    assert _yaml.node_get(child, str, 'mood') == mood
+    assert child.get_str('mood') == mood
     assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
 
 
@@ -272,7 +270,7 @@ def test_list_deletion(datafiles):
     overlay = _yaml.load(overlay, shortname='listoverwriteempty.yaml')
     _yaml.composite_dict(base, overlay)
 
-    children = _yaml.node_get(base, list, 'children')
+    children = base.get_sequence('children')
     assert not children
 
 
@@ -286,8 +284,8 @@ def test_nonexistent_list_extension(datafiles):
 
     _yaml.node_extend_list(base, 'todo', 3, 'empty')
 
-    assert len(_yaml.node_get(base, list, 'todo')) == 3
-    assert _yaml.node_get(base, list, 'todo') == ['empty', 'empty', 'empty']
+    assert len(base.get_sequence('todo')) == 3
+    assert base.get_sequence('todo').as_str_list() == ['empty', 'empty', 'empty']
 
 
 # Tests for deep list composition
@@ -390,11 +388,11 @@ def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
     _yaml.composite_dict(base, overlay1)
     _yaml.composite_dict(base, overlay2)
 
-    children = _yaml.node_get(base, list, 'children')
+    children = base.get_sequence('children')
     assert len(children) == length
-    child = children[index]
+    child = children.mapping_at(index)
 
-    assert _yaml.node_get(child, str, 'mood') == mood
+    assert child.get_str('mood') == mood
     assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
 
     #####################
@@ -407,11 +405,11 @@ def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
     _yaml.composite_dict(overlay1, overlay2)
     _yaml.composite_dict(base, overlay1)
 
-    children = _yaml.node_get(base, list, 'children')
+    children = base.get_sequence('children')
     assert len(children) == length
-    child = children[index]
+    child = children.mapping_at(index)
 
-    assert _yaml.node_get(child, str, 'mood') == mood
+    assert child.get_str('mood') == mood
     assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
 
 
@@ -424,19 +422,19 @@ def test_convert_value_to_string(datafiles):
     # Run file through yaml to convert it
     test_dict = _yaml.load(conf_file)
 
-    user_config = _yaml.node_get(test_dict, str, "Test1")
+    user_config = test_dict.get_str("Test1")
     assert isinstance(user_config, str)
     assert user_config == "1_23_4"
 
-    user_config = _yaml.node_get(test_dict, str, "Test2")
+    user_config = test_dict.get_str("Test2")
     assert isinstance(user_config, str)
     assert user_config == "1.23.4"
 
-    user_config = _yaml.node_get(test_dict, str, "Test3")
+    user_config = test_dict.get_str("Test3")
     assert isinstance(user_config, str)
     assert user_config == "1.20"
 
-    user_config = _yaml.node_get(test_dict, str, "Test4")
+    user_config = test_dict.get_str("Test4")
     assert isinstance(user_config, str)
     assert user_config == "OneTwoThree"
 
@@ -451,7 +449,7 @@ def test_value_doesnt_match_expected(datafiles):
     test_dict = _yaml.load(conf_file)
 
     with pytest.raises(LoadError) as exc:
-        _yaml.node_get(test_dict, int, "Test4")
+        test_dict.get_int("Test4")
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
 

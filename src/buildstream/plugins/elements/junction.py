@@ -175,9 +175,9 @@ class JunctionElement(Element):
     BST_FORBID_RDEPENDS = True
 
     def configure(self, node):
-        self.path = self.node_get_member(node, str, 'path', default='')
-        self.options = self.node_get_member(node, dict, 'options', default={})
-        self.target = self.node_get_member(node, str, 'target', default=None)
+        self.path = node.get_str('path', default='')
+        self.options = node.get_mapping('options', default={})
+        self.target = node.get_str('target', default=None)
         self.target_element = None
         self.target_junction = None
 

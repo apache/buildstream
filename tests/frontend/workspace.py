@@ -184,11 +184,11 @@ def test_open_bzr_customize(cli, tmpdir, datafiles):
 
     # Check that the correct origin branch is set
     element_config = _yaml.load(os.path.join(project, "elements", element_name))
-    source_config = _yaml.node_get(element_config, dict, 'sources', [0])
+    source_config = element_config.get_sequence('sources').mapping_at(0)
     output = subprocess.check_output(["bzr", "info"], cwd=workspace)
-    stripped_url = _yaml.node_get(source_config, str, 'url').lstrip("file:///")
+    stripped_url = source_config.get_str('url').lstrip("file:///")
     expected_output_str = ("checkout of branch: /{}/{}"
-                           .format(stripped_url, _yaml.node_get(source_config, str, 'track')))
+                           .format(stripped_url, source_config.get_str('track')))
     assert expected_output_str in str(output)
 
 
@@ -608,13 +608,12 @@ def test_list(cli, tmpdir, datafiles):
     result.assert_success()
 
     loaded = _yaml.load_data(result.output)
-    assert isinstance(_yaml.node_get(loaded, None, 'workspaces'), list)
-    workspaces = _yaml.node_get(loaded, list, 'workspaces')
+    workspaces = loaded.get_sequence('workspaces')
     assert len(workspaces) == 1
 
-    space = workspaces[0]
-    assert _yaml.node_get(space, str, 'element') == element_name
-    assert _yaml.node_get(space, str, 'directory') == workspace
+    space = workspaces.mapping_at(0)
+    assert space.get_str('element') == element_name
+    assert space.get_str('directory') == workspace
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -1133,7 +1132,7 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
     # Delete the ref from the source so that we can detect if the
     # element has been tracked
     element_contents = _yaml.load(element_file)
-    _yaml.node_del(_yaml.node_get(element_contents, dict, 'sources', [0]), 'ref')
+    _yaml.node_del(element_contents.get_sequence('sources').mapping_at(0), 'ref')
     _yaml.dump(element_contents, element_file)
 
     result = cli.run(project=project, args=['-C', workspace, 'source', 'track', *arg_elm])
@@ -1141,7 +1140,7 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
 
     # Element is tracked now
     element_contents = _yaml.load(element_file)
-    assert 'ref' in _yaml.node_get(element_contents, dict, 'sources', [0])
+    assert 'ref' in element_contents.get_sequence('sources').mapping_at(0)
 
 
 @pytest.mark.datafiles(DATA_DIR)

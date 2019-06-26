@@ -760,7 +760,7 @@ def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
     result.assert_success()
 
     element = _yaml.load(element_path)
-    new_ref = _yaml.node_get(_yaml.node_get(element, dict, 'sources', [0]), str, 'ref')
+    new_ref = element.get_sequence('sources').mapping_at(0).get_str('ref')
 
     if ref_format == 'git-describe' and tag:
         # Check and strip prefix
@@ -849,16 +849,16 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
 
     if ref_storage == 'inline':
         element = _yaml.load(element_path)
-        tags = _yaml.node_get(_yaml.node_get(element, dict, 'sources', [0]), list, 'tags')
+        tags = element.get_sequence('sources').mapping_at(0).get_sequence('tags')
         assert len(tags) == 2
         for tag in tags:
             assert 'tag' in tag
             assert 'commit' in tag
             assert 'annotated' in tag
-            assert _yaml.node_get(tag, bool, 'annotated') == (tag_type == 'annotated')
+            assert tag.get_bool('annotated') == (tag_type == 'annotated')
 
-        assert {(_yaml.node_get(tag, str, 'tag'),
-                 _yaml.node_get(tag, str, 'commit'))
+        assert {(tag.get_str('tag'),
+                 tag.get_str('commit'))
                 for tag in tags} == {('tag1', repo.rev_parse('tag1^{commit}')),
                                      ('tag2', repo.rev_parse('tag2^{commit}'))}
 
@@ -962,18 +962,18 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
 
     if ref_storage == 'inline':
         element = _yaml.load(element_path)
-        source = _yaml.node_get(element, dict, 'sources', indices=[0])
-        tags = _yaml.node_get(source, list, 'tags')
+        source = element.get_sequence('sources').mapping_at(0)
+        tags = source.get_sequence('tags')
         assert len(tags) == 1
 
-        tag = _yaml.node_get(source, dict, 'tags', indices=[0])
+        tag = source.get_sequence('tags').mapping_at(0)
         assert 'tag' in tag
         assert 'commit' in tag
         assert 'annotated' in tag
-        assert _yaml.node_get(tag, bool, 'annotated') == (tag_type == 'annotated')
+        assert tag.get_bool('annotated') == (tag_type == 'annotated')
 
-        tag_name = _yaml.node_get(tag, str, 'tag')
-        commit = _yaml.node_get(tag, str, 'commit')
+        tag_name = tag.get_str('tag')
+        commit = tag.get_str('commit')
         assert (tag_name, commit) == ('tag', repo.rev_parse('tag^{commit}'))
 
     checkout = os.path.join(str(tmpdir), 'checkout')
@@ -1125,7 +1125,7 @@ def test_default_do_not_track_tags(cli, tmpdir, datafiles):
     result.assert_success()
 
     element = _yaml.load(element_path)
-    source = _yaml.node_get(element, dict, 'sources', indices=[0])
+    source = element.get_sequence('sources').mapping_at(0)
     assert 'tags' not in source
 
 

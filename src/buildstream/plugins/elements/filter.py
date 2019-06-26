@@ -171,9 +171,9 @@ class FilterElement(Element):
             'include', 'exclude', 'include-orphans'
         ])
 
-        self.include = self.node_get_member(node, list, 'include')
-        self.exclude = self.node_get_member(node, list, 'exclude')
-        self.include_orphans = self.node_get_member(node, bool, 'include-orphans')
+        self.include = node.get_sequence('include').as_str_list()
+        self.exclude = node.get_sequence('exclude').as_str_list()
+        self.include_orphans = node.get_bool('include-orphans')
         self.include_provenance = self.node_provenance(node, member_name='include')
         self.exclude_provenance = self.node_provenance(node, member_name='exclude')
 
@@ -217,7 +217,7 @@ class FilterElement(Element):
             for dep in self.dependencies(Scope.BUILD, recurse=False):
                 # Check that all the included/excluded domains exist
                 pub_data = dep.get_public_data('bst')
-                split_rules = self.node_get_member(pub_data, dict, 'split-rules', {})
+                split_rules = pub_data.get_mapping('split-rules', {})
                 unfound_includes = []
                 for domain in self.include:
                     if domain not in split_rules:

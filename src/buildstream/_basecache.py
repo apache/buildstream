@@ -74,10 +74,10 @@ class BaseCache():
         cache_specs = []
 
         try:
-            artifacts = [_yaml.node_get(config_node, dict, cls.config_node_name)]
+            artifacts = [config_node.get_mapping(cls.config_node_name)]
         except LoadError:
             try:
-                artifacts = _yaml.node_get(config_node, list, cls.config_node_name, default_value=[])
+                artifacts = config_node.get_sequence(cls.config_node_name, default=[])
             except LoadError:
                 provenance = _yaml.node_get_provenance(config_node, key=cls.config_node_name)
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,

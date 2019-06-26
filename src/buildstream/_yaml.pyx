@@ -40,6 +40,11 @@ from ._exceptions import LoadError, LoadErrorReason
 # pylint: disable=unidiomatic-typecheck
 
 
+# A sentinel to be used as a default argument for functions that need
+# to distinguish between a kwarg set to None and an unset kwarg.
+_sentinel = object()
+
+
 # Node()
 #
 # Container for YAML loaded data and its provenance
@@ -68,6 +73,190 @@ cdef class Node:
         # very well if the node is a list or string, it's unlikely that
         # code which has access to such nodes would do this.
         return what in self.value
+
+
+cdef class ScalarNode(Node):
+
+    def __init__(self, object value, int file_index, int line, int column):
+        if type(value) is str:
+            value = value.strip()
+        self.value = value
+        self.file_index = file_index
+        self.line = line
+        self.column = column
+
+    cpdef bint is_none(self):
+        return self.value is None
+
+    cpdef bint as_bool(self) except *:
+        if type(self.value) is bool:
+            return self.value
+
+        # Don't coerce booleans to string, this makes "False" strings evaluate to True
+        if self.value in ('True', 'true'):
+            return True
+        elif self.value in ('False', 'false'):
+            return False
+        else:
+            provenance = node_get_provenance(self)
+            path = node_find_target(provenance.toplevel, self)[-1]
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                "{}: Value of '{}' is not of the expected type '{}'"
+                .format(provenance, path, bool.__name__, self.value))
+
+    cpdef int as_int(self) except *:
+        try:
+            return int(self.value)
+        except ValueError:
+            provenance = node_get_provenance(self)
+            path = node_find_target(provenance.toplevel, self)[-1]
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                "{}: Value of '{}' is not of the expected type '{}'"
+                .format(provenance, path, int.__name__))
+
+    cpdef str as_str(self):
+        # We keep 'None' as 'None' to simplify the API's usage and allow chaining for users
+        if self.value is None:
+            return None
+        return str(self.value)
+
+
+cdef class MappingNode(Node):
+
+    def __init__(self, dict value, int file_index, int line, int column):
+        self.value = value
+        self.file_index = file_index
+        self.line = line
+        self.column = column
+
+    cdef Node get(self, str key, object default, object default_constructor):
+        value = self.value.get(key, _sentinel)
+
+        if value is _sentinel:
+            if default is _sentinel:
+                provenance = node_get_provenance(self)
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
+
+            if default is None:
+                value = None
+            else:
+                value = default_constructor(default, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+
+        return value
+
+    cpdef MappingNode get_mapping(self, str key, object default=_sentinel):
+        value = self.get(key, default, MappingNode)
+
+        if type(value) is not MappingNode and value is not None:
+            provenance = node_get_provenance(value)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Value of '{}' is not of the expected type 'Mapping'"
+                            .format(provenance, key))
+
+        return value
+
+    cpdef Node get_node(self, str key, list allowed_types, bint allow_none = False):
+        cdef value = self.value.get(key, _sentinel)
+
+        if value is _sentinel:
+            if allow_none:
+                return None
+
+            provenance = node_get_provenance(self)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
+
+        if type(value) not in allowed_types:
+            provenance = node_get_provenance(self)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Value of '{}' is not one of the following: {}.".format(
+                                provenance, key, ", ".join(allowed_types)))
+
+        return value
+
+    cpdef ScalarNode get_scalar(self, str key, object default=_sentinel):
+        value = self.get(key, default, ScalarNode)
+
+        if type(value) is not ScalarNode:
+            if value is None:
+                value = ScalarNode(None, self.file_index, 0, next_synthetic_counter())
+            else:
+                provenance = node_get_provenance(value)
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Value of '{}' is not of the expected type 'Scalar'"
+                                .format(provenance, key))
+
+        return value
+
+    cpdef SequenceNode get_sequence(self, str key, object default=_sentinel):
+        value = self.get(key, default, SequenceNode)
+
+        if type(value) is not SequenceNode and value is not None:
+            provenance = node_get_provenance(value)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Value of '{}' is not of the expected type 'Sequence'"
+                            .format(provenance, key))
+
+        return value
+
+    cpdef bint get_bool(self, str key, object default=_sentinel) except *:
+        # TODO: don't go through 'get_scalar', we can directly get everything and optimize
+        cdef ScalarNode scalar = self.get_scalar(key, default)
+        return scalar.as_bool()
+
+    cpdef int get_int(self, str key, object default=_sentinel) except *:
+        # TODO: don't go through 'get_scalar', we can directly get everything and optimize
+        cdef ScalarNode scalar = self.get_scalar(key, default)
+        return scalar.as_int()
+
+    cpdef str get_str(self, str key, object default=_sentinel):
+        # TODO: don't go through 'get_scalar', we can directly get everything and optimize
+        cdef ScalarNode scalar = self.get_scalar(key, default)
+        return scalar.as_str()
+
+
+cdef class SequenceNode(Node):
+    def __init__(self, list value, int file_index, int line, int column):
+        self.value = value
+        self.file_index = file_index
+        self.line = line
+        self.column = column
+
+    cpdef MappingNode mapping_at(self, int index):
+        value = self.value[index]
+
+        if type(value) is not MappingNode:
+            provenance = node_get_provenance(self)
+            path = ["[{}]".format(p) for p in node_find_target(provenance.toplevel, self)] + ["[{}]".format(index)]
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Value of '{}' is not of the expected type '{}'"
+                            .format(provenance, path, MappingNode.__name__))
+        return value
+
+    cpdef SequenceNode sequence_at(self, int index):
+        value = self.value[index]
+
+        if type(value) is not SequenceNode:
+            provenance = node_get_provenance(self)
+            path = ["[{}]".format(p) for p in node_find_target(provenance.toplevel, self)] + ["[{}]".format(index)]
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Value of '{}' is not of the expected type '{}'"
+                            .format(provenance, path, SequenceNode.__name__))
+
+        return value
+
+    cpdef list as_str_list(self):
+        return [node.as_str() for node in self.value]
+
+    def __iter__(self):
+        return iter(self.value)
+
+    def __len__(self):
+        return len(self.value)
+
+    def __reversed__(self):
+        return reversed(self.value)
 
 
 # Metadata container for a yaml toplevel node.
@@ -280,7 +469,7 @@ cdef class Representer:
         return RepresenterState.doc
 
     cdef RepresenterState _handle_doc_MappingStartEvent(self, object ev):
-        newmap = Node({}, self._file_index, ev.start_mark.line, ev.start_mark.column)
+        newmap = MappingNode({}, self._file_index, ev.start_mark.line, ev.start_mark.column)
         self.output.append(newmap)
         return RepresenterState.wait_key
 
@@ -291,13 +480,13 @@ cdef class Representer:
     cdef RepresenterState _handle_wait_value_ScalarEvent(self, object ev):
         key = self.keys.pop()
         (<dict> (<Node> self.output[-1]).value)[key] = \
-            Node(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column)
+            ScalarNode(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column)
         return RepresenterState.wait_key
 
     cdef RepresenterState _handle_wait_value_MappingStartEvent(self, object ev):
         cdef RepresenterState new_state = self._handle_doc_MappingStartEvent(ev)
         key = self.keys.pop()
-        (<dict> (<Node> self.output[-2]).value)[key] = self.output[-1]
+        (<dict> (<MappingNode> self.output[-2]).value)[key] = self.output[-1]
         return new_state
 
     cdef RepresenterState _handle_wait_key_MappingEndEvent(self, object ev):
@@ -313,13 +502,13 @@ cdef class Representer:
             return RepresenterState.doc
 
     cdef RepresenterState _handle_wait_value_SequenceStartEvent(self, object ev):
-        self.output.append(Node([], self._file_index, ev.start_mark.line, ev.start_mark.column))
+        self.output.append(SequenceNode([], self._file_index, ev.start_mark.line, ev.start_mark.column))
         (<dict> (<Node> self.output[-2]).value)[self.keys[-1]] = self.output[-1]
         return RepresenterState.wait_list_item
 
     cdef RepresenterState _handle_wait_list_item_SequenceStartEvent(self, object ev):
         self.keys.append(len((<Node> self.output[-1]).value))
-        self.output.append(Node([], self._file_index, ev.start_mark.line, ev.start_mark.column))
+        self.output.append(SequenceNode([], self._file_index, ev.start_mark.line, ev.start_mark.column))
         (<list> (<Node> self.output[-2]).value).append(self.output[-1])
         return RepresenterState.wait_list_item
 
@@ -336,7 +525,7 @@ cdef class Representer:
 
     cdef RepresenterState _handle_wait_list_item_ScalarEvent(self, object ev):
         (<Node> self.output[-1]).value.append(
-            Node(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column))
+           ScalarNode(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column))
         return RepresenterState.wait_list_item
 
     cdef RepresenterState _handle_wait_list_item_MappingStartEvent(self, object ev):
@@ -351,6 +540,19 @@ cdef class Representer:
 
     cdef RepresenterState _handle_stream_StreamEndEvent(self, object ev):
         return RepresenterState.init
+
+
+cdef Node _create_node(object value, int file_index, int line, int column):
+    cdef type_value = type(value)
+
+    if type_value in [bool, str, type(None), int]:
+        return ScalarNode(value, file_index, line, column)
+    elif type_value is dict:
+        return MappingNode(value, file_index, line, column)
+    elif type_value is list:
+        return SequenceNode(value, file_index, line, column)
+    raise ValueError(
+        "Node values can only be 'list', 'dict', 'bool', 'str', 'int' or None. Not {}".format(type_value))
 
 
 # Loads a dictionary from some YAML
@@ -426,10 +628,10 @@ cpdef Node load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_na
         raise LoadError(LoadErrorReason.INVALID_YAML,
                         "Severely malformed YAML:\n\n{}\n\n".format(e)) from e
 
-    if type(contents) != Node:
+    if type(contents) != MappingNode:
         # Special case allowance for None, when the loaded file has only comments in it.
         if contents is None:
-            contents = Node({}, file_index, 0, 0)
+            contents = MappingNode({}, file_index, 0, 0)
         else:
             raise LoadError(LoadErrorReason.INVALID_YAML,
                             "YAML file has content of type '{}' instead of expected type 'dict': {}"
@@ -479,8 +681,6 @@ def dump(object contents, str filename=None):
 # Returns: The Provenance of the dict, member or list element
 #
 cpdef ProvenanceInformation node_get_provenance(Node node, str key=None, list indices=None):
-    assert type(node.value) is dict
-
     if key is None:
         # Retrieving the provenance for this node directly
         return ProvenanceInformation(node)
@@ -493,105 +693,6 @@ cpdef ProvenanceInformation node_get_provenance(Node node, str key=None, list in
         nodeish = <Node> nodeish.value[idx]
 
     return ProvenanceInformation(nodeish)
-
-
-# A sentinel to be used as a default argument for functions that need
-# to distinguish between a kwarg set to None and an unset kwarg.
-_sentinel = object()
-
-
-# node_get()
-#
-# Fetches a value from a dictionary node and checks it for
-# an expected value. Use default_value when parsing a value
-# which is only optionally supplied.
-#
-# Args:
-#    node (dict): The dictionary node
-#    expected_type (type): The expected type for the value being searched
-#    key (str): The key to get a value for in node
-#    indices (list of ints): Optionally decend into lists of lists
-#    default_value: Optionally return this value if the key is not found
-#    allow_none: (bool): Allow None to be a valid value
-#
-# Returns:
-#    The value if found in node, otherwise default_value is returned
-#
-# Raises:
-#    LoadError, when the value found is not of the expected type
-#
-# Note:
-#    Returned strings are stripped of leading and trailing whitespace
-#
-cpdef object node_get(Node node, object expected_type, str key, list indices=None, object default_value=_sentinel, bint allow_none=False):
-    if indices is None:
-        value = node.value.get(key, _sentinel)
-
-        if value is _sentinel:
-            if default_value is _sentinel:
-                provenance = node_get_provenance(node)
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
-
-            value = Node(default_value, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
-    else:
-        # Implied type check of the element itself
-        # No need to synthesise useful node content as we destructure it immediately
-        value = Node(node_get(node, list, key), _SYNTHETIC_FILE_INDEX, 0, 0)
-        for index in indices:
-            value = value.value[index]
-            if type(value) is not Node:
-                value = Node(value, _SYNTHETIC_FILE_INDEX, 0, 0)
-
-    # Optionally allow None as a valid value for any type
-    if value.value is None and (allow_none or default_value is None):
-        return None
-
-    if (expected_type is not None) and (type(value.value) is not expected_type):
-        # Attempt basic conversions if possible, typically we want to
-        # be able to specify numeric values and convert them to strings,
-        # but we dont want to try converting dicts/lists
-        try:
-            if expected_type == bool and type(value.value) is str:
-                # Dont coerce booleans to string, this makes "False" strings evaluate to True
-                # We don't structure into full nodes since there's no need.
-                if value.value in ('True', 'true'):
-                    value = Node(True, _SYNTHETIC_FILE_INDEX, 0, 0)
-                elif value.value in ('False', 'false'):
-                    value = Node(False, _SYNTHETIC_FILE_INDEX, 0, 0)
-                else:
-                    raise ValueError()
-            elif not (expected_type == list or
-                      expected_type == dict or
-                      isinstance(value.value, (list, dict))):
-                value = Node(expected_type(value.value), _SYNTHETIC_FILE_INDEX, 0, 0)
-            else:
-                raise ValueError()
-        except (ValueError, TypeError):
-            provenance = node_get_provenance(node, key=key, indices=indices)
-            if indices:
-                path = [key, *["[{:d}]".format(i) for i in indices]]
-                path = "".join(path)
-            else:
-                path = key
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Value of '{}' is not of the expected type '{}'"
-                            .format(provenance, path, expected_type.__name__))
-
-    # Now collapse lists, and scalars, to their value, leaving nodes as-is
-    if type(value.value) is not dict:
-        value = value.value
-
-    # Trim it at the bud, let all loaded strings from yaml be stripped of whitespace
-    if type(value) is str:
-        value = value.strip()
-
-    elif type(value) is list:
-        # Now we create a fresh list which unwraps the str and list types
-        # semi-recursively.
-        value = __trim_list_provenance(value)
-
-    return value
 
 
 cdef list __trim_list_provenance(list value):
@@ -632,7 +733,7 @@ cpdef void node_set(Node node, object key, object value, list indices=None) exce
         key = indices.pop()
         for idx in indices:
             node = <Node> (<list> node.value)[idx]
-    if type(value) is Node:
+    if type(value) in [Node, MappingNode, ScalarNode, SequenceNode]:
         node.value[key] = value
     else:
         try:
@@ -640,10 +741,11 @@ cpdef void node_set(Node node, object key, object value, list indices=None) exce
             old_value = <Node> node.value[key]
         except KeyError:
             old_value = None
+
         if old_value is None:
-            node.value[key] = Node(value, node.file_index, node.line, next_synthetic_counter())
+            node.value[key] = _create_node(value, node.file_index, node.line, next_synthetic_counter())
         else:
-            node.value[key] = Node(value, old_value.file_index, old_value.line, old_value.column)
+            node.value[key] = _create_node(value, old_value.file_index, old_value.line, old_value.column)
 
 
 # node_extend_list()
@@ -666,7 +768,7 @@ def node_extend_list(Node node, str key, Py_ssize_t length, object default):
 
     cdef Node list_node = <Node> node.value.get(key)
     if list_node is None:
-        list_node = node.value[key] = Node([], node.file_index, node.line, next_synthetic_counter())
+        list_node = node.value[key] = SequenceNode([], node.file_index, node.line, next_synthetic_counter())
 
     cdef list the_list = list_node.value
     def_type = type(default)
@@ -687,7 +789,7 @@ def node_extend_list(Node node, str key, Py_ssize_t length, object default):
 
         line_num += 1
 
-        the_list.append(Node(value, file_index, line_num, next_synthetic_counter()))
+        the_list.append(_create_node(value, file_index, line_num, next_synthetic_counter()))
 
 
 # node_items()
@@ -763,9 +865,9 @@ cpdef void node_del(Node node, str key, bint safe=False) except *:
 def is_node(maybenode):
     # It's a programming error to give this a Node which isn't a mapping
     # so assert that.
-    assert (type(maybenode) is not Node) or (type(maybenode.value) is dict)
+    assert (type(maybenode) not in [ScalarNode, SequenceNode])
     # Now return the type check
-    return type(maybenode) is Node
+    return type(maybenode) is MappingNode
 
 
 # new_synthetic_file()
@@ -784,7 +886,7 @@ def is_node(maybenode):
 #
 def new_synthetic_file(str filename, object project=None):
     cdef Py_ssize_t file_index = len(_FILE_LIST)
-    cdef Node node = Node({}, file_index, 0, 0)
+    cdef Node node = MappingNode({}, file_index, 0, 0)
 
     _FILE_LIST.append(FileInfo(filename,
                        filename,
@@ -804,9 +906,14 @@ def new_synthetic_file(str filename, object project=None):
 #
 def new_empty_node(Node ref_node=None):
     if ref_node is not None:
-        return Node({}, ref_node.file_index, ref_node.line, next_synthetic_counter())
+        return MappingNode({}, ref_node.file_index, ref_node.line, next_synthetic_counter())
     else:
-        return Node({}, _SYNTHETIC_FILE_INDEX, 0, 0)
+        return MappingNode({}, _SYNTHETIC_FILE_INDEX, 0, 0)
+
+
+# FIXME: we should never need that
+def new_empty_list_node():
+    return SequenceNode([], _SYNTHETIC_FILE_INDEX, 0, 0)
 
 
 # new_node_from_dict()
@@ -827,8 +934,8 @@ cpdef Node new_node_from_dict(dict indict):
         elif vtype is list:
             ret[k] = __new_node_from_list(v)
         else:
-            ret[k] = Node(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
-    return Node(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+            ret[k] = ScalarNode(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+    return MappingNode(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
 
 
 # Internal function to help new_node_from_dict() to handle lists
@@ -841,8 +948,8 @@ cdef Node __new_node_from_list(list inlist):
         elif vtype is list:
             ret.append(__new_node_from_list(v))
         else:
-            ret.append(Node(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
-    return Node(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+            ret.append(ScalarNode(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
+    return SequenceNode(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
 
 
 # _is_composite_list
@@ -1000,7 +1107,7 @@ cpdef void composite_dict(Node target, Node source, list path=None) except *:
             if k not in target.value:
                 # Target lacks a dict at that point, make a fresh one with
                 # the same provenance as the incoming dict
-                target.value[k] = Node({}, v.file_index, v.line, v.column)
+                target.value[k] = MappingNode({}, v.file_index, v.line, v.column)
             if type(target.value) is not dict:
                 raise CompositeError(path,
                                      "{}: Cannot compose dictionary onto {}".format(
@@ -1020,7 +1127,7 @@ cpdef void composite_dict(Node target, Node source, list path=None) except *:
 
 # Like composite_dict(), but raises an all purpose LoadError for convenience
 #
-cpdef void composite(Node target, Node source) except *:
+cpdef void composite(MappingNode target, MappingNode source) except *:
     assert type(source.value) is dict
     assert type(target.value) is dict
 
@@ -1040,7 +1147,7 @@ cpdef void composite(Node target, Node source) except *:
 
 # Like composite(target, source), but where target overrides source instead.
 #
-def composite_and_move(Node target, Node source):
+def composite_and_move(MappingNode target, MappingNode source):
     composite(source, target)
 
     cdef str key
@@ -1067,9 +1174,13 @@ cpdef object node_sanitize(object node, object dict_type=OrderedDict):
     node_type = type(node)
 
     # If we have an unwrappable node, unwrap it
-    if node_type is Node:
+    # FIXME: we should only ever have Nodes here
+    if node_type in [MappingNode, SequenceNode]:
         node = node.value
         node_type = type(node)
+
+    if node_type is ScalarNode:
+        return node.value
 
     # Short-circuit None which occurs ca. twice per element
     if node is None:
@@ -1157,7 +1268,7 @@ __NODE_ASSERT_COMPOSITION_DIRECTIVES = ('(>)', '(<)', '(=)')
 # Returns:
 #    (Node): A deep copy of source with provenance preserved.
 #
-cpdef Node node_copy(Node source):
+cpdef MappingNode node_copy(MappingNode source):
     cdef dict copy = {}
     cdef str key
     cdef Node value
@@ -1173,7 +1284,7 @@ cpdef Node node_copy(Node source):
         else:
             raise ValueError("Unable to be quick about node_copy of {}".format(value_type))
 
-    return Node(copy, source.file_index, source.line, source.column)
+    return MappingNode(copy, source.file_index, source.line, source.column)
 
 
 # Internal function to help node_copy() but for lists.
@@ -1193,7 +1304,7 @@ cdef Node _list_copy(Node source):
         else:
             raise ValueError("Unable to be quick about list_copy of {}".format(item_type))
 
-    return Node(copy, source.file_index, source.line, source.column)
+    return SequenceNode(copy, source.file_index, source.line, source.column)
 
 
 # node_final_assertions()
@@ -1207,7 +1318,7 @@ cdef Node _list_copy(Node source):
 # Raises:
 #    (LoadError): If any assertions fail
 #
-cpdef void node_final_assertions(Node node) except *:
+cpdef void node_final_assertions(MappingNode node) except *:
     cdef str key
     cdef Node value
 
@@ -1303,7 +1414,7 @@ def assert_symbol_name(ProvenanceInformation provenance, str symbol_name, str pu
 #
 # Returns:
 #    (list): A path from `node` to `target` or None if `target` is not in the subtree
-cpdef list node_find_target(Node node, Node target, str key=None):
+cpdef list node_find_target(MappingNode node, Node target, str key=None):
     if key is not None:
         target = target.value[key]
 
@@ -1317,7 +1428,7 @@ cpdef list node_find_target(Node node, Node target, str key=None):
 
 
 # Helper for node_find_target() which walks a value
-cdef bint _walk_find_target(Node node, list path, Node target):
+cdef bint _walk_find_target(Node node, list path, Node target) except *:
     if node.file_index == target.file_index and node.line == target.line and node.column == target.column:
         return True
     elif type(node.value) is dict:
@@ -1341,7 +1452,7 @@ cdef bint _walk_list_node(Node node, list path, Node target):
 
 
 # Helper for node_find_target() which walks a mapping
-cdef bint _walk_dict_node(Node node, list path, Node target):
+cdef bint _walk_dict_node(MappingNode node, list path, Node target):
     cdef str k
     cdef Node v
 

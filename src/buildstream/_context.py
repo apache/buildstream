@@ -222,7 +222,7 @@ class Context():
             # Allow the ~ tilde expansion and any environment variables in
             # path specification in the config files.
             #
-            path = _yaml.node_get(defaults, str, directory)
+            path = defaults.get_str(directory)
             path = os.path.expanduser(path)
             path = os.path.expandvars(path)
             path = os.path.normpath(path)
@@ -251,10 +251,10 @@ class Context():
         # Load quota configuration
         # We need to find the first existing directory in the path of our
         # cachedir - the cachedir may not have been created yet.
-        cache = _yaml.node_get(defaults, dict, 'cache')
+        cache = defaults.get_mapping('cache')
         _yaml.node_validate(cache, ['quota', 'pull-buildtrees', 'cache-buildtrees'])
 
-        self.config_cache_quota_string = _yaml.node_get(cache, str, 'quota')
+        self.config_cache_quota_string = cache.get_str('quota')
         try:
             self.config_cache_quota = utils._parse_size(self.config_cache_quota_string,
                                                         self.casdir)
@@ -273,42 +273,43 @@ class Context():
         self.remote_execution_specs = SandboxRemote.specs_from_config_node(defaults)
 
         # Load pull build trees configuration
-        self.pull_buildtrees = _yaml.node_get(cache, bool, 'pull-buildtrees')
+        self.pull_buildtrees = cache.get_bool('pull-buildtrees')
 
         # Load cache build trees configuration
         self.cache_buildtrees = _node_get_option_str(
             cache, 'cache-buildtrees', ['always', 'auto', 'never'])
 
         # Load logging config
-        logging = _yaml.node_get(defaults, dict, 'logging')
+        logging = defaults.get_mapping('logging')
         _yaml.node_validate(logging, [
             'key-length', 'verbose',
             'error-lines', 'message-lines',
             'debug', 'element-format', 'message-format'
         ])
-        self.log_key_length = _yaml.node_get(logging, int, 'key-length')
-        self.log_debug = _yaml.node_get(logging, bool, 'debug')
-        self.log_verbose = _yaml.node_get(logging, bool, 'verbose')
-        self.log_error_lines = _yaml.node_get(logging, int, 'error-lines')
-        self.log_message_lines = _yaml.node_get(logging, int, 'message-lines')
-        self.log_element_format = _yaml.node_get(logging, str, 'element-format')
-        self.log_message_format = _yaml.node_get(logging, str, 'message-format')
+        self.log_key_length = logging.get_int('key-length')
+        self.log_debug = logging.get_bool('debug')
+        self.log_verbose = logging.get_bool('verbose')
+        self.log_error_lines = logging.get_int('error-lines')
+        self.log_message_lines = logging.get_int('message-lines')
+        self.log_message_lines = logging.get_int('message-lines')
+        self.log_element_format = logging.get_str('element-format')
+        self.log_message_format = logging.get_str('message-format')
 
         # Load scheduler config
-        scheduler = _yaml.node_get(defaults, dict, 'scheduler')
+        scheduler = defaults.get_mapping('scheduler')
         _yaml.node_validate(scheduler, [
             'on-error', 'fetchers', 'builders',
             'pushers', 'network-retries'
         ])
         self.sched_error_action = _node_get_option_str(
             scheduler, 'on-error', ['continue', 'quit', 'terminate'])
-        self.sched_fetchers = _yaml.node_get(scheduler, int, 'fetchers')
-        self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
-        self.sched_pushers = _yaml.node_get(scheduler, int, 'pushers')
-        self.sched_network_retries = _yaml.node_get(scheduler, int, 'network-retries')
+        self.sched_fetchers = scheduler.get_int('fetchers')
+        self.sched_builders = scheduler.get_int('builders')
+        self.sched_pushers = scheduler.get_int('pushers')
+        self.sched_network_retries = scheduler.get_int('network-retries')
 
         # Load per-projects overrides
-        self._project_overrides = _yaml.node_get(defaults, dict, 'projects', default_value={})
+        self._project_overrides = defaults.get_mapping('projects', default={})
 
         # Shallow validation of overrides, parts of buildstream which rely
         # on the overrides are expected to validate elsewhere.
@@ -398,17 +399,16 @@ class Context():
     # get_overrides():
     #
     # Fetch the override dictionary for the active project. This returns
-    # a node loaded from YAML and as such, values loaded from the returned
-    # node should be loaded using the _yaml.node_get() family of functions.
+    # a node loaded from YAML.
     #
     # Args:
     #    project_name (str): The project name
     #
     # Returns:
-    #    (dict): The overrides dictionary for the specified project
+    #    (MappingNode): The overrides dictionary for the specified project
     #
     def get_overrides(self, project_name):
-        return _yaml.node_get(self._project_overrides, dict, project_name, default_value={})
+        return self._project_overrides.get_mapping(project_name, default={})
 
     # get_strict():
     #
@@ -423,7 +423,7 @@ class Context():
             # so work out if we should be strict, and then cache the result
             toplevel = self.get_toplevel_project()
             overrides = self.get_overrides(toplevel.name)
-            self._strict_build_plan = _yaml.node_get(overrides, bool, 'strict', default_value=True)
+            self._strict_build_plan = overrides.get_bool('strict', default=True)
 
         # If it was set by the CLI, it overrides any config
         # Ditto if we've already computed this, then we return the computed
@@ -740,7 +740,7 @@ class Context():
 
 # _node_get_option_str()
 #
-# Like _yaml.node_get(), but also checks value is one of the allowed option
+# Like Node.get_scalar().as_str(), but also checks value is one of the allowed option
 # strings. Fetches a value from a dictionary node, and makes sure it's one of
 # the pre-defined options.
 #
@@ -756,7 +756,7 @@ class Context():
 #    LoadError, when the value is not of the expected type, or is not found.
 #
 def _node_get_option_str(node, key, allowed_options):
-    result = _yaml.node_get(node, str, key)
+    result = node.get_str(key)
     if result not in allowed_options:
         provenance = _yaml.node_get_provenance(node, key)
         raise LoadError(LoadErrorReason.INVALID_DATA,

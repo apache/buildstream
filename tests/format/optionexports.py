@@ -36,4 +36,4 @@ def test_export(cli, datafiles, option_name, option_value, var_name, var_value):
 
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, var_name) == var_value
+    assert loaded.get_str(var_name) == var_value

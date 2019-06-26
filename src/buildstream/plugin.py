@@ -280,13 +280,7 @@ class Plugin():
         Plugin implementors should implement this method to read configuration
         data and store it.
 
-        Plugins should use the :func:`Plugin.node_get_member() <buildstream.plugin.Plugin.node_get_member>`
-        and :func:`Plugin.node_get_list_element() <buildstream.plugin.Plugin.node_get_list_element>`
-        methods to fetch values from the passed `node`. This will ensure that a nice human readable error
-        message will be raised if the expected configuration is not found, indicating the filename,
-        line and column numbers.
-
-        Further the :func:`Plugin.node_validate() <buildstream.plugin.Plugin.node_validate>` method
+        The :func:`Plugin.node_validate() <buildstream.plugin.Plugin.node_validate>` method
         should be used to ensure that the user has not specified keys in `node` which are unsupported
         by the plugin.
 
@@ -294,8 +288,7 @@ class Plugin():
 
            For Elements, when variable substitution is desirable, the
            :func:`Element.node_subst_member() <buildstream.element.Element.node_subst_member>`
-           and :func:`Element.node_subst_list_element() <buildstream.element.Element.node_subst_list_element>`
-           methods can be used.
+           method can be used.
         """
         raise ImplError("{tag} plugin '{kind}' does not implement configure()".format(
             tag=self.__type_tag, kind=self.get_kind()))
@@ -386,38 +379,6 @@ class Plugin():
         """
         provenance = _yaml.node_get_provenance(node, key=member_name)
         return str(provenance)
-
-    def node_get_member(self, node, expected_type, member_name, default=_yaml._sentinel, *, allow_none=False):
-        """Fetch the value of a node member, raising an error if the value is
-        missing or incorrectly typed.
-
-        Args:
-           node (Node): A dictionary loaded from YAML
-           expected_type (type): The expected type of the node member
-           member_name (str): The name of the member to fetch
-           default (expected_type): A value to return when *member_name* is not specified in *node*
-           allow_none (bool): Allow explicitly set None values in the YAML (*Since: 1.4*)
-
-        Returns:
-           The value of *member_name* in *node*, otherwise *default*
-
-        Raises:
-           :class:`.LoadError`: When *member_name* is not found and no *default* was provided
-
-        Note:
-           Returned strings are stripped of leading and trailing whitespace
-
-        **Example:**
-
-        .. code:: python
-
-          # Expect a string 'name' in 'node'
-          name = self.node_get_member(node, str, 'name')
-
-          # Fetch an optional integer
-          level = self.node_get_member(node, int, 'level', -1)
-        """
-        return _yaml.node_get(node, expected_type, member_name, default_value=default, allow_none=allow_none)
 
     def node_set_member(self, node, key, value):
         """Set the value of a node member
@@ -529,41 +490,6 @@ class Plugin():
 
         """
         _yaml.node_validate(node, valid_keys)
-
-    def node_get_list_element(self, node, expected_type, member_name, indices):
-        """Fetch the value of a list element from a node member, raising an error if the
-        value is incorrectly typed.
-
-        Args:
-           node (dict): A dictionary loaded from YAML
-           expected_type (type): The expected type of the node member
-           member_name (str): The name of the member to fetch
-           indices (list of int): List of indices to search, in case of nested lists
-
-        Returns:
-           The value of the list element in *member_name* at the specified *indices*
-
-        Raises:
-           :class:`.LoadError`
-
-        Note:
-           Returned strings are stripped of leading and trailing whitespace
-
-        **Example:**
-
-        .. code:: python
-
-          # Fetch the list itself
-          things = self.node_get_member(node, list, 'things')
-
-          # Iterate over the list indices
-          for i in range(len(things)):
-
-              # Fetch dict things
-              thing = self.node_get_list_element(
-                  node, dict, 'things', [ i ])
-        """
-        return _yaml.node_get(node, expected_type, member_name, indices=indices)
 
     def debug(self, brief, *, detail=None):
         """Print a debugging message
@@ -894,10 +820,10 @@ class Plugin():
             project = self.__project
 
             for key, value in self.node_items(project.element_overrides):
-                if _yaml.node_get(value, bool, 'suppress-deprecation-warnings', default_value=False):
+                if value.get_bool('suppress-deprecation-warnings', default=False):
                     silenced_warnings.add(key)
             for key, value in self.node_items(project.source_overrides):
-                if _yaml.node_get(value, bool, 'suppress-deprecation-warnings', default_value=False):
+                if value.get_bool('suppress-deprecation-warnings', default=False):
                     silenced_warnings.add(key)
 
             return self.get_kind() in silenced_warnings

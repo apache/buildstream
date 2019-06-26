@@ -123,8 +123,8 @@ class ProjectRefs():
     def _lookup(self, toplevel, project, element, source_index, *, ensure=False):
         # Fetch the project
         try:
-            projects = _yaml.node_get(toplevel, dict, 'projects')
-            project_node = _yaml.node_get(projects, dict, project)
+            projects = toplevel.get_mapping('projects')
+            project_node = projects.get_mapping(project)
         except LoadError:
             if not ensure:
                 return None
@@ -133,16 +133,16 @@ class ProjectRefs():
 
         # Fetch the element
         try:
-            element_list = _yaml.node_get(project_node, list, element)
+            element_list = project_node.get_sequence(element)
         except LoadError:
             if not ensure:
                 return None
-            element_list = []
+            element_list = _yaml.new_empty_list_node()
             _yaml.node_set(project_node, element, element_list)
 
         # Fetch the source index
         try:
-            node = element_list[source_index]
+            node = element_list.mapping_at(source_index)
         except IndexError:
             if not ensure:
                 return None
@@ -150,6 +150,6 @@ class ProjectRefs():
             # Pad the list with empty newly created dictionaries
             _yaml.node_extend_list(project_node, element, source_index + 1, {})
 
-            node = _yaml.node_get(project_node, dict, element, indices=[source_index])
+            node = project_node.get_sequence(element).mapping_at(source_index)
 
         return node

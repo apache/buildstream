@@ -75,11 +75,12 @@ def test_list_cross_junction(cli, tmpdir):
     result.assert_success()
 
     loaded = _yaml.load_data(result.output)
-    assert isinstance(_yaml.node_get(loaded, None, 'workspaces'), list)
-    workspaces = _yaml.node_get(loaded, list, 'workspaces')
+    workspaces = loaded.get_sequence('workspaces')
     assert len(workspaces) == 1
-    assert 'element' in workspaces[0]
-    assert _yaml.node_get(workspaces[0], str, 'element') == element
+    first_workspace = workspaces.mapping_at(0)
+
+    assert 'element' in first_workspace
+    assert first_workspace.get_str('element') == element
 
 
 def test_close_cross_junction(cli, tmpdir):
@@ -97,8 +98,7 @@ def test_close_cross_junction(cli, tmpdir):
     result.assert_success()
 
     loaded = _yaml.load_data(result.output)
-    assert isinstance(_yaml.node_get(loaded, None, 'workspaces'), list)
-    workspaces = _yaml.node_get(loaded, list, 'workspaces')
+    workspaces = loaded.get_sequence('workspaces')
     assert not workspaces
 
 
@@ -116,8 +116,7 @@ def test_close_all_cross_junction(cli, tmpdir):
     result.assert_success()
 
     loaded = _yaml.load_data(result.output)
-    assert isinstance(_yaml.node_get(loaded, None, 'workspaces'), list)
-    workspaces = _yaml.node_get(loaded, list, 'workspaces')
+    workspaces = loaded.get_sequence('workspaces')
     assert not workspaces
 
 

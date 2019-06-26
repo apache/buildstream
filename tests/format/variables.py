@@ -49,7 +49,7 @@ def test_defaults(cli, datafiles, target, varname, expected):
     ])
     result.assert_success()
     result_vars = _yaml.load_data(result.output)
-    assert _yaml.node_get(result_vars, str, varname) == expected
+    assert result_vars.get_str(varname) == expected
 
 
 ################################################################
@@ -75,7 +75,7 @@ def test_overrides(cli, datafiles, target, varname, expected):
     ])
     result.assert_success()
     result_vars = _yaml.load_data(result.output)
-    assert _yaml.node_get(result_vars, str, varname) == expected
+    assert result_vars.get_str(varname) == expected
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'missing_variables'))

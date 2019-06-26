@@ -136,7 +136,7 @@ def test_simple_conditional(cli, datafiles, opt_option, expected_prefix):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'prefix') == expected_prefix
+    assert loaded.get_str('prefix') == expected_prefix
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -159,7 +159,7 @@ def test_nested_conditional(cli, datafiles, debug, logging, expected):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'debug') == expected
+    assert loaded.get_str('debug') == expected
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -182,7 +182,7 @@ def test_compound_and_conditional(cli, datafiles, debug, logging, expected):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'debug') == expected
+    assert loaded.get_str('debug') == expected
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -205,7 +205,7 @@ def test_compound_or_conditional(cli, datafiles, debug, logging, expected):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'logging') == expected
+    assert loaded.get_str('logging') == expected
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -223,10 +223,10 @@ def test_deep_nesting_level1(cli, datafiles, option, expected):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    shallow_list = _yaml.node_get(loaded, list, 'shallow-nest')
-    first_dict = shallow_list[0]
+    shallow_list = loaded.get_sequence('shallow-nest')
+    first_dict = shallow_list.mapping_at(0)
 
-    assert _yaml.node_get(first_dict, str, 'animal') == expected
+    assert first_dict.get_str('animal') == expected
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -244,8 +244,8 @@ def test_deep_nesting_level2(cli, datafiles, option, expected):
         'element-deeper.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    shallow_list = _yaml.node_get(loaded, list, 'deep-nest')
-    deeper_list = shallow_list[0]
-    first_dict = deeper_list[0]
+    shallow_list = loaded.get_sequence('deep-nest')
+    deeper_list = shallow_list.sequence_at(0)
+    first_dict = deeper_list.mapping_at(0)
 
-    assert _yaml.node_get(first_dict, str, 'animal') == expected
+    assert first_dict.get_str('animal') == expected
