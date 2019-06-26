@@ -2239,14 +2239,14 @@ class Element(Plugin):
 
     # _update_ready_for_runtime_and_cached()
     #
-    # An Element becomes ready for runtime and cached once the following three criteria
+    # An Element becomes ready for runtime and cached once the following criteria
     # are met:
     #  1. The Element has a strong cache key
     #  2. The Element's keys are considered stable
     #  3. The Element is cached (locally)
     #  4. The runtime dependencies of the Element are ready for runtime and cached.
     #
-    # These three criteria serve as potential trigger points as to when an Element may have
+    # These criteria serve as potential trigger points as to when an Element may have
     # become ready for runtime and cached.
     #
     # Once an Element becomes ready for runtime and cached, we notify the reverse
@@ -3105,7 +3105,6 @@ class Element(Plugin):
             self.__strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key,
                                               weak_key=self.__weak_cache_key)
 
-            # In strict mode, the strong cache key always matches the strict cache key
             if context.get_strict():
                 self.__artifact = self.__strict_artifact
 
