@@ -851,7 +851,7 @@ class Element(Plugin):
 
         data = self.__dynamic_public.get_mapping(domain, default=None)
         if data is not None:
-            data = _yaml.node_copy(data)
+            data = data.copy()
 
         return data
 
@@ -871,7 +871,7 @@ class Element(Plugin):
             self.__load_public_data()
 
         if data is not None:
-            data = _yaml.node_copy(data)
+            data = data.copy()
 
         _yaml.node_set(self.__dynamic_public, domain, data)
 
@@ -1631,7 +1631,7 @@ class Element(Plugin):
 
                 # By default, the dynamic public data is the same as the static public data.
                 # The plugin's assemble() method may modify this, though.
-                self.__dynamic_public = _yaml.node_copy(self.__public)
+                self.__dynamic_public = self.__public.copy()
 
                 # Call the abstract plugin methods
 
@@ -2496,11 +2496,11 @@ class Element(Plugin):
         element_splits = element_bst.get_mapping("split-rules", default={})
 
         if is_junction:
-            splits = _yaml.node_copy(element_splits)
+            splits = element_splits.copy()
         else:
             assert project._splits is not None
 
-            splits = _yaml.node_copy(project._splits)
+            splits = project._splits.copy()
             # Extend project wide split rules with any split rules defined by the element
             _yaml.composite(splits, element_splits)
 
@@ -2550,7 +2550,7 @@ class Element(Plugin):
         if meta.is_junction:
             environment = _yaml.new_empty_node()
         else:
-            environment = _yaml.node_copy(project.base_environment)
+            environment = project.base_environment.copy()
 
         _yaml.composite(environment, default_env)
         _yaml.composite(environment, meta.environment)
@@ -2594,9 +2594,9 @@ class Element(Plugin):
         default_vars = cls.__defaults.get_mapping('variables', default={})
 
         if meta.is_junction:
-            variables = _yaml.node_copy(project.first_pass_config.base_variables)
+            variables = project.first_pass_config.base_variables.copy()
         else:
-            variables = _yaml.node_copy(project.base_variables)
+            variables = project.base_variables.copy()
 
         _yaml.composite(variables, default_vars)
         _yaml.composite(variables, meta.variables)
@@ -2619,7 +2619,7 @@ class Element(Plugin):
 
         # The default config is already composited with the project overrides
         config = cls.__defaults.get_mapping('config', default={})
-        config = _yaml.node_copy(config)
+        config = config.copy()
 
         _yaml.composite(config, meta.config)
         _yaml.node_final_assertions(config)
@@ -2636,7 +2636,7 @@ class Element(Plugin):
                 'build-gid': 0
             })
         else:
-            sandbox_config = _yaml.node_copy(project._sandbox)
+            sandbox_config = project._sandbox.copy()
 
         # Get the platform to ask for host architecture
         platform = Platform.get_platform()
@@ -2645,7 +2645,7 @@ class Element(Plugin):
 
         # The default config is already composited with the project overrides
         sandbox_defaults = cls.__defaults.get_mapping('sandbox', default={})
-        sandbox_defaults = _yaml.node_copy(sandbox_defaults)
+        sandbox_defaults = sandbox_defaults.copy()
 
         _yaml.composite(sandbox_config, sandbox_defaults)
         _yaml.composite(sandbox_config, meta.sandbox)
@@ -2672,12 +2672,12 @@ class Element(Plugin):
     @classmethod
     def __extract_public(cls, meta):
         base_public = cls.__defaults.get_mapping('public', default={})
-        base_public = _yaml.node_copy(base_public)
+        base_public = base_public.copy()
 
         base_bst = base_public.get_mapping('bst', default={})
         base_splits = base_bst.get_mapping('split-rules', default={})
 
-        element_public = _yaml.node_copy(meta.public)
+        element_public = meta.public.copy()
         element_bst = element_public.get_mapping('bst', default={})
         element_splits = element_bst.get_mapping('split-rules', default={})
 
