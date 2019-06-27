@@ -52,9 +52,19 @@ class OptionPool():
         self._options = {}      # The Options
         self._variables = None  # The Options resolved into typed variables
 
-        # jinja2 environment, with default globals cleared out of the way
-        self._environment = jinja2.Environment(undefined=jinja2.StrictUndefined)
-        self._environment.globals = []
+        self._environment = None
+        self._init_environment()
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Jinja2 Environments don't appear to be serializable. It is easy
+        # enough for us to reconstruct this one anyway, so no need to pickle it.
+        del state['_environment']
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._init_environment()
 
     # load()
     #
@@ -287,3 +297,8 @@ class OptionPool():
             return True
 
         return False
+
+    def _init_environment(self):
+        # jinja2 environment, with default globals cleared out of the way
+        self._environment = jinja2.Environment(undefined=jinja2.StrictUndefined)
+        self._environment.globals = []
