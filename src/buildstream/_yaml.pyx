@@ -173,7 +173,7 @@ cdef class MappingNode(Node):
 
         return value
 
-    cpdef Node get_node(self, str key, list allowed_types, bint allow_none = False):
+    cpdef Node get_node(self, str key, list allowed_types = None, bint allow_none = False):
         cdef value = self.value.get(key, _sentinel)
 
         if value is _sentinel:
@@ -184,7 +184,7 @@ cdef class MappingNode(Node):
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
 
-        if type(value) not in allowed_types:
+        if allowed_types and type(value) not in allowed_types:
             provenance = node_get_provenance(self)
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Value of '{}' is not one of the following: {}.".format(
@@ -1339,19 +1339,12 @@ def assert_symbol_name(ProvenanceInformation provenance, str symbol_name, str pu
 # Args:
 #    node (Node): The node at the root of the tree to search
 #    target (Node): The node you are looking for in that tree
-#    key (str): Optional string key within target node
 #
 # Returns:
 #    (list): A path from `node` to `target` or None if `target` is not in the subtree
-cpdef list node_find_target(MappingNode node, Node target, str key=None):
-    if key is not None:
-        target = target.value[key]
-
+cpdef list node_find_target(MappingNode node, Node target):
     cdef list path = []
     if _walk_find_target(node, path, target):
-        if key:
-            # Remove key from end of path
-            path = path[:-1]
         return path
     return None
 
