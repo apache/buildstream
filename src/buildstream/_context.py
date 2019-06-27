@@ -171,7 +171,6 @@ class Context():
     # Args:
     #    config (filename): The user specified configuration file, if any
     #
-
     # Raises:
     #   LoadError
     #
