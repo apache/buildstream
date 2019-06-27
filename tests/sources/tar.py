@@ -86,6 +86,19 @@ def test_fetch_bad_url(cli, tmpdir, datafiles):
     result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.SOURCE, None)
 
+# Test that when I fetch an invalid path, errors are handled gracefully.
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
+def test_fetch_invalid_path(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    generate_project(project, tmpdir)
+
+    # Try to fetch it
+    result = cli.run(project=project, args=[
+        'source', 'fetch', 'target-no-path.bst'
+    ])
+    result.assert_main_error(ErrorDomain.STREAM, None)
+    result.assert_task_error(ErrorDomain.SOURCE, None)
+
 # Test that when I fetch a nonexistent path, errors are handled gracefully.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'fetch'))
 def test_fetch_bad_path(cli, tmpdir, datafiles):
