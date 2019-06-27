@@ -68,6 +68,12 @@ cdef class Node:
         self.line = line
         self.column = column
 
+    cdef bint _walk_find(self, Node target, list path) except *:
+        raise NotImplementedError()
+
+    cdef bint _shares_position_with(self, Node target):
+        return self.file_index == target.file_index and self.line == target.line and self.column == target.column
+
     def __contains__(self, what):
         # Delegate to the inner value, though this will likely not work
         # very well if the node is a list or string, it's unlikely that
@@ -105,7 +111,7 @@ cdef class ScalarNode(Node):
             return False
         else:
             provenance = node_get_provenance(self)
-            path = node_find_target(provenance.toplevel, self)[-1]
+            path = provenance.toplevel._find(self)[-1]
             raise LoadError(LoadErrorReason.INVALID_DATA,
                 "{}: Value of '{}' is not of the expected type '{}'"
                 .format(provenance, path, bool.__name__, self.value))
@@ -115,7 +121,7 @@ cdef class ScalarNode(Node):
             return int(self.value)
         except ValueError:
             provenance = node_get_provenance(self)
-            path = node_find_target(provenance.toplevel, self)[-1]
+            path = provenance.toplevel._find(self)[-1]
             raise LoadError(LoadErrorReason.INVALID_DATA,
                 "{}: Value of '{}' is not of the expected type '{}'"
                 .format(provenance, path, int.__name__))
@@ -125,6 +131,9 @@ cdef class ScalarNode(Node):
         if self.value is None:
             return None
         return str(self.value)
+
+    cdef bint _walk_find(self, Node target, list path) except *:
+        return self._shares_position_with(target)
 
 
 cdef class MappingNode(Node):
@@ -145,6 +154,23 @@ cdef class MappingNode(Node):
 
         return MappingNode(copy, self.file_index, self.line, self.column)
 
+    # find()
+    #
+    # Searches the given node tree for the given target node.
+    #
+    # This is typically used when trying to walk a path to a given node
+    # for the purpose of then modifying a similar tree of objects elsewhere
+    #
+    # Args:
+    #    target (Node): The node you are looking for in that tree
+    #
+    # Returns:
+    #    (list): A path from `node` to `target` or None if `target` is not in the subtree
+    cpdef list _find(self, Node target):
+        cdef list path = []
+        if self._walk_find(target, path):
+            return path
+        return None
 
     cdef Node get(self, str key, object default, object default_constructor):
         value = self.value.get(key, _sentinel)
@@ -277,6 +303,22 @@ cdef class MappingNode(Node):
 
             self.value[key] = node
 
+    cdef bint _walk_find(self, Node target, list path) except *:
+        cdef str k
+        cdef Node v
+
+        if self._shares_position_with(target):
+            return True
+
+        for k, v in self.value.items():
+            path.append(k)
+            if v._walk_find(target, path):
+                return True
+            del path[-1]
+
+        return False
+
+
 
 cdef class SequenceNode(Node):
     def __init__(self, list value, int file_index, int line, int column):
@@ -299,7 +341,7 @@ cdef class SequenceNode(Node):
 
         if type(value) is not MappingNode:
             provenance = node_get_provenance(self)
-            path = ["[{}]".format(p) for p in node_find_target(provenance.toplevel, self)] + ["[{}]".format(index)]
+            path = ["[{}]".format(p) for p in provenance.toplevel._find(self)] + ["[{}]".format(index)]
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Value of '{}' is not of the expected type '{}'"
                             .format(provenance, path, MappingNode.__name__))
@@ -310,7 +352,7 @@ cdef class SequenceNode(Node):
 
         if type(value) is not SequenceNode:
             provenance = node_get_provenance(self)
-            path = ["[{}]".format(p) for p in node_find_target(provenance.toplevel, self)] + ["[{}]".format(index)]
+            path = ["[{}]".format(p) for p in provenance.toplevel._find(self)] + ["[{}]".format(index)]
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Value of '{}' is not of the expected type '{}'"
                             .format(provenance, path, SequenceNode.__name__))
@@ -319,6 +361,21 @@ cdef class SequenceNode(Node):
 
     cpdef list as_str_list(self):
         return [node.as_str() for node in self.value]
+
+    cdef bint _walk_find(self, Node target, list path) except *:
+        cdef int i
+        cdef Node v
+
+        if self._shares_position_with(target):
+            return True
+
+        for i, v in enumerate(self.value):
+            path.append(i)
+            if v._walk_find(target, path):
+                return True
+            del path[-1]
+
+        return False
 
     def __iter__(self):
         return iter(self.value)
@@ -1324,66 +1381,6 @@ def assert_symbol_name(ProvenanceInformation provenance, str symbol_name, str pu
 
         raise LoadError(LoadErrorReason.INVALID_SYMBOL_NAME,
                         message, detail=detail)
-
-
-# node_find_target()
-#
-# Searches the given node tree for the given target node.
-#
-# This is typically used when trying to walk a path to a given node
-# for the purpose of then modifying a similar tree of objects elsewhere
-#
-# If the key is provided, then we actually hunt for the node represented by
-# target[key] and return its container, rather than hunting for target directly
-#
-# Args:
-#    node (Node): The node at the root of the tree to search
-#    target (Node): The node you are looking for in that tree
-#
-# Returns:
-#    (list): A path from `node` to `target` or None if `target` is not in the subtree
-cpdef list node_find_target(MappingNode node, Node target):
-    cdef list path = []
-    if _walk_find_target(node, path, target):
-        return path
-    return None
-
-
-# Helper for node_find_target() which walks a value
-cdef bint _walk_find_target(Node node, list path, Node target) except *:
-    if node.file_index == target.file_index and node.line == target.line and node.column == target.column:
-        return True
-    elif type(node.value) is dict:
-        return _walk_dict_node(node, path, target)
-    elif type(node.value) is list:
-        return _walk_list_node(node, path, target)
-    return False
-
-
-# Helper for node_find_target() which walks a list
-cdef bint _walk_list_node(Node node, list path, Node target):
-    cdef int i
-    cdef Node v
-
-    for i, v in enumerate(node.value):
-        path.append(i)
-        if _walk_find_target(v, path, target):
-            return True
-        del path[-1]
-    return False
-
-
-# Helper for node_find_target() which walks a mapping
-cdef bint _walk_dict_node(MappingNode node, list path, Node target):
-    cdef str k
-    cdef Node v
-
-    for k, v in node.value.items():
-        path.append(k)
-        if _walk_find_target(v, path, target):
-            return True
-        del path[-1]
-    return False
 
 
 ###############################################################################
