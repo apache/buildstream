@@ -523,7 +523,7 @@ def test_node_find_target(datafiles, case):
             return node.value[entry]
 
     want = _walk(loaded, case[0], case[1:])
-    found_path = _yaml.node_find_target(toplevel, want)
+    found_path = toplevel._find(want)
 
     assert case == found_path
 
@@ -537,4 +537,4 @@ def test_node_find_target_fails(datafiles):
 
     brand_new = _yaml.new_empty_node()
 
-    assert _yaml.node_find_target(loaded, brand_new) is None
+    assert loaded._find(brand_new) is None
