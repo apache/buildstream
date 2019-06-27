@@ -172,7 +172,7 @@ class App():
         # Load the Context
         #
         try:
-            self.context = Context(directory)
+            self.context = Context()
             self.context.load(config)
         except BstError as e:
             self._error_exit(e, "Error loading user configuration")

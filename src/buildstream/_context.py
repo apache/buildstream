@@ -49,12 +49,9 @@ from .sandbox import SandboxRemote
 # verbosity levels and basically anything pertaining to the context
 # in which BuildStream was invoked.
 #
-# Args:
-#    directory (str): The directory that buildstream was invoked in
-#
 class Context():
 
-    def __init__(self, directory=None):
+    def __init__(self):
 
         # Filename indicating which configuration file was used, or None for the defaults
         self.config_origin = None
@@ -166,7 +163,6 @@ class Context():
         self._log_filename = None
         self._cascache = None
         self._casquota = None
-        self._directory = directory
 
     # load()
     #
