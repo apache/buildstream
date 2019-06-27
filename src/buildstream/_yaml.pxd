@@ -29,6 +29,9 @@ cdef class Node:
 
     cpdef Node copy(self)
 
+    cdef bint _shares_position_with(self, Node target)
+    cdef bint _walk_find(self, Node target, list path) except *
+
 
 cdef class MappingNode(Node):
     cdef Node get(self, str key, default, default_constructor)
@@ -43,6 +46,8 @@ cdef class MappingNode(Node):
     cpdef list keys(self)
     cpdef void safe_del(self, str key)
     cpdef object values(self)
+
+    cpdef list _find(self, Node target)
 
 
 cdef class ScalarNode(Node):
