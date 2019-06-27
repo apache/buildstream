@@ -33,7 +33,7 @@ cdef class Node:
 cdef class MappingNode(Node):
     cdef Node get(self, str key, default, default_constructor)
     cpdef MappingNode get_mapping(self, str key, default=*)
-    cpdef Node get_node(self, str key, list allowed_types, bint allow_none=*)
+    cpdef Node get_node(self, str key, list allowed_types=*, bint allow_none=*)
     cpdef ScalarNode get_scalar(self, str key, default=*)
     cpdef SequenceNode get_sequence(self, str key, object default=*)
     cpdef bint get_bool(self, str key, default=*) except *
