@@ -512,8 +512,9 @@ class Stream():
                  scope=Scope.RUN,
                  integrate=True,
                  hardlinks=False,
-                 tar=False,
-                 pull=False):
+                 compression='',
+                 pull=False,
+                 tar=False):
 
         # if pulling we need to ensure dependency artifacts are also pulled
         selection = PipelineSelection.RUN if pull else PipelineSelection.NONE
@@ -552,21 +553,23 @@ class Stream():
                                               .format(e)) from e
                 else:
                     if location == '-':
+                        mode = 'w|' + compression
                         with target.timed_activity("Creating tarball"):
                             # Save the stdout FD to restore later
                             saved_fd = os.dup(sys.stdout.fileno())
                             try:
                                 with os.fdopen(sys.stdout.fileno(), 'wb') as fo:
-                                    with tarfile.open(fileobj=fo, mode="w|") as tf:
+                                    with tarfile.open(fileobj=fo, mode=mode) as tf:
                                         sandbox_vroot.export_to_tar(tf, '.')
                             finally:
                                 # No matter what, restore stdout for further use
                                 os.dup2(saved_fd, sys.stdout.fileno())
                                 os.close(saved_fd)
                     else:
+                        mode = 'w:' + compression
                         with target.timed_activity("Creating tarball '{}'"
                                                    .format(location)):
-                            with tarfile.open(location, "w:") as tf:
+                            with tarfile.open(location, mode=mode) as tf:
                                 sandbox_vroot.export_to_tar(tf, '.')
 
         except BstError as e:

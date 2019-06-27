@@ -1351,3 +1351,38 @@ def _deterministic_umask():
         yield
     finally:
         os.umask(old_umask)
+
+
+# _get_compression:
+#
+# Given a file name infer the compression
+#
+# Args:
+#    tar (str): The file name from which to determine compression
+#
+# Returns:
+#    (str): One from '', 'gz', 'xz', 'bz2'
+#
+# Raises:
+#    UtilError: In the case where an unsupported file extension has been provided,
+#               expecting compression.
+#
+#
+def _get_compression(tar):
+    mapped_extensions = {'.tar': '', '.gz': 'gz', '.xz': 'xz', '.bz2': 'bz2'}
+
+    name, ext = os.path.splitext(tar)
+
+    try:
+        return mapped_extensions[ext]
+    except KeyError:
+        # If ext not in mapped_extensions, find out if inner ext is .tar
+        # If so, we assume we have been given an unsupported extension,
+        # which expects compression. Raise an error
+        _, suffix = os.path.splitext(name)
+        if suffix == '.tar':
+            raise UtilError("Expected compression with unknown file extension ('{}'), "
+                            "supported extensions are ('.tar'), ('.gz'), ('.xz'), ('.bz2')".format(ext))
+        else:
+            # Assume just an unconventional name was provided, default to uncompressed
+            return ''

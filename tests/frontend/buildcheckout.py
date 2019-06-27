@@ -211,6 +211,76 @@ def test_build_checkout_unbuilt(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_compression_no_tar(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout.tar')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    checkout_args = ['artifact', 'checkout', '--directory', checkout, '--compression', 'gz', 'target.bst']
+
+    result = cli.run(project=project, args=checkout_args)
+    assert "ERROR: --compression can only be provided if --tar is provided" in result.stderr
+    assert result.exit_code != 0
+
+# If we don't support the extension, we default to an uncompressed tarball
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_tar_with_unconventional_name(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout.foo')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    checkout_args = ['artifact', 'checkout', '--tar', checkout, 'target.bst']
+
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    tar = tarfile.open(name=checkout, mode='r')
+    assert os.path.join('.', 'usr', 'bin', 'hello') in tar.getnames()
+    assert os.path.join('.', 'usr', 'include', 'pony.h') in tar.getnames()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_tar_with_unsupported_ext(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout.tar.foo')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    checkout_args = ['artifact', 'checkout', '--tar', checkout, 'target.bst']
+
+    result = cli.run(project=project, args=checkout_args)
+    assert "Invalid file extension given with '--tar': Expected compression with unknown file extension ('.foo'), " \
+           "supported extensions are ('.tar'), ('.gz'), ('.xz'), ('.bz2')" in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_tar_no_compression(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout.tar.gz')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
+    checkout_args = ['artifact', 'checkout', '--tar', checkout, 'target.bst']
+
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    tar = tarfile.open(name=checkout, mode='r:gz')
+    assert os.path.join('.', 'usr', 'bin', 'hello') in tar.getnames()
+    assert os.path.join('.', 'usr', 'include', 'pony.h') in tar.getnames()
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_tarball(datafiles, cli):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout.tar')
@@ -248,6 +318,31 @@ def test_build_checkout_no_tar_no_directory(datafiles, cli, tmpdir):
     assert os.path.exists(filename)
     filename = os.path.join(runtestdir, 'target', 'usr', 'include', 'pony.h')
     assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("compression", [("gz"), ("xz"), ("bz2")])
+def test_build_checkout_tarball_compression(datafiles, cli, compression):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout.tar')
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
+    checkout_args = ['artifact', 'checkout', '--tar', checkout, '--compression', compression, 'target.bst']
+
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    # Docs say not to use TarFile class directly, using .open seems to work.
+    # https://docs.python.org/3/library/tarfile.html#tarfile.TarFile
+    tar = tarfile.open(name=checkout, mode='r:' + compression)
+    assert os.path.join('.', 'usr', 'bin', 'hello') in tar.getnames()
+    assert os.path.join('.', 'usr', 'include', 'pony.h') in tar.getnames()
 
 
 @pytest.mark.datafiles(DATA_DIR)
