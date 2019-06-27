@@ -998,7 +998,7 @@ def _tempdir(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefined-bu
 #    prefix (str): A prefix for the temporary file name
 #
 # Yields:
-#    (str): The temporary file handle
+#    (tempfile.NamedTemporaryFile): The temporary file handle
 #
 # Do not use tempfile.NamedTemporaryFile() directly, as this will
 # leak files on the filesystem when BuildStream exits a process
