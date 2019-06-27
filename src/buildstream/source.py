@@ -964,7 +964,9 @@ class Source(Plugin):
             if action == 'add':
                 path = _yaml.node_find_target(toplevel_node, node)
             else:
-                path = _yaml.node_find_target(toplevel_node, node, key=key)
+                full_path = _yaml.node_find_target(toplevel_node, node.get_node(key))
+                # We want the path to the node containing the key, not to the key
+                path = full_path[:-1]
 
             roundtrip_file = roundtrip_cache.get(provenance.filename)
             if not roundtrip_file:
