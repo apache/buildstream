@@ -968,9 +968,9 @@ class Source(Plugin):
 
             # Get the path to whatever changed
             if action == 'add':
-                path = _yaml.node_find_target(toplevel_node, node)
+                path = toplevel_node._find(node)
             else:
-                full_path = _yaml.node_find_target(toplevel_node, node.get_node(key))
+                full_path = toplevel_node._find(node.get_node(key))
                 # We want the path to the node containing the key, not to the key
                 path = full_path[:-1]
 
