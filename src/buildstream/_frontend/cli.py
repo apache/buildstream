@@ -751,8 +751,6 @@ def source_track(app, elements, deps, except_, cross_junctions):
 @click.option('--deps', '-d', default='none',
               type=click.Choice(['build', 'none', 'run', 'all']),
               help='The dependencies whose sources to checkout (default: none)')
-@click.option('--fetch', 'fetch_', default=False, is_flag=True,
-              help='Fetch elements if they are not fetched')
 @click.option('--tar', 'tar', default=False, is_flag=True,
               help='Create a tarball from the element\'s sources instead of a '
                    'file tree.')
@@ -760,7 +758,7 @@ def source_track(app, elements, deps, except_, cross_junctions):
 @click.argument('element', required=False, type=click.Path(readable=False))
 @click.argument('location', type=click.Path(), required=False)
 @click.pass_obj
-def source_checkout(app, element, location, force, deps, fetch_, except_,
+def source_checkout(app, element, location, force, deps, except_,
                     tar, build_scripts):
     """Checkout sources of an element to the specified location
 
@@ -786,7 +784,6 @@ def source_checkout(app, element, location, force, deps, fetch_, except_,
                                    location=location,
                                    force=force,
                                    deps=deps,
-                                   fetch=fetch_,
                                    except_targets=except_,
                                    tar=tar,
                                    include_build_scripts=build_scripts)

@@ -1,4 +1,4 @@
-.TH "BST ARTIFACT CHECKOUT" "1" "13-Mar-2019" "" "bst artifact checkout Manual"
+.TH "BST ARTIFACT CHECKOUT" "1" "27-Jun-2019" "" "bst artifact checkout Manual"
 .SH NAME
 bst\-artifact\-checkout \- Checkout contents of an artifact
 .SH SYNOPSIS
@@ -25,6 +25,9 @@ Checkout hardlinks instead of copying if possible
 .TP
 \fB\-\-tar\fP LOCATION
 Create a tarball from the artifact contents instead of a file tree. If LOCATION is '-', the tarball will be dumped to the standard output.
+.TP
+\fB\-\-pull\fP
+Whether to pull the artifact if it's missing or incomplete.
 .TP
 \fB\-\-directory\fP DIRECTORY
 The directory to checkout the artifact to

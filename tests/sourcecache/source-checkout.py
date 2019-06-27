@@ -48,14 +48,8 @@ def test_source_checkout(tmpdir, datafiles, cli):
 
     repo = create_element_size('target.bst', project_dir, element_path, [], 100000)
 
-    # without fetch it should fail
+    # check implicit fetching
     res = cli.run(project=project_dir, args=['source', 'checkout', 'target.bst', target_dir])
-    res.assert_main_error(ErrorDomain.PIPELINE, "uncached-sources")
-
-    # fetch and check it works
-    res = cli.run(project=project_dir,
-                  args=['source', 'checkout', '--fetch', 'target.bst',
-                        target_dir])
     res.assert_success()
     assert "Fetching from" in res.stderr
 
@@ -75,5 +69,5 @@ def test_source_checkout(tmpdir, datafiles, cli):
     shutil.rmtree(os.path.join(cache_dir, 'cas'))
 
     res = cli.run(project=project_dir,
-                  args=['source', 'checkout', '--fetch', 'target.bst', target_dir])
+                  args=['source', 'checkout', 'target.bst', target_dir])
     res.assert_task_error(ErrorDomain.PLUGIN, None)
