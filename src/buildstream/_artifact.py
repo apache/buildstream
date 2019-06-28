@@ -147,7 +147,7 @@ class Artifact():
 
         # Store public data
         with utils._tempnamedfile_name(dir=self._tmpdir) as tmpname:
-            _yaml.dump(publicdata, tmpname)
+            _yaml.roundtrip_dump(publicdata, tmpname)
             public_data_digest = self._cas.add_object(path=tmpname, link_directly=True)
             artifact.public_data.CopyFrom(public_data_digest)
             size += public_data_digest.size_bytes

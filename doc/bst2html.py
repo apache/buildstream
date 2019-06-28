@@ -197,7 +197,7 @@ def workdir(source_cache=None):
             'sourcedir': source_cache,
             'logdir': os.path.join(tempdir, 'logs'),
         }
-        _yaml.dump(config, bst_config_file)
+        _yaml.roundtrip_dump(config, bst_config_file)
 
         yield (tempdir, bst_config_file, source_cache)
 
