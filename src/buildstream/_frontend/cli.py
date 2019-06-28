@@ -374,7 +374,7 @@ def init(app, project_name, format_version, element_path, force, target_director
 #                          Build Command                         #
 ##################################################################
 @cli.command(short_help="Build elements in a pipeline")
-@click.option('--deps', '-d', default='plan', show_default=True,
+@click.option('--deps', '-d', default=None,
               type=click.Choice(['plan', 'all']),
               help='The dependencies to build')
 @click.option('--track', 'track_', multiple=True,
@@ -422,6 +422,9 @@ def build(app, elements, deps, track_, track_save, track_all, track_except, trac
 
     with app.initialized(session_name="Build"):
         ignore_junction_targets = False
+
+        if deps is None:
+            deps = app.context.build_dependencies
 
         if not elements:
             elements = app.project.get_default_targets()
