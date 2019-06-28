@@ -230,7 +230,7 @@ class Project():
 
             # Anything that alters the build goes into the unique key
             # (currently nothing here)
-            self._cache_key = _cachekey.generate_key(_yaml.new_empty_node())
+            self._cache_key = _cachekey.generate_key({})
 
         return self._cache_key
 
