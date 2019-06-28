@@ -575,7 +575,7 @@ class CliIntegration(Cli):
 
             _yaml.composite_dict(base_config, project_config)
 
-            _yaml.dump(base_config, project_filename)
+            _yaml.roundtrip_dump(base_config, project_filename)
 
         else:
 
@@ -886,6 +886,6 @@ def configured(directory, config=None):
     # Dump it and yield the filename for test scripts to feed it
     # to buildstream as an artument
     filename = os.path.join(directory, "buildstream.conf")
-    _yaml.dump(config, filename)
+    _yaml.roundtrip_dump(config, filename)
 
     yield filename

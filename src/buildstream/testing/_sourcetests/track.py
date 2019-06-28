@@ -43,7 +43,7 @@ def generate_element(repo, element_path, dep_name=None):
     if dep_name:
         element['depends'] = [dep_name]
 
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -290,8 +290,8 @@ def test_track_include(cli, tmpdir, datafiles, ref_storage, kind):
         ]
     }
 
-    _yaml.dump(element, os.path.join(element_path, element_name))
-    _yaml.dump(sources, os.path.join(element_path, 'sources.yml'))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(sources, os.path.join(element_path, 'sources.yml'))
 
     # Assert that a fetch is needed
     assert cli.get_element_state(project, element_name) == 'no reference'
@@ -363,8 +363,8 @@ def test_track_include_junction(cli, tmpdir, datafiles, ref_storage, kind):
         ]
     }
 
-    _yaml.dump(element, os.path.join(element_path, element_name))
-    _yaml.dump(sources, os.path.join(sub_element_path, 'sources.yml'))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(sources, os.path.join(sub_element_path, 'sources.yml'))
 
     generate_junction(str(tmpdir.join('junction_repo')),
                       subproject_path, junction_path, store_ref=True)

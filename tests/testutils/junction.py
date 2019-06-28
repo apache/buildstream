@@ -30,6 +30,6 @@ def generate_junction(tmpdir, subproject_path, junction_path, *, store_ref=True)
             repo.source_config(ref=source_ref)
         ]
     }
-    _yaml.dump(element, junction_path)
+    _yaml.roundtrip_dump(element, junction_path)
 
     return ref
