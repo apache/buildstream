@@ -101,6 +101,22 @@ cdef class Node:
     cpdef void _assert_fully_composited(self) except *:
         raise NotImplementedError()
 
+    # _is_composite_list
+    #
+    # Checks if the node is a Mapping with array composition
+    # directives.
+    #
+    # Returns:
+    #    (bool): True if node was a Mapping containing only
+    #            list composition directives
+    #
+    # Raises:
+    #    (LoadError): If node was a mapping and contained a mix of
+    #                 list composition directives and other keys
+    #
+    cdef bint _is_composite_list(self) except *:
+        raise NotImplementedError()
+
     def __json__(self):
         raise ValueError("Nodes should not be allowed when jsonify-ing data", self)
 
@@ -158,6 +174,9 @@ cdef class ScalarNode(Node):
 
     cpdef void _assert_fully_composited(self) except *:
         pass
+
+    cdef bint _is_composite_list(self) except *:
+        return False
 
     cdef bint _walk_find(self, Node target, list path) except *:
         return self._shares_position_with(target)
@@ -303,6 +322,25 @@ cdef class MappingNode(Node):
 
         return {key: value.strip_node_info() for key, value in self.value.items()}
 
+    cdef bint _is_composite_list(self) except *:
+        cdef bint has_directives = False
+        cdef bint has_keys = False
+        cdef str key
+
+        for key in self.value.keys():
+            if key in ['(>)', '(<)', '(=)']:
+                has_directives = True
+            else:
+                has_keys = True
+
+        if has_keys and has_directives:
+            provenance = node_get_provenance(self)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Dictionary contains array composition directives and arbitrary keys"
+                            .format(provenance))
+
+        return has_directives
+
     def __delitem__(self, str key):
         del self.value[key]
 
@@ -419,6 +457,9 @@ cdef class SequenceNode(Node):
         cdef Node value
         for value in self.value:
             value._assert_fully_composited()
+
+    cdef bint _is_composite_list(self) except *:
+        return False
 
     cdef bint _walk_find(self, Node target, list path) except *:
         cdef int i
@@ -1043,44 +1084,6 @@ cdef Node __new_node_from_list(list inlist):
     return SequenceNode(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
 
 
-# _is_composite_list
-#
-# Checks if the given node is a Mapping with array composition
-# directives.
-#
-# Args:
-#    node (value): Any node
-#
-# Returns:
-#    (bool): True if node was a Mapping containing only
-#            list composition directives
-#
-# Raises:
-#    (LoadError): If node was a mapping and contained a mix of
-#                 list composition directives and other keys
-#
-cdef bint _is_composite_list(Node node):
-    cdef bint has_directives = False
-    cdef bint has_keys = False
-    cdef str key
-
-    if type(node) is MappingNode:
-        for key in (<MappingNode> node).keys():
-            if key in ['(>)', '(<)', '(=)']:  # pylint: disable=simplifiable-if-statement
-                has_directives = True
-            else:
-                has_keys = True
-
-            if has_keys and has_directives:
-                provenance = node_get_provenance(node)
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Dictionary contains array composition directives and arbitrary keys"
-                                .format(provenance))
-        return has_directives
-
-    return False
-
-
 # _compose_composite_list()
 #
 # Composes a composite list (i.e. a dict with list composition directives)
@@ -1090,7 +1093,7 @@ cdef bint _is_composite_list(Node node):
 #    target (Node): A composite list
 #    source (Node): A composite list
 #
-cdef void _compose_composite_list(Node target, Node source):
+cdef void _compose_composite_list(MappingNode target, MappingNode source):
     clobber = source.value.get("(=)")
     prefix = source.value.get("(<)")
     suffix = source.value.get("(>)")
@@ -1131,7 +1134,7 @@ cdef void _compose_composite_list(Node target, Node source):
 #    target (Node): The target list to be composed into
 #    source (Node): The composition list to be composed from
 #
-cdef void _compose_list(Node target, Node source):
+cdef void _compose_list(SequenceNode target, MappingNode source):
     clobber = source.value.get("(=)")
     prefix = source.value.get("(<)")
     suffix = source.value.get("(>)")
@@ -1156,7 +1159,7 @@ cdef void _compose_list(Node target, Node source):
 #
 # Raises: CompositeError
 #
-cpdef void composite_dict(Node target, Node source, list path=None) except *:
+cpdef void composite_dict(MappingNode target, MappingNode source, list path=None) except *:
     cdef str k
     cdef Node v, target_value
 
@@ -1169,7 +1172,7 @@ cpdef void composite_dict(Node target, Node source, list path=None) except *:
             target_value = target.value.get(k)
             if not (target_value is None or
                     type(target_value.value) is list or
-                    _is_composite_list(target_value)):
+                    target_value._is_composite_list()):
                 raise CompositeError(path,
                                      "{}: List cannot overwrite {} at: {}"
                                      .format(node_get_provenance(source, k),
@@ -1177,14 +1180,14 @@ cpdef void composite_dict(Node target, Node source, list path=None) except *:
                                              node_get_provenance(target, k)))
             # Looks good, clobber it
             target.value[k] = v
-        elif _is_composite_list(v):
+        elif v._is_composite_list():
             if k not in target.value:
                 # Composite list clobbers empty space
                 target.value[k] = v
             elif type(target.value[k].value) is list:
                 # Composite list composes into a list
                 _compose_list(target.value[k], v)
-            elif _is_composite_list(target.value[k]):
+            elif (<Node> target.value[k])._is_composite_list():
                 # Composite list merges into composite list
                 _compose_composite_list(target.value[k], v)
             else:
