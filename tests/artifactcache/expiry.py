@@ -223,6 +223,12 @@ def test_never_delete_required(cli, datafiles):
     create_element_size('dep3.bst', project, element_path, ['dep2.bst'], 8000000)
     create_element_size('target.bst', project, element_path, ['dep3.bst'], 8000000)
 
+    # I dont know why building dep2.bst fixis a issue with file systems that only
+    # recored mtimes to 1 seconds resolution
+    # TODO fix bug that causes slow filesystems to need this line and then
+    # remove this line
+    res = cli.run(project=project, args=['build', 'dep2.bst'])
+
     # We try to build this pipeline, but it's too big for the
     # cache. Since all elements are required, the build should fail.
     res = cli.run(project=project, args=['build', 'target.bst'])
