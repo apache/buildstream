@@ -53,7 +53,7 @@ def test_missing_certs(cli, datafiles, config_key, config_value):
         }
     }
     project_conf_file = os.path.join(project, 'project.conf')
-    _yaml.dump(project_conf, project_conf_file)
+    _yaml.roundtrip_dump(project_conf, project_conf_file)
 
     # Use `pull` here to ensure we try to initialize the remotes, triggering the error
     #

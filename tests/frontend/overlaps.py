@@ -25,7 +25,7 @@ def gen_project(project_dir, fail_on_overlap, use_fatal_warnings=True, project_n
     else:
         template["fail-on-overlap"] = fail_on_overlap
     projectfile = os.path.join(project_dir, "project.conf")
-    _yaml.dump(template, projectfile)
+    _yaml.roundtrip_dump(template, projectfile)
 
 
 @pytest.mark.datafiles(DATA_DIR)

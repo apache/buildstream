@@ -39,7 +39,7 @@ def test_no_fetch_cached(cli, tmpdir, datafiles):
             }
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Test fetch of target with a cached and a non-cached source
     result = cli.run(project=project, args=[

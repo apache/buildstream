@@ -47,7 +47,7 @@ def _assemble_tar_lz(workingdir, srcdir, dstfile):
 
 def generate_project(project_dir, tmpdir):
     project_file = os.path.join(project_dir, "project.conf")
-    _yaml.dump({
+    _yaml.roundtrip_dump({
         'name': 'foo',
         'aliases': {
             'tmpdir': "file:///" + str(tmpdir)
@@ -57,7 +57,7 @@ def generate_project(project_dir, tmpdir):
 
 def generate_project_file_server(base_url, project_dir):
     project_file = os.path.join(project_dir, "project.conf")
-    _yaml.dump({
+    _yaml.roundtrip_dump({
         'name': 'foo',
         'aliases': {
             'tmpdir': base_url
@@ -289,7 +289,7 @@ def test_read_only_dir(cli, tmpdir, datafiles, tar_name):
         bst_path = os.path.join(project, "target.bst")
         tar_file = "{}.tar.gz".format(tar_name)
 
-        _yaml.dump({
+        _yaml.roundtrip_dump({
             'kind': 'import',
             'sources': [
                 {
