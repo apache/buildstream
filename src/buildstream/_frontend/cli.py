@@ -217,7 +217,7 @@ def print_version(ctx, param, value):
 @click.option('--config', '-c',
               type=click.Path(exists=True, dir_okay=False, readable=True),
               help="Configuration file to use")
-@click.option('--directory', '-C', default=os.getcwd(),
+@click.option('--directory', '-C', default=None,  # Set to os.getcwd() later.
               type=click.Path(file_okay=False, readable=True),
               help="Project directory (default: current directory)")
 @click.option('--on-error', default=None,
