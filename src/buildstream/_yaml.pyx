@@ -836,21 +836,6 @@ cpdef Node load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_na
     return contents
 
 
-# dump()
-#
-# Write a YAML node structure out to disk.
-#
-# This will always call `node_sanitize` on its input, so if you wanted
-# to output something close to what you read in, consider using the
-# `roundtrip_load` and `roundtrip_dump` function pair instead.
-#
-# Args:
-#    contents (any): Content to write out
-#    filename (str): The (optional) file name to write out to
-def dump(object contents, str filename=None):
-    roundtrip_dump(node_sanitize(contents), file=filename)
-
-
 # node_get_provenance()
 #
 # Gets the provenance for a node
