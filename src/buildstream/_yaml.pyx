@@ -1215,60 +1215,6 @@ def composite_and_move(MappingNode target, MappingNode source):
         del target.value[key]
 
 
-# Types we can short-circuit in node_sanitize for speed.
-__SANITIZE_SHORT_CIRCUIT_TYPES = (int, float, str, bool)
-
-
-# node_sanitize()
-#
-# Returns an alphabetically ordered recursive copy
-# of the source node with internal provenance information stripped.
-#
-# Only dicts are ordered, list elements are left in order.
-#
-cpdef object node_sanitize(object node, object dict_type=OrderedDict):
-    node_type = type(node)
-
-    # If we have an unwrappable node, unwrap it
-    # FIXME: we should only ever have Nodes here
-    if node_type in [MappingNode, SequenceNode]:
-        node = node.value
-        node_type = type(node)
-
-    if node_type is ScalarNode:
-        return node.value
-
-    # Short-circuit None which occurs ca. twice per element
-    if node is None:
-        return node
-
-    # Next short-circuit integers, floats, strings, booleans, and tuples
-    if node_type in __SANITIZE_SHORT_CIRCUIT_TYPES:
-        return node
-
-    # Now short-circuit lists.
-    elif node_type is list:
-        return [node_sanitize(elt, dict_type=dict_type) for elt in node]
-
-    # Finally dict, and other Mappings need special handling
-    elif node_type is dict:
-        result = dict_type()
-
-        key_list = [key for key, _ in node.items()]
-        for key in sorted(key_list):
-            result[key] = node_sanitize(node[key], dict_type=dict_type)
-
-        return result
-
-    # Sometimes we're handed tuples and we can't be sure what they contain
-    # so we have to sanitize into them
-    elif node_type is tuple:
-        return tuple([node_sanitize(v, dict_type=dict_type) for v in node])
-
-    # Everything else just gets returned as-is.
-    return node
-
-
 # node_validate()
 #
 # Validate the node so as to ensure the user has not specified

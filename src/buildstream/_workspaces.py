@@ -114,7 +114,8 @@ class WorkspaceProject():
     def load(cls, directory):
         workspace_file = os.path.join(directory, WORKSPACE_PROJECT_FILE)
         if os.path.exists(workspace_file):
-            data_dict = _yaml.node_sanitize(_yaml.roundtrip_load(workspace_file), dict_type=dict)
+            data_dict = _yaml.roundtrip_load(workspace_file)
+
             return cls.from_dict(directory, data_dict)
         else:
             return None
@@ -627,13 +628,15 @@ class Workspaces():
     #    (Workspace): A newly instantiated Workspace
     #
     def _load_workspace(self, node):
+        running_files = node.get_mapping('running_files', default=None)
+        if running_files:
+            running_files = running_files.strip_node_info()
+
         dictionary = {
             'prepared': node.get_bool('prepared', default=False),
             'path': node.get_str('path'),
             'last_successful': node.get_str('last_successful', default=None),
-            'running_files': _yaml.node_sanitize(
-                node.get_mapping('running_files', default=None),
-                dict_type=dict),
+            'running_files': running_files,
         }
         return Workspace.from_dict(self._toplevel_project, dictionary)
 
