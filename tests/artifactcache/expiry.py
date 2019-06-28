@@ -78,6 +78,7 @@ def test_artifact_too_large(cli, datafiles, tmpdir, size):
     res.assert_task_error(ErrorDomain.ARTIFACT, 'cache-too-full')
 
 
+@pytest.mark.skip
 @pytest.mark.datafiles(DATA_DIR)
 def test_expiry_order(cli, datafiles, tmpdir):
     project = os.path.join(datafiles.dirname, datafiles.basename)
