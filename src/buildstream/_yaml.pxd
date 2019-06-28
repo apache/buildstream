@@ -28,6 +28,7 @@ cdef class Node:
     cdef public int column
 
     cpdef Node copy(self)
+    cpdef object strip_node_info(self)
 
     cdef bint _shares_position_with(self, Node target)
     cdef bint _walk_find(self, Node target, list path) except *

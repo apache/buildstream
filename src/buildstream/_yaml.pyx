@@ -29,6 +29,7 @@ from collections.abc import Mapping, Sequence
 from copy import deepcopy
 
 from ruamel import yaml
+
 from ._exceptions import LoadError, LoadErrorReason
 
 
@@ -83,6 +84,12 @@ cdef class Node:
     cpdef Node copy(self):
         raise NotImplementedError()
 
+    cpdef object strip_node_info(self):
+        raise NotImplementedError()
+
+    def __json__(self):
+        raise ValueError("Nodes should not be allowed when jsonify-ing data", self)
+
 
 cdef class ScalarNode(Node):
 
@@ -131,6 +138,9 @@ cdef class ScalarNode(Node):
         if self.value is None:
             return None
         return str(self.value)
+
+    cpdef object strip_node_info(self):
+        return self.value
 
     cdef bint _walk_find(self, Node target, list path) except *:
         return self._shares_position_with(target)
@@ -270,6 +280,12 @@ cdef class MappingNode(Node):
     cpdef object values(self):
         return self.value.values()
 
+    cpdef object strip_node_info(self):
+        cdef str key
+        cdef Node value
+
+        return {key: value.strip_node_info() for key, value in self.value.items()}
+
     def __delitem__(self, str key):
         del self.value[key]
 
@@ -361,6 +377,10 @@ cdef class SequenceNode(Node):
 
     cpdef list as_str_list(self):
         return [node.as_str() for node in self.value]
+
+    cpdef object strip_node_info(self):
+        cdef Node value
+        return [value.strip_node_info() for value in self.value]
 
     cdef bint _walk_find(self, Node target, list path) except *:
         cdef int i
