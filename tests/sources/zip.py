@@ -32,7 +32,7 @@ def _assemble_zip(workingdir, dstfile):
 
 def generate_project(project_dir, tmpdir):
     project_file = os.path.join(project_dir, "project.conf")
-    _yaml.dump({
+    _yaml.roundtrip_dump({
         'name': 'foo',
         'aliases': {
             'tmpdir': "file:///" + str(tmpdir)
@@ -42,7 +42,7 @@ def generate_project(project_dir, tmpdir):
 
 def generate_project_file_server(server, project_dir):
     project_file = os.path.join(project_dir, "project.conf")
-    _yaml.dump({
+    _yaml.roundtrip_dump({
         'name': 'foo',
         'aliases': {
             'tmpdir': server.base_url()

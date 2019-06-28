@@ -56,7 +56,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             },
             'cachedir': cache_dir,
         }
-        _yaml.dump(user_config, filename=user_config_file)
+        _yaml.roundtrip_dump(user_config, file=user_config_file)
         cli.configure(user_config)
 
         repo = create_repo('git', str(tmpdir))
@@ -67,7 +67,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             'kind': 'import',
             'sources': [repo.source_config(ref=ref)]
         }
-        _yaml.dump(element, os.path.join(element_path, element_name))
+        _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
         context = Context()
         context.load(config=user_config_file)
@@ -131,7 +131,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
             },
             'cachedir': cache_dir,
         }
-        _yaml.dump(user_config, filename=user_config_file)
+        _yaml.roundtrip_dump(user_config, file=user_config_file)
         cli.configure(user_config)
 
         repo = create_repo('git', str(tmpdir))
@@ -142,7 +142,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
             'kind': 'import',
             'sources': [repo.source_config(ref=ref)]
         }
-        _yaml.dump(element, os.path.join(element_path, element_name))
+        _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
         context = Context()
         context.load(config=user_config_file)
@@ -188,7 +188,7 @@ def test_pull_fail(cli, tmpdir, datafiles):
             },
             'cachedir': cache_dir,
         }
-        _yaml.dump(user_config, filename=user_config_file)
+        _yaml.roundtrip_dump(user_config, file=user_config_file)
         cli.configure(user_config)
 
         repo = create_repo('git', str(tmpdir))
@@ -199,7 +199,7 @@ def test_pull_fail(cli, tmpdir, datafiles):
             'kind': 'import',
             'sources': [repo.source_config(ref=ref)]
         }
-        _yaml.dump(element, os.path.join(element_path, element_name))
+        _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
         # get the source object
         context = Context()

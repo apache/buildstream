@@ -32,7 +32,7 @@ def test_fetch_checkout(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])

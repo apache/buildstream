@@ -37,9 +37,8 @@ def test_fetch_default_targets(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element,
-               os.path.join(element_path,
-                            element_name))
+    _yaml.roundtrip_dump(element,
+                         os.path.join(element_path, element_name))
 
     # Assert that a fetch is needed
     assert cli.get_element_state(project, element_name) == 'fetch needed'
@@ -113,7 +112,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, strict, ref_storage):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Dump a project.refs if we're using project.refs storage
     #
@@ -129,7 +128,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, strict, ref_storage):
                 }
             }
         }
-        _yaml.dump(project_refs, os.path.join(project, 'junction.refs'))
+        _yaml.roundtrip_dump(project_refs, os.path.join(project, 'junction.refs'))
 
     # Now try to fetch it, this should automatically result in fetching
     # the junction itself.
@@ -163,7 +162,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Now try to fetch it, this will bail with the appropriate error
     # informing the user to track the junction first
