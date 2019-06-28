@@ -37,7 +37,7 @@ DATA_DIR = os.path.join(
 def configure_project(path, config):
     config['name'] = 'test'
     config['element-path'] = 'elements'
-    _yaml.dump(config, os.path.join(path, 'project.conf'))
+    _yaml.roundtrip_dump(config, os.path.join(path, 'project.conf'))
 
 
 def create_element(repo, name, path, dependencies, ref=None):
@@ -48,7 +48,7 @@ def create_element(repo, name, path, dependencies, ref=None):
         ],
         'depends': dependencies
     }
-    _yaml.dump(element, os.path.join(path, name))
+    _yaml.roundtrip_dump(element, os.path.join(path, name))
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -97,7 +97,7 @@ def test_junction_build_remote(cli, tmpdir, datafiles):
             }
         ]
     }
-    _yaml.dump(element, os.path.join(element_path, 'composed.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, 'composed.bst'))
 
     # We're doing remote execution so ensure services are available
     services = cli.ensure_services()

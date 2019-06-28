@@ -73,9 +73,8 @@ class WorkspaceCreator():
         }
         if element_attrs:
             element = {**element, **element_attrs}
-        _yaml.dump(element,
-                   os.path.join(element_path,
-                                element_name))
+        _yaml.roundtrip_dump(element,
+                             os.path.join(element_path, element_name))
         return element_name, element_path, workspace_dir
 
     def create_workspace_elements(self, kinds, track, suffixs=None, workspace_dir_usr=None,

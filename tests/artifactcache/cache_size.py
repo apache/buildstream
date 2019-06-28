@@ -22,7 +22,7 @@ def create_project(project_dir):
     project_conf = {
         "name": "test"
     }
-    _yaml.dump(project_conf, project_file)
+    _yaml.roundtrip_dump(project_conf, project_file)
     element_name = "test.bst"
     create_element_size(element_name, project_dir, ".", [], 1024)
 
@@ -77,7 +77,7 @@ def test_quota_over_1024T(cli, tmpdir):
     })
     project = tmpdir.join("main")
     os.makedirs(str(project))
-    _yaml.dump({'name': 'main'}, str(project.join("project.conf")))
+    _yaml.roundtrip_dump({'name': 'main'}, str(project.join("project.conf")))
 
     volume_space_patch = mock.patch(
         "buildstream._cas.CASQuota._get_cache_volume_size",

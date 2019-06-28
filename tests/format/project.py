@@ -200,7 +200,7 @@ def test_plugin_no_load_ref(cli, datafiles, ref_storage):
             }
         ]
     }
-    _yaml.dump(config, os.path.join(project, 'project.conf'))
+    _yaml.roundtrip_dump(config, os.path.join(project, 'project.conf'))
 
     result = cli.run(project=project, silent=True, args=['show', 'noloadref.bst'])
 

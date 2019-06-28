@@ -27,7 +27,7 @@ def generate_element(repo, element_path, dep_name=None):
     if dep_name:
         element['depends'] = [dep_name]
 
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -156,7 +156,7 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
         'name': 'test',
         'ref-storage': ref_storage
     }
-    _yaml.dump(project_conf, os.path.join(project, 'project.conf'))
+    _yaml.roundtrip_dump(project_conf, os.path.join(project, 'project.conf'))
 
     #
     # FIXME: This can be simplified when we have support
@@ -267,7 +267,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Now try to track it, this will bail with the appropriate error
     # informing the user to track the junction first
@@ -307,7 +307,7 @@ def test_junction_element(cli, tmpdir, datafiles, ref_storage):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # First demonstrate that showing the pipeline yields an error
     result = cli.run(project=project, args=['show', 'junction-dep.bst'])
