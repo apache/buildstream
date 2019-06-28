@@ -223,6 +223,12 @@ def test_artifact_expires(cli, datafiles, tmpdir):
         result = cli.run(project=project, args=['build', 'element1.bst'])
         result.assert_success()
 
+        # Something to do with the artifact share means we need two calls to
+        # wait_for_cache_franularity
+        # TODO: understand why to calls are needed
+        wait_for_cache_granularity()
+        wait_for_cache_granularity()
+
         # Create and build an element of 5 MB
         create_element_size('element2.bst', project, element_path, [], int(5e6))
         result = cli.run(project=project, args=['build', 'element2.bst'])
@@ -238,6 +244,12 @@ def test_artifact_expires(cli, datafiles, tmpdir):
 
         assert_shared(cli, share, project, 'element1.bst')
         assert_shared(cli, share, project, 'element2.bst')
+
+        # Something to do with the artifact share means we need two calls to
+        # wait_for_cache_franularity
+        # TODO: understand why to calls are needed
+        wait_for_cache_granularity()
+        wait_for_cache_granularity()
 
         # Create and build another element of 5 MB (This will exceed the free disk space available)
         create_element_size('element3.bst', project, element_path, [], int(5e6))

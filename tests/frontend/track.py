@@ -9,7 +9,7 @@ from buildstream.testing import create_repo
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
-from tests.testutils import generate_junction, yaml_file_get_provenance
+from tests.testutils import generate_junction, yaml_file_get_provenance, wait_for_cache_granularity
 from . import configure_project
 
 # Project directory
@@ -380,6 +380,8 @@ def test_no_needless_overwrite(cli, tmpdir, datafiles):
     states = cli.get_element_states(project, [target])
     assert states[target] == 'no reference'
 
+    wait_for_cache_granularity()
+
     # Perform the track
     result = cli.run(project=project, args=['source', 'track', target])
     result.assert_success()
@@ -387,6 +389,8 @@ def test_no_needless_overwrite(cli, tmpdir, datafiles):
     track1_mtime = os.path.getmtime(path_to_target)
 
     assert creation_mtime != track1_mtime
+
+    wait_for_cache_granularity()
 
     # Now (needlessly) track again
     result = cli.run(project=project, args=['source', 'track', target])
