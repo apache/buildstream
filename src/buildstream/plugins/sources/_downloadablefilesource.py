@@ -92,80 +92,76 @@ class DownloadableFileSource(Source):
             raise SourceError("You cannot specify both 'path' ({}) and 'url' ({})"
                               .format(self.path_provenance, self.url_provenance))
 
-        # If using a url, use appropriate checks
-        if self.original_url is not None:
-            self.url = self.translate_url(self.original_url)
-
-        # If using path, do checks
-        if self.original_path is not None:
+        # If using path, use appropriate checks
+        if self.original_url is None:
             self.path = self.node_get_project_path(node, 'path')
             self.fullpath = os.path.join(self.get_project_directory(), self.path)
             self.sha = unique_key(self.fullpath)
-        else:
-            self.sha = self.ref
+
+        # If using url, do checks
+        if self.original_path is None:
+            self.url = self.translate_url(self.original_url)
 
     def preflight(self):
         return
 
     def get_unique_key(self):
-        self.__unique_key = None
-        if self.original_url is not None:
-            return [self.original_url, self.ref]
-        else:
-            return [(os.path.basename(self.original_path)), self.sha]
+        if self.original_url is None:
+            return [os.path.basename(self.original_path), self.sha]
+
+        return [self.original_url, self.ref]
 
     def get_consistency(self):
-        if self.original_url is not None:
-            if self.ref is None:
-                return Consistency.INCONSISTENT
-
-            if os.path.isfile(self._get_mirror_file()):
-                return Consistency.CACHED
-
-            else:
-                return Consistency.RESOLVED
-
-        else:
+        if self.original_url is None:
             return Consistency.CACHED
 
-    def load_ref(self, node):
-        if self.original_url is not None:
-            self.ref = self.node_get_member(node, str, 'ref', None)
-            self._warn_deprecated_etag(node)
+        if self.ref is None:
+            return Consistency.INCONSISTENT
+
+        if os.path.isfile(self._get_mirror_file()):
+            return Consistency.CACHED
+
         else:
-            pass
+            return Consistency.RESOLVED
+
+    def load_ref(self, node):
+        if self.original_url is None:
+            return
+
+        self.ref = self.node_get_member(node, str, 'ref', None)
+        self._warn_deprecated_etag(node)
 
     def get_ref(self):
-        if self.original_url is not None:
-            return self.ref
-        else:
+        if self.original_url is None:
             return None
 
+        return self.ref
+
     def set_ref(self, ref, node):
-        if self.original_url is not None:
-            node['ref'] = self.ref = self.sha = ref
-        else:
-            pass
+        if self.original_url is None:
+            return
+
+        node['ref'] = self.ref = ref
 
     def track(self):
         # there is no 'track' field in the source to determine what/whether
         # or not to update refs, because tracking a ref is always a conscious
         # decision by the user.
-        if self.original_url is not None:
-            with self.timed_activity("Tracking {}".format(self.url),
-                                     silent_nested=True):
-                new_ref = self._ensure_mirror()
+        if self.original_url is None:
+            return
 
-                if self.ref and self.ref != new_ref:
-                    detail = "When tracking, new ref differs from current ref:\n" \
-                        + "  Tracked URL: {}\n".format(self.url) \
-                        + "  Current ref: {}\n".format(self.ref) \
-                        + "  New ref: {}\n".format(new_ref)
-                    self.warn("Potential man-in-the-middle attack!", detail=detail)
+        with self.timed_activity("Tracking {}".format(self.url),
+                                 silent_nested=True):
+            new_ref = self._ensure_mirror()
 
-                return new_ref
-        else:
-            pass
+            if self.ref != new_ref:
+                detail = "When tracking, new ref differs from current ref:\n" \
+                    + "  Tracked URL: {}\n".format(self.url) \
+                    + "  Current ref: {}\n".format(self.ref) \
+                    + "  New ref: {}\n".format(new_ref)
+                self.warn("Potential man-in-the-middle attack!", detail=detail)
+
+            return new_ref
 
     def fetch(self):
 
@@ -173,19 +169,19 @@ class DownloadableFileSource(Source):
         # file to be already cached because Source.fetch() will
         # not be called if the source is already Consistency.CACHED.
         #
-        if self.original_url is not None:
-            if os.path.isfile(self._get_mirror_file()):
-                return  # pragma: nocover
+        if self.original_url is None:
+            return
 
-            # Download the file, raise hell if the sha256sums don't match,
-            # and mirror the file otherwise.
-            with self.timed_activity("Fetching {}".format(self.url), silent_nested=True):
-                sha256 = self._ensure_mirror()
-                if sha256 != self.ref:
-                    raise SourceError("File downloaded from {} has sha256sum '{}', not '{}'!"
-                                      .format(self.url, sha256, self.ref))
-        else:
-            pass
+        if os.path.isfile(self._get_mirror_file()):
+            return  # pragma: nocover
+
+        # Download the file, raise hell if the sha256sums don't match,
+        # and mirror the file otherwise.
+        with self.timed_activity("Fetching {}".format(self.url), silent_nested=True):
+            sha256 = self._ensure_mirror()
+            if sha256 != self.ref:
+                raise SourceError("File downloaded from {} has sha256sum '{}', not '{}'!"
+                                  .format(self.url, sha256, self.ref))
 
     def _get_local_path(self):
         return self.path
@@ -269,10 +265,7 @@ class DownloadableFileSource(Source):
                               .format(self, self.url, e), temporary=True) from e
 
     def _get_mirror_dir(self):
-        if self.original_url is not None:
-            directory_name = utils.url_directory_name(self.original_url)
-        else:
-            directory_name = self.original_path
+        directory_name = utils.url_directory_name(self.original_url)
         return os.path.join(self.get_mirror_directory(),
                             directory_name)
 
