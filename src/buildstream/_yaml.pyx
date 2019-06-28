@@ -21,12 +21,12 @@
 #        James Ennis <james.ennis@codethink.co.uk>
 #        Benjamin Schubert <bschubert@bloomberg.net>
 
+import datetime
 import sys
 import string
 from contextlib import ExitStack
 from collections import OrderedDict
-from collections.abc import Mapping, Sequence
-from copy import deepcopy
+from collections.abc import Mapping
 
 from ruamel import yaml
 
@@ -1410,6 +1410,18 @@ def assert_symbol_name(ProvenanceInformation provenance, str symbol_name, str pu
 
 # Roundtrip code
 
+# Represent simple types as strings
+
+def represent_as_str(self, value):
+    return self.represent_str(str(value))
+
+yaml.RoundTripRepresenter.add_representer(type(None), represent_as_str)
+yaml.RoundTripRepresenter.add_representer(int, represent_as_str)
+yaml.RoundTripRepresenter.add_representer(float, represent_as_str)
+yaml.RoundTripRepresenter.add_representer(bool, represent_as_str)
+yaml.RoundTripRepresenter.add_representer(datetime.datetime, represent_as_str)
+yaml.RoundTripRepresenter.add_representer(datetime.date, represent_as_str)
+
 # Always represent things consistently:
 
 yaml.RoundTripRepresenter.add_representer(OrderedDict,
@@ -1541,31 +1553,6 @@ def roundtrip_load_data(contents, *, filename=None):
 #
 def roundtrip_dump(contents, file=None):
     assert type(contents) is not Node
-
-    def stringify_dict(thing):
-        for k, v in thing.items():
-            if type(v) is str:
-                pass
-            elif isinstance(v, Mapping):
-                stringify_dict(v)
-            elif isinstance(v, Sequence):
-                stringify_list(v)
-            else:
-                thing[k] = str(v)
-
-    def stringify_list(thing):
-        for i, v in enumerate(thing):
-            if type(v) is str:
-                pass
-            elif isinstance(v, Mapping):
-                stringify_dict(v)
-            elif isinstance(v, Sequence):
-                stringify_list(v)
-            else:
-                thing[i] = str(v)
-
-    contents = deepcopy(contents)
-    stringify_dict(contents)
 
     with ExitStack() as stack:
         if type(file) is str:
