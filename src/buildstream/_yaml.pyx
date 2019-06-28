@@ -1410,6 +1410,22 @@ def assert_symbol_name(ProvenanceInformation provenance, str symbol_name, str pu
 
 # Roundtrip code
 
+# Represent Nodes automatically
+
+def represent_mapping(self, MappingNode mapping):
+    return self.represent_dict(mapping.value)
+
+def represent_scalar(self, ScalarNode scalar):
+    return self.represent_str(scalar.value)
+
+def represent_sequence(self, SequenceNode sequence):
+    return self.represent_list(sequence.value)
+
+
+yaml.RoundTripRepresenter.add_representer(MappingNode, represent_mapping)
+yaml.RoundTripRepresenter.add_representer(ScalarNode, represent_scalar)
+yaml.RoundTripRepresenter.add_representer(SequenceNode, represent_sequence)
+
 # Represent simple types as strings
 
 def represent_as_str(self, value):
@@ -1552,8 +1568,6 @@ def roundtrip_load_data(contents, *, filename=None):
 #    file (any): The file to write to
 #
 def roundtrip_dump(contents, file=None):
-    assert type(contents) is not Node
-
     with ExitStack() as stack:
         if type(file) is str:
             from . import utils
