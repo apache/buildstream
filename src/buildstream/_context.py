@@ -444,7 +444,7 @@ class Context():
         if self._cache_key is None:
 
             # Anything that alters the build goes into the unique key
-            self._cache_key = _cachekey.generate_key(_yaml.new_empty_node())
+            self._cache_key = _cachekey.generate_key({})
 
         return self._cache_key
 

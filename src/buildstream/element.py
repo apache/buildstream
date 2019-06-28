@@ -2162,7 +2162,7 @@ class Element(Plugin):
                 'environment': cache_env,
                 'sources': [s._get_unique_key(workspace is None) for s in self.__sources],
                 'workspace': '' if workspace is None else workspace.get_key(self._get_project()),
-                'public': self.__public
+                'public': self.__public.strip_node_info(),
             }
 
             self.__cache_key_dict['fatal-warnings'] = sorted(project._fatal_warnings)
