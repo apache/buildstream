@@ -175,7 +175,8 @@ class SandboxRemote(Sandbox):
                 if tls_key in config:
                     config[tls_key] = resolve_path(config.get_str(tls_key))
 
-        return RemoteExecutionSpec(*[_yaml.node_sanitize(conf) for conf in service_configs])
+        # TODO: we should probably not be stripping node info and rather load files the safe way
+        return RemoteExecutionSpec(*[conf.strip_node_info() for conf in service_configs])
 
     def run_remote_command(self, channel, action_digest):
         # Sends an execution request to the remote execution server.
