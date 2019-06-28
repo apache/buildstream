@@ -883,7 +883,7 @@ class Element(Plugin):
            (dict): A dictionary of string key/values suitable for passing
            to :func:`Sandbox.run() <buildstream.sandbox.Sandbox.run>`
         """
-        return _yaml.node_sanitize(self.__environment)
+        return self.__environment
 
     def get_variable(self, varname):
         """Fetch the value of a variable resolved for this element.
