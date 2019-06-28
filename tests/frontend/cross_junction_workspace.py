@@ -13,8 +13,8 @@ def prepare_junction_project(cli, tmpdir):
     os.makedirs(str(main_project))
     os.makedirs(str(sub_project))
 
-    _yaml.dump({'name': 'main'}, str(main_project.join("project.conf")))
-    _yaml.dump({'name': 'sub'}, str(sub_project.join("project.conf")))
+    _yaml.roundtrip_dump({'name': 'main'}, str(main_project.join("project.conf")))
+    _yaml.roundtrip_dump({'name': 'sub'}, str(sub_project.join("project.conf")))
 
     import_dir = tmpdir.join("import")
     os.makedirs(str(import_dir))
@@ -26,18 +26,18 @@ def prepare_junction_project(cli, tmpdir):
     import_repo = create_repo("git", str(import_repo_dir))
     import_ref = import_repo.create(str(import_dir))
 
-    _yaml.dump({'kind': 'import',
-                'sources': [import_repo.source_config(ref=import_ref)]},
-               str(sub_project.join("data.bst")))
+    _yaml.roundtrip_dump({'kind': 'import',
+                          'sources': [import_repo.source_config(ref=import_ref)]},
+                         str(sub_project.join("data.bst")))
 
     sub_repo_dir = tmpdir.join("sub_repo")
     os.makedirs(str(sub_repo_dir))
     sub_repo = create_repo("git", str(sub_repo_dir))
     sub_ref = sub_repo.create(str(sub_project))
 
-    _yaml.dump({'kind': 'junction',
-                'sources': [sub_repo.source_config(ref=sub_ref)]},
-               str(main_project.join("sub.bst")))
+    _yaml.roundtrip_dump({'kind': 'junction',
+                          'sources': [sub_repo.source_config(ref=sub_ref)]},
+                         str(main_project.join("sub.bst")))
 
     args = ['source', 'fetch', 'sub.bst']
     result = cli.run(project=str(main_project), args=args)

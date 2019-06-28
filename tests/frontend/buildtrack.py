@@ -31,7 +31,7 @@ def create_element(repo, name, path, dependencies, ref=None):
         ],
         'depends': dependencies
     }
-    _yaml.dump(element, os.path.join(path, name))
+    _yaml.roundtrip_dump(element, os.path.join(path, name))
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -120,7 +120,7 @@ def test_build_track(cli, datafiles, tmpdir, ref_storage, strict,
                 'test': initial_project_refs
             }
         }
-        _yaml.dump(project_refs, os.path.join(project, 'project.refs'))
+        _yaml.roundtrip_dump(project_refs, os.path.join(project, 'project.refs'))
 
     args = ['build']
     args += itertools.chain.from_iterable(zip(itertools.repeat('--track'), track_targets))
@@ -219,7 +219,7 @@ def test_build_track_all(cli, tmpdir, datafiles, strict, ref_storage):
             }
         ]
     }
-    _yaml.dump(element, os.path.join(element_path, 'composed.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, 'composed.bst'))
 
     # Track the junction itself first.
     result = cli.run(project=project, args=['source', 'track', 'junction.bst'])

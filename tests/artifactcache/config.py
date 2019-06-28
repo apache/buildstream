@@ -101,11 +101,11 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
     project_config['name'] = 'test'
 
     user_config_file = str(tmpdir.join('buildstream.conf'))
-    _yaml.dump(user_config, filename=user_config_file)
+    _yaml.roundtrip_dump(user_config, file=user_config_file)
 
     project_dir = tmpdir.mkdir('project')
     project_config_file = str(project_dir.join('project.conf'))
-    _yaml.dump(project_config, filename=project_config_file)
+    _yaml.roundtrip_dump(project_config, file=project_config_file)
 
     context = Context()
     context.load(config=user_config_file)
@@ -141,7 +141,7 @@ def test_missing_certs(cli, datafiles, config_key, config_value):
         }
     }
     project_conf_file = os.path.join(project, 'project.conf')
-    _yaml.dump(project_conf, project_conf_file)
+    _yaml.roundtrip_dump(project_conf, project_conf_file)
 
     # Use `pull` here to ensure we try to initialize the remotes, triggering the error
     #

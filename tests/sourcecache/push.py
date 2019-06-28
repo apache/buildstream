@@ -56,7 +56,7 @@ def test_source_push(cli, tmpdir, datafiles):
             },
             'cachedir': cache_dir,
         }
-        _yaml.dump(user_config, filename=user_config_file)
+        _yaml.roundtrip_dump(user_config, file=user_config_file)
         cli.configure(user_config)
 
         repo = create_repo('git', str(tmpdir))
@@ -67,7 +67,7 @@ def test_source_push(cli, tmpdir, datafiles):
             'kind': 'import',
             'sources': [repo.source_config(ref=ref)]
         }
-        _yaml.dump(element, os.path.join(element_path, element_name))
+        _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
         # get the source object
         context = Context()
@@ -116,7 +116,7 @@ def test_push_pull(cli, datafiles, tmpdir):
             },
             'cachedir': cache_dir,
         }
-        _yaml.dump(user_config, filename=user_config_file)
+        _yaml.roundtrip_dump(user_config, file=user_config_file)
         cli.configure(user_config)
 
         # create repo to pull from
@@ -128,7 +128,7 @@ def test_push_pull(cli, datafiles, tmpdir):
             'kind': 'import',
             'sources': [repo.source_config(ref=ref)]
         }
-        _yaml.dump(element, os.path.join(element_path, element_name))
+        _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
         res = cli.run(project=project_dir, args=['build', 'push.bst'])
         res.assert_success()
@@ -162,7 +162,7 @@ def test_push_fail(cli, tmpdir, datafiles):
             },
             'cachedir': cache_dir,
         }
-        _yaml.dump(user_config, filename=user_config_file)
+        _yaml.roundtrip_dump(user_config, file=user_config_file)
         cli.configure(user_config)
 
     # create repo to pull from
@@ -174,7 +174,7 @@ def test_push_fail(cli, tmpdir, datafiles):
         'kind': 'import',
         'sources': [repo.source_config(ref=ref)]
     }
-    _yaml.dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
     # build and check that it fails to set up the remote
     res = cli.run(project=project_dir, args=['build', 'push.bst'])
@@ -212,7 +212,7 @@ def test_source_push_build_fail(cli, tmpdir, datafiles):
             'kind': 'always_fail',
             'sources': [repo.source_config(ref=ref)]
         }
-        _yaml.dump(element, os.path.join(element_path, element_name))
+        _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
         res = cli.run(project=project_dir, args=['build', 'always-fail.bst'])
         res.assert_main_error(ErrorDomain.STREAM, None)

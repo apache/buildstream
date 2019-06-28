@@ -217,4 +217,4 @@ def test_deterministic_source_umask(cli, tmpdir, datafiles):
             ]
         }
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)

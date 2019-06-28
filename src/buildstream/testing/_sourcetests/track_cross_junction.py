@@ -42,7 +42,7 @@ def generate_element(repo, element_path, dep_name=None):
     if dep_name:
         element['depends'] = [dep_name]
 
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
 
 def generate_import_element(tmpdir, kind, project, name):
@@ -75,7 +75,7 @@ def generate_project(tmpdir, name, config=None):
         'element-path': 'elements'
     }
     project_conf.update(config)
-    _yaml.dump(project_conf, os.path.join(subproject_path, 'project.conf'))
+    _yaml.roundtrip_dump(project_conf, os.path.join(subproject_path, 'project.conf'))
 
     return project_name, subproject_path
 
@@ -87,7 +87,7 @@ def generate_simple_stack(project, name, dependencies):
         'kind': 'stack',
         'depends': dependencies
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     return element_name
 

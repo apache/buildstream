@@ -116,7 +116,7 @@ def test_mirror_fetch_ref_storage(cli, tmpdir, datafiles, ref_storage, mirror):
     full_mirror = mirror_repo.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
     os.makedirs(element_dir)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     if ref_storage == 'project.refs':
         # Manually set project.refs to avoid caching the repo prematurely
@@ -128,7 +128,7 @@ def test_mirror_fetch_ref_storage(cli, tmpdir, datafiles, ref_storage, mirror):
             }
         }}
         project_refs_path = os.path.join(project_dir, 'project.refs')
-        _yaml.dump(project_refs, project_refs_path)
+        _yaml.roundtrip_dump(project_refs, project_refs_path)
 
     project = {
         'name': 'test',
@@ -151,7 +151,7 @@ def test_mirror_fetch_ref_storage(cli, tmpdir, datafiles, ref_storage, mirror):
         project['mirrors'] = mirror_data
 
     project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
@@ -167,11 +167,11 @@ def test_mirror_fetch_multi(cli, tmpdir):
     element_name = "test.bst"
     element_path = os.path.join(element_dir, element_name)
     element = generate_element(output_file)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     project_file = os.path.join(project_dir, 'project.conf')
     project = generate_project()
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
@@ -191,11 +191,11 @@ def test_mirror_fetch_default_cmdline(cli, tmpdir):
     element_name = "test.bst"
     element_path = os.path.join(element_dir, element_name)
     element = generate_element(output_file)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     project_file = os.path.join(project_dir, 'project.conf')
     project = generate_project()
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     result = cli.run(project=project_dir, args=['--default-mirror', 'arrakis', 'source', 'fetch', element_name])
     result.assert_success()
@@ -222,11 +222,11 @@ def test_mirror_fetch_default_userconfig(cli, tmpdir):
     element_name = "test.bst"
     element_path = os.path.join(element_dir, element_name)
     element = generate_element(output_file)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     project_file = os.path.join(project_dir, 'project.conf')
     project = generate_project()
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     userconfig = {
         'projects': {
@@ -262,11 +262,11 @@ def test_mirror_fetch_default_cmdline_overrides_config(cli, tmpdir):
     element_name = "test.bst"
     element_path = os.path.join(element_dir, element_name)
     element = generate_element(output_file)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     project_file = os.path.join(project_dir, 'project.conf')
     project = generate_project()
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     userconfig = {
         'projects': {
@@ -346,7 +346,7 @@ def test_mirror_git_submodule_fetch(cli, tmpdir, datafiles):
     aliased_repo = alias + ':' + repo_name
     element['sources'][0]['submodules']['defined']['url'] = aliased_repo
 
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     full_mirror = main_mirror.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
@@ -366,7 +366,7 @@ def test_mirror_git_submodule_fetch(cli, tmpdir, datafiles):
         ]
     }
     project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
@@ -433,7 +433,7 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
     element_name = 'test.bst'
     element_path = os.path.join(element_dir, element_name)
     os.makedirs(element_dir)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     project = {
         'name': 'test',
@@ -451,7 +451,7 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
         ]
     }
     project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     # Now make the upstream unavailable.
     os.rename(upstream_bin_repo.repo, '{}.bak'.format(upstream_bin_repo.repo))
@@ -529,7 +529,7 @@ def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
     element_name = 'test.bst'
     element_path = os.path.join(element_dir, element_name)
     os.makedirs(element_dir)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     project = {
         'name': 'test',
@@ -547,7 +547,7 @@ def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
         ]
     }
     project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     # Now make the upstream unavailable.
     os.rename(upstream_main_repo.repo, '{}.bak'.format(upstream_main_repo.repo))

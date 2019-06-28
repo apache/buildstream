@@ -126,7 +126,7 @@ def test_junction_element_partial_project_project(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, junction_path)
+    _yaml.roundtrip_dump(element, junction_path)
 
     result = cli.run(project=project, args=[
         'show',
@@ -159,7 +159,7 @@ def test_junction_element_not_partial_project_file(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, junction_path)
+    _yaml.roundtrip_dump(element, junction_path)
 
     result = cli.run(project=project, args=[
         'show',

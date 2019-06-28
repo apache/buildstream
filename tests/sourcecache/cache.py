@@ -96,7 +96,7 @@ def test_source_cache_key(cli, datafiles):
             }
         ]
     }
-    _yaml.dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
     res = cli.run(project=project_dir, args=["source", "track", element_name])
     res.assert_success()

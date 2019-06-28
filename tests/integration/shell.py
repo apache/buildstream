@@ -163,7 +163,7 @@ def test_no_shell(cli, datafiles):
         }
     }
     os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
-    _yaml.dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
     result = execute_shell(cli, project, ['/bin/echo', 'Pegasissies!'], element=element_name)
     assert result.exit_code == 0

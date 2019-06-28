@@ -39,7 +39,7 @@ def test_missing_brwap_has_nice_error_message(cli, datafiles):
             ],
         },
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Build without access to host tools, this should fail with a nice error
     result = cli.run(
@@ -79,7 +79,7 @@ def test_old_brwap_has_nice_error_message(cli, datafiles, tmp_path):
             ],
         },
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Build without access to host tools, this should fail with a nice error
     result = cli.run(
