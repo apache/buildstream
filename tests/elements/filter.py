@@ -202,7 +202,7 @@ def test_filter_track(datafiles, cli, tmpdir):
         "element-path": "elements",
     }
     project_file = os.path.join(str(tmpdir), "project.conf")
-    _yaml.dump(project_config, project_file)
+    _yaml.roundtrip_dump(project_config, project_file)
 
     input_config = {
         "kind": "import",
@@ -210,7 +210,7 @@ def test_filter_track(datafiles, cli, tmpdir):
     }
 
     input_file = os.path.join(elements_dir, input_name)
-    _yaml.dump(input_config, input_file)
+    _yaml.roundtrip_dump(input_config, input_file)
 
     filter1_config = {
         "kind": "filter",
@@ -219,7 +219,7 @@ def test_filter_track(datafiles, cli, tmpdir):
         ]
     }
     filter1_file = os.path.join(elements_dir, "filter1.bst")
-    _yaml.dump(filter1_config, filter1_file)
+    _yaml.roundtrip_dump(filter1_config, filter1_file)
 
     filter2_config = {
         "kind": "filter",
@@ -228,7 +228,7 @@ def test_filter_track(datafiles, cli, tmpdir):
         ]
     }
     filter2_file = os.path.join(elements_dir, "filter2.bst")
-    _yaml.dump(filter2_config, filter2_file)
+    _yaml.roundtrip_dump(filter2_config, filter2_file)
 
     # Assert that a fetch is needed
     assert cli.get_element_state(project, input_name) == 'no reference'
@@ -257,7 +257,7 @@ def test_filter_track_excepted(datafiles, cli, tmpdir):
         "element-path": "elements",
     }
     project_file = os.path.join(str(tmpdir), "project.conf")
-    _yaml.dump(project_config, project_file)
+    _yaml.roundtrip_dump(project_config, project_file)
 
     input_config = {
         "kind": "import",
@@ -265,7 +265,7 @@ def test_filter_track_excepted(datafiles, cli, tmpdir):
     }
 
     input_file = os.path.join(elements_dir, input_name)
-    _yaml.dump(input_config, input_file)
+    _yaml.roundtrip_dump(input_config, input_file)
 
     filter1_config = {
         "kind": "filter",
@@ -274,7 +274,7 @@ def test_filter_track_excepted(datafiles, cli, tmpdir):
         ]
     }
     filter1_file = os.path.join(elements_dir, "filter1.bst")
-    _yaml.dump(filter1_config, filter1_file)
+    _yaml.roundtrip_dump(filter1_config, filter1_file)
 
     filter2_config = {
         "kind": "filter",
@@ -283,7 +283,7 @@ def test_filter_track_excepted(datafiles, cli, tmpdir):
         ]
     }
     filter2_file = os.path.join(elements_dir, "filter2.bst")
-    _yaml.dump(filter2_config, filter2_file)
+    _yaml.roundtrip_dump(filter2_config, filter2_file)
 
     # Assert that a fetch is needed
     assert cli.get_element_state(project, input_name) == 'no reference'
@@ -311,7 +311,7 @@ def test_filter_track_multi_to_one(datafiles, cli, tmpdir):
         "element-path": "elements",
     }
     project_file = os.path.join(str(tmpdir), "project.conf")
-    _yaml.dump(project_config, project_file)
+    _yaml.roundtrip_dump(project_config, project_file)
 
     input_config = {
         "kind": "import",
@@ -319,7 +319,7 @@ def test_filter_track_multi_to_one(datafiles, cli, tmpdir):
     }
 
     input_file = os.path.join(elements_dir, input_name)
-    _yaml.dump(input_config, input_file)
+    _yaml.roundtrip_dump(input_config, input_file)
 
     filter1_config = {
         "kind": "filter",
@@ -328,7 +328,7 @@ def test_filter_track_multi_to_one(datafiles, cli, tmpdir):
         ]
     }
     filter1_file = os.path.join(elements_dir, "filter1.bst")
-    _yaml.dump(filter1_config, filter1_file)
+    _yaml.roundtrip_dump(filter1_config, filter1_file)
 
     filter2_config = {
         "kind": "filter",
@@ -337,7 +337,7 @@ def test_filter_track_multi_to_one(datafiles, cli, tmpdir):
         ]
     }
     filter2_file = os.path.join(elements_dir, "filter2.bst")
-    _yaml.dump(filter2_config, filter2_file)
+    _yaml.roundtrip_dump(filter2_config, filter2_file)
 
     # Assert that a fetch is needed
     assert cli.get_element_state(project, input_name) == 'no reference'
@@ -367,7 +367,7 @@ def test_filter_track_multi(datafiles, cli, tmpdir):
         "element-path": "elements",
     }
     project_file = os.path.join(str(tmpdir), "project.conf")
-    _yaml.dump(project_config, project_file)
+    _yaml.roundtrip_dump(project_config, project_file)
 
     input_config = {
         "kind": "import",
@@ -375,11 +375,11 @@ def test_filter_track_multi(datafiles, cli, tmpdir):
     }
 
     input_file = os.path.join(elements_dir, input_name)
-    _yaml.dump(input_config, input_file)
+    _yaml.roundtrip_dump(input_config, input_file)
 
     input2_config = dict(input_config)
     input2_file = os.path.join(elements_dir, input2_name)
-    _yaml.dump(input2_config, input2_file)
+    _yaml.roundtrip_dump(input2_config, input2_file)
 
     filter1_config = {
         "kind": "filter",
@@ -388,7 +388,7 @@ def test_filter_track_multi(datafiles, cli, tmpdir):
         ]
     }
     filter1_file = os.path.join(elements_dir, "filter1.bst")
-    _yaml.dump(filter1_config, filter1_file)
+    _yaml.roundtrip_dump(filter1_config, filter1_file)
 
     filter2_config = {
         "kind": "filter",
@@ -397,7 +397,7 @@ def test_filter_track_multi(datafiles, cli, tmpdir):
         ]
     }
     filter2_file = os.path.join(elements_dir, "filter2.bst")
-    _yaml.dump(filter2_config, filter2_file)
+    _yaml.roundtrip_dump(filter2_config, filter2_file)
 
     # Assert that a fetch is needed
     states = cli.get_element_states(project, [input_name, input2_name])
@@ -437,7 +437,7 @@ def test_filter_track_multi_exclude(datafiles, cli, tmpdir):
         "element-path": "elements",
     }
     project_file = os.path.join(str(tmpdir), "project.conf")
-    _yaml.dump(project_config, project_file)
+    _yaml.roundtrip_dump(project_config, project_file)
 
     input_config = {
         "kind": "import",
@@ -445,11 +445,11 @@ def test_filter_track_multi_exclude(datafiles, cli, tmpdir):
     }
 
     input_file = os.path.join(elements_dir, input_name)
-    _yaml.dump(input_config, input_file)
+    _yaml.roundtrip_dump(input_config, input_file)
 
     input2_config = dict(input_config)
     input2_file = os.path.join(elements_dir, input2_name)
-    _yaml.dump(input2_config, input2_file)
+    _yaml.roundtrip_dump(input2_config, input2_file)
 
     filter1_config = {
         "kind": "filter",
@@ -458,7 +458,7 @@ def test_filter_track_multi_exclude(datafiles, cli, tmpdir):
         ]
     }
     filter1_file = os.path.join(elements_dir, "filter1.bst")
-    _yaml.dump(filter1_config, filter1_file)
+    _yaml.roundtrip_dump(filter1_config, filter1_file)
 
     filter2_config = {
         "kind": "filter",
@@ -467,7 +467,7 @@ def test_filter_track_multi_exclude(datafiles, cli, tmpdir):
         ]
     }
     filter2_file = os.path.join(elements_dir, "filter2.bst")
-    _yaml.dump(filter2_config, filter2_file)
+    _yaml.roundtrip_dump(filter2_config, filter2_file)
 
     # Assert that a fetch is needed
     states = cli.get_element_states(project, [input_name, input2_name])

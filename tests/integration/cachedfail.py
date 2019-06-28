@@ -61,7 +61,7 @@ def test_build_checkout_cached_fail(cli, datafiles):
             ],
         },
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Try to build it, this should result in a failure that contains the content
     result = cli.run(project=project, args=['build', 'element.bst'])
@@ -103,7 +103,7 @@ def test_build_depend_on_cached_fail(cli, datafiles):
             ],
         },
     }
-    _yaml.dump(dep, dep_path)
+    _yaml.roundtrip_dump(dep, dep_path)
     target = {
         'kind': 'script',
         'depends': [
@@ -122,7 +122,7 @@ def test_build_depend_on_cached_fail(cli, datafiles):
             ],
         },
     }
-    _yaml.dump(target, target_path)
+    _yaml.roundtrip_dump(target, target_path)
 
     # Try to build it, this should result in caching a failure to build dep
     result = cli.run(project=project, args=['build', 'dep.bst'])
@@ -166,7 +166,7 @@ def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
             ],
         },
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'remote')) as share:
         cli.configure({
@@ -204,7 +204,7 @@ def test_host_tools_errors_are_not_cached(cli, datafiles):
             ],
         },
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     clean_platform_cache()
 

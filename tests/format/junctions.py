@@ -331,7 +331,7 @@ def test_git_show(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'base.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'base.bst'))
 
     # Check that bst show succeeds with implicit subproject fetching and the
     # pipeline includes the subproject element
@@ -356,7 +356,7 @@ def test_git_build(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'base.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'base.bst'))
 
     # Build (with implicit fetch of subproject), checkout
     result = cli.run(project=project, args=['build', 'target.bst'])
@@ -389,7 +389,7 @@ def test_git_missing_project_conf(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, str(project / 'base.bst'))
+    _yaml.roundtrip_dump(element, str(project / 'base.bst'))
 
     result = cli.run(project=project, args=['build', 'app.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_JUNCTION)
@@ -423,7 +423,7 @@ def test_build_git_cross_junction_names(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'base.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'base.bst'))
 
     print(element)
     print(cli.get_pipeline(project, ['base.bst']))

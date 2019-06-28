@@ -252,7 +252,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name, w
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Dump a project.refs if we're using project.refs storage
     #
@@ -268,7 +268,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name, w
                 }
             }
         }
-        _yaml.dump(project_refs, os.path.join(project, 'junction.refs'))
+        _yaml.roundtrip_dump(project_refs, os.path.join(project, 'junction.refs'))
 
     # Open a workspace if we're testing workspaced behavior
     if workspaced:
@@ -310,7 +310,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage, workspaced):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Open a workspace if we're testing workspaced behavior
     if workspaced:
@@ -366,7 +366,7 @@ def test_fetched_junction(cli, tmpdir, datafiles, element_name, workspaced):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     result = cli.run(project=project, silent=True, args=[
         'source', 'fetch', 'junction.bst'])
@@ -421,7 +421,7 @@ def test_exceed_max_recursion_depth(cli, tmpdir, dependency_depth):
             }
             if i == 0:
                 del element['depends']
-            _yaml.dump(element, os.path.join(element_path, "element{}.bst".format(str(i))))
+            _yaml.roundtrip_dump(element, os.path.join(element_path, "element{}.bst".format(str(i))))
 
             source = os.path.join(sourcefiles_path, "source{}".format(str(i)))
             open(source, 'x').close()

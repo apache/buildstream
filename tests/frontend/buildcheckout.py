@@ -133,7 +133,7 @@ def test_build_invalid_filename_chars(datafiles, cli):
     element = {
         'kind': 'stack',
     }
-    _yaml.dump(element, os.path.join(project, 'elements', element_name))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'elements', element_name))
 
     result = cli.run(project=project, args=strict_args(['build', element_name], 'non-strict'))
     result.assert_main_error(ErrorDomain.LOAD, "bad-characters-in-name")
@@ -151,7 +151,7 @@ def test_build_invalid_filename_chars_dep(datafiles, cli):
     element = {
         'kind': 'stack',
     }
-    _yaml.dump(element, os.path.join(project, 'elements', element_name))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'elements', element_name))
 
     result = cli.run(project=project, args=strict_args(['build', 'invalid-chars-in-dep.bst'], 'non-strict'))
     result.assert_main_error(ErrorDomain.LOAD, "bad-characters-in-name")
@@ -452,7 +452,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Now try to track it, this will bail with the appropriate error
     # informing the user to track the junction first
@@ -492,7 +492,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Dump a project.refs if we're using project.refs storage
     #
@@ -508,7 +508,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
                 }
             }
         }
-        _yaml.dump(project_refs, os.path.join(project, 'junction.refs'))
+        _yaml.roundtrip_dump(project_refs, os.path.join(project, 'junction.refs'))
 
     # Now try to build it, this should automatically result in fetching
     # the junction itself at load time.
@@ -541,7 +541,7 @@ def test_build_checkout_junction(cli, tmpdir, datafiles):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Now try to build it, this should automatically result in fetching
     # the junction itself at load time.
@@ -588,7 +588,7 @@ def test_build_checkout_junction_default_targets(cli, tmpdir, datafiles):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Now try to build it, this should automatically result in fetching
     # the junction itself at load time.
@@ -635,7 +635,7 @@ def test_build_checkout_workspaced_junction(cli, tmpdir, datafiles):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Now open a workspace on the junction
     #
@@ -712,7 +712,7 @@ def test_build_junction_short_notation(cli, tmpdir, datafiles):
         'kind': 'stack',
         'depends': ['junction.bst:import-etc.bst']
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Now try to build it, this should automatically result in fetching
     # the junction itself at load time.
@@ -753,7 +753,7 @@ def test_build_junction_short_notation_filename(cli, tmpdir, datafiles):
         'kind': 'stack',
         'depends': [{'filename': 'junction.bst:import-etc.bst'}]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Now try to build it, this should automatically result in fetching
     # the junction itself at load time.
@@ -796,7 +796,7 @@ def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
             'junction': 'junction.bst',
         }]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Now try to build it, this should fail as filenames should not contain
     # `:` when junction is explicity specified
@@ -820,7 +820,7 @@ def test_build_junction_transitive_short_notation_with_junction(cli, tmpdir, dat
         'kind': 'stack',
         'depends': ['junction.bst:import-etc.bst:foo.bst']
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Now try to build it, this should fail as recursive lookups for
     # cross-junction elements is not allowed.
