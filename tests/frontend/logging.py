@@ -39,9 +39,8 @@ def test_default_logging(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element,
-               os.path.join(element_path,
-                            element_name))
+    _yaml.roundtrip_dump(element,
+                         os.path.join(element_path, element_name))
 
     # Now try to fetch it
     result = cli.run(project=project, args=['source', 'fetch', element_name])
@@ -76,9 +75,8 @@ def test_custom_logging(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element,
-               os.path.join(element_path,
-                            element_name))
+    _yaml.roundtrip_dump(element,
+                         os.path.join(element_path, element_name))
 
     # Now try to fetch it
     result = cli.run(project=project, args=['source', 'fetch', element_name])
@@ -104,7 +102,7 @@ def test_failed_build_listing(cli, datafiles):
                 ]
             }
         }
-        _yaml.dump(element, os.path.join(project, element_path))
+        _yaml.roundtrip_dump(element, os.path.join(project, element_path))
         element_names.append(element_name)
     result = cli.run(project=project, args=['--on-error=continue', 'build', *element_names])
     result.assert_main_error(ErrorDomain.STREAM, None)

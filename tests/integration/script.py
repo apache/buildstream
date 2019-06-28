@@ -35,7 +35,7 @@ def create_script_element(name, path, config=None, variables=None):
         'variables': variables
     }
     os.makedirs(os.path.dirname(os.path.join(path, name)), exist_ok=True)
-    _yaml.dump(element, os.path.join(path, name))
+    _yaml.roundtrip_dump(element, os.path.join(path, name))
 
 
 @pytest.mark.datafiles(DATA_DIR)

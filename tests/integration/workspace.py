@@ -74,7 +74,7 @@ def test_workspace_updated_dependency(cli, datafiles):
         }
     }
     os.makedirs(os.path.dirname(os.path.join(element_path, dep_name)), exist_ok=True)
-    _yaml.dump(dependency, os.path.join(element_path, dep_name))
+    _yaml.roundtrip_dump(dependency, os.path.join(element_path, dep_name))
 
     # First open the workspace
     res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
@@ -90,7 +90,7 @@ def test_workspace_updated_dependency(cli, datafiles):
         'mkdir -p %{install-root}/etc/test/',
         'echo "Hello china!" > %{install-root}/etc/test/hello.txt'
     ]
-    _yaml.dump(dependency, os.path.join(element_path, dep_name))
+    _yaml.roundtrip_dump(dependency, os.path.join(element_path, dep_name))
 
     # `Make` would look at timestamps and normally not realize that
     # our dependency's header files changed. BuildStream must
@@ -129,7 +129,7 @@ def test_workspace_update_dependency_failed(cli, datafiles):
         }
     }
     os.makedirs(os.path.dirname(os.path.join(element_path, dep_name)), exist_ok=True)
-    _yaml.dump(dependency, os.path.join(element_path, dep_name))
+    _yaml.roundtrip_dump(dependency, os.path.join(element_path, dep_name))
 
     # First open the workspace
     res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
@@ -146,7 +146,7 @@ def test_workspace_update_dependency_failed(cli, datafiles):
         'echo "Hello china!" > %{install-root}/etc/test/hello.txt',
         'echo "Hello brazil!" > %{install-root}/etc/test/brazil.txt'
     ]
-    _yaml.dump(dependency, os.path.join(element_path, dep_name))
+    _yaml.roundtrip_dump(dependency, os.path.join(element_path, dep_name))
 
     # And our build fails!
     with open(os.path.join(workspace, 'Makefile'), 'a') as f:
@@ -161,7 +161,7 @@ def test_workspace_update_dependency_failed(cli, datafiles):
         'echo "Hello world!" > %{install-root}/etc/test/hello.txt',
         'echo "Hello spain!" > %{install-root}/etc/test/brazil.txt'
     ]
-    _yaml.dump(dependency, os.path.join(element_path, dep_name))
+    _yaml.roundtrip_dump(dependency, os.path.join(element_path, dep_name))
 
     # And fix the source
     with open(os.path.join(workspace, 'Makefile'), 'r') as f:
@@ -204,7 +204,7 @@ def test_updated_dependency_nested(cli, datafiles):
         }
     }
     os.makedirs(os.path.dirname(os.path.join(element_path, dep_name)), exist_ok=True)
-    _yaml.dump(dependency, os.path.join(element_path, dep_name))
+    _yaml.roundtrip_dump(dependency, os.path.join(element_path, dep_name))
 
     # First open the workspace
     res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
@@ -221,7 +221,7 @@ def test_updated_dependency_nested(cli, datafiles):
         'echo "Hello world!" > %{install-root}/etc/test/hello.txt',
         'echo "Hello test!" > %{install-root}/etc/test/tests/tests.txt'
     ]
-    _yaml.dump(dependency, os.path.join(element_path, dep_name))
+    _yaml.roundtrip_dump(dependency, os.path.join(element_path, dep_name))
 
     res = cli.run(project=project, args=['build', element_name])
     assert res.exit_code == 0
@@ -257,7 +257,7 @@ def test_incremental_configure_commands_run_only_once(cli, datafiles):
             ]
         }
     }
-    _yaml.dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
     # We open a workspace on the above element
     res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])

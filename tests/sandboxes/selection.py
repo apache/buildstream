@@ -54,7 +54,7 @@ def test_force_sandbox(cli, datafiles):
             ],
         },
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     clean_platform_cache()
 
@@ -87,7 +87,7 @@ def test_dummy_sandbox_fallback(cli, datafiles):
             ],
         },
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     clean_platform_cache()
 

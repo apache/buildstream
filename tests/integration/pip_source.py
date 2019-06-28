@@ -58,7 +58,7 @@ def test_pip_source_import_packages(cli, datafiles, setup_pypi_repo):
         ]
     }
     os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
-    _yaml.dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
     result = cli.run(project=project, args=['source', 'track', element_name])
     assert result.exit_code == 0
@@ -116,7 +116,7 @@ def test_pip_source_import_requirements_files(cli, datafiles, setup_pypi_repo):
         ]
     }
     os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
-    _yaml.dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
     result = cli.run(project=project, args=['source', 'track', element_name])
     assert result.exit_code == 0
@@ -182,7 +182,7 @@ def test_pip_source_build(cli, datafiles, setup_pypi_repo):
         }
     }
     os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
-    _yaml.dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
     result = cli.run(project=project, args=['source', 'track', element_name])
     assert result.exit_code == 0
