@@ -69,5 +69,4 @@ cdef class ProvenanceInformation:
 
 
 cpdef void node_validate(Node node, list valid_keys) except *
-cpdef void node_set(Node node, object key, object value, list indices=*) except *
 cpdef ProvenanceInformation node_get_provenance(Node node, str key=*, list indices=*)

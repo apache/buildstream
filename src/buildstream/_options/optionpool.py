@@ -152,7 +152,7 @@ class OptionPool():
     def export_variables(self, variables):
         for _, option in self._options.items():
             if option.variable:
-                _yaml.node_set(variables, option.variable, option.get_value())
+                variables[option.variable] = option.get_value()
 
     # printable_variables()
     #
