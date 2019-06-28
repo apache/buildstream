@@ -125,7 +125,7 @@ class WorkspaceProject():
     #
     def write(self):
         os.makedirs(self._directory, exist_ok=True)
-        _yaml.dump(self.to_dict(), self.get_filename())
+        _yaml.roundtrip_dump(self.to_dict(), self.get_filename())
 
     # get_filename()
     #
@@ -530,7 +530,7 @@ class Workspaces():
             }
         }
         os.makedirs(self._bst_directory, exist_ok=True)
-        _yaml.dump(config, self._get_filename())
+        _yaml.roundtrip_dump(config, self._get_filename())
 
     # _load_config()
     #
