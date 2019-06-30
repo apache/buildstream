@@ -34,6 +34,8 @@ import subprocess
 import tempfile
 import itertools
 from contextlib import contextmanager
+from pathlib import Path
+from typing import Callable, IO, Iterable, Iterator, Optional, Tuple, Union
 
 import psutil
 
@@ -102,7 +104,7 @@ class FileListResult():
         self.files_written = []
         """List of files that were written."""
 
-    def combine(self, other):
+    def combine(self, other: 'FileListResult') -> 'FileListResult':
         """Create a new FileListResult that contains the results of both.
         """
         ret = FileListResult()
@@ -115,7 +117,7 @@ class FileListResult():
         return ret
 
 
-def list_relative_paths(directory):
+def list_relative_paths(directory: str) -> Iterator[str]:
     """A generator for walking directory relative paths
 
     This generator is useful for checking the full manifest of
@@ -125,7 +127,7 @@ def list_relative_paths(directory):
     in the manifest.
 
     Args:
-       directory (str): The directory to list files in
+       directory: The directory to list files in
 
     Yields:
        Relative filenames in `directory`
@@ -167,7 +169,7 @@ def list_relative_paths(directory):
 
 
 # pylint: disable=anomalous-backslash-in-string
-def glob(paths, pattern):
+def glob(paths: Iterable[str], pattern: str) -> Iterator[str]:
     """A generator to yield paths which match the glob pattern
 
     Args:
@@ -218,14 +220,14 @@ def glob(paths, pattern):
             yield filename
 
 
-def sha256sum(filename):
+def sha256sum(filename: str) -> str:
     """Calculate the sha256sum of a file
 
     Args:
-       filename (str): A path to a file on disk
+       filename: A path to a file on disk
 
     Returns:
-       (str): An sha256 checksum string
+      An sha256 checksum string
 
     Raises:
        UtilError: In the case there was an issue opening
@@ -244,13 +246,13 @@ def sha256sum(filename):
     return h.hexdigest()
 
 
-def safe_copy(src, dest, *, result=None):
+def safe_copy(src: str, dest: str, *, result: Optional[FileListResult] = None) -> None:
     """Copy a file while preserving attributes
 
     Args:
-       src (str): The source filename
-       dest (str): The destination filename
-       result (:class:`~.FileListResult`): An optional collective result
+       src: The source filename
+       dest: The destination filename
+       result: An optional collective result
 
     Raises:
        UtilError: In the case of unexpected system call failures
@@ -285,13 +287,13 @@ def safe_copy(src, dest, *, result=None):
                         .format(src, dest, e)) from e
 
 
-def safe_link(src, dest, *, result=None, _unlink=False):
+def safe_link(src: str, dest: str, *, result: Optional[FileListResult] = None, _unlink=False) -> None:
     """Try to create a hardlink, but resort to copying in the case of cross device links.
 
     Args:
-       src (str): The source filename
-       dest (str): The destination filename
-       result (:class:`~.FileListResult`): An optional collective result
+       src: The source filename
+       dest: The destination filename
+       result: An optional collective result
 
     Raises:
        UtilError: In the case of unexpected system call failures
@@ -320,14 +322,14 @@ def safe_link(src, dest, *, result=None, _unlink=False):
                             .format(src, dest, e)) from e
 
 
-def safe_remove(path):
+def safe_remove(path: str) -> bool:
     """Removes a file or directory
 
     This will remove a file if it exists, and will
     remove a directory if the directory is empty.
 
     Args:
-       path (str): The path to remove
+       path: The path to remove
 
     Returns:
        True if `path` was removed or did not exist, False
@@ -357,21 +359,26 @@ def safe_remove(path):
                         .format(path, e))
 
 
-def copy_files(src, dest, *, filter_callback=None, ignore_missing=False, report_written=False):
+def copy_files(src: str,
+               dest: str,
+               *,
+               filter_callback: Optional[Callable[[str], bool]] = None,
+               ignore_missing: bool = False,
+               report_written: bool = False) -> FileListResult:
     """Copy files from source to destination.
 
     Args:
-       src (str): The source directory
-       dest (str): The destination directory
-       filter_callback (callable): Optional filter callback. Called with the relative path as
-                                   argument for every file in the source directory. The file is
-                                   copied only if the callable returns True. If no filter callback
-                                   is specified, all files will be copied.
-       ignore_missing (bool): Dont raise any error if a source file is missing
-       report_written (bool): Add to the result object the full list of files written
+       src: The source directory
+       dest: The destination directory
+       filter_callback: Optional filter callback. Called with the relative path as
+                        argument for every file in the source directory. The file is
+                        copied only if the callable returns True. If no filter callback
+                        is specified, all files will be copied.
+       ignore_missing: Dont raise any error if a source file is missing
+       report_written: Add to the result object the full list of files written
 
     Returns:
-       (:class:`~.FileListResult`): The result describing what happened during this file operation
+       The result describing what happened during this file operation
 
     Raises:
        UtilError: In the case of unexpected system call failures
@@ -396,21 +403,26 @@ def copy_files(src, dest, *, filter_callback=None, ignore_missing=False, report_
     return result
 
 
-def link_files(src, dest, *, filter_callback=None, ignore_missing=False, report_written=False):
+def link_files(src: str,
+               dest: str,
+               *,
+               filter_callback: Optional[Callable[[str], bool]] = None,
+               ignore_missing: bool = False,
+               report_written: bool = False) -> FileListResult:
     """Hardlink files from source to destination.
 
     Args:
-       src (str): The source directory
-       dest (str): The destination directory
-       filter_callback (callable): Optional filter callback. Called with the relative path as
-                                   argument for every file in the source directory. The file is
-                                   hardlinked only if the callable returns True. If no filter
-                                   callback is specified, all files will be hardlinked.
-       ignore_missing (bool): Dont raise any error if a source file is missing
-       report_written (bool): Add to the result object the full list of files written
+       src: The source directory
+       dest: The destination directory
+       filter_callback: Optional filter callback. Called with the relative path as
+                        argument for every file in the source directory. The file is
+                        hardlinked only if the callable returns True. If no filter
+                        callback is specified, all files will be hardlinked.
+       ignore_missing: Dont raise any error if a source file is missing
+       report_written: Add to the result object the full list of files written
 
     Returns:
-       (:class:`~.FileListResult`): The result describing what happened during this file operation
+       The result describing what happened during this file operation
 
     Raises:
        UtilError: In the case of unexpected system call failures
@@ -441,7 +453,7 @@ def link_files(src, dest, *, filter_callback=None, ignore_missing=False, report_
     return result
 
 
-def get_host_tool(name):
+def get_host_tool(name: str) -> str:
     """Get the full path of a host tool
 
     Args:
@@ -462,13 +474,12 @@ def get_host_tool(name):
     return program_path
 
 
-def get_bst_version():
+def get_bst_version() -> Tuple[int, int]:
     """Gets the major, minor release portion of the
     BuildStream version.
 
     Returns:
-       (int): The major version
-       (int): The minor version
+       A 2-tuple of form (major version, minor version)
     """
     # Import this only conditionally, it's not resolved at bash complete time
     from . import __version__  # pylint: disable=cyclic-import
@@ -490,7 +501,7 @@ def get_bst_version():
                         .format(__version__))
 
 
-def move_atomic(source, destination, *, ensure_parents=True):
+def move_atomic(source: Union[Path, str], destination: Union[Path, str], *, ensure_parents: bool = True) -> None:
     """Move the source to the destination using atomic primitives.
 
     This uses `os.rename` to move a file or directory to a new destination.
@@ -508,10 +519,10 @@ def move_atomic(source, destination, *, ensure_parents=True):
     should be used instead of `os.rename`
 
     Args:
-      source (str or Path): source to rename
-      destination (str or Path): destination to which to move the source
-      ensure_parents (bool): Whether or not to create the parent's directories
-                             of the destination (default: True)
+      source: source to rename
+      destination: destination to which to move the source
+      ensure_parents: Whether or not to create the parent's directories
+                      of the destination (default: True)
     Raises:
       DirectoryExistsError: if the destination directory already exists and is
                             not empty
@@ -529,8 +540,16 @@ def move_atomic(source, destination, *, ensure_parents=True):
 
 
 @contextmanager
-def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
-                     errors=None, newline=None, closefd=True, opener=None, tempdir=None):
+def save_file_atomic(filename: str,
+                     mode: str = 'w',
+                     *,
+                     buffering: int = -1,
+                     encoding: Optional[str] = None,
+                     errors: Optional[str] = None,
+                     newline: Optional[str] = None,
+                     closefd: bool = True,
+                     opener: Optional[Callable[[str, int], int]] = None,
+                     tempdir: Optional[str] = None) -> Iterator[IO]:
     """Save a file with a temporary name and rename it into place when ready.
 
     This is a context manager which is meant for saving data to files.
@@ -576,7 +595,8 @@ def save_file_atomic(filename, mode='w', *, buffering=-1, encoding=None,
 
     try:
         with _signals.terminator(cleanup_tempfile):
-            f.real_filename = filename
+            # Disable type-checking since "IO[Any]" has no attribute "real_filename"
+            f.real_filename = filename		# type: ignore
             yield f
             f.close()
             # This operation is atomic, at least on platforms we care about:

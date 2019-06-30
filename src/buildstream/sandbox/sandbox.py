@@ -33,11 +33,21 @@ import os
 import shlex
 import contextlib
 from contextlib import contextmanager
+from typing import Dict, Generator, List, Optional, TYPE_CHECKING
 
 from .._exceptions import ImplError, BstError, SandboxError
 from .._message import Message, MessageType
+from ..storage.directory import Directory
 from ..storage._filebaseddirectory import FileBasedDirectory
 from ..storage._casbaseddirectory import CasBasedDirectory
+
+if TYPE_CHECKING:
+    from typing import Union
+
+    # pylint: disable=cyclic-import
+    from .._context import Context
+    from .._project import Project
+    # pylint: enable=cyclic-import
 
 
 class SandboxFlags():
@@ -109,15 +119,15 @@ class Sandbox():
         '/dev/zero',
         '/dev/null'
     ]
-    _dummy_reasons = []
+    _dummy_reasons = []         # type: List[str]
 
-    def __init__(self, context, project, directory, **kwargs):
+    def __init__(self, context: 'Context', project: 'Project', directory: str, **kwargs):
         self.__context = context
         self.__project = project
-        self.__directories = []
-        self.__cwd = None
-        self.__env = None
-        self.__mount_sources = {}
+        self.__directories = []     # type: List[Dict[str, Union[int, str]]]
+        self.__cwd = None           # type: Optional[str]
+        self.__env = None           # type: Optional[Dict[str, str]]
+        self.__mount_sources = {}   # type: Dict[str, str]
         self.__allow_real_directory = kwargs['allow_real_directory']
         self.__allow_run = True
 
@@ -148,10 +158,10 @@ class Sandbox():
             for directory_ in [self._root, self.__scratch]:
                 os.makedirs(directory_, exist_ok=True)
 
-        self._output_directory = None
+        self._output_directory = None       # type: Optional[str]
         self._build_directory = None
         self._build_directory_always = None
-        self._vdir = None
+        self._vdir = None                   # type: Optional[Directory]
         self._usebuildtree = False
 
         # This is set if anyone requests access to the underlying
@@ -161,7 +171,7 @@ class Sandbox():
         # Pending command batch
         self.__batch = None
 
-    def get_directory(self):
+    def get_directory(self) -> str:
         """Fetches the sandbox root directory
 
         The root directory is where artifacts for the base
@@ -169,7 +179,7 @@ class Sandbox():
         BST_VIRTUAL_DIRECTORY is not set.
 
         Returns:
-           (str): The sandbox root directory
+           The sandbox root directory
 
         """
         if self.__allow_real_directory:
@@ -178,7 +188,7 @@ class Sandbox():
         else:
             raise BstError("You can't use get_directory")
 
-    def get_virtual_directory(self):
+    def get_virtual_directory(self) -> Directory:
         """Fetches the sandbox root directory as a virtual Directory.
 
         The root directory is where artifacts for the base
@@ -191,7 +201,7 @@ class Sandbox():
         must call get_virtual_directory again to get a new copy.
 
         Returns:
-           (Directory): The sandbox root directory
+           The sandbox root directory
 
         """
         if self._vdir is None or self._never_cache_vdirs:
@@ -208,38 +218,38 @@ class Sandbox():
         """
         self._vdir = virtual_directory
 
-    def set_environment(self, environment):
+    def set_environment(self, environment: Dict[str, str]) -> None:
         """Sets the environment variables for the sandbox
 
         Args:
-           environment (dict): The environment variables to use in the sandbox
+           environment: The environment variables to use in the sandbox
         """
         self.__env = environment
 
-    def set_work_directory(self, directory):
+    def set_work_directory(self, directory: str) -> None:
         """Sets the work directory for commands run in the sandbox
 
         Args:
-           directory (str): An absolute path within the sandbox
+           directory: An absolute path within the sandbox
         """
         self.__cwd = directory
 
-    def set_output_directory(self, directory):
+    def set_output_directory(self, directory: str) -> None:
         """Sets the output directory - the directory which is preserved
         as an artifact after assembly.
 
         Args:
-           directory (str): An absolute path within the sandbox
+           directory: An absolute path within the sandbox
         """
         self._output_directory = directory
 
-    def mark_directory(self, directory, *, artifact=False):
+    def mark_directory(self, directory: str, *, artifact: bool = False) -> None:
         """Marks a sandbox directory and ensures it will exist
 
         Args:
-           directory (str): An absolute path within the sandbox to mark
-           artifact (bool): Whether the content staged at this location
-                            contains artifacts
+           directory: An absolute path within the sandbox to mark
+           artifact: Whether the content staged at this location
+                     contains artifacts
 
         .. note::
            Any marked directories will be read-write in the sandboxed
@@ -250,7 +260,13 @@ class Sandbox():
             'artifact': artifact
         })
 
-    def run(self, command, flags, *, cwd=None, env=None, label=None):
+    def run(self,
+            command: List[str],
+            flags: int,
+            *,
+            cwd: Optional[str] = None,
+            env: Optional[Dict[str, str]] = None,
+            label: str = None) -> Optional[int]:
         """Run a command in the sandbox.
 
         If this is called outside a batch context, the command is immediately
@@ -261,16 +277,16 @@ class Sandbox():
         executed. Command flags must match batch flags.
 
         Args:
-            command (list): The command to run in the sandboxed environment, as a list
-                            of strings starting with the binary to run.
+            command: The command to run in the sandboxed environment, as a list
+                     of strings starting with the binary to run.
             flags (:class:`.SandboxFlags`): The flags for running this command.
-            cwd (str): The sandbox relative working directory in which to run the command.
-            env (dict): A dictionary of string key, value pairs to set as environment
-                        variables inside the sandbox environment.
-            label (str): An optional label for the command, used for logging. (*Since: 1.4*)
+            cwd: The sandbox relative working directory in which to run the command.
+            env: A dictionary of string key, value pairs to set as environment
+                 variables inside the sandbox environment.
+            label: An optional label for the command, used for logging. (*Since: 1.4*)
 
         Returns:
-            (int|None): The program exit code, or None if running in batch context.
+            The program exit code, or None if running in batch context.
 
         Raises:
             (:class:`.ProgramNotFoundError`): If a host tool which the given sandbox
@@ -310,7 +326,7 @@ class Sandbox():
             return self._run(command, flags, cwd=cwd, env=env)
 
     @contextmanager
-    def batch(self, flags, *, label=None, collect=None):
+    def batch(self, flags: int, *, label: str = None, collect: str = None) -> Generator[None, None, None]:
         """Context manager for command batching
 
         This provides a batch context that defers execution of commands until
@@ -322,8 +338,8 @@ class Sandbox():
 
         Args:
             flags (:class:`.SandboxFlags`): The flags for this command batch.
-            label (str): An optional label for the batch group, used for logging.
-            collect (str): An optional directory containing partial install contents
+            label: An optional label for the batch group, used for logging.
+            collect: An optional directory containing partial install contents
                            on command failure.
 
         Raises:

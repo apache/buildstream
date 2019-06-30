@@ -16,11 +16,17 @@
 #
 #  Authors:
 #        James Ennis <james.ennis@codethink.co.uk>
+
+from typing import TYPE_CHECKING
+
 from . import Element
 from . import _cachekey
 from ._exceptions import ArtifactElementError
 from ._loader.metaelement import MetaElement
 from .types import Scope
+
+if TYPE_CHECKING:
+    from typing import Dict
 
 
 # ArtifactElement()
@@ -33,7 +39,8 @@ from .types import Scope
 #
 class ArtifactElement(Element):
 
-    __instantiated_artifacts = {}  # A hash of ArtifactElement by ref
+    # A hash of ArtifactElement by ref
+    __instantiated_artifacts = {}   # type: Dict[str, ArtifactElement]
 
     def __init__(self, context, ref):
         _, element, key = verify_artifact_ref(ref)

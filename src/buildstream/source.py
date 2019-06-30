@@ -163,10 +163,12 @@ Class Reference
 
 import os
 from contextlib import contextmanager
+from typing import Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
 
 from . import _yaml, utils
+from .node import MappingNode
 from .plugin import Plugin
-from .types import Consistency
+from .types import Consistency, SourceRef
 from ._exceptions import BstError, ImplError, ErrorDomain
 from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage
@@ -174,18 +176,31 @@ from ._cachekey import generate_key
 from .storage import FileBasedDirectory
 from .storage.directory import Directory, VirtualDirectoryError
 
+if TYPE_CHECKING:
+    from typing import Any, Dict, Set
+
+    # pylint: disable=cyclic-import
+    from ._context import Context
+    from ._project import Project
+    # pylint: enable=cyclic-import
+
 
 class SourceError(BstError):
     """This exception should be raised by :class:`.Source` implementations
     to report errors to the user.
 
     Args:
-       message (str): The breif error description to report to the user
-       detail (str): A possibly multiline, more detailed error message
-       reason (str): An optional machine readable reason string, used for test cases
-       temporary (bool): An indicator to whether the error may occur if the operation was run again. (*Since: 1.2*)
+       message: The breif error description to report to the user
+       detail: A possibly multiline, more detailed error message
+       reason: An optional machine readable reason string, used for test cases
+       temporary: An indicator to whether the error may occur if the operation was run again. (*Since: 1.2*)
     """
-    def __init__(self, message, *, detail=None, reason=None, temporary=False):
+    def __init__(self,
+                 message: str,
+                 *,
+                 detail: Optional[str] = None,
+                 reason: Optional[str] = None,
+                 temporary: bool = False):
         super().__init__(message, detail=detail, domain=ErrorDomain.SOURCE, reason=reason, temporary=temporary)
 
 
@@ -211,12 +226,12 @@ class SourceFetcher():
     #############################################################
     #                      Abstract Methods                     #
     #############################################################
-    def fetch(self, alias_override=None, **kwargs):
+    def fetch(self, alias_override: Optional[str] = None, **kwargs) -> None:
         """Fetch remote sources and mirror them locally, ensuring at least
         that the specific reference is cached locally.
 
         Args:
-           alias_override (str): The alias to use instead of the default one
+           alias_override: The alias to use instead of the default one
                defined by the :ref:`aliases <project_source_aliases>` field
                in the project's config.
 
@@ -231,13 +246,13 @@ class SourceFetcher():
     #############################################################
     #                       Public Methods                      #
     #############################################################
-    def mark_download_url(self, url):
+    def mark_download_url(self, url: str) -> None:
         """Identifies the URL that this SourceFetcher uses to download
 
         This must be called during the fetcher's initialization
 
         Args:
-           url (str): The url used to download.
+           url: The url used to download.
         """
         self.__alias = _extract_alias(url)
 
@@ -258,7 +273,8 @@ class Source(Plugin):
     All Sources derive from this class, this interface defines how
     the core will be interacting with Sources.
     """
-    __defaults = None        # The defaults from the project
+    # The defaults from the project
+    __defaults = None     # type: Optional[Dict[str, Any]]
 
     BST_REQUIRES_PREVIOUS_SOURCES_TRACK = False
     """Whether access to previous sources is required during track
@@ -306,7 +322,13 @@ class Source(Plugin):
     *Since: 1.4*
     """
 
-    def __init__(self, context, project, meta, *, alias_override=None, unique_id=None):
+    def __init__(self,
+                 context: 'Context',
+                 project: 'Project',
+                 meta: MetaSource,
+                 *,
+                 alias_override: Optional[Tuple[str, str]] = None,
+                 unique_id: Optional[int] = None):
         provenance = meta.config.get_provenance()
         # Set element_name member before parent init, as needed for debug messaging
         self.__element_name = meta.element_name         # The name of the element owning this source
@@ -324,7 +346,8 @@ class Source(Plugin):
         # The alias_override is only set on a re-instantiated Source
         self.__alias_override = alias_override          # Tuple of alias and its override to use instead
         self.__expected_alias = None                    # The primary alias
-        self.__marked_urls = set()                      # Set of marked download URLs
+        # Set of marked download URLs
+        self.__marked_urls = set()                      # type: Set[str]
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -333,7 +356,7 @@ class Source(Plugin):
         self.__first_pass = meta.first_pass
 
         # cached values for commonly access values on the source
-        self.__mirror_directory = None
+        self.__mirror_directory = None                  # type: Optional[str]
 
         self._configure(self.__config)
 
@@ -347,7 +370,7 @@ class Source(Plugin):
     #############################################################
     #                      Abstract Methods                     #
     #############################################################
-    def get_consistency(self):
+    def get_consistency(self) -> int:
         """Report whether the source has a resolved reference
 
         Returns:
@@ -355,11 +378,11 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement get_consistency()".format(self.get_kind()))
 
-    def load_ref(self, node):
+    def load_ref(self, node: MappingNode) -> None:
         """Loads the *ref* for this Source from the specified *node*.
 
         Args:
-           node (:class:`MappingNode <buildstream.node.MappingNode>`): The YAML node to load the ref from
+           node: The YAML node to load the ref from
 
         .. note::
 
@@ -373,7 +396,7 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement load_ref()".format(self.get_kind()))
 
-    def get_ref(self):
+    def get_ref(self) -> SourceRef:
         """Fetch the internal ref, however it is represented
 
         Returns:
@@ -391,12 +414,12 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement get_ref()".format(self.get_kind()))
 
-    def set_ref(self, ref, node):
+    def set_ref(self, ref: SourceRef, node: MappingNode) -> None:
         """Applies the internal ref, however it is represented
 
         Args:
            ref (simple object): The internal source reference to set, or ``None``
-           node (:class:`MappingNode <buildstream.node.MappingNode>`): The same dictionary which was previously passed
+           node: The same dictionary which was previously passed
                 to :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
 
         See :func:`Source.get_ref() <buildstream.source.Source.get_ref>`
@@ -409,7 +432,7 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement set_ref()".format(self.get_kind()))
 
-    def track(self, **kwargs):
+    def track(self, **kwargs) -> SourceRef:
         """Resolve a new ref from the plugin's track option
 
         Args:
@@ -437,7 +460,7 @@ class Source(Plugin):
         # Allow a non implementation
         return None
 
-    def fetch(self, **kwargs):
+    def fetch(self, **kwargs) -> None:
         """Fetch remote sources and mirror them locally, ensuring at least
         that the specific reference is cached locally.
 
@@ -455,11 +478,11 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement fetch()".format(self.get_kind()))
 
-    def stage(self, directory):
+    def stage(self, directory: str) -> None:
         """Stage the sources to a directory
 
         Args:
-           directory (str): Path to stage the source
+           directory: Path to stage the source
 
         Raises:
            :class:`.SourceError`
@@ -472,11 +495,11 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement stage()".format(self.get_kind()))
 
-    def init_workspace(self, directory):
+    def init_workspace(self, directory: str) -> None:
         """Initialises a new workspace
 
         Args:
-           directory (str): Path of the workspace to init
+           directory: Path of the workspace to init
 
         Raises:
            :class:`.SourceError`
@@ -492,7 +515,7 @@ class Source(Plugin):
         """
         self.stage(directory)
 
-    def get_source_fetchers(self):
+    def get_source_fetchers(self) -> Iterable[SourceFetcher]:
         """Get the objects that are used for fetching
 
         If this source doesn't download from multiple URLs,
@@ -500,7 +523,7 @@ class Source(Plugin):
         is recommended.
 
         Returns:
-           iterable: The Source's SourceFetchers, if any.
+           The Source's SourceFetchers, if any.
 
         .. note::
 
@@ -514,7 +537,7 @@ class Source(Plugin):
         """
         return []
 
-    def validate_cache(self):
+    def validate_cache(self) -> None:
         """Implement any validations once we know the sources are cached
 
         This is guaranteed to be called only once for a given session
@@ -530,11 +553,11 @@ class Source(Plugin):
     #############################################################
     #                       Public Methods                      #
     #############################################################
-    def get_mirror_directory(self):
+    def get_mirror_directory(self) -> str:
         """Fetches the directory where this source should store things
 
         Returns:
-           (str): The directory belonging to this source
+           The directory belonging to this source
         """
         if self.__mirror_directory is None:
             # Create the directory if it doesnt exist
@@ -545,17 +568,17 @@ class Source(Plugin):
 
         return self.__mirror_directory
 
-    def translate_url(self, url, *, alias_override=None, primary=True):
+    def translate_url(self, url: str, *, alias_override: Optional[str] = None, primary: bool = True) -> str:
         """Translates the given url which may be specified with an alias
         into a fully qualified url.
 
         Args:
-           url (str): A URL, which may be using an alias
-           alias_override (str): Optionally, an URI to override the alias with. (*Since: 1.2*)
-           primary (bool): Whether this is the primary URL for the source. (*Since: 1.2*)
+           url: A URL, which may be using an alias
+           alias_override: Optionally, an URI to override the alias with. (*Since: 1.2*)
+           primary: Whether this is the primary URL for the source. (*Since: 1.2*)
 
         Returns:
-           str: The fully qualified URL, with aliases resolved
+           The fully qualified URL, with aliases resolved
         .. note::
 
            This must be called for every URL in the configuration during
@@ -578,8 +601,8 @@ class Source(Plugin):
                     # specific alias, so that sources that fetch from multiple
                     # URLs and use different aliases default to only overriding
                     # one alias, rather than getting confused.
-                    override_alias = self.__alias_override[0]
-                    override_url = self.__alias_override[1]
+                    override_alias = self.__alias_override[0]       # type: ignore
+                    override_url = self.__alias_override[1]         # type: ignore
                     if url_alias == override_alias:
                         url = override_url + url_body
             return url
@@ -587,7 +610,7 @@ class Source(Plugin):
             project = self._get_project()
             return project.translate_url(url, first_pass=self.__first_pass)
 
-    def mark_download_url(self, url, *, primary=True):
+    def mark_download_url(self, url: str, *, primary: bool = True) -> None:
         """Identifies the URL that this Source uses to download
 
         Args:
@@ -634,24 +657,24 @@ class Source(Plugin):
             assert (url in self.__marked_urls or not _extract_alias(url)), \
                 "URL was not seen at configure time: {}".format(url)
 
-    def get_project_directory(self):
+    def get_project_directory(self) -> str:
         """Fetch the project base directory
 
         This is useful for sources which need to load resources
         stored somewhere inside the project.
 
         Returns:
-           str: The project base directory
+           The project base directory
         """
         project = self._get_project()
         return project.directory
 
     @contextmanager
-    def tempdir(self):
+    def tempdir(self) -> Iterator[str]:
         """Context manager for working in a temporary directory
 
         Yields:
-           (str): A path to a temporary directory
+           A path to a temporary directory
 
         This should be used by source plugins directly instead of the tempfile
         module. This one will automatically cleanup in case of termination by

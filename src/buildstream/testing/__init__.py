@@ -38,7 +38,7 @@ except ImportError:
 
 
 # Of the form plugin_name -> (repo_class, plugin_package)
-ALL_REPO_KINDS = OrderedDict()
+ALL_REPO_KINDS = OrderedDict()  # type: OrderedDict[Repo, str]
 
 
 def create_repo(kind, directory, subdir='repo'):

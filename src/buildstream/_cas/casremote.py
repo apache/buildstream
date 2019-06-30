@@ -62,7 +62,8 @@ class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key
         return CASRemoteSpec(url, push, server_cert, client_key, client_cert, instance_name)
 
 
-CASRemoteSpec.__new__.__defaults__ = (None, None, None, None)
+# Disable type-checking since "Callable[...] has no attributes __defaults__"
+CASRemoteSpec.__new__.__defaults__ = (None, None, None, None)   # type: ignore
 
 
 class BlobNotFound(CASRemoteError):

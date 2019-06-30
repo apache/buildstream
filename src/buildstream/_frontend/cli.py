@@ -236,7 +236,9 @@ def override_main(self, args=None, prog_name=None, complete_var=None,
 
 
 original_main = click.BaseCommand.main
-click.BaseCommand.main = override_main
+# Disable type checking since mypy doesn't support assigning to a method.
+# See https://github.com/python/mypy/issues/2427.
+click.BaseCommand.main = override_main      # type: ignore
 
 
 ##################################################################

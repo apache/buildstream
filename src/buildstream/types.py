@@ -25,6 +25,8 @@ Foundation types
 
 """
 
+from typing import Any, Dict, List, Union
+
 from ._types import MetaFastEnum
 
 
@@ -44,7 +46,8 @@ class FastEnum(metaclass=MetaFastEnum):
     """The value of the current Enum entry, same as :func:`enum.Enum.value`
     """
 
-    _value_to_entry = dict()  # A dict of all values mapping to the entries in the enum
+    # A dict of all values mapping to the entries in the enum
+    _value_to_entry = dict()  # type: Dict[str, Any]
 
     @classmethod
     def values(cls):
@@ -225,3 +228,11 @@ class _CacheBuildTrees(FastEnum):
 
     # Never cache build trees
     NEVER = "never"
+
+
+########################################
+#           Type aliases               #
+########################################
+
+# Internal reference for a given Source
+SourceRef = Union[None, int, List[Any], Dict[str, Any]]

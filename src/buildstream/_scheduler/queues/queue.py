@@ -23,6 +23,7 @@ import os
 from collections import deque
 import heapq
 import traceback
+from typing import TYPE_CHECKING
 
 # Local imports
 from ..jobs import ElementJob, JobStatus
@@ -32,6 +33,9 @@ from ..resources import ResourceType
 from ..._exceptions import BstError, ImplError, set_last_task_error
 from ..._message import Message, MessageType
 from ...types import FastEnum
+
+if TYPE_CHECKING:
+    from typing import List, Optional
 
 
 # Queue status for a given element
@@ -56,9 +60,10 @@ class QueueStatus(FastEnum):
 class Queue():
 
     # These should be overridden on class data of of concrete Queue implementations
-    action_name = None
-    complete_name = None
-    resources = []                     # Resources this queues' jobs want
+    action_name = None      # type: Optional[str]
+    complete_name = None    # type: Optional[str]
+    # Resources this queues' jobs want
+    resources = []  # type: List[int]
 
     def __init__(self, scheduler):
 
