@@ -45,3 +45,6 @@ doc/source/buildstream.rst
 doc/source/buildstream.*.rst
 doc/build/
 versioneer.pyc
+
+# mypy
+.mypy_cache
