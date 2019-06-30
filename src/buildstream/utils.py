@@ -46,7 +46,7 @@ from ._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from ._utils import url_directory_name  # pylint: disable=unused-import
 
 # The magic number for timestamps: 2011-11-11 11:11:11
-BST_ARBITRARY_TIMESTAMP = calendar.timegm([2011, 11, 11, 11, 11, 11])
+BST_ARBITRARY_TIMESTAMP = calendar.timegm((2011, 11, 11, 11, 11, 11))
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
