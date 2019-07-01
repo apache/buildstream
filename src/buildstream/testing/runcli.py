@@ -322,7 +322,6 @@ class Cli():
 
         # We may have been passed e.g. pathlib.Path or py.path
         args = [str(x) for x in args]
-        project = str(project)
 
         options = self.default_options + options
 
@@ -339,7 +338,7 @@ class Cli():
                 bst_args += ['--config', config_file]
 
             if project:
-                bst_args += ['--directory', project]
+                bst_args += ['--directory', str(project)]
 
             for option, value in options:
                 bst_args += ['--option', option, value]
