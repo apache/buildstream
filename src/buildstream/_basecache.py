@@ -161,7 +161,7 @@ class BaseCache():
         q = multiprocessing.Queue()
         for remote_spec in remote_specs:
 
-            error = self.remote_class.check_remote(remote_spec, q)
+            error = self.remote_class.check_remote(remote_spec, self.cas, q)
 
             if error and on_failure:
                 on_failure(remote_spec.url, error)
@@ -173,7 +173,7 @@ class BaseCache():
             if remote_spec.push:
                 self._has_push_remotes = True
 
-            remotes[remote_spec.url] = self.remote_class(remote_spec)
+            remotes[remote_spec.url] = self.remote_class(remote_spec, self.cas)
 
         for project in self.context.get_projects():
             remote_specs = self.global_remote_specs

@@ -281,7 +281,7 @@ class SandboxRemote(Sandbox):
         context = self._get_context()
         cascache = context.get_cascache()
         artifactcache = context.artifactcache
-        casremote = CASRemote(self.storage_remote_spec)
+        casremote = CASRemote(self.storage_remote_spec, cascache)
 
         # Now do a pull to ensure we have the full directory structure.
         dir_digest = cascache.pull_tree(casremote, tree_digest)
@@ -300,7 +300,7 @@ class SandboxRemote(Sandbox):
         project = self._get_project()
         cascache = context.get_cascache()
         artifactcache = context.artifactcache
-        casremote = CASRemote(self.storage_remote_spec)
+        casremote = CASRemote(self.storage_remote_spec, cascache)
 
         # Fetch the file blobs if needed
         if self._output_files_required or artifactcache.has_push_remotes():
@@ -368,7 +368,7 @@ class SandboxRemote(Sandbox):
         action_result = self._check_action_cache(action_digest)
 
         if not action_result:
-            casremote = CASRemote(self.storage_remote_spec)
+            casremote = CASRemote(self.storage_remote_spec, cascache)
             try:
                 casremote.init()
             except grpc.RpcError as e:
