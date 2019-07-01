@@ -206,6 +206,9 @@ class ScriptElement(Element):
         # Tell the sandbox to mount the install root
         directories = {self.__install_root: False}
 
+        # set the output directory
+        sandbox.set_output_directory(self.__install_root)
+
         # Mark the artifact directories in the layout
         for item in self.__layout:
             destination = item['destination']
