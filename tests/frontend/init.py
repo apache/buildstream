@@ -90,6 +90,11 @@ def test_relative_path_directory_as_argument(cli, tmpdir):
     assert _yaml.node_get(project_conf, str, 'element-path') == 'elements'
 
 
+def test_set_directory_and_directory_as_argument(cli, tmpdir):
+    result = cli.run(args=['-C', '/foo/bar', 'init', '--project-name', 'foo', '/boo/far'])
+    result.assert_main_error(ErrorDomain.APP, 'init-with-set-directory')
+
+
 @pytest.mark.parametrize("project_name", [('Micheal Jackson'), ('one+one')])
 def test_bad_project_name(cli, tmpdir, project_name):
     result = cli.run(args=['init', '--project-name', str(tmpdir)])
