@@ -31,6 +31,7 @@ cdef class Node:
     cpdef object strip_node_info(self)
 
     cpdef void _assert_fully_composited(self) except *
+    cdef void _compose_on(self, str key, MappingNode target, list path) except *
     cdef bint _is_composite_list(self) except *
     cdef bint _shares_position_with(self, Node target)
     cdef bint _walk_find(self, Node target, list path) except *
