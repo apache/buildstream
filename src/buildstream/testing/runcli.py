@@ -573,7 +573,7 @@ class CliIntegration(Cli):
 
                 project_config = _yaml.load(temp_project)
 
-            _yaml.composite_dict(base_config, project_config)
+            _yaml.composite(base_config, project_config)
 
             _yaml.roundtrip_dump(base_config, project_filename)
 
