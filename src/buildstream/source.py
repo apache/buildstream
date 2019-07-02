@@ -1290,7 +1290,7 @@ class Source(Plugin):
         config = cls.__defaults.get_mapping('config', default={})
         config = config.copy()
 
-        _yaml.composite(config, meta.config)
+        meta.config.composite(config)
         config._assert_fully_composited()
 
         return config

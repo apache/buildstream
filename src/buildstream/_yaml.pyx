@@ -232,6 +232,43 @@ cdef class MappingNode(Node):
             return path
         return None
 
+    # composite()
+    #
+    # Compose one mapping node onto another
+    #
+    # Args:
+    #    target (Node): The target to compose into
+    #
+    # Raises: LoadError
+    #
+    cpdef void composite(self, MappingNode target) except *:
+        try:
+            self._composite(target, [])
+        except CompositeError as e:
+            source_provenance = node_get_provenance(self)
+            error_prefix = ""
+            if source_provenance:
+                error_prefix = "{}: ".format(source_provenance)
+            raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
+                            "{}Failure composing {}: {}"
+                            .format(error_prefix,
+                                    e.path,
+                                    e.message)) from e
+
+    # Like composite(target, source), but where target overrides source instead.
+    #
+    cpdef void composite_under(self, MappingNode target) except *:
+        target.composite(self)
+
+        cdef str key
+        cdef Node value
+        cdef list to_delete = [key for key in target.value.keys() if key not in self.value]
+
+        for key, value in self.value.items():
+            target.value[key] = value
+        for key in to_delete:
+            del target.value[key]
+
     cdef Node get(self, str key, object default, object default_constructor):
         value = self.value.get(key, _sentinel)
 
@@ -1197,49 +1234,6 @@ cdef Node __new_node_from_list(list inlist):
         else:
             ret.append(ScalarNode(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
     return SequenceNode(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
-
-
-# composite()
-#
-# Compose one mapping node onto another
-#
-# Args:
-#    target (Node): The target to compose into
-#    source (Node): The source to compose from
-#    path   (list): The path to the current composition node
-#
-# Raises: LoadError
-#
-cpdef void composite(MappingNode target, MappingNode source) except *:
-    assert type(source.value) is dict
-    assert type(target.value) is dict
-
-    try:
-        source._composite(target, [])
-    except CompositeError as e:
-        source_provenance = node_get_provenance(source)
-        error_prefix = ""
-        if source_provenance:
-            error_prefix = "{}: ".format(source_provenance)
-        raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                        "{}Failure composing {}: {}"
-                        .format(error_prefix,
-                                e.path,
-                                e.message)) from e
-
-
-# Like composite(target, source), but where target overrides source instead.
-#
-def composite_and_move(MappingNode target, MappingNode source):
-    composite(source, target)
-
-    cdef str key
-    cdef Node value
-    cdef list to_delete = [key for key in target.value.keys() if key not in source.value]
-    for key, value in source.value.items():
-        target.value[key] = value
-    for key in to_delete:
-        del target.value[key]
 
 
 # node_validate()

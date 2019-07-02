@@ -189,7 +189,7 @@ class Context():
         if config:
             self.config_origin = os.path.abspath(config)
             user_config = _yaml.load(config)
-            _yaml.composite(defaults, user_config)
+            user_config.composite(defaults)
 
         # Give obsoletion warnings
         if 'builddir' in defaults:
