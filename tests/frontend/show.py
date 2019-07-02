@@ -403,8 +403,8 @@ def test_exceed_max_recursion_depth(cli, tmpdir, dependency_depth):
         """
         os.mkdir(project_path)
 
-        result = cli.run(project=project_path, silent=True,
-                         args=['init', '--project-name', project_name])
+        result = cli.run(silent=True,
+                         args=['init', '--project-name', project_name, project_path])
         result.assert_success()
 
         sourcefiles_path = os.path.join(project_path, "files")

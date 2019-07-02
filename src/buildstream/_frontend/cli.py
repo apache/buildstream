@@ -217,7 +217,7 @@ def print_version(ctx, param, value):
 @click.option('--config', '-c',
               type=click.Path(exists=True, dir_okay=False, readable=True),
               help="Configuration file to use")
-@click.option('--directory', '-C', default=os.getcwd(),
+@click.option('--directory', '-C', default=None,  # Set to os.getcwd() later.
               type=click.Path(file_okay=False, readable=True),
               help="Project directory (default: current directory)")
 @click.option('--on-error', default=None,
@@ -311,8 +311,10 @@ def help_command(ctx, command):
               help="The subdirectory to store elements in (default: elements)")
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Allow overwriting an existing project.conf")
+@click.argument('target-directory', nargs=1, required=False,
+                type=click.Path(file_okay=False, writable=True))
 @click.pass_obj
-def init(app, project_name, format_version, element_path, force):
+def init(app, project_name, format_version, element_path, force, target_directory):
     """Initialize a new BuildStream project
 
     Creates a new BuildStream project.conf in the project
@@ -321,7 +323,7 @@ def init(app, project_name, format_version, element_path, force):
     Unless `--project-name` is specified, this will be an
     interactive session.
     """
-    app.init_project(project_name, format_version, element_path, force)
+    app.init_project(project_name, format_version, element_path, force, target_directory)
 
 
 ##################################################################
