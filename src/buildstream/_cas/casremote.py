@@ -7,7 +7,6 @@ from urllib.parse import urlparse
 import grpc
 
 from .._protos.google.rpc import code_pb2
-from .._protos.google.bytestream import bytestream_pb2_grpc
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.build.buildgrid import local_cas_pb2
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
@@ -82,7 +81,6 @@ class CASRemote():
         self.cascache = cascache
         self.channel = None
         self.instance_name = None
-        self.bytestream = None
         self.cas = None
         self.ref_storage = None
         self.batch_update_supported = None
@@ -128,7 +126,6 @@ class CASRemote():
 
             self.instance_name = self.spec.instance_name or None
 
-            self.bytestream = bytestream_pb2_grpc.ByteStreamStub(self.channel)
             self.cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self.channel)
             self.capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self.channel)
             self.ref_storage = buildstream_pb2_grpc.ReferenceStorageStub(self.channel)
