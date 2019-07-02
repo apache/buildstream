@@ -81,6 +81,7 @@ class App():
         self._fail_messages = {}           # Failure messages by unique plugin id
         self._interactive_failures = None  # Whether to handle failures interactively
         self._started = False              # Whether a session has started
+        self._set_project_dir = False      # Whether -C option was used
 
         # UI Colors Profiles
         self._content_profile = Profile(fg='yellow')
@@ -115,6 +116,11 @@ class App():
             self.colors = True
         else:
             self.colors = False
+
+        if main_options['directory']:
+            self._set_project_dir = True
+        else:
+            main_options['directory'] = os.getcwd()
 
     # create()
     #
@@ -310,13 +316,24 @@ class App():
     #    format_version (int): The project format version, default is the latest version
     #    element_path (str): The subdirectory to store elements in, default is 'elements'
     #    force (bool): Allow overwriting an existing project.conf
+    #    target_directory (str): The target directory the project should be initialized in
     #
-    def init_project(self, project_name, format_version=BST_FORMAT_VERSION, element_path='elements', force=False):
-        directory = self._main_options['directory']
-        directory = os.path.abspath(directory)
+    def init_project(self, project_name, format_version=BST_FORMAT_VERSION, element_path='elements',
+                     force=False, target_directory=None):
+        if target_directory:
+            directory = os.path.abspath(target_directory)
+        else:
+            directory = self._main_options['directory']
+            directory = os.path.abspath(directory)
+
         project_path = os.path.join(directory, 'project.conf')
 
         try:
+            if self._set_project_dir:
+                raise AppError("Attempted to use -C or --directory with init.",
+                               reason='init-with-set-directory',
+                               detail="Please use 'bst init {}' instead.".format(directory))
+
             # Abort if the project.conf already exists, unless `--force` was specified in `bst init`
             if not force and os.path.exists(project_path):
                 raise AppError("A project.conf already exists at: {}".format(project_path),
