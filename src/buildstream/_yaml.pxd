@@ -38,6 +38,8 @@ cdef class Node:
 
 
 cdef class MappingNode(Node):
+    cpdef void composite(self, MappingNode target) except *
+    cpdef void composite_under(self, MappingNode target) except *
     cdef Node get(self, str key, default, default_constructor)
     cpdef MappingNode get_mapping(self, str key, default=*)
     cpdef Node get_node(self, str key, list allowed_types=*, bint allow_none=*)

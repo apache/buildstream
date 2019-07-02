@@ -81,7 +81,7 @@ class Includes:
                 finally:
                     included.remove(file_path)
 
-                _yaml.composite_and_move(node, include_node)
+                include_node.composite_under(node)
 
         for value in node.values():
             self._process_value(value,
