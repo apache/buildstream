@@ -2551,7 +2551,7 @@ class Element(Plugin):
 
         _yaml.composite(environment, default_env)
         _yaml.composite(environment, meta.environment)
-        _yaml.node_final_assertions(environment)
+        environment._assert_fully_composited()
 
         return environment
 
@@ -2597,7 +2597,7 @@ class Element(Plugin):
 
         _yaml.composite(variables, default_vars)
         _yaml.composite(variables, meta.variables)
-        _yaml.node_final_assertions(variables)
+        variables._assert_fully_composited()
 
         for var in ('project-name', 'element-name', 'max-jobs'):
             provenance = _yaml.node_get_provenance(variables, var)
@@ -2619,7 +2619,7 @@ class Element(Plugin):
         config = config.copy()
 
         _yaml.composite(config, meta.config)
-        _yaml.node_final_assertions(config)
+        config._assert_fully_composited()
 
         return config
 
@@ -2646,7 +2646,7 @@ class Element(Plugin):
 
         _yaml.composite(sandbox_config, sandbox_defaults)
         _yaml.composite(sandbox_config, meta.sandbox)
-        _yaml.node_final_assertions(sandbox_config)
+        sandbox_config._assert_fully_composited()
 
         # Sandbox config, unlike others, has fixed members so we should validate them
         _yaml.node_validate(sandbox_config, ['build-uid', 'build-gid', 'build-os', 'build-arch'])
@@ -2685,7 +2685,7 @@ class Element(Plugin):
         element_bst['split-rules'] = base_splits
         element_public['bst'] = element_bst
 
-        _yaml.node_final_assertions(element_public)
+        element_public._assert_fully_composited()
 
         return element_public
 
