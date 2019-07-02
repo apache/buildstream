@@ -35,7 +35,7 @@ def test_include_missing_file(cli, tmpdir):
     tmpdir.join('project.conf').write('{"name": "test"}')
     element = tmpdir.join('include_missing_file.bst')
 
-    # Normally we would use dicts and _yaml.dump to write such things, but here
+    # Normally we would use dicts and _yaml.roundtrip_dump to write such things, but here
     # we want to be sure of a stable line and column number.
     element.write(textwrap.dedent("""
         kind: manual
@@ -55,7 +55,7 @@ def test_include_dir(cli, tmpdir):
     tmpdir.mkdir('subdir')
     element = tmpdir.join('include_dir.bst')
 
-    # Normally we would use dicts and _yaml.dump to write such things, but here
+    # Normally we would use dicts and _yaml.roundtrip_dump to write such things, but here
     # we want to be sure of a stable line and column number.
     element.write(textwrap.dedent("""
         kind: manual
@@ -126,7 +126,7 @@ def test_junction_element_partial_project_project(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, junction_path)
+    _yaml.roundtrip_dump(element, junction_path)
 
     result = cli.run(project=project, args=[
         'show',
@@ -159,7 +159,7 @@ def test_junction_element_not_partial_project_file(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, junction_path)
+    _yaml.roundtrip_dump(element, junction_path)
 
     result = cli.run(project=project, args=[
         'show',

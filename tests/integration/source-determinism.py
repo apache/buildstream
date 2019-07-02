@@ -60,7 +60,7 @@ def test_deterministic_source_local(cli, tmpdir, datafiles):
             ]
         }
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     def get_value_for_mask(mask):
         checkoutdir = os.path.join(str(tmpdir), 'checkout-{}'.format(mask))

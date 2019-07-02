@@ -883,7 +883,7 @@ class Element(Plugin):
            (dict): A dictionary of string key/values suitable for passing
            to :func:`Sandbox.run() <buildstream.sandbox.Sandbox.run>`
         """
-        return _yaml.node_sanitize(self.__environment)
+        return self.__environment
 
     def get_variable(self, varname):
         """Fetch the value of a variable resolved for this element.
@@ -2166,7 +2166,7 @@ class Element(Plugin):
                 'environment': cache_env,
                 'sources': [s._get_unique_key(workspace is None) for s in self.__sources],
                 'workspace': '' if workspace is None else workspace.get_key(self._get_project()),
-                'public': self.__public,
+                'public': self.__public.strip_node_info(),
                 'cache': 'CASCache'
             }
 

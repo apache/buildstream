@@ -47,7 +47,7 @@ def test_pip_build(cli, datafiles):
         }]
     }
     os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
-    _yaml.dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
     result = cli.run(project=project, args=['build', element_name])
     assert result.exit_code == 0
@@ -119,7 +119,7 @@ def test_pip_element_should_install_pip_deps(cli, datafiles, setup_pypi_repo):
             }
         ]
     }
-    _yaml.dump(element, os.path.join(elements_path, element_name))
+    _yaml.roundtrip_dump(element, os.path.join(elements_path, element_name))
 
     result = cli.run(project=project, args=['source', 'track', element_name])
     assert result.exit_code == 0

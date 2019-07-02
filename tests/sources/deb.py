@@ -22,7 +22,7 @@ deb_name = "a_deb.deb"
 
 def generate_project(project_dir, tmpdir):
     project_file = os.path.join(project_dir, "project.conf")
-    _yaml.dump({
+    _yaml.roundtrip_dump({
         'name': 'foo',
         'aliases': {
             'tmpdir': "file:///" + str(tmpdir)

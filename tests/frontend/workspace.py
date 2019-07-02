@@ -92,9 +92,8 @@ class WorkspaceCreator():
         }
         if element_attrs:
             element = {**element, **element_attrs}
-        _yaml.dump(element,
-                   os.path.join(element_path,
-                                element_name))
+        _yaml.roundtrip_dump(element,
+                             os.path.join(element_path, element_name))
         return element_name, element_path, workspace_dir
 
     def create_workspace_elements(self, kinds, track, suffixs=None, workspace_dir_usr=None,
@@ -683,9 +682,8 @@ def test_buildable_no_ref(cli, tmpdir, datafiles):
             repo.source_config()
         ]
     }
-    _yaml.dump(element,
-               os.path.join(element_path,
-                            element_name))
+    _yaml.roundtrip_dump(element,
+                         os.path.join(element_path, element_name))
 
     # Assert that this target is not buildable when no workspace is associated.
     assert cli.get_element_state(project, element_name) == 'no reference'
@@ -804,7 +802,7 @@ def test_list_unsupported_workspace(cli, datafiles, workspace_cfg):
     os.makedirs(os.path.join(project, '.bst'))
     workspace_config_path = os.path.join(project, '.bst', 'workspaces.yml')
 
-    _yaml.dump(workspace_cfg, workspace_config_path)
+    _yaml.roundtrip_dump(workspace_cfg, workspace_config_path)
 
     result = cli.run(project=project, args=['workspace', 'list'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
@@ -909,20 +907,20 @@ def test_list_unsupported_workspace(cli, datafiles, workspace_cfg):
 def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expected):
     def parse_dict_as_yaml(node):
         tempfile = os.path.join(str(tmpdir), 'yaml_dump')
-        _yaml.dump(node, tempfile)
-        return _yaml.node_sanitize(_yaml.load(tempfile))
+        _yaml.roundtrip_dump(node, tempfile)
+        return _yaml.load(tempfile).strip_node_info()
 
     project = str(datafiles)
     os.makedirs(os.path.join(project, '.bst'))
     workspace_config_path = os.path.join(project, '.bst', 'workspaces.yml')
 
-    _yaml.dump(workspace_cfg, workspace_config_path)
+    _yaml.roundtrip_dump(workspace_cfg, workspace_config_path)
 
     # Check that we can still read workspace config that is in old format
     result = cli.run(project=project, args=['workspace', 'list'])
     result.assert_success()
 
-    loaded_config = _yaml.node_sanitize(_yaml.load(workspace_config_path))
+    loaded_config = _yaml.load(workspace_config_path).strip_node_info()
 
     # Check that workspace config remains the same if no modifications
     # to workspaces were made
@@ -947,9 +945,8 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element,
-               os.path.join(element_path,
-                            element_name))
+    _yaml.roundtrip_dump(element,
+                         os.path.join(element_path, element_name))
 
     # Make a change to the workspaces file
     result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
@@ -958,7 +955,7 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
     result.assert_success()
 
     # Check that workspace config is converted correctly if necessary
-    loaded_config = _yaml.node_sanitize(_yaml.load(workspace_config_path))
+    loaded_config = _yaml.load(workspace_config_path).strip_node_info()
     assert loaded_config == parse_dict_as_yaml(expected)
 
 
@@ -994,9 +991,8 @@ def test_cache_key_workspace_in_dependencies(cli, tmpdir, datafiles, strict):
             }
         ]
     }
-    _yaml.dump(element,
-               os.path.join(element_path,
-                            back_dep_element_name))
+    _yaml.roundtrip_dump(element,
+                         os.path.join(element_path, back_dep_element_name))
 
     # Modify workspace
     shutil.rmtree(os.path.join(workspace, 'usr', 'bin'))
@@ -1133,7 +1129,7 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
     # element has been tracked
     element_contents = _yaml.load(element_file)
     del element_contents.get_sequence('sources').mapping_at(0)['ref']
-    _yaml.dump(element_contents, element_file)
+    _yaml.roundtrip_dump(element_contents, element_file)
 
     result = cli.run(project=project, args=['-C', workspace, 'source', 'track', *arg_elm])
     result.assert_success()
@@ -1247,7 +1243,7 @@ def test_multisource_workspace(cli, datafiles, tmpdir):
         }]
     }
     element_path = os.path.join(project, 'elements', element_name)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     workspace_dir = os.path.join(str(tmpdir), 'multisource')
     res = cli.run(project=project,

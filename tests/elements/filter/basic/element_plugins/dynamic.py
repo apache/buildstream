@@ -11,7 +11,7 @@ class DynamicElement(Element):
         pass
 
     def get_unique_key(self):
-        return {'split-rules': self.split_rules}
+        return {'split-rules': self.split_rules.strip_node_info()}
 
     def configure_sandbox(self, sandbox):
         pass

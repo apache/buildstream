@@ -21,14 +21,15 @@
 #        James Ennis <james.ennis@codethink.co.uk>
 #        Benjamin Schubert <bschubert@bloomberg.net>
 
+import datetime
 import sys
 import string
 from contextlib import ExitStack
 from collections import OrderedDict
-from collections.abc import Mapping, Sequence
-from copy import deepcopy
+from collections.abc import Mapping
 
 from ruamel import yaml
+
 from ._exceptions import LoadError, LoadErrorReason
 
 
@@ -83,6 +84,12 @@ cdef class Node:
     cpdef Node copy(self):
         raise NotImplementedError()
 
+    cpdef object strip_node_info(self):
+        raise NotImplementedError()
+
+    def __json__(self):
+        raise ValueError("Nodes should not be allowed when jsonify-ing data", self)
+
 
 cdef class ScalarNode(Node):
 
@@ -131,6 +138,9 @@ cdef class ScalarNode(Node):
         if self.value is None:
             return None
         return str(self.value)
+
+    cpdef object strip_node_info(self):
+        return self.value
 
     cdef bint _walk_find(self, Node target, list path) except *:
         return self._shares_position_with(target)
@@ -273,6 +283,12 @@ cdef class MappingNode(Node):
     cpdef object values(self):
         return self.value.values()
 
+    cpdef object strip_node_info(self):
+        cdef str key
+        cdef Node value
+
+        return {key: value.strip_node_info() for key, value in self.value.items()}
+
     def __delitem__(self, str key):
         del self.value[key]
 
@@ -364,6 +380,10 @@ cdef class SequenceNode(Node):
 
     cpdef list as_str_list(self):
         return [node.as_str() for node in self.value]
+
+    cpdef object strip_node_info(self):
+        cdef Node value
+        return [value.strip_node_info() for value in self.value]
 
     cdef bint _walk_find(self, Node target, list path) except *:
         cdef int i
@@ -816,21 +836,6 @@ cpdef Node load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_na
     return contents
 
 
-# dump()
-#
-# Write a YAML node structure out to disk.
-#
-# This will always call `node_sanitize` on its input, so if you wanted
-# to output something close to what you read in, consider using the
-# `roundtrip_load` and `roundtrip_dump` function pair instead.
-#
-# Args:
-#    contents (any): Content to write out
-#    filename (str): The (optional) file name to write out to
-def dump(object contents, str filename=None):
-    roundtrip_dump(node_sanitize(contents), file=filename)
-
-
 # node_get_provenance()
 #
 # Gets the provenance for a node
@@ -1210,60 +1215,6 @@ def composite_and_move(MappingNode target, MappingNode source):
         del target.value[key]
 
 
-# Types we can short-circuit in node_sanitize for speed.
-__SANITIZE_SHORT_CIRCUIT_TYPES = (int, float, str, bool)
-
-
-# node_sanitize()
-#
-# Returns an alphabetically ordered recursive copy
-# of the source node with internal provenance information stripped.
-#
-# Only dicts are ordered, list elements are left in order.
-#
-cpdef object node_sanitize(object node, object dict_type=OrderedDict):
-    node_type = type(node)
-
-    # If we have an unwrappable node, unwrap it
-    # FIXME: we should only ever have Nodes here
-    if node_type in [MappingNode, SequenceNode]:
-        node = node.value
-        node_type = type(node)
-
-    if node_type is ScalarNode:
-        return node.value
-
-    # Short-circuit None which occurs ca. twice per element
-    if node is None:
-        return node
-
-    # Next short-circuit integers, floats, strings, booleans, and tuples
-    if node_type in __SANITIZE_SHORT_CIRCUIT_TYPES:
-        return node
-
-    # Now short-circuit lists.
-    elif node_type is list:
-        return [node_sanitize(elt, dict_type=dict_type) for elt in node]
-
-    # Finally dict, and other Mappings need special handling
-    elif node_type is dict:
-        result = dict_type()
-
-        key_list = [key for key, _ in node.items()]
-        for key in sorted(key_list):
-            result[key] = node_sanitize(node[key], dict_type=dict_type)
-
-        return result
-
-    # Sometimes we're handed tuples and we can't be sure what they contain
-    # so we have to sanitize into them
-    elif node_type is tuple:
-        return tuple([node_sanitize(v, dict_type=dict_type) for v in node])
-
-    # Everything else just gets returned as-is.
-    return node
-
-
 # node_validate()
 #
 # Validate the node so as to ensure the user has not specified
@@ -1389,6 +1340,34 @@ def assert_symbol_name(ProvenanceInformation provenance, str symbol_name, str pu
 ###############################################################################
 
 # Roundtrip code
+
+# Represent Nodes automatically
+
+def represent_mapping(self, MappingNode mapping):
+    return self.represent_dict(mapping.value)
+
+def represent_scalar(self, ScalarNode scalar):
+    return self.represent_str(scalar.value)
+
+def represent_sequence(self, SequenceNode sequence):
+    return self.represent_list(sequence.value)
+
+
+yaml.RoundTripRepresenter.add_representer(MappingNode, represent_mapping)
+yaml.RoundTripRepresenter.add_representer(ScalarNode, represent_scalar)
+yaml.RoundTripRepresenter.add_representer(SequenceNode, represent_sequence)
+
+# Represent simple types as strings
+
+def represent_as_str(self, value):
+    return self.represent_str(str(value))
+
+yaml.RoundTripRepresenter.add_representer(type(None), represent_as_str)
+yaml.RoundTripRepresenter.add_representer(int, represent_as_str)
+yaml.RoundTripRepresenter.add_representer(float, represent_as_str)
+yaml.RoundTripRepresenter.add_representer(bool, represent_as_str)
+yaml.RoundTripRepresenter.add_representer(datetime.datetime, represent_as_str)
+yaml.RoundTripRepresenter.add_representer(datetime.date, represent_as_str)
 
 # Always represent things consistently:
 
@@ -1520,33 +1499,6 @@ def roundtrip_load_data(contents, *, filename=None):
 #    file (any): The file to write to
 #
 def roundtrip_dump(contents, file=None):
-    assert type(contents) is not Node
-
-    def stringify_dict(thing):
-        for k, v in thing.items():
-            if type(v) is str:
-                pass
-            elif isinstance(v, Mapping):
-                stringify_dict(v)
-            elif isinstance(v, Sequence):
-                stringify_list(v)
-            else:
-                thing[k] = str(v)
-
-    def stringify_list(thing):
-        for i, v in enumerate(thing):
-            if type(v) is str:
-                pass
-            elif isinstance(v, Mapping):
-                stringify_dict(v)
-            elif isinstance(v, Sequence):
-                stringify_list(v)
-            else:
-                thing[i] = str(v)
-
-    contents = deepcopy(contents)
-    stringify_dict(contents)
-
     with ExitStack() as stack:
         if type(file) is str:
             from . import utils
