@@ -325,6 +325,52 @@ cdef class MappingNode(Node):
 
         return {key: value.strip_node_info() for key, value in self.value.items()}
 
+    cdef void _compose_on_list(self, SequenceNode target):
+        cdef SequenceNode clobber = self.value.get("(=)")
+        cdef SequenceNode prefix = self.value.get("(<)")
+        cdef SequenceNode suffix = self.value.get("(>)")
+
+        if clobber is not None:
+            target.value.clear()
+            target.value.extend(clobber.value)
+        if prefix is not None:
+            for v in reversed(prefix.value):
+                target.value.insert(0, v)
+        if suffix is not None:
+            target.value.extend(suffix.value)
+
+    cdef void _compose_on_composite_dict(self, MappingNode target):
+        cdef SequenceNode clobber = self.value.get("(=)")
+        cdef SequenceNode prefix = self.value.get("(<)")
+        cdef SequenceNode suffix = self.value.get("(>)")
+
+        if clobber is not None:
+            # We want to clobber the target list
+            # which basically means replacing the target list
+            # with ourselves
+            target.value["(=)"] = clobber
+            if prefix is not None:
+                target.value["(<)"] = prefix
+            elif "(<)" in target.value:
+                target.value["(<)"].value.clear()
+            if suffix is not None:
+                target.value["(>)"] = suffix
+            elif "(>)" in target.value:
+                target.value["(>)"].value.clear()
+        else:
+            # Not clobbering, so prefix the prefix and suffix the suffix
+            if prefix is not None:
+                if "(<)" in target.value:
+                    for v in reversed(prefix.value):
+                        target.value["(<)"].value.insert(0, v)
+                else:
+                    target.value["(<)"] = prefix
+            if suffix is not None:
+                if "(>)" in target.value:
+                    target.value["(>)"].value.extend(suffix.value)
+                else:
+                    target.value["(>)"] = suffix
+
     cdef bint _is_composite_list(self) except *:
         cdef bint has_directives = False
         cdef bint has_keys = False
@@ -1087,70 +1133,6 @@ cdef Node __new_node_from_list(list inlist):
     return SequenceNode(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
 
 
-# _compose_composite_list()
-#
-# Composes a composite list (i.e. a dict with list composition directives)
-# on top of a target list which is a composite list itself.
-#
-# Args:
-#    target (Node): A composite list
-#    source (Node): A composite list
-#
-cdef void _compose_composite_list(MappingNode target, MappingNode source):
-    clobber = source.value.get("(=)")
-    prefix = source.value.get("(<)")
-    suffix = source.value.get("(>)")
-    if clobber is not None:
-        # We want to clobber the target list
-        # which basically means replacing the target list
-        # with ourselves
-        target.value["(=)"] = clobber
-        if prefix is not None:
-            target.value["(<)"] = prefix
-        elif "(<)" in target.value:
-            target.value["(<)"].value.clear()
-        if suffix is not None:
-            target.value["(>)"] = suffix
-        elif "(>)" in target.value:
-            target.value["(>)"].value.clear()
-    else:
-        # Not clobbering, so prefix the prefix and suffix the suffix
-        if prefix is not None:
-            if "(<)" in target.value:
-                for v in reversed(prefix.value):
-                    target.value["(<)"].value.insert(0, v)
-            else:
-                target.value["(<)"] = prefix
-        if suffix is not None:
-            if "(>)" in target.value:
-                target.value["(>)"].value.extend(suffix.value)
-            else:
-                target.value["(>)"] = suffix
-
-
-# _compose_list()
-#
-# Compose a composite list (a dict with composition directives) on top of a
-# simple list.
-#
-# Args:
-#    target (Node): The target list to be composed into
-#    source (Node): The composition list to be composed from
-#
-cdef void _compose_list(SequenceNode target, MappingNode source):
-    clobber = source.value.get("(=)")
-    prefix = source.value.get("(<)")
-    suffix = source.value.get("(>)")
-    if clobber is not None:
-        target.value.clear()
-        target.value.extend(clobber.value)
-    if prefix is not None:
-        for v in reversed(prefix.value):
-            target.value.insert(0, v)
-    if suffix is not None:
-        target.value.extend(suffix.value)
-
-
 # composite_dict()
 #
 # Compose one mapping node onto another
@@ -1187,12 +1169,12 @@ cpdef void composite_dict(MappingNode target, MappingNode source, list path=None
             if k not in target.value:
                 # Composite list clobbers empty space
                 target.value[k] = v
-            elif type(target.value[k].value) is list:
+            elif type(target.value[k]) is SequenceNode:
                 # Composite list composes into a list
-                _compose_list(target.value[k], v)
+                (<MappingNode> v)._compose_on_list(target.value[k])
             elif (<Node> target.value[k])._is_composite_list():
                 # Composite list merges into composite list
-                _compose_composite_list(target.value[k], v)
+                (<MappingNode> v)._compose_on_composite_dict(target.value[k])
             else:
                 # Else composing on top of normal dict or a scalar, so raise...
                 raise CompositeError(path,
