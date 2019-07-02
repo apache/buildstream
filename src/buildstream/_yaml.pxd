@@ -50,6 +50,8 @@ cdef class MappingNode(Node):
     cpdef void safe_del(self, str key)
     cpdef object values(self)
 
+    cdef void _compose_on_composite_dict(self, MappingNode target)
+    cdef void _compose_on_list(self, SequenceNode target)
     cpdef list _find(self, Node target)
 
 
