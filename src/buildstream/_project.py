@@ -756,7 +756,7 @@ class Project():
         output.source_overrides = config.get_mapping('sources', default={})
         config.safe_del('elements')
         config.safe_del('sources')
-        _yaml.node_final_assertions(config)
+        config._assert_fully_composited()
 
         self._load_plugin_factories(config, output)
 
