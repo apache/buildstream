@@ -438,8 +438,13 @@ class Context():
     # Sets the handler for any status messages propagated through
     # the context.
     #
-    # The message handler should have the same signature as
-    # the message() method
+    # The handler should have the signature:
+    #
+    #   def handler(
+    #      message: _message.Message,  # The message to send.
+    #      is_silenced: bool,          # Whether messages are currently being silenced.
+    #   ) -> None
+    #
     def set_message_handler(self, handler):
         self._messenger.set_message_handler(handler)
 
@@ -460,7 +465,7 @@ class Context():
     #    message: A Message object
     #
     def message(self, message):
-        self._messenger.message(message, context=self)
+        self._messenger.message(message)
 
     # silence()
     #
@@ -487,7 +492,7 @@ class Context():
     @contextmanager
     def timed_activity(self, activity_name, *, unique_id=None, detail=None, silent_nested=False):
         with self._messenger.timed_activity(
-                activity_name, context=self, unique_id=unique_id, detail=detail, silent_nested=silent_nested):
+                activity_name, unique_id=unique_id, detail=detail, silent_nested=silent_nested):
             yield
 
     # recorded_messages()

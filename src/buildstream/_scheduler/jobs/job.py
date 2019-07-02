@@ -828,16 +828,16 @@ class ChildJob():
     # the message back to the parent process for further propagation.
     #
     # Args:
-    #    message (Message): The message to log
-    #    context (Context): The context object delegating this message
+    #    message     (Message): The message to log
+    #    is_silenced (bool)   : Whether messages are silenced
     #
-    def _child_message_handler(self, message, context):
+    def _child_message_handler(self, message, is_silenced):
 
         message.action_name = self.action_name
         message.task_id = self._task_id
 
         # Send to frontend if appropriate
-        if context.silent_messages() and (message.message_type not in unconditional_messages):
+        if is_silenced and (message.message_type not in unconditional_messages):
             return
 
         if message.message_type == MessageType.LOG:

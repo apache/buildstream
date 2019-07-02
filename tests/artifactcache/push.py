@@ -23,7 +23,7 @@ DATA_DIR = os.path.join(
 
 
 # Handle messages from the pipeline
-def message_handler(message, context):
+def message_handler(message, is_silenced):
     pass
 
 

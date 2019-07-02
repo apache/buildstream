@@ -35,7 +35,7 @@ from tests.testutils.element_generators import create_element_size
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
-def dummy_message_handler(message, context):
+def dummy_message_handler(message, is_silenced):
     pass
 
 

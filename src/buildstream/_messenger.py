@@ -42,8 +42,13 @@ class Messenger():
     # Sets the handler for any status messages propagated through
     # the context.
     #
-    # The message handler should have the same signature as
-    # the message() method
+    # The handler should have the signature:
+    #
+    #   def handler(
+    #      message: _message.Message,  # The message to send.
+    #      is_silenced: bool,          # Whether messages are currently being silenced.
+    #   ) -> None
+    #
     def set_message_handler(self, handler):
         self._message_handler = handler
 
@@ -66,7 +71,7 @@ class Messenger():
     # Args:
     #    message: A Message object
     #
-    def message(self, message, context):
+    def message(self, message):
 
         # Tag message only once
         if message.depth is None:
@@ -80,7 +85,7 @@ class Messenger():
         # to the frontend)
         assert self._message_handler
 
-        self._message_handler(message, context=context)
+        self._message_handler(message, is_silenced=self.silent_messages())
 
     # silence()
     #
@@ -109,7 +114,7 @@ class Messenger():
     #    silent_nested (bool): If specified, nested messages will be silenced
     #
     @contextmanager
-    def timed_activity(self, activity_name, context, *, unique_id=None, detail=None, silent_nested=False):
+    def timed_activity(self, activity_name, *, unique_id=None, detail=None, silent_nested=False):
 
         starttime = datetime.datetime.now()
         stopped_time = None
@@ -128,7 +133,7 @@ class Messenger():
             try:
                 # Push activity depth for status messages
                 message = Message(unique_id, MessageType.START, activity_name, detail=detail)
-                self.message(message, context)
+                self.message(message)
                 self._push_message_depth(silent_nested)
                 yield
 
@@ -138,13 +143,13 @@ class Messenger():
                 elapsed = datetime.datetime.now() - starttime
                 message = Message(unique_id, MessageType.FAIL, activity_name, elapsed=elapsed)
                 self._pop_message_depth()
-                self.message(message, context)
+                self.message(message)
                 raise
 
             elapsed = datetime.datetime.now() - starttime
             message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed)
             self._pop_message_depth()
-            self.message(message, context)
+            self.message(message)
 
     # recorded_messages()
     #

@@ -35,7 +35,7 @@ from tests.testutils import create_artifact_share
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
 
-def message_handler(message, context):
+def message_handler(message, is_silenced):
     pass
 
 

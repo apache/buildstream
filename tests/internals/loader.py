@@ -13,7 +13,7 @@ DATA_DIR = os.path.join(
 )
 
 
-def dummy_handler(message, context):
+def dummy_handler(message, is_silenced):
     pass
 
 
