@@ -617,7 +617,7 @@ class Stream():
 
         # Prune the artifact cache
         if ref_removed and not no_prune:
-            with self._context.timed_activity("Pruning artifact cache"):
+            with self._context.messenger.timed_activity("Pruning artifact cache"):
                 self._artifacts.prune()
 
         if not ref_removed:
@@ -789,8 +789,8 @@ class Stream():
 
         # Remove workspace directory if prompted
         if remove_dir:
-            with self._context.timed_activity("Removing workspace directory {}"
-                                              .format(workspace.get_absolute_path())):
+            with self._context.messenger.timed_activity("Removing workspace directory {}"
+                                                        .format(workspace.get_absolute_path())):
                 try:
                     shutil.rmtree(workspace.get_absolute_path())
                 except OSError as e:
@@ -1195,7 +1195,7 @@ class Stream():
     #
     def _message(self, message_type, message, **kwargs):
         args = dict(kwargs)
-        self._context.message(
+        self._context.messenger.message(
             Message(None, message_type, message, **args))
 
     # _add_queue()
@@ -1434,7 +1434,7 @@ class Stream():
 
     # Collect the sources in the given sandbox into a tarfile
     def _collect_sources(self, directory, tar_name, element_name, compression):
-        with self._context.timed_activity("Creating tarball {}".format(tar_name)):
+        with self._context.messenger.timed_activity("Creating tarball {}".format(tar_name)):
             if compression == "none":
                 permissions = "w:"
             else:

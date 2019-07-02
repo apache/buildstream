@@ -71,7 +71,7 @@ def test_push(cli, tmpdir, datafiles):
         # Fake minimal context
         context = Context()
         context.load(config=user_config_file)
-        context.set_message_handler(message_handler)
+        context.messenger.set_message_handler(message_handler)
 
         # Load the project manually
         project = Project(project_dir, context)
@@ -108,7 +108,7 @@ def _test_push(user_config_file, project_dir, element_name, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
-    context.set_message_handler(message_handler)
+    context.messenger.set_message_handler(message_handler)
 
     # Load the project manually
     project = Project(project_dir, context)
@@ -194,7 +194,7 @@ def _test_push_message(user_config_file, project_dir, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
-    context.set_message_handler(message_handler)
+    context.messenger.set_message_handler(message_handler)
 
     # Load the project manually
     project = Project(project_dir, context)

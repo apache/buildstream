@@ -95,7 +95,7 @@ def test_pull(cli, tmpdir, datafiles):
         # Fake minimal context
         context = Context()
         context.load(config=user_config_file)
-        context.set_message_handler(message_handler)
+        context.messenger.set_message_handler(message_handler)
 
         # Load the project
         project = Project(project_dir, context)
@@ -136,7 +136,7 @@ def _test_pull(user_config_file, project_dir, cache_dir,
     context.cachedir = cache_dir
     context.casdir = os.path.join(cache_dir, 'cas')
     context.tmpdir = os.path.join(cache_dir, 'tmp')
-    context.set_message_handler(message_handler)
+    context.messenger.set_message_handler(message_handler)
 
     # Load the project manually
     project = Project(project_dir, context)
@@ -198,7 +198,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Fake minimal context
         context = Context()
         context.load(config=user_config_file)
-        context.set_message_handler(message_handler)
+        context.messenger.set_message_handler(message_handler)
 
         # Load the project and CAS cache
         project = Project(project_dir, context)
@@ -273,7 +273,7 @@ def _test_push_tree(user_config_file, project_dir, artifact_digest, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
-    context.set_message_handler(message_handler)
+    context.messenger.set_message_handler(message_handler)
 
     # Load the project manually
     project = Project(project_dir, context)
@@ -308,7 +308,7 @@ def _test_pull_tree(user_config_file, project_dir, artifact_digest, queue):
     # Fake minimal context
     context = Context()
     context.load(config=user_config_file)
-    context.set_message_handler(message_handler)
+    context.messenger.set_message_handler(message_handler)
 
     # Load the project manually
     project = Project(project_dir, context)

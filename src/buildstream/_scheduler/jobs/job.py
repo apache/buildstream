@@ -347,7 +347,7 @@ class Job():
         if "unique_id" in kwargs:
             unique_id = kwargs["unique_id"]
             del kwargs["unique_id"]
-        self._scheduler.context.message(
+        self._scheduler.context.messenger.message(
             Message(unique_id, message_type, message, **kwargs))
 
     #######################################################
@@ -470,7 +470,7 @@ class Job():
         if envelope.message_type is _MessageType.LOG_MESSAGE:
             # Propagate received messages from children
             # back through the context.
-            self._scheduler.context.message(envelope.message)
+            self._scheduler.context.messenger.message(envelope.message)
         elif envelope.message_type is _MessageType.ERROR:
             # For regression tests only, save the last error domain / reason
             # reported from a child task in the main process, this global state
@@ -592,7 +592,7 @@ class ChildJob():
         if "unique_id" in kwargs:
             unique_id = kwargs["unique_id"]
             del kwargs["unique_id"]
-        self._context.message(
+        self._context.messenger.message(
             Message(unique_id, message_type, message, **kwargs))
 
     # send_message()
@@ -673,7 +673,7 @@ class ChildJob():
         # Set the global message handler in this child
         # process to forward messages to the parent process
         self._queue = queue
-        self._context.set_message_handler(self._child_message_handler)
+        self._context.messenger.set_message_handler(self._child_message_handler)
 
         starttime = datetime.datetime.now()
         stopped_time = None
@@ -690,7 +690,7 @@ class ChildJob():
         # Time, log and and run the action function
         #
         with _signals.suspendable(stop_time, resume_time), \
-                self._context.recorded_messages(self._logfile) as filename:
+                self._context.messenger.recorded_messages(self._logfile, self._context.logdir) as filename:
 
             self.message(MessageType.START, self.action_name, logfile=filename)
 

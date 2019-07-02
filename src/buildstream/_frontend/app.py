@@ -213,7 +213,7 @@ class App():
                               indent=INDENT)
 
         # Propagate pipeline feedback to the user
-        self.context.set_message_handler(self._message_handler)
+        self.context.messenger.set_message_handler(self._message_handler)
 
         # Preflight the artifact cache after initializing logging,
         # this can cause messages to be emitted.
@@ -459,7 +459,7 @@ class App():
     #
     def _message(self, message_type, message, **kwargs):
         args = dict(kwargs)
-        self.context.message(
+        self.context.messenger.message(
             Message(None, message_type, message, **args))
 
     # Exception handler

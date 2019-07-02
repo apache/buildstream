@@ -52,12 +52,12 @@ class Messenger():
     def set_message_handler(self, handler):
         self._message_handler = handler
 
-    # silent_messages():
+    # _silent_messages():
     #
     # Returns:
     #    (bool): Whether messages are currently being silenced
     #
-    def silent_messages(self):
+    def _silent_messages(self):
         for silent in self._message_depth:
             if silent:
                 return True
@@ -85,7 +85,7 @@ class Messenger():
         # to the frontend)
         assert self._message_handler
 
-        self._message_handler(message, is_silenced=self.silent_messages())
+        self._message_handler(message, is_silenced=self._silent_messages())
 
     # silence()
     #

@@ -1052,7 +1052,7 @@ class CASQuota:
         self._cache_lower_threshold = None    # The target cache size for a cleanup
         self.available_space = None
 
-        self._message = context.message
+        self._message = context.messenger.message
 
         self._remove_callbacks = []   # Callbacks to remove unrequired refs and their remove method
         self._list_refs_callbacks = []  # Callbacks to all refs

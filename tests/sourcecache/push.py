@@ -72,7 +72,7 @@ def test_source_push(cli, tmpdir, datafiles):
         # get the source object
         context = Context()
         context.load(config=user_config_file)
-        context.set_message_handler(message_handler)
+        context.messenger.set_message_handler(message_handler)
         project = Project(project_dir, context)
         project.ensure_fully_loaded()
 

@@ -332,7 +332,7 @@ class Queue():
     def _message(self, element, message_type, brief, **kwargs):
         context = element._get_context()
         message = Message(element._unique_id, message_type, brief, **kwargs)
-        context.message(message)
+        context.messenger.message(message)
 
     def _element_log_path(self, element):
         project = element._get_project()

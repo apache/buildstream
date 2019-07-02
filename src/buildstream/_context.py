@@ -19,7 +19,6 @@
 
 import os
 import shutil
-from contextlib import contextmanager
 from . import utils
 from . import _cachekey
 from . import _site
@@ -145,6 +144,8 @@ class Context():
         # Make sure the XDG vars are set in the environment before loading anything
         self._init_xdg()
 
+        self.messenger = Messenger()
+
         # Private variables
         self._cache_key = None
         self._artifactcache = None
@@ -155,7 +156,6 @@ class Context():
         self._workspace_project_cache = WorkspaceProjectCache()
         self._cascache = None
         self._casquota = None
-        self._messenger = Messenger()
 
     # load()
     #
@@ -433,116 +433,6 @@ class Context():
 
         return self._cache_key
 
-    # set_message_handler()
-    #
-    # Sets the handler for any status messages propagated through
-    # the context.
-    #
-    # The handler should have the signature:
-    #
-    #   def handler(
-    #      message: _message.Message,  # The message to send.
-    #      is_silenced: bool,          # Whether messages are currently being silenced.
-    #   ) -> None
-    #
-    def set_message_handler(self, handler):
-        self._messenger.set_message_handler(handler)
-
-    # silent_messages():
-    #
-    # Returns:
-    #    (bool): Whether messages are currently being silenced
-    #
-    def silent_messages(self):
-        return self._messenger.silent_messages()
-
-    # message():
-    #
-    # Proxies a message back to the caller, this is the central
-    # point through which all messages pass.
-    #
-    # Args:
-    #    message: A Message object
-    #
-    def message(self, message):
-        self._messenger.message(message)
-
-    # silence()
-    #
-    # A context manager to silence messages, this behaves in
-    # the same way as the `silent_nested` argument of the
-    # Context._timed_activity() context manager: especially
-    # important messages will not be silenced.
-    #
-    @contextmanager
-    def silence(self):
-        with self._messenger.silence():
-            yield
-
-    # timed_activity()
-    #
-    # Context manager for performing timed activities and logging those
-    #
-    # Args:
-    #    context (Context): The invocation context object
-    #    activity_name (str): The name of the activity
-    #    detail (str): An optional detailed message, can be multiline output
-    #    silent_nested (bool): If specified, nested messages will be silenced
-    #
-    @contextmanager
-    def timed_activity(self, activity_name, *, unique_id=None, detail=None, silent_nested=False):
-        with self._messenger.timed_activity(
-                activity_name, unique_id=unique_id, detail=detail, silent_nested=silent_nested):
-            yield
-
-    # recorded_messages()
-    #
-    # Records all messages in a log file while the context manager
-    # is active.
-    #
-    # In addition to automatically writing all messages to the
-    # specified logging file, an open file handle for process stdout
-    # and stderr will be available via the Context.get_log_handle() API,
-    # and the full logfile path will be available via the
-    # Context.get_log_filename() API.
-    #
-    # Args:
-    #     filename (str): A logging directory relative filename,
-    #                     the pid and .log extension will be automatically
-    #                     appended
-    #
-    # Yields:
-    #     (str): The fully qualified log filename
-    #
-    @contextmanager
-    def recorded_messages(self, filename):
-        with self._messenger.recorded_messages(filename, logdir=self.logdir) as messages:
-            yield messages
-
-    # get_log_handle()
-    #
-    # Fetches the active log handle, this will return the active
-    # log file handle when the Context.recorded_messages() context
-    # manager is active
-    #
-    # Returns:
-    #     (file): The active logging file handle, or None
-    #
-    def get_log_handle(self):
-        return self._messenger.get_log_handle()
-
-    # get_log_filename()
-    #
-    # Fetches the active log filename, this will return the active
-    # log filename when the Context.recorded_messages() context
-    # manager is active
-    #
-    # Returns:
-    #     (str): The active logging filename, or None
-    #
-    def get_log_filename(self):
-        return self._messenger.get_log_filename()
-
     # set_artifact_directories_optional()
     #
     # This indicates that the current context (command or configuration)
@@ -561,27 +451,6 @@ class Context():
     #
     def set_artifact_files_optional(self):
         self.require_artifact_files = False
-
-    # _record_message()
-    #
-    # Records the message if recording is enabled
-    #
-    # Args:
-    #    message (Message): The message to record
-    #
-    def _record_message(self, message):
-        self._messenger._record_message(message)
-
-    # _push_message_depth() / _pop_message_depth()
-    #
-    # For status messages, send the depth of timed
-    # activities inside a given task through the message
-    #
-    def _push_message_depth(self, silent_nested):
-        self._messenger._push_message_depth(silent_nested)
-
-    def _pop_message_depth(self):
-        self._messenger._pop_message_depth()
 
     # Force the resolved XDG variables into the environment,
     # this is so that they can be used directly to specify

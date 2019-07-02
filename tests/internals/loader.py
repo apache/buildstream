@@ -20,7 +20,7 @@ def dummy_handler(message, is_silenced):
 def make_loader(basedir):
     context = Context()
     context.load(config=os.devnull)
-    context.set_message_handler(dummy_handler)
+    context.messenger.set_message_handler(dummy_handler)
     project = Project(basedir, context)
     return project.loader
 
