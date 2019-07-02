@@ -316,35 +316,25 @@ class CASRemote():
 class _CASBatchRead():
     def __init__(self, remote):
         self._remote = remote
-        self._max_total_size_bytes = remote.max_batch_total_size_bytes
-        self._request = remote_execution_pb2.BatchReadBlobsRequest()
-        if remote.instance_name:
-            self._request.instance_name = remote.instance_name
-        self._size = 0
+        self._request = local_cas_pb2.FetchMissingBlobsRequest()
+        self._request.instance_name = remote.local_cas_instance_name
         self._sent = False
 
     def add(self, digest):
         assert not self._sent
 
-        new_batch_size = self._size + digest.size_bytes
-        if new_batch_size > self._max_total_size_bytes:
-            # Not enough space left in current batch
-            return False
-
-        request_digest = self._request.digests.add()
-        request_digest.hash = digest.hash
-        request_digest.size_bytes = digest.size_bytes
-        self._size = new_batch_size
-        return True
+        request_digest = self._request.blob_digests.add()
+        request_digest.CopyFrom(digest)
 
     def send(self, *, missing_blobs=None):
         assert not self._sent
         self._sent = True
 
-        if not self._request.digests:
+        if not self._request.blob_digests:
             return
 
-        batch_response = self._remote.cas.BatchReadBlobs(self._request)
+        local_cas = self._remote.cascache._get_local_cas()
+        batch_response = local_cas.FetchMissingBlobs(self._request)
 
         for response in batch_response.responses:
             if response.status.code == code_pb2.NOT_FOUND:
@@ -360,8 +350,6 @@ class _CASBatchRead():
             if response.digest.size_bytes != len(response.data):
                 raise CASRemoteError("Failed to download blob {}: expected {} bytes, received {} bytes".format(
                     response.digest.hash, response.digest.size_bytes, len(response.data)))
-
-            yield (response.digest, response.data)
 
 
 # Represents a batch of blobs queued for upload.

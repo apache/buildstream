@@ -824,18 +824,9 @@ class CASCache():
 
         return objpath
 
-    def _batch_download_complete(self, batch, *, missing_blobs=None):
-        for digest, data in batch.send(missing_blobs=missing_blobs):
-            with self._temporary_object() as f:
-                f.write(data)
-                f.flush()
-
-                added_digest = self.add_object(path=f.name, link_directly=True)
-                assert added_digest.hash == digest.hash
-
     # Helper function for _fetch_directory().
     def _fetch_directory_batch(self, remote, batch, fetch_queue, fetch_next_queue):
-        self._batch_download_complete(batch)
+        batch.send()
 
         # All previously scheduled directories are now locally available,
         # move them to the processing queue.
@@ -850,17 +841,8 @@ class CASCache():
         if in_local_cache:
             # Skip download, already in local cache.
             pass
-        elif (digest.size_bytes >= remote.max_batch_total_size_bytes or
-              not remote.batch_read_supported):
-            # Too large for batch request, download in independent request.
-            self._ensure_blob(remote, digest)
-            in_local_cache = True
         else:
-            if not batch.add(digest):
-                # Not enough space left in batch request.
-                # Complete pending batch first.
-                batch = self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
-                batch.add(digest)
+            batch.add(digest)
 
         if recursive:
             if in_local_cache:
@@ -944,27 +926,9 @@ class CASCache():
         batch = _CASBatchRead(remote)
 
         for digest in digests:
-            if (digest.size_bytes >= remote.max_batch_total_size_bytes or
-                    not remote.batch_read_supported):
-                # Too large for batch request, download in independent request.
-                try:
-                    self._ensure_blob(remote, digest)
-                except grpc.RpcError as e:
-                    if e.code() == grpc.StatusCode.NOT_FOUND:
-                        missing_blobs.append(digest)
-                    else:
-                        raise CASCacheError("Failed to fetch blob: {}".format(e)) from e
-            else:
-                if not batch.add(digest):
-                    # Not enough space left in batch request.
-                    # Complete pending batch first.
-                    self._batch_download_complete(batch, missing_blobs=missing_blobs)
+            batch.add(digest)
 
-                    batch = _CASBatchRead(remote)
-                    batch.add(digest)
-
-        # Complete last pending batch
-        self._batch_download_complete(batch, missing_blobs=missing_blobs)
+        batch.send(missing_blobs=missing_blobs)
 
         return missing_blobs
 
