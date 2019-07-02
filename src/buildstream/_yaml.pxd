@@ -30,6 +30,7 @@ cdef class Node:
     cpdef Node copy(self)
     cpdef object strip_node_info(self)
 
+    cpdef void _assert_fully_composited(self) except *
     cdef bint _shares_position_with(self, Node target)
     cdef bint _walk_find(self, Node target, list path) except *
 
