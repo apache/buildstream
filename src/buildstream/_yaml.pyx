@@ -336,6 +336,15 @@ cdef class MappingNode(Node):
 
         return {key: value.strip_node_info() for key, value in self.value.items()}
 
+    cdef void _composite(self, MappingNode target, list path=None) except *:
+        cdef str key
+        cdef Node value
+
+        for key, value in self.value.items():
+            path.append(key)
+            value._compose_on(key, target, path)
+            path.pop()
+
     cdef void _compose_on(self, str key, MappingNode target, list path) except *:
         cdef Node target_value
 
@@ -365,7 +374,7 @@ cdef class MappingNode(Node):
                 # the same provenance as the incoming dict
                 target.value[key] = MappingNode({}, self.file_index, self.line, self.column)
 
-            composite_dict(target.value[key], self, path)
+            self._composite(target.value[key], path)
 
     cdef void _compose_on_list(self, SequenceNode target):
         cdef SequenceNode clobber = self.value.get("(=)")
@@ -1190,7 +1199,7 @@ cdef Node __new_node_from_list(list inlist):
     return SequenceNode(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
 
 
-# composite_dict()
+# composite()
 #
 # Compose one mapping node onto another
 #
@@ -1199,28 +1208,14 @@ cdef Node __new_node_from_list(list inlist):
 #    source (Node): The source to compose from
 #    path   (list): The path to the current composition node
 #
-# Raises: CompositeError
-#
-cpdef void composite_dict(MappingNode target, MappingNode source, list path=None) except *:
-    cdef str k
-    cdef Node v, target_value
-
-    if path is None:
-        path = []
-    for k, v in source.value.items():
-        path.append(k)
-        v._compose_on(k, target, path)
-        path.pop()
-
-
-# Like composite_dict(), but raises an all purpose LoadError for convenience
+# Raises: LoadError
 #
 cpdef void composite(MappingNode target, MappingNode source) except *:
     assert type(source.value) is dict
     assert type(target.value) is dict
 
     try:
-        composite_dict(target, source)
+        source._composite(target, [])
     except CompositeError as e:
         source_provenance = node_get_provenance(source)
         error_prefix = ""
