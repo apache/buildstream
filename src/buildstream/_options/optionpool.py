@@ -290,7 +290,7 @@ class OptionPool():
 
                 # Apply the yaml fragment if its condition evaluates to true
                 if apply_fragment:
-                    _yaml.composite(node, value)
+                    value.composite(node)
 
             return True
 
