@@ -20,7 +20,6 @@
 import os
 import platform
 import sys
-import resource
 
 import psutil
 
@@ -36,7 +35,7 @@ class Platform():
     # sandbox factory as well as platform helpers.
     #
     def __init__(self):
-        self.set_resource_limits()
+        self.maximize_open_file_limit()
 
     @classmethod
     def _create_instance(cls):
@@ -153,14 +152,18 @@ class Platform():
         raise ImplError("Platform {platform} does not implement check_sandbox_config()"
                         .format(platform=type(self).__name__))
 
-    def set_resource_limits(self, soft_limit=None, hard_limit=None):
+    def maximize_open_file_limit(self):
         # Need to set resources for _frontend/app.py as this is dependent on the platform
         # SafeHardlinks FUSE needs to hold file descriptors for all processes in the sandbox.
-        # Avoid hitting the limit too quickly.
-        limits = resource.getrlimit(resource.RLIMIT_NOFILE)
-        if limits[0] != limits[1]:
-            if soft_limit is None:
-                soft_limit = limits[1]
-            if hard_limit is None:
-                hard_limit = limits[1]
-            resource.setrlimit(resource.RLIMIT_NOFILE, (soft_limit, hard_limit))
+        # Avoid hitting the limit too quickly, by increasing it as far as we can.
+
+        # Import this late, as it is not available on Windows. Note that we
+        # could use `psutil.Process().rlimit` instead, but this would introduce
+        # a dependency on the `prlimit(2)` call, which seems to only be
+        # available on Linux. For more info:
+        # https://github.com/giampaolo/psutil/blob/cbf2bafbd33ad21ef63400d94cb313c299e78a45/psutil/_psutil_linux.c#L45
+        import resource
+
+        soft_limit, hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+        if soft_limit != hard_limit:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (hard_limit, hard_limit))
