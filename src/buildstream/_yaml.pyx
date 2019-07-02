@@ -117,6 +117,9 @@ cdef class Node:
     cdef bint _is_composite_list(self) except *:
         raise NotImplementedError()
 
+    cdef void _compose_on(self, str key, MappingNode target, list path) except *:
+        raise NotImplementedError()
+
     def __json__(self):
         raise ValueError("Nodes should not be allowed when jsonify-ing data", self)
 
@@ -174,6 +177,17 @@ cdef class ScalarNode(Node):
 
     cpdef void _assert_fully_composited(self) except *:
         pass
+
+    cdef void _compose_on(self, str key, MappingNode target, list path) except *:
+        cdef Node target_value = target.value.get(key)
+
+        if target_value is not None and type(target_value) is not ScalarNode:
+            raise CompositeError(path,
+                                 "{}: Cannot compose scalar on non-scalar at {}".format(
+                                    node_get_provenance(self),
+                                    node_get_provenance(target_value)))
+
+        target.value[key] = self
 
     cdef bint _is_composite_list(self) except *:
         return False
@@ -321,6 +335,37 @@ cdef class MappingNode(Node):
         cdef Node value
 
         return {key: value.strip_node_info() for key, value in self.value.items()}
+
+    cdef void _compose_on(self, str key, MappingNode target, list path) except *:
+        cdef Node target_value
+
+        if self._is_composite_list():
+            if key not in target.value:
+                # Composite list clobbers empty space
+                target.value[key] = self
+            else:
+                target_value = target.value[key]
+
+                if type(target_value) is SequenceNode:
+                    # Composite list composes into a list
+                    self._compose_on_list(target_value)
+                elif target_value._is_composite_list():
+                    # Composite list merges into composite list
+                    self._compose_on_composite_dict(target_value)
+                else:
+                    # Else composing on top of normal dict or a scalar, so raise...
+                    raise CompositeError(path,
+                                         "{}: Cannot compose lists onto {}".format(
+                                             node_get_provenance(self),
+                                             node_get_provenance(target_value)))
+        else:
+            # We're composing a dict into target now
+            if key not in target.value:
+                # Target lacks a dict at that point, make a fresh one with
+                # the same provenance as the incoming dict
+                target.value[key] = MappingNode({}, self.file_index, self.line, self.column)
+
+            composite_dict(target.value[key], self, path)
 
     cdef void _compose_on_list(self, SequenceNode target):
         cdef SequenceNode clobber = self.value.get("(=)")
@@ -503,6 +548,21 @@ cdef class SequenceNode(Node):
         cdef Node value
         for value in self.value:
             value._assert_fully_composited()
+
+    cdef void _compose_on(self, str key, MappingNode target, list path) except *:
+        # List clobbers anything list-like
+        cdef Node target_value = target.value.get(key)
+
+        if not (target_value is None or
+                type(target_value) is SequenceNode or
+                target_value._is_composite_list()):
+            raise CompositeError(path,
+                                 "{}: List cannot overwrite {} at: {}"
+                                 .format(node_get_provenance(self),
+                                         key,
+                                         node_get_provenance(target_value)))
+        # Looks good, clobber it
+        target.value[key] = self
 
     cdef bint _is_composite_list(self) except *:
         return False
@@ -1149,55 +1209,7 @@ cpdef void composite_dict(MappingNode target, MappingNode source, list path=None
         path = []
     for k, v in source.value.items():
         path.append(k)
-        if type(v.value) is list:
-            # List clobbers anything list-like
-            target_value = target.value.get(k)
-            if not (target_value is None or
-                    type(target_value.value) is list or
-                    target_value._is_composite_list()):
-                raise CompositeError(path,
-                                     "{}: List cannot overwrite {} at: {}"
-                                     .format(node_get_provenance(source, k),
-                                             k,
-                                             node_get_provenance(target, k)))
-            # Looks good, clobber it
-            target.value[k] = v
-        elif v._is_composite_list():
-            if k not in target.value:
-                # Composite list clobbers empty space
-                target.value[k] = v
-            elif type(target.value[k]) is SequenceNode:
-                # Composite list composes into a list
-                (<MappingNode> v)._compose_on_list(target.value[k])
-            elif (<Node> target.value[k])._is_composite_list():
-                # Composite list merges into composite list
-                (<MappingNode> v)._compose_on_composite_dict(target.value[k])
-            else:
-                # Else composing on top of normal dict or a scalar, so raise...
-                raise CompositeError(path,
-                                     "{}: Cannot compose lists onto {}".format(
-                                         node_get_provenance(v),
-                                         node_get_provenance(target.value[k])))
-        elif type(v.value) is dict:
-            # We're composing a dict into target now
-            if k not in target.value:
-                # Target lacks a dict at that point, make a fresh one with
-                # the same provenance as the incoming dict
-                target.value[k] = MappingNode({}, v.file_index, v.line, v.column)
-            if type(target.value) is not dict:
-                raise CompositeError(path,
-                                     "{}: Cannot compose dictionary onto {}".format(
-                                         node_get_provenance(v),
-                                         node_get_provenance(target.value[k])))
-            composite_dict(target.value[k], v, path)
-        else:
-            target_value = target.value.get(k)
-            if target_value is not None and type(target_value.value) is not str:
-                raise CompositeError(path,
-                                     "{}: Cannot compose scalar on non-scalar at {}".format(
-                                         node_get_provenance(v),
-                                         node_get_provenance(target.value[k])))
-            target.value[k] = v
+        v._compose_on(k, target, path)
         path.pop()
 
 
