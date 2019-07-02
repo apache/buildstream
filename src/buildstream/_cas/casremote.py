@@ -262,22 +262,21 @@ class CASRemote():
     ################################################
     #             Local Private Methods            #
     ################################################
-    def _fetch_blob(self, digest, stream):
-        if self.instance_name:
-            resource_name = '/'.join([self.instance_name, 'blobs',
-                                      digest.hash, str(digest.size_bytes)])
-        else:
-            resource_name = '/'.join(['blobs',
-                                      digest.hash, str(digest.size_bytes)])
+    def _fetch_blob(self, digest):
+        local_cas = self.cascache._get_local_cas()
+        request = local_cas_pb2.FetchMissingBlobsRequest()
+        request.instance_name = self.local_cas_instance_name
+        request_digest = request.blob_digests.add()
+        request_digest.CopyFrom(digest)
+        response = local_cas.FetchMissingBlobs(request)
+        for blob_response in response.responses:
+            if blob_response.status.code == code_pb2.NOT_FOUND:
+                raise BlobNotFound(response.digest.hash, "Failed to download blob {}: {}".format(
+                    blob_response.digest.hash, blob_response.status.code))
 
-        request = bytestream_pb2.ReadRequest()
-        request.resource_name = resource_name
-        request.read_offset = 0
-        for response in self.bytestream.Read(request):
-            stream.write(response.data)
-        stream.flush()
-
-        assert digest.size_bytes == os.fstat(stream.fileno()).st_size
+            if blob_response.status.code != code_pb2.OK:
+                raise CASRemoteError("Failed to download blob {}: {}".format(
+                    blob_response.digest.hash, blob_response.status.code))
 
     def _send_blob(self, digest, stream, u_uid=uuid.uuid4()):
         if self.instance_name:

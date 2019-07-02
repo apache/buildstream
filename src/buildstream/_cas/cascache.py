@@ -820,11 +820,7 @@ class CASCache():
             # already in local repository
             return objpath
 
-        with self._temporary_object() as f:
-            remote._fetch_blob(digest, f)
-
-            added_digest = self.add_object(path=f.name, link_directly=True)
-            assert added_digest.hash == digest.hash
+        remote._fetch_blob(digest)
 
         return objpath
 
@@ -915,20 +911,18 @@ class CASCache():
         self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
 
     def _fetch_tree(self, remote, digest):
-        # download but do not store the Tree object
-        with utils._tempnamedfile(dir=self.tmpdir) as out:
-            remote._fetch_blob(digest, out)
+        objpath = self._ensure_blob(remote, digest)
 
-            tree = remote_execution_pb2.Tree()
+        tree = remote_execution_pb2.Tree()
 
-            with open(out.name, 'rb') as f:
-                tree.ParseFromString(f.read())
+        with open(objpath, 'rb') as f:
+            tree.ParseFromString(f.read())
 
-            tree.children.extend([tree.root])
-            for directory in tree.children:
-                dirbuffer = directory.SerializeToString()
-                dirdigest = self.add_object(buffer=dirbuffer)
-                assert dirdigest.size_bytes == len(dirbuffer)
+        tree.children.extend([tree.root])
+        for directory in tree.children:
+            dirbuffer = directory.SerializeToString()
+            dirdigest = self.add_object(buffer=dirbuffer)
+            assert dirdigest.size_bytes == len(dirbuffer)
 
         return dirdigest
 
