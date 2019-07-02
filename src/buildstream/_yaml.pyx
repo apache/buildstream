@@ -87,6 +87,20 @@ cdef class Node:
     cpdef object strip_node_info(self):
         raise NotImplementedError()
 
+    # _assert_fully_composited()
+    #
+    # This must be called on a fully loaded and composited node,
+    # after all composition has completed.
+    #
+    # This checks that no more composition directives are present
+    # in the data.
+    #
+    # Raises:
+    #    (LoadError): If any assertions fail
+    #
+    cpdef void _assert_fully_composited(self) except *:
+        raise NotImplementedError()
+
     def __json__(self):
         raise ValueError("Nodes should not be allowed when jsonify-ing data", self)
 
@@ -141,6 +155,9 @@ cdef class ScalarNode(Node):
 
     cpdef object strip_node_info(self):
         return self.value
+
+    cpdef void _assert_fully_composited(self) except *:
+        pass
 
     cdef bint _walk_find(self, Node target, list path) except *:
         return self._shares_position_with(target)
@@ -322,6 +339,22 @@ cdef class MappingNode(Node):
 
             self.value[key] = node
 
+    cpdef void _assert_fully_composited(self) except *:
+        cdef str key
+        cdef Node value
+
+        for key, value in self.value.items():
+            # Assert that list composition directives dont remain, this
+            # indicates that the user intended to override a list which
+            # never existed in the underlying data
+            #
+            if key in ('(>)', '(<)', '(=)'):
+                provenance = node_get_provenance(value)
+                raise LoadError(LoadErrorReason.TRAILING_LIST_DIRECTIVE,
+                                "{}: Attempt to override non-existing list".format(provenance))
+
+            value._assert_fully_composited()
+
     cdef bint _walk_find(self, Node target, list path) except *:
         cdef str k
         cdef Node v
@@ -384,6 +417,11 @@ cdef class SequenceNode(Node):
     cpdef object strip_node_info(self):
         cdef Node value
         return [value.strip_node_info() for value in self.value]
+
+    cpdef void _assert_fully_composited(self) except *:
+        cdef Node value
+        for value in self.value:
+            value._assert_fully_composited()
 
     cdef bint _walk_find(self, Node target, list path) except *:
         cdef int i
@@ -1240,56 +1278,6 @@ cpdef void node_validate(Node node, list valid_keys) except *:
             provenance = node_get_provenance(node, key=key)
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Unexpected key: {}".format(provenance, key))
-
-
-# These are the directives used to compose lists, we need this because it's
-# slightly faster during the node_final_assertions checks
-__NODE_ASSERT_COMPOSITION_DIRECTIVES = ('(>)', '(<)', '(=)')
-
-
-# node_final_assertions()
-#
-# This must be called on a fully loaded and composited node,
-# after all composition has completed.
-#
-# Args:
-#    node (Mapping): The final composited node
-#
-# Raises:
-#    (LoadError): If any assertions fail
-#
-cpdef void node_final_assertions(MappingNode node) except *:
-    cdef str key
-    cdef Node value
-
-    for key, value in node.value.items():
-
-        # Assert that list composition directives dont remain, this
-        # indicates that the user intended to override a list which
-        # never existed in the underlying data
-        #
-        if key in __NODE_ASSERT_COMPOSITION_DIRECTIVES:
-            provenance = node_get_provenance(node, key)
-            raise LoadError(LoadErrorReason.TRAILING_LIST_DIRECTIVE,
-                            "{}: Attempt to override non-existing list".format(provenance))
-
-        value_type = type(value.value)
-
-        if value_type is dict:
-            node_final_assertions(value)
-        elif value_type is list:
-            _list_final_assertions(value)
-
-
-# Helper function for node_final_assertions(), but for lists.
-def _list_final_assertions(Node values):
-    for value in values.value:
-        value_type = type(value.value)
-
-        if value_type is dict:
-            node_final_assertions(value)
-        elif value_type is list:
-            _list_final_assertions(value)
 
 
 # assert_symbol_name()
