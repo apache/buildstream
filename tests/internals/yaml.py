@@ -183,7 +183,7 @@ def test_composite_preserve_originals(datafiles):
     base = _yaml.load(filename)
     overlay = _yaml.load(overlayfile)
     base_copy = base.copy()
-    _yaml.composite(base_copy, overlay)
+    overlay.composite(base_copy)
 
     copy_extra = base_copy.get_mapping('extra')
     orig_extra = base.get_mapping('extra')
@@ -249,7 +249,7 @@ def test_list_composition(datafiles, filename, tmpdir,
     base = _yaml.load(base_file, 'basics.yaml')
     overlay = _yaml.load(overlay_file, shortname=filename)
 
-    _yaml.composite(base, overlay)
+    overlay.composite(base)
 
     children = base.get_sequence('children')
     assert len(children) == length
@@ -267,7 +267,7 @@ def test_list_deletion(datafiles):
 
     base = _yaml.load(base, shortname='basics.yaml')
     overlay = _yaml.load(overlay, shortname='listoverwriteempty.yaml')
-    _yaml.composite(base, overlay)
+    overlay.composite(base)
 
     children = base.get_sequence('children')
     assert not children
@@ -384,8 +384,8 @@ def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
     overlay1 = _yaml.load(file1, shortname=filename1)
     overlay2 = _yaml.load(file2, shortname=filename2)
 
-    _yaml.composite(base, overlay1)
-    _yaml.composite(base, overlay2)
+    overlay1.composite(base)
+    overlay2.composite(base)
 
     children = base.get_sequence('children')
     assert len(children) == length
@@ -401,8 +401,8 @@ def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
     overlay1 = _yaml.load(file1, shortname=filename1)
     overlay2 = _yaml.load(file2, shortname=filename2)
 
-    _yaml.composite(overlay1, overlay2)
-    _yaml.composite(base, overlay1)
+    overlay2.composite(overlay1)
+    overlay1.composite(base)
 
     children = base.get_sequence('children')
     assert len(children) == length
