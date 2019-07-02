@@ -3,12 +3,11 @@ import os
 import multiprocessing
 import signal
 from urllib.parse import urlparse
-import uuid
 
 import grpc
 
 from .._protos.google.rpc import code_pb2
-from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
+from .._protos.google.bytestream import bytestream_pb2_grpc
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.build.buildgrid import local_cas_pb2
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
@@ -273,37 +272,21 @@ class CASRemote():
                 raise CASRemoteError("Failed to download blob {}: {}".format(
                     blob_response.digest.hash, blob_response.status.code))
 
-    def _send_blob(self, digest, stream, u_uid=uuid.uuid4()):
-        if self.instance_name:
-            resource_name = '/'.join([self.instance_name, 'uploads', str(u_uid), 'blobs',
-                                      digest.hash, str(digest.size_bytes)])
-        else:
-            resource_name = '/'.join(['uploads', str(u_uid), 'blobs',
-                                      digest.hash, str(digest.size_bytes)])
+    def _send_blob(self, digest):
+        local_cas = self.cascache._get_local_cas()
+        request = local_cas_pb2.UploadMissingBlobsRequest()
+        request.instance_name = self.local_cas_instance_name
+        request_digest = request.blob_digests.add()
+        request_digest.CopyFrom(digest)
+        response = local_cas.UploadMissingBlobs(request)
+        for blob_response in response.responses:
+            if blob_response.status.code == code_pb2.NOT_FOUND:
+                raise BlobNotFound(blob_response.digest.hash, "Failed to upload blob {}: {}".format(
+                    blob_response.digest.hash, blob_response.status.code))
 
-        def request_stream(resname, instream):
-            offset = 0
-            finished = False
-            remaining = digest.size_bytes
-            while not finished:
-                chunk_size = min(remaining, _MAX_PAYLOAD_BYTES)
-                remaining -= chunk_size
-
-                request = bytestream_pb2.WriteRequest()
-                request.write_offset = offset
-                # max. _MAX_PAYLOAD_BYTES chunks
-                request.data = instream.read(chunk_size)
-                request.resource_name = resname
-                request.finish_write = remaining <= 0
-
-                yield request
-
-                offset += chunk_size
-                finished = request.finish_write
-
-        response = self.bytestream.Write(request_stream(resource_name, stream))
-
-        assert response.committed_size == digest.size_bytes
+            if blob_response.status.code != code_pb2.OK:
+                raise CASRemoteError("Failed to upload blob {}: {}".format(
+                    blob_response.digest.hash, blob_response.status.code))
 
 
 # Represents a batch of blobs queued for fetching.

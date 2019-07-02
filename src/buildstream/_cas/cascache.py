@@ -21,7 +21,6 @@ import itertools
 import os
 import stat
 import errno
-import uuid
 import contextlib
 import shutil
 import subprocess
@@ -944,7 +943,7 @@ class CASCache():
     #    remote (CASRemote): The remote repository to upload to
     #    digests (list): The Digests of Blobs to upload
     #
-    def send_blobs(self, remote, digests, u_uid=uuid.uuid4()):
+    def send_blobs(self, remote, digests):
         batch = _CASBatchUpdate(remote)
 
         for digest in digests:
@@ -954,7 +953,7 @@ class CASCache():
                 if (digest.size_bytes >= remote.max_batch_total_size_bytes or
                         not remote.batch_update_supported):
                     # Too large for batch request, upload in independent request.
-                    remote._send_blob(digest, f, u_uid=u_uid)
+                    remote._send_blob(digest)
                 else:
                     if not batch.add(digest, f):
                         # Not enough space left in batch request.
@@ -966,11 +965,11 @@ class CASCache():
         # Send final batch
         batch.send()
 
-    def _send_directory(self, remote, digest, u_uid=uuid.uuid4()):
+    def _send_directory(self, remote, digest):
         missing_blobs = self.remote_missing_blobs_for_directory(remote, digest)
 
         # Upload any blobs missing on the server
-        self.send_blobs(remote, missing_blobs, u_uid)
+        self.send_blobs(remote, missing_blobs)
 
 
 def _grouper(iterable, n):
