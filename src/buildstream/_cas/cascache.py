@@ -947,22 +947,8 @@ class CASCache():
         batch = _CASBatchUpdate(remote)
 
         for digest in digests:
-            with open(self.objpath(digest), 'rb') as f:
-                assert os.fstat(f.fileno()).st_size == digest.size_bytes
+            batch.add(digest)
 
-                if (digest.size_bytes >= remote.max_batch_total_size_bytes or
-                        not remote.batch_update_supported):
-                    # Too large for batch request, upload in independent request.
-                    remote._send_blob(digest)
-                else:
-                    if not batch.add(digest, f):
-                        # Not enough space left in batch request.
-                        # Complete pending batch first.
-                        batch.send()
-                        batch = _CASBatchUpdate(remote)
-                        batch.add(digest, f)
-
-        # Send final batch
         batch.send()
 
     def _send_directory(self, remote, digest):
