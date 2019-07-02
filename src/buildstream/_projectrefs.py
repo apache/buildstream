@@ -71,7 +71,7 @@ class ProjectRefs():
 
             # Run any final assertions on the project.refs, just incase there
             # are list composition directives or anything left unprocessed.
-            _yaml.node_final_assertions(self._toplevel_node)
+            self._toplevel_node._assert_fully_composited()
 
         except LoadError as e:
             if e.reason != LoadErrorReason.MISSING_FILE:

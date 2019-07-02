@@ -1285,7 +1285,7 @@ class Source(Plugin):
         config = config.copy()
 
         _yaml.composite(config, meta.config)
-        _yaml.node_final_assertions(config)
+        config._assert_fully_composited()
 
         return config
 
