@@ -730,6 +730,8 @@ def _is_main_process():
 # Recursively remove directories, ignoring file permissions as much as
 # possible.
 def _force_rmtree(rootpath, **kwargs):
+
+    os.chmod(rootpath, 0o755)
     for root, dirs, _ in os.walk(rootpath):
         for d in dirs:
             path = os.path.join(root, d.lstrip('/'))
