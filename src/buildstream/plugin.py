@@ -363,27 +363,7 @@ class Plugin():
         provenance = _yaml.node_get_provenance(node, key=member_name)
         return str(provenance)
 
-    def new_empty_node(self):
-        """Create an empty 'Node' object to be handled by BuildStream's core
-        Args:
-           None
-
-        Returns:
-           Node: An empty Node object
-
-        Raises:
-           None
-
-        **Example:**
-
-        .. code:: python
-
-          # Create an empty Node object to store metadata information
-          metadata = self.new_empty_node()
-        """
-        return _yaml.new_empty_node()
-
-    def node_get_project_path(self, node, key, *,
+    def node_get_project_path(self, node, *,
                               check_is_file=False, check_is_dir=False):
         """Fetches a project path from a dictionary node and validates it
 
