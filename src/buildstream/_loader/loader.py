@@ -622,7 +622,7 @@ class Loader():
 
         # Handle the case where a subproject needs to be fetched
         #
-        if element._get_consistency() == Consistency.RESOLVED:
+        if element._get_consistency() >= Consistency.RESOLVED and not element._source_cached():
             if ticker:
                 ticker(filename, 'Fetching subproject')
             self._fetch_subprojects([element])

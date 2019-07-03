@@ -1466,8 +1466,8 @@ class Element(Plugin):
 
             # No workspace or cached buildtree, stage source from source cache
             else:
-                # Ensure sources are cached
-                self.__cache_sources()
+                # Assert sources are cached
+                assert self._source_cached()
 
                 if self.__sources:
 
@@ -2225,7 +2225,7 @@ class Element(Plugin):
 
     # Check if sources are cached, generating the source key if it hasn't been
     def _source_cached(self):
-        if self.__sources:
+        if self.__sources and not self._get_workspace():
             sourcecache = self._get_context().sourcecache
 
             # Go through sources we'll cache generating keys
