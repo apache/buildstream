@@ -22,10 +22,10 @@
 
 cdef class Node:
 
-    cdef public object value
-    cdef public int file_index
-    cdef public int line
-    cdef public int column
+    cdef object value
+    cdef int file_index
+    cdef int line
+    cdef int column
 
     cpdef Node copy(self)
     cpdef object strip_node_info(self)

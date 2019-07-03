@@ -514,6 +514,8 @@ cdef class MappingNode(Node):
         del self.value[key]
 
     def __setitem__(self, str key, object value):
+        cdef Node old_value
+
         if type(value) in [MappingNode, ScalarNode, SequenceNode]:
             self.value[key] = value
         else:
