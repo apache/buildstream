@@ -423,12 +423,18 @@ class Project():
     #    (list): A list of loaded Element
     #
     def load_elements(self, targets, *, rewritable=False):
-        with self._context.messenger.timed_activity("Loading elements", silent_nested=True):
-            meta_elements = self.loader.load(targets, rewritable=rewritable, ticker=None)
+        with self._context.messenger.simple_task("Loading elements", silent_nested=True) as task:
+            meta_elements = self.loader.load(targets, rewritable=rewritable, ticker=None, task=task)
 
-        with self._context.messenger.timed_activity("Resolving elements"):
+            # workaround for task potentially being None (because no State object)
+            if task:
+                total_elements = task.current_progress
+
+        with self._context.messenger.simple_task("Resolving elements") as task:
+            if task:
+                task.set_maximum_progress(total_elements)
             elements = [
-                Element._new_from_meta(meta)
+                Element._new_from_meta(meta, task)
                 for meta in meta_elements
             ]
 

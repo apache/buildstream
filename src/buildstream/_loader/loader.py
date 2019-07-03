@@ -88,11 +88,12 @@ class Loader():
     #                       this is a bit more expensive due to deep copies
     #    ticker (callable): An optional function for tracking load progress
     #    targets (list of str): Target, element-path relative bst filenames in the project
+    #    task (Task): A task object to report progress to
     #
     # Raises: LoadError
     #
     # Returns: The toplevel LoadElement
-    def load(self, targets, rewritable=False, ticker=None):
+    def load(self, targets, rewritable=False, ticker=None, task=None):
 
         for filename in targets:
             if os.path.isabs(filename):
@@ -141,7 +142,7 @@ class Loader():
 
             # Finally, wrap what we have into LoadElements and return the target
             #
-            ret.append(loader._collect_element(element))
+            ret.append(loader._collect_element(element, task))
 
         self._clean_caches()
 
@@ -411,11 +412,12 @@ class Loader():
     #
     # Args:
     #    element (LoadElement): The element for which to load a MetaElement
+    #    task (Task): A task to write progress information to
     #
     # Returns:
     #    (MetaElement): A partially loaded MetaElement
     #
-    def _collect_element_no_deps(self, element):
+    def _collect_element_no_deps(self, element, task):
         # Return the already built one, if we already built it
         meta_element = self._meta_elements.get(element.name)
         if meta_element:
@@ -452,6 +454,8 @@ class Loader():
 
         # Cache it now, make sure it's already there before recursing
         self._meta_elements[element.name] = meta_element
+        if task:
+            task.add_current_progress()
 
         return meta_element
 
@@ -461,13 +465,14 @@ class Loader():
     #
     # Args:
     #    top_element (LoadElement): The element for which to load a MetaElement
+    #    task (Task): The task to update with progress changes
     #
     # Returns:
     #    (MetaElement): A fully loaded MetaElement
     #
-    def _collect_element(self, top_element):
+    def _collect_element(self, top_element, task):
         element_queue = [top_element]
-        meta_element_queue = [self._collect_element_no_deps(top_element)]
+        meta_element_queue = [self._collect_element_no_deps(top_element, task)]
 
         while element_queue:
             element = element_queue.pop()
@@ -484,7 +489,7 @@ class Loader():
                 name = dep.element.name
 
                 if name not in loader._meta_elements:
-                    meta_dep = loader._collect_element_no_deps(dep.element)
+                    meta_dep = loader._collect_element_no_deps(dep.element, task)
                     element_queue.append(dep.element)
                     meta_element_queue.append(meta_dep)
                 else:
@@ -555,7 +560,9 @@ class Loader():
                 return None
 
         # meta junction element
-        meta_element = self._collect_element(self._elements[filename])
+        # XXX: This is a likely point for progress reporting to end up
+        # missing some elements, but it currently doesn't appear to be the case.
+        meta_element = self._collect_element(self._elements[filename], None)
         if meta_element.kind != 'junction':
             raise LoadError("{}{}: Expected junction but element kind is {}"
                             .format(provenance_str, filename, meta_element.kind),

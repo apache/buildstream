@@ -15,7 +15,7 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 
-
+import datetime
 from collections import OrderedDict
 
 
@@ -92,8 +92,14 @@ class TaskGroup():
 # BuildStream's Core is responsible for making changes to this data.
 # BuildStream's Frontend may register callbacks with State to be notified
 # when parts of State change, and read State to know what has changed.
+#
+# Args:
+#    session_start (datetime): The time the session started
+#
 class State():
-    def __init__(self):
+    def __init__(self, session_start):
+        self._session_start = session_start
+
         self.task_groups = OrderedDict()  # key is TaskGroup name
 
         # Note: A Task's full_name is technically unique, but only accidentally.
@@ -101,6 +107,7 @@ class State():
 
         self._task_added_cbs = []
         self._task_removed_cbs = []
+        self._task_changed_cbs = []
         self._task_groups_changed_cbs = []
         self._task_failed_cbs = []
 
@@ -161,6 +168,33 @@ class State():
     #
     def unregister_task_removed_callback(self, callback):
         self._task_removed_cbs.remove(callback)
+
+    # register_task_changed_callback()
+    #
+    # Register a callback to be notified when a task has changed
+    #
+    # Args:
+    #    callback (function): The callback to be notified
+    #
+    # Callback Args:
+    #    action_name (str): The name of the action, e.g. 'build'
+    #    full_name (str): The full name of the task, distinguishing
+    #                     it from other tasks with the same action name
+    #                     e.g. an element's name.
+    #
+    def register_task_changed_callback(self, callback):
+        self._task_changed_cbs.append(callback)
+
+    # unregister_task_changed_callback()
+    #
+    # Unregisters a callback previously registered by
+    # register_task_changed_callback()
+    #
+    # Args:
+    #    callback (function): The callback to be notified
+    #
+    def unregister_task_changed_callback(self, callback):
+        self._task_changed_cbs.remove(callback)
 
     # register_task_failed_callback()
     #
@@ -238,19 +272,24 @@ class State():
     #    full_name (str): The full name of the task, distinguishing
     #                     it from other tasks with the same action name
     #                     e.g. an element's name.
-    #    start_time (timedelta): The time the task started, relative to
-    #                            buildstream's start time.
+    #    elapsed_offset (timedelta): (Optional) The time the task started, relative
+    #                                to buildstream's start time.
     #
-    def add_task(self, action_name, full_name, start_time):
+    def add_task(self, action_name, full_name, elapsed_offset=None):
         task_key = (action_name, full_name)
         assert task_key not in self.tasks, \
             "Trying to add task '{}:{}' to '{}'".format(action_name, full_name, self.tasks)
 
-        task = _Task(action_name, full_name, start_time)
+        if not elapsed_offset:
+            elapsed_offset = datetime.datetime.now() - self._session_start
+
+        task = _Task(self, action_name, full_name, elapsed_offset)
         self.tasks[task_key] = task
 
         for cb in self._task_added_cbs:
             cb(action_name, full_name)
+
+        return task
 
     # remove_task()
     #
@@ -297,14 +336,55 @@ class State():
 # The state data stored for an individual task
 #
 # Args:
+#    state (State): The State object
 #    action_name (str): The name of the action, e.g. 'build'
 #    full_name (str): The full name of the task, distinguishing
 #                     it from other tasks with the same action name
 #                     e.g. an element's name.
-#    start_time (timedelta): The time the task started, relative to
-#                            buildstream's start time.
+#    elapsed_offset (timedelta): The time the task started, relative to
+#                                buildstream's start time.
 class _Task():
-    def __init__(self, action_name, full_name, start_time):
+    def __init__(self, state, action_name, full_name, elapsed_offset):
+        self._state = state
         self.action_name = action_name
         self.full_name = full_name
-        self.start_time = start_time
+        self.elapsed_offset = elapsed_offset
+        self.current_progress = None
+        self.maximum_progress = None
+
+        self._render_cb = None  # Callback to call when something could be rendered
+
+    # set_render_cb()
+    #
+    # Sets the callback to be called when the Task has changed and should be rendered
+    #
+    # NOTE: This should probably be removed once the frontend is running
+    #       separately from the scheduler, since renders could be triggered
+    #       by the scheduler.
+    def set_render_cb(self, callback):
+        self._render_cb = callback
+
+    def set_current_progress(self, progress):
+        self.current_progress = progress
+        for cb in self._state._task_changed_cbs:
+            cb(self.action_name, self.full_name)
+        if self._render_cb:
+            self._render_cb()
+
+    def set_maximum_progress(self, progress):
+        self.maximum_progress = progress
+        for cb in self._state._task_changed_cbs:
+            cb(self.action_name, self.full_name)
+
+        if self._render_cb:
+            self._render_cb()
+
+    def add_current_progress(self):
+        if self.current_progress is None:
+            new_progress = 1
+        else:
+            new_progress = self.current_progress + 1
+        self.set_current_progress(new_progress)
+
+    def add_maximum_progress(self):
+        self.set_maximum_progress(self.maximum_progress or 0 + 1)

@@ -230,6 +230,9 @@ class App():
             # Propagate pipeline feedback to the user
             self.context.messenger.set_message_handler(self._message_handler)
 
+            # Allow the Messenger to write status messages
+            self.context.messenger.set_render_status_cb(self._maybe_render_status)
+
             # Preflight the artifact cache after initializing logging,
             # this can cause messages to be emitted.
             try:

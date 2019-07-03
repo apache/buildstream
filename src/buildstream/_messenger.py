@@ -28,6 +28,18 @@ from ._message import Message, MessageType
 from .plugin import Plugin
 
 
+_RENDER_INTERVAL = datetime.timedelta(seconds=1)
+
+
+# TimeData class to contain times in an object that can be passed around
+# and updated from different places
+class _TimeData():
+    __slots__ = ['start_time']
+
+    def __init__(self, start_time):
+        self.start_time = start_time
+
+
 class Messenger():
 
     def __init__(self):
@@ -35,6 +47,10 @@ class Messenger():
         self._silence_scope_depth = 0
         self._log_handle = None
         self._log_filename = None
+        self._state = None
+        self._next_render = None  # A Time object
+        self._active_simple_tasks = 0
+        self._render_status_cb = None
 
     # set_message_handler()
     #
@@ -50,6 +66,29 @@ class Messenger():
     #
     def set_message_handler(self, handler):
         self._message_handler = handler
+
+    # set_state()
+    #
+    # Sets the State object within the Messenger
+    #
+    # Args:
+    #    state (State): The state to set
+    #
+    def set_state(self, state):
+        self._state = state
+
+    # set_render_status_cb()
+    #
+    # Sets the callback to use to render status
+    #
+    # Args:
+    #    callback (function): The Callback to be notified
+    #
+    # Callback Args:
+    #    There are no arguments to the callback
+    #
+    def set_render_status_cb(self, callback):
+        self._render_status_cb = callback
 
     # _silent_messages():
     #
@@ -110,28 +149,13 @@ class Messenger():
     #
     # Args:
     #    activity_name (str): The name of the activity
-    #    context (Context): The invocation context object
     #    unique_id (int): Optionally, the unique id of the plugin related to the message
     #    detail (str): An optional detailed message, can be multiline output
     #    silent_nested (bool): If True, all but _message.unconditional_messages are silenced
     #
     @contextmanager
     def timed_activity(self, activity_name, *, unique_id=None, detail=None, silent_nested=False):
-
-        starttime = datetime.datetime.now()
-        stopped_time = None
-
-        def stop_time():
-            nonlocal stopped_time
-            stopped_time = datetime.datetime.now()
-
-        def resume_time():
-            nonlocal stopped_time
-            nonlocal starttime
-            sleep_time = datetime.datetime.now() - stopped_time
-            starttime += sleep_time
-
-        with _signals.suspendable(stop_time, resume_time):
+        with self._timed_suspendable() as timedata:
             try:
                 # Push activity depth for status messages
                 message = Message(unique_id, MessageType.START, activity_name, detail=detail)
@@ -142,13 +166,73 @@ class Messenger():
             except BstError:
                 # Note the failure in status messages and reraise, the scheduler
                 # expects an error when there is an error.
-                elapsed = datetime.datetime.now() - starttime
+                elapsed = datetime.datetime.now() - timedata.start_time
                 message = Message(unique_id, MessageType.FAIL, activity_name, elapsed=elapsed)
                 self.message(message)
                 raise
 
-            elapsed = datetime.datetime.now() - starttime
+            elapsed = datetime.datetime.now() - timedata.start_time
             message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed)
+            self.message(message)
+
+    # simple_task()
+    #
+    # Context manager for creating a task to report progress to.
+    #
+    # Args:
+    #    activity_name (str): The name of the activity
+    #    unique_id (int): Optionally, the unique id of the plugin related to the message
+    #    full_name (str): Optionally, the distinguishing name of the activity, e.g. element name
+    #    silent_nested (bool): If True, all but _message.unconditional_messages are silenced
+    #
+    # Yields:
+    #    Task: A Task object that represents this activity, principally used to report progress
+    #
+    @contextmanager
+    def simple_task(self, activity_name, *, unique_id=None, full_name=None, silent_nested=False):
+        # Bypass use of State when none exists (e.g. tests)
+        if not self._state:
+            with self.timed_activity(activity_name, unique_id=unique_id, silent_nested=silent_nested):
+                yield
+            return
+
+        if not full_name:
+            full_name = activity_name
+
+        with self._timed_suspendable() as timedata:
+            try:
+                message = Message(unique_id, MessageType.START, activity_name)
+                self.message(message)
+
+                task = self._state.add_task(activity_name, full_name)
+                task.set_render_cb(self._render_status)
+                self._active_simple_tasks += 1
+                if not self._next_render:
+                    self._next_render = datetime.datetime.now() + _RENDER_INTERVAL
+
+                with self.silence(actually_silence=silent_nested):
+                    yield task
+
+            except BstError:
+                elapsed = datetime.datetime.now() - timedata.start_time
+                message = Message(unique_id, MessageType.FAIL, activity_name, elapsed=elapsed)
+                self.message(message)
+                raise
+            finally:
+                self._state.remove_task(activity_name, full_name)
+                self._active_simple_tasks -= 1
+                if self._active_simple_tasks == 0:
+                    self._next_render = None
+
+            elapsed = datetime.datetime.now() - timedata.start_time
+            if task.current_progress is not None:
+                if task.maximum_progress is not None:
+                    detail = "{} of {} subtasks processed".format(task.current_progress, task.maximum_progress)
+                else:
+                    detail = "{} subtasks processed".format(task.current_progress)
+            else:
+                detail = None
+            message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed, detail=detail)
             self.message(message)
 
     # recorded_messages()
@@ -312,3 +396,45 @@ class Messenger():
         del state['_message_handler']
 
         return state
+
+    # _render_status()
+    #
+    # Calls the render status callback set in the messenger, but only if a
+    # second has passed since it last rendered.
+    #
+    def _render_status(self):
+        assert self._next_render
+
+        # self._render_status_cb()
+        now = datetime.datetime.now()
+        if self._render_status_cb and now >= self._next_render:
+            self._render_status_cb()
+            self._next_render = now + _RENDER_INTERVAL
+
+    # _timed_suspendable()
+    #
+    # A contextmanager that allows an activity to be suspended and can
+    # adjust for clock drift caused by suspending
+    #
+    # Yields:
+    #    TimeData: An object that contains the time the activity started
+    #
+    @contextmanager
+    def _timed_suspendable(self):
+        # Note: timedata needs to be in a namedtuple so that values can be
+        # yielded that will change
+        timedata = _TimeData(start_time=datetime.datetime.now())
+        stopped_time = None
+
+        def stop_time():
+            nonlocal stopped_time
+            stopped_time = datetime.datetime.now()
+
+        def resume_time():
+            nonlocal timedata
+            nonlocal stopped_time
+            sleep_time = datetime.datetime.now() - stopped_time
+            timedata.start_time += sleep_time
+
+        with _signals.suspendable(stop_time, resume_time):
+            yield timedata
