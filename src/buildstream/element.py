@@ -2513,7 +2513,7 @@ class Element(Plugin):
         # Defaults are loaded once per class and then reused
         #
         if cls.__defaults is None:
-            defaults = _yaml.new_empty_node()
+            defaults = _yaml.Node.from_dict({})
 
             if plugin_conf is not None:
                 # Load the plugin's accompanying .yaml file if one was provided
@@ -2548,7 +2548,7 @@ class Element(Plugin):
         default_env = cls.__defaults.get_mapping("environment", default={})
 
         if meta.is_junction:
-            environment = _yaml.new_empty_node()
+            environment = _yaml.Node.from_dict({})
         else:
             environment = project.base_environment.copy()
 

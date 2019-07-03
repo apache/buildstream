@@ -144,7 +144,7 @@ class SandboxRemote(Sandbox):
         # 'url' was the only valid key for remote-execution:
         if 'url' in remote_config:
             if 'execution-service' not in remote_config:
-                exec_config = _yaml.new_node_from_dict({'url': remote_config['url']})
+                exec_config = _yaml.Node.from_dict({'url': remote_config['url']})
             else:
                 provenance = _yaml.node_get_provenance(remote_config, key='url')
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
