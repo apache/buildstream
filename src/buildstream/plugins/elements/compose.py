@@ -59,7 +59,7 @@ class ComposeElement(Element):
     BST_VIRTUAL_DIRECTORY = True
 
     def configure(self, node):
-        self.node_validate(node, [
+        node.validate_keys([
             'integrate', 'include', 'exclude', 'include-orphans'
         ])
 

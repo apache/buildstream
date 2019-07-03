@@ -109,7 +109,7 @@ class PipSource(Source):
     BST_REQUIRES_PREVIOUS_SOURCES_TRACK = True
 
     def configure(self, node):
-        self.node_validate(node, ['url', 'packages', 'ref', 'requirements-files'] +
+        node.validate_keys(['url', 'packages', 'ref', 'requirements-files'] +
                            Source.COMMON_CONFIG_KEYS)
         self.ref = node.get_str('ref', None)
         self.original_url = node.get_str('url', _PYPI_INDEX_URL)

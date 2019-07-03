@@ -381,11 +381,11 @@ class _GitSourceBase(Source):
         config_keys = ['url', 'track', 'ref', 'submodules',
                        'checkout-submodules', 'ref-format',
                        'track-tags', 'tags']
-        self.node_validate(node, config_keys + Source.COMMON_CONFIG_KEYS)
+        node.validate_keys(config_keys + Source.COMMON_CONFIG_KEYS)
 
         tags_node = node.get_sequence('tags', [])
         for tag_node in tags_node:
-            self.node_validate(tag_node, ['tag', 'commit', 'annotated'])
+            tag_node.validate_keys(['tag', 'commit', 'annotated'])
 
         tags = self._load_tags(node)
         self.track_tags = node.get_bool('track-tags', default=False)
