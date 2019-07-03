@@ -71,7 +71,7 @@ cdef class Node:
 
     @classmethod
     def from_dict(cls, dict value):
-        return new_node_from_dict(value)
+        return _new_node_from_dict(value, Node(None, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
 
     cdef bint _walk_find(self, Node target, list path) except *:
         raise NotImplementedError()
@@ -492,7 +492,7 @@ cdef class MappingNode(Node):
         if type(value) in [MappingNode, ScalarNode, SequenceNode]:
             self.value[key] = value
         else:
-            node = _create_node_recursive(value)
+            node = _create_node_recursive(value, self)
 
             # FIXME: Do we really want to override provenance?
             #
@@ -648,7 +648,7 @@ cdef class SequenceNode(Node):
         if type(value) in [MappingNode, ScalarNode, SequenceNode]:
             self.value[key] = value
         else:
-            node = _create_node_recursive(value)
+            node = _create_node_recursive(value, self)
 
             # FIXME: Do we really want to override provenance?
             # See __setitem__ on 'MappingNode' for more context
@@ -956,15 +956,15 @@ cdef Node _create_node(object value, int file_index, int line, int column):
         "Node values can only be 'list', 'dict', 'bool', 'str', 'int' or None. Not {}".format(type_value))
 
 
-cdef Node _create_node_recursive(object value):
+cdef Node _create_node_recursive(object value, Node ref_node):
     cdef value_type = type(value)
 
     if value_type is list:
-        node = __new_node_from_list(value)
+        node = _new_node_from_list(value, ref_node)
     elif value_type is str:
-        node = ScalarNode(value, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+        node = ScalarNode(value, ref_node.file_index, ref_node.line, next_synthetic_counter())
     elif value_type is dict:
-        node = new_node_from_dict(value)
+        node = _new_node_from_dict(value, ref_node)
     else:
         raise ValueError(
             "Unable to assign a value of type {} to a Node.".format(value_type))
@@ -1215,32 +1215,35 @@ def new_empty_list_node():
 # Returns:
 #   (Node): A new synthetic YAML tree which represents this dictionary
 #
-cpdef Node new_node_from_dict(dict indict):
-    cdef dict ret = {}
+cdef Node _new_node_from_dict(dict indict, Node ref_node):
+    cdef MappingNode ret = MappingNode({}, ref_node.file_index, ref_node.line, next_synthetic_counter())
     cdef str k
+
     for k, v in indict.items():
         vtype = type(v)
         if vtype is dict:
-            ret[k] = new_node_from_dict(v)
+            ret.value[k] = _new_node_from_dict(v, ref_node)
         elif vtype is list:
-            ret[k] = __new_node_from_list(v)
+            ret.value[k] = _new_node_from_list(v, ref_node)
         else:
-            ret[k] = ScalarNode(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
-    return MappingNode(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+            ret.value[k] = ScalarNode(str(v), ref_node.file_index, ref_node.line, next_synthetic_counter())
+    return ret
 
 
 # Internal function to help new_node_from_dict() to handle lists
-cdef Node __new_node_from_list(list inlist):
-    cdef list ret = []
+cdef Node _new_node_from_list(list inlist, Node ref_node):
+    cdef SequenceNode ret = SequenceNode([], ref_node.file_index, ref_node.line, next_synthetic_counter())
+
     for v in inlist:
         vtype = type(v)
         if vtype is dict:
-            ret.append(new_node_from_dict(v))
+            ret.value.append(_new_node_from_dict(v, ref_node))
         elif vtype is list:
-            ret.append(__new_node_from_list(v))
+            ret.value.append(_new_node_from_list(v, ref_node))
         else:
-            ret.append(ScalarNode(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
-    return SequenceNode(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+            ret.value.append(ScalarNode(str(v), ref_node.file_index, ref_node.line, next_synthetic_counter()))
+
+    return ret
 
 
 # node_validate()
