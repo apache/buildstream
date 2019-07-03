@@ -200,7 +200,7 @@ class Context():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "artifactdir is obsolete")
 
-        _yaml.node_validate(defaults, [
+        defaults.validate_keys([
             'cachedir', 'sourcedir', 'builddir', 'logdir', 'scheduler',
             'artifacts', 'source-caches', 'logging', 'projects', 'cache', 'prompt',
             'workspacedir', 'remote-execution',
@@ -240,7 +240,7 @@ class Context():
         # We need to find the first existing directory in the path of our
         # cachedir - the cachedir may not have been created yet.
         cache = defaults.get_mapping('cache')
-        _yaml.node_validate(cache, ['quota', 'pull-buildtrees', 'cache-buildtrees'])
+        cache.validate_keys(['quota', 'pull-buildtrees', 'cache-buildtrees'])
 
         self.config_cache_quota_string = cache.get_str('quota')
         try:
@@ -269,7 +269,7 @@ class Context():
 
         # Load logging config
         logging = defaults.get_mapping('logging')
-        _yaml.node_validate(logging, [
+        logging.validate_keys([
             'key-length', 'verbose',
             'error-lines', 'message-lines',
             'debug', 'element-format', 'message-format'
@@ -285,7 +285,7 @@ class Context():
 
         # Load scheduler config
         scheduler = defaults.get_mapping('scheduler')
-        _yaml.node_validate(scheduler, [
+        scheduler.validate_keys([
             'on-error', 'fetchers', 'builders',
             'pushers', 'network-retries'
         ])
@@ -302,10 +302,9 @@ class Context():
         # Shallow validation of overrides, parts of buildstream which rely
         # on the overrides are expected to validate elsewhere.
         for overrides in self._project_overrides.values():
-            _yaml.node_validate(overrides,
-                                ['artifacts', 'source-caches', 'options',
-                                 'strict', 'default-mirror',
-                                 'remote-execution'])
+            overrides.validate_keys(['artifacts', 'source-caches', 'options',
+                                     'strict', 'default-mirror',
+                                     'remote-execution'])
 
     @property
     def artifactcache(self):

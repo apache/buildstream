@@ -67,7 +67,7 @@ class BzrSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
     def configure(self, node):
-        self.node_validate(node, ['url', 'track', 'ref', *Source.COMMON_CONFIG_KEYS])
+        node.validate_keys(['url', 'track', 'ref', *Source.COMMON_CONFIG_KEYS])
 
         self.original_url = node.get_str('url')
         self.tracking = node.get_str('track')

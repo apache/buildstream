@@ -79,10 +79,10 @@ cdef class Dependency:
 
         elif type(dep) is _yaml.MappingNode:
             if default_dep_type:
-                _yaml.node_validate(<_yaml.Node> dep, ['filename', 'junction'])
+                (<_yaml.MappingNode> dep).validate_keys(['filename', 'junction'])
                 dep_type = default_dep_type
             else:
-                _yaml.node_validate(<_yaml.Node> dep, ['filename', 'type', 'junction'])
+                (<_yaml.MappingNode> dep).validate_keys(['filename', 'type', 'junction'])
 
                 # Make type optional, for this we set it to None
                 dep_type = (<_yaml.MappingNode> dep).get_str(<str> Symbol.TYPE, None)
