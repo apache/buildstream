@@ -127,7 +127,7 @@ class SandboxRemote(Sandbox):
 
         service_keys = ['execution-service', 'storage-service', 'action-cache-service']
 
-        _yaml.node_validate(remote_config, ['url', *service_keys])
+        remote_config.validate_keys(['url', *service_keys])
 
         exec_config = require_node(remote_config, 'execution-service')
         storage_config = require_node(remote_config, 'storage-service')
@@ -135,10 +135,10 @@ class SandboxRemote(Sandbox):
 
         tls_keys = ['client-key', 'client-cert', 'server-cert']
 
-        _yaml.node_validate(exec_config, ['url', 'instance-name', *tls_keys])
-        _yaml.node_validate(storage_config, ['url', 'instance-name', *tls_keys])
+        exec_config.validate_keys(['url', 'instance-name', *tls_keys])
+        storage_config.validate_keys(['url', 'instance-name', *tls_keys])
         if action_config:
-            _yaml.node_validate(action_config, ['url', 'instance-name', *tls_keys])
+            action_config.validate_keys(['url', 'instance-name', *tls_keys])
 
         # Maintain some backwards compatibility with older configs, in which
         # 'url' was the only valid key for remote-execution:

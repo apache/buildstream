@@ -51,6 +51,7 @@ cdef class MappingNode(Node):
     cpdef object items(self)
     cpdef list keys(self)
     cpdef void safe_del(self, str key)
+    cpdef void validate_keys(self, list valid_keys) except *
     cpdef object values(self)
 
     cdef void _composite(self, MappingNode target, list path=*) except *
@@ -83,5 +84,4 @@ cdef class ProvenanceInformation:
     cdef public bint is_synthetic
 
 
-cpdef void node_validate(Node node, list valid_keys) except *
 cpdef ProvenanceInformation node_get_provenance(Node node, str key=*, list indices=*)

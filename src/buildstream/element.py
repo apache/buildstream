@@ -2654,7 +2654,7 @@ class Element(Plugin):
         sandbox_config._assert_fully_composited()
 
         # Sandbox config, unlike others, has fixed members so we should validate them
-        _yaml.node_validate(sandbox_config, ['build-uid', 'build-gid', 'build-os', 'build-arch'])
+        sandbox_config.validate_keys(['build-uid', 'build-gid', 'build-os', 'build-arch'])
 
         build_arch = sandbox_config.get_str('build-arch', default=None)
         if build_arch:

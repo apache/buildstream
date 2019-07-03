@@ -72,7 +72,7 @@ def test_element_provenance(datafiles):
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
-def test_node_validate(datafiles):
+def test_mapping_validate_keys(datafiles):
 
     valid = os.path.join(datafiles.dirname,
                          datafiles.basename,
@@ -83,12 +83,12 @@ def test_node_validate(datafiles):
 
     base = _yaml.load(valid)
 
-    _yaml.node_validate(base, ['kind', 'description', 'moods', 'children', 'extra'])
+    base.validate_keys(['kind', 'description', 'moods', 'children', 'extra'])
 
     base = _yaml.load(invalid)
 
     with pytest.raises(LoadError) as exc:
-        _yaml.node_validate(base, ['kind', 'description', 'moods', 'children', 'extra'])
+        base.validate_keys(['kind', 'description', 'moods', 'children', 'extra'])
 
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
 

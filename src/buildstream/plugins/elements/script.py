@@ -51,7 +51,7 @@ class ScriptElement(buildstream.ScriptElement):
             elm = self.node_subst_member(n, 'element', None)
             self.layout_add(elm, dst)
 
-        self.node_validate(node, [
+        node.validate_keys([
             'commands', 'root-read-only', 'layout'
         ])
 

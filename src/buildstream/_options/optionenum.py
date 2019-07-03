@@ -44,7 +44,7 @@ class OptionEnum(Option):
         if allow_default_definition:
             valid_symbols += ['default']
 
-        _yaml.node_validate(node, valid_symbols)
+        node.validate_keys(valid_symbols)
 
         self.values = node.get_sequence('values', default=[]).as_str_list()
         if not self.values:
