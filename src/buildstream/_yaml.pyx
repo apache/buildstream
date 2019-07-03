@@ -558,6 +558,13 @@ cdef class SequenceNode(Node):
         self.line = line
         self.column = column
 
+    cpdef void append(self, object value):
+        if type(value) in [MappingNode, ScalarNode, SequenceNode]:
+            self.value.append(value)
+        else:
+            node = _create_node_recursive(value, self)
+            self.value.append(node)
+
     cpdef SequenceNode copy(self):
         cdef list copy = []
         cdef Node entry
@@ -943,19 +950,6 @@ cdef class Representer:
         return RepresenterState.init
 
 
-cdef Node _create_node(object value, int file_index, int line, int column):
-    cdef type_value = type(value)
-
-    if type_value in [bool, str, type(None), int]:
-        return ScalarNode(value, file_index, line, column)
-    elif type_value is dict:
-        return MappingNode(value, file_index, line, column)
-    elif type_value is list:
-        return SequenceNode(value, file_index, line, column)
-    raise ValueError(
-        "Node values can only be 'list', 'dict', 'bool', 'str', 'int' or None. Not {}".format(type_value))
-
-
 cdef Node _create_node_recursive(object value, Node ref_node):
     cdef value_type = type(value)
 
@@ -1095,50 +1089,6 @@ cpdef ProvenanceInformation node_get_provenance(Node node, str key=None, list in
         nodeish = <Node> nodeish.value[idx]
 
     return ProvenanceInformation(nodeish)
-
-
-# node_extend_list()
-#
-# Extend a list inside a node to a given length, using the passed
-# default value to fill it out.
-#
-# Valid default values are:
-#    Any string
-#    An empty dict
-#    An empty list
-#
-# Args:
-#    node (node): The node
-#    key (str): The list name in the node
-#    length (int): The length to extend the list to
-#    default (any): The default value to extend with.
-def node_extend_list(Node node, str key, Py_ssize_t length, object default):
-    assert type(default) is str or default in ([], {})
-
-    cdef Node list_node = <Node> node.value.get(key)
-    if list_node is None:
-        list_node = node.value[key] = SequenceNode([], node.file_index, node.line, next_synthetic_counter())
-
-    cdef list the_list = list_node.value
-    def_type = type(default)
-
-    file_index = node.file_index
-    if the_list:
-        line_num = the_list[-1][2]
-    else:
-        line_num = list_node.line
-
-    while length > len(the_list):
-        if def_type is str:
-            value = default
-        elif def_type is list:
-            value = []
-        else:
-            value = {}
-
-        line_num += 1
-
-        the_list.append(_create_node(value, file_index, line_num, next_synthetic_counter()))
 
 
 # is_node()
