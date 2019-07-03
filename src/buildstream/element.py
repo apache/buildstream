@@ -2631,7 +2631,7 @@ class Element(Plugin):
     @classmethod
     def __extract_sandbox_config(cls, project, meta):
         if meta.is_junction:
-            sandbox_config = _yaml.new_node_from_dict({
+            sandbox_config = _yaml.Node.from_dict({
                 'build-uid': 0,
                 'build-gid': 0
             })
