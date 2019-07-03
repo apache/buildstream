@@ -336,7 +336,7 @@ class Source(Plugin):
     """Common source config keys
 
     Source config keys that must not be accessed in configure(), and
-    should be checked for using node_validate().
+    should be checked for using node.validate_keys().
     """
 
     #############################################################

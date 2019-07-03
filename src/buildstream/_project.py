@@ -328,7 +328,7 @@ class Project():
         return path_str
 
     def _validate_node(self, node):
-        _yaml.node_validate(node, [
+        node.validate_keys([
             'format-version',
             'element-path', 'variables',
             'environment', 'environment-nocache',
@@ -602,7 +602,7 @@ class Project():
         self.first_pass_config.options = OptionPool(self.element_path)
 
         defaults = pre_config_node.get_mapping('defaults')
-        _yaml.node_validate(defaults, ['targets'])
+        defaults.validate_keys(['targets'])
         self._default_targets = defaults.get_sequence("targets").as_str_list()
 
         # Fatal warnings
@@ -710,7 +710,7 @@ class Project():
 
         # Parse shell options
         shell_options = config.get_mapping('shell')
-        _yaml.node_validate(shell_options, ['command', 'environment', 'host-files'])
+        shell_options.validate_keys(['command', 'environment', 'host-files'])
         self._shell_command = shell_options.get_sequence('command').as_str_list()
 
         # Perform environment expansion right away
@@ -726,7 +726,7 @@ class Project():
                 mount = HostMount(host_file)
             else:
                 # Some validation
-                _yaml.node_validate(host_file, ['path', 'host_path', 'optional'])
+                host_file.validate_keys(['path', 'host_path', 'optional'])
 
                 # Parse the host mount
                 path = host_file.get_str('path')
@@ -813,7 +813,7 @@ class Project():
             allowed_mirror_fields = [
                 'name', 'aliases'
             ]
-            _yaml.node_validate(mirror, allowed_mirror_fields)
+            mirror.validate_keys(allowed_mirror_fields)
             mirror_name = mirror.get_str('name')
             alias_mappings = {}
             for alias_mapping, uris in mirror.get_mapping('aliases').items():
@@ -877,7 +877,7 @@ class Project():
                 'package-name', 'path',
             ]
             allowed_origins = ['core', 'local', 'pip']
-            _yaml.node_validate(origin, allowed_origin_fields)
+            origin.validate_keys(allowed_origin_fields)
 
             origin_value = origin.get_str('origin')
             if origin_value not in allowed_origins:

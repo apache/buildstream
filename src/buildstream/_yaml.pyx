@@ -372,6 +372,30 @@ cdef class MappingNode(Node):
         except KeyError:
             pass
 
+    # validate_keys()
+    #
+    # Validate the node so as to ensure the user has not specified
+    # any keys which are unrecognized by buildstream (usually this
+    # means a typo which would otherwise not trigger an error).
+    #
+    # Args:
+    #    valid_keys (list): A list of valid keys for the specified node
+    #
+    # Raises:
+    #    LoadError: In the case that the specified node contained
+    #               one or more invalid keys
+    #
+    cpdef void validate_keys(self, list valid_keys) except *:
+        # Probably the fastest way to do this: https://stackoverflow.com/a/23062482
+        cdef set valid_keys_set = set(valid_keys)
+        cdef str key
+
+        for key in self.value:
+            if key not in valid_keys_set:
+                provenance = node_get_provenance(self, key=key)
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Unexpected key: {}".format(provenance, key))
+
     cpdef object values(self):
         return self.value.values()
 
@@ -1175,33 +1199,6 @@ cdef Node _new_node_from_list(list inlist, Node ref_node):
             ret.value.append(ScalarNode(str(v), ref_node.file_index, ref_node.line, next_synthetic_counter()))
 
     return ret
-
-
-# node_validate()
-#
-# Validate the node so as to ensure the user has not specified
-# any keys which are unrecognized by buildstream (usually this
-# means a typo which would otherwise not trigger an error).
-#
-# Args:
-#    node (Node): A dictionary loaded from YAML
-#    valid_keys (list): A list of valid keys for the specified node
-#
-# Raises:
-#    LoadError: In the case that the specified node contained
-#               one or more invalid keys
-#
-cpdef void node_validate(Node node, list valid_keys) except *:
-
-    # Probably the fastest way to do this: https://stackoverflow.com/a/23062482
-    cdef set valid_keys_set = set(valid_keys)
-    cdef str key
-
-    for key in node.value:
-        if key not in valid_keys_set:
-            provenance = node_get_provenance(node, key=key)
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Unexpected key: {}".format(provenance, key))
 
 
 # assert_symbol_name()
