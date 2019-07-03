@@ -22,7 +22,6 @@
 
 cdef class Node:
 
-    cdef object value
     cdef int file_index
     cdef int line
     cdef int column
@@ -38,6 +37,8 @@ cdef class Node:
 
 
 cdef class MappingNode(Node):
+    cdef dict value
+
     cpdef void composite(self, MappingNode target) except *
     cpdef void composite_under(self, MappingNode target) except *
     cdef Node get(self, str key, default, default_constructor)
@@ -61,6 +62,8 @@ cdef class MappingNode(Node):
 
 
 cdef class ScalarNode(Node):
+    cdef str value
+
     cpdef bint as_bool(self) except *
     cpdef int as_int(self) except *
     cpdef str as_str(self)
@@ -68,8 +71,11 @@ cdef class ScalarNode(Node):
 
 
 cdef class SequenceNode(Node):
+    cdef list value
+
     cpdef void append(self, object value)
     cpdef MappingNode mapping_at(self, int index)
+    cpdef Node node_at(self, int index, list allowed_types=*)
     cpdef SequenceNode sequence_at(self, int index)
     cpdef list as_str_list(self)
 
