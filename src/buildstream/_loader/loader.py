@@ -120,7 +120,7 @@ class Loader():
 
         # Set up a dummy element that depends on all top-level targets
         # to resolve potential circular dependencies between them
-        dummy_target = LoadElement(_yaml.new_empty_node(), "", self)
+        dummy_target = LoadElement(_yaml.Node.from_dict({}), "", self)
         dummy_target.dependencies.extend(
             LoadElement.Dependency(element, Symbol.RUNTIME)
             for element in target_elements

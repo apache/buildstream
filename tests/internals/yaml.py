@@ -521,6 +521,6 @@ def test_node_find_target_fails(datafiles):
                             "traversal.yaml")
     loaded = _yaml.load(filename, copy_tree=True)
 
-    brand_new = _yaml.new_empty_node()
+    brand_new = _yaml.Node.from_dict({})
 
     assert loaded._find(brand_new) is None
