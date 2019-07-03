@@ -71,7 +71,11 @@ cdef class Node:
 
     @classmethod
     def from_dict(cls, dict value):
-        return _new_node_from_dict(value, Node(None, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
+        if value:
+            return _new_node_from_dict(value, Node(None, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
+        else:
+            # We got an empty dict, we can shortcut
+            return MappingNode({}, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
 
     cdef bint _walk_find(self, Node target, list path) except *:
         raise NotImplementedError()
@@ -1135,26 +1139,6 @@ def new_synthetic_file(str filename, object project=None):
                        node,
                        project))
     return node
-
-
-# new_empty_node()
-#
-# Args:
-#    ref_node (Node): Optional node whose provenance should be referenced
-#
-# Returns
-#    (Node): A new empty YAML mapping node
-#
-def new_empty_node(Node ref_node=None):
-    if ref_node is not None:
-        return MappingNode({}, ref_node.file_index, ref_node.line, next_synthetic_counter())
-    else:
-        return MappingNode({}, _SYNTHETIC_FILE_INDEX, 0, 0)
-
-
-# FIXME: we should never need that
-def new_empty_list_node():
-    return SequenceNode([], _SYNTHETIC_FILE_INDEX, 0, 0)
 
 
 # new_node_from_dict()
