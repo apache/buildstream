@@ -54,7 +54,6 @@ _sentinel = object()
 # than a plain tuple, to distinguish them in things like node_sanitize)
 #
 # Members:
-#   value (str/list/dict): The loaded value.
 #   file_index (int): Index within _FILE_LIST (a list of loaded file paths).
 #                     Negative indices indicate synthetic nodes so that
 #                     they can be referenced.
@@ -63,8 +62,7 @@ _sentinel = object()
 #
 cdef class Node:
 
-    def __init__(self, object value, int file_index, int line, int column):
-        self.value = value
+    def __init__(self, int file_index, int line, int column):
         self.file_index = file_index
         self.line = line
         self.column = column
@@ -72,7 +70,7 @@ cdef class Node:
     @classmethod
     def from_dict(cls, dict value):
         if value:
-            return _new_node_from_dict(value, Node(None, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
+            return _new_node_from_dict(value, MappingNode({}, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
         else:
             # We got an empty dict, we can shortcut
             return MappingNode({}, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
@@ -87,7 +85,7 @@ cdef class Node:
         # Delegate to the inner value, though this will likely not work
         # very well if the node is a list or string, it's unlikely that
         # code which has access to such nodes would do this.
-        return what in self.value
+        return what in (<MappingNode> self).value
 
     cpdef Node copy(self):
         raise NotImplementedError()
@@ -135,12 +133,25 @@ cdef class Node:
 cdef class ScalarNode(Node):
 
     def __init__(self, object value, int file_index, int line, int column):
-        if type(value) is str:
+        super().__init__(file_index, line, column)
+
+        cdef value_type = type(value)
+
+        if value_type is str:
             value = value.strip()
+        elif value_type is bool:
+            if value:
+                value = "True"
+            else:
+                value = "False"
+        elif value_type is int:
+            value = str(value)
+        elif value is None:
+            pass
+        else:
+            raise ValueError("ScalarNode can only hold str, int, bool or None objects")
+
         self.value = value
-        self.file_index = file_index
-        self.line = line
-        self.column = column
 
     cpdef ScalarNode copy(self):
         return self
@@ -207,10 +218,8 @@ cdef class ScalarNode(Node):
 cdef class MappingNode(Node):
 
     def __init__(self, dict value, int file_index, int line, int column):
+        super().__init__(file_index, line, column)
         self.value = value
-        self.file_index = file_index
-        self.line = line
-        self.column = column
 
     cpdef MappingNode copy(self):
         cdef dict copy = {}
@@ -475,22 +484,22 @@ cdef class MappingNode(Node):
             if prefix is not None:
                 target.value["(<)"] = prefix
             elif "(<)" in target.value:
-                target.value["(<)"].value.clear()
+                (<SequenceNode> target.value["(<)"]).value.clear()
             if suffix is not None:
                 target.value["(>)"] = suffix
             elif "(>)" in target.value:
-                target.value["(>)"].value.clear()
+                (<SequenceNode> target.value["(>)"]).value.clear()
         else:
             # Not clobbering, so prefix the prefix and suffix the suffix
             if prefix is not None:
                 if "(<)" in target.value:
                     for v in reversed(prefix.value):
-                        target.value["(<)"].value.insert(0, v)
+                        (<SequenceNode> target.value["(<)"]).value.insert(0, v)
                 else:
                     target.value["(<)"] = prefix
             if suffix is not None:
                 if "(>)" in target.value:
-                    target.value["(>)"].value.extend(suffix.value)
+                    (<SequenceNode> target.value["(>)"]).value.extend(suffix.value)
                 else:
                     target.value["(>)"] = suffix
 
@@ -583,10 +592,8 @@ cdef class MappingNode(Node):
 
 cdef class SequenceNode(Node):
     def __init__(self, list value, int file_index, int line, int column):
+        super().__init__(file_index, line, column)
         self.value = value
-        self.file_index = file_index
-        self.line = line
-        self.column = column
 
     cpdef void append(self, object value):
         if type(value) in [MappingNode, ScalarNode, SequenceNode]:
@@ -613,6 +620,17 @@ cdef class SequenceNode(Node):
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Value of '{}' is not of the expected type '{}'"
                             .format(provenance, path, MappingNode.__name__))
+        return value
+
+    cpdef Node node_at(self, int key, list allowed_types = None):
+        cdef value = self.value[key]
+
+        if allowed_types and type(value) not in allowed_types:
+            provenance = node_get_provenance(self)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Value of '{}' is not one of the following: {}.".format(
+                                provenance, key, ", ".join(allowed_types)))
+
         return value
 
     cpdef SequenceNode sequence_at(self, int index):
@@ -682,6 +700,8 @@ cdef class SequenceNode(Node):
         return reversed(self.value)
 
     def __setitem__(self, int key, object value):
+        cdef Node old_value
+
         if type(value) in [MappingNode, ScalarNode, SequenceNode]:
             self.value[key] = value
         else:
@@ -917,14 +937,14 @@ cdef class Representer:
 
     cdef RepresenterState _handle_wait_value_ScalarEvent(self, object ev):
         key = self.keys.pop()
-        (<dict> (<Node> self.output[-1]).value)[key] = \
+        (<MappingNode> self.output[-1]).value[key] = \
             ScalarNode(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column)
         return RepresenterState.wait_key
 
     cdef RepresenterState _handle_wait_value_MappingStartEvent(self, object ev):
         cdef RepresenterState new_state = self._handle_doc_MappingStartEvent(ev)
         key = self.keys.pop()
-        (<dict> (<MappingNode> self.output[-2]).value)[key] = self.output[-1]
+        (<MappingNode> self.output[-2]).value[key] = self.output[-1]
         return new_state
 
     cdef RepresenterState _handle_wait_key_MappingEndEvent(self, object ev):
@@ -932,7 +952,7 @@ cdef class Representer:
         # unless it's the last one in which case we leave it
         if len(self.output) > 1:
             self.output.pop()
-            if type((<Node> self.output[-1]).value) is list:
+            if type(self.output[-1]) is SequenceNode:
                 return RepresenterState.wait_list_item
             else:
                 return RepresenterState.wait_key
@@ -941,13 +961,13 @@ cdef class Representer:
 
     cdef RepresenterState _handle_wait_value_SequenceStartEvent(self, object ev):
         self.output.append(SequenceNode([], self._file_index, ev.start_mark.line, ev.start_mark.column))
-        (<dict> (<Node> self.output[-2]).value)[self.keys[-1]] = self.output[-1]
+        (<MappingNode> self.output[-2]).value[self.keys[-1]] = self.output[-1]
         return RepresenterState.wait_list_item
 
     cdef RepresenterState _handle_wait_list_item_SequenceStartEvent(self, object ev):
-        self.keys.append(len((<Node> self.output[-1]).value))
+        self.keys.append(len((<SequenceNode> self.output[-1]).value))
         self.output.append(SequenceNode([], self._file_index, ev.start_mark.line, ev.start_mark.column))
-        (<list> (<Node> self.output[-2]).value).append(self.output[-1])
+        (<SequenceNode> self.output[-2]).value.append(self.output[-1])
         return RepresenterState.wait_list_item
 
     cdef RepresenterState _handle_wait_list_item_SequenceEndEvent(self, object ev):
@@ -962,13 +982,13 @@ cdef class Representer:
             return RepresenterState.wait_key
 
     cdef RepresenterState _handle_wait_list_item_ScalarEvent(self, object ev):
-        (<Node> self.output[-1]).value.append(
+        (<SequenceNode> self.output[-1]).value.append(
            ScalarNode(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column))
         return RepresenterState.wait_list_item
 
     cdef RepresenterState _handle_wait_list_item_MappingStartEvent(self, object ev):
         cdef RepresenterState new_state = self._handle_doc_MappingStartEvent(ev)
-        (<list> (<Node> self.output[-2]).value).append(self.output[-1])
+        (<SequenceNode> self.output[-2]).value.append(self.output[-1])
         return new_state
 
     cdef RepresenterState _handle_doc_DocumentEndEvent(self, object ev):
@@ -1112,11 +1132,11 @@ cpdef ProvenanceInformation node_get_provenance(Node node, str key=None, list in
         return ProvenanceInformation(node)
 
     if key and not indices:
-        return ProvenanceInformation(node.value.get(key))
+        return ProvenanceInformation((<MappingNode> node).value.get(key))
 
-    cdef Node nodeish = <Node> node.value.get(key)
+    cdef Node nodeish = <Node> (<MappingNode> node).value.get(key)
     for idx in indices:
-        nodeish = <Node> nodeish.value[idx]
+        nodeish = <Node> (<SequenceNode> nodeish).value[idx]
 
     return ProvenanceInformation(nodeish)
 
@@ -1182,7 +1202,6 @@ cdef Node _new_node_from_list(list inlist, Node ref_node):
             ret.value.append(_new_node_from_list(v, ref_node))
         else:
             ret.value.append(ScalarNode(str(v), ref_node.file_index, ref_node.line, next_synthetic_counter()))
-
     return ret
 
 
