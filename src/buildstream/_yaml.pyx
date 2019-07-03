@@ -101,6 +101,25 @@ cdef class Node:
     cpdef void _assert_fully_composited(self) except *:
         raise NotImplementedError()
 
+    # _is_composite_list
+    #
+    # Checks if the node is a Mapping with array composition
+    # directives.
+    #
+    # Returns:
+    #    (bool): True if node was a Mapping containing only
+    #            list composition directives
+    #
+    # Raises:
+    #    (LoadError): If node was a mapping and contained a mix of
+    #                 list composition directives and other keys
+    #
+    cdef bint _is_composite_list(self) except *:
+        raise NotImplementedError()
+
+    cdef void _compose_on(self, str key, MappingNode target, list path) except *:
+        raise NotImplementedError()
+
     def __json__(self):
         raise ValueError("Nodes should not be allowed when jsonify-ing data", self)
 
@@ -159,6 +178,20 @@ cdef class ScalarNode(Node):
     cpdef void _assert_fully_composited(self) except *:
         pass
 
+    cdef void _compose_on(self, str key, MappingNode target, list path) except *:
+        cdef Node target_value = target.value.get(key)
+
+        if target_value is not None and type(target_value) is not ScalarNode:
+            raise CompositeError(path,
+                                 "{}: Cannot compose scalar on non-scalar at {}".format(
+                                    node_get_provenance(self),
+                                    node_get_provenance(target_value)))
+
+        target.value[key] = self
+
+    cdef bint _is_composite_list(self) except *:
+        return False
+
     cdef bint _walk_find(self, Node target, list path) except *:
         return self._shares_position_with(target)
 
@@ -198,6 +231,43 @@ cdef class MappingNode(Node):
         if self._walk_find(target, path):
             return path
         return None
+
+    # composite()
+    #
+    # Compose one mapping node onto another
+    #
+    # Args:
+    #    target (Node): The target to compose into
+    #
+    # Raises: LoadError
+    #
+    cpdef void composite(self, MappingNode target) except *:
+        try:
+            self._composite(target, [])
+        except CompositeError as e:
+            source_provenance = node_get_provenance(self)
+            error_prefix = ""
+            if source_provenance:
+                error_prefix = "{}: ".format(source_provenance)
+            raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
+                            "{}Failure composing {}: {}"
+                            .format(error_prefix,
+                                    e.path,
+                                    e.message)) from e
+
+    # Like composite(target, source), but where target overrides source instead.
+    #
+    cpdef void composite_under(self, MappingNode target) except *:
+        target.composite(self)
+
+        cdef str key
+        cdef Node value
+        cdef list to_delete = [key for key in target.value.keys() if key not in self.value]
+
+        for key, value in self.value.items():
+            target.value[key] = value
+        for key in to_delete:
+            del target.value[key]
 
     cdef Node get(self, str key, object default, object default_constructor):
         value = self.value.get(key, _sentinel)
@@ -305,6 +375,111 @@ cdef class MappingNode(Node):
         cdef Node value
 
         return {key: value.strip_node_info() for key, value in self.value.items()}
+
+    cdef void _composite(self, MappingNode target, list path=None) except *:
+        cdef str key
+        cdef Node value
+
+        for key, value in self.value.items():
+            path.append(key)
+            value._compose_on(key, target, path)
+            path.pop()
+
+    cdef void _compose_on(self, str key, MappingNode target, list path) except *:
+        cdef Node target_value
+
+        if self._is_composite_list():
+            if key not in target.value:
+                # Composite list clobbers empty space
+                target.value[key] = self
+            else:
+                target_value = target.value[key]
+
+                if type(target_value) is SequenceNode:
+                    # Composite list composes into a list
+                    self._compose_on_list(target_value)
+                elif target_value._is_composite_list():
+                    # Composite list merges into composite list
+                    self._compose_on_composite_dict(target_value)
+                else:
+                    # Else composing on top of normal dict or a scalar, so raise...
+                    raise CompositeError(path,
+                                         "{}: Cannot compose lists onto {}".format(
+                                             node_get_provenance(self),
+                                             node_get_provenance(target_value)))
+        else:
+            # We're composing a dict into target now
+            if key not in target.value:
+                # Target lacks a dict at that point, make a fresh one with
+                # the same provenance as the incoming dict
+                target.value[key] = MappingNode({}, self.file_index, self.line, self.column)
+
+            self._composite(target.value[key], path)
+
+    cdef void _compose_on_list(self, SequenceNode target):
+        cdef SequenceNode clobber = self.value.get("(=)")
+        cdef SequenceNode prefix = self.value.get("(<)")
+        cdef SequenceNode suffix = self.value.get("(>)")
+
+        if clobber is not None:
+            target.value.clear()
+            target.value.extend(clobber.value)
+        if prefix is not None:
+            for v in reversed(prefix.value):
+                target.value.insert(0, v)
+        if suffix is not None:
+            target.value.extend(suffix.value)
+
+    cdef void _compose_on_composite_dict(self, MappingNode target):
+        cdef SequenceNode clobber = self.value.get("(=)")
+        cdef SequenceNode prefix = self.value.get("(<)")
+        cdef SequenceNode suffix = self.value.get("(>)")
+
+        if clobber is not None:
+            # We want to clobber the target list
+            # which basically means replacing the target list
+            # with ourselves
+            target.value["(=)"] = clobber
+            if prefix is not None:
+                target.value["(<)"] = prefix
+            elif "(<)" in target.value:
+                target.value["(<)"].value.clear()
+            if suffix is not None:
+                target.value["(>)"] = suffix
+            elif "(>)" in target.value:
+                target.value["(>)"].value.clear()
+        else:
+            # Not clobbering, so prefix the prefix and suffix the suffix
+            if prefix is not None:
+                if "(<)" in target.value:
+                    for v in reversed(prefix.value):
+                        target.value["(<)"].value.insert(0, v)
+                else:
+                    target.value["(<)"] = prefix
+            if suffix is not None:
+                if "(>)" in target.value:
+                    target.value["(>)"].value.extend(suffix.value)
+                else:
+                    target.value["(>)"] = suffix
+
+    cdef bint _is_composite_list(self) except *:
+        cdef bint has_directives = False
+        cdef bint has_keys = False
+        cdef str key
+
+        for key in self.value.keys():
+            if key in ['(>)', '(<)', '(=)']:
+                has_directives = True
+            else:
+                has_keys = True
+
+        if has_keys and has_directives:
+            provenance = node_get_provenance(self)
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Dictionary contains array composition directives and arbitrary keys"
+                            .format(provenance))
+
+        return has_directives
 
     def __delitem__(self, str key):
         del self.value[key]
@@ -422,6 +597,24 @@ cdef class SequenceNode(Node):
         cdef Node value
         for value in self.value:
             value._assert_fully_composited()
+
+    cdef void _compose_on(self, str key, MappingNode target, list path) except *:
+        # List clobbers anything list-like
+        cdef Node target_value = target.value.get(key)
+
+        if not (target_value is None or
+                type(target_value) is SequenceNode or
+                target_value._is_composite_list()):
+            raise CompositeError(path,
+                                 "{}: List cannot overwrite {} at: {}"
+                                 .format(node_get_provenance(self),
+                                         key,
+                                         node_get_provenance(target_value)))
+        # Looks good, clobber it
+        target.value[key] = self
+
+    cdef bint _is_composite_list(self) except *:
+        return False
 
     cdef bint _walk_find(self, Node target, list path) except *:
         cdef int i
@@ -1044,213 +1237,6 @@ cdef Node __new_node_from_list(list inlist):
         else:
             ret.append(ScalarNode(str(v), _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
     return SequenceNode(ret, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
-
-
-# _is_composite_list
-#
-# Checks if the given node is a Mapping with array composition
-# directives.
-#
-# Args:
-#    node (value): Any node
-#
-# Returns:
-#    (bool): True if node was a Mapping containing only
-#            list composition directives
-#
-# Raises:
-#    (LoadError): If node was a mapping and contained a mix of
-#                 list composition directives and other keys
-#
-cdef bint _is_composite_list(Node node):
-    cdef bint has_directives = False
-    cdef bint has_keys = False
-    cdef str key
-
-    if type(node) is MappingNode:
-        for key in (<MappingNode> node).keys():
-            if key in ['(>)', '(<)', '(=)']:  # pylint: disable=simplifiable-if-statement
-                has_directives = True
-            else:
-                has_keys = True
-
-            if has_keys and has_directives:
-                provenance = node_get_provenance(node)
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Dictionary contains array composition directives and arbitrary keys"
-                                .format(provenance))
-        return has_directives
-
-    return False
-
-
-# _compose_composite_list()
-#
-# Composes a composite list (i.e. a dict with list composition directives)
-# on top of a target list which is a composite list itself.
-#
-# Args:
-#    target (Node): A composite list
-#    source (Node): A composite list
-#
-cdef void _compose_composite_list(Node target, Node source):
-    clobber = source.value.get("(=)")
-    prefix = source.value.get("(<)")
-    suffix = source.value.get("(>)")
-    if clobber is not None:
-        # We want to clobber the target list
-        # which basically means replacing the target list
-        # with ourselves
-        target.value["(=)"] = clobber
-        if prefix is not None:
-            target.value["(<)"] = prefix
-        elif "(<)" in target.value:
-            target.value["(<)"].value.clear()
-        if suffix is not None:
-            target.value["(>)"] = suffix
-        elif "(>)" in target.value:
-            target.value["(>)"].value.clear()
-    else:
-        # Not clobbering, so prefix the prefix and suffix the suffix
-        if prefix is not None:
-            if "(<)" in target.value:
-                for v in reversed(prefix.value):
-                    target.value["(<)"].value.insert(0, v)
-            else:
-                target.value["(<)"] = prefix
-        if suffix is not None:
-            if "(>)" in target.value:
-                target.value["(>)"].value.extend(suffix.value)
-            else:
-                target.value["(>)"] = suffix
-
-
-# _compose_list()
-#
-# Compose a composite list (a dict with composition directives) on top of a
-# simple list.
-#
-# Args:
-#    target (Node): The target list to be composed into
-#    source (Node): The composition list to be composed from
-#
-cdef void _compose_list(Node target, Node source):
-    clobber = source.value.get("(=)")
-    prefix = source.value.get("(<)")
-    suffix = source.value.get("(>)")
-    if clobber is not None:
-        target.value.clear()
-        target.value.extend(clobber.value)
-    if prefix is not None:
-        for v in reversed(prefix.value):
-            target.value.insert(0, v)
-    if suffix is not None:
-        target.value.extend(suffix.value)
-
-
-# composite_dict()
-#
-# Compose one mapping node onto another
-#
-# Args:
-#    target (Node): The target to compose into
-#    source (Node): The source to compose from
-#    path   (list): The path to the current composition node
-#
-# Raises: CompositeError
-#
-cpdef void composite_dict(Node target, Node source, list path=None) except *:
-    cdef str k
-    cdef Node v, target_value
-
-    if path is None:
-        path = []
-    for k, v in source.value.items():
-        path.append(k)
-        if type(v.value) is list:
-            # List clobbers anything list-like
-            target_value = target.value.get(k)
-            if not (target_value is None or
-                    type(target_value.value) is list or
-                    _is_composite_list(target_value)):
-                raise CompositeError(path,
-                                     "{}: List cannot overwrite {} at: {}"
-                                     .format(node_get_provenance(source, k),
-                                             k,
-                                             node_get_provenance(target, k)))
-            # Looks good, clobber it
-            target.value[k] = v
-        elif _is_composite_list(v):
-            if k not in target.value:
-                # Composite list clobbers empty space
-                target.value[k] = v
-            elif type(target.value[k].value) is list:
-                # Composite list composes into a list
-                _compose_list(target.value[k], v)
-            elif _is_composite_list(target.value[k]):
-                # Composite list merges into composite list
-                _compose_composite_list(target.value[k], v)
-            else:
-                # Else composing on top of normal dict or a scalar, so raise...
-                raise CompositeError(path,
-                                     "{}: Cannot compose lists onto {}".format(
-                                         node_get_provenance(v),
-                                         node_get_provenance(target.value[k])))
-        elif type(v.value) is dict:
-            # We're composing a dict into target now
-            if k not in target.value:
-                # Target lacks a dict at that point, make a fresh one with
-                # the same provenance as the incoming dict
-                target.value[k] = MappingNode({}, v.file_index, v.line, v.column)
-            if type(target.value) is not dict:
-                raise CompositeError(path,
-                                     "{}: Cannot compose dictionary onto {}".format(
-                                         node_get_provenance(v),
-                                         node_get_provenance(target.value[k])))
-            composite_dict(target.value[k], v, path)
-        else:
-            target_value = target.value.get(k)
-            if target_value is not None and type(target_value.value) is not str:
-                raise CompositeError(path,
-                                     "{}: Cannot compose scalar on non-scalar at {}".format(
-                                         node_get_provenance(v),
-                                         node_get_provenance(target.value[k])))
-            target.value[k] = v
-        path.pop()
-
-
-# Like composite_dict(), but raises an all purpose LoadError for convenience
-#
-cpdef void composite(MappingNode target, MappingNode source) except *:
-    assert type(source.value) is dict
-    assert type(target.value) is dict
-
-    try:
-        composite_dict(target, source)
-    except CompositeError as e:
-        source_provenance = node_get_provenance(source)
-        error_prefix = ""
-        if source_provenance:
-            error_prefix = "{}: ".format(source_provenance)
-        raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                        "{}Failure composing {}: {}"
-                        .format(error_prefix,
-                                e.path,
-                                e.message)) from e
-
-
-# Like composite(target, source), but where target overrides source instead.
-#
-def composite_and_move(MappingNode target, MappingNode source):
-    composite(source, target)
-
-    cdef str key
-    cdef Node value
-    cdef list to_delete = [key for key in target.value.keys() if key not in source.value]
-    for key, value in source.value.items():
-        target.value[key] = value
-    for key in to_delete:
-        del target.value[key]
 
 
 # node_validate()

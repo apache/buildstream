@@ -31,11 +31,15 @@ cdef class Node:
     cpdef object strip_node_info(self)
 
     cpdef void _assert_fully_composited(self) except *
+    cdef void _compose_on(self, str key, MappingNode target, list path) except *
+    cdef bint _is_composite_list(self) except *
     cdef bint _shares_position_with(self, Node target)
     cdef bint _walk_find(self, Node target, list path) except *
 
 
 cdef class MappingNode(Node):
+    cpdef void composite(self, MappingNode target) except *
+    cpdef void composite_under(self, MappingNode target) except *
     cdef Node get(self, str key, default, default_constructor)
     cpdef MappingNode get_mapping(self, str key, default=*)
     cpdef Node get_node(self, str key, list allowed_types=*, bint allow_none=*)
@@ -49,6 +53,9 @@ cdef class MappingNode(Node):
     cpdef void safe_del(self, str key)
     cpdef object values(self)
 
+    cdef void _composite(self, MappingNode target, list path=*) except *
+    cdef void _compose_on_composite_dict(self, MappingNode target)
+    cdef void _compose_on_list(self, SequenceNode target)
     cpdef list _find(self, Node target)
 
 
