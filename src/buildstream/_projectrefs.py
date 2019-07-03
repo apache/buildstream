@@ -121,15 +121,16 @@ class ProjectRefs():
     # Looks up a ref node in the project.refs file, creates one if ensure is True.
     #
     def _lookup(self, toplevel, project, element, source_index, *, ensure=False):
+        projects = toplevel.get_mapping('projects')
+
         # Fetch the project
         try:
-            projects = toplevel.get_mapping('projects')
             project_node = projects.get_mapping(project)
         except LoadError:
             if not ensure:
                 return None
-            project_node = _yaml.new_empty_node(ref_node=projects)
-            projects[project] = project_node
+            projects[project] = {}
+            project_node = projects.get_mapping(project)
 
         # Fetch the element
         try:
@@ -137,8 +138,8 @@ class ProjectRefs():
         except LoadError:
             if not ensure:
                 return None
-            element_list = _yaml.new_empty_list_node()
-            project_node[element] = element_list
+            project_node[element] = []
+            element_list = project_node.get_sequence(element)
 
         # Fetch the source index
         try:
@@ -147,9 +148,7 @@ class ProjectRefs():
             if not ensure:
                 return None
 
-            # Pad the list with empty newly created dictionaries
-            _yaml.node_extend_list(project_node, element, source_index + 1, {})
-
-            node = project_node.get_sequence(element).mapping_at(source_index)
+            element_list.append({})
+            node = element_list.mapping_at(source_index)
 
         return node
