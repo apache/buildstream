@@ -280,7 +280,7 @@ class Plugin():
         Plugin implementors should implement this method to read configuration
         data and store it.
 
-        The :func:`Plugin.node_validate() <buildstream.plugin.Plugin.node_validate>` method
+        The :func:`MappingNode.validate_keys() <buildstream._yaml.MappingNode.validate_keys>` method
         should be used to ensure that the user has not specified keys in `node` which are unsupported
         by the plugin.
 
@@ -406,31 +406,6 @@ class Plugin():
         return self.__project.get_path_from_node(node, key,
                                                  check_is_file=check_is_file,
                                                  check_is_dir=check_is_dir)
-
-    def node_validate(self, node, valid_keys):
-        """This should be used in :func:`~buildstream.plugin.Plugin.configure`
-        implementations to assert that users have only entered
-        valid configuration keys.
-
-        Args:
-            node (dict): A dictionary loaded from YAML
-            valid_keys (iterable): A list of valid keys for the node
-
-        Raises:
-            :class:`.LoadError`: When an invalid key is found
-
-        **Example:**
-
-        .. code:: python
-
-          # Ensure our node only contains valid autotools config keys
-          self.node_validate(node, [
-              'configure-commands', 'build-commands',
-              'install-commands', 'strip-commands'
-          ])
-
-        """
-        _yaml.node_validate(node, valid_keys)
 
     def debug(self, brief, *, detail=None):
         """Print a debugging message
