@@ -73,7 +73,7 @@ class ZipSource(DownloadableFileSource):
         super().configure(node)
 
         self.base_dir = node.get_str('base-dir', '*')
-        self.node_validate(node, DownloadableFileSource.COMMON_CONFIG_KEYS + ['base-dir'])
+        node.validate_keys(DownloadableFileSource.COMMON_CONFIG_KEYS + ['base-dir'])
 
     def get_unique_key(self):
         return super().get_unique_key() + [self.base_dir]

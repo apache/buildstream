@@ -31,7 +31,7 @@ class FooTransformSource(Source):
         return path
 
     def configure(self, node):
-        self.node_validate(node, ['ref', *Source.COMMON_CONFIG_KEYS])
+        node.validate_keys(['ref', *Source.COMMON_CONFIG_KEYS])
         self.ref = node.get_str('ref', None)
 
     def preflight(self):

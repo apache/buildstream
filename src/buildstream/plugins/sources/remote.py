@@ -68,7 +68,7 @@ class RemoteSource(DownloadableFileSource):
         if os.sep in self.filename:
             raise SourceError('{}: filename parameter cannot contain directories'.format(self),
                               reason="filename-contains-directory")
-        self.node_validate(node, DownloadableFileSource.COMMON_CONFIG_KEYS + ['filename', 'executable'])
+        node.validate_keys(DownloadableFileSource.COMMON_CONFIG_KEYS + ['filename', 'executable'])
 
     def get_unique_key(self):
         return super().get_unique_key() + [self.filename, self.executable]
