@@ -154,7 +154,7 @@ class Context():
         self._artifactcache = None
         self._sourcecache = None
         self._projects = []
-        self._project_overrides = _yaml.new_empty_node()
+        self._project_overrides = _yaml.Node.from_dict({})
         self._workspaces = None
         self._workspace_project_cache = WorkspaceProjectCache()
         self._cascache = None
