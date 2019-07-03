@@ -21,7 +21,7 @@ def test_load_yaml(datafiles):
                             'basics.yaml')
 
     loaded = _yaml.load(filename)
-    assert loaded.value.get('kind').value == 'pony'
+    assert loaded.get_str('kind') == 'pony'
 
 
 def assert_provenance(filename, line, col, node, key=None, indices=None):
@@ -42,7 +42,7 @@ def test_basic_provenance(datafiles):
                             'basics.yaml')
 
     loaded = _yaml.load(filename)
-    assert loaded.value.get('kind').value == 'pony'
+    assert loaded.get_str('kind') == 'pony'
 
     assert_provenance(filename, 1, 0, loaded)
 
@@ -55,7 +55,7 @@ def test_member_provenance(datafiles):
                             'basics.yaml')
 
     loaded = _yaml.load(filename)
-    assert loaded.value.get('kind').value == 'pony'
+    assert loaded.get_str('kind') == 'pony'
     assert_provenance(filename, 2, 13, loaded, 'description')
 
 
@@ -67,7 +67,7 @@ def test_element_provenance(datafiles):
                             'basics.yaml')
 
     loaded = _yaml.load(filename)
-    assert loaded.value.get('kind').value == 'pony'
+    assert loaded.get_str('kind') == 'pony'
     assert_provenance(filename, 5, 2, loaded, 'moods', [1])
 
 
@@ -101,7 +101,7 @@ def test_node_get(datafiles):
                             'basics.yaml')
 
     base = _yaml.load(filename)
-    assert base.value.get('kind').value == 'pony'
+    assert base.get_str('kind') == 'pony'
 
     children = base.get_sequence('children')
     assert isinstance(children, _yaml.SequenceNode)
@@ -504,9 +504,16 @@ def test_node_find_target(datafiles, case):
     # laid out.  Client code should never do this.
     def _walk(node, entry, rest):
         if rest:
-            return _walk(node.value[entry], rest[0], rest[1:])
+            if isinstance(entry, int):
+                new_node = node.node_at(entry)
+            else:
+                new_node = node.get_node(entry)
+
+            return _walk(new_node, rest[0], rest[1:])
         else:
-            return node.value[entry]
+            if isinstance(entry, int):
+                return node.node_at(entry)
+            return node.get_node(entry)
 
     want = _walk(loaded, case[0], case[1:])
     found_path = toplevel._find(want)
