@@ -1151,7 +1151,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
 
     repodir, reponame = os.path.split(repo.repo)
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    project_config['aliases'] = _yaml.new_node_from_dict({
+    project_config['aliases'] = _yaml.Node.from_dict({
         'repo': 'http://example.com/'
     })
     project_config['mirrors'] = [

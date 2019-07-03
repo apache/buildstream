@@ -69,6 +69,10 @@ cdef class Node:
         self.line = line
         self.column = column
 
+    @classmethod
+    def from_dict(cls, dict value):
+        return new_node_from_dict(value)
+
     cdef bint _walk_find(self, Node target, list path) except *:
         raise NotImplementedError()
 
