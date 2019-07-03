@@ -22,8 +22,6 @@ from itertools import count
 
 from pyroaring import BitMap, FrozenBitMap  # pylint: disable=no-name-in-module
 
-from .. import _yaml
-
 
 # LoadElement():
 #
@@ -82,7 +80,7 @@ class LoadElement():
             self.full_name = self.name
 
         # Ensure the root node is valid
-        _yaml.node_validate(self.node, [
+        self.node.validate_keys([
             'kind', 'depends', 'sources', 'sandbox',
             'variables', 'environment', 'environment-nocache',
             'config', 'public', 'description',

@@ -4,7 +4,7 @@ from buildstream import Element, Scope
 # Copies files from the dependent element but inserts split-rules using dynamic data
 class DynamicElement(Element):
     def configure(self, node):
-        self.node_validate(node, ['split-rules'])
+        node.validate_keys(['split-rules'])
         self.split_rules = node.get_mapping('split-rules')
 
     def preflight(self):

@@ -44,7 +44,7 @@ class OptionFlags(Option):
         if allow_value_definitions:
             valid_symbols += ['values']
 
-        _yaml.node_validate(node, valid_symbols)
+        node.validate_keys(valid_symbols)
 
         # Allow subclass to define the valid values
         self.values = self.load_valid_values(node)

@@ -17,7 +17,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .. import _yaml
 from .._exceptions import LoadError, LoadErrorReason
 from .option import Option, OPTION_SYMBOLS
 
@@ -33,7 +32,7 @@ class OptionBool(Option):
     def load(self, node):
 
         super().load(node)
-        _yaml.node_validate(node, OPTION_SYMBOLS + ['default'])
+        node.validate_keys(OPTION_SYMBOLS + ['default'])
         self.value = node.get_bool('default')
 
     def load_value(self, node, *, transform=None):
