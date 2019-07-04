@@ -273,20 +273,6 @@ def test_list_deletion(datafiles):
     assert not children
 
 
-# Test that extending a non-existent list works as expected
-@pytest.mark.datafiles(os.path.join(DATA_DIR))
-def test_nonexistent_list_extension(datafiles):
-    base = os.path.join(datafiles.dirname, datafiles.basename, 'basics.yaml')
-
-    base = _yaml.load(base, shortname='basics.yaml')
-    assert 'todo' not in base
-
-    _yaml.node_extend_list(base, 'todo', 3, 'empty')
-
-    assert len(base.get_sequence('todo')) == 3
-    assert base.get_sequence('todo').as_str_list() == ['empty', 'empty', 'empty']
-
-
 # Tests for deep list composition
 #
 # Same as test_list_composition(), but adds an additional file
@@ -535,6 +521,6 @@ def test_node_find_target_fails(datafiles):
                             "traversal.yaml")
     loaded = _yaml.load(filename, copy_tree=True)
 
-    brand_new = _yaml.new_empty_node()
+    brand_new = _yaml.Node.from_dict({})
 
     assert loaded._find(brand_new) is None
