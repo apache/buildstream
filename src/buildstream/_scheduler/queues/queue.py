@@ -91,20 +91,25 @@ class Queue():
     #     Abstract Methods for Queue implementations    #
     #####################################################
 
-    # process()
+    # get_process_func()
     #
-    # Abstract method for processing an element
+    # Abstract method, returns a callable for processing an element.
     #
-    # Args:
-    #    element (Element): An element to process
+    # The callable should fit the signature `process(element: Element) -> any`.
+    #
+    # Note that the callable may be executed in a child process, so the return
+    # value should be a simple object (must be pickle-able, i.e. strings,
+    # lists, dicts, numbers, but not Element instances). This is sent to back
+    # to the main process.
+    #
+    # This method is the only way for a queue to affect elements, and so is
+    # not optional to implement.
     #
     # Returns:
-    #    (any): An optional something to be returned
-    #           for every element successfully processed
+    #    (Callable[[Element], Any]): The callable for processing elements.
     #
-    #
-    def process(self, element):
-        pass
+    def get_process_func(self):
+        raise NotImplementedError()
 
     # status()
     #
@@ -218,7 +223,7 @@ class Queue():
             ElementJob(self._scheduler, self.action_name,
                        self._element_log_path(element),
                        element=element, queue=self,
-                       action_cb=self.process,
+                       action_cb=self.get_process_func(),
                        complete_cb=self._job_done,
                        max_retries=self._max_retries)
             for element in ready
@@ -259,7 +264,7 @@ class Queue():
                     workspaces.save_config()
                 except BstError as e:
                     self._message(element, MessageType.ERROR, "Error saving workspaces", detail=str(e))
-                except Exception as e:   # pylint: disable=broad-except
+                except Exception:   # pylint: disable=broad-except
                     self._message(element, MessageType.BUG,
                                   "Unhandled exception while saving workspaces",
                                   detail=traceback.format_exc())
@@ -302,7 +307,7 @@ class Queue():
             #
             set_last_task_error(e.domain, e.reason)
 
-        except Exception as e:   # pylint: disable=broad-except
+        except Exception:   # pylint: disable=broad-except
 
             # Report unhandled exceptions and mark as failed
             #

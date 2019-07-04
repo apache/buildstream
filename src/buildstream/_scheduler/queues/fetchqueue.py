@@ -39,10 +39,13 @@ class FetchQueue(Queue):
         super().__init__(scheduler)
 
         self._skip_cached = skip_cached
-        self._fetch_original = fetch_original
+        self._should_fetch_original = fetch_original
 
-    def process(self, element):
-        element._fetch(fetch_original=self._fetch_original)
+    def get_process_func(self):
+        if self._should_fetch_original:
+            return FetchQueue._fetch_original
+        else:
+            return FetchQueue._fetch_not_original
 
     def status(self, element):
         # Optionally skip elements that are already in the artifact cache
@@ -56,7 +59,7 @@ class FetchQueue(Queue):
         # This will automatically skip elements which
         # have no sources.
 
-        if not element._should_fetch(self._fetch_original):
+        if not element._should_fetch(self._should_fetch_original):
             return QueueStatus.SKIP
 
         return QueueStatus.READY
@@ -69,7 +72,7 @@ class FetchQueue(Queue):
         element._fetch_done()
 
         # Successful fetch, we must be CACHED or in the sourcecache
-        if self._fetch_original:
+        if self._should_fetch_original:
             assert element._get_consistency() == Consistency.CACHED
         else:
             assert element._source_cached()
@@ -78,3 +81,11 @@ class FetchQueue(Queue):
         # Set a "can_query_cache" callback for an element not yet ready
         # to be processed in the fetch queue.
         element._set_can_query_cache_callback(self._enqueue_element)
+
+    @staticmethod
+    def _fetch_not_original(element):
+        element._fetch(fetch_original=False)
+
+    @staticmethod
+    def _fetch_original(element):
+        element._fetch(fetch_original=True)

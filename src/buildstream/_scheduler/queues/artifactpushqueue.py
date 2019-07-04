@@ -32,13 +32,16 @@ class ArtifactPushQueue(Queue):
     complete_name = "Pushed"
     resources = [ResourceType.UPLOAD]
 
-    def process(self, element):
-        # returns whether an artifact was uploaded or not
-        if not element._push():
-            raise SkipJob(self.action_name)
+    def get_process_func(self):
+        return ArtifactPushQueue._push_or_skip
 
     def status(self, element):
         if element._skip_push():
             return QueueStatus.SKIP
 
         return QueueStatus.READY
+
+    @staticmethod
+    def _push_or_skip(element):
+        if not element._push():
+            raise SkipJob(ArtifactPushQueue.action_name)
