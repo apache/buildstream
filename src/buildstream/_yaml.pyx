@@ -1119,26 +1119,6 @@ cpdef ProvenanceInformation node_get_provenance(Node node, str key=None, list in
     return ProvenanceInformation(nodeish)
 
 
-# is_node()
-#
-# A test method which returns whether or not the passed in value
-# is a valid YAML node.  It is not valid to call this on a Node
-# object which is not a Mapping.
-#
-# Args:
-#    maybenode (any): The object to test for nodeness
-#
-# Returns:
-#    (bool): Whether or not maybenode was a Node
-#
-def is_node(maybenode):
-    # It's a programming error to give this a Node which isn't a mapping
-    # so assert that.
-    assert (type(maybenode) not in [ScalarNode, SequenceNode])
-    # Now return the type check
-    return type(maybenode) is MappingNode
-
-
 # new_synthetic_file()
 #
 # Create a new synthetic mapping node, with an associated file entry
