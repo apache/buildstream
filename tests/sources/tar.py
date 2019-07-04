@@ -276,21 +276,38 @@ def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
     assert checkout_contents == original_contents
 
 
-# Test that a tarball that contains a read only dir works
+# Test that tarballs with read-only files work
+# a - contains read-only files in a writable directory
+# b - root directory has read-only permission
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'read-only'))
-def test_read_only_dir(cli, tmpdir, datafiles):
+@pytest.mark.parametrize("tar_name", ["a", "b"])
+def test_read_only_dir(cli, tmpdir, datafiles, tar_name):
     try:
         project = str(datafiles)
         generate_project(project, tmpdir)
+
+        bst_path = os.path.join(project, "target.bst")
+        tar_file = "{}.tar.gz".format(tar_name)
+
+        _yaml.dump({
+            'kind': 'import',
+            'sources': [
+                {
+                    'kind': 'tar',
+                    'url': 'tmpdir:/{}'.format(tar_file),
+                    'ref': 'foo'
+                }
+            ]
+        }, bst_path)
 
         # Get the tarball in tests/sources/tar/read-only/content
         #
         # NOTE that we need to do this because tarfile.open and tar.add()
         # are packing the tar up with writeable files and dirs
-        tarball = os.path.join(str(datafiles), 'content', 'a.tar.gz')
+        tarball = os.path.join(str(datafiles), 'content', tar_file)
         if not os.path.exists(tarball):
             raise FileNotFoundError('{} does not exist'.format(tarball))
-        copyfile(tarball, os.path.join(str(tmpdir), 'a.tar.gz'))
+        copyfile(tarball, os.path.join(str(tmpdir), tar_file))
 
         # Because this test can potentially leave directories behind
         # which are difficult to remove, ask buildstream to use
