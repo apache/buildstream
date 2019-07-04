@@ -76,6 +76,7 @@ cdef class SequenceNode(Node):
     cpdef void append(self, object value)
     cpdef MappingNode mapping_at(self, int index)
     cpdef Node node_at(self, int index, list allowed_types=*)
+    cpdef ScalarNode scalar_at(self, int index)
     cpdef SequenceNode sequence_at(self, int index)
     cpdef list as_str_list(self)
 
@@ -90,4 +91,4 @@ cdef class ProvenanceInformation:
     cdef public bint is_synthetic
 
 
-cpdef ProvenanceInformation node_get_provenance(Node node, str key=*, list indices=*)
+cpdef ProvenanceInformation node_get_provenance(Node node, str key=*)

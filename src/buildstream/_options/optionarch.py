@@ -55,7 +55,7 @@ class OptionArch(OptionEnum):
                     # Do not terminate the loop early to ensure we validate
                     # all values in the list.
             except PlatformError as e:
-                provenance = _yaml.node_get_provenance(node, key='values', indices=[index])
+                provenance = _yaml.node_get_provenance(node.get_sequence('values').scalar_at(index))
                 prefix = ""
                 if provenance:
                     prefix = "{}: ".format(provenance)
