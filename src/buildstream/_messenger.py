@@ -32,7 +32,7 @@ class Messenger():
 
     def __init__(self):
         self._message_handler = None
-        self._message_depth = []
+        self._silence_scope_depth = 0
         self._log_handle = None
         self._log_filename = None
 
@@ -57,7 +57,7 @@ class Messenger():
     #    (bool): Whether messages are currently being silenced
     #
     def _silent_messages(self):
-        return any(self._message_depth)
+        return self._silence_scope_depth > 0
 
     # message():
     #
@@ -87,12 +87,17 @@ class Messenger():
     # important messages will not be silenced.
     #
     @contextmanager
-    def silence(self):
-        self._push_message_depth(True)
+    def silence(self, silent_nested=True):
+        if not silent_nested:
+            yield
+            return
+
+        self._silence_scope_depth += 1
         try:
             yield
         finally:
-            self._pop_message_depth()
+            assert self._silence_scope_depth > 0
+            self._silence_scope_depth -= 1
 
     # timed_activity()
     #
@@ -273,15 +278,3 @@ class Messenger():
         # Write to the open log file
         self._log_handle.write('{}\n'.format(text))
         self._log_handle.flush()
-
-    # _push_message_depth() / _pop_message_depth()
-    #
-    # For status messages, send the depth of timed
-    # activities inside a given task through the message
-    #
-    def _push_message_depth(self, silent_nested):
-        self._message_depth.append(silent_nested)
-
-    def _pop_message_depth(self):
-        assert self._message_depth
-        self._message_depth.pop()
