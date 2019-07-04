@@ -227,9 +227,10 @@ This of course relies on contributors being responsive and showing willingness
 to address any problems that may arise after landing patches. However, the primary
 criterion for commit access is good judgment.
 
-You do not have to be a technical wizard, or demonstrate deep knowledge of the
+You do not have to be a technical wizard or demonstrate deep knowledge of the
 entire codebase to become a committer. You just need to know what you don't
-know. If your patches adhere to the guidelines in this file, adhere to all the usual
+know. Non-code contributions are just as valuable in the path to commit access. 
+If your patches adhere to the guidelines in this file, adhere to all the usual
 unquantifiable rules of coding (code should be readable, robust, maintainable, etc.),
 and respect the Hippocratic Principle of "first, do no harm", then you will probably
 get commit access pretty quickly. The size, complexity, and quantity of your patches
