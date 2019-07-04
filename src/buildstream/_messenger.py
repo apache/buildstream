@@ -126,21 +126,19 @@ class Messenger():
                 # Push activity depth for status messages
                 message = Message(unique_id, MessageType.START, activity_name, detail=detail)
                 self.message(message)
-                self._push_message_depth(silent_nested)
-                yield
+                with self.silence(silent_nested):
+                    yield
 
             except BstError:
                 # Note the failure in status messages and reraise, the scheduler
                 # expects an error when there is an error.
                 elapsed = datetime.datetime.now() - starttime
                 message = Message(unique_id, MessageType.FAIL, activity_name, elapsed=elapsed)
-                self._pop_message_depth()
                 self.message(message)
                 raise
 
             elapsed = datetime.datetime.now() - starttime
             message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed)
-            self._pop_message_depth()
             self.message(message)
 
     # recorded_messages()
