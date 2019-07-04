@@ -169,7 +169,7 @@ class BuildElement(Element):
         # FIXME: Currently this forcefully validates configurations
         #        for all BuildElement subclasses so they are unable to
         #        extend the configuration
-        self.node_validate(node, _command_steps)
+        node.validate_keys(_command_steps)
 
         for command_name in _legacy_command_steps:
             if command_name in _command_steps:

@@ -82,7 +82,7 @@ class ProjectRefs():
             self._toplevel_node = _yaml.new_synthetic_file(self._fullpath)
             self._toplevel_save = self._toplevel_node
 
-        _yaml.node_validate(self._toplevel_node, ['projects'])
+        self._toplevel_node.validate_keys(['projects'])
 
         # Ensure we create our toplevel entry point on the fly here
         for node in [self._toplevel_node, self._toplevel_save]:
