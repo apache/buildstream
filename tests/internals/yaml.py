@@ -24,8 +24,8 @@ def test_load_yaml(datafiles):
     assert loaded.get_str('kind') == 'pony'
 
 
-def assert_provenance(filename, line, col, node, key=None, indices=None):
-    provenance = _yaml.node_get_provenance(node, key=key, indices=indices)
+def assert_provenance(filename, line, col, node, key=None):
+    provenance = _yaml.node_get_provenance(node, key=key)
 
     assert isinstance(provenance, _yaml.ProvenanceInformation)
 
@@ -68,7 +68,7 @@ def test_element_provenance(datafiles):
 
     loaded = _yaml.load(filename)
     assert loaded.get_str('kind') == 'pony'
-    assert_provenance(filename, 5, 2, loaded, 'moods', [1])
+    assert_provenance(filename, 5, 2, loaded.get_sequence('moods').scalar_at(1))
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))

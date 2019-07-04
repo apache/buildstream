@@ -262,31 +262,27 @@ class OptionPool():
                             "{}: {}".format(p, assertion.strip()))
 
         if conditions is not None:
-
-            # Collect provenance first, we need to delete the (?) key
-            # before any composition occurs.
-            provenance = [
-                _yaml.node_get_provenance(node, '(?)', indices=[i])
-                for i in range(len(conditions))
-            ]
             del node['(?)']
 
-            for condition, p in zip(conditions, provenance):
+            for condition in conditions:
                 tuples = list(condition.items())
                 if len(tuples) > 1:
+                    provenance = _yaml.node_get_provenance(condition)
                     raise LoadError(LoadErrorReason.INVALID_DATA,
-                                    "{}: Conditional statement has more than one key".format(p))
+                                    "{}: Conditional statement has more than one key".format(provenance))
 
                 expression, value = tuples[0]
                 try:
                     apply_fragment = self._evaluate(expression)
                 except LoadError as e:
                     # Prepend the provenance of the error
-                    raise LoadError(e.reason, "{}: {}".format(p, e)) from e
+                    provenance = _yaml.node_get_provenance(condition)
+                    raise LoadError(e.reason, "{}: {}".format(provenance, e)) from e
 
                 if type(value) is not _yaml.MappingNode:  # pylint: disable=unidiomatic-typecheck
+                    provenance = _yaml.node_get_provenance(condition)
                     raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                                    "{}: Only values of type 'dict' can be composed.".format(p))
+                                    "{}: Only values of type 'dict' can be composed.".format(provenance))
 
                 # Apply the yaml fragment if its condition evaluates to true
                 if apply_fragment:
