@@ -69,10 +69,6 @@ class Messenger():
     #
     def message(self, message):
 
-        # Tag message only once
-        if message.depth is None:
-            message.depth = len(self._message_depth)
-
         # If we are recording messages, dump a copy into the open log file.
         self._record_message(message)
 
