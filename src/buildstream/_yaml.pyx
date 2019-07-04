@@ -620,15 +620,26 @@ cdef class SequenceNode(Node):
                             .format(provenance, path, MappingNode.__name__))
         return value
 
-    cpdef Node node_at(self, int key, list allowed_types = None):
-        cdef value = self.value[key]
+    cpdef Node node_at(self, int index, list allowed_types = None):
+        cdef value = self.value[index]
 
         if allowed_types and type(value) not in allowed_types:
             provenance = node_get_provenance(self)
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Value of '{}' is not one of the following: {}.".format(
-                                provenance, key, ", ".join(allowed_types)))
+                                provenance, index, ", ".join(allowed_types)))
 
+        return value
+
+    cpdef ScalarNode scalar_at(self, int index):
+        value = self.value[index]
+
+        if type(value) is not ScalarNode:
+            provenance = node_get_provenance(self)
+            path = ["[{}]".format(p) for p in provenance.toplevel._find(self)] + ["[{}]".format(index)]
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Value of '{}' is not of the expected type '{}'"
+                            .format(provenance, path, ScalarNode.__name__))
         return value
 
     cpdef SequenceNode sequence_at(self, int index):
@@ -1122,23 +1133,15 @@ cpdef Node load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_na
 # Args:
 #   node (Node): a dictionary
 #   key (str): key in the dictionary
-#   indices (list of indexes): Index path, in the case of list values
 #
 # Returns: The Provenance of the dict, member or list element
 #
-cpdef ProvenanceInformation node_get_provenance(Node node, str key=None, list indices=None):
+cpdef ProvenanceInformation node_get_provenance(Node node, str key=None):
     if key is None:
         # Retrieving the provenance for this node directly
         return ProvenanceInformation(node)
 
-    if key and not indices:
-        return ProvenanceInformation((<MappingNode> node).value.get(key))
-
-    cdef Node nodeish = <Node> (<MappingNode> node).value.get(key)
-    for idx in indices:
-        nodeish = <Node> (<SequenceNode> nodeish).value[idx]
-
-    return ProvenanceInformation(nodeish)
+    return ProvenanceInformation((<MappingNode> node).value.get(key))
 
 
 # new_synthetic_file()
