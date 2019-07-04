@@ -6,7 +6,7 @@ Committers
 Full committ access
 -------------------
 
-List of people with full commit access, ie blanket committ access to 
+List of people with full commit access, i.e. blanket commit access to 
 the BuildStream codebase. Note that this is not a full list of all 
 contributors, and may not even be a fulll list of all people who have
 blanket commit access.
