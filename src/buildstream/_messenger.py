@@ -83,12 +83,17 @@ class Messenger():
     #
     # A context manager to silence messages, this behaves in
     # the same way as the `silent_nested` argument of the
-    # timed_activity() context manager: especially
-    # important messages will not be silenced.
+    # timed_activity() context manager: all but
+    # _message.unconditional_messages will be silenced.
+    #
+    # Args:
+    #    actually_silence (bool): Whether to actually do the silencing, if
+    #                             False then this context manager does not
+    #                             affect anything.
     #
     @contextmanager
-    def silence(self, silent_nested=True):
-        if not silent_nested:
+    def silence(self, *, actually_silence=True):
+        if not actually_silence:
             yield
             return
 
@@ -108,7 +113,7 @@ class Messenger():
     #    context (Context): The invocation context object
     #    unique_id (int): Optionally, the unique id of the plugin related to the message
     #    detail (str): An optional detailed message, can be multiline output
-    #    silent_nested (bool): If specified, nested messages will be silenced
+    #    silent_nested (bool): If True, all but _message.unconditional_messages are silenced
     #
     @contextmanager
     def timed_activity(self, activity_name, *, unique_id=None, detail=None, silent_nested=False):
@@ -131,7 +136,7 @@ class Messenger():
                 # Push activity depth for status messages
                 message = Message(unique_id, MessageType.START, activity_name, detail=detail)
                 self.message(message)
-                with self.silence(silent_nested):
+                with self.silence(actually_silence=silent_nested):
                     yield
 
             except BstError:
