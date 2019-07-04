@@ -8,7 +8,8 @@ Full committ access
 
 List of people with full commit access, ie blanket committ access to 
 the BuildStream codebase. Note that this is not a full list of all 
-contributors.
+contributors, and may not even be a fulll list of all people who have
+blanket commit access.
 
 If you have a question or comment, it's probably best to email 
 the BuildStream mailing list, rather than any of these people
@@ -27,7 +28,7 @@ directly.
 +-------------------------+------------------------------------------+
 | Angelos Evripiotis      | <jevripiotis@bloomberg.net>              |
 +-------------------------+------------------------------------------+
-| James Ennis             | <james.ennis@codethink.com>              |
+| James Ennis             | <james.ennis@codethink.co.uk>            |
 +-------------------------+------------------------------------------+
 | Tristan Maat            | <tristan.maat@codethink.co.uk>           |
 +-------------------------+------------------------------------------+
@@ -35,16 +36,6 @@ directly.
 +-------------------------+------------------------------------------+
 | Will Salmon             | <will.salmon@codethink.co.uk>            |
 +-------------------------+------------------------------------------+
-
-
-
-
-
-
-
-
-
-
-
-
+| Valentin David          | <valentin.david@codethink.co.uk>         |
++-------------------------+------------------------------------------+
 
