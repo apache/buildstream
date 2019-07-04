@@ -19,7 +19,6 @@
 
 import os
 import datetime
-from collections import deque
 from contextlib import contextmanager
 
 from . import _signals
@@ -33,7 +32,7 @@ class Messenger():
 
     def __init__(self):
         self._message_handler = None
-        self._message_depth = deque()
+        self._message_depth = []
         self._log_handle = None
         self._log_filename = None
 
@@ -58,10 +57,7 @@ class Messenger():
     #    (bool): Whether messages are currently being silenced
     #
     def _silent_messages(self):
-        for silent in self._message_depth:
-            if silent:
-                return True
-        return False
+        return any(self._message_depth)
 
     # message():
     #
@@ -75,7 +71,7 @@ class Messenger():
 
         # Tag message only once
         if message.depth is None:
-            message.depth = len(list(self._message_depth))
+            message.depth = len(self._message_depth)
 
         # If we are recording messages, dump a copy into the open log file.
         self._record_message(message)
@@ -290,8 +286,8 @@ class Messenger():
     # activities inside a given task through the message
     #
     def _push_message_depth(self, silent_nested):
-        self._message_depth.appendleft(silent_nested)
+        self._message_depth.append(silent_nested)
 
     def _pop_message_depth(self):
         assert self._message_depth
-        self._message_depth.popleft()
+        self._message_depth.pop()
