@@ -596,84 +596,83 @@ class App():
 
     def _handle_failure(self, element, queue, failure):
 
-        # Handle non interactive mode setting of what to do when a job fails.
-        if not self._interactive_failures:
+        # # Handle non interactive mode setting of what to do when a job fails.
+        # if not self._interactive_failures:
 
-            if self.context.sched_error_action == _SchedulerErrorAction.TERMINATE:
-                self.stream.terminate()
-            elif self.context.sched_error_action == _SchedulerErrorAction.QUIT:
-                self.stream.quit()
-            elif self.context.sched_error_action == _SchedulerErrorAction.CONTINUE:
-                pass
-            return
+        if self.context.sched_error_action == 'terminate':
+            self.stream.terminate()
+        elif self.context.sched_error_action == 'quit':
+            self.stream.quit()
+        elif self.context.sched_error_action == 'continue':
+            pass
+        return
 
-        assert False
-        # Interactive mode for element failures
-        with self._interrupted():
+        # assert False
+        # # Interactive mode for element failures
+        # with self._interrupted():
 
-            summary = ("\n{} failure on element: {}\n".format(failure.action_name, element.name) +
-                       "\n" +
-                       "Choose one of the following options:\n" +
-                       "  (c)ontinue  - Continue queueing jobs as much as possible\n" +
-                       "  (q)uit      - Exit after all ongoing jobs complete\n" +
-                       "  (t)erminate - Terminate any ongoing jobs and exit\n" +
-                       "  (r)etry     - Retry this job\n")
-            if failure.logfile:
-                summary += "  (l)og       - View the full log file\n"
-            if failure.sandbox:
-                summary += "  (s)hell     - Drop into a shell in the failed build sandbox\n"
-            summary += "\nPressing ^C will terminate jobs and exit\n"
+        #     summary = ("\n{} failure on element: {}\n".format(failure.action_name, element.name) +
+        #                "\n" +
+        #                "Choose one of the following options:\n" +
+        #                "  (c)ontinue  - Continue queueing jobs as much as possible\n" +
+        #                "  (q)uit      - Exit after all ongoing jobs complete\n" +
+        #                "  (t)erminate - Terminate any ongoing jobs and exit\n" +
+        #                "  (r)etry     - Retry this job\n")
+        #     if failure.logfile:
+        #         summary += "  (l)og       - View the full log file\n"
+        #     if failure.sandbox:
+        #         summary += "  (s)hell     - Drop into a shell in the failed build sandbox\n"
+        #     summary += "\nPressing ^C will terminate jobs and exit\n"
 
-            choices = ['continue', 'quit', 'terminate', 'retry']
-            if failure.logfile:
-                choices += ['log']
-            if failure.sandbox:
-                choices += ['shell']
+        #     choices = ['continue', 'quit', 'terminate', 'retry']
+        #     if failure.logfile:
+        #         choices += ['log']
+        #     if failure.sandbox:
+        #         choices += ['shell']
 
-            choice = ''
-            while choice not in ['continue', 'quit', 'terminate', 'retry']:
-                click.echo(summary, err=True)
+        #     choice = ''
+        #     while choice not in ['continue', 'quit', 'terminate', 'retry']:
+        #         click.echo(summary, err=True)
 
-                self._notify("BuildStream failure", "{} on element {}"
-                             .format(failure.action_name, element.name))
+        #         self._notify("BuildStream failure", "{} on element {}"
+        #                      .format(failure.action_name, element.name))
 
-                try:
-                    choice = click.prompt("Choice:", default='continue', err=True,
-                                          value_proc=_prefix_choice_value_proc(choices))
-                except click.Abort:
-                    # Ensure a newline after automatically printed '^C'
-                    click.echo("", err=True)
-                    choice = 'terminate'
+        #         try:
+        #             choice = click.prompt("Choice:", default='continue', err=True,
+        #                                   value_proc=_prefix_choice_value_proc(choices))
+        #         except click.Abort:
+        #             # Ensure a newline after automatically printed '^C'
+        #             click.echo("", err=True)
+        #             choice = 'terminate'
 
-                # Handle choices which you can come back from
-                #
-                assert choice != 'shell'  # This won't work for now
-                if choice == 'shell':
-                    click.echo("\nDropping into an interactive shell in the failed build sandbox\n", err=True)
-                    try:
-                        prompt = self.shell_prompt(element)
-                        self.stream.shell(element, Scope.BUILD, prompt, isolate=True, usebuildtree='always')
-                    except BstError as e:
-                        click.echo("Error while attempting to create interactive shell: {}".format(e), err=True)
-                elif choice == 'log':
-                    with open(failure.logfile, 'r') as logfile:
-                        content = logfile.read()
-                        click.echo_via_pager(content)
+        #         # Handle choices which you can come back from
+        #         #
+        #         assert choice != 'shell'  # This won't work for now
+        #         if choice == 'shell':
+        #             click.echo("\nDropping into an interactive shell in the failed build sandbox\n", err=True)
+        #             try:
+        #                 prompt = self.shell_prompt(element)
+        #                 self.stream.shell(element, Scope.BUILD, prompt, isolate=True, usebuildtree='always')
+        #             except BstError as e:
+        #                 click.echo("Error while attempting to create interactive shell: {}".format(e), err=True)
+        #         elif choice == 'log':
+        #             with open(failure.logfile, 'r') as logfile:
+        #                 content = logfile.read()
+        #                 click.echo_via_pager(content)
 
-            if choice == 'terminate':
-                click.echo("\nTerminating all jobs\n", err=True)
-                self.stream.terminate()
-            else:
-                if choice == 'quit':
-                    click.echo("\nCompleting ongoing tasks before quitting\n", err=True)
-                    self.stream.quit()
-                elif choice == 'continue':
-                    click.echo("\nContinuing with other non failing elements\n", err=True)
-                elif choice == 'retry':
-                    click.echo("\nRetrying failed job\n", err=True)
-                    # FIXME: Outstandingly nasty modification of core state
-                    queue._task_group.failed_tasks.remove(element._get_full_name())
-                    queue.enqueue([element])
+        #     if choice == 'terminate':
+        #         click.echo("\nTerminating all jobs\n", err=True)
+        #         self.stream.terminate()
+        #     else:
+        #         if choice == 'quit':
+        #             click.echo("\nCompleting ongoing tasks before quitting\n", err=True)
+        #             self.stream.quit()
+        #         elif choice == 'continue':
+        #             click.echo("\nContinuing with other non failing elements\n", err=True)
+        #         elif choice == 'retry':
+        #             click.echo("\nRetrying failed job\n", err=True)
+        #             queue.failed_elements.remove(element)
+        #             queue.enqueue([element])
 
     #
     # Print the session heading if we've loaded a pipeline and there

@@ -52,6 +52,7 @@ class NotificationType(enum.Enum):
     JOB_START = "job_start"
     JOB_COMPLETE = "job_complete"
     TICK = "tick"
+    EXCEPTION = "exception"
 
 
 class Notification:
@@ -64,7 +65,9 @@ class Notification:
                  job_status=None,
                  failed_element=False,
                  elapsed_time=None,
-                 element=None):
+                 element=None,
+                 exception=None):
+
         self.notification_type = notification_type
         self.full_name = full_name
         self.job_action = job_action
@@ -72,6 +75,7 @@ class Notification:
         self.failed_element = failed_element
         self.elapsed_time = elapsed_time
         self.element = element
+        self.exception = exception
 
 
 # Scheduler()

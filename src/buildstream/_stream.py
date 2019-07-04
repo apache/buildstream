@@ -19,6 +19,7 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+import asyncio
 import itertools
 import functools
 import multiprocessing as mp
@@ -31,6 +32,7 @@ import tarfile
 import tempfile
 from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
+import queue
 
 from ._artifact import Artifact
 from ._artifactelement import verify_artifact_ref, ArtifactElement
@@ -44,6 +46,40 @@ from ._state import State
 from .types import _KeyStrength
 from . import utils, _yaml, _site
 from . import Scope, Consistency
+
+
+# A decorator which runs the decorated method to be run in a subprocess
+def subprocessed(func):
+
+    @functools.wraps(func)
+    def _subprocessed(self, *args, **kwargs):
+        assert self
+        print("Args: {}".format([*args]))
+        print("Kwargs: {}".format(list(kwargs.items())))
+        assert not self._subprocess
+
+        # TODO use functools to pass arguments to func to make target for subprocess
+
+        # Start subprocessed work
+        mp_context = mp.get_context(method='spawn')
+        process_name = "stream-{}".format(func.__name__)
+        target = functools.partial(func, self, *args, **kwargs)
+        print("launching subprocess:", process_name)
+        self._subprocess = mp_context.Process(target=target, name=process_name)
+        self._subprocess.run()
+
+        # TODO connect signal handlers
+
+        # Run event loop. This event loop should exit once the
+        # subprocessed work has completed
+        print("Starting loop...")
+        while not self._subprocess.exitcode:
+            self._loop()
+        print("Stopping loop...")
+
+        # Return result of subprocessed function
+
+    return _subprocessed
 
 
 # Stream()
@@ -77,6 +113,7 @@ class Stream():
         #
         # Private members
         #
+        self._subprocess = None
         self._notification_queue = mp.Queue()
         self._context = context
         self._artifacts = None
@@ -245,6 +282,7 @@ class Stream():
     # If `remote` specified as None, then regular configuration will be used
     # to determine where to push artifacts to.
     #
+    @subprocessed
     def build(self, targets, *,
               track_targets=None,
               track_except=None,
@@ -1592,6 +1630,9 @@ class Stream():
                 else:
                     unique_id = None
                 self._state.fail_task(notification.job_action, notification.full_name, unique_id)
+        elif notification.notification_type == NotificationType.EXCEPTION:
+            # TODO
+            pass
         else:
             raise StreamError("Unreccognised notification type recieved")
 
@@ -1610,31 +1651,19 @@ class Stream():
         #
         raise TypeError("Stream objects should not be pickled.")
 
-    # TODO
-    # Causes the decorated method to be run in a subprocess
-    @contextmanager
-    def subprocessed(self, func, *args, **kwargs):
-        pass
-        # Set up event loop
-
-        # Start subprocessed work
-
-        # Run event loop. This event loop should exit once the
-        # subprocessed work has completed
-
-        # Return result of subprocessed function
-
     # The code to be run by the Stream's event loop while delegating
-    # work to a subprocess with the @subprocessed
+    # work to a subprocess with the @subprocessed decorator
     def _loop(self):
         assert self._notification_queue
-        # Check that the subprocessed work has not finished
-        # TODO
 
         # Check for new messages
-        notification = self._notification_queue.get(block=True, timeout=0.1)
+        try:
+            notification = self._notification_queue.get(block=True, timeout=0.1)
+        except queue.Empty:
+            notification = None
+            print("queue empty, continuing...")
 
         # Process new messages
         if notification:
+            print("handling notifications")
             self._scheduler_notification_handler(notification)
-
