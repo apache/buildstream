@@ -62,7 +62,10 @@ _sentinel = object()
 #
 cdef class Node:
 
-    def __init__(self, int file_index, int line, int column):
+    def __init__(self):
+        raise NotImplementedError("Please do not construct nodes like this. Use Node.__new__(Node, *args) instead.")
+
+    def __cinit__(self, int file_index, int line, int column, *args):
         self.file_index = file_index
         self.line = line
         self.column = column
@@ -70,10 +73,11 @@ cdef class Node:
     @classmethod
     def from_dict(cls, dict value):
         if value:
-            return _new_node_from_dict(value, MappingNode({}, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter()))
+            return _new_node_from_dict(value, MappingNode.__new__(
+                MappingNode, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter(), {}))
         else:
             # We got an empty dict, we can shortcut
-            return MappingNode({}, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+            return MappingNode.__new__(MappingNode, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter(), {})
 
     cdef bint _walk_find(self, Node target, list path) except *:
         raise NotImplementedError()
@@ -132,9 +136,7 @@ cdef class Node:
 
 cdef class ScalarNode(Node):
 
-    def __init__(self, object value, int file_index, int line, int column):
-        super().__init__(file_index, line, column)
-
+    def __cinit__(self, int file_index, int line, int column, object value):
         cdef value_type = type(value)
 
         if value_type is str:
@@ -217,8 +219,7 @@ cdef class ScalarNode(Node):
 
 cdef class MappingNode(Node):
 
-    def __init__(self, dict value, int file_index, int line, int column):
-        super().__init__(file_index, line, column)
+    def __cinit__(self, int file_index, int line, int column, dict value):
         self.value = value
 
     cpdef MappingNode copy(self):
@@ -229,7 +230,7 @@ cdef class MappingNode(Node):
         for key, value in self.value.items():
             copy[key] = value.copy()
 
-        return MappingNode(copy, self.file_index, self.line, self.column)
+        return MappingNode.__new__(MappingNode, self.file_index, self.line, self.column, copy)
 
     # find()
     #
@@ -298,7 +299,8 @@ cdef class MappingNode(Node):
             if default is None:
                 value = None
             else:
-                value = default_constructor(default, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter())
+                value = default_constructor.__new__(
+                    default_constructor, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter(), default)
 
         return value
 
@@ -337,7 +339,7 @@ cdef class MappingNode(Node):
 
         if type(value) is not ScalarNode:
             if value is None:
-                value = ScalarNode(None, self.file_index, 0, next_synthetic_counter())
+                value = ScalarNode.__new__(ScalarNode, self.file_index, 0, next_synthetic_counter(), None)
             else:
                 provenance = node_get_provenance(value)
                 raise LoadError(LoadErrorReason.INVALID_DATA,
@@ -453,7 +455,7 @@ cdef class MappingNode(Node):
             if key not in target.value:
                 # Target lacks a dict at that point, make a fresh one with
                 # the same provenance as the incoming dict
-                target.value[key] = MappingNode({}, self.file_index, self.line, self.column)
+                target.value[key] = MappingNode.__new__(MappingNode, self.file_index, self.line, self.column, {})
 
             self._composite(target.value[key], path)
 
@@ -591,8 +593,7 @@ cdef class MappingNode(Node):
 
 
 cdef class SequenceNode(Node):
-    def __init__(self, list value, int file_index, int line, int column):
-        super().__init__(file_index, line, column)
+    def __cinit__(self, int file_index, int line, int column, list value):
         self.value = value
 
     cpdef void append(self, object value):
@@ -609,7 +610,7 @@ cdef class SequenceNode(Node):
         for entry in self.value:
             copy.append(entry.copy())
 
-        return SequenceNode(copy, self.file_index, self.line, self.column)
+        return SequenceNode.__new__(SequenceNode, self.file_index, self.line, self.column, copy)
 
     cpdef MappingNode mapping_at(self, int index):
         value = self.value[index]
@@ -927,7 +928,7 @@ cdef class Representer:
         return RepresenterState.doc
 
     cdef RepresenterState _handle_doc_MappingStartEvent(self, object ev):
-        newmap = MappingNode({}, self._file_index, ev.start_mark.line, ev.start_mark.column)
+        newmap = MappingNode.__new__(MappingNode, self._file_index, ev.start_mark.line, ev.start_mark.column, {})
         self.output.append(newmap)
         return RepresenterState.wait_key
 
@@ -938,7 +939,7 @@ cdef class Representer:
     cdef RepresenterState _handle_wait_value_ScalarEvent(self, object ev):
         key = self.keys.pop()
         (<MappingNode> self.output[-1]).value[key] = \
-            ScalarNode(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column)
+            ScalarNode.__new__(ScalarNode, self._file_index, ev.start_mark.line, ev.start_mark.column, ev.value)
         return RepresenterState.wait_key
 
     cdef RepresenterState _handle_wait_value_MappingStartEvent(self, object ev):
@@ -960,13 +961,15 @@ cdef class Representer:
             return RepresenterState.doc
 
     cdef RepresenterState _handle_wait_value_SequenceStartEvent(self, object ev):
-        self.output.append(SequenceNode([], self._file_index, ev.start_mark.line, ev.start_mark.column))
+        self.output.append(SequenceNode.__new__(
+            SequenceNode, self._file_index, ev.start_mark.line, ev.start_mark.column, []))
         (<MappingNode> self.output[-2]).value[self.keys[-1]] = self.output[-1]
         return RepresenterState.wait_list_item
 
     cdef RepresenterState _handle_wait_list_item_SequenceStartEvent(self, object ev):
         self.keys.append(len((<SequenceNode> self.output[-1]).value))
-        self.output.append(SequenceNode([], self._file_index, ev.start_mark.line, ev.start_mark.column))
+        self.output.append(SequenceNode.__new__(
+            SequenceNode, self._file_index, ev.start_mark.line, ev.start_mark.column, []))
         (<SequenceNode> self.output[-2]).value.append(self.output[-1])
         return RepresenterState.wait_list_item
 
@@ -983,7 +986,7 @@ cdef class Representer:
 
     cdef RepresenterState _handle_wait_list_item_ScalarEvent(self, object ev):
         (<SequenceNode> self.output[-1]).value.append(
-           ScalarNode(ev.value, self._file_index, ev.start_mark.line, ev.start_mark.column))
+           ScalarNode.__new__(ScalarNode, self._file_index, ev.start_mark.line, ev.start_mark.column, ev.value))
         return RepresenterState.wait_list_item
 
     cdef RepresenterState _handle_wait_list_item_MappingStartEvent(self, object ev):
@@ -1006,7 +1009,7 @@ cdef Node _create_node_recursive(object value, Node ref_node):
     if value_type is list:
         node = _new_node_from_list(value, ref_node)
     elif value_type is str:
-        node = ScalarNode(value, ref_node.file_index, ref_node.line, next_synthetic_counter())
+        node = ScalarNode.__new__(ScalarNode, ref_node.file_index, ref_node.line, next_synthetic_counter(), value)
     elif value_type is dict:
         node = _new_node_from_dict(value, ref_node)
     else:
@@ -1092,7 +1095,7 @@ cpdef Node load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_na
     if type(contents) != MappingNode:
         # Special case allowance for None, when the loaded file has only comments in it.
         if contents is None:
-            contents = MappingNode({}, file_index, 0, 0)
+            contents = MappingNode.__new__(MappingNode, file_index, 0, 0, {})
         else:
             raise LoadError(LoadErrorReason.INVALID_YAML,
                             "YAML file has content of type '{}' instead of expected type 'dict': {}"
@@ -1157,7 +1160,7 @@ cpdef ProvenanceInformation node_get_provenance(Node node, str key=None, list in
 #
 def new_synthetic_file(str filename, object project=None):
     cdef Py_ssize_t file_index = len(_FILE_LIST)
-    cdef Node node = MappingNode({}, file_index, 0, 0)
+    cdef Node node = MappingNode.__new__(MappingNode, file_index, 0, 0, {})
 
     _FILE_LIST.append(FileInfo(filename,
                        filename,
@@ -1176,7 +1179,8 @@ def new_synthetic_file(str filename, object project=None):
 #   (Node): A new synthetic YAML tree which represents this dictionary
 #
 cdef Node _new_node_from_dict(dict indict, Node ref_node):
-    cdef MappingNode ret = MappingNode({}, ref_node.file_index, ref_node.line, next_synthetic_counter())
+    cdef MappingNode ret = MappingNode.__new__(
+        MappingNode, ref_node.file_index, ref_node.line, next_synthetic_counter(), {})
     cdef str k
 
     for k, v in indict.items():
@@ -1186,13 +1190,15 @@ cdef Node _new_node_from_dict(dict indict, Node ref_node):
         elif vtype is list:
             ret.value[k] = _new_node_from_list(v, ref_node)
         else:
-            ret.value[k] = ScalarNode(str(v), ref_node.file_index, ref_node.line, next_synthetic_counter())
+            ret.value[k] = ScalarNode.__new__(
+                ScalarNode, ref_node.file_index, ref_node.line, next_synthetic_counter(), v)
     return ret
 
 
 # Internal function to help new_node_from_dict() to handle lists
 cdef Node _new_node_from_list(list inlist, Node ref_node):
-    cdef SequenceNode ret = SequenceNode([], ref_node.file_index, ref_node.line, next_synthetic_counter())
+    cdef SequenceNode ret = SequenceNode.__new__(
+        SequenceNode, ref_node.file_index, ref_node.line, next_synthetic_counter(), [])
 
     for v in inlist:
         vtype = type(v)
@@ -1201,7 +1207,8 @@ cdef Node _new_node_from_list(list inlist, Node ref_node):
         elif vtype is list:
             ret.value.append(_new_node_from_list(v, ref_node))
         else:
-            ret.value.append(ScalarNode(str(v), ref_node.file_index, ref_node.line, next_synthetic_counter()))
+            ret.value.append(
+                ScalarNode.__new__(ScalarNode, ref_node.file_index, ref_node.line, next_synthetic_counter(), v))
     return ret
 
 
