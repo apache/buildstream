@@ -66,7 +66,7 @@ def subprocessed(func):
         target = functools.partial(func, self, *args, **kwargs)
         print("launching subprocess:", process_name)
         self._subprocess = mp_context.Process(target=target, name=process_name)
-        self._subprocess.run()
+        self._subprocess.start()
 
         # TODO connect signal handlers
 
