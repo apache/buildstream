@@ -410,7 +410,7 @@ class CasBasedDirectory(Directory):
     def export_to_tar(self, tarfile, destination_dir, mtime=BST_ARBITRARY_TIMESTAMP):
         raise NotImplementedError()
 
-    def mark_changed(self):
+    def _mark_changed(self):
         """ It should not be possible to externally modify a CAS-based
         directory at the moment."""
         raise NotImplementedError()
