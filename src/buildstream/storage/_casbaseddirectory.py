@@ -584,32 +584,6 @@ class CasBasedDirectory(Directory):
 
         return self.__digest
 
-    def _get_child_digest(self, *path):
-        subdir = self.descend(*path[:-1])
-        entry = subdir.index[path[-1]]
-        if entry.type == _FileType.DIRECTORY:
-            subdir = entry.buildstream_object
-            if subdir:
-                return subdir._get_digest()
-            else:
-                return entry.digest
-        elif entry.type == _FileType.REGULAR_FILE:
-            return entry.digest
-        else:
-            raise VirtualDirectoryError("Directory entry has no digest: {}".format(os.path.join(*path)))
-
-    def _objpath(self, *path):
-        subdir = self.descend(*path[:-1])
-        entry = subdir.index[path[-1]]
-        return self.cas_cache.objpath(entry.digest)
-
-    def _exists(self, *path):
-        try:
-            subdir = self.descend(*path[:-1])
-            return path[-1] in subdir.index
-        except VirtualDirectoryError:
-            return False
-
     def __invalidate_digest(self):
         if self.__digest:
             self.__digest = None
