@@ -175,6 +175,17 @@ class Scheduler():
 
         return status
 
+    # clear_queues()
+    #
+    # Forcibly destroys all the scheduler's queues
+    # This is needed because Queues register TaskGroups with State,
+    # which must be unique. As there is not yet any reason to have multiple
+    # Queues of the same type, old ones should be deleted.
+    #
+    def clear_queues(self):
+        if self.queues:
+            self.queues.clear()
+
     # terminate_jobs()
     #
     # Forcefully terminates all ongoing jobs.
