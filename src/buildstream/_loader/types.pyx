@@ -65,12 +65,11 @@ cdef class Dependency:
     cdef public str junction
 
     def __init__(self,
-                 object dep,
-                 _yaml.ProvenanceInformation provenance,
+                 _yaml.Node dep,
                  str default_dep_type=None):
         cdef str dep_type
 
-        self.provenance = provenance
+        self.provenance = _yaml.node_get_provenance(dep)
 
         if type(dep) is _yaml.ScalarNode:
             self.name = dep.as_str()
@@ -100,7 +99,7 @@ cdef class Dependency:
 
         else:
             raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Dependency is not specified as a string or a dictionary".format(provenance))
+                            "{}: Dependency is not specified as a string or a dictionary".format(self.provenance))
 
         # `:` characters are not allowed in filename if a junction was
         # explicitly specified
@@ -140,13 +139,9 @@ cdef class Dependency:
 cdef void _extract_depends_from_node(_yaml.Node node, str key, str default_dep_type, list acc) except *:
     cdef _yaml.SequenceNode depends = node.get_sequence(key, [])
     cdef _yaml.Node dep_node
-    cdef _yaml.ProvenanceInformation dep_provenance
 
     for dep_node in depends:
-        # FIXME: the provenance information would be obtainable from the Node directly if we stop
-        #        stripping provenance and have proper nodes for str elements
-        dep_provenance = <_yaml.ProvenanceInformation> _yaml.node_get_provenance(dep_node)
-        dependency = Dependency(dep_node, dep_provenance, default_dep_type=default_dep_type)
+        dependency = Dependency(dep_node, default_dep_type=default_dep_type)
         acc.append(dependency)
 
     # Now delete the field, we dont want it anymore
