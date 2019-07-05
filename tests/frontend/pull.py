@@ -6,6 +6,7 @@ import shutil
 import stat
 import pytest
 from buildstream import utils
+from buildstream._exceptions import ErrorDomain
 from buildstream.testing import cli  # pylint: disable=unused-import
 from tests.testutils import create_artifact_share, generate_junction, assert_shared, assert_not_shared
 
@@ -558,3 +559,51 @@ def test_pull_access_rights(cli, tmpdir, datafiles):
         st = os.lstat(os.path.join(checkout, 'usr/share/big-file'))
         assert stat.S_ISREG(st.st_mode)
         assert stat.S_IMODE(st.st_mode) == 0o0644
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_pull_artifact_ref(cli, tmpdir, datafiles):
+    project = str(datafiles)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+
+        # First build the target element and push to the remote.
+        cli.configure({
+            'artifacts': {'url': share.repo, 'push': True}
+        })
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        result.assert_success()
+        assert cli.get_element_state(project, 'target.bst') == 'cached'
+
+        # Assert that everything is now cached in the remote.
+        all_elements = ['target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst']
+        for element_name in all_elements:
+            assert_shared(cli, share, project, element_name)
+
+        # get target cache key to pull ref of
+        cache_key = cli.get_element_key(project, 'target.bst')
+        target = "test/target/{}".format(cache_key)
+
+        # Now we've pushed, delete the user's local artifact cache
+        # directory and try to redownload it from the share
+        #
+        casdir = os.path.join(cli.directory, 'cas')
+        shutil.rmtree(casdir)
+        artifactdir = os.path.join(cli.directory, 'artifacts')
+        shutil.rmtree(artifactdir)
+
+        # Assert that nothing is cached locally anymore
+        states = cli.get_element_states(project, all_elements)
+        assert not any(states[e] == 'cached' for e in all_elements)
+
+        # Now try bst artifact pull
+        result = cli.run(project=project, args=['artifact', 'pull', target])
+        result.assert_success()
+
+        # And assert that it's again in the local cache, without having built
+        assert cli.get_element_state(project, 'target.bst') == 'cached'
+
+        # check that it fails if you try and pull with dependencies
+        result = cli.run(project=project, args=[
+            'artifact', 'pull', '--deps', 'all', target])
+        result.assert_main_error(ErrorDomain.ELEMENT, None, debug=True)
