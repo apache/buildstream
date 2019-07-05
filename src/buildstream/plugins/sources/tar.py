@@ -66,6 +66,23 @@ from buildstream import utils
 from ._downloadablefilesource import DownloadableFileSource
 
 
+class ReadableTarInfo(tarfile.TarInfo):
+    """
+           The goal is to override `TarFile`'s `extractall` semantics by ensuring that on extraction, the
+           files are readable by the owner of the file. This is done by overriding the accessor for the
+           `mode` attribute in `TarInfo`, the class that encapsulates the internal meta-data of the tarball,
+           so that the owner-read bit is always set.
+    """
+    @property
+    def mode(self):
+        # ensure file is readable by owner
+        return self.__permission | 0o400
+
+    @mode.setter
+    def mode(self, permission):
+        self.__permission = permission
+
+
 class TarSource(DownloadableFileSource):
     # pylint: disable=attribute-defined-outside-init
 
@@ -99,10 +116,10 @@ class TarSource(DownloadableFileSource):
     def _get_tar(self):
         if self.url.endswith('.lz'):
             with self._run_lzip() as lzip_dec:
-                with tarfile.open(fileobj=lzip_dec, mode='r:') as tar:
+                with tarfile.open(fileobj=lzip_dec, mode='r:', tarinfo=ReadableTarInfo) as tar:
                     yield tar
         else:
-            with tarfile.open(self._get_mirror_file()) as tar:
+            with tarfile.open(self._get_mirror_file(), tarinfo=ReadableTarInfo) as tar:
                 yield tar
 
     def stage(self, directory):
