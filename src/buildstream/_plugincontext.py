@@ -217,9 +217,10 @@ class PluginContext():
         # Now assert BuildStream version
         bst_major, bst_minor = utils.get_bst_version()
 
-        if bst_major < plugin_type.BST_REQUIRED_VERSION_MAJOR or \
-           (bst_major == plugin_type.BST_REQUIRED_VERSION_MAJOR and
-            bst_minor < plugin_type.BST_REQUIRED_VERSION_MINOR):
+        req_major = plugin_type.BST_REQUIRED_VERSION_MAJOR
+        req_minor = plugin_type.BST_REQUIRED_VERSION_MINOR
+
+        if (bst_major, bst_minor) < (req_major, req_minor):
             raise PluginError("BuildStream {}.{} is too old for {} plugin '{}' (requires {}.{})"
                               .format(
                                   bst_major, bst_minor,
