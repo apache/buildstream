@@ -162,8 +162,9 @@ class Job():
         self._parent_start_listening()
 
         child_job = self.create_child_job(  # pylint: disable=assignment-from-no-return
-            self._scheduler.context,
             self.action_name,
+            self._scheduler.context.messenger,
+            self._scheduler.context.logdir,
             self._logfile,
             self._max_retries,
             self._tries,
@@ -347,7 +348,7 @@ class Job():
         if "unique_id" in kwargs:
             unique_id = kwargs["unique_id"]
             del kwargs["unique_id"]
-        self._scheduler.context.message(
+        self._scheduler.context.messenger.message(
             Message(unique_id, message_type, message, **kwargs))
 
     #######################################################
@@ -470,7 +471,7 @@ class Job():
         if envelope.message_type is _MessageType.LOG_MESSAGE:
             # Propagate received messages from children
             # back through the context.
-            self._scheduler.context.message(envelope.message)
+            self._scheduler.context.messenger.message(envelope.message)
         elif envelope.message_type is _MessageType.ERROR:
             # For regression tests only, save the last error domain / reason
             # reported from a child task in the main process, this global state
@@ -562,11 +563,12 @@ class Job():
 class ChildJob():
 
     def __init__(
-            self, context, action_name, logfile, max_retries, tries, message_unique_id, task_id):
+            self, action_name, messenger, logdir, logfile, max_retries, tries, message_unique_id, task_id):
 
         self.action_name = action_name
 
-        self._context = context
+        self._messenger = messenger
+        self._logdir = logdir
         self._logfile = logfile
         self._max_retries = max_retries
         self._tries = tries
@@ -592,7 +594,7 @@ class ChildJob():
         if "unique_id" in kwargs:
             unique_id = kwargs["unique_id"]
             del kwargs["unique_id"]
-        self._context.message(
+        self._messenger.message(
             Message(unique_id, message_type, message, **kwargs))
 
     # send_message()
@@ -673,7 +675,7 @@ class ChildJob():
         # Set the global message handler in this child
         # process to forward messages to the parent process
         self._queue = queue
-        self._context.set_message_handler(self._child_message_handler)
+        self._messenger.set_message_handler(self._child_message_handler)
 
         starttime = datetime.datetime.now()
         stopped_time = None
@@ -690,7 +692,7 @@ class ChildJob():
         # Time, log and and run the action function
         #
         with _signals.suspendable(stop_time, resume_time), \
-                self._context.recorded_messages(self._logfile) as filename:
+                self._messenger.recorded_messages(self._logfile, self._logdir) as filename:
 
             self.message(MessageType.START, self.action_name, logfile=filename)
 
@@ -828,16 +830,16 @@ class ChildJob():
     # the message back to the parent process for further propagation.
     #
     # Args:
-    #    message (Message): The message to log
-    #    context (Context): The context object delegating this message
+    #    message     (Message): The message to log
+    #    is_silenced (bool)   : Whether messages are silenced
     #
-    def _child_message_handler(self, message, context):
+    def _child_message_handler(self, message, is_silenced):
 
         message.action_name = self.action_name
         message.task_id = self._task_id
 
         # Send to frontend if appropriate
-        if context.silent_messages() and (message.message_type not in unconditional_messages):
+        if is_silenced and (message.message_type not in unconditional_messages):
             return
 
         if message.message_type == MessageType.LOG:

@@ -35,7 +35,7 @@ from tests.testutils.element_generators import create_element_size
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
-def dummy_message_handler(message, context):
+def dummy_message_handler(message, is_silenced):
     pass
 
 
@@ -63,7 +63,7 @@ def test_source_staged(tmpdir, cli, datafiles):
     project = Project(project_dir, context)
     project.ensure_fully_loaded()
     context.cachedir = cachedir
-    context.set_message_handler(dummy_message_handler)
+    context.messenger.set_message_handler(dummy_message_handler)
     sourcecache = context.sourcecache
     cas = context.get_cascache()
 
@@ -106,7 +106,7 @@ def test_source_fetch(tmpdir, cli, datafiles):
     project = Project(project_dir, context)
     project.ensure_fully_loaded()
     context.cachedir = cachedir
-    context.set_message_handler(dummy_message_handler)
+    context.messenger.set_message_handler(dummy_message_handler)
     cas = context.get_cascache()
 
     res = cli.run(project=project_dir, args=["source", "fetch", "import-dev.bst"])
@@ -148,7 +148,7 @@ def test_staged_source_build(tmpdir, datafiles, cli):
     project = Project(project_dir, context)
     project.ensure_fully_loaded()
     context.cachedir = cachedir
-    context.set_message_handler(dummy_message_handler)
+    context.messenger.set_message_handler(dummy_message_handler)
 
     element = project.load_elements(["import-dev.bst"])[0]
 

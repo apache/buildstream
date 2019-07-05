@@ -34,7 +34,7 @@ from tests.testutils import create_artifact_share
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
 
-def message_handler(message, context):
+def message_handler(message, is_silenced):
     pass
 
 
@@ -71,7 +71,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
 
         context = Context()
         context.load(config=user_config_file)
-        context.set_message_handler(message_handler)
+        context.messenger.set_message_handler(message_handler)
 
         project = Project(project_dir, context)
         project.ensure_fully_loaded()
@@ -146,7 +146,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
 
         context = Context()
         context.load(config=user_config_file)
-        context.set_message_handler(message_handler)
+        context.messenger.set_message_handler(message_handler)
 
         project = Project(project_dir, context)
         project.ensure_fully_loaded()
@@ -204,7 +204,7 @@ def test_pull_fail(cli, tmpdir, datafiles):
         # get the source object
         context = Context()
         context.load(config=user_config_file)
-        context.set_message_handler(message_handler)
+        context.messenger.set_message_handler(message_handler)
         project = Project(project_dir, context)
         project.ensure_fully_loaded()
 

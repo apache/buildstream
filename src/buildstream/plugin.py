@@ -657,10 +657,10 @@ class Plugin():
               # This will raise SourceError on its own
               self.call(... command which takes time ...)
         """
-        with self.__context.timed_activity(activity_name,
-                                           unique_id=self._unique_id,
-                                           detail=detail,
-                                           silent_nested=silent_nested):
+        with self.__context.messenger.timed_activity(activity_name,
+                                                     unique_id=self._unique_id,
+                                                     detail=detail,
+                                                     silent_nested=silent_nested):
             yield
 
     def call(self, *popenargs, fail=None, fail_temporarily=False, **kwargs):
@@ -798,7 +798,7 @@ class Plugin():
     #
     @contextmanager
     def _output_file(self):
-        log = self.__context.get_log_handle()
+        log = self.__context.messenger.get_log_handle()
         if log is None:
             with open(os.devnull, "w") as output:
                 yield output
@@ -870,7 +870,7 @@ class Plugin():
 
     def __message(self, message_type, brief, **kwargs):
         message = Message(self._unique_id, message_type, brief, **kwargs)
-        self.__context.message(message)
+        self.__context.messenger.message(message)
 
     def __note_command(self, output, *popenargs, **kwargs):
         workdir = kwargs.get('cwd', os.getcwd())

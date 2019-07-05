@@ -59,7 +59,6 @@ class Message():
                  detail=None,
                  action_name=None,
                  elapsed=None,
-                 depth=None,
                  logfile=None,
                  sandbox=None,
                  scheduler=False):
@@ -68,7 +67,6 @@ class Message():
         self.detail = detail              # An additional detail string
         self.action_name = action_name    # Name of the task queue (fetch, refresh, build, etc)
         self.elapsed = elapsed            # The elapsed time, in timed messages
-        self.depth = depth                # The depth of a timed message
         self.logfile = logfile            # The log file path where commands took place
         self.sandbox = sandbox            # The error that caused this message used a sandbox
         self.pid = os.getpid()            # The process pid

@@ -698,7 +698,7 @@ class Source(Plugin):
 
             # Source consistency interrogations are silent.
             context = self._get_context()
-            with context.silence():
+            with context.messenger.silence():
                 self.__consistency = self.get_consistency()  # pylint: disable=assignment-from-no-return
 
                 # Give the Source an opportunity to validate the cached
@@ -1150,7 +1150,7 @@ class Source(Plugin):
 
         # Silence the STATUS messages which might happen as a result
         # of checking the source fetchers.
-        with context.silence():
+        with context.messenger.silence():
             source_fetchers = self.get_source_fetchers()
 
         # Use the source fetchers if they are provided
@@ -1165,7 +1165,7 @@ class Source(Plugin):
 
             while True:
 
-                with context.silence():
+                with context.messenger.silence():
                     try:
                         fetcher = next(source_fetchers)
                     except StopIteration:

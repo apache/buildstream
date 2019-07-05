@@ -628,7 +628,7 @@ class _SandboxBatch():
     def execute_group(self, group):
         if group.label:
             context = self.sandbox._get_context()
-            cm = context.timed_activity(group.label, unique_id=self.sandbox._get_plugin_id())
+            cm = context.messenger.timed_activity(group.label, unique_id=self.sandbox._get_plugin_id())
         else:
             cm = contextlib.suppress()
 
@@ -640,7 +640,7 @@ class _SandboxBatch():
             context = self.sandbox._get_context()
             message = Message(self.sandbox._get_plugin_id(), MessageType.STATUS,
                               'Running command', detail=command.label)
-            context.message(message)
+            context.messenger.message(message)
 
         exitcode = self.sandbox._run(command.command, self.flags, cwd=command.cwd, env=command.env)
         if exitcode != 0:
