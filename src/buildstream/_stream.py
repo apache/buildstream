@@ -106,8 +106,6 @@ class Stream():
     def init(self):
         self._artifacts = self._context.artifactcache
         self._sourcecache = self._context.sourcecache
-        print(Stream.build, Stream.build.__qualname__, Stream.build.__name__, Stream.build.__module__,
-              id(Stream.build))
 
     def run_in_subprocess(self, func, *args, **kwargs):
         print("Args: {}".format([*args]))
@@ -126,7 +124,7 @@ class Stream():
         self._subprocess.start()
 
         # TODO connect signal handlers
-        while self._subprocess.exitcode is not None:
+        while self._subprocess.exitcode is not:
             self._subprocess.join(0.1)
             self._loop()
         print("Stopping loop...")
