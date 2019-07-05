@@ -114,9 +114,7 @@ class Stream():
 
         global notification_count
         notification_count = 0
-        # TODO use functools to pass arguments to func to make target for subprocess
 
-        # Start subprocessed work
         mp_context = mp.get_context(method='fork')
         process_name = "stream-{}".format(func.__name__)
         print("launchinglaunching subprocess:", process_name)
