@@ -221,7 +221,6 @@ class Element(Plugin):
         self.__assemble_scheduled = False       # Element is scheduled to be assembled
         self.__assemble_done = False            # Element is assembled
         self.__tracking_scheduled = False       # Sources are scheduled to be tracked
-        self.__tracking_done = False            # Sources have been tracked
         self.__pull_done = False                # Whether pull was attempted
         self.__splits = None                    # Resolved regex objects for computing split domains
         self.__whitelist_regex = None           # Resolved regex object to check if file is allowed to overlap
@@ -1337,7 +1336,6 @@ class Element(Plugin):
         assert self.__tracking_scheduled
 
         self.__tracking_scheduled = False
-        self.__tracking_done = True
 
         self.__update_state_recursively()
 
