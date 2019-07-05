@@ -1222,9 +1222,9 @@ cdef Node _new_node_from_list(list inlist, Node ref_node):
 # are required to be symbols.
 #
 # Args:
-#    provenance (Provenance): The provenance of the loaded symbol, or None
 #    symbol_name (str): The loaded symbol name
 #    purpose (str): The purpose of the string, for an error message
+#    ref_node (Node): The node of the loaded symbol, or None
 #    allow_dashes (bool): Whether dashes are allowed for this symbol
 #
 # Raises:
@@ -1233,7 +1233,7 @@ cdef Node _new_node_from_list(list inlist, Node ref_node):
 # Note that dashes are generally preferred for variable names and
 # usage in YAML, but things such as option names which will be
 # evaluated with jinja2 cannot use dashes.
-def assert_symbol_name(ProvenanceInformation provenance, str symbol_name, str purpose, *, bint allow_dashes=True):
+def assert_symbol_name(str symbol_name, str purpose, *, Node ref_node=None, bint allow_dashes=True):
     cdef str valid_chars = string.digits + string.ascii_letters + '_'
     if allow_dashes:
         valid_chars += '-'
@@ -1253,8 +1253,10 @@ def assert_symbol_name(ProvenanceInformation provenance, str symbol_name, str pu
             detail += " or dashes"
 
         message = "Invalid symbol name for {}: '{}'".format(purpose, symbol_name)
-        if provenance is not None:
-            message = "{}: {}".format(provenance, message)
+        if ref_node:
+            provenance = node_get_provenance(ref_node)
+            if provenance is not None:
+                message = "{}: {}".format(provenance, message)
 
         raise LoadError(LoadErrorReason.INVALID_SYMBOL_NAME,
                         message, detail=detail)

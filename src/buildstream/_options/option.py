@@ -66,8 +66,7 @@ class Option():
 
         # Assert valid symbol name for variable name
         if self.variable is not None:
-            p = _yaml.node_get_provenance(node, 'variable')
-            _yaml.assert_symbol_name(p, self.variable, 'variable name')
+            _yaml.assert_symbol_name(self.variable, 'variable name', ref_node=node.get_node('variable'))
 
     # load_value()
     #
