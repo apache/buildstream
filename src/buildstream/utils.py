@@ -765,12 +765,12 @@ def _force_rmtree(rootpath, **kwargs):
 def _copy_directories(srcdir, destdir, target):
     this_dir = os.path.dirname(target)
     new_dir = os.path.join(destdir, this_dir)
+    old_dir = os.path.join(srcdir, this_dir)
 
     if not os.path.lexists(new_dir):
         if this_dir:
             yield from _copy_directories(srcdir, destdir, this_dir)
 
-        old_dir = os.path.join(srcdir, this_dir)
         if os.path.lexists(old_dir):
             dir_stat = os.lstat(old_dir)
             mode = dir_stat.st_mode
@@ -781,6 +781,16 @@ def _copy_directories(srcdir, destdir, target):
             else:
                 raise UtilError('Source directory tree has file where '
                                 'directory expected: {}'.format(old_dir))
+    else:
+        if not os.access(new_dir, os.W_OK):
+            # If the destination directory is not writable, change permissions to make it
+            # writable. Callers of this method (like `_process_list`) must
+            # restore the original permissions towards the end of their processing.
+            try:
+                os.chmod(new_dir, 0o755)
+                yield (new_dir, os.lstat(old_dir).st_mode)
+            except PermissionError:
+                raise UtilError("Directory {} is not writable".format(destdir))
 
 
 # _ensure_real_directory()
