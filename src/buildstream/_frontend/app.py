@@ -213,7 +213,7 @@ class App():
                               indent=INDENT)
 
         # Propagate pipeline feedback to the user
-        self.context.set_message_handler(self._message_handler)
+        self.context.messenger.set_message_handler(self._message_handler)
 
         # Preflight the artifact cache after initializing logging,
         # this can cause messages to be emitted.
@@ -459,7 +459,7 @@ class App():
     #
     def _message(self, message_type, message, **kwargs):
         args = dict(kwargs)
-        self.context.message(
+        self.context.messenger.message(
             Message(None, message_type, message, **args))
 
     # Exception handler
@@ -695,11 +695,11 @@ class App():
     #
     # Handle messages from the pipeline
     #
-    def _message_handler(self, message, context):
+    def _message_handler(self, message, is_silenced):
 
         # Drop status messages from the UI if not verbose, we'll still see
         # info messages and status messages will still go to the log files.
-        if not context.log_verbose and message.message_type == MessageType.STATUS:
+        if not self.context.log_verbose and message.message_type == MessageType.STATUS:
             return
 
         # Hold on to the failure messages
@@ -707,7 +707,7 @@ class App():
             self._fail_messages[message.unique_id] = message
 
         # Send to frontend if appropriate
-        if self.context.silent_messages() and (message.message_type not in unconditional_messages):
+        if is_silenced and (message.message_type not in unconditional_messages):
             return
 
         if self._status:

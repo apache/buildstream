@@ -162,7 +162,7 @@ class Artifact():
             new_build.was_workspaced = bool(e._get_workspace())
 
         # Store log file
-        log_filename = context.get_log_filename()
+        log_filename = context.messenger.get_log_filename()
         if log_filename:
             digest = self._cas.add_object(path=log_filename)
             element._build_log_path = self._cas.objpath(digest)

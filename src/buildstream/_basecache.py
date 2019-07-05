@@ -244,7 +244,7 @@ class BaseCache():
     #
     def _message(self, message_type, message, **kwargs):
         args = dict(kwargs)
-        self.context.message(
+        self.context.messenger.message(
             Message(None, message_type, message, **args))
 
     # _set_remotes():
@@ -272,7 +272,7 @@ class BaseCache():
         def remote_failed(url, error):
             self._message(MessageType.WARN, "Failed to initialize remote {}: {}".format(url, error))
 
-        with self.context.timed_activity("Initializing remote caches", silent_nested=True):
+        with self.context.messenger.timed_activity("Initializing remote caches", silent_nested=True):
             self.initialize_remotes(on_failure=remote_failed)
 
     # _list_refs_mtimes()

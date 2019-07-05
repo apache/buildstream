@@ -123,7 +123,7 @@ class Pipeline():
     #    targets (list of Element): The list of toplevel element targets
     #
     def resolve_elements(self, targets):
-        with self._context.timed_activity("Resolving cached state", silent_nested=True):
+        with self._context.messenger.timed_activity("Resolving cached state", silent_nested=True):
             for element in self.dependencies(targets, Scope.ALL):
 
                 # Preflight
@@ -355,7 +355,7 @@ class Pipeline():
     def assert_consistent(self, elements):
         inconsistent = []
         inconsistent_workspaced = []
-        with self._context.timed_activity("Checking sources"):
+        with self._context.messenger.timed_activity("Checking sources"):
             for element in elements:
                 if element._get_consistency() == Consistency.INCONSISTENT:
                     if element._get_workspace():
@@ -391,7 +391,7 @@ class Pipeline():
     #
     def assert_sources_cached(self, elements):
         uncached = []
-        with self._context.timed_activity("Checking sources"):
+        with self._context.messenger.timed_activity("Checking sources"):
             for element in elements:
                 if element._get_consistency() < Consistency.CACHED and \
                         not element._source_cached():
@@ -466,7 +466,7 @@ class Pipeline():
     #
     def _message(self, message_type, message, **kwargs):
         args = dict(kwargs)
-        self._context.message(
+        self._context.messenger.message(
             Message(None, message_type, message, **args))
 
 

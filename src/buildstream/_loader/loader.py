@@ -721,7 +721,7 @@ class Loader():
                 raise LoadError(warning_token, brief)
 
         message = Message(None, MessageType.WARN, brief)
-        self._context.message(message)
+        self._context.messenger.message(message)
 
     # Print warning messages if any of the specified elements have invalid names.
     #

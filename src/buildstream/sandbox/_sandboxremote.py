@@ -106,7 +106,7 @@ class SandboxRemote(Sandbox):
         self.operation_name = None
 
     def info(self, msg):
-        self._get_context().message(Message(None, MessageType.INFO, msg))
+        self._get_context().messenger.message(Message(None, MessageType.INFO, msg))
 
     @staticmethod
     def specs_from_config_node(config_node, basedir=None):
@@ -226,8 +226,8 @@ class SandboxRemote(Sandbox):
 
         # Set up signal handler to trigger cancel_operation on SIGTERM
         operation = None
-        with self._get_context().timed_activity("Waiting for the remote build to complete"), \
-            _signals.terminator(partial(self.cancel_operation, channel)):
+        with self._get_context().messenger.timed_activity("Waiting for the remote build to complete"), \
+                _signals.terminator(partial(self.cancel_operation, channel)):
             operation = __run_remote_command(stub, execute_request=request)
             if operation is None:
                 return None

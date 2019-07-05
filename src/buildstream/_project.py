@@ -445,10 +445,10 @@ class Project():
     #    (list): A list of loaded Element
     #
     def load_elements(self, targets, *, rewritable=False):
-        with self._context.timed_activity("Loading elements", silent_nested=True):
+        with self._context.messenger.timed_activity("Loading elements", silent_nested=True):
             meta_elements = self.loader.load(targets, rewritable=rewritable, ticker=None)
 
-        with self._context.timed_activity("Resolving elements"):
+        with self._context.messenger.timed_activity("Resolving elements"):
             elements = [
                 Element._new_from_meta(meta)
                 for meta in meta_elements
@@ -466,7 +466,7 @@ class Project():
                 for source, ref in redundant_refs
             ]
             detail += "\n".join(lines)
-            self._context.message(
+            self._context.messenger.message(
                 Message(None, MessageType.WARN, "Ignoring redundant source references", detail=detail))
 
         return elements
@@ -694,7 +694,7 @@ class Project():
 
         # Deprecation check
         if fail_on_overlap is not None:
-            self._context.message(
+            self._context.messenger.message(
                 Message(
                     None,
                     MessageType.WARN,

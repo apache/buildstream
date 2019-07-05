@@ -19,10 +19,10 @@ def create_pipeline(tmpdir, basedir, target):
     context.casdir = os.path.join(str(tmpdir), 'cas')
     project = Project(basedir, context)
 
-    def dummy_handler(message, context):
+    def dummy_handler(message, is_silenced):
         pass
 
-    context.set_message_handler(dummy_handler)
+    context.messenger.set_message_handler(dummy_handler)
 
     pipeline = Pipeline(context, project, None)
     targets, = pipeline.load([(target,)])
