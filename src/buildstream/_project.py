@@ -594,8 +594,8 @@ class Project():
         self.name = self._project_conf.get_str('name')
 
         # Validate that project name is a valid symbol name
-        _yaml.assert_symbol_name(_yaml.node_get_provenance(pre_config_node, 'name'),
-                                 self.name, "project name")
+        _yaml.assert_symbol_name(self.name, "project name",
+                                 ref_node=pre_config_node.get_node('name'))
 
         self.element_path = os.path.join(
             self.directory,

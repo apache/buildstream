@@ -68,8 +68,7 @@ class OptionPool():
         for option_name, option_definition in options.items():
 
             # Assert that the option name is a valid symbol
-            p = _yaml.node_get_provenance(options, option_name)
-            _yaml.assert_symbol_name(p, option_name, "option name", allow_dashes=False)
+            _yaml.assert_symbol_name(option_name, "option name", ref_node=option_definition, allow_dashes=False)
 
             opt_type_name = option_definition.get_str('type')
             try:
