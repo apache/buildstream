@@ -272,19 +272,6 @@ class CASCache():
 
         return None
 
-    # link_ref():
-    #
-    # Add an alias for an existing ref.
-    #
-    # Args:
-    #     oldref (str): An existing ref
-    #     newref (str): A new ref for the same directory
-    #
-    def link_ref(self, oldref, newref):
-        tree = self.resolve_ref(oldref)
-
-        self.set_ref(newref, tree)
-
     # push():
     #
     # Push committed refs to remote repository.
@@ -1050,7 +1037,6 @@ class CASQuota:
         self._cache_quota_original = None     # The cache quota as specified by the user, in bytes
         self._cache_quota_headroom = None     # The headroom in bytes before reaching the quota or full disk
         self._cache_lower_threshold = None    # The target cache size for a cleanup
-        self.available_space = None
 
         self._message = context.messenger.message
 
@@ -1225,7 +1211,6 @@ class CASQuota:
 
         total_size, available_space = self._get_cache_volume_size()
         cache_size = self.get_cache_size()
-        self.available_space = available_space
 
         # Ensure system has enough storage for the cache_quota
         #
