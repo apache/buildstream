@@ -377,8 +377,7 @@ class Plugin():
         ``True``.
 
         Args:
-           node (dict): A dictionary loaded from YAML
-           key (str): The key whose value contains a path to validate
+           node (ScalarNode): A Node loaded from YAML containing the path to validate
            check_is_file (bool): If ``True`` an error will also be raised
                                  if path does not point to a regular file.
                                  Defaults to ``False``
@@ -403,7 +402,7 @@ class Plugin():
 
         """
 
-        return self.__project.get_path_from_node(node, key,
+        return self.__project.get_path_from_node(node,
                                                  check_is_file=check_is_file,
                                                  check_is_dir=check_is_dir)
 

@@ -247,8 +247,7 @@ class Project():
     # will always be raised if both parameters are set to ``True``.
     #
     # Args:
-    #    node (dict): A dictionary loaded from YAML
-    #    key (str): The key whose value contains a path to validate
+    #    node (ScalarNode): A Node loaded from YAML containing the path to validate
     #    check_is_file (bool): If ``True`` an error will also be raised
     #                          if path does not point to a regular file.
     #                          Defaults to ``False``
@@ -262,21 +261,21 @@ class Project():
     #    (LoadError): In case that the project path is not valid or does not
     #                 exist
     #
-    def get_path_from_node(self, node, key, *,
+    def get_path_from_node(self, node, *,
                            check_is_file=False, check_is_dir=False):
-        path_str = node.get_str(key)
+        path_str = node.as_str()
         path = Path(path_str)
         full_path = self._absolute_directory_path / path
 
-        provenance = _yaml.node_get_provenance(node, key=key)
-
         if full_path.is_symlink():
+            provenance = _yaml.node_get_provenance(node)
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
                             "{}: Specified path '{}' must not point to "
                             "symbolic links "
                             .format(provenance, path_str))
 
         if path.parts and path.parts[0] == '..':
+            provenance = _yaml.node_get_provenance(node)
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
                             "{}: Specified path '{}' first component must "
                             "not be '..'"
@@ -288,6 +287,7 @@ class Project():
             else:
                 full_resolved_path = full_path.resolve(strict=True)  # pylint: disable=unexpected-keyword-arg
         except FileNotFoundError:
+            provenance = _yaml.node_get_provenance(node)
             raise LoadError(LoadErrorReason.MISSING_FILE,
                             "{}: Specified path '{}' does not exist"
                             .format(provenance, path_str))
@@ -296,12 +296,14 @@ class Project():
             full_resolved_path == self._absolute_directory_path)
 
         if not is_inside:
+            provenance = _yaml.node_get_provenance(node)
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
                             "{}: Specified path '{}' must not lead outside of the "
                             "project directory"
                             .format(provenance, path_str))
 
         if path.is_absolute():
+            provenance = _yaml.node_get_provenance(node)
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
                             "{}: Absolute path: '{}' invalid.\n"
                             "Please specify a path relative to the project's root."
@@ -310,17 +312,20 @@ class Project():
         if full_resolved_path.is_socket() or (
                 full_resolved_path.is_fifo() or
                 full_resolved_path.is_block_device()):
+            provenance = _yaml.node_get_provenance(node)
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
                             "{}: Specified path '{}' points to an unsupported "
                             "file kind"
                             .format(provenance, path_str))
 
         if check_is_file and not full_resolved_path.is_file():
+            provenance = _yaml.node_get_provenance(node)
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
                             "{}: Specified path '{}' is not a regular file"
                             .format(provenance, path_str))
 
         if check_is_dir and not full_resolved_path.is_dir():
+            provenance = _yaml.node_get_provenance(node)
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
                             "{}: Specified path '{}' is not a directory"
                             .format(provenance, path_str))
@@ -594,7 +599,7 @@ class Project():
 
         self.element_path = os.path.join(
             self.directory,
-            self.get_path_from_node(pre_config_node, 'element-path',
+            self.get_path_from_node(pre_config_node.get_scalar('element-path'),
                                     check_is_dir=True)
         )
 
@@ -947,7 +952,7 @@ class Project():
                     del origin_node[group]
 
             if origin_node.get_str('origin') == 'local':
-                path = self.get_path_from_node(origin, 'path',
+                path = self.get_path_from_node(origin.get_scalar('path'),
                                                check_is_dir=True)
                 # paths are passed in relative to the project, but must be absolute
                 origin_node['path'] = os.path.join(self.directory, path)
