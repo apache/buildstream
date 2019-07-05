@@ -342,7 +342,7 @@ class App():
             if project_name:
                 # If project name was specified, user interaction is not desired, just
                 # perform some validation and write the project.conf
-                _yaml.assert_symbol_name(None, project_name, 'project name')
+                _yaml.assert_symbol_name(project_name, 'project name')
                 self._assert_format_version(format_version)
                 self._assert_element_path(element_path)
 
