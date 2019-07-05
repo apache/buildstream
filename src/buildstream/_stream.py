@@ -1451,17 +1451,6 @@ class Stream():
 
         os.chmod(script_path, stat.S_IEXEC | stat.S_IREAD)
 
-    # Collect the sources in the given sandbox into a tarfile
-    def _collect_sources(self, directory, tar_name, element_name, compression):
-        with self._context.messenger.timed_activity("Creating tarball {}".format(tar_name)):
-            if compression == "none":
-                permissions = "w:"
-            else:
-                permissions = "w:" + compression
-
-            with tarfile.open(tar_name, permissions) as tar:
-                tar.add(directory, arcname=element_name)
-
     # _get_element_dirname()
     #
     # Get path to directory for an element based on its normal name.
