@@ -32,6 +32,8 @@ from . import _yaml
 #     base_type (type):         A base object type for this context
 #     site_plugin_path (str):   Path to where buildstream keeps plugins
 #     plugin_origins (list):    Data used to search for plugins
+#     format_versions (dict):   A dict of meta.kind to the integer minimum
+#                               version number for each plugin to be loaded
 #
 # Since multiple pipelines can be processed recursively
 # within the same interpretor, it's important that we have
@@ -43,8 +45,7 @@ from . import _yaml
 class PluginContext():
 
     def __init__(self, plugin_base, base_type, site_plugin_path, *,
-                 plugin_origins=None, dependencies=None,
-                 format_versions={}):
+                 plugin_origins=None, format_versions={}):
 
         # The plugin kinds which were loaded
         self.loaded_dependencies = []
@@ -52,7 +53,6 @@ class PluginContext():
         #
         # Private members
         #
-        self._dependencies = dependencies
         self._base_type = base_type  # The base class plugins derive from
         self._types = {}             # Plugin type lookup table by kind
         self._plugin_origins = plugin_origins or []
