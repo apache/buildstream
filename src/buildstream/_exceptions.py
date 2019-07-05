@@ -88,15 +88,14 @@ class ErrorDomain(Enum):
     SANDBOX = 5
     ARTIFACT = 6
     PIPELINE = 7
-    OSTREE = 8
-    UTIL = 9
-    SOURCE = 10
-    ELEMENT = 11
-    APP = 12
-    STREAM = 13
-    VIRTUAL_FS = 14
-    CAS = 15
-    PROG_NOT_FOUND = 16
+    UTIL = 8
+    SOURCE = 9
+    ELEMENT = 10
+    APP = 11
+    STREAM = 12
+    VIRTUAL_FS = 13
+    CAS = 14
+    PROG_NOT_FOUND = 15
 
 
 # BstError is an internal base exception class for BuildSream
