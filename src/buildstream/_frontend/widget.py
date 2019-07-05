@@ -74,13 +74,6 @@ class Widget():
         raise ImplError("{} does not implement render()".format(type(self).__name__))
 
 
-# Used to add spacing between columns
-class Space(Widget):
-
-    def render(self, message):
-        return ' '
-
-
 # Used to add fixed text between columns
 class FixedText(Widget):
 
@@ -330,7 +323,6 @@ class LogLine(Widget):
         self._resolved_keys = None
         self._state = state
 
-        self._space_widget = Space(context, content_profile, format_profile)
         self._logfile_widget = LogFile(context, content_profile, format_profile, err_profile)
 
         if context.log_debug:
