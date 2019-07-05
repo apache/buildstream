@@ -319,6 +319,22 @@ class Pipeline():
             if e not in subtract_set
         ]
 
+    # add_elements()
+    #
+    # Add to a list of elements all elements that are not already in it
+    #
+    # Args:
+    #    elements (list of Element): The element list
+    #    add (list of Element): List of elements to add
+    #
+    # Returns:
+    #    (list): The original elements list, with elements in add that weren't
+    #            already in it added.
+    def add_elements(self, elements, add):
+        ret = elements[:]
+        ret.extend(e for e in add if e not in ret)
+        return ret
+
     # track_cross_junction_filter()
     #
     # Filters out elements which are across junction boundaries,

@@ -180,7 +180,8 @@ class Stream():
                 self._message(MessageType.INFO, "Attempting to fetch missing or incomplete artifacts")
                 self._scheduler.clear_queues()
                 self._add_queue(PullQueue(self._scheduler))
-                self._enqueue_plan([element] + missing_deps)
+                plan = self._pipeline.add_elements([element], missing_deps)
+                self._enqueue_plan(plan)
                 self._run()
 
         buildtree = False
