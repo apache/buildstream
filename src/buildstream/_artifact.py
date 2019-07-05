@@ -54,7 +54,6 @@ class Artifact():
     def __init__(self, element, context, *, strong_key=None, weak_key=None):
         self._element = element
         self._context = context
-        self._artifacts = context.artifactcache
         self._cache_key = strong_key
         self._weak_cache_key = weak_key
         self._artifactdir = context.artifactdir
