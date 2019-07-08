@@ -32,6 +32,7 @@ class StackElement(Element):
 
     # This plugin has been modified to avoid the use of Sandbox.get_directory
     BST_VIRTUAL_DIRECTORY = True
+    BST_ALLOW_SHELL = False
 
     def configure(self, node):
         pass

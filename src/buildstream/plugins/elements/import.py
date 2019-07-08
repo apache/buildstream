@@ -44,6 +44,8 @@ class ImportElement(Element):
     # Import elements do not run any commands
     BST_RUN_COMMANDS = False
 
+    BST_ALLOW_SHELL = False
+
     def configure(self, node):
         self.node_validate(node, [
             'source', 'target'

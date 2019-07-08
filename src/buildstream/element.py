@@ -185,6 +185,8 @@ class Element(Plugin):
     *Since: 1.4*
     """
 
+    BST_ALLOW_SHELL = True
+
     def __init__(self, context, project, meta, plugin_conf):
 
         self.__cache_key_dict = None            # Dict for cache key calculation
@@ -1957,6 +1959,9 @@ class Element(Plugin):
     def _shell(self, scope=None, directory=None, *, mounts=None, isolate=False, prompt=None, command=None,
                usebuildtree=False):
 
+        if scope == Scope.BUILD and self.BST_ALLOW_SHELL == False:    
+            raise ElementError("{} does not allow build shell access".format(self))
+        
         with self._prepare_sandbox(scope, directory, shell=True, usebuildtree=usebuildtree) as sandbox:
             environment = self.get_environment()
             environment = copy.copy(environment)
