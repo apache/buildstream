@@ -114,7 +114,7 @@ cdef class ProvenanceInformation:
         cdef FileInfo fileinfo
 
         self.node = nodeish
-        if (nodeish is None) or (nodeish.file_index is None):
+        if (nodeish is None) or (nodeish.file_index == _SYNTHETIC_FILE_INDEX):
             self.filename = ""
             self.shortname = ""
             self.displayname = ""
@@ -436,7 +436,7 @@ cpdef Node load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_na
                             .format(type(contents[0]).__name__, file_name))
 
     # Store this away because we'll use it later for "top level" provenance
-    if file_index is not None:
+    if file_index != _SYNTHETIC_FILE_INDEX:
         f_info = <FileInfo> _FILE_LIST[file_index]
 
         _FILE_LIST[file_index] = FileInfo(
