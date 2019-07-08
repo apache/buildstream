@@ -24,8 +24,8 @@ def test_load_yaml(datafiles):
     assert loaded.get_str('kind') == 'pony'
 
 
-def assert_provenance(filename, line, col, node, key=None):
-    provenance = _yaml.node_get_provenance(node, key=key)
+def assert_provenance(filename, line, col, node):
+    provenance = node.get_provenance()
 
     assert isinstance(provenance, _yaml.ProvenanceInformation)
 
@@ -56,7 +56,7 @@ def test_member_provenance(datafiles):
 
     loaded = _yaml.load(filename)
     assert loaded.get_str('kind') == 'pony'
-    assert_provenance(filename, 2, 13, loaded, 'description')
+    assert_provenance(filename, 2, 13, loaded.get_scalar('description'))
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -108,7 +108,7 @@ def test_node_get(datafiles):
     assert len(children) == 7
 
     child = base.get_sequence('children').mapping_at(6)
-    assert_provenance(filename, 20, 8, child, 'mood')
+    assert_provenance(filename, 20, 8, child.get_scalar('mood'))
 
     extra = base.get_mapping('extra')
     with pytest.raises(LoadError) as exc:
@@ -256,7 +256,7 @@ def test_list_composition(datafiles, filename, tmpdir,
     child = children.mapping_at(index)
 
     assert child.get_str('mood') == mood
-    assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
+    assert_provenance(prov_file, prov_line, prov_col, child.get_node('mood'))
 
 
 # Test that overwriting a list with an empty list works as expected.
@@ -378,7 +378,7 @@ def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
     child = children.mapping_at(index)
 
     assert child.get_str('mood') == mood
-    assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
+    assert_provenance(prov_file, prov_line, prov_col, child.get_node('mood'))
 
     #####################
     # Round 2 - Fight !
@@ -395,7 +395,7 @@ def test_list_composition_twice(datafiles, tmpdir, filename1, filename2,
     child = children.mapping_at(index)
 
     assert child.get_str('mood') == mood
-    assert_provenance(prov_file, prov_line, prov_col, child, 'mood')
+    assert_provenance(prov_file, prov_line, prov_col, child.get_node('mood'))
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -494,7 +494,7 @@ def test_node_find_target(datafiles, case):
     # are not the same nodes as in `prov.toplevel`
     loaded = _yaml.load(filename, copy_tree=True)
 
-    prov = _yaml.node_get_provenance(loaded)
+    prov = loaded.get_provenance()
 
     toplevel = prov.toplevel
 

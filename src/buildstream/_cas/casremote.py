@@ -8,7 +8,6 @@ import uuid
 
 import grpc
 
-from .. import _yaml
 from .._protos.google.rpc import code_pb2
 from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
@@ -35,7 +34,7 @@ class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key
         url = spec_node.get_str('url')
         push = spec_node.get_bool('push', default=False)
         if not url:
-            provenance = _yaml.node_get_provenance(spec_node, 'url')
+            provenance = spec_node.get_node('url').get_provenance()
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: empty artifact cache URL".format(provenance))
 
@@ -54,12 +53,12 @@ class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key
             client_cert = os.path.join(basedir, client_cert)
 
         if client_key and not client_cert:
-            provenance = _yaml.node_get_provenance(spec_node, 'client-key')
+            provenance = spec_node.get_node('client-key').get_provenance()
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: 'client-key' was specified without 'client-cert'".format(provenance))
 
         if client_cert and not client_key:
-            provenance = _yaml.node_get_provenance(spec_node, 'client-cert')
+            provenance = spec_node.get_node('client-cert').get_provenance()
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: 'client-cert' was specified without 'client-key'".format(provenance))
 

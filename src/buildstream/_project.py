@@ -268,14 +268,14 @@ class Project():
         full_path = self._absolute_directory_path / path
 
         if full_path.is_symlink():
-            provenance = _yaml.node_get_provenance(node)
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
                             "{}: Specified path '{}' must not point to "
                             "symbolic links "
                             .format(provenance, path_str))
 
         if path.parts and path.parts[0] == '..':
-            provenance = _yaml.node_get_provenance(node)
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
                             "{}: Specified path '{}' first component must "
                             "not be '..'"
@@ -287,7 +287,7 @@ class Project():
             else:
                 full_resolved_path = full_path.resolve(strict=True)  # pylint: disable=unexpected-keyword-arg
         except FileNotFoundError:
-            provenance = _yaml.node_get_provenance(node)
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.MISSING_FILE,
                             "{}: Specified path '{}' does not exist"
                             .format(provenance, path_str))
@@ -296,14 +296,14 @@ class Project():
             full_resolved_path == self._absolute_directory_path)
 
         if not is_inside:
-            provenance = _yaml.node_get_provenance(node)
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
                             "{}: Specified path '{}' must not lead outside of the "
                             "project directory"
                             .format(provenance, path_str))
 
         if path.is_absolute():
-            provenance = _yaml.node_get_provenance(node)
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
                             "{}: Absolute path: '{}' invalid.\n"
                             "Please specify a path relative to the project's root."
@@ -312,20 +312,20 @@ class Project():
         if full_resolved_path.is_socket() or (
                 full_resolved_path.is_fifo() or
                 full_resolved_path.is_block_device()):
-            provenance = _yaml.node_get_provenance(node)
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
                             "{}: Specified path '{}' points to an unsupported "
                             "file kind"
                             .format(provenance, path_str))
 
         if check_is_file and not full_resolved_path.is_file():
-            provenance = _yaml.node_get_provenance(node)
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
                             "{}: Specified path '{}' is not a regular file"
                             .format(provenance, path_str))
 
         if check_is_dir and not full_resolved_path.is_dir():
-            provenance = _yaml.node_get_provenance(node)
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
                             "{}: Specified path '{}' is not a directory"
                             .format(provenance, path_str))
@@ -627,9 +627,10 @@ class Project():
                         ignore_unknown=True)
 
         # Use separate file for storing source references
-        self.ref_storage = pre_config_node.get_str('ref-storage')
+        ref_storage_node = pre_config_node.get_scalar('ref-storage')
+        self.ref_storage = ref_storage_node.as_str()
         if self.ref_storage not in [ProjectRefStorage.INLINE, ProjectRefStorage.PROJECT_REFS]:
-            p = _yaml.node_get_provenance(pre_config_node, 'ref-storage')
+            p = ref_storage_node.get_provenance()
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Invalid value '{}' specified for ref-storage"
                             .format(p, self.ref_storage))

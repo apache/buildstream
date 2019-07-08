@@ -116,7 +116,6 @@ import sys
 from contextlib import contextmanager
 from weakref import WeakValueDictionary
 
-from . import _yaml
 from . import utils
 from ._exceptions import PluginError, ImplError
 from ._message import Message, MessageType
@@ -360,7 +359,7 @@ class Plugin():
         Returns:
             (str): A string describing the provenance of the node and member
         """
-        provenance = _yaml.node_get_provenance(node, key=member_name)
+        provenance = node.get_node(member_name).get_provenance()
         return str(provenance)
 
     def node_get_project_path(self, node, *,
