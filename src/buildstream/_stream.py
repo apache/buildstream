@@ -112,9 +112,6 @@ class Stream():
         print("Kwargs: {}".format(list(kwargs.items())))
         assert not self._subprocess
 
-        global notification_count
-        notification_count = 0
-
         mp_context = mp.get_context(method='fork')
         process_name = "stream-{}".format(func.__name__)
         print("launchinglaunching subprocess:", process_name)
@@ -122,8 +119,10 @@ class Stream():
         self._subprocess.start()
 
         # TODO connect signal handlers
-        while self._subprocess.exitcode is not:
+        while self._subprocess.exitcode is None:
+            # check every given time interval on subprocess state
             self._subprocess.join(0.1)
+            # if no exit code, go back to checking the message queue
             self._loop()
         print("Stopping loop...")
 
