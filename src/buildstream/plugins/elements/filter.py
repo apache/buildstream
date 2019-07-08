@@ -171,11 +171,12 @@ class FilterElement(Element):
             'include', 'exclude', 'include-orphans'
         ])
 
-        self.include = node.get_sequence('include').as_str_list()
-        self.exclude = node.get_sequence('exclude').as_str_list()
+        self.include_node = node.get_sequence('include')
+        self.exclude_node = node.get_sequence('exclude')
+
+        self.include = self.include_node.as_str_list()
+        self.exclude = self.exclude_node.as_str_list()
         self.include_orphans = node.get_bool('include-orphans')
-        self.include_provenance = self.node_provenance(node, member_name='include')
-        self.exclude_provenance = self.node_provenance(node, member_name='exclude')
 
     def preflight(self):
         # Exactly one build-depend is permitted
@@ -229,11 +230,11 @@ class FilterElement(Element):
 
                 detail = []
                 if unfound_includes:
-                    detail.append("Unknown domains were used in {}".format(self.include_provenance))
+                    detail.append("Unknown domains were used in {}".format(self.include_node.get_provenance()))
                     detail.extend([' - {}'.format(domain) for domain in unfound_includes])
 
                 if unfound_excludes:
-                    detail.append("Unknown domains were used in {}".format(self.exclude_provenance))
+                    detail.append("Unknown domains were used in {}".format(self.exclude_node.get_provenance()))
                     detail.extend([' - {}'.format(domain) for domain in unfound_excludes])
 
                 if detail:

@@ -143,9 +143,9 @@ class DownloadableFileSource(Source):
                                   .format(self.url, sha256, self.ref))
 
     def _warn_deprecated_etag(self, node):
-        etag = node.get_str('etag', None)
+        etag = node.get_scalar('etag', None)
         if etag:
-            provenance = self.node_provenance(node, member_name='etag')
+            provenance = etag.get_provenance()
             self.warn('{} "etag" is deprecated and ignored.'.format(provenance))
 
     def _get_etag(self, ref):
