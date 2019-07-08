@@ -396,7 +396,7 @@ class _GitSourceBase(Source):
 
         self.ref_format = node.get_str('ref-format', 'sha1')
         if self.ref_format not in ['sha1', 'git-describe']:
-            provenance = self.node_provenance(node, member_name='ref-format')
+            provenance = node.get_scalar('ref-format').get_provenance()
             raise SourceError("{}: Unexpected value for ref-format: {}".format(provenance, self.ref_format))
 
         # At this point we now know if the source has a ref and/or a track.
