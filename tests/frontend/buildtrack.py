@@ -140,8 +140,8 @@ def test_build_track(cli, datafiles, tmpdir, ref_storage, strict,
     # Delete element sources
     source_dir = os.path.join(project, 'cache', 'sources')
     shutil.rmtree(source_dir)
-    source_refs = os.path.join(project, 'cache', 'cas', 'refs', 'heads', '@sources')
-    shutil.rmtree(source_refs)
+    source_protos = os.path.join(project, 'cache', 'source_protos')
+    shutil.rmtree(source_protos)
 
     # Delete artifacts one by one and assert element states
     for target in set(tracked):

@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='buildstream.v2',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n buildstream/v2/buildstream.proto\x12\x0e\x62uildstream.v2\x1a\x36\x62uild/bazel/remote/execution/v2/remote_execution.proto\x1a\x1cgoogle/api/annotations.proto\"9\n\x13GetReferenceRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\"O\n\x14GetReferenceResponse\x12\x37\n\x06\x64igest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"v\n\x16UpdateReferenceRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0c\n\x04keys\x18\x02 \x03(\t\x12\x37\n\x06\x64igest\x18\x03 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\x19\n\x17UpdateReferenceResponse\"&\n\rStatusRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"\'\n\x0eStatusResponse\x12\x15\n\rallow_updates\x18\x01 \x01(\x08\"/\n\x16GetCapabilitiesRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"-\n\x14\x41rtifactCapabilities\x12\x15\n\rallow_updates\x18\x01 \x01(\x08\"Y\n\x12ServerCapabilities\x12\x43\n\x15\x61rtifact_capabilities\x18\x01 \x01(\x0b\x32$.buildstream.v2.ArtifactCapabilities2\xca\x03\n\x10ReferenceStorage\x12\x90\x01\n\x0cGetReference\x12#.buildstream.v2.GetReferenceRequest\x1a$.buildstream.v2.GetReferenceResponse\"5\x82\xd3\xe4\x93\x02/\x12-/v2/{instance_name=**}/buildstream/refs/{key}\x12\xa1\x01\n\x0fUpdateReference\x12&.buildstream.v2.UpdateReferenceRequest\x1a\'.buildstream.v2.UpdateReferenceResponse\"=\x82\xd3\xe4\x93\x02\x37\x1a-/v2/{instance_name=**}/buildstream/refs/{key}:\x06\x64igest\x12\x7f\n\x06Status\x12\x1d.buildstream.v2.StatusRequest\x1a\x1e.buildstream.v2.StatusResponse\"6\x82\xd3\xe4\x93\x02\x30\x1a./v2/{instance_name=**}/buildstream/refs:status2\x9b\x01\n\x0c\x43\x61pabilities\x12\x8a\x01\n\x0fGetCapabilities\x12&.buildstream.v2.GetCapabilitiesRequest\x1a\".buildstream.v2.ServerCapabilities\"+\x82\xd3\xe4\x93\x02%\x12#/v2/{instance_name=**}/capabilitiesb\x06proto3')
+  serialized_pb=_b('\n buildstream/v2/buildstream.proto\x12\x0e\x62uildstream.v2\x1a\x36\x62uild/bazel/remote/execution/v2/remote_execution.proto\x1a\x1cgoogle/api/annotations.proto\"9\n\x13GetReferenceRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\"O\n\x14GetReferenceResponse\x12\x37\n\x06\x64igest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"v\n\x16UpdateReferenceRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0c\n\x04keys\x18\x02 \x03(\t\x12\x37\n\x06\x64igest\x18\x03 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\x19\n\x17UpdateReferenceResponse\"&\n\rStatusRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"\'\n\x0eStatusResponse\x12\x15\n\rallow_updates\x18\x01 \x01(\x08\"/\n\x16GetCapabilitiesRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"-\n\x14\x41rtifactCapabilities\x12\x15\n\rallow_updates\x18\x01 \x01(\x08\"+\n\x12SourceCapabilities\x12\x15\n\rallow_updates\x18\x01 \x01(\x08\"\x9a\x01\n\x12ServerCapabilities\x12\x43\n\x15\x61rtifact_capabilities\x18\x01 \x01(\x0b\x32$.buildstream.v2.ArtifactCapabilities\x12?\n\x13source_capabilities\x18\x02 \x01(\x0b\x32\".buildstream.v2.SourceCapabilities2\xca\x03\n\x10ReferenceStorage\x12\x90\x01\n\x0cGetReference\x12#.buildstream.v2.GetReferenceRequest\x1a$.buildstream.v2.GetReferenceResponse\"5\x82\xd3\xe4\x93\x02/\x12-/v2/{instance_name=**}/buildstream/refs/{key}\x12\xa1\x01\n\x0fUpdateReference\x12&.buildstream.v2.UpdateReferenceRequest\x1a\'.buildstream.v2.UpdateReferenceResponse\"=\x82\xd3\xe4\x93\x02\x37\x1a-/v2/{instance_name=**}/buildstream/refs/{key}:\x06\x64igest\x12\x7f\n\x06Status\x12\x1d.buildstream.v2.StatusRequest\x1a\x1e.buildstream.v2.StatusResponse\"6\x82\xd3\xe4\x93\x02\x30\x1a./v2/{instance_name=**}/buildstream/refs:status2\x9b\x01\n\x0c\x43\x61pabilities\x12\x8a\x01\n\x0fGetCapabilities\x12&.buildstream.v2.GetCapabilitiesRequest\x1a\".buildstream.v2.ServerCapabilities\"+\x82\xd3\xe4\x93\x02%\x12#/v2/{instance_name=**}/capabilitiesb\x06proto3')
   ,
   dependencies=[build_dot_bazel_dot_remote_dot_execution_dot_v2_dot_remote__execution__pb2.DESCRIPTOR,google_dot_api_dot_annotations__pb2.DESCRIPTOR,])
 
@@ -291,17 +291,17 @@ _ARTIFACTCAPABILITIES = _descriptor.Descriptor(
 )
 
 
-_SERVERCAPABILITIES = _descriptor.Descriptor(
-  name='ServerCapabilities',
-  full_name='buildstream.v2.ServerCapabilities',
+_SOURCECAPABILITIES = _descriptor.Descriptor(
+  name='SourceCapabilities',
+  full_name='buildstream.v2.SourceCapabilities',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='artifact_capabilities', full_name='buildstream.v2.ServerCapabilities.artifact_capabilities', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='allow_updates', full_name='buildstream.v2.SourceCapabilities.allow_updates', index=0,
+      number=1, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
@@ -318,12 +318,51 @@ _SERVERCAPABILITIES = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=602,
-  serialized_end=691,
+  serialized_end=645,
+)
+
+
+_SERVERCAPABILITIES = _descriptor.Descriptor(
+  name='ServerCapabilities',
+  full_name='buildstream.v2.ServerCapabilities',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='artifact_capabilities', full_name='buildstream.v2.ServerCapabilities.artifact_capabilities', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='source_capabilities', full_name='buildstream.v2.ServerCapabilities.source_capabilities', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=648,
+  serialized_end=802,
 )
 
 _GETREFERENCERESPONSE.fields_by_name['digest'].message_type = build_dot_bazel_dot_remote_dot_execution_dot_v2_dot_remote__execution__pb2._DIGEST
 _UPDATEREFERENCEREQUEST.fields_by_name['digest'].message_type = build_dot_bazel_dot_remote_dot_execution_dot_v2_dot_remote__execution__pb2._DIGEST
 _SERVERCAPABILITIES.fields_by_name['artifact_capabilities'].message_type = _ARTIFACTCAPABILITIES
+_SERVERCAPABILITIES.fields_by_name['source_capabilities'].message_type = _SOURCECAPABILITIES
 DESCRIPTOR.message_types_by_name['GetReferenceRequest'] = _GETREFERENCEREQUEST
 DESCRIPTOR.message_types_by_name['GetReferenceResponse'] = _GETREFERENCERESPONSE
 DESCRIPTOR.message_types_by_name['UpdateReferenceRequest'] = _UPDATEREFERENCEREQUEST
@@ -332,6 +371,7 @@ DESCRIPTOR.message_types_by_name['StatusRequest'] = _STATUSREQUEST
 DESCRIPTOR.message_types_by_name['StatusResponse'] = _STATUSRESPONSE
 DESCRIPTOR.message_types_by_name['GetCapabilitiesRequest'] = _GETCAPABILITIESREQUEST
 DESCRIPTOR.message_types_by_name['ArtifactCapabilities'] = _ARTIFACTCAPABILITIES
+DESCRIPTOR.message_types_by_name['SourceCapabilities'] = _SOURCECAPABILITIES
 DESCRIPTOR.message_types_by_name['ServerCapabilities'] = _SERVERCAPABILITIES
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -391,6 +431,13 @@ ArtifactCapabilities = _reflection.GeneratedProtocolMessageType('ArtifactCapabil
   ))
 _sym_db.RegisterMessage(ArtifactCapabilities)
 
+SourceCapabilities = _reflection.GeneratedProtocolMessageType('SourceCapabilities', (_message.Message,), dict(
+  DESCRIPTOR = _SOURCECAPABILITIES,
+  __module__ = 'buildstream.v2.buildstream_pb2'
+  # @@protoc_insertion_point(class_scope:buildstream.v2.SourceCapabilities)
+  ))
+_sym_db.RegisterMessage(SourceCapabilities)
+
 ServerCapabilities = _reflection.GeneratedProtocolMessageType('ServerCapabilities', (_message.Message,), dict(
   DESCRIPTOR = _SERVERCAPABILITIES,
   __module__ = 'buildstream.v2.buildstream_pb2'
@@ -406,8 +453,8 @@ _REFERENCESTORAGE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=694,
-  serialized_end=1152,
+  serialized_start=805,
+  serialized_end=1263,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetReference',
@@ -448,8 +495,8 @@ _CAPABILITIES = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=1,
   serialized_options=None,
-  serialized_start=1155,
-  serialized_end=1310,
+  serialized_start=1266,
+  serialized_end=1421,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetCapabilities',
