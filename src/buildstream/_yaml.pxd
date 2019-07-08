@@ -27,6 +27,7 @@ cdef class Node:
     cdef int column
 
     cpdef Node copy(self)
+    cpdef ProvenanceInformation get_provenance(self)
     cpdef object strip_node_info(self)
 
     cpdef void _assert_fully_composited(self) except *
@@ -89,6 +90,3 @@ cdef class ProvenanceInformation:
     cdef public int col, line
     cdef public object project, toplevel
     cdef public bint is_synthetic
-
-
-cpdef ProvenanceInformation node_get_provenance(Node node, str key=*)

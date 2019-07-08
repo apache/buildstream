@@ -43,7 +43,6 @@ class Includes:
             else:
                 includes = includes_node.as_str_list()
 
-            include_provenance = _yaml.node_get_provenance(node, key='(@)')
             del node['(@)']
 
             for include in reversed(includes):
@@ -53,6 +52,7 @@ class Includes:
                     include_node, file_path, sub_loader = self._include_file(include,
                                                                              current_loader)
                 except LoadError as e:
+                    include_provenance = includes_node.get_provenance()
                     if e.reason == LoadErrorReason.MISSING_FILE:
                         message = "{}: Include block references a file that could not be found: '{}'.".format(
                             include_provenance, include)
@@ -65,6 +65,7 @@ class Includes:
                         raise
 
                 if file_path in included:
+                    include_provenance = includes_node.get_provenance()
                     raise LoadError(LoadErrorReason.RECURSIVE_INCLUDE,
                                     "{}: trying to recursively include {}". format(include_provenance,
                                                                                    file_path))

@@ -507,9 +507,10 @@ class Context():
 #    LoadError, when the value is not of the expected type, or is not found.
 #
 def _node_get_option_str(node, key, allowed_options):
-    result = node.get_str(key)
+    result_node = node.get_scalar(key)
+    result = result_node.as_str()
     if result not in allowed_options:
-        provenance = _yaml.node_get_provenance(node, key)
+        provenance = result_node.get_provenance()
         raise LoadError(LoadErrorReason.INVALID_DATA,
                         "{}: {} should be one of: {}".format(
                             provenance, key, ", ".join(allowed_options)))

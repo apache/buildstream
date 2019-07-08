@@ -17,7 +17,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .. import _yaml
 from .._exceptions import LoadError, LoadErrorReason
 from .option import Option, OPTION_SYMBOLS
 
@@ -51,17 +50,19 @@ class OptionFlags(Option):
         if not self.values:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: No values specified for {} option '{}'"
-                            .format(_yaml.node_get_provenance(node), self.OPTION_TYPE, self.name))
+                            .format(node.get_provenance(), self.OPTION_TYPE, self.name))
 
-        self.value = node.get_sequence('default', default=[]).as_str_list()
-        self.validate(self.value, _yaml.node_get_provenance(node, 'default'))
+        value_node = node.get_sequence('default', default=[])
+        self.value = value_node.as_str_list()
+        self.validate(self.value, value_node)
 
     def load_value(self, node, *, transform=None):
-        self.value = node.get_sequence(self.name).as_str_list()
+        value_node = node.get_sequence(self.name)
+        self.value = value_node.as_str_list()
         if transform:
             self.value = [transform(x) for x in self.value]
         self.value = sorted(self.value)
-        self.validate(self.value, _yaml.node_get_provenance(node, self.name))
+        self.validate(self.value, value_node)
 
     def set_value(self, value):
         # Strip out all whitespace, allowing: "value1, value2 , value3"
@@ -76,12 +77,14 @@ class OptionFlags(Option):
     def get_value(self):
         return ",".join(self.value)
 
-    def validate(self, value, provenance=None):
+    def validate(self, value, node=None):
         for flag in value:
             if flag not in self.values:
-                prefix = ""
-                if provenance:
+                if node is not None:
+                    provenance = node.get_provenance()
                     prefix = "{}: ".format(provenance)
+                else:
+                    prefix = ""
                 raise LoadError(LoadErrorReason.INVALID_DATA,
                                 "{}Invalid value for flags option '{}': {}\n"
                                 .format(prefix, self.name, value) +
