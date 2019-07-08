@@ -43,8 +43,7 @@ from ._exceptions import BstError, ErrorDomain
 from ._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 
 # The magic number for timestamps: 2011-11-11 11:11:11
-_magic_timestamp = calendar.timegm([2011, 11, 11, 11, 11, 11])
-
+BST_ARBITRARY_TIMESTAMP = calendar.timegm([2011, 11, 11, 11, 11, 11])
 
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ':'
@@ -952,9 +951,9 @@ def _set_deterministic_mtime(directory):
             # However, nowadays it is possible at least on gnuish systems
             # with with the lutimes glibc function.
             if not os.path.islink(pathname):
-                os.utime(pathname, (_magic_timestamp, _magic_timestamp))
+                os.utime(pathname, (BST_ARBITRARY_TIMESTAMP, BST_ARBITRARY_TIMESTAMP))
 
-        os.utime(dirname, (_magic_timestamp, _magic_timestamp))
+        os.utime(dirname, (BST_ARBITRARY_TIMESTAMP, BST_ARBITRARY_TIMESTAMP))
 
 
 # _tempdir()

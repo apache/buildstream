@@ -34,7 +34,7 @@ See also: :ref:`sandboxing`.
 from enum import Enum
 
 from .._exceptions import BstError, ErrorDomain
-from ..utils import _magic_timestamp
+from ..utils import BST_ARBITRARY_TIMESTAMP
 
 
 class VirtualDirectoryError(BstError):
@@ -122,7 +122,7 @@ class Directory():
 
         raise NotImplementedError()
 
-    def export_to_tar(self, tarfile, destination_dir, mtime=_magic_timestamp):
+    def export_to_tar(self, tarfile, destination_dir, mtime=BST_ARBITRARY_TIMESTAMP):
         """ Exports this directory into the given tar file.
 
         Args:

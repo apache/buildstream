@@ -32,7 +32,7 @@ import os
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .directory import Directory, VirtualDirectoryError, _FileType
 from ._filebaseddirectory import FileBasedDirectory
-from ..utils import FileListResult, _magic_timestamp
+from ..utils import FileListResult, BST_ARBITRARY_TIMESTAMP
 
 
 class IndexEntry():
@@ -436,7 +436,7 @@ class CasBasedDirectory(Directory):
 
         self.cas_cache.checkout(to_directory, self._get_digest(), can_link=can_link)
 
-    def export_to_tar(self, tarfile, destination_dir, mtime=_magic_timestamp):
+    def export_to_tar(self, tarfile, destination_dir, mtime=BST_ARBITRARY_TIMESTAMP):
         raise NotImplementedError()
 
     def mark_changed(self):
