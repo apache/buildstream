@@ -114,7 +114,7 @@ class SandboxRemote(Sandbox):
         def require_node(config, keyname):
             val = config.get_mapping(keyname, default=None)
             if val is None:
-                provenance = _yaml.node_get_provenance(remote_config, key=keyname)
+                provenance = remote_config.get_provenance()
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
                                       "{}: '{}' was not present in the remote "
                                       "execution configuration (remote-execution). "
@@ -146,7 +146,7 @@ class SandboxRemote(Sandbox):
             if 'execution-service' not in remote_config:
                 exec_config = _yaml.Node.from_dict({'url': remote_config['url']})
             else:
-                provenance = _yaml.node_get_provenance(remote_config, key='url')
+                provenance = remote_config.get_node('url').get_provenance()
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
                                       "{}: 'url' and 'execution-service' keys were found in the remote "
                                       "execution configuration (remote-execution). "
@@ -164,7 +164,7 @@ class SandboxRemote(Sandbox):
         for config_key, config in zip(service_keys, service_configs):
             # Either both or none of the TLS client key/cert pair must be specified:
             if ('client-key' in config) != ('client-cert' in config):
-                provenance = _yaml.node_get_provenance(remote_config, key=config_key)
+                provenance = remote_config.get_node(config_key).get_provenance()
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
                                       "{}: TLS client key/cert pair is incomplete. "
                                       "You must specify both 'client-key' and 'client-cert' "

@@ -69,7 +69,7 @@ cdef class Dependency:
                  str default_dep_type=None):
         cdef str dep_type
 
-        self.provenance = _yaml.node_get_provenance(dep)
+        self.provenance = dep.get_provenance()
 
         if type(dep) is _yaml.ScalarNode:
             self.name = dep.as_str()
@@ -88,7 +88,7 @@ cdef class Dependency:
                 if dep_type is None or dep_type == <str> Symbol.ALL:
                     dep_type = None
                 elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
-                    provenance = _yaml.node_get_provenance(dep, key=Symbol.TYPE)
+                    provenance = dep.get_scalar(Symbol.TYPE).get_provenance()
                     raise LoadError(LoadErrorReason.INVALID_DATA,
                                     "{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
                                     .format(provenance, dep_type))
