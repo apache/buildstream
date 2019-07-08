@@ -307,7 +307,7 @@ class Source(Plugin):
     """
 
     def __init__(self, context, project, meta, *, alias_override=None, unique_id=None):
-        provenance = _yaml.node_get_provenance(meta.config)
+        provenance = meta.config.get_provenance()
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
                          context, project, provenance, "source", unique_id=unique_id)
 
@@ -961,9 +961,9 @@ class Source(Plugin):
         for key, action in actions.items():
             # Obtain the top level node and its file
             if action == 'add':
-                provenance = _yaml.node_get_provenance(node)
+                provenance = node.get_provenance()
             else:
-                provenance = _yaml.node_get_provenance(node, key=key)
+                provenance = node.get_node(key).get_provenance()
 
             toplevel_node = provenance.toplevel
 

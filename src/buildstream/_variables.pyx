@@ -139,7 +139,7 @@ cdef class Variables:
             for var in expstr[1::2]:
                 if var not in self._expstr_map:
                     line = "  unresolved variable '{unmatched}' in declaration of '{variable}' at: {provenance}"
-                    provenance = _yaml.node_get_provenance(self.original, key)
+                    provenance = expstr.get_provenance()
                     summary.append(line.format(unmatched=var, variable=key, provenance=provenance))
         if summary:
             raise LoadError(LoadErrorReason.UNRESOLVED_VARIABLE,
@@ -153,7 +153,7 @@ cdef class Variables:
                     continue
                 if var in visited:
                     raise LoadError(LoadErrorReason.RECURSIVE_VARIABLE,
-                                    "{}: ".format(_yaml.node_get_provenance(self.original, var)) +
+                                    "{}: ".format(self.original.get_scalar(var).get_provenance()) +
                                     ("Variable '{}' expands to contain a reference to itself. " +
                                      "Perhaps '{}' contains '%{{{}}}").format(var, visited[-1], var))
                 visited.append(var)
