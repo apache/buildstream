@@ -195,6 +195,14 @@ tests-spawn-multiprocessing-start-method:
   variables:
     BST_FORCE_START_METHOD: "spawn"
 
+# Run type checkers
+mypy:
+  stage: test
+
+  script:
+  - tox -e mypy
+  except:
+  - schedules
 
 # Lint separately from testing
 lint:
