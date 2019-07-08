@@ -514,7 +514,7 @@ class Element(Plugin):
         try:
             return self.__variables.subst(value)
         except LoadError as e:
-            provenance = _yaml.node_get_provenance(node, key=member_name)
+            provenance = node.get_scalar(member_name).get_provenance()
             raise LoadError(e.reason, '{}: {}'.format(provenance, e), detail=e.detail) from e
 
     def node_subst_list(self, node, member_name):
@@ -536,7 +536,7 @@ class Element(Plugin):
             try:
                 ret.append(self.__variables.subst(value.as_str()))
             except LoadError as e:
-                provenance = _yaml.node_get_provenance(value)
+                provenance = value.get_provenance()
                 raise LoadError(e.reason, '{}: {}'.format(provenance, e), detail=e.detail) from e
         return ret
 
@@ -2603,8 +2603,13 @@ class Element(Plugin):
         variables._assert_fully_composited()
 
         for var in ('project-name', 'element-name', 'max-jobs'):
-            provenance = _yaml.node_get_provenance(variables, var)
-            if provenance and not provenance.is_synthetic:
+            node = variables.get_node(var, allow_none=True)
+
+            if node is None:
+                continue
+
+            provenance = node.get_provenance()
+            if not provenance.is_synthetic:
                 raise LoadError(LoadErrorReason.PROTECTED_VARIABLE_REDEFINED,
                                 "{}: invalid redefinition of protected variable '{}'"
                                 .format(provenance, var))

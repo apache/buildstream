@@ -74,7 +74,7 @@ class OptionPool():
             try:
                 opt_type = _OPTION_TYPES[opt_type_name]
             except KeyError:
-                p = _yaml.node_get_provenance(option_definition, 'type')
+                p = option_definition.get_scalar('type').get_provenance()
                 raise LoadError(LoadErrorReason.INVALID_DATA,
                                 "{}: Invalid option type '{}'".format(p, opt_type_name))
 
@@ -90,11 +90,11 @@ class OptionPool():
     #    node (dict): The loaded YAML options
     #
     def load_yaml_values(self, node, *, transform=None):
-        for option_name in node.keys():
+        for option_name, option_value in node.items():
             try:
                 option = self._options[option_name]
             except KeyError as e:
-                p = _yaml.node_get_provenance(node, option_name)
+                p = option_value.get_provenance()
                 raise LoadError(LoadErrorReason.INVALID_DATA,
                                 "{}: Unknown option '{}' specified"
                                 .format(p, option_name)) from e
@@ -256,7 +256,7 @@ class OptionPool():
         # assertion in a given dictionary, and not lose an assertion due to
         # it being overwritten by a later assertion which might also trigger.
         if assertion is not None:
-            p = _yaml.node_get_provenance(node, '(!)')
+            p = node.get_scalar('(!)').get_provenance()
             raise LoadError(LoadErrorReason.USER_ASSERTION,
                             "{}: {}".format(p, assertion.strip()))
 
@@ -266,7 +266,7 @@ class OptionPool():
             for condition in conditions:
                 tuples = list(condition.items())
                 if len(tuples) > 1:
-                    provenance = _yaml.node_get_provenance(condition)
+                    provenance = condition.get_provenance()
                     raise LoadError(LoadErrorReason.INVALID_DATA,
                                     "{}: Conditional statement has more than one key".format(provenance))
 
@@ -275,11 +275,11 @@ class OptionPool():
                     apply_fragment = self._evaluate(expression)
                 except LoadError as e:
                     # Prepend the provenance of the error
-                    provenance = _yaml.node_get_provenance(condition)
+                    provenance = condition.get_provenance()
                     raise LoadError(e.reason, "{}: {}".format(provenance, e)) from e
 
                 if type(value) is not _yaml.MappingNode:  # pylint: disable=unidiomatic-typecheck
-                    provenance = _yaml.node_get_provenance(condition)
+                    provenance = condition.get_provenance()
                     raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
                                     "{}: Only values of type 'dict' can be composed.".format(provenance))
 
