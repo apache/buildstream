@@ -232,7 +232,7 @@ cdef class MappingNode(Node):
 
         return MappingNode.__new__(MappingNode, self.file_index, self.line, self.column, copy)
 
-    # find()
+    # _find()
     #
     # Searches the given node tree for the given target node.
     #
@@ -250,7 +250,7 @@ cdef class MappingNode(Node):
             return path
         return None
 
-    # composite()
+    # _composite()
     #
     # Compose one mapping node onto another
     #
@@ -259,9 +259,9 @@ cdef class MappingNode(Node):
     #
     # Raises: LoadError
     #
-    cpdef void composite(self, MappingNode target) except *:
+    cpdef void _composite(self, MappingNode target) except *:
         try:
-            self._composite(target, [])
+            self.__composite(target, [])
         except CompositeError as e:
             source_provenance = self.get_provenance()
             error_prefix = ""
@@ -273,10 +273,10 @@ cdef class MappingNode(Node):
                                     e.path,
                                     e.message)) from e
 
-    # Like composite(target, source), but where target overrides source instead.
+    # Like _composite(target, source), but where target overrides source instead.
     #
-    cpdef void composite_under(self, MappingNode target) except *:
-        target.composite(self)
+    cpdef void _composite_under(self, MappingNode target) except *:
+        target._composite(self)
 
         cdef str key
         cdef Node value
@@ -287,7 +287,7 @@ cdef class MappingNode(Node):
         for key in to_delete:
             del target.value[key]
 
-    cdef Node get(self, str key, object default, object default_constructor):
+    cdef Node _get(self, str key, object default, object default_constructor):
         value = self.value.get(key, _sentinel)
 
         if value is _sentinel:
@@ -305,7 +305,7 @@ cdef class MappingNode(Node):
         return value
 
     cpdef MappingNode get_mapping(self, str key, object default=_sentinel):
-        value = self.get(key, default, MappingNode)
+        value = self._get(key, default, MappingNode)
 
         if type(value) is not MappingNode and value is not None:
             provenance = value.get_provenance()
@@ -335,7 +335,7 @@ cdef class MappingNode(Node):
         return value
 
     cpdef ScalarNode get_scalar(self, str key, object default=_sentinel):
-        value = self.get(key, default, ScalarNode)
+        value = self._get(key, default, ScalarNode)
 
         if type(value) is not ScalarNode:
             if value is None:
@@ -349,7 +349,7 @@ cdef class MappingNode(Node):
         return value
 
     cpdef SequenceNode get_sequence(self, str key, object default=_sentinel):
-        value = self.get(key, default, SequenceNode)
+        value = self._get(key, default, SequenceNode)
 
         if type(value) is not SequenceNode and value is not None:
             provenance = value.get_provenance()
@@ -416,7 +416,7 @@ cdef class MappingNode(Node):
 
         return {key: value.strip_node_info() for key, value in self.value.items()}
 
-    cdef void _composite(self, MappingNode target, list path=None) except *:
+    cdef void __composite(self, MappingNode target, list path=None) except *:
         cdef str key
         cdef Node value
 
@@ -454,7 +454,7 @@ cdef class MappingNode(Node):
                 # the same provenance as the incoming dict
                 target.value[key] = MappingNode.__new__(MappingNode, self.file_index, self.line, self.column, {})
 
-            self._composite(target.value[key], path)
+            self.__composite(target.value[key], path)
 
     cdef void _compose_on_list(self, SequenceNode target):
         cdef SequenceNode clobber = self.value.get("(=)")

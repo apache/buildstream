@@ -82,7 +82,7 @@ class Includes:
                 finally:
                     included.remove(file_path)
 
-                include_node.composite_under(node)
+                include_node._composite_under(node)
 
         for value in node.values():
             self._process_value(value,
