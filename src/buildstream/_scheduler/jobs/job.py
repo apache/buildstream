@@ -20,14 +20,14 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 # System imports
+import asyncio
+import datetime
+import multiprocessing
 import os
 import pickle
-import sys
 import signal
-import datetime
+import sys
 import traceback
-import asyncio
-import multiprocessing
 
 # BuildStream toplevel imports
 from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
