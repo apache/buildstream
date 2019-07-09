@@ -874,20 +874,20 @@ class Source(Plugin):
             node = toplevel_refs.lookup_ref(project.name, element_name, element_idx, write=True)
 
         if project is toplevel and not node:
-            node = provenance.node
+            node = provenance._node
 
         # Ensure the node is not from a junction
-        if not toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS and provenance.project is not toplevel:
-            if provenance.project is project:
+        if not toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS and provenance._project is not toplevel:
+            if provenance._project is project:
                 self.warn("{}: Not persisting new reference in junctioned project".format(self))
-            elif provenance.project is None:
-                assert provenance.filename == ""
-                assert provenance.shortname == ""
+            elif provenance._project is None:
+                assert provenance._filename == ""
+                assert provenance._shortname == ""
                 raise SourceError("{}: Error saving source reference to synthetic node."
                                   .format(self))
             else:
                 raise SourceError("{}: Cannot track source in a fragment from a junction"
-                                  .format(provenance.shortname),
+                                  .format(provenance._shortname),
                                   reason="tracking-junction-fragment")
 
         #
@@ -965,7 +965,7 @@ class Source(Plugin):
             else:
                 provenance = node.get_node(key).get_provenance()
 
-            toplevel_node = provenance.toplevel
+            toplevel_node = provenance._toplevel
 
             # Get the path to whatever changed
             if action == 'add':
@@ -975,10 +975,10 @@ class Source(Plugin):
                 # We want the path to the node containing the key, not to the key
                 path = full_path[:-1]
 
-            roundtrip_file = roundtrip_cache.get(provenance.filename)
+            roundtrip_file = roundtrip_cache.get(provenance._filename)
             if not roundtrip_file:
-                roundtrip_file = roundtrip_cache[provenance.filename] = _yaml.roundtrip_load(
-                    provenance.filename,
+                roundtrip_file = roundtrip_cache[provenance._filename] = _yaml.roundtrip_load(
+                    provenance._filename,
                     allow_missing=True
                 )
 

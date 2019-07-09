@@ -64,7 +64,7 @@ class ProjectRefs():
         try:
             self._toplevel_node = _yaml.load(self._fullpath, shortname=self._base_name, copy_tree=True)
             provenance = self._toplevel_node.get_provenance()
-            self._toplevel_save = provenance.toplevel
+            self._toplevel_save = provenance._toplevel
 
             # Process any project options immediately
             options.process_node(self._toplevel_node)
