@@ -34,7 +34,7 @@ from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
 from ... import _signals, utils
 
-from .jobpickler import pickle_child_job
+from .jobpickler import pickle_child_job, unpickle_child_job
 
 
 # Return code values shutdown of job handling child processes
@@ -87,6 +87,11 @@ class _MessageType(enum.Enum):
     RESULT = 3
     CHILD_DATA = 4
     SUBCLASS_CUSTOM_MESSAGE = 5
+
+
+def _do_pickled_child_job(pickled, *child_args):
+    child_job = unpickle_child_job(pickled)
+    return child_job.child_action(*child_args)
 
 
 # Job()
@@ -165,7 +170,7 @@ class Job():
     #
     def start(self):
 
-        self._queue = multiprocessing.Queue()
+        self._queue = self._scheduler.manager.Queue()
 
         self._tries += 1
         self._parent_start_listening()
@@ -181,10 +186,11 @@ class Job():
             self._task_id,
         )
 
-        if 'BST_TEST_SUITE' in os.environ:
-            pickle_child_job(child_job, self._scheduler.context)
-
-        self._process = Process(target=child_job.child_action, args=[self._queue])
+        pickled = pickle_child_job(child_job, self._scheduler.context)
+        self._process = Process(
+            target=_do_pickled_child_job,
+            args=[pickled, self._queue],
+        )
 
         # Block signals which are handled in the main process such that
         # the child process does not inherit the parent's state, but the main
@@ -537,8 +543,8 @@ class Job():
         #      http://bugs.python.org/issue3831
         #
         if not self._listening:
-            self._scheduler.loop.add_reader(
-                self._queue._reader.fileno(), self._parent_recv)
+            # self._scheduler.loop.add_reader(
+            #     self._queue._reader.fileno(), self._parent_recv)
             self._listening = True
 
     # _parent_stop_listening()
@@ -547,7 +553,7 @@ class Job():
     #
     def _parent_stop_listening(self):
         if self._listening:
-            self._scheduler.loop.remove_reader(self._queue._reader.fileno())
+            # self._scheduler.loop.remove_reader(self._queue._reader.fileno())
             self._listening = False
 
 
@@ -830,7 +836,7 @@ class ChildJob():
     #    exit_code (_ReturnCode): The exit code to exit with
     #
     def _child_shutdown(self, exit_code):
-        self._queue.close()
+        # self._queue.close()
         assert isinstance(exit_code, _ReturnCode)
         sys.exit(int(exit_code))
 
