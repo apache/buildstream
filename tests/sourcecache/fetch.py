@@ -24,18 +24,14 @@ import shutil
 import pytest
 
 from buildstream._exceptions import ErrorDomain
-from buildstream._context import Context
 from buildstream._project import Project
 from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
-from tests.testutils import create_artifact_share
+
+from tests.testutils import create_artifact_share, dummy_context
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
-
-
-def message_handler(message, is_silenced):
-    pass
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -69,55 +65,52 @@ def test_source_fetch(cli, tmpdir, datafiles):
         }
         _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
-        context = Context()
-        context.load(config=user_config_file)
-        context.messenger.set_message_handler(message_handler)
+        with dummy_context(config=user_config_file) as context:
+            project = Project(project_dir, context)
+            project.ensure_fully_loaded()
 
-        project = Project(project_dir, context)
-        project.ensure_fully_loaded()
+            element = project.load_elements(['fetch.bst'])[0]
+            assert not element._source_cached()
+            source = list(element.sources())[0]
 
-        element = project.load_elements(['fetch.bst'])[0]
-        assert not element._source_cached()
-        source = list(element.sources())[0]
+            cas = context.get_cascache()
+            assert not cas.contains(source._get_source_name())
 
-        cas = context.get_cascache()
-        assert not cas.contains(source._get_source_name())
+            # Just check that we sensibly fetch and build the element
+            res = cli.run(project=project_dir, args=['build', 'fetch.bst'])
+            res.assert_success()
 
-        # Just check that we sensibly fetch and build the element
-        res = cli.run(project=project_dir, args=['build', 'fetch.bst'])
-        res.assert_success()
+            assert os.listdir(os.path.join(str(tmpdir), 'cache', 'sources', 'git')) != []
 
-        assert os.listdir(os.path.join(str(tmpdir), 'cache', 'sources', 'git')) != []
+            # get root digest of source
+            sourcecache = context.sourcecache
+            digest = sourcecache.export(source)._get_digest()
 
-        # get root digest of source
-        sourcecache = context.sourcecache
-        digest = sourcecache.export(source)._get_digest()
+            # Move source in local cas to repo
+            shutil.rmtree(os.path.join(str(tmpdir), 'sourceshare', 'repo', 'cas'))
+            shutil.move(
+                os.path.join(str(tmpdir), 'cache', 'source_protos'),
+                os.path.join(str(tmpdir), 'sourceshare', 'repo'))
+            shutil.move(
+                os.path.join(str(tmpdir), 'cache', 'cas'),
+                os.path.join(str(tmpdir), 'sourceshare', 'repo'))
+            shutil.rmtree(os.path.join(str(tmpdir), 'cache', 'sources'))
+            shutil.rmtree(os.path.join(str(tmpdir), 'cache', 'artifacts'))
 
-        # Move source in local cas to repo
-        shutil.rmtree(os.path.join(str(tmpdir), 'sourceshare', 'repo', 'cas'))
-        shutil.move(
-            os.path.join(str(tmpdir), 'cache', 'source_protos'),
-            os.path.join(str(tmpdir), 'sourceshare', 'repo'))
-        shutil.move(
-            os.path.join(str(tmpdir), 'cache', 'cas'),
-            os.path.join(str(tmpdir), 'sourceshare', 'repo'))
-        shutil.rmtree(os.path.join(str(tmpdir), 'cache', 'sources'))
-        shutil.rmtree(os.path.join(str(tmpdir), 'cache', 'artifacts'))
+            # check the share has the object
+            assert share.has_object(digest)
 
-        # check the share has the object
-        assert share.has_object(digest)
+            state = cli.get_element_state(project_dir, 'fetch.bst')
+            assert state == 'fetch needed'
 
-        state = cli.get_element_state(project_dir, 'fetch.bst')
-        assert state == 'fetch needed'
+            # Now fetch the source and check
+            res = cli.run(project=project_dir, args=['source', 'fetch', 'fetch.bst'])
+            res.assert_success()
+            assert "Pulled source" in res.stderr
 
-        # Now fetch the source and check
-        res = cli.run(project=project_dir, args=['source', 'fetch', 'fetch.bst'])
-        res.assert_success()
-        assert "Pulled source" in res.stderr
-
-        # check that we have the source in the cas now and it's not fetched
-        assert element._source_cached()
-        assert os.listdir(os.path.join(str(tmpdir), 'cache', 'sources', 'git')) == []
+            # check that we have the source in the cas now and it's not fetched
+            assert element._source_cached()
+            assert os.listdir(os.path.join(str(tmpdir), 'cache', 'sources', 'git')) == []
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -151,32 +144,29 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
         }
         _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
-        context = Context()
-        context.load(config=user_config_file)
-        context.messenger.set_message_handler(message_handler)
+        with dummy_context(config=user_config_file) as context:
+            project = Project(project_dir, context)
+            project.ensure_fully_loaded()
 
-        project = Project(project_dir, context)
-        project.ensure_fully_loaded()
+            element = project.load_elements(['fetch.bst'])[0]
+            assert not element._source_cached()
+            source = list(element.sources())[0]
 
-        element = project.load_elements(['fetch.bst'])[0]
-        assert not element._source_cached()
-        source = list(element.sources())[0]
+            cas = context.get_cascache()
+            assert not cas.contains(source._get_source_name())
+            assert not os.path.exists(os.path.join(cache_dir, 'sources'))
 
-        cas = context.get_cascache()
-        assert not cas.contains(source._get_source_name())
-        assert not os.path.exists(os.path.join(cache_dir, 'sources'))
+            # Now check if it falls back to the source fetch method.
+            res = cli.run(project=project_dir, args=['source', 'fetch', 'fetch.bst'])
+            res.assert_success()
+            brief_key = source._get_brief_display_key()
+            assert ("Remote source service ({}) does not have source {} cached"
+                    .format(share.repo, brief_key)) in res.stderr
+            assert ("SUCCESS Fetching from {}"
+                    .format(repo.source_config(ref=ref)['url'])) in res.stderr
 
-        # Now check if it falls back to the source fetch method.
-        res = cli.run(project=project_dir, args=['source', 'fetch', 'fetch.bst'])
-        res.assert_success()
-        brief_key = source._get_brief_display_key()
-        assert ("Remote source service ({}) does not have source {} cached"
-                .format(share.repo, brief_key)) in res.stderr
-        assert ("SUCCESS Fetching from {}"
-                .format(repo.source_config(ref=ref)['url'])) in res.stderr
-
-        # Check that the source in both in the source dir and the local CAS
-        assert element._source_cached()
+            # Check that the source in both in the source dir and the local CAS
+            assert element._source_cached()
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -209,22 +199,20 @@ def test_pull_fail(cli, tmpdir, datafiles):
         _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
         # get the source object
-        context = Context()
-        context.load(config=user_config_file)
-        context.messenger.set_message_handler(message_handler)
-        project = Project(project_dir, context)
-        project.ensure_fully_loaded()
+        with dummy_context(config=user_config_file) as context:
+            project = Project(project_dir, context)
+            project.ensure_fully_loaded()
 
-        element = project.load_elements(['push.bst'])[0]
-        assert not element._source_cached()
-        source = list(element.sources())[0]
+            element = project.load_elements(['push.bst'])[0]
+            assert not element._source_cached()
+            source = list(element.sources())[0]
 
-        # remove files and check that it doesn't build
-        shutil.rmtree(repo.repo)
+            # remove files and check that it doesn't build
+            shutil.rmtree(repo.repo)
 
-        # Should fail in stream, with a plugin tasks causing the error
-        res = cli.run(project=project_dir, args=['build', 'push.bst'])
-        res.assert_main_error(ErrorDomain.STREAM, None)
-        res.assert_task_error(ErrorDomain.PLUGIN, None)
-        assert "Remote source service ({}) does not have source {} cached".format(
-            share.repo, source._get_brief_display_key()) in res.stderr
+            # Should fail in stream, with a plugin tasks causing the error
+            res = cli.run(project=project_dir, args=['build', 'push.bst'])
+            res.assert_main_error(ErrorDomain.STREAM, None)
+            res.assert_task_error(ErrorDomain.PLUGIN, None)
+            assert "Remote source service ({}) does not have source {} cached".format(
+                share.repo, source._get_brief_display_key()) in res.stderr
