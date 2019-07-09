@@ -76,7 +76,6 @@ class Status():
         self._term_width, _ = click.get_terminal_size()
         self._alloc_lines = 0
         self._alloc_columns = None
-        self._line_length = 0
         self._need_alloc = True
         self._term_caps = self._init_terminal()
 
@@ -258,7 +257,6 @@ class Status():
 
         self._alloc_lines = alloc_lines
         self._alloc_columns = alloc_columns
-        self._line_length = line_length
         self._need_alloc = False
 
     def _job_lines(self, columns):

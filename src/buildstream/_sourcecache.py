@@ -126,18 +126,6 @@ class SourceCache(BaseCache):
             except SourceCacheError:
                 pass
 
-    # required_sources()
-    #
-    # Yields the keys of all sources marked as required by the current build
-    # plan
-    #
-    # Returns:
-    #     iterable (str): iterable over the required source refs
-    #
-    def required_sources(self):
-        for source in self._required_sources:
-            yield source._get_source_name()
-
     # unrequired_sources()
     #
     # Yields the refs of all sources not required by the current build plan

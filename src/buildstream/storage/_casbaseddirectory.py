@@ -62,35 +62,6 @@ class IndexEntry():
             return self.buildstream_object._get_digest()
 
 
-class ResolutionException(VirtualDirectoryError):
-    """ Superclass of all exceptions that can be raised by
-    CasBasedDirectory._resolve. Should not be used outside this module. """
-
-
-class InfiniteSymlinkException(ResolutionException):
-    """ Raised when an infinite symlink loop is found. """
-
-
-class AbsoluteSymlinkException(ResolutionException):
-    """Raised if we try to follow an absolute symlink (i.e. one whose
-    target starts with the path separator) and we have disallowed
-    following such symlinks.
-    """
-
-
-class UnexpectedFileException(ResolutionException):
-    """Raised if we were found a file where a directory or symlink was
-    expected, for example we try to resolve a symlink pointing to
-    /a/b/c but /a/b is a file.
-    """
-    def __init__(self, message=""):
-        """Allow constructor with no arguments, since this can be raised in
-        places where there isn't sufficient information to write the
-        message.
-        """
-        super().__init__(message)
-
-
 # CasBasedDirectory intentionally doesn't call its superclass constuctor,
 # which is meant to be unimplemented.
 # pylint: disable=super-init-not-called
@@ -439,7 +410,7 @@ class CasBasedDirectory(Directory):
     def export_to_tar(self, tarfile, destination_dir, mtime=BST_ARBITRARY_TIMESTAMP):
         raise NotImplementedError()
 
-    def mark_changed(self):
+    def _mark_changed(self):
         """ It should not be possible to externally modify a CAS-based
         directory at the moment."""
         raise NotImplementedError()
@@ -612,32 +583,6 @@ class CasBasedDirectory(Directory):
             self.__digest = self.cas_cache.add_object(buffer=pb2_directory.SerializeToString())
 
         return self.__digest
-
-    def _get_child_digest(self, *path):
-        subdir = self.descend(*path[:-1])
-        entry = subdir.index[path[-1]]
-        if entry.type == _FileType.DIRECTORY:
-            subdir = entry.buildstream_object
-            if subdir:
-                return subdir._get_digest()
-            else:
-                return entry.digest
-        elif entry.type == _FileType.REGULAR_FILE:
-            return entry.digest
-        else:
-            raise VirtualDirectoryError("Directory entry has no digest: {}".format(os.path.join(*path)))
-
-    def _objpath(self, *path):
-        subdir = self.descend(*path[:-1])
-        entry = subdir.index[path[-1]]
-        return self.cas_cache.objpath(entry.digest)
-
-    def _exists(self, *path):
-        try:
-            subdir = self.descend(*path[:-1])
-            return path[-1] in subdir.index
-        except VirtualDirectoryError:
-            return False
 
     def __invalidate_digest(self):
         if self.__digest:

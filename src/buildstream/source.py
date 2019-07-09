@@ -312,8 +312,6 @@ class Source(Plugin):
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
                          context, project, provenance, "source", unique_id=unique_id)
 
-        self.__source_cache = context.sourcecache
-
         self.__element_name = meta.element_name         # The name of the element owning this source
         self.__element_index = meta.element_index       # The index of the source in the owning element's source list
         self.__element_kind = meta.element_kind         # The kind of the element owning this source
@@ -725,10 +723,6 @@ class Source(Plugin):
                 self.__do_fetch(previous_sources_dir=self.__ensure_directory(staging_directory))
         else:
             self.__do_fetch()
-
-    def _cache(self, previous_sources):
-        # stage the source into the source cache
-        self.__source_cache.commit(self, previous_sources)
 
     # Wrapper for stage() api which gives the source
     # plugin a fully constructed path considering the

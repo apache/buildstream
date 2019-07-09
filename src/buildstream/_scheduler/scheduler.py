@@ -103,15 +103,6 @@ class Scheduler():
         self._interrupt_callback = interrupt_callback
         self._ticker_callback = ticker_callback
 
-        # Whether our exclusive jobs, like 'cleanup' are currently already
-        # waiting or active.
-        #
-        # This is just a bit quicker than scanning the wait queue and active
-        # queue and comparing job action names.
-        #
-        self._exclusive_waiting = set()
-        self._exclusive_active = set()
-
         self.resources = Resources(context.sched_builders,
                                    context.sched_fetchers,
                                    context.sched_pushers)

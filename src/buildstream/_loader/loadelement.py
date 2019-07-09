@@ -61,7 +61,6 @@ class LoadElement():
         self.node = node        # The YAML node
         self.name = filename    # The element name
         self.full_name = None   # The element full name (with associated junction)
-        self.deps = None        # The list of Dependency objects
         self.meta_done = False  # If the MetaElement for this LoadElement is done
         self.node_id = next(self._counter)
 

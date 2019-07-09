@@ -45,7 +45,6 @@ class Option():
 
     def __init__(self, name, definition, pool):
         self.name = name
-        self.description = None
         self.variable = None
         self.value = None
         self.pool = pool
@@ -60,7 +59,11 @@ class Option():
     #    node (dict): The loaded YAML dictionary describing
     #                 the option
     def load(self, node):
-        self.description = _yaml.node_get(node, str, 'description')
+
+        # We don't use the description, but we do require that options have a
+        # description.
+        _yaml.node_get(node, str, 'description')
+
         self.variable = _yaml.node_get(node, str, 'variable', default_value=None)
 
         # Assert valid symbol name for variable name
