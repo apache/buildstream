@@ -29,9 +29,9 @@ def assert_provenance(filename, line, col, node):
 
     assert isinstance(provenance, _yaml.ProvenanceInformation)
 
-    assert provenance.shortname == filename
-    assert provenance.line == line
-    assert provenance.col == col
+    assert provenance._shortname == filename
+    assert provenance._line == line
+    assert provenance._col == col
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
@@ -496,7 +496,7 @@ def test_node_find_target(datafiles, case):
 
     prov = loaded.get_provenance()
 
-    toplevel = prov.toplevel
+    toplevel = prov._toplevel
 
     assert toplevel is not loaded
 
