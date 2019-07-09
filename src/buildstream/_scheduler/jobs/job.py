@@ -23,10 +23,12 @@
 import asyncio
 import datetime
 import enum
+import io
 import multiprocessing
 import os
 import signal
 import sys
+import time
 import traceback
 
 # BuildStream toplevel imports
@@ -202,18 +204,30 @@ class Job():
             self._task_id,
         )
 
+        then = time.time()
         pickled = pickle_child_job(child_job, self._scheduler.context)
+        now = time.time()
+        pickled.seek(0, io.SEEK_END)
+        self.message(MessageType.INFO, "pickled len: {:,}".format(pickled.tell()))
+        self.message(MessageType.INFO, "pickle time: {}s".format(round(now - then, 2)))
+        pickled.seek(0)
+        then = time.time()
         self._process = Process(
             target=_do_pickled_child_job,
             args=[pickled, self._queue],
         )
+        now = time.time()
+        self.message(MessageType.INFO, "make process: {}s".format(round(now - then, 2)))
 
         # Block signals which are handled in the main process such that
         # the child process does not inherit the parent's state, but the main
         # process will be notified of any signal after we launch the child.
         #
+        then = time.time()
         with _signals.blocked([signal.SIGINT, signal.SIGTERM], ignore=False):
             self._process.start()
+        now = time.time()
+        self.message(MessageType.INFO, "start process: {}s".format(round(now - then, 2)))
 
         # Wait for the child task to complete.
         #
