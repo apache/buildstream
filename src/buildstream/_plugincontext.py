@@ -98,7 +98,10 @@ class PluginContext():
     def _get_local_plugin_source(self, path):
         if ('local', path) not in self._alternate_sources:
             # key by a tuple to avoid collision
-            source = self._plugin_base.make_plugin_source(searchpath=[path], identifier='local_plugin-' + path + '-' + self._identifier)
+            source = self._plugin_base.make_plugin_source(
+                searchpath=[path],
+                identifier='local_plugin-' + path + '-' + self._identifier,
+            )
             # Ensure that sources never get garbage collected,
             # as they'll take the plugins with them.
             self._alternate_sources[('local', path)] = source
@@ -139,7 +142,10 @@ class PluginContext():
                 # The plugin didn't have an accompanying YAML file
                 defaults = None
 
-            source = self._plugin_base.make_plugin_source(searchpath=[os.path.dirname(location)], identifier='pip_plugin-' + self._identifier)
+            source = self._plugin_base.make_plugin_source(
+                searchpath=[os.path.dirname(location)],
+                identifier='pip_plugin-' + self._identifier,
+            )
             self._alternate_sources[('pip', package_name)] = source
 
         else:
