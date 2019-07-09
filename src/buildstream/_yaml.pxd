@@ -40,9 +40,9 @@ cdef class Node:
 cdef class MappingNode(Node):
     cdef dict value
 
-    cpdef void composite(self, MappingNode target) except *
-    cpdef void composite_under(self, MappingNode target) except *
-    cdef Node get(self, str key, default, default_constructor)
+    cpdef void _composite(self, MappingNode target) except *
+    cpdef void _composite_under(self, MappingNode target) except *
+    cdef Node _get(self, str key, default, default_constructor)
     cpdef MappingNode get_mapping(self, str key, default=*)
     cpdef Node get_node(self, str key, list allowed_types=*, bint allow_none=*)
     cpdef ScalarNode get_scalar(self, str key, default=*)
@@ -56,7 +56,7 @@ cdef class MappingNode(Node):
     cpdef void validate_keys(self, list valid_keys) except *
     cpdef object values(self)
 
-    cdef void _composite(self, MappingNode target, list path=*) except *
+    cdef void __composite(self, MappingNode target, list path=*) except *
     cdef void _compose_on_composite_dict(self, MappingNode target)
     cdef void _compose_on_list(self, SequenceNode target)
     cpdef list _find(self, Node target)

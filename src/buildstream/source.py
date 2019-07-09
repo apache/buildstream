@@ -1284,7 +1284,7 @@ class Source(Plugin):
         config = cls.__defaults.get_mapping('config', default={})
         config = config.copy()
 
-        meta.config.composite(config)
+        meta.config._composite(config)
         config._assert_fully_composited()
 
         return config

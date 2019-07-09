@@ -575,7 +575,7 @@ class Project():
                 raise
 
         pre_config_node = self._default_config_node.copy()
-        self._project_conf.composite(pre_config_node)
+        self._project_conf._composite(pre_config_node)
 
         # Assert project's format version early, before validating toplevel keys
         format_version = pre_config_node.get_int('format-version')
@@ -621,7 +621,7 @@ class Project():
         project_conf_first_pass = self._project_conf.copy()
         self._project_includes.process(project_conf_first_pass, only_local=True)
         config_no_include = self._default_config_node.copy()
-        project_conf_first_pass.composite(config_no_include)
+        project_conf_first_pass._composite(config_no_include)
 
         self._load_pass(config_no_include, self.first_pass_config,
                         ignore_unknown=True)
@@ -646,7 +646,7 @@ class Project():
         project_conf_second_pass = self._project_conf.copy()
         self._project_includes.process(project_conf_second_pass)
         config = self._default_config_node.copy()
-        project_conf_second_pass.composite(config)
+        project_conf_second_pass._composite(config)
 
         self._load_pass(config, self.config)
 
