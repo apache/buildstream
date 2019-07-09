@@ -2502,7 +2502,7 @@ class Element(Plugin):
 
             splits = project._splits.copy()
             # Extend project wide split rules with any split rules defined by the element
-            element_splits.composite(splits)
+            element_splits._composite(splits)
 
         element_bst['split-rules'] = splits
         element_public['bst'] = element_bst
@@ -2535,7 +2535,7 @@ class Element(Plugin):
 
             overrides = elements.get_mapping(kind, default=None)
             if overrides:
-                overrides.composite(defaults)
+                overrides._composite(defaults)
 
             # Set the data class wide
             cls.__defaults = defaults
@@ -2552,8 +2552,8 @@ class Element(Plugin):
         else:
             environment = project.base_environment.copy()
 
-        default_env.composite(environment)
-        meta.environment.composite(environment)
+        default_env._composite(environment)
+        meta.environment._composite(environment)
         environment._assert_fully_composited()
 
         return environment
@@ -2598,8 +2598,8 @@ class Element(Plugin):
         else:
             variables = project.base_variables.copy()
 
-        default_vars.composite(variables)
-        meta.variables.composite(variables)
+        default_vars._composite(variables)
+        meta.variables._composite(variables)
         variables._assert_fully_composited()
 
         for var in ('project-name', 'element-name', 'max-jobs'):
@@ -2626,7 +2626,7 @@ class Element(Plugin):
         config = cls.__defaults.get_mapping('config', default={})
         config = config.copy()
 
-        meta.config.composite(config)
+        meta.config._composite(config)
         config._assert_fully_composited()
 
         return config
@@ -2652,8 +2652,8 @@ class Element(Plugin):
         sandbox_defaults = cls.__defaults.get_mapping('sandbox', default={})
         sandbox_defaults = sandbox_defaults.copy()
 
-        sandbox_defaults.composite(sandbox_config)
-        meta.sandbox.composite(sandbox_config)
+        sandbox_defaults._composite(sandbox_config)
+        meta.sandbox._composite(sandbox_config)
         sandbox_config._assert_fully_composited()
 
         # Sandbox config, unlike others, has fixed members so we should validate them
@@ -2688,7 +2688,7 @@ class Element(Plugin):
 
         # Allow elements to extend the default splits defined in their project or
         # element specific defaults
-        element_splits.composite(base_splits)
+        element_splits._composite(base_splits)
 
         element_bst['split-rules'] = base_splits
         element_public['bst'] = element_bst
