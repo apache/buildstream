@@ -23,14 +23,13 @@ import os
 import shutil
 import pytest
 
-from buildstream._context import Context
 from buildstream._exceptions import ErrorDomain
 from buildstream._project import Project
 from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
 
-from tests.testutils import create_artifact_share
+from tests.testutils import create_artifact_share, dummy_context
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
@@ -70,33 +69,31 @@ def test_source_push(cli, tmpdir, datafiles):
         _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
         # get the source object
-        context = Context()
-        context.load(config=user_config_file)
-        context.messenger.set_message_handler(message_handler)
-        project = Project(project_dir, context)
-        project.ensure_fully_loaded()
+        with dummy_context(config=user_config_file) as context:
+            project = Project(project_dir, context)
+            project.ensure_fully_loaded()
 
-        element = project.load_elements(['push.bst'])[0]
-        assert not element._source_cached()
-        source = list(element.sources())[0]
+            element = project.load_elements(['push.bst'])[0]
+            assert not element._source_cached()
+            source = list(element.sources())[0]
 
-        # check we don't have it in the current cache
-        cas = context.get_cascache()
-        assert not cas.contains(source._get_source_name())
+            # check we don't have it in the current cache
+            cas = context.get_cascache()
+            assert not cas.contains(source._get_source_name())
 
-        # build the element, this should fetch and then push the source to the
-        # remote
-        res = cli.run(project=project_dir, args=['build', 'push.bst'])
-        res.assert_success()
-        assert "Pushed source" in res.stderr
+            # build the element, this should fetch and then push the source to the
+            # remote
+            res = cli.run(project=project_dir, args=['build', 'push.bst'])
+            res.assert_success()
+            assert "Pushed source" in res.stderr
 
-        # check that we've got the remote locally now
-        sourcecache = context.sourcecache
-        assert sourcecache.contains(source)
+            # check that we've got the remote locally now
+            sourcecache = context.sourcecache
+            assert sourcecache.contains(source)
 
-        # check that's the remote CAS now has it
-        digest = sourcecache.export(source)._get_digest()
-        assert share.has_object(digest)
+            # check that's the remote CAS now has it
+            digest = sourcecache.export(source)._get_digest()
+            assert share.has_object(digest)
 
 
 @pytest.mark.datafiles(DATA_DIR)
