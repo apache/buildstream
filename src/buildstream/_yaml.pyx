@@ -1019,7 +1019,7 @@ cdef Node _create_node_recursive(object value, Node ref_node):
 
     if value_type is list:
         node = _new_node_from_list(value, ref_node)
-    elif value_type is str:
+    elif value_type in [int, str, bool]:
         node = ScalarNode.__new__(ScalarNode, ref_node.file_index, ref_node.line, next_synthetic_counter(), value)
     elif value_type is dict:
         node = _new_node_from_dict(value, ref_node)
@@ -1169,14 +1169,8 @@ cdef Node _new_node_from_dict(dict indict, Node ref_node):
     cdef str k
 
     for k, v in indict.items():
-        vtype = type(v)
-        if vtype is dict:
-            ret.value[k] = _new_node_from_dict(v, ref_node)
-        elif vtype is list:
-            ret.value[k] = _new_node_from_list(v, ref_node)
-        else:
-            ret.value[k] = ScalarNode.__new__(
-                ScalarNode, ref_node.file_index, ref_node.line, next_synthetic_counter(), v)
+        ret.value[k] = _create_node_recursive(v, ref_node)
+
     return ret
 
 
@@ -1186,14 +1180,8 @@ cdef Node _new_node_from_list(list inlist, Node ref_node):
         SequenceNode, ref_node.file_index, ref_node.line, next_synthetic_counter(), [])
 
     for v in inlist:
-        vtype = type(v)
-        if vtype is dict:
-            ret.value.append(_new_node_from_dict(v, ref_node))
-        elif vtype is list:
-            ret.value.append(_new_node_from_list(v, ref_node))
-        else:
-            ret.value.append(
-                ScalarNode.__new__(ScalarNode, ref_node.file_index, ref_node.line, next_synthetic_counter(), v))
+        ret.value.append(_create_node_recursive(v, ref_node))
+
     return ret
 
 
