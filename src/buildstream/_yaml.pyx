@@ -1140,7 +1140,7 @@ cpdef Node load_data(str data, int file_index=_SYNTHETIC_FILE_INDEX, str file_na
 #    (Node): An empty YAML mapping node, whose provenance is to this new
 #            synthetic file
 #
-def new_synthetic_file(str filename, object project=None):
+def _new_synthetic_file(str filename, object project=None):
     cdef Py_ssize_t file_index = len(_FILE_LIST)
     cdef Node node = MappingNode.__new__(MappingNode, file_index, 0, 0, {})
 
