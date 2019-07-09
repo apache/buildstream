@@ -160,6 +160,20 @@ class Context():
         self._cascache = None
         self._casquota = None
 
+    # __enter__()
+    #
+    # Called when entering the with-statement context.
+    #
+    def __enter__(self):
+        return self
+
+    # __exit__()
+    #
+    # Called when exiting the with-statement context.
+    #
+    def __exit__(self, exc_type, exc_value, traceback):
+        return None
+
     # load()
     #
     # Loads the configuration files
