@@ -158,6 +158,7 @@ if not os.environ.get('BST_ARTIFACTS_ONLY', ''):
     bst_install_entry_points['console_scripts'] += [
         'bst = buildstream._frontend:cli',
         'bst-buildboxcasd-test = buildstream.buildboxcasdtest:cli',
+        'bst-job-replay = buildstream._jobreplay:cli',
     ]
 
 #####################################################
