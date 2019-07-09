@@ -85,12 +85,6 @@ cdef class Node:
     cdef bint _shares_position_with(self, Node target):
         return self.file_index == target.file_index and self.line == target.line and self.column == target.column
 
-    def __contains__(self, what):
-        # Delegate to the inner value, though this will likely not work
-        # very well if the node is a list or string, it's unlikely that
-        # code which has access to such nodes would do this.
-        return what in (<MappingNode> self).value
-
     cpdef Node copy(self):
         raise NotImplementedError()
 
@@ -224,6 +218,9 @@ cdef class MappingNode(Node):
 
     def __cinit__(self, int file_index, int line, int column, dict value):
         self.value = value
+
+    def __contains__(self, what):
+        return what in self.value
 
     cpdef MappingNode copy(self):
         cdef dict copy = {}
