@@ -66,24 +66,30 @@ def main():
 
 def set_committers(repository: str, committer_file: str, token: str, commit: bool):
     """Set GitLab members as defined in the committer_file."""
-    new_committers = [get_user_by_username(committer[2], token)
-                      for committer in parse_committer_list(committer_file)]
-    old_committers = get_project_committers(repository, token)
+    # new_committers = [get_user_by_username(committer[2], token)
+    #                   for committer in parse_committer_list(committer_file)]
+    committers = get_allowed_to_push(repository, token)
 
-    new_set = set(committer["id"] for committer in new_committers)
-    old_set = set(committer["id"] for committer in old_committers)
+    logging.info(pformat(committers))
 
-    added = [committer for committer in new_committers if committer["id"] in new_set - old_set]
-    removed = [committer for committer in new_committers if committer["id"] in old_set - new_set]
+    # logging.debug("Committer list: %s", pformat(old_committers))
+    # logging.debug("GitLab committers: %s", pformat(old_committers))
 
-    logging.info("Adding:\n%s", pformat(added))
-    logging.info("Removing:\n%s", pformat(removed))
+    # new_set = set(committer["id"] for committer in new_committers)
+    # old_set = set(committer["id"] for committer in old_committers)
 
-    if commit:
-        for committer in added:
-            set_user_access_level(repository, committer, 40, token)
-        for committer in removed:
-            set_user_access_level(repository, committer, 30, token)
+    # added = [committer for committer in new_committers if committer["id"] in new_set - old_set]
+    # removed = [committer for committer in old_committers if committer["id"] in old_set - new_set]
+
+    # logging.info("Adding:\n%s", pformat(added))
+    # # logging.info("Removing:\n%s", pformat(removed))
+
+    # if commit:
+    #     for committer in added:
+    #         if not (committer in committers and committer["access_level"] >= 30):
+    #             set_user_access_level(repository, committer, 30, token)
+
+    #         set_allowed_to_push(repository, committer, True, token)
 
 
 ####################################################################################################
@@ -138,32 +144,59 @@ def urlopen(url: str, token: str, data=None, method='GET') -> Any:
             res = urllib.request.urlopen(req)
         except urllib.error.HTTPError as err:
             logging.error("Could not access '%s': %s", url, err)
-            sys.exit(1)
+            raise
         result.extend(json.load(res))
         page = res.getheader('X-Next-Page')
     return result
 
 
-def get_project_committers(project: str, token: str) -> List[Dict]:
+def get_members(project: str, token: str) -> List[Dict]:
     """Get a list of current committers."""
-    return [committer for committer in
-            urlopen(make_project_url(project, "members", "all"), token)
-            if committer["access_level"] >= 40]
+    try:
+        return [committer for committer in
+                urlopen(make_project_url(project, "members", "all"), token)]
+    except urllib.error.HTTPError as err:
+        sys.exit(1)
+
+
+def get_allowed_to_push(project: str, token: str):
+    """Get a list of members who are allowed to push to protected branches."""
+    try:
+        return urlopen(make_project_url(project, "protected_branches", name="master"), token)
+    except urllib.error.HTTPError as err:
+        sys.exit(1)
 
 
 def get_user_by_username(username: str, token: str) -> Dict:
     """Get a user ID from their email address."""
-    return urlopen(make_request_url("users",
-                                    username=username),
-                   token)[0]
+    try:
+        return urlopen(make_request_url("users",
+                                        username=username),
+                       token)[0]
+    except urllib.error.HTTPError as err:
+        sys.exit(1)
 
 
-def set_user_access_level(project: str, user: Dict, level: int, token: str) -> Dict:
+def set_user_access_level(project: str, user: Dict, level: int, token: str):
     """Set a user's project access level."""
-    return urlopen(make_project_url(project, "members", str(user["id"]),
-                                    access_level=str(level)),
-                   token,
-                   method="PUT")
+    try:
+        urlopen(make_project_url(project, "members", str(user["id"]),
+                                 access_level=str(level)),
+                token,
+                method="PUT")
+    except urllib.error.HTTPError as err:
+        logging.error("This probably means that their permissions are set in the group.")
+
+
+def set_allowed_to_push(project: str, user: Dict, permission: bool, token: str):
+    permission = str(1) if permission else str(0)
+    try:
+        urlopen(make_project_url(project, "protected_branches",
+                                 name="master") + "&allowed_to_push[][{}]={}".format(user["id"], permission),
+                token,
+                method="POST")
+    except urllib.error.HTTPError:
+        sys.exit(1)
 
 
 if __name__ == '__main__':
