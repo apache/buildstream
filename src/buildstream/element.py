@@ -209,8 +209,8 @@ class Element(Plugin):
         self.__build_dependencies = []          # Direct build dependency Elements
         self.__reverse_build_deps = set()       # Direct reverse build dependency Elements
         self.__reverse_runtime_deps = set()     # Direct reverse runtime dependency Elements
-        self.__remaining_build_deps_uncached = None    # Built dependencies which are not yet cached
-        self.__remaining_runtime_deps_uncached = None  # Runtime dependencies which are not yet cached
+        self.__build_deps_uncached = None    # Build dependencies which are not yet cached
+        self.__runtime_deps_uncached = None  # Runtime dependencies which are not yet cached
         self.__ready_for_runtime = False        # Whether the element has all dependencies ready and has a cache key
         self.__ready_for_runtime_and_cached = False  # Whether all runtime deps are cached, as well as the element
         self.__sources = []                     # List of Sources
@@ -962,13 +962,13 @@ class Element(Plugin):
             dependency = Element._new_from_meta(meta_dep)
             element.__runtime_dependencies.append(dependency)
             dependency.__reverse_runtime_deps.add(element)
-        element.__remaining_runtime_deps_uncached = len(element.__runtime_dependencies)
+        element.__runtime_deps_uncached = len(element.__runtime_dependencies)
 
         for meta_dep in meta.build_dependencies:
             dependency = Element._new_from_meta(meta_dep)
             element.__build_dependencies.append(dependency)
             dependency.__reverse_build_deps.add(element)
-        element.__remaining_build_deps_uncached = len(element.__build_dependencies)
+        element.__build_deps_uncached = len(element.__build_dependencies)
 
         element.__preflight()
 
@@ -1093,7 +1093,7 @@ class Element(Plugin):
         if not self.__assemble_scheduled:
             return False
 
-        return self.__remaining_build_deps_uncached == 0
+        return self.__build_deps_uncached == 0
 
     # _get_cache_key():
     #
@@ -2255,7 +2255,7 @@ class Element(Plugin):
     #
     def _update_ready_for_runtime_and_cached(self):
         if not self.__ready_for_runtime_and_cached:
-            if self.__remaining_runtime_deps_uncached == 0 and self._cached_success() and \
+            if self.__runtime_deps_uncached == 0 and self._cached_success() and \
                self.__cache_key and not self.__cache_keys_unstable:
                 self.__ready_for_runtime_and_cached = True
 
@@ -2967,11 +2967,11 @@ class Element(Plugin):
     # If this is zero, we attempt to notify all reverse dependencies of the Element.
     #
     def __on_runtime_dependency_ready_for_runtime_and_cached(self):
-        self.__remaining_runtime_deps_uncached -= 1
-        assert not self.__remaining_runtime_deps_uncached < 0
+        self.__runtime_deps_uncached -= 1
+        assert not self.__runtime_deps_uncached < 0
 
         # Try to notify reverse dependencies if all runtime deps are ready
-        if self.__remaining_runtime_deps_uncached == 0:
+        if self.__runtime_deps_uncached == 0:
             self._update_ready_for_runtime_and_cached()
 
     # __on_build_dependency_ready_for_runtime_and_cached()
@@ -2983,8 +2983,8 @@ class Element(Plugin):
     # If this is zero, we invoke the buildable callback.
     #
     def __on_build_dependency_ready_for_runtime_and_cached(self):
-        self.__remaining_build_deps_uncached -= 1
-        assert not self.__remaining_build_deps_uncached < 0
+        self.__build_deps_uncached -= 1
+        assert not self.__build_deps_uncached < 0
 
         if self.__buildable_callback is not None and self._buildable():
             self.__buildable_callback(self)
