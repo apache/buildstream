@@ -209,8 +209,11 @@ class Element(Plugin):
         self.__build_dependencies = []          # Direct build dependency Elements
         self.__reverse_build_deps = set()       # Direct reverse build dependency Elements
         self.__reverse_runtime_deps = set()     # Direct reverse runtime dependency Elements
+        self.__build_deps_without_strict_cache_key = None    # Number of build dependencies without a strict key
+        self.__runtime_deps_without_strict_cache_key = None  # Number of runtime dependencies without a strict key
         self.__build_deps_uncached = None    # Build dependencies which are not yet cached
         self.__runtime_deps_uncached = None  # Runtime dependencies which are not yet cached
+        self.__updated_strict_cache_keys_of_rdeps = False  # Whether we've updated strict cache keys of rdeps
         self.__ready_for_runtime = False        # Whether the element has all dependencies ready and has a cache key
         self.__ready_for_runtime_and_cached = False  # Whether all runtime deps are cached, as well as the element
         self.__sources = []                     # List of Sources
@@ -962,13 +965,17 @@ class Element(Plugin):
             dependency = Element._new_from_meta(meta_dep)
             element.__runtime_dependencies.append(dependency)
             dependency.__reverse_runtime_deps.add(element)
-        element.__runtime_deps_uncached = len(element.__runtime_dependencies)
+        no_of_runtime_deps = len(element.__runtime_dependencies)
+        element.__runtime_deps_without_strict_cache_key = no_of_runtime_deps
+        element.__runtime_deps_uncached = no_of_runtime_deps
 
         for meta_dep in meta.build_dependencies:
             dependency = Element._new_from_meta(meta_dep)
             element.__build_dependencies.append(dependency)
             dependency.__reverse_build_deps.add(element)
-        element.__build_deps_uncached = len(element.__build_dependencies)
+        no_of_build_deps = len(element.__build_dependencies)
+        element.__build_deps_without_strict_cache_key = no_of_build_deps
+        element.__build_deps_uncached = no_of_build_deps
 
         element.__preflight()
 
@@ -3042,6 +3049,9 @@ class Element(Plugin):
             ]
             self.__strict_cache_key = self._calculate_cache_key(dependencies)
 
+            if self.__strict_cache_key is not None:
+                self.__update_strict_cache_key_of_rdeps()
+
             # In strict mode, the strong cache key always matches the strict cache key
             if context.get_strict():
                 self.__cache_key = self.__strict_cache_key
@@ -3130,6 +3140,33 @@ class Element(Plugin):
 
             # Now we have the strong cache key, update the Artifact
             self.__artifact._cache_key = self.__cache_key
+
+    # __update_strict_cache_key_of_rdeps()
+    #
+    # Once an Element is given its strict cache key, immediately inform
+    # its reverse dependencies and see if their strict cache key can be
+    # obtained
+    #
+    def __update_strict_cache_key_of_rdeps(self):
+        if not self.__updated_strict_cache_keys_of_rdeps:
+            if self.__runtime_deps_without_strict_cache_key == 0 and \
+               self.__strict_cache_key is not None and not self.__cache_keys_unstable:
+                self.__updated_strict_cache_keys_of_rdeps = True
+
+                # Notify reverse dependencies
+                for rdep in self.__reverse_runtime_deps:
+                    rdep.__runtime_deps_without_strict_cache_key -= 1
+                    assert not rdep.__runtime_deps_without_strict_cache_key < 0
+
+                    if rdep.__runtime_deps_without_strict_cache_key == 0:
+                        rdep.__update_strict_cache_key_of_rdeps()
+
+                for rdep in self.__reverse_build_deps:
+                    rdep.__build_deps_without_strict_cache_key -= 1
+                    assert not rdep.__build_deps_without_strict_cache_key < 0
+
+                    if rdep.__build_deps_without_strict_cache_key == 0:
+                        rdep._update_state()
 
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):
