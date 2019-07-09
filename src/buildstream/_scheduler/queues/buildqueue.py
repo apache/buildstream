@@ -21,7 +21,7 @@
 from datetime import timedelta
 
 from . import Queue, QueueStatus
-from ..jobs import ElementJob, JobStatus
+from ..jobs import JobStatus
 from ..resources import ResourceType
 from ..._message import MessageType
 
@@ -55,14 +55,9 @@ class BuildQueue(Queue):
                           detail=detail, action_name=self.action_name,
                           elapsed=timedelta(seconds=0),
                           logfile=logfile)
-            job = ElementJob(self._scheduler, self.action_name,
-                             logfile, element=element, queue=self,
-                             action_cb=self.get_process_func(),
-                             complete_cb=self._job_done,
-                             max_retries=self._max_retries)
             self._done_queue.append(element)
-            self.failed_elements.append(element)
-            self._scheduler._job_complete_callback(job, False)
+            element_name = element._get_full_name()
+            self._task_group.add_failed_task(element_name)
 
         return super().enqueue(to_queue)
 

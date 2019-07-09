@@ -300,6 +300,7 @@ class MessageOrLogFile(Widget):
 #
 # Args:
 #    context (Context): The Context
+#    state (State): The state data from the Core
 #    content_profile (Profile): Formatting profile for content text
 #    format_profile (Profile): Formatting profile for formatting text
 #    success_profile (Profile): Formatting profile for success text
@@ -309,7 +310,7 @@ class MessageOrLogFile(Widget):
 #
 class LogLine(Widget):
 
-    def __init__(self, context,
+    def __init__(self, context, state,
                  content_profile,
                  format_profile,
                  success_profile,
@@ -327,6 +328,7 @@ class LogLine(Widget):
         self._log_lines = context.log_error_lines
         self._message_lines = context.log_message_lines
         self._resolved_keys = None
+        self._state = state
 
         self._space_widget = Space(context, content_profile, format_profile)
         self._logfile_widget = LogFile(context, content_profile, format_profile, err_profile)
@@ -550,7 +552,7 @@ class LogLine(Widget):
         # Early silent return if there are no queues, can happen
         # only in the case that the stream early returned due to
         # an inconsistent pipeline state.
-        if not stream.queues:
+        if not self._state.task_groups:
             return
 
         text = ''
@@ -566,9 +568,12 @@ class LogLine(Widget):
             values = OrderedDict()
 
             for element, messages in sorted(self._failure_messages.items(), key=lambda x: x[0].name):
-                for queue in stream.queues:
-                    if any(el.name == element.name for el in queue.failed_elements):
+                for group in self._state.task_groups.values():
+                    # Exclude the failure messages if the job didn't ultimately fail
+                    # (e.g. succeeded on retry)
+                    if element.name in group.failed_tasks:
                         values[element.name] = ''.join(self._render(v) for v in messages)
+
             if values:
                 text += self.content_profile.fmt("Failure Summary\n", bold=True)
                 text += self._format_values(values, style_value=False)
@@ -582,15 +587,15 @@ class LogLine(Widget):
         processed_maxlen = 1
         skipped_maxlen = 1
         failed_maxlen = 1
-        for queue in stream.queues:
-            processed_maxlen = max(len(str(len(queue.processed_elements))), processed_maxlen)
-            skipped_maxlen = max(len(str(len(queue.skipped_elements))), skipped_maxlen)
-            failed_maxlen = max(len(str(len(queue.failed_elements))), failed_maxlen)
+        for group in self._state.task_groups.values():
+            processed_maxlen = max(len(str(group.processed_tasks)), processed_maxlen)
+            skipped_maxlen = max(len(str(group.skipped_tasks)), skipped_maxlen)
+            failed_maxlen = max(len(str(len(group.failed_tasks))), failed_maxlen)
 
-        for queue in stream.queues:
-            processed = str(len(queue.processed_elements))
-            skipped = str(len(queue.skipped_elements))
-            failed = str(len(queue.failed_elements))
+        for group in self._state.task_groups.values():
+            processed = str(group.processed_tasks)
+            skipped = str(group.skipped_tasks)
+            failed = str(len(group.failed_tasks))
 
             processed_align = ' ' * (processed_maxlen - len(processed))
             skipped_align = ' ' * (skipped_maxlen - len(skipped))
@@ -606,7 +611,7 @@ class LogLine(Widget):
 
             status_text += self.content_profile.fmt("failed ") + \
                 self._err_profile.fmt(failed) + ' ' + failed_align
-            values["{} Queue".format(queue.action_name)] = status_text
+            values["{} Queue".format(group.name)] = status_text
 
         text += self._format_values(values, style_value=False)
 

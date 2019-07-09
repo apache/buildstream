@@ -22,6 +22,7 @@ from .job import Job, JobStatus, ChildJob
 class CleanupJob(Job):
     def __init__(self, *args, complete_cb, **kwargs):
         super().__init__(*args, **kwargs)
+        self.set_name(self.action_name)
         self._complete_cb = complete_cb
 
         context = self._scheduler.context
