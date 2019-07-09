@@ -20,14 +20,14 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 # System imports
-import enum
-import os
-import sys
-import signal
-import datetime
-import traceback
 import asyncio
+import datetime
+import enum
 import multiprocessing
+import os
+import signal
+import sys
+import traceback
 
 # BuildStream toplevel imports
 from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
