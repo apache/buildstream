@@ -84,9 +84,12 @@ cdef class SequenceNode(Node):
 
 cdef class ProvenanceInformation:
 
-    cdef public Node node
-    cdef str displayname
-    cdef public str filename, shortname
-    cdef public int col, line
-    cdef public object project, toplevel
-    cdef public bint is_synthetic
+    cdef readonly Node _node
+    cdef readonly Node _toplevel
+    cdef readonly _project
+    cdef readonly bint _is_synthetic
+    cdef readonly str _filename
+    cdef readonly str _displayname
+    cdef readonly str _shortname
+    cdef readonly int _col
+    cdef readonly int _line

@@ -175,7 +175,7 @@ cdef class ScalarNode(Node):
             return False
         else:
             provenance = self.get_provenance()
-            path = provenance.toplevel._find(self)[-1]
+            path = provenance._toplevel._find(self)[-1]
             raise LoadError(LoadErrorReason.INVALID_DATA,
                 "{}: Value of '{}' is not of the expected type '{}'"
                 .format(provenance, path, bool.__name__, self.value))
@@ -185,7 +185,7 @@ cdef class ScalarNode(Node):
             return int(self.value)
         except ValueError:
             provenance = self.get_provenance()
-            path = provenance.toplevel._find(self)[-1]
+            path = provenance._toplevel._find(self)[-1]
             raise LoadError(LoadErrorReason.INVALID_DATA,
                 "{}: Value of '{}' is not of the expected type '{}'"
                 .format(provenance, path, int.__name__))
@@ -772,33 +772,33 @@ cdef class ProvenanceInformation:
     def __init__(self, Node nodeish):
         cdef FileInfo fileinfo
 
-        self.node = nodeish
+        self._node = nodeish
         if (nodeish is None) or (nodeish.file_index == _SYNTHETIC_FILE_INDEX):
-            self.filename = ""
-            self.shortname = ""
-            self.displayname = ""
-            self.line = 1
-            self.col = 0
-            self.toplevel = None
-            self.project = None
+            self._filename = ""
+            self._shortname = ""
+            self._displayname = ""
+            self._line = 1
+            self._col = 0
+            self._toplevel = None
+            self._project = None
         else:
             fileinfo = <FileInfo> _FILE_LIST[nodeish.file_index]
-            self.filename = fileinfo.filename
-            self.shortname = fileinfo.shortname
-            self.displayname = fileinfo.displayname
+            self._filename = fileinfo.filename
+            self._shortname = fileinfo.shortname
+            self._displayname = fileinfo.displayname
             # We add 1 here to convert from computerish to humanish
-            self.line = nodeish.line + 1
-            self.col = nodeish.column
-            self.toplevel = fileinfo.toplevel
-            self.project = fileinfo.project
-        self.is_synthetic = (self.filename == '') or (self.col < 0)
+            self._line = nodeish.line + 1
+            self._col = nodeish.column
+            self._toplevel = fileinfo.toplevel
+            self._project = fileinfo.project
+        self._is_synthetic = (self._filename == '') or (self._col < 0)
 
     # Convert a Provenance to a string for error reporting
     def __str__(self):
-        if self.is_synthetic:
-            return "{} [synthetic node]".format(self.displayname)
+        if self._is_synthetic:
+            return "{} [synthetic node]".format(self._displayname)
         else:
-            return "{} [line {:d} column {:d}]".format(self.displayname, self.line, self.col)
+            return "{} [line {:d} column {:d}]".format(self._displayname, self._line, self._col)
 
 
 # These exceptions are intended to be caught entirely within

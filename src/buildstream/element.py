@@ -2606,7 +2606,7 @@ class Element(Plugin):
                 continue
 
             provenance = node.get_provenance()
-            if not provenance.is_synthetic:
+            if not provenance._is_synthetic:
                 raise LoadError(LoadErrorReason.PROTECTED_VARIABLE_REDEFINED,
                                 "{}: invalid redefinition of protected variable '{}'"
                                 .format(provenance, var))
