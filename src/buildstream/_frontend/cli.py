@@ -117,30 +117,30 @@ def complete_target(args, incomplete):
 
 def complete_artifact(orig_args, args, incomplete):
     from .._context import Context
-    ctx = Context()
+    with Context() as ctx:
 
-    config = None
-    if orig_args:
-        for i, arg in enumerate(orig_args):
-            if arg in ('-c', '--config'):
-                try:
-                    config = orig_args[i + 1]
-                except IndexError:
-                    pass
-    if args:
-        for i, arg in enumerate(args):
-            if arg in ('-c', '--config'):
-                try:
-                    config = args[i + 1]
-                except IndexError:
-                    pass
-    ctx.load(config)
+        config = None
+        if orig_args:
+            for i, arg in enumerate(orig_args):
+                if arg in ('-c', '--config'):
+                    try:
+                        config = orig_args[i + 1]
+                    except IndexError:
+                        pass
+        if args:
+            for i, arg in enumerate(args):
+                if arg in ('-c', '--config'):
+                    try:
+                        config = args[i + 1]
+                    except IndexError:
+                        pass
+        ctx.load(config)
 
-    # element targets are valid artifact names
-    complete_list = complete_target(args, incomplete)
-    complete_list.extend(ref for ref in ctx.artifactcache.list_artifacts() if ref.startswith(incomplete))
+        # element targets are valid artifact names
+        complete_list = complete_target(args, incomplete)
+        complete_list.extend(ref for ref in ctx.artifactcache.list_artifacts() if ref.startswith(incomplete))
 
-    return complete_list
+        return complete_list
 
 
 def override_completions(orig_args, cmd, cmd_param, args, incomplete):
