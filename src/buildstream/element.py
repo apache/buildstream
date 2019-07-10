@@ -97,6 +97,7 @@ from . import _cachekey
 from . import _signals
 from . import _site
 from ._platform import Platform
+from .node import Node, _sentinel as _node_sentinel
 from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
@@ -487,7 +488,7 @@ class Element(Plugin):
     def substitute_variables(self, value):
         return self.__variables.subst(value)
 
-    def node_subst_member(self, node, member_name, default=_yaml._sentinel):
+    def node_subst_member(self, node, member_name, default=_node_sentinel):
         """Fetch the value of a string node member, substituting any variables
         in the loaded value with the element contextual variables.
 
@@ -2510,7 +2511,7 @@ class Element(Plugin):
         # Defaults are loaded once per class and then reused
         #
         if cls.__defaults is None:
-            defaults = _yaml.Node.from_dict({})
+            defaults = Node.from_dict({})
 
             if plugin_conf is not None:
                 # Load the plugin's accompanying .yaml file if one was provided
@@ -2545,7 +2546,7 @@ class Element(Plugin):
         default_env = cls.__defaults.get_mapping("environment", default={})
 
         if meta.is_junction:
-            environment = _yaml.Node.from_dict({})
+            environment = Node.from_dict({})
         else:
             environment = project.base_environment.copy()
 
@@ -2633,7 +2634,7 @@ class Element(Plugin):
     @classmethod
     def __extract_sandbox_config(cls, project, meta):
         if meta.is_junction:
-            sandbox_config = _yaml.Node.from_dict({
+            sandbox_config = Node.from_dict({
                 'build-uid': 0,
                 'build-gid': 0
             })

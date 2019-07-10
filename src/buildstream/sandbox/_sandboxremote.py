@@ -27,6 +27,7 @@ from functools import partial
 import grpc
 
 from .. import utils
+from ..node import Node
 from .._message import Message, MessageType
 from .sandbox import Sandbox, SandboxCommandError, _SandboxBatch
 from ..storage.directory import VirtualDirectoryError
@@ -144,7 +145,7 @@ class SandboxRemote(Sandbox):
         # 'url' was the only valid key for remote-execution:
         if 'url' in remote_config:
             if 'execution-service' not in remote_config:
-                exec_config = _yaml.Node.from_dict({'url': remote_config['url']})
+                exec_config = Node.from_dict({'url': remote_config['url']})
             else:
                 provenance = remote_config.get_node('url').get_provenance()
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,

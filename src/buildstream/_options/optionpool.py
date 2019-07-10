@@ -20,8 +20,8 @@
 
 import jinja2
 
-from .. import _yaml
 from .._exceptions import LoadError, LoadErrorReason
+from ..node import MappingNode, SequenceNode, assert_symbol_name
 from .optionbool import OptionBool
 from .optionenum import OptionEnum
 from .optionflags import OptionFlags
@@ -68,7 +68,7 @@ class OptionPool():
         for option_name, option_definition in options.items():
 
             # Assert that the option name is a valid symbol
-            _yaml.assert_symbol_name(option_name, "option name", ref_node=option_definition, allow_dashes=False)
+            assert_symbol_name(option_name, "option name", ref_node=option_definition, allow_dashes=False)
 
             opt_type_name = option_definition.get_str('type')
             try:
@@ -186,9 +186,9 @@ class OptionPool():
         #
         for value in node.values():
             value_type = type(value)
-            if value_type is _yaml.MappingNode:
+            if value_type is MappingNode:
                 self.process_node(value)
-            elif value_type is _yaml.SequenceNode:
+            elif value_type is SequenceNode:
                 self._process_list(value)
 
     #######################################################
@@ -238,9 +238,9 @@ class OptionPool():
     def _process_list(self, values):
         for value in values:
             value_type = type(value)
-            if value_type is _yaml.MappingNode:
+            if value_type is MappingNode:
                 self.process_node(value)
-            elif value_type is _yaml.SequenceNode:
+            elif value_type is SequenceNode:
                 self._process_list(value)
 
     # Process a single conditional, resulting in composition
@@ -278,7 +278,7 @@ class OptionPool():
                     provenance = condition.get_provenance()
                     raise LoadError(e.reason, "{}: {}".format(provenance, e)) from e
 
-                if type(value) is not _yaml.MappingNode:  # pylint: disable=unidiomatic-typecheck
+                if type(value) is not MappingNode:  # pylint: disable=unidiomatic-typecheck
                     provenance = condition.get_provenance()
                     raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
                                     "{}: Only values of type 'dict' can be composed.".format(provenance))
