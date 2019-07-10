@@ -13,6 +13,7 @@
 #
 import os
 import tempfile
+from unittest import mock
 from buildstream.testing.runcli import Cli
 
 # This weird try / except is needed, because this will be imported differently
@@ -67,4 +68,5 @@ def update_keys():
 
 
 if __name__ == '__main__':
-    update_keys()
+    with mock.patch.dict(os.environ, {**os.environ, 'BST_TEST_SUITE': 'True'}):
+        update_keys()
