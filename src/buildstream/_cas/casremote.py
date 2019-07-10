@@ -1,5 +1,4 @@
 from collections import namedtuple
-import io
 import os
 import multiprocessing
 import signal
@@ -250,14 +249,10 @@ class CASRemote():
     def push_message(self, message):
 
         message_buffer = message.SerializeToString()
-        message_digest = utils._message_digest(message_buffer)
 
         self.init()
 
-        with io.BytesIO(message_buffer) as b:
-            self._send_blob(message_digest, b)
-
-        return message_digest
+        return self.cascache.add_object(buffer=message_buffer, instance_name=self.local_cas_instance_name)
 
     ################################################
     #             Local Private Methods            #
