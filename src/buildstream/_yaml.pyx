@@ -325,7 +325,7 @@ cpdef MappingNode load_data(str data, int file_index=node._SYNTHETIC_FILE_INDEX,
     node._set_root_node_for_file(file_index, contents)
 
     if copy_tree:
-        contents = contents.copy()
+        contents = contents.clone()
     return contents
 
 

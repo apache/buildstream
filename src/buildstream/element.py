@@ -852,7 +852,7 @@ class Element(Plugin):
 
         data = self.__dynamic_public.get_mapping(domain, default=None)
         if data is not None:
-            data = data.copy()
+            data = data.clone()
 
         return data
 
@@ -872,7 +872,7 @@ class Element(Plugin):
             self.__load_public_data()
 
         if data is not None:
-            data = data.copy()
+            data = data.clone()
 
         self.__dynamic_public[domain] = data
 
@@ -1632,7 +1632,7 @@ class Element(Plugin):
 
                 # By default, the dynamic public data is the same as the static public data.
                 # The plugin's assemble() method may modify this, though.
-                self.__dynamic_public = self.__public.copy()
+                self.__dynamic_public = self.__public.clone()
 
                 # Call the abstract plugin methods
 
@@ -2494,11 +2494,11 @@ class Element(Plugin):
         element_splits = element_bst.get_mapping("split-rules", default={})
 
         if is_junction:
-            splits = element_splits.copy()
+            splits = element_splits.clone()
         else:
             assert project._splits is not None
 
-            splits = project._splits.copy()
+            splits = project._splits.clone()
             # Extend project wide split rules with any split rules defined by the element
             element_splits._composite(splits)
 
@@ -2548,7 +2548,7 @@ class Element(Plugin):
         if meta.is_junction:
             environment = Node.from_dict({})
         else:
-            environment = project.base_environment.copy()
+            environment = project.base_environment.clone()
 
         default_env._composite(environment)
         meta.environment._composite(environment)
@@ -2592,9 +2592,9 @@ class Element(Plugin):
         default_vars = cls.__defaults.get_mapping('variables', default={})
 
         if meta.is_junction:
-            variables = project.first_pass_config.base_variables.copy()
+            variables = project.first_pass_config.base_variables.clone()
         else:
-            variables = project.base_variables.copy()
+            variables = project.base_variables.clone()
 
         default_vars._composite(variables)
         meta.variables._composite(variables)
@@ -2622,7 +2622,7 @@ class Element(Plugin):
 
         # The default config is already composited with the project overrides
         config = cls.__defaults.get_mapping('config', default={})
-        config = config.copy()
+        config = config.clone()
 
         meta.config._composite(config)
         config._assert_fully_composited()
@@ -2639,7 +2639,7 @@ class Element(Plugin):
                 'build-gid': 0
             })
         else:
-            sandbox_config = project._sandbox.copy()
+            sandbox_config = project._sandbox.clone()
 
         # Get the platform to ask for host architecture
         platform = Platform.get_platform()
@@ -2648,7 +2648,7 @@ class Element(Plugin):
 
         # The default config is already composited with the project overrides
         sandbox_defaults = cls.__defaults.get_mapping('sandbox', default={})
-        sandbox_defaults = sandbox_defaults.copy()
+        sandbox_defaults = sandbox_defaults.clone()
 
         sandbox_defaults._composite(sandbox_config)
         meta.sandbox._composite(sandbox_config)
@@ -2675,12 +2675,12 @@ class Element(Plugin):
     @classmethod
     def __extract_public(cls, meta):
         base_public = cls.__defaults.get_mapping('public', default={})
-        base_public = base_public.copy()
+        base_public = base_public.clone()
 
         base_bst = base_public.get_mapping('bst', default={})
         base_splits = base_bst.get_mapping('split-rules', default={})
 
-        element_public = meta.public.copy()
+        element_public = meta.public.clone()
         element_bst = element_public.get_mapping('bst', default={})
         element_splits = element_bst.get_mapping('split-rules', default={})
 

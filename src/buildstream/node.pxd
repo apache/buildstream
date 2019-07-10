@@ -27,7 +27,7 @@ cdef class Node:
     cdef int column
 
     # Public Methods
-    cpdef Node copy(self)
+    cpdef Node clone(self)
     cpdef ProvenanceInformation get_provenance(self)
 
     # Private Methods used in BuildStream

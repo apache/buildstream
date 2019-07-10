@@ -73,7 +73,7 @@ class Includes:
                 # Because the included node will be modified, we need
                 # to copy it so that we do not modify the toplevel
                 # node of the provenance.
-                include_node = include_node.copy()
+                include_node = include_node.clone()
 
                 try:
                     included.add(file_path)
