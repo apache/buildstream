@@ -33,6 +33,7 @@ from ._exceptions import LoadError, LoadErrorReason
 from ._options import OptionPool
 from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
+from .node import ScalarNode, SequenceNode, assert_symbol_name
 from .sandbox import SandboxRemote
 from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
@@ -594,8 +595,8 @@ class Project():
         self.name = self._project_conf.get_str('name')
 
         # Validate that project name is a valid symbol name
-        _yaml.assert_symbol_name(self.name, "project name",
-                                 ref_node=pre_config_node.get_node('name'))
+        assert_symbol_name(self.name, "project name",
+                           ref_node=pre_config_node.get_node('name'))
 
         self.element_path = os.path.join(
             self.directory,
@@ -728,7 +729,7 @@ class Project():
         # Host files is parsed as a list for convenience
         host_files = shell_options.get_sequence('host-files', default=[])
         for host_file in host_files:
-            if isinstance(host_file, _yaml.ScalarNode):
+            if isinstance(host_file, ScalarNode):
                 mount = HostMount(host_file)
             else:
                 # Some validation
@@ -823,7 +824,7 @@ class Project():
             mirror_name = mirror.get_str('name')
             alias_mappings = {}
             for alias_mapping, uris in mirror.get_mapping('aliases').items():
-                assert type(uris) is _yaml.SequenceNode  # pylint: disable=unidiomatic-typecheck
+                assert type(uris) is SequenceNode  # pylint: disable=unidiomatic-typecheck
                 alias_mappings[alias_mapping] = uris.as_str_list()
             output.mirrors[mirror_name] = alias_mappings
             if not output.default_mirror:

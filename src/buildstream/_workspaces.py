@@ -21,6 +21,7 @@ import os
 from . import utils
 from . import _yaml
 
+from .node import MappingNode, ScalarNode
 from ._exceptions import LoadError, LoadErrorReason
 
 
@@ -581,10 +582,10 @@ class Workspaces():
             for element, config in workspaces.items():
                 config_type = type(config)
 
-                if config_type is _yaml.ScalarNode:
+                if config_type is ScalarNode:
                     pass
 
-                elif config_type is _yaml.MappingNode:
+                elif config_type is MappingNode:
                     sources = list(config.values())
                     if len(sources) > 1:
                         detail = "There are multiple workspaces open for '{}'.\n" + \

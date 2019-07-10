@@ -402,10 +402,11 @@ def register_cython_module(module_name, dependencies=None):
 
 BUILD_EXTENSIONS = []
 
+register_cython_module("buildstream.node")
 register_cython_module("buildstream._loader._loader")
-register_cython_module("buildstream._loader.types", dependencies=["buildstream._yaml"])
-register_cython_module("buildstream._yaml")
-register_cython_module("buildstream._variables", dependencies=["buildstream._yaml"])
+register_cython_module("buildstream._loader.types", dependencies=["buildstream.node"])
+register_cython_module("buildstream._yaml", dependencies=["buildstream.node"])
+register_cython_module("buildstream._variables", dependencies=["buildstream.node"])
 
 #####################################################
 #             Main setup() Invocation               #
