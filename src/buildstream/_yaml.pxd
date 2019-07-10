@@ -26,11 +26,15 @@ cdef class Node:
     cdef int line
     cdef int column
 
+    # Public Methods
     cpdef Node copy(self)
     cpdef ProvenanceInformation get_provenance(self)
+
+    # Private Methods used in BuildStream
+    cpdef void _assert_fully_composited(self) except *
     cpdef object _strip_node_info(self)
 
-    cpdef void _assert_fully_composited(self) except *
+    # Protected Methods
     cdef void _compose_on(self, str key, MappingNode target, list path) except *
     cdef bint _is_composite_list(self) except *
     cdef bint _shares_position_with(self, Node target)
@@ -40,15 +44,13 @@ cdef class Node:
 cdef class MappingNode(Node):
     cdef dict value
 
-    cpdef void _composite(self, MappingNode target) except *
-    cpdef void _composite_under(self, MappingNode target) except *
-    cdef Node _get(self, str key, default, default_constructor)
+    # Public Methods
+    cpdef bint get_bool(self, str key, default=*) except *
+    cpdef int get_int(self, str key, default=*) except *
     cpdef MappingNode get_mapping(self, str key, default=*)
     cpdef Node get_node(self, str key, list allowed_types=*, bint allow_none=*)
     cpdef ScalarNode get_scalar(self, str key, default=*)
     cpdef SequenceNode get_sequence(self, str key, object default=*)
-    cpdef bint get_bool(self, str key, default=*) except *
-    cpdef int get_int(self, str key, default=*) except *
     cpdef str get_str(self, str key, object default=*)
     cpdef object items(self)
     cpdef list keys(self)
@@ -56,15 +58,24 @@ cdef class MappingNode(Node):
     cpdef void validate_keys(self, list valid_keys) except *
     cpdef object values(self)
 
-    cdef void __composite(self, MappingNode target, list path=*) except *
+    # Private Methods used in BuildStream
+    cpdef void _composite(self, MappingNode target) except *
+    cpdef void _composite_under(self, MappingNode target) except *
+    cpdef list _find(self, Node target)
+
+    # Protected Methods
     cdef void _compose_on_composite_dict(self, MappingNode target)
     cdef void _compose_on_list(self, SequenceNode target)
-    cpdef list _find(self, Node target)
+    cdef Node _get(self, str key, default, default_constructor)
+
+    # Private Methods
+    cdef void __composite(self, MappingNode target, list path=*) except *
 
 
 cdef class ScalarNode(Node):
     cdef str value
 
+    # Public Methods
     cpdef bint as_bool(self) except *
     cpdef int as_int(self) except *
     cpdef str as_str(self)
@@ -74,12 +85,13 @@ cdef class ScalarNode(Node):
 cdef class SequenceNode(Node):
     cdef list value
 
+    # Public Methods
     cpdef void append(self, object value)
+    cpdef list as_str_list(self)
     cpdef MappingNode mapping_at(self, int index)
     cpdef Node node_at(self, int index, list allowed_types=*)
     cpdef ScalarNode scalar_at(self, int index)
     cpdef SequenceNode sequence_at(self, int index)
-    cpdef list as_str_list(self)
 
 
 cdef class ProvenanceInformation:
