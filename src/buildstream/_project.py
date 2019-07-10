@@ -575,7 +575,7 @@ class Project():
             else:
                 raise
 
-        pre_config_node = self._default_config_node.copy()
+        pre_config_node = self._default_config_node.clone()
         self._project_conf._composite(pre_config_node)
 
         # Assert project's format version early, before validating toplevel keys
@@ -619,9 +619,9 @@ class Project():
 
         self._project_includes = Includes(self.loader, copy_tree=False)
 
-        project_conf_first_pass = self._project_conf.copy()
+        project_conf_first_pass = self._project_conf.clone()
         self._project_includes.process(project_conf_first_pass, only_local=True)
-        config_no_include = self._default_config_node.copy()
+        config_no_include = self._default_config_node.clone()
         project_conf_first_pass._composite(config_no_include)
 
         self._load_pass(config_no_include, self.first_pass_config,
@@ -644,9 +644,9 @@ class Project():
     # Process the second pass of loading the project configuration.
     #
     def _load_second_pass(self):
-        project_conf_second_pass = self._project_conf.copy()
+        project_conf_second_pass = self._project_conf.clone()
         self._project_includes.process(project_conf_second_pass)
-        config = self._default_config_node.copy()
+        config = self._default_config_node.clone()
         project_conf_second_pass._composite(config)
 
         self._load_pass(config, self.config)
@@ -945,7 +945,7 @@ class Project():
                             "Unexpected plugin group: {}, expecting {}"
                             .format(plugin_group, expected_groups))
         if plugin_group in origin.keys():
-            origin_node = origin.copy()
+            origin_node = origin.clone()
             plugins = origin.get_mapping(plugin_group, default={})
             origin_node['plugins'] = plugins.keys()
 
