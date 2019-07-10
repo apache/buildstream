@@ -70,6 +70,16 @@ cdef class Node:
         self.line = line
         self.column = column
 
+    def __json__(self):
+        raise ValueError("Nodes should not be allowed when jsonify-ing data", self)
+
+    #############################################################
+    #                       Public Methods                      #
+    #############################################################
+
+    cpdef Node copy(self):
+        raise NotImplementedError()
+
     @classmethod
     def from_dict(cls, dict value):
         if value:
@@ -79,20 +89,12 @@ cdef class Node:
             # We got an empty dict, we can shortcut
             return MappingNode.__new__(MappingNode, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter(), {})
 
-    cdef bint _walk_find(self, Node target, list path) except *:
-        raise NotImplementedError()
-
-    cdef bint _shares_position_with(self, Node target):
-        return self.file_index == target.file_index and self.line == target.line and self.column == target.column
-
-    cpdef Node copy(self):
-        raise NotImplementedError()
-
     cpdef ProvenanceInformation get_provenance(self):
         return ProvenanceInformation(self)
 
-    cpdef object _strip_node_info(self):
-        raise NotImplementedError()
+    #############################################################
+    #            Private Methods used in BuildStream            #
+    #############################################################
 
     # _assert_fully_composited()
     #
@@ -106,6 +108,16 @@ cdef class Node:
     #    (LoadError): If any assertions fail
     #
     cpdef void _assert_fully_composited(self) except *:
+        raise NotImplementedError()
+
+    cpdef object _strip_node_info(self):
+        raise NotImplementedError()
+
+    #############################################################
+    #                     Protected Methods                     #
+    #############################################################
+
+    cdef void _compose_on(self, str key, MappingNode target, list path) except *:
         raise NotImplementedError()
 
     # _is_composite_list
@@ -124,11 +136,11 @@ cdef class Node:
     cdef bint _is_composite_list(self) except *:
         raise NotImplementedError()
 
-    cdef void _compose_on(self, str key, MappingNode target, list path) except *:
-        raise NotImplementedError()
+    cdef bint _shares_position_with(self, Node target):
+        return self.file_index == target.file_index and self.line == target.line and self.column == target.column
 
-    def __json__(self):
-        raise ValueError("Nodes should not be allowed when jsonify-ing data", self)
+    cdef bint _walk_find(self, Node target, list path) except *:
+        raise NotImplementedError()
 
 
 cdef class ScalarNode(Node):
@@ -152,11 +164,9 @@ cdef class ScalarNode(Node):
 
         self.value = value
 
-    cpdef ScalarNode copy(self):
-        return self
-
-    cpdef bint is_none(self):
-        return self.value is None
+    #############################################################
+    #                       Public Methods                      #
+    #############################################################
 
     cpdef bint as_bool(self) except *:
         if type(self.value) is bool:
@@ -190,11 +200,25 @@ cdef class ScalarNode(Node):
             return None
         return str(self.value)
 
-    cpdef object _strip_node_info(self):
-        return self.value
+    cpdef ScalarNode copy(self):
+        return self
+
+    cpdef bint is_none(self):
+        return self.value is None
+
+    #############################################################
+    #            Private Methods used in BuildStream            #
+    #############################################################
 
     cpdef void _assert_fully_composited(self) except *:
         pass
+
+    cpdef object _strip_node_info(self):
+        return self.value
+
+    #############################################################
+    #                     Protected Methods                     #
+    #############################################################
 
     cdef void _compose_on(self, str key, MappingNode target, list path) except *:
         cdef Node target_value = target.value.get(key)
@@ -222,6 +246,45 @@ cdef class MappingNode(Node):
     def __contains__(self, what):
         return what in self.value
 
+    def __delitem__(self, str key):
+        del self.value[key]
+
+    def __setitem__(self, str key, object value):
+        cdef Node old_value
+
+        if type(value) in [MappingNode, ScalarNode, SequenceNode]:
+            self.value[key] = value
+        else:
+            node = _create_node_recursive(value, self)
+
+            # FIXME: Do we really want to override provenance?
+            #
+            # Related to https://gitlab.com/BuildStream/buildstream/issues/1058
+            #
+            # There are only two cases were nodes are set in the code (hence without provenance):
+            #   - When automatic variables are set by the core (e-g: max-jobs)
+            #   - when plugins call Element.set_public_data
+            #
+            # The first case should never throw errors, so it is of limited interests.
+            #
+            # The second is more important. What should probably be done here is to have 'set_public_data'
+            # able of creating a fake provenance with the name of the plugin, the project and probably the
+            # element name.
+            #
+            # We would therefore have much better error messages, and would be able to get rid of most synthetic
+            # nodes.
+            old_value = self.value.get(key)
+            if old_value:
+                node.file_index = old_value.file_index
+                node.line = old_value.line
+                node.column = old_value.column
+
+            self.value[key] = node
+
+    #############################################################
+    #                       Public Methods                      #
+    #############################################################
+
     cpdef MappingNode copy(self):
         cdef dict copy = {}
         cdef str key
@@ -232,77 +295,13 @@ cdef class MappingNode(Node):
 
         return MappingNode.__new__(MappingNode, self.file_index, self.line, self.column, copy)
 
-    # _find()
-    #
-    # Searches the given node tree for the given target node.
-    #
-    # This is typically used when trying to walk a path to a given node
-    # for the purpose of then modifying a similar tree of objects elsewhere
-    #
-    # Args:
-    #    target (Node): The node you are looking for in that tree
-    #
-    # Returns:
-    #    (list): A path from `node` to `target` or None if `target` is not in the subtree
-    cpdef list _find(self, Node target):
-        cdef list path = []
-        if self._walk_find(target, path):
-            return path
-        return None
+    cpdef bint get_bool(self, str key, object default=_sentinel) except *:
+        cdef ScalarNode scalar = self.get_scalar(key, default)
+        return scalar.as_bool()
 
-    # _composite()
-    #
-    # Compose one mapping node onto another
-    #
-    # Args:
-    #    target (Node): The target to compose into
-    #
-    # Raises: LoadError
-    #
-    cpdef void _composite(self, MappingNode target) except *:
-        try:
-            self.__composite(target, [])
-        except CompositeError as e:
-            source_provenance = self.get_provenance()
-            error_prefix = ""
-            if source_provenance:
-                error_prefix = "{}: ".format(source_provenance)
-            raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                            "{}Failure composing {}: {}"
-                            .format(error_prefix,
-                                    e.path,
-                                    e.message)) from e
-
-    # Like _composite(target, source), but where target overrides source instead.
-    #
-    cpdef void _composite_under(self, MappingNode target) except *:
-        target._composite(self)
-
-        cdef str key
-        cdef Node value
-        cdef list to_delete = [key for key in target.value.keys() if key not in self.value]
-
-        for key, value in self.value.items():
-            target.value[key] = value
-        for key in to_delete:
-            del target.value[key]
-
-    cdef Node _get(self, str key, object default, object default_constructor):
-        value = self.value.get(key, _sentinel)
-
-        if value is _sentinel:
-            if default is _sentinel:
-                provenance = self.get_provenance()
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
-
-            if default is None:
-                value = None
-            else:
-                value = default_constructor.__new__(
-                    default_constructor, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter(), default)
-
-        return value
+    cpdef int get_int(self, str key, object default=_sentinel) except *:
+        cdef ScalarNode scalar = self.get_scalar(key, default)
+        return scalar.as_int()
 
     cpdef MappingNode get_mapping(self, str key, object default=_sentinel):
         value = self._get(key, default, MappingNode)
@@ -359,14 +358,6 @@ cdef class MappingNode(Node):
 
         return value
 
-    cpdef bint get_bool(self, str key, object default=_sentinel) except *:
-        cdef ScalarNode scalar = self.get_scalar(key, default)
-        return scalar.as_bool()
-
-    cpdef int get_int(self, str key, object default=_sentinel) except *:
-        cdef ScalarNode scalar = self.get_scalar(key, default)
-        return scalar.as_int()
-
     cpdef str get_str(self, str key, object default=_sentinel):
         cdef ScalarNode scalar = self.get_scalar(key, default)
         return scalar.as_str()
@@ -410,20 +401,90 @@ cdef class MappingNode(Node):
     cpdef object values(self):
         return self.value.values()
 
+    #############################################################
+    #            Private Methods used in BuildStream            #
+    #############################################################
+
+    cpdef void _assert_fully_composited(self) except *:
+        cdef str key
+        cdef Node value
+
+        for key, value in self.value.items():
+            # Assert that list composition directives dont remain, this
+            # indicates that the user intended to override a list which
+            # never existed in the underlying data
+            #
+            if key in ('(>)', '(<)', '(=)'):
+                provenance = value.get_provenance()
+                raise LoadError(LoadErrorReason.TRAILING_LIST_DIRECTIVE,
+                                "{}: Attempt to override non-existing list".format(provenance))
+
+            value._assert_fully_composited()
+
+    # _composite()
+    #
+    # Compose one mapping node onto another
+    #
+    # Args:
+    #    target (Node): The target to compose into
+    #
+    # Raises: LoadError
+    #
+    cpdef void _composite(self, MappingNode target) except *:
+        try:
+            self.__composite(target, [])
+        except CompositeError as e:
+            source_provenance = self.get_provenance()
+            error_prefix = ""
+            if source_provenance:
+                error_prefix = "{}: ".format(source_provenance)
+            raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
+                            "{}Failure composing {}: {}"
+                            .format(error_prefix,
+                                    e.path,
+                                    e.message)) from e
+
+    # Like _composite(target, source), but where target overrides source instead.
+    #
+    cpdef void _composite_under(self, MappingNode target) except *:
+        target._composite(self)
+
+        cdef str key
+        cdef Node value
+        cdef list to_delete = [key for key in target.value.keys() if key not in self.value]
+
+        for key, value in self.value.items():
+            target.value[key] = value
+        for key in to_delete:
+            del target.value[key]
+
+    # _find()
+    #
+    # Searches the given node tree for the given target node.
+    #
+    # This is typically used when trying to walk a path to a given node
+    # for the purpose of then modifying a similar tree of objects elsewhere
+    #
+    # Args:
+    #    target (Node): The node you are looking for in that tree
+    #
+    # Returns:
+    #    (list): A path from `node` to `target` or None if `target` is not in the subtree
+    cpdef list _find(self, Node target):
+        cdef list path = []
+        if self._walk_find(target, path):
+            return path
+        return None
+
     cpdef object _strip_node_info(self):
         cdef str key
         cdef Node value
 
         return {key: value._strip_node_info() for key, value in self.value.items()}
 
-    cdef void __composite(self, MappingNode target, list path=None) except *:
-        cdef str key
-        cdef Node value
-
-        for key, value in self.value.items():
-            path.append(key)
-            value._compose_on(key, target, path)
-            path.pop()
+    #############################################################
+    #                     Protected Methods                     #
+    #############################################################
 
     cdef void _compose_on(self, str key, MappingNode target, list path) except *:
         cdef Node target_value
@@ -502,6 +563,23 @@ cdef class MappingNode(Node):
                 else:
                     target.value["(>)"] = suffix
 
+    cdef Node _get(self, str key, object default, object default_constructor):
+        value = self.value.get(key, _sentinel)
+
+        if value is _sentinel:
+            if default is _sentinel:
+                provenance = self.get_provenance()
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
+
+            if default is None:
+                value = None
+            else:
+                value = default_constructor.__new__(
+                    default_constructor, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter(), default)
+
+        return value
+
     cdef bint _is_composite_list(self) except *:
         cdef bint has_directives = False
         cdef bint has_keys = False
@@ -521,57 +599,6 @@ cdef class MappingNode(Node):
 
         return has_directives
 
-    def __delitem__(self, str key):
-        del self.value[key]
-
-    def __setitem__(self, str key, object value):
-        cdef Node old_value
-
-        if type(value) in [MappingNode, ScalarNode, SequenceNode]:
-            self.value[key] = value
-        else:
-            node = _create_node_recursive(value, self)
-
-            # FIXME: Do we really want to override provenance?
-            #
-            # Related to https://gitlab.com/BuildStream/buildstream/issues/1058
-            #
-            # There are only two cases were nodes are set in the code (hence without provenance):
-            #   - When automatic variables are set by the core (e-g: max-jobs)
-            #   - when plugins call Element.set_public_data
-            #
-            # The first case should never throw errors, so it is of limited interests.
-            #
-            # The second is more important. What should probably be done here is to have 'set_public_data'
-            # able of creating a fake provenance with the name of the plugin, the project and probably the
-            # element name.
-            #
-            # We would therefore have much better error messages, and would be able to get rid of most synthetic
-            # nodes.
-            old_value = self.value.get(key)
-            if old_value:
-                node.file_index = old_value.file_index
-                node.line = old_value.line
-                node.column = old_value.column
-
-            self.value[key] = node
-
-    cpdef void _assert_fully_composited(self) except *:
-        cdef str key
-        cdef Node value
-
-        for key, value in self.value.items():
-            # Assert that list composition directives dont remain, this
-            # indicates that the user intended to override a list which
-            # never existed in the underlying data
-            #
-            if key in ('(>)', '(<)', '(=)'):
-                provenance = value.get_provenance()
-                raise LoadError(LoadErrorReason.TRAILING_LIST_DIRECTIVE,
-                                "{}: Attempt to override non-existing list".format(provenance))
-
-            value._assert_fully_composited()
-
     cdef bint _walk_find(self, Node target, list path) except *:
         cdef str k
         cdef Node v
@@ -587,11 +614,54 @@ cdef class MappingNode(Node):
 
         return False
 
+    #############################################################
+    #                      Private Methods                      #
+    #############################################################
+
+    cdef void __composite(self, MappingNode target, list path=None) except *:
+        cdef str key
+        cdef Node value
+
+        for key, value in self.value.items():
+            path.append(key)
+            value._compose_on(key, target, path)
+            path.pop()
 
 
 cdef class SequenceNode(Node):
     def __cinit__(self, int file_index, int line, int column, list value):
         self.value = value
+
+    def __iter__(self):
+        return iter(self.value)
+
+    def __len__(self):
+        return len(self.value)
+
+    def __reversed__(self):
+        return reversed(self.value)
+
+    def __setitem__(self, int key, object value):
+        cdef Node old_value
+
+        if type(value) in [MappingNode, ScalarNode, SequenceNode]:
+            self.value[key] = value
+        else:
+            node = _create_node_recursive(value, self)
+
+            # FIXME: Do we really want to override provenance?
+            # See __setitem__ on 'MappingNode' for more context
+            old_value = self.value[key]
+            if old_value:
+                node.file_index = old_value.file_index
+                node.line = old_value.line
+                node.column = old_value.column
+
+            self.value[key] = node
+
+    #############################################################
+    #                       Public Methods                      #
+    #############################################################
 
     cpdef void append(self, object value):
         if type(value) in [MappingNode, ScalarNode, SequenceNode]:
@@ -599,6 +669,9 @@ cdef class SequenceNode(Node):
         else:
             node = _create_node_recursive(value, self)
             self.value.append(node)
+
+    cpdef list as_str_list(self):
+        return [node.as_str() for node in self.value]
 
     cpdef SequenceNode copy(self):
         cdef list copy = []
@@ -654,17 +727,22 @@ cdef class SequenceNode(Node):
 
         return value
 
-    cpdef list as_str_list(self):
-        return [node.as_str() for node in self.value]
-
-    cpdef object _strip_node_info(self):
-        cdef Node value
-        return [value._strip_node_info() for value in self.value]
+    #############################################################
+    #            Private Methods used in BuildStream            #
+    #############################################################
 
     cpdef void _assert_fully_composited(self) except *:
         cdef Node value
         for value in self.value:
             value._assert_fully_composited()
+
+    cpdef object _strip_node_info(self):
+        cdef Node value
+        return [value._strip_node_info() for value in self.value]
+
+    #############################################################
+    #                     Protected Methods                     #
+    #############################################################
 
     cdef void _compose_on(self, str key, MappingNode target, list path) except *:
         # List clobbers anything list-like
@@ -699,32 +777,6 @@ cdef class SequenceNode(Node):
 
         return False
 
-    def __iter__(self):
-        return iter(self.value)
-
-    def __len__(self):
-        return len(self.value)
-
-    def __reversed__(self):
-        return reversed(self.value)
-
-    def __setitem__(self, int key, object value):
-        cdef Node old_value
-
-        if type(value) in [MappingNode, ScalarNode, SequenceNode]:
-            self.value[key] = value
-        else:
-            node = _create_node_recursive(value, self)
-
-            # FIXME: Do we really want to override provenance?
-            # See __setitem__ on 'MappingNode' for more context
-            old_value = self.value[key]
-            if old_value:
-                node.file_index = old_value.file_index
-                node.line = old_value.line
-                node.column = old_value.column
-
-            self.value[key] = node
 
 # Metadata container for a yaml toplevel node.
 #
