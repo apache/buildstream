@@ -312,6 +312,8 @@ class Source(Plugin):
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
                          context, project, provenance, "source", unique_id=unique_id)
 
+        self._meta_kind = meta.kind
+
         self.__element_name = meta.element_name         # The name of the element owning this source
         self.__element_index = meta.element_index       # The index of the source in the owning element's source list
         self.__element_kind = meta.element_kind         # The kind of the element owning this source

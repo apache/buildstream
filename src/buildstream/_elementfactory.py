@@ -33,9 +33,12 @@ class ElementFactory(PluginContext):
 
     def __init__(self, plugin_base, *,
                  format_versions={},
-                 plugin_origins=None):
+                 plugin_origins=None,
+                 pass_=None):
 
-        super().__init__(plugin_base, Element, [_site.element_plugins],
+        assert pass_ is not None
+
+        super().__init__(plugin_base, Element, [_site.element_plugins], 'element' + str(pass_),
                          plugin_origins=plugin_origins,
                          format_versions=format_versions)
 
