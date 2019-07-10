@@ -62,7 +62,7 @@ cdef class Node:
     #                  Abstract Public Methods                  #
     #############################################################
 
-    cpdef Node copy(self):
+    cpdef Node clone(self):
         raise NotImplementedError()
 
     #############################################################
@@ -202,7 +202,7 @@ cdef class ScalarNode(Node):
     #               Public Methods implementations              #
     #############################################################
 
-    cpdef ScalarNode copy(self):
+    cpdef ScalarNode clone(self):
         return self
 
     #############################################################
@@ -391,13 +391,13 @@ cdef class MappingNode(Node):
     #               Public Methods implementations              #
     #############################################################
 
-    cpdef MappingNode copy(self):
+    cpdef MappingNode clone(self):
         cdef dict copy = {}
         cdef str key
         cdef Node value
 
         for key, value in self.value.items():
-            copy[key] = value.copy()
+            copy[key] = value.clone()
 
         return MappingNode.__new__(MappingNode, self.file_index, self.line, self.column, copy)
 
@@ -726,12 +726,12 @@ cdef class SequenceNode(Node):
     #               Public Methods implementations              #
     #############################################################
 
-    cpdef SequenceNode copy(self):
+    cpdef SequenceNode clone(self):
         cdef list copy = []
         cdef Node entry
 
         for entry in self.value:
-            copy.append(entry.copy())
+            copy.append(entry.clone())
 
         return SequenceNode.__new__(SequenceNode, self.file_index, self.line, self.column, copy)
 

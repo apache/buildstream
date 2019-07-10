@@ -1282,7 +1282,7 @@ class Source(Plugin):
     @classmethod
     def __extract_config(cls, meta):
         config = cls.__defaults.get_mapping('config', default={})
-        config = config.copy()
+        config = config.clone()
 
         meta.config._composite(config)
         config._assert_fully_composited()
