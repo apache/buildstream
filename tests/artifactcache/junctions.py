@@ -24,7 +24,7 @@ def project_set_artifacts(project, url):
         'url': url,
         'push': True
     }
-    _yaml.roundtrip_dump(project_config.strip_node_info(), file=project_conf_file)
+    _yaml.roundtrip_dump(project_config._strip_node_info(), file=project_conf_file)
 
 
 @pytest.mark.datafiles(DATA_DIR)
