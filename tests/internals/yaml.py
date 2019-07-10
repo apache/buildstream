@@ -182,7 +182,7 @@ def test_composite_preserve_originals(datafiles):
 
     base = _yaml.load(filename)
     overlay = _yaml.load(overlayfile)
-    base_copy = base.copy()
+    base_copy = base.clone()
     overlay._composite(base_copy)
 
     copy_extra = base_copy.get_mapping('extra')
