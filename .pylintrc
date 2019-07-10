@@ -4,6 +4,7 @@
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code
 extension-pkg-whitelist=
+    buildstream.node,
     buildstream._loader._loader,
     buildstream._loader.types,
     buildstream._variables,

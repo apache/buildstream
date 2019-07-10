@@ -30,7 +30,7 @@ import shutil
 import pytest
 
 from buildstream._exceptions import ErrorDomain
-from buildstream import _yaml
+from buildstream import _yaml, Node
 from buildstream.plugin import CoreWarnings
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
@@ -1151,7 +1151,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
 
     repodir, reponame = os.path.split(repo.repo)
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    project_config['aliases'] = _yaml.Node.from_dict({
+    project_config['aliases'] = Node.from_dict({
         'repo': 'http://example.com/'
     })
     project_config['mirrors'] = [
