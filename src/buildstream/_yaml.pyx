@@ -91,7 +91,7 @@ cdef class Node:
     cpdef ProvenanceInformation get_provenance(self):
         return ProvenanceInformation(self)
 
-    cpdef object strip_node_info(self):
+    cpdef object _strip_node_info(self):
         raise NotImplementedError()
 
     # _assert_fully_composited()
@@ -190,7 +190,7 @@ cdef class ScalarNode(Node):
             return None
         return str(self.value)
 
-    cpdef object strip_node_info(self):
+    cpdef object _strip_node_info(self):
         return self.value
 
     cpdef void _assert_fully_composited(self) except *:
@@ -410,11 +410,11 @@ cdef class MappingNode(Node):
     cpdef object values(self):
         return self.value.values()
 
-    cpdef object strip_node_info(self):
+    cpdef object _strip_node_info(self):
         cdef str key
         cdef Node value
 
-        return {key: value.strip_node_info() for key, value in self.value.items()}
+        return {key: value._strip_node_info() for key, value in self.value.items()}
 
     cdef void __composite(self, MappingNode target, list path=None) except *:
         cdef str key
@@ -657,9 +657,9 @@ cdef class SequenceNode(Node):
     cpdef list as_str_list(self):
         return [node.as_str() for node in self.value]
 
-    cpdef object strip_node_info(self):
+    cpdef object _strip_node_info(self):
         cdef Node value
-        return [value.strip_node_info() for value in self.value]
+        return [value._strip_node_info() for value in self.value]
 
     cpdef void _assert_fully_composited(self) except *:
         cdef Node value

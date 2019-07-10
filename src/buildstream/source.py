@@ -894,8 +894,8 @@ class Source(Plugin):
         # Step 2 - Set the ref in memory, and determine changed state
         #
         # TODO: we are working on dictionaries here, would be nicer to just work on the nodes themselves
-        clean = node.strip_node_info()
-        to_modify = node.strip_node_info()
+        clean = node._strip_node_info()
+        to_modify = node._strip_node_info()
 
         current_ref = self.get_ref()  # pylint: disable=assignment-from-no-return
 
