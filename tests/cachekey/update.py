@@ -42,7 +42,7 @@ def update_keys():
     with tempfile.TemporaryDirectory(dir=PROJECT_DIR) as tmpdir:
         directory = os.path.join(tmpdir, 'cache')
         os.makedirs(directory)
-        cli = Cli(directory, verbose=False)
+        cli = Cli(directory, verbose=True)
 
         # Run bst show
         result = cli.run(project=PROJECT_DIR, silent=True, args=[
@@ -52,6 +52,9 @@ def update_keys():
         ])
 
         # Load the actual keys, and the expected ones if they exist
+        if not result.output:
+            print("No results from parsing {}:target.bst".format(PROJECT_DIR))
+            return None
         actual_keys = parse_output_keys(result.output)
         expected_keys = load_expected_keys(PROJECT_DIR, actual_keys, raise_error=False)
 
@@ -65,6 +68,7 @@ def update_keys():
                     print("Updating expected file: {}".format(expected))
 
                 write_expected_key(element_name, actual_keys[element_name])
+        return None
 
 
 if __name__ == '__main__':
