@@ -434,13 +434,14 @@ class CASCache():
     #     path (str): Path to file to add
     #     buffer (bytes): Byte buffer to add
     #     link_directly (bool): Whether file given by path can be linked
+    #     instance_name (str): casd instance_name for remote CAS
     #
     # Returns:
     #     (Digest): The digest of the added object
     #
     # Either `path` or `buffer` must be passed, but not both.
     #
-    def add_object(self, *, digest=None, path=None, buffer=None, link_directly=False):
+    def add_object(self, *, digest=None, path=None, buffer=None, link_directly=False, instance_name=None):
         # Exactly one of the two parameters has to be specified
         assert (path is None) != (buffer is None)
 
@@ -458,6 +459,9 @@ class CASCache():
                 path = tmp.name
 
             request = local_cas_pb2.CaptureFilesRequest()
+            if instance_name:
+                request.instance_name = instance_name
+
             request.path.append(path)
 
             local_cas = self._get_local_cas()
