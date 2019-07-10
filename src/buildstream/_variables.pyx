@@ -24,7 +24,7 @@ import re
 import sys
 
 from ._exceptions import LoadError, LoadErrorReason
-from . cimport _yaml
+from .node cimport MappingNode
 
 # Variables are allowed to have dashes here
 #
@@ -65,11 +65,11 @@ PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
 #
 cdef class Variables:
 
-    cdef _yaml.Node original
+    cdef MappingNode original
     cdef dict _expstr_map
     cdef public dict flat
 
-    def __init__(self, _yaml.Node node):
+    def __init__(self, MappingNode node):
         self.original = node
         self._expstr_map = self._resolve(node)
         self.flat = self._flatten()
@@ -115,7 +115,7 @@ cdef class Variables:
     #
     # Here we resolve all of our inputs into a dictionary, ready for use
     # in subst()
-    cdef dict _resolve(self, _yaml.Node node):
+    cdef dict _resolve(self, MappingNode node):
         # Special case, if notparallel is specified in the variables for this
         # element, then override max-jobs to be 1.
         # Initialize it as a string as all variables are processed as strings.

@@ -30,6 +30,7 @@ from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASQuota, CASCacheUsage
 from ._workspaces import Workspaces, WorkspaceProjectCache
+from .node import Node
 from .sandbox import SandboxRemote
 
 
@@ -154,7 +155,7 @@ class Context():
         self._artifactcache = None
         self._sourcecache = None
         self._projects = []
-        self._project_overrides = _yaml.Node.from_dict({})
+        self._project_overrides = Node.from_dict({})
         self._workspaces = None
         self._workspace_project_cache = WorkspaceProjectCache()
         self._cascache = None

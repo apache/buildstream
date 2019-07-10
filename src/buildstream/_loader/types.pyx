@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from .._exceptions import LoadError, LoadErrorReason
-from .. cimport _yaml
+from ..node cimport MappingNode, Node, ProvenanceInformation, ScalarNode, SequenceNode
 
 
 # Symbol():
@@ -59,32 +59,32 @@ class Symbol():
 #                                        dependency was declared
 #
 cdef class Dependency:
-    cdef public _yaml.ProvenanceInformation provenance
+    cdef public ProvenanceInformation provenance
     cdef public str name
     cdef public str dep_type
     cdef public str junction
 
     def __init__(self,
-                 _yaml.Node dep,
+                 Node dep,
                  str default_dep_type=None):
         cdef str dep_type
 
         self.provenance = dep.get_provenance()
 
-        if type(dep) is _yaml.ScalarNode:
+        if type(dep) is ScalarNode:
             self.name = dep.as_str()
             self.dep_type = default_dep_type
             self.junction = None
 
-        elif type(dep) is _yaml.MappingNode:
+        elif type(dep) is MappingNode:
             if default_dep_type:
-                (<_yaml.MappingNode> dep).validate_keys(['filename', 'junction'])
+                (<MappingNode> dep).validate_keys(['filename', 'junction'])
                 dep_type = default_dep_type
             else:
-                (<_yaml.MappingNode> dep).validate_keys(['filename', 'type', 'junction'])
+                (<MappingNode> dep).validate_keys(['filename', 'type', 'junction'])
 
                 # Make type optional, for this we set it to None
-                dep_type = (<_yaml.MappingNode> dep).get_str(<str> Symbol.TYPE, None)
+                dep_type = (<MappingNode> dep).get_str(<str> Symbol.TYPE, None)
                 if dep_type is None or dep_type == <str> Symbol.ALL:
                     dep_type = None
                 elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
@@ -93,9 +93,9 @@ cdef class Dependency:
                                     "{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
                                     .format(provenance, dep_type))
 
-            self.name = (<_yaml.MappingNode> dep).get_str(<str> Symbol.FILENAME)
+            self.name = (<MappingNode> dep).get_str(<str> Symbol.FILENAME)
             self.dep_type = dep_type
-            self.junction = (<_yaml.MappingNode> dep).get_str(<str> Symbol.JUNCTION, None)
+            self.junction = (<MappingNode> dep).get_str(<str> Symbol.JUNCTION, None)
 
         else:
             raise LoadError(LoadErrorReason.INVALID_DATA,
@@ -136,9 +136,9 @@ cdef class Dependency:
 #    default_dep_type (str): type to give to the dependency
 #    acc (list): a list in which to add the loaded dependencies
 #
-cdef void _extract_depends_from_node(_yaml.Node node, str key, str default_dep_type, list acc) except *:
-    cdef _yaml.SequenceNode depends = node.get_sequence(key, [])
-    cdef _yaml.Node dep_node
+cdef void _extract_depends_from_node(Node node, str key, str default_dep_type, list acc) except *:
+    cdef SequenceNode depends = node.get_sequence(key, [])
+    cdef Node dep_node
 
     for dep_node in depends:
         dependency = Dependency(dep_node, default_dep_type=default_dep_type)
@@ -162,7 +162,7 @@ cdef void _extract_depends_from_node(_yaml.Node node, str key, str default_dep_t
 # Returns:
 #    (list): a list of Dependency objects
 #
-def extract_depends_from_node(_yaml.Node node):
+def extract_depends_from_node(Node node):
     cdef list acc = []
     _extract_depends_from_node(node, <str> Symbol.BUILD_DEPENDS, <str> Symbol.BUILD, acc)
     _extract_depends_from_node(node, <str> Symbol.RUNTIME_DEPENDS, <str> Symbol.RUNTIME, acc)

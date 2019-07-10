@@ -19,6 +19,7 @@
 import os
 
 from . import _yaml
+from .node import _new_synthetic_file
 from ._exceptions import LoadError, LoadErrorReason
 
 
@@ -79,7 +80,7 @@ class ProjectRefs():
 
             # Ignore failure if the file doesnt exist, it'll be created and
             # for now just assumed to be empty
-            self._toplevel_node = _yaml._new_synthetic_file(self._fullpath)
+            self._toplevel_node = _new_synthetic_file(self._fullpath)
             self._toplevel_save = self._toplevel_node
 
         self._toplevel_node.validate_keys(['projects'])

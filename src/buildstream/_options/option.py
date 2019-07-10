@@ -17,7 +17,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .. import _yaml
+from ..node import assert_symbol_name
 
 
 # Shared symbols for validation purposes
@@ -66,7 +66,7 @@ class Option():
 
         # Assert valid symbol name for variable name
         if self.variable is not None:
-            _yaml.assert_symbol_name(self.variable, 'variable name', ref_node=node.get_node('variable'))
+            assert_symbol_name(self.variable, 'variable name', ref_node=node.get_node('variable'))
 
     # load_value()
     #

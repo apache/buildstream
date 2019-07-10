@@ -1,5 +1,6 @@
 import os
 from . import _yaml
+from .node import MappingNode, ScalarNode, SequenceNode
 from ._exceptions import LoadError, LoadErrorReason
 
 
@@ -35,10 +36,10 @@ class Includes:
         if current_loader is None:
             current_loader = self._loader
 
-        includes_node = node.get_node('(@)', allowed_types=[_yaml.ScalarNode, _yaml.SequenceNode], allow_none=True)
+        includes_node = node.get_node('(@)', allowed_types=[ScalarNode, SequenceNode], allow_none=True)
 
         if includes_node:
-            if type(includes_node) is _yaml.ScalarNode:  # pylint: disable=unidiomatic-typecheck
+            if type(includes_node) is ScalarNode:  # pylint: disable=unidiomatic-typecheck
                 includes = [includes_node.as_str()]
             else:
                 includes = includes_node.as_str_list()
@@ -132,12 +133,12 @@ class Includes:
                        only_local=False):
         value_type = type(value)
 
-        if value_type is _yaml.MappingNode:
+        if value_type is MappingNode:
             self.process(value,
                          included=included,
                          current_loader=current_loader,
                          only_local=only_local)
-        elif value_type is _yaml.SequenceNode:
+        elif value_type is SequenceNode:
             for v in value:
                 self._process_value(v,
                                     included=included,

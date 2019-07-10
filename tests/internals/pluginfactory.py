@@ -5,10 +5,10 @@ import os
 import pytest
 
 from pluginbase import PluginBase
+from buildstream import Node
 from buildstream._elementfactory import ElementFactory
 from buildstream._sourcefactory import SourceFactory
 from buildstream._exceptions import PluginError
-from buildstream import _yaml
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -47,7 +47,7 @@ def test_element_factory(plugin_fixture):
 ##############################################################
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'customsource'))
 def test_custom_source(plugin_fixture, datafiles):
-    plugins = [_yaml.Node.from_dict({
+    plugins = [Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename),
@@ -62,7 +62,7 @@ def test_custom_source(plugin_fixture, datafiles):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'customelement'))
 def test_custom_element(plugin_fixture, datafiles):
-    plugins = [_yaml.Node.from_dict({
+    plugins = [Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename),
@@ -99,7 +99,7 @@ def test_missing_element(plugin_fixture):
 # Load a factory with a plugin that returns a value instead of Source subclass
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'notatype'))
 def test_source_notatype(plugin_fixture, datafiles):
-    plugins = [_yaml.Node.from_dict({
+    plugins = [Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename),
@@ -113,7 +113,7 @@ def test_source_notatype(plugin_fixture, datafiles):
 # Load a factory with a plugin that returns a value instead of Element subclass
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'notatype'))
 def test_element_notatype(plugin_fixture, datafiles):
-    plugins = [_yaml.Node.from_dict({
+    plugins = [Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename),
@@ -128,7 +128,7 @@ def test_element_notatype(plugin_fixture, datafiles):
 # which is not a Source subclass
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'wrongtype'))
 def test_source_wrongtype(plugin_fixture, datafiles):
-    plugins = [_yaml.Node.from_dict({
+    plugins = [Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename),
@@ -143,7 +143,7 @@ def test_source_wrongtype(plugin_fixture, datafiles):
 # which is not a Element subclass
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'wrongtype'))
 def test_element_wrongtype(plugin_fixture, datafiles):
-    plugins = [_yaml.Node.from_dict({
+    plugins = [Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename),
@@ -157,7 +157,7 @@ def test_element_wrongtype(plugin_fixture, datafiles):
 # Load a factory with a plugin which fails to provide a setup() function
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'nosetup'))
 def test_source_missing_setup(plugin_fixture, datafiles):
-    plugins = [_yaml.Node.from_dict({
+    plugins = [Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename),
@@ -171,7 +171,7 @@ def test_source_missing_setup(plugin_fixture, datafiles):
 # Load a factory with a plugin which fails to provide a setup() function
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'nosetup'))
 def test_element_missing_setup(plugin_fixture, datafiles):
-    plugins = [_yaml.Node.from_dict({
+    plugins = [Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename),
@@ -186,7 +186,7 @@ def test_element_missing_setup(plugin_fixture, datafiles):
 # that is not a function
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'badsetup'))
 def test_source_bad_setup(plugin_fixture, datafiles):
-    plugins = [_yaml.Node.from_dict({
+    plugins = [Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename),
@@ -201,7 +201,7 @@ def test_source_bad_setup(plugin_fixture, datafiles):
 # that is not a function
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'badsetup'))
 def test_element_bad_setup(plugin_fixture, datafiles):
-    plugins = [_yaml.Node.from_dict({
+    plugins = [Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename),
@@ -216,7 +216,7 @@ def test_element_bad_setup(plugin_fixture, datafiles):
 # high version of buildstream
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'badversionsource'))
 def test_source_badversion(plugin_fixture, datafiles):
-    plugins = [_yaml.Node.from_dict({
+    plugins = [Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename),
@@ -231,7 +231,7 @@ def test_source_badversion(plugin_fixture, datafiles):
 # high version of buildstream
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'badversionelement'))
 def test_element_badversion(plugin_fixture, datafiles):
-    plugins = [_yaml.Node.from_dict({
+    plugins = [Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename),
@@ -249,14 +249,14 @@ def test_element_badversion(plugin_fixture, datafiles):
 # Load two factories, both of which define a different 'foo' plugin
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_multicontext(plugin_fixture, datafiles):
-    plugins1 = _yaml.Node.from_dict({
+    plugins1 = Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename,
                              'customsource'),
         'plugins': ['foo']
     })
-    plugins2 = _yaml.Node.from_dict({
+    plugins2 = Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename,
@@ -278,14 +278,14 @@ def test_source_multicontext(plugin_fixture, datafiles):
 # Load two factories, both of which define a different 'foo' plugin
 @pytest.mark.datafiles(DATA_DIR)
 def test_element_multicontext(plugin_fixture, datafiles):
-    plugins1 = _yaml.Node.from_dict({
+    plugins1 = Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename,
                              'customelement'),
         'plugins': ['foo']
     })
-    plugins2 = _yaml.Node.from_dict({
+    plugins2 = Node.from_dict({
         'origin': 'local',
         'path': os.path.join(datafiles.dirname,
                              datafiles.basename,

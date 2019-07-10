@@ -105,3 +105,8 @@ cdef class ProvenanceInformation:
     cdef readonly str _shortname
     cdef readonly int _col
     cdef readonly int _line
+
+
+cdef int _SYNTHETIC_FILE_INDEX
+cdef Py_ssize_t _create_new_file(str filename, str shortname, str displayname, Node toplevel, object project)
+cdef void _set_root_node_for_file(Py_ssize_t file_index, MappingNode contents) except *
