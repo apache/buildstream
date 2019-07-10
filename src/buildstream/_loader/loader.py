@@ -463,7 +463,7 @@ class Loader():
             return meta_element
 
         node = element.node
-        elt_provenance = _yaml.node_get_provenance(node)
+        elt_provenance = node.get_provenance()
         meta_sources = []
 
         sources = node.get_sequence(Symbol.SOURCES, default=[])

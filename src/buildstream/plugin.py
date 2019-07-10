@@ -116,7 +116,6 @@ import sys
 from contextlib import contextmanager
 from weakref import WeakValueDictionary
 
-from . import _yaml
 from . import utils
 from ._exceptions import PluginError, ImplError
 from ._message import Message, MessageType
@@ -346,22 +345,6 @@ class Plugin():
            (str): The kind of this plugin
         """
         return self.__kind
-
-    def node_provenance(self, node, member_name=None):
-        """Gets the provenance for `node` and `member_name`
-
-        This reports a string with file, line and column information suitable
-        for reporting an error or warning.
-
-        Args:
-            node (Node): The YAML loaded dictionary object
-            member_name (str): The name of the member to check, or None for the node itself
-
-        Returns:
-            (str): A string describing the provenance of the node and member
-        """
-        provenance = _yaml.node_get_provenance(node, key=member_name)
-        return str(provenance)
 
     def node_get_project_path(self, node, *,
                               check_is_file=False, check_is_dir=False):

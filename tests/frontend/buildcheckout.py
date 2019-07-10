@@ -462,7 +462,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
     # Assert that we have the expected provenance encoded into the error
     element_node = _yaml.load(element_path, shortname='junction-dep.bst')
     ref_node = element_node.get_sequence('depends').mapping_at(0)
-    provenance = _yaml.node_get_provenance(ref_node)
+    provenance = ref_node.get_provenance()
     assert str(provenance) in result.stderr
 
 
