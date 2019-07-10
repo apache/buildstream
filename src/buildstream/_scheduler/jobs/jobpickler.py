@@ -28,7 +28,6 @@ from ..._protos.buildstream.v2.artifact_pb2 import Artifact as ArtifactProto
 from ... import Element, Source
 from ..._loader import Loader
 from ..._messenger import Messenger
-from ..._plugincontext import PluginContext
 
 
 def _reduce_artifact_proto(instance):
@@ -54,7 +53,6 @@ def _reduce_loader(instance):
     # time that seems just right is here, when preparing the child process'
     # copy of the Loader.
     #
-    # TODO: move this reduce func to loader.py
     del state['_fetch_subprojects']
 
     return (Loader.__new__, (Loader,), state)
@@ -74,30 +72,9 @@ def _reduce_messenger(instance):
     # which removes and restores the _message_handler. This wouldn't require
     # access to private details of Messenger.
     #
-    # TODO: move this reduce func to messenger.py
     del state['_message_handler']
 
     return (Messenger.__new__, (Messenger,), state)
-
-
-def _reduce_plugincontext(instance):
-    assert isinstance(instance, PluginContext)
-    state = instance.__dict__.copy()
-    del state['_site_source']
-    state['_types'] = {}
-
-    # TODO: move this reduce func to plugincontext.py
-
-    return (_unreduce_plugincontext, (state,))
-
-
-def _unreduce_plugincontext(state):
-    instance = PluginContext()
-    instance.__dict__ = state
-    instance._site_source = instance._plugin_base.make_plugin_source(
-        searchpath=instance._site_plugin_path,
-        identifier='site_plugin-' + instance._identifier)
-    return instance
 
 
 def _reduce_element(element):
@@ -162,7 +139,6 @@ def pickle_child_job(child_job, context):
     pickler.dispatch_table[ArtifactProto] = _reduce_artifact_proto
     pickler.dispatch_table[Loader] = _reduce_loader
     pickler.dispatch_table[Messenger] = _reduce_messenger
-    pickler.dispatch_table[PluginContext] = _reduce_plugincontext
 
     pickler.dump(child_job)
     data.seek(0)

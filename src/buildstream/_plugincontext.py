@@ -68,6 +68,19 @@ class PluginContext():
         self._alternate_sources = {}
         self._format_versions = format_versions
 
+    def __getstate__(self):
+        import copy
+        state = copy.copy(self.__dict__)
+        del state['_site_source']
+        state['_types'] = {}
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self._site_source = self._plugin_base.make_plugin_source(
+            searchpath=self._site_plugin_path,
+            identifier='site_plugin-' + self._identifier)
+
     # lookup():
     #
     # Fetches a type loaded from a plugin in this plugin context
