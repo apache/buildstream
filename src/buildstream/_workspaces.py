@@ -630,7 +630,7 @@ class Workspaces():
     def _load_workspace(self, node):
         running_files = node.get_mapping('running_files', default=None)
         if running_files:
-            running_files = running_files.strip_node_info()
+            running_files = running_files._strip_node_info()
 
         dictionary = {
             'prepared': node.get_bool('prepared', default=False),

@@ -28,7 +28,7 @@ cdef class Node:
 
     cpdef Node copy(self)
     cpdef ProvenanceInformation get_provenance(self)
-    cpdef object strip_node_info(self)
+    cpdef object _strip_node_info(self)
 
     cpdef void _assert_fully_composited(self) except *
     cdef void _compose_on(self, str key, MappingNode target, list path) except *

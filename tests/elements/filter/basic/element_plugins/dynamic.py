@@ -5,13 +5,13 @@ from buildstream import Element, Scope
 class DynamicElement(Element):
     def configure(self, node):
         node.validate_keys(['split-rules'])
-        self.split_rules = node.get_mapping('split-rules')
+        self.split_rules = {key: value.as_str_list() for key, value in node.get_mapping('split-rules').items()}
 
     def preflight(self):
         pass
 
     def get_unique_key(self):
-        return {'split-rules': self.split_rules.strip_node_info()}
+        return {'split-rules': self.split_rules}
 
     def configure_sandbox(self, sandbox):
         pass
