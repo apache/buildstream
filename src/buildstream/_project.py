@@ -33,7 +33,7 @@ from ._exceptions import LoadError, LoadErrorReason
 from ._options import OptionPool
 from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
-from .node import ScalarNode, SequenceNode, assert_symbol_name
+from .node import ScalarNode, SequenceNode, _assert_symbol_name
 from .sandbox import SandboxRemote
 from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
@@ -595,8 +595,8 @@ class Project():
         self.name = self._project_conf.get_str('name')
 
         # Validate that project name is a valid symbol name
-        assert_symbol_name(self.name, "project name",
-                           ref_node=pre_config_node.get_node('name'))
+        _assert_symbol_name(self.name, "project name",
+                            ref_node=pre_config_node.get_node('name'))
 
         self.element_path = os.path.join(
             self.directory,
