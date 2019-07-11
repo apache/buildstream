@@ -2261,9 +2261,20 @@ class Element(Plugin):
 
                 # Notify reverse dependencies
                 for rdep in self.__reverse_runtime_deps:
-                    rdep.__on_runtime_dependency_ready_for_runtime_and_cached()
+                    rdep.__runtime_deps_uncached -= 1
+                    assert not rdep.__runtime_deps_uncached < 0
+
+                    # Try to notify reverse dependencies if all runtime deps are ready
+                    if rdep.__runtime_deps_uncached == 0:
+                        rdep._update_ready_for_runtime_and_cached()
+
                 for rdep in self.__reverse_build_deps:
-                    rdep.__on_build_dependency_ready_for_runtime_and_cached()
+                    rdep.__build_deps_uncached -= 1
+                    assert not rdep.__build_deps_uncached < 0
+
+                    if rdep.__buildable_callback is not None and rdep._buildable():
+                        rdep.__buildable_callback(rdep)
+                        rdep.__buildable_callback = None
 
     #############################################################
     #                   Private Local Methods                   #
@@ -2957,38 +2968,6 @@ class Element(Plugin):
                element.__strict_cache_key != old_strict_cache_key:
                 for rdep in element.__reverse_build_deps | element.__reverse_runtime_deps:
                     queue.push(rdep._unique_id, rdep)
-
-    # __on_runtime_dependency_ready_for_runtime_and_cached()
-    #
-    # This function is called once one of the Element's runtime dependencies has
-    # become ready for runtime and cached.
-    #
-    # On calling this function, we decrement the Element's remaining runtime deps counter.
-    # If this is zero, we attempt to notify all reverse dependencies of the Element.
-    #
-    def __on_runtime_dependency_ready_for_runtime_and_cached(self):
-        self.__runtime_deps_uncached -= 1
-        assert not self.__runtime_deps_uncached < 0
-
-        # Try to notify reverse dependencies if all runtime deps are ready
-        if self.__runtime_deps_uncached == 0:
-            self._update_ready_for_runtime_and_cached()
-
-    # __on_build_dependency_ready_for_runtime_and_cached()
-    #
-    # This function is called once one of the Element's build dependencies has become
-    # ready for runtime and cached.
-    #
-    # On calling this function, we decrement the Element's remaining build deps counter.
-    # If this is zero, we invoke the buildable callback.
-    #
-    def __on_build_dependency_ready_for_runtime_and_cached(self):
-        self.__build_deps_uncached -= 1
-        assert not self.__build_deps_uncached < 0
-
-        if self.__buildable_callback is not None and self._buildable():
-            self.__buildable_callback(self)
-            self.__buildable_callback = None
 
     # __reset_cache_data()
     #
