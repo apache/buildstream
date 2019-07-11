@@ -194,6 +194,8 @@ class SandboxChroot(Sandbox):
                                    .format(rootfs, cwd)) from e
             else:
                 raise SandboxError('Could not run command {}: {}'.format(command, e)) from e
+        except PermissionError as e:
+            raise SandboxError('Permission error to run command {}: {}'.format(command, e)) from e
 
         return code
 
