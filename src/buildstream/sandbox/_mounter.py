@@ -90,7 +90,7 @@ class Mounter():
     @classmethod
     @contextmanager
     def mount(cls, dest, src=None, stdout=sys.stdout,
-              stderr=sys.stderr, mount_type=None, **kwargs):
+              stderr=sys.stderr, mount_type=None, unmount=True, **kwargs):
 
         def kill_proc():
             cls._umount(dest, stdout, stderr)
@@ -100,9 +100,10 @@ class Mounter():
         path = cls._mount(dest, src, mount_type, stdout=stdout, stderr=stderr, options=options)
         try:
             with _signals.terminator(kill_proc):
-                yield path
+                 yield path
         finally:
-            cls._umount(dest, stdout, stderr)
+            if unmount:
+                cls._umount(dest, stdout, stderr)
 
     # bind_mount()
     #
