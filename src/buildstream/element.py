@@ -3030,15 +3030,15 @@ class Element(Plugin):
             self.__strict_cache_key = self._calculate_cache_key(dependencies)
 
             if self.__strict_cache_key is not None:
-                self.__update_strict_cache_key_of_rdeps()
+                # In strict mode, the strong cache key always matches the strict cache key
+                if context.get_strict():
+                    self.__cache_key = self.__strict_cache_key
 
-            # In strict mode, the strong cache key always matches the strict cache key
-            if context.get_strict():
-                self.__cache_key = self.__strict_cache_key
-
-                # The Element may have just become ready for runtime now that the
-                # strong cache key has just been set
-                self.__update_ready_for_runtime()
+                    # The Element may have just become ready for runtime now that the
+                    # strong cache key has just been set
+                    self.__update_ready_for_runtime()
+                else:
+                    self.__update_strict_cache_key_of_rdeps()
 
         if self.__strict_cache_key is not None and self.__can_query_cache_callback is not None:
             self.__can_query_cache_callback(self)
