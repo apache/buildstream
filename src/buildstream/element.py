@@ -254,6 +254,7 @@ class Element(Plugin):
         self.__buildable_callback = None              # Callback to BuildQueue
 
         self._depth = None                            # Depth of Element in its current dependency graph
+        self._resolved_initial_state = False          # Whether the initial state of the Element has been resolved
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults(project, plugin_conf, meta.kind, meta.is_junction)
@@ -1151,6 +1152,8 @@ class Element(Plugin):
     # This must be called whenever the state of an element may have changed.
     #
     def _update_state(self):
+        if not self._resolved_initial_state:
+            self._resolved_initial_state = True
         context = self._get_context()
 
         # Compute and determine consistency of sources
