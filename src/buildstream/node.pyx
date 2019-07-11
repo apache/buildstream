@@ -824,7 +824,21 @@ cdef class ProvenanceInformation:
             return "{} [line {:d} column {:d}]".format(self._displayname, self._line, self._col)
 
 
-# assert_symbol_name()
+#############################################################
+#                BuildStream Private methods                #
+#############################################################
+# Purely synthetic nodes will have _SYNTHETIC_FILE_INDEX for the file number, have line number
+# zero, and a negative column number which comes from inverting the next value
+# out of this counter.  Synthetic nodes created with a reference node will
+# have a file number from the reference node, some unknown line number, and
+# a negative column number from this counter.
+cdef int _SYNTHETIC_FILE_INDEX = -1
+
+# File name handling
+cdef list _FILE_LIST = []
+
+
+# _assert_symbol_name()
 #
 # A helper function to check if a loaded string is a valid symbol
 # name and to raise a consistent LoadError if not. For strings which
@@ -842,7 +856,7 @@ cdef class ProvenanceInformation:
 # Note that dashes are generally preferred for variable names and
 # usage in YAML, but things such as option names which will be
 # evaluated with jinja2 cannot use dashes.
-def assert_symbol_name(str symbol_name, str purpose, *, Node ref_node=None, bint allow_dashes=True):
+def _assert_symbol_name(str symbol_name, str purpose, *, Node ref_node=None, bint allow_dashes=True):
     cdef str valid_chars = string.digits + string.ascii_letters + '_'
     if allow_dashes:
         valid_chars += '-'
@@ -869,20 +883,6 @@ def assert_symbol_name(str symbol_name, str purpose, *, Node ref_node=None, bint
 
         raise LoadError(LoadErrorReason.INVALID_SYMBOL_NAME,
                         message, detail=detail)
-
-
-#############################################################
-#                BuildStream Private methods                #
-#############################################################
-# Purely synthetic nodes will have _SYNTHETIC_FILE_INDEX for the file number, have line number
-# zero, and a negative column number which comes from inverting the next value
-# out of this counter.  Synthetic nodes created with a reference node will
-# have a file number from the reference node, some unknown line number, and
-# a negative column number from this counter.
-cdef int _SYNTHETIC_FILE_INDEX = -1
-
-# File name handling
-cdef list _FILE_LIST = []
 
 
 cdef Py_ssize_t _create_new_file(str filename, str shortname, str displayname, Node toplevel, object project):
