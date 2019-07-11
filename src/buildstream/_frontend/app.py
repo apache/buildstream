@@ -349,7 +349,7 @@ class App():
             if project_name:
                 # If project name was specified, user interaction is not desired, just
                 # perform some validation and write the project.conf
-                node.assert_symbol_name(project_name, 'project name')
+                node._assert_symbol_name(project_name, 'project name')
                 self._assert_format_version(format_version)
                 self._assert_element_path(element_path)
 
@@ -801,7 +801,7 @@ class App():
 
         def project_name_proc(user_input):
             try:
-                node.assert_symbol_name(None, user_input, 'project name')
+                node._assert_symbol_name(None, user_input, 'project name')
             except LoadError as e:
                 message = "{}\n\n{}\n".format(e, e.detail)
                 raise UsageError(message) from e

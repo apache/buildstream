@@ -21,7 +21,7 @@
 import jinja2
 
 from .._exceptions import LoadError, LoadErrorReason
-from ..node import MappingNode, SequenceNode, assert_symbol_name
+from ..node import MappingNode, SequenceNode, _assert_symbol_name
 from .optionbool import OptionBool
 from .optionenum import OptionEnum
 from .optionflags import OptionFlags
@@ -68,7 +68,7 @@ class OptionPool():
         for option_name, option_definition in options.items():
 
             # Assert that the option name is a valid symbol
-            assert_symbol_name(option_name, "option name", ref_node=option_definition, allow_dashes=False)
+            _assert_symbol_name(option_name, "option name", ref_node=option_definition, allow_dashes=False)
 
             opt_type_name = option_definition.get_str('type')
             try:
