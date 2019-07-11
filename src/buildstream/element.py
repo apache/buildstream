@@ -3040,11 +3040,6 @@ class Element(Plugin):
                 # strong cache key has just been set
                 self.__update_ready_for_runtime()
 
-                # If the element is cached, and has all of its runtime dependencies cached,
-                # now that we have the cache key, we are able to notify reverse dependencies
-                # that the element it ready. This is a likely trigger for workspaced elements.
-                self._update_ready_for_runtime_and_cached()
-
         if self.__strict_cache_key is not None and self.__can_query_cache_callback is not None:
             self.__can_query_cache_callback(self)
             self.__can_query_cache_callback = None
@@ -3121,11 +3116,6 @@ class Element(Plugin):
             # strong cache key has just been set
             self.__update_ready_for_runtime()
 
-            # If the element is cached, and has all of its runtime dependencies cached,
-            # now that we have the strong cache key, we are able to notify reverse dependencies
-            # that the element it ready. This is a likely trigger for workspaced elements.
-            self._update_ready_for_runtime_and_cached()
-
             # Now we have the strong cache key, update the Artifact
             self.__artifact._cache_key = self.__cache_key
 
@@ -3192,6 +3182,11 @@ class Element(Plugin):
 
                     if rdep.__build_deps_without_cache_key == 0:
                         rdep._update_state()
+
+                # If the element is cached, and has all of its runtime dependencies cached,
+                # now that we have the cache key, we are able to notify reverse dependencies
+                # that the element it ready. This is a likely trigger for workspaced elements.
+                self._update_ready_for_runtime_and_cached()
 
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):
