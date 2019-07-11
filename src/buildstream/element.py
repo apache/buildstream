@@ -969,6 +969,8 @@ class Element(Plugin):
             dependency.__reverse_build_deps.add(element)
         element.__remaining_build_deps_uncached = len(element.__build_dependencies)
 
+        element.__preflight()
+
         return element
 
     # _clear_meta_elements_cache()
@@ -1225,49 +1227,6 @@ class Element(Plugin):
     def _get_brief_display_key(self):
         _, display_key, _ = self._get_display_key()
         return display_key
-
-    # _preflight():
-    #
-    # A wrapper for calling the abstract preflight() method on
-    # the element and its sources.
-    #
-    def _preflight(self):
-
-        if self.BST_FORBID_RDEPENDS and self.BST_FORBID_BDEPENDS:
-            if any(self.dependencies(Scope.RUN, recurse=False)) or any(self.dependencies(Scope.BUILD, recurse=False)):
-                raise ElementError("{}: Dependencies are forbidden for '{}' elements"
-                                   .format(self, self.get_kind()), reason="element-forbidden-depends")
-
-        if self.BST_FORBID_RDEPENDS:
-            if any(self.dependencies(Scope.RUN, recurse=False)):
-                raise ElementError("{}: Runtime dependencies are forbidden for '{}' elements"
-                                   .format(self, self.get_kind()), reason="element-forbidden-rdepends")
-
-        if self.BST_FORBID_BDEPENDS:
-            if any(self.dependencies(Scope.BUILD, recurse=False)):
-                raise ElementError("{}: Build dependencies are forbidden for '{}' elements"
-                                   .format(self, self.get_kind()), reason="element-forbidden-bdepends")
-
-        if self.BST_FORBID_SOURCES:
-            if any(self.sources()):
-                raise ElementError("{}: Sources are forbidden for '{}' elements"
-                                   .format(self, self.get_kind()), reason="element-forbidden-sources")
-
-        try:
-            self.preflight()
-        except BstError as e:
-            # Prepend provenance to the error
-            raise ElementError("{}: {}".format(self, e), reason=e.reason, detail=e.detail) from e
-
-        # Ensure that the first source does not need access to previous soruces
-        if self.__sources and self.__sources[0]._requires_previous_sources():
-            raise ElementError("{}: {} cannot be the first source of an element "
-                               "as it requires access to previous sources"
-                               .format(self, self.__sources[0]))
-
-        # Preflight the sources
-        for source in self.sources():
-            source._preflight()
 
     # _schedule_tracking():
     #
@@ -2369,6 +2328,49 @@ class Element(Plugin):
                 # Defer workspace.prepared setting until pending batch commands
                 # have been executed.
                 sandbox._callback(mark_workspace_prepared)
+
+    # __preflight():
+    #
+    # A internal wrapper for calling the abstract preflight() method on
+    # the element and its sources.
+    #
+    def __preflight(self):
+
+        if self.BST_FORBID_RDEPENDS and self.BST_FORBID_BDEPENDS:
+            if any(self.dependencies(Scope.RUN, recurse=False)) or any(self.dependencies(Scope.BUILD, recurse=False)):
+                raise ElementError("{}: Dependencies are forbidden for '{}' elements"
+                                   .format(self, self.get_kind()), reason="element-forbidden-depends")
+
+        if self.BST_FORBID_RDEPENDS:
+            if any(self.dependencies(Scope.RUN, recurse=False)):
+                raise ElementError("{}: Runtime dependencies are forbidden for '{}' elements"
+                                   .format(self, self.get_kind()), reason="element-forbidden-rdepends")
+
+        if self.BST_FORBID_BDEPENDS:
+            if any(self.dependencies(Scope.BUILD, recurse=False)):
+                raise ElementError("{}: Build dependencies are forbidden for '{}' elements"
+                                   .format(self, self.get_kind()), reason="element-forbidden-bdepends")
+
+        if self.BST_FORBID_SOURCES:
+            if any(self.sources()):
+                raise ElementError("{}: Sources are forbidden for '{}' elements"
+                                   .format(self, self.get_kind()), reason="element-forbidden-sources")
+
+        try:
+            self.preflight()
+        except BstError as e:
+            # Prepend provenance to the error
+            raise ElementError("{}: {}".format(self, e), reason=e.reason, detail=e.detail) from e
+
+        # Ensure that the first source does not need access to previous soruces
+        if self.__sources and self.__sources[0]._requires_previous_sources():
+            raise ElementError("{}: {} cannot be the first source of an element "
+                               "as it requires access to previous sources"
+                               .format(self, self.__sources[0]))
+
+        # Preflight the sources
+        for source in self.sources():
+            source._preflight()
 
     # __assert_cached()
     #

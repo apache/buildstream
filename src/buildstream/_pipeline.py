@@ -125,10 +125,6 @@ class Pipeline():
     def resolve_elements(self, targets):
         with self._context.messenger.timed_activity("Resolving cached state", silent_nested=True):
             for element in self.dependencies(targets, Scope.ALL):
-
-                # Preflight
-                element._preflight()
-
                 # Determine initial element state.
                 element._update_state()
 
