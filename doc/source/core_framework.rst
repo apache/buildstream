@@ -13,6 +13,7 @@ useful for working on BuildStream itself.
    :maxdepth: 1
 
    buildstream.types
+   buildstream.node
    buildstream.plugin
    buildstream.source
    buildstream.element
