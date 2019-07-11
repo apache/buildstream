@@ -23,7 +23,8 @@ DATA_DIR = os.path.join(
 # Test that `bst build` does not download file blobs of a build-only dependency
 # to the local cache.
 @pytest.mark.datafiles(DATA_DIR)
-def test_build_dependency_partial_local_cas(cli, datafiles):
+@pytest.mark.parametrize('pull_artifact_files', [True, False])
+def test_build_dependency_partial_local_cas(cli, datafiles, pull_artifact_files):
     project = str(datafiles)
     element_name = 'no-runtime-deps.bst'
     builddep_element_name = 'autotools/amhello.bst'
@@ -33,16 +34,22 @@ def test_build_dependency_partial_local_cas(cli, datafiles):
     services = cli.ensure_services()
     assert set(services) == set(['action-cache', 'execution', 'storage'])
 
+    # configure pull blobs
+    cli.config['remote-execution']['pull-artifact-files'] = pull_artifact_files
+
     result = cli.run(project=project, args=['build', element_name])
     result.assert_success()
 
-    # Verify that the target element is available in local cache
+    # Verify artifact is pulled bar files when ensure artifact files is set
     result = cli.run(project=project, args=['artifact', 'checkout', element_name,
                                             '--directory', checkout])
-    result.assert_success()
-    assert_contains(checkout, ['/test'])
+    if pull_artifact_files:
+        result.assert_success()
+        assert_contains(checkout, ['/test'])
+    else:
+        result.assert_main_error(ErrorDomain.STREAM, 'uncached-checkout-attempt')
 
-    # Verify that the build-only dependency is not (complete) in the local cache
+    # Verify build dependencies is pulled for ALL and BUILD
     result = cli.run(project=project, args=['artifact', 'checkout', builddep_element_name,
                                             '--directory', builddep_checkout])
     result.assert_main_error(ErrorDomain.STREAM, 'uncached-checkout-attempt')

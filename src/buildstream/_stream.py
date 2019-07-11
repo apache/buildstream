@@ -272,8 +272,12 @@ class Stream():
             # Remote execution is configured for all projects.
             # Require artifact files only for target elements and their runtime dependencies.
             self._context.set_artifact_files_optional()
-            for element in self.targets:
-                element._set_artifact_files_required()
+
+            # fetch blobs of targets if options set
+            if self._context.pull_artifact_files:
+                scope = Scope.ALL if build_all else Scope.RUN
+                for element in self.targets:
+                    element._set_artifact_files_required(scope=scope)
 
         # Now construct the queues
         #
