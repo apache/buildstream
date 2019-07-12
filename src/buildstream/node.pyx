@@ -176,6 +176,11 @@ cdef class Node:
     cpdef void _assert_fully_composited(self) except *:
         raise NotImplementedError()
 
+    # _strip_node_info()
+    #
+    # Remove all the node information (provenance) and return
+    # the underlying data as plain python objects (list, dict, str, None)
+    #
     cpdef object _strip_node_info(self):
         raise NotImplementedError()
 
@@ -183,6 +188,19 @@ cdef class Node:
     #                Abstract Protected Methods                 #
     #############################################################
 
+    # _compose_on(key, target, path)
+    #
+    # Compose the current node on the given target.
+    #
+    # Args:
+    #   key (str): key on the target on which to compose the current value
+    #   target (.Node): target node on which to compose
+    #   path (list): path from the root of the target when composing recursively
+    #         in order to give accurate error reporting.
+    #
+    # Raises:
+    #   (_CompositeError): if an error is encountered during composition
+    #
     cdef void _compose_on(self, str key, MappingNode target, list path) except *:
         raise NotImplementedError()
 
@@ -202,6 +220,20 @@ cdef class Node:
     cdef bint _is_composite_list(self) except *:
         raise NotImplementedError()
 
+    # _walk_find(target, path)
+    #
+    # Walk the node to search for `target`.
+    #
+    # When this returns `True`, the `path` argument will contain the full path
+    # to the target from the root node.
+    #
+    # Args:
+    #   target (.Node): target to find in the node tree
+    #   path (list): current path from the root
+    #
+    # Returns:
+    #   (bool): whether the target was found in the tree or not
+    #
     cdef bint _walk_find(self, Node target, list path) except *:
         raise NotImplementedError()
 
@@ -209,6 +241,20 @@ cdef class Node:
     #                     Protected Methods                     #
     #############################################################
 
+    # _shares_position_with(target)
+    #
+    # Check whether the current node is at the same position in its tree as the target.
+    #
+    # This is useful when we want to know if two nodes are 'identical', that is they
+    # are at the exact same position in each respective tree, but do not necessarily
+    # have the same content.
+    #
+    # Args:
+    #   target (.Node): the target to compare with the current node.
+    #
+    # Returns:
+    #   (bool): whether the two nodes share the same position
+    #
     cdef bint _shares_position_with(self, Node target):
         return (self.file_index == target.file_index and
                 self.line == target.line and
@@ -736,7 +782,7 @@ cdef class MappingNode(Node):
                                     e.path,
                                     e.message)) from e
 
-    # Like _composite(target, source), but where target overrides source instead.
+    # Like self._composite(target), but where values in the target don't get overridden by values in self.
     #
     cpdef void _composite_under(self, MappingNode target) except *:
         target._composite(self)
@@ -829,6 +875,13 @@ cdef class MappingNode(Node):
 
             self.__composite(target.value[key], path)
 
+    # _compose_on_list(target)
+    #
+    # Compose the current node on the given sequence.
+    #
+    # Args:
+    #   target (.SequenceNode): sequence on which to compose the current composite dict
+    #
     cdef void _compose_on_list(self, SequenceNode target):
         cdef SequenceNode clobber = self.value.get("(=)")
         cdef SequenceNode prefix = self.value.get("(<)")
@@ -843,6 +896,15 @@ cdef class MappingNode(Node):
         if suffix is not None:
             target.value.extend(suffix.value)
 
+    # _compose_on_composite_dict(target)
+    #
+    # Compose the current node on the given composite dict.
+    #
+    # A composite dict is a dict that contains composition directives.
+    #
+    # Args:
+    #   target (.MappingNode): sequence on which to compose the current composite dict
+    #
     cdef void _compose_on_composite_dict(self, MappingNode target):
         cdef SequenceNode clobber = self.value.get("(=)")
         cdef SequenceNode prefix = self.value.get("(<)")
@@ -913,6 +975,15 @@ cdef class MappingNode(Node):
     #                      Private Methods                      #
     #############################################################
 
+    # __composite(target, path)
+    #
+    # Helper method to compose the current node on another.
+    #
+    # Args:
+    #   target (.MappingNode): target on which to compose the current node
+    #   path (list): path from the root of the target when composing recursively
+    #                in order to give accurate error reporting.
+    #
     cdef void __composite(self, MappingNode target, list path=None) except *:
         cdef str key
         cdef Node value
@@ -922,6 +993,19 @@ cdef class MappingNode(Node):
             value._compose_on(key, target, path)
             path.pop()
 
+    # _get(key, default, default_constructor)
+    #
+    # Internal helper method to get an entry from the underlying dictionary.
+    #
+    # Args:
+    #   key (str): the key for which to retrieve the entry
+    #   default (object): default value if the entry is not present
+    #   default_constructor (object): method to transform the `default` into a Node
+    #                                 if the entry is not present
+    #
+    # Raises:
+    #   (LoadError): if the key is not present and no default has been given.
+    #
     cdef Node _get(self, str key, object default, object default_constructor):
         value = self.value.get(key, _sentinel)
 
@@ -1305,6 +1389,19 @@ def _assert_symbol_name(str symbol_name, str purpose, *, Node ref_node=None, bin
                         message, detail=detail)
 
 
+# _create_new_file(filename, shortname, displayname, toplevel, project)
+#
+# Create a new synthetic file and return it's index in the `._FILE_LIST`.
+#
+# Args:
+#   filename (str): the name to give to the file
+#   shortname (str): a shorter name used when showing information on the screen
+#   displayname (str): the name to give when reporting errors
+#   project (object): project with which to associate the current file (when dealing with junctions)
+#
+# Returns:
+#   (int): the index in the `._FILE_LIST` that identifies the new file
+#
 cdef Py_ssize_t _create_new_file(str filename, str shortname, str displayname, object project):
     cdef Py_ssize_t file_number = len(__FILE_LIST)
     __FILE_LIST.append(__FileInfo(filename, shortname, displayname, None, project))
@@ -1312,6 +1409,14 @@ cdef Py_ssize_t _create_new_file(str filename, str shortname, str displayname, o
     return file_number
 
 
+# _set_root_node_for_file(file_index, contents)
+#
+# Set the root node for the given file
+#
+# Args:
+#   file_index (int): the index in the `._FILE_LIST` for the file for which to set the root
+#   contents (.MappingNode): node that should be the root for the file
+#
 cdef void _set_root_node_for_file(Py_ssize_t file_index, MappingNode contents) except *:
     cdef __FileInfo f_info
 
