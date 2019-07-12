@@ -29,4 +29,4 @@ def test_override(cli, datafiles, arch):
     expected_value = '--host={}-unknown-linux-gnu'.format(arch)
 
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'conf-global') == expected_value
+    assert loaded.get_str('conf-global') == expected_value

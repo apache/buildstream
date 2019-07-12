@@ -27,6 +27,7 @@ from functools import partial
 import grpc
 
 from .. import utils
+from ..node import Node
 from .._message import Message, MessageType
 from .sandbox import Sandbox, SandboxCommandError, _SandboxBatch
 from ..storage.directory import VirtualDirectoryError
@@ -112,41 +113,41 @@ class SandboxRemote(Sandbox):
     def specs_from_config_node(config_node, basedir=None):
 
         def require_node(config, keyname):
-            val = _yaml.node_get(config, dict, keyname, default_value=None)
+            val = config.get_mapping(keyname, default=None)
             if val is None:
-                provenance = _yaml.node_get_provenance(remote_config, key=keyname)
+                provenance = remote_config.get_provenance()
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
                                       "{}: '{}' was not present in the remote "
                                       "execution configuration (remote-execution). "
                                       .format(str(provenance), keyname))
             return val
 
-        remote_config = _yaml.node_get(config_node, dict, 'remote-execution', default_value=None)
+        remote_config = config_node.get_mapping('remote-execution', default=None)
         if remote_config is None:
             return None
 
         service_keys = ['execution-service', 'storage-service', 'action-cache-service']
 
-        _yaml.node_validate(remote_config, ['url', *service_keys])
+        remote_config.validate_keys(['url', *service_keys])
 
         exec_config = require_node(remote_config, 'execution-service')
         storage_config = require_node(remote_config, 'storage-service')
-        action_config = _yaml.node_get(remote_config, dict, 'action-cache-service', default_value={})
+        action_config = remote_config.get_mapping('action-cache-service', default={})
 
         tls_keys = ['client-key', 'client-cert', 'server-cert']
 
-        _yaml.node_validate(exec_config, ['url', 'instance-name', *tls_keys])
-        _yaml.node_validate(storage_config, ['url', 'instance-name', *tls_keys])
+        exec_config.validate_keys(['url', 'instance-name', *tls_keys])
+        storage_config.validate_keys(['url', 'instance-name', *tls_keys])
         if action_config:
-            _yaml.node_validate(action_config, ['url', 'instance-name', *tls_keys])
+            action_config.validate_keys(['url', 'instance-name', *tls_keys])
 
         # Maintain some backwards compatibility with older configs, in which
         # 'url' was the only valid key for remote-execution:
         if 'url' in remote_config:
             if 'execution-service' not in remote_config:
-                exec_config = _yaml.new_node_from_dict({'url': remote_config['url']})
+                exec_config = Node.from_dict({'url': remote_config['url']})
             else:
-                provenance = _yaml.node_get_provenance(remote_config, key='url')
+                provenance = remote_config.get_node('url').get_provenance()
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
                                       "{}: 'url' and 'execution-service' keys were found in the remote "
                                       "execution configuration (remote-execution). "
@@ -164,7 +165,7 @@ class SandboxRemote(Sandbox):
         for config_key, config in zip(service_keys, service_configs):
             # Either both or none of the TLS client key/cert pair must be specified:
             if ('client-key' in config) != ('client-cert' in config):
-                provenance = _yaml.node_get_provenance(remote_config, key=config_key)
+                provenance = remote_config.get_node(config_key).get_provenance()
                 raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
                                       "{}: TLS client key/cert pair is incomplete. "
                                       "You must specify both 'client-key' and 'client-cert' "
@@ -173,9 +174,10 @@ class SandboxRemote(Sandbox):
 
             for tls_key in tls_keys:
                 if tls_key in config:
-                    _yaml.node_set(config, tls_key, resolve_path(_yaml.node_get(config, str, tls_key)))
+                    config[tls_key] = resolve_path(config.get_str(tls_key))
 
-        return RemoteExecutionSpec(*[_yaml.node_sanitize(conf) for conf in service_configs])
+        # TODO: we should probably not be stripping node info and rather load files the safe way
+        return RemoteExecutionSpec(*[conf._strip_node_info() for conf in service_configs])
 
     def run_remote_command(self, channel, action_digest):
         # Sends an execution request to the remote execution server.

@@ -17,7 +17,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .. import _yaml
 from .._exceptions import LoadError, LoadErrorReason, PlatformError
 from .._platform import Platform
 from .optionenum import OptionEnum
@@ -55,7 +54,7 @@ class OptionArch(OptionEnum):
                     # Do not terminate the loop early to ensure we validate
                     # all values in the list.
             except PlatformError as e:
-                provenance = _yaml.node_get_provenance(node, key='values', indices=[index])
+                provenance = node.get_sequence('values').scalar_at(index).get_provenance()
                 prefix = ""
                 if provenance:
                     prefix = "{}: ".format(provenance)

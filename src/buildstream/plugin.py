@@ -116,7 +116,6 @@ import sys
 from contextlib import contextmanager
 from weakref import WeakValueDictionary
 
-from . import _yaml
 from . import utils
 from ._exceptions import PluginError, ImplError
 from ._message import Message, MessageType
@@ -271,7 +270,7 @@ class Plugin():
         """Configure the Plugin from loaded configuration data
 
         Args:
-           node (dict): The loaded configuration dictionary
+           node (:class:`MappingNode <buildstream.node.MappingNode>`): The loaded configuration dictionary
 
         Raises:
            :class:`.SourceError`: If it's a :class:`.Source` implementation
@@ -280,13 +279,7 @@ class Plugin():
         Plugin implementors should implement this method to read configuration
         data and store it.
 
-        Plugins should use the :func:`Plugin.node_get_member() <buildstream.plugin.Plugin.node_get_member>`
-        and :func:`Plugin.node_get_list_element() <buildstream.plugin.Plugin.node_get_list_element>`
-        methods to fetch values from the passed `node`. This will ensure that a nice human readable error
-        message will be raised if the expected configuration is not found, indicating the filename,
-        line and column numbers.
-
-        Further the :func:`Plugin.node_validate() <buildstream.plugin.Plugin.node_validate>` method
+        The :func:`MappingNode.validate_keys() <buildstream._yaml.MappingNode.validate_keys>` method
         should be used to ensure that the user has not specified keys in `node` which are unsupported
         by the plugin.
 
@@ -294,8 +287,7 @@ class Plugin():
 
            For Elements, when variable substitution is desirable, the
            :func:`Element.node_subst_member() <buildstream.element.Element.node_subst_member>`
-           and :func:`Element.node_subst_list_element() <buildstream.element.Element.node_subst_list_element>`
-           methods can be used.
+           method can be used.
         """
         raise ImplError("{tag} plugin '{kind}' does not implement configure()".format(
             tag=self.__type_tag, kind=self.get_kind()))
@@ -354,114 +346,7 @@ class Plugin():
         """
         return self.__kind
 
-    def node_items(self, node):
-        """Iterate over a dictionary loaded from YAML
-
-        Args:
-            node (Node): The YAML loaded dictionary object
-
-        Returns:
-           list: List of key/value tuples to iterate over
-
-        BuildStream holds some private data in dictionaries loaded from
-        the YAML in order to preserve information to report in errors.
-
-        This convenience function should be used instead of the dict.items()
-        builtin function provided by python.
-        """
-        yield from _yaml.node_items(node)
-
-    def node_provenance(self, node, member_name=None):
-        """Gets the provenance for `node` and `member_name`
-
-        This reports a string with file, line and column information suitable
-        for reporting an error or warning.
-
-        Args:
-            node (Node): The YAML loaded dictionary object
-            member_name (str): The name of the member to check, or None for the node itself
-
-        Returns:
-            (str): A string describing the provenance of the node and member
-        """
-        provenance = _yaml.node_get_provenance(node, key=member_name)
-        return str(provenance)
-
-    def node_get_member(self, node, expected_type, member_name, default=_yaml._sentinel, *, allow_none=False):
-        """Fetch the value of a node member, raising an error if the value is
-        missing or incorrectly typed.
-
-        Args:
-           node (Node): A dictionary loaded from YAML
-           expected_type (type): The expected type of the node member
-           member_name (str): The name of the member to fetch
-           default (expected_type): A value to return when *member_name* is not specified in *node*
-           allow_none (bool): Allow explicitly set None values in the YAML (*Since: 1.4*)
-
-        Returns:
-           The value of *member_name* in *node*, otherwise *default*
-
-        Raises:
-           :class:`.LoadError`: When *member_name* is not found and no *default* was provided
-
-        Note:
-           Returned strings are stripped of leading and trailing whitespace
-
-        **Example:**
-
-        .. code:: python
-
-          # Expect a string 'name' in 'node'
-          name = self.node_get_member(node, str, 'name')
-
-          # Fetch an optional integer
-          level = self.node_get_member(node, int, 'level', -1)
-        """
-        return _yaml.node_get(node, expected_type, member_name, default_value=default, allow_none=allow_none)
-
-    def node_set_member(self, node, key, value):
-        """Set the value of a node member
-        Args:
-           node (node): A dictionary loaded from YAML
-           key (str): The key name
-           value: The value
-
-        Returns:
-           None
-
-        Raises:
-           None
-
-        **Example:**
-
-        .. code:: python
-
-          # Set a string 'tomjon' in node[name]
-          self.node_set_member(node, 'name', 'tomjon')
-        """
-        _yaml.node_set(node, key, value)
-
-    def new_empty_node(self):
-        """Create an empty 'Node' object to be handled by BuildStream's core
-        Args:
-           None
-
-        Returns:
-           Node: An empty Node object
-
-        Raises:
-           None
-
-        **Example:**
-
-        .. code:: python
-
-          # Create an empty Node object to store metadata information
-          metadata = self.new_empty_node()
-        """
-        return _yaml.new_empty_node()
-
-    def node_get_project_path(self, node, key, *,
+    def node_get_project_path(self, node, *,
                               check_is_file=False, check_is_dir=False):
         """Fetches a project path from a dictionary node and validates it
 
@@ -475,8 +360,7 @@ class Plugin():
         ``True``.
 
         Args:
-           node (dict): A dictionary loaded from YAML
-           key (str): The key whose value contains a path to validate
+           node (ScalarNode): A Node loaded from YAML containing the path to validate
            check_is_file (bool): If ``True`` an error will also be raised
                                  if path does not point to a regular file.
                                  Defaults to ``False``
@@ -501,69 +385,9 @@ class Plugin():
 
         """
 
-        return self.__project.get_path_from_node(node, key,
+        return self.__project.get_path_from_node(node,
                                                  check_is_file=check_is_file,
                                                  check_is_dir=check_is_dir)
-
-    def node_validate(self, node, valid_keys):
-        """This should be used in :func:`~buildstream.plugin.Plugin.configure`
-        implementations to assert that users have only entered
-        valid configuration keys.
-
-        Args:
-            node (dict): A dictionary loaded from YAML
-            valid_keys (iterable): A list of valid keys for the node
-
-        Raises:
-            :class:`.LoadError`: When an invalid key is found
-
-        **Example:**
-
-        .. code:: python
-
-          # Ensure our node only contains valid autotools config keys
-          self.node_validate(node, [
-              'configure-commands', 'build-commands',
-              'install-commands', 'strip-commands'
-          ])
-
-        """
-        _yaml.node_validate(node, valid_keys)
-
-    def node_get_list_element(self, node, expected_type, member_name, indices):
-        """Fetch the value of a list element from a node member, raising an error if the
-        value is incorrectly typed.
-
-        Args:
-           node (dict): A dictionary loaded from YAML
-           expected_type (type): The expected type of the node member
-           member_name (str): The name of the member to fetch
-           indices (list of int): List of indices to search, in case of nested lists
-
-        Returns:
-           The value of the list element in *member_name* at the specified *indices*
-
-        Raises:
-           :class:`.LoadError`
-
-        Note:
-           Returned strings are stripped of leading and trailing whitespace
-
-        **Example:**
-
-        .. code:: python
-
-          # Fetch the list itself
-          things = self.node_get_member(node, list, 'things')
-
-          # Iterate over the list indices
-          for i in range(len(things)):
-
-              # Fetch dict things
-              thing = self.node_get_list_element(
-                  node, dict, 'things', [ i ])
-        """
-        return _yaml.node_get(node, expected_type, member_name, indices=indices)
 
     def debug(self, brief, *, detail=None):
         """Print a debugging message
@@ -812,7 +636,7 @@ class Plugin():
     # _get_configuring() state is up to date.
     #
     # Args:
-    #    node (dict): The loaded configuration dictionary
+    #    node (buildstream.node.MappingNode): The loaded configuration dictionary
     #
     def _configure(self, node):
         self.__configuring = True
@@ -893,11 +717,11 @@ class Plugin():
             silenced_warnings = set()
             project = self.__project
 
-            for key, value in self.node_items(project.element_overrides):
-                if _yaml.node_get(value, bool, 'suppress-deprecation-warnings', default_value=False):
+            for key, value in project.element_overrides.items():
+                if value.get_bool('suppress-deprecation-warnings', default=False):
                     silenced_warnings.add(key)
-            for key, value in self.node_items(project.source_overrides):
-                if _yaml.node_get(value, bool, 'suppress-deprecation-warnings', default_value=False):
+            for key, value in project.source_overrides.items():
+                if value.get_bool('suppress-deprecation-warnings', default=False):
                     silenced_warnings.add(key)
 
             return self.get_kind() in silenced_warnings

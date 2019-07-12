@@ -21,6 +21,7 @@ import os
 from . import utils
 from . import _yaml
 
+from .node import MappingNode, ScalarNode
 from ._exceptions import LoadError, LoadErrorReason
 
 
@@ -114,7 +115,8 @@ class WorkspaceProject():
     def load(cls, directory):
         workspace_file = os.path.join(directory, WORKSPACE_PROJECT_FILE)
         if os.path.exists(workspace_file):
-            data_dict = _yaml.node_sanitize(_yaml.roundtrip_load(workspace_file), dict_type=dict)
+            data_dict = _yaml.roundtrip_load(workspace_file)
+
             return cls.from_dict(directory, data_dict)
         else:
             return None
@@ -125,7 +127,7 @@ class WorkspaceProject():
     #
     def write(self):
         os.makedirs(self._directory, exist_ok=True)
-        _yaml.dump(self.to_dict(), self.get_filename())
+        _yaml.roundtrip_dump(self.to_dict(), self.get_filename())
 
     # get_filename()
     #
@@ -530,7 +532,7 @@ class Workspaces():
             }
         }
         os.makedirs(self._bst_directory, exist_ok=True)
-        _yaml.dump(config, self._get_filename())
+        _yaml.roundtrip_dump(config, self._get_filename())
 
     # _load_config()
     #
@@ -570,23 +572,21 @@ class Workspaces():
     #
     def _parse_workspace_config(self, workspaces):
         try:
-            version = _yaml.node_get(workspaces, int, 'format-version', default_value=0)
+            version = workspaces.get_int('format-version', default=0)
         except ValueError:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "Format version is not an integer in workspace configuration")
 
         if version == 0:
             # Pre-versioning format can be of two forms
-            for element, config in _yaml.node_items(workspaces):
-                if _yaml.is_node(config):
-                    # Get a dict
-                    config = _yaml.node_sanitize(config, dict_type=dict)
+            for element, config in workspaces.items():
+                config_type = type(config)
 
-                if isinstance(config, str):
+                if config_type is ScalarNode:
                     pass
 
-                elif isinstance(config, dict):
-                    sources = list(config.items())
+                elif config_type is MappingNode:
+                    sources = list(config.values())
                     if len(sources) > 1:
                         detail = "There are multiple workspaces open for '{}'.\n" + \
                                  "This is not supported anymore.\n" + \
@@ -594,22 +594,21 @@ class Workspaces():
                         raise LoadError(LoadErrorReason.INVALID_DATA,
                                         detail.format(element, self._get_filename()))
 
-                    _yaml.node_set(workspaces, element, sources[0][1])
+                    workspaces[element] = sources[0]
 
                 else:
                     raise LoadError(LoadErrorReason.INVALID_DATA,
                                     "Workspace config is in unexpected format.")
 
             res = {
-                element: Workspace(self._toplevel_project, path=config)
-                for element, config in _yaml.node_items(workspaces)
+                element: Workspace(self._toplevel_project, path=config.as_str())
+                for element, config in workspaces.items()
             }
 
         elif 1 <= version <= BST_WORKSPACE_FORMAT_VERSION:
-            workspaces = _yaml.node_get(workspaces, dict, "workspaces",
-                                        default_value=_yaml.new_empty_node())
+            workspaces = workspaces.get_mapping("workspaces", default={})
             res = {element: self._load_workspace(node)
-                   for element, node in _yaml.node_items(workspaces)}
+                   for element, node in workspaces.items()}
 
         else:
             raise LoadError(LoadErrorReason.INVALID_DATA,
@@ -630,13 +629,15 @@ class Workspaces():
     #    (Workspace): A newly instantiated Workspace
     #
     def _load_workspace(self, node):
+        running_files = node.get_mapping('running_files', default=None)
+        if running_files:
+            running_files = running_files._strip_node_info()
+
         dictionary = {
-            'prepared': _yaml.node_get(node, bool, 'prepared', default_value=False),
-            'path': _yaml.node_get(node, str, 'path'),
-            'last_successful': _yaml.node_get(node, str, 'last_successful', default_value=None),
-            'running_files': _yaml.node_sanitize(
-                _yaml.node_get(node, dict, 'running_files', default_value=None),
-                dict_type=dict),
+            'prepared': node.get_bool('prepared', default=False),
+            'path': node.get_str('path'),
+            'last_successful': node.get_str('last_successful', default=None),
+            'running_files': running_files,
         }
         return Workspace.from_dict(self._toplevel_project, dictionary)
 

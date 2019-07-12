@@ -175,9 +175,9 @@ class JunctionElement(Element):
     BST_FORBID_RDEPENDS = True
 
     def configure(self, node):
-        self.path = self.node_get_member(node, str, 'path', default='')
-        self.options = self.node_get_member(node, dict, 'options', default={})
-        self.target = self.node_get_member(node, str, 'target', default=None)
+        self.path = node.get_str('path', default='')
+        self.options = node.get_mapping('options', default={})
+        self.target = node.get_str('target', default=None)
         self.target_element = None
         self.target_junction = None
 
@@ -188,7 +188,7 @@ class JunctionElement(Element):
         # 3. config['path']
         if self.target and any(self.sources()):
             raise ElementError("junction elements cannot define both 'sources' and 'target' config option")
-        if self.target and any(self.node_items(self.options)):
+        if self.target and any(self.options.items()):
             raise ElementError("junction elements cannot define both 'options' and 'target'")
         if self.target and self.path:
             raise ElementError("junction elements cannot define both 'path' and 'target'")

@@ -28,14 +28,14 @@ def test_include_project_file(cli, datafiles):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, bool, 'included')
+    assert loaded.get_bool('included')
 
 
 def test_include_missing_file(cli, tmpdir):
     tmpdir.join('project.conf').write('{"name": "test"}')
     element = tmpdir.join('include_missing_file.bst')
 
-    # Normally we would use dicts and _yaml.dump to write such things, but here
+    # Normally we would use dicts and _yaml.roundtrip_dump to write such things, but here
     # we want to be sure of a stable line and column number.
     element.write(textwrap.dedent("""
         kind: manual
@@ -55,7 +55,7 @@ def test_include_dir(cli, tmpdir):
     tmpdir.mkdir('subdir')
     element = tmpdir.join('include_dir.bst')
 
-    # Normally we would use dicts and _yaml.dump to write such things, but here
+    # Normally we would use dicts and _yaml.roundtrip_dump to write such things, but here
     # we want to be sure of a stable line and column number.
     element.write(textwrap.dedent("""
         kind: manual
@@ -87,7 +87,7 @@ def test_include_junction_file(cli, tmpdir, datafiles):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, bool, 'included')
+    assert loaded.get_bool('included')
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -102,7 +102,7 @@ def test_include_junction_options(cli, datafiles):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'build_arch') == 'x86_64'
+    assert loaded.get_str('build_arch') == 'x86_64'
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -126,7 +126,7 @@ def test_junction_element_partial_project_project(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, junction_path)
+    _yaml.roundtrip_dump(element, junction_path)
 
     result = cli.run(project=project, args=[
         'show',
@@ -135,7 +135,7 @@ def test_junction_element_partial_project_project(cli, tmpdir, datafiles):
         'junction.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'included', default_value=None) is None
+    assert loaded.get_str('included', default=None) is None
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -159,7 +159,7 @@ def test_junction_element_not_partial_project_file(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, junction_path)
+    _yaml.roundtrip_dump(element, junction_path)
 
     result = cli.run(project=project, args=[
         'show',
@@ -168,7 +168,7 @@ def test_junction_element_not_partial_project_file(cli, tmpdir, datafiles):
         'junction.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'included', default_value=None) is not None
+    assert loaded.get_str('included', default=None) is not None
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -182,8 +182,8 @@ def test_include_element_overrides(cli, datafiles):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'manual_main_override', default_value=None) is not None
-    assert _yaml.node_get(loaded, str, 'manual_included_override', default_value=None) is not None
+    assert loaded.get_str('manual_main_override', default=None) is not None
+    assert loaded.get_str('manual_included_override', default=None) is not None
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -197,7 +197,7 @@ def test_include_element_overrides_composition(cli, datafiles):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, list, 'build-commands') == ['first', 'second']
+    assert loaded.get_sequence('build-commands').as_str_list() == ['first', 'second']
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -213,9 +213,9 @@ def test_list_overide_does_not_fail_upon_first_composition(cli, datafiles):
     loaded = _yaml.load_data(result.output)
 
     # Assert that the explicitly overwritten public data is present
-    bst = _yaml.node_get(loaded, dict, 'bst')
+    bst = loaded.get_mapping('bst')
     assert 'foo-commands' in bst
-    assert _yaml.node_get(bst, list, 'foo-commands') == ['need', 'this']
+    assert bst.get_sequence('foo-commands').as_str_list() == ['need', 'this']
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -229,7 +229,7 @@ def test_include_element_overrides_sub_include(cli, datafiles):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'included', default_value=None) is not None
+    assert loaded.get_str('included', default=None) is not None
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -248,8 +248,8 @@ def test_junction_do_not_use_included_overrides(cli, tmpdir, datafiles):
         'junction.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'main_override', default_value=None) is not None
-    assert _yaml.node_get(loaded, str, 'included_override', default_value=None) is None
+    assert loaded.get_str('main_override', default=None) is not None
+    assert loaded.get_str('included_override', default=None) is None
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -264,7 +264,7 @@ def test_conditional_in_fragment(cli, datafiles):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'size') == '8'
+    assert loaded.get_str('size') == '8'
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -278,7 +278,7 @@ def test_inner(cli, datafiles):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, str, 'build_arch') == 'x86_64'
+    assert loaded.get_str('build_arch') == 'x86_64'
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -310,4 +310,4 @@ def test_local_to_junction(cli, tmpdir, datafiles):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert _yaml.node_get(loaded, bool, 'included')
+    assert loaded.get_bool('included')

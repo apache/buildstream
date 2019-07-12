@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from .._exceptions import LoadError, LoadErrorReason
-from .. cimport _yaml
+from ..node cimport MappingNode, Node, ProvenanceInformation, ScalarNode, SequenceNode
 
 
 # Symbol():
@@ -59,48 +59,47 @@ class Symbol():
 #                                        dependency was declared
 #
 cdef class Dependency:
-    cdef public _yaml.ProvenanceInformation provenance
+    cdef public ProvenanceInformation provenance
     cdef public str name
     cdef public str dep_type
     cdef public str junction
 
     def __init__(self,
-                 object dep,
-                 _yaml.ProvenanceInformation provenance,
+                 Node dep,
                  str default_dep_type=None):
         cdef str dep_type
 
-        self.provenance = provenance
+        self.provenance = dep.get_provenance()
 
-        if type(dep) is str:
-            self.name = <str> dep
+        if type(dep) is ScalarNode:
+            self.name = dep.as_str()
             self.dep_type = default_dep_type
             self.junction = None
 
-        elif type(dep) is _yaml.Node and type(dep.value) is dict:
+        elif type(dep) is MappingNode:
             if default_dep_type:
-                _yaml.node_validate(<_yaml.Node> dep, ['filename', 'junction'])
+                (<MappingNode> dep).validate_keys(['filename', 'junction'])
                 dep_type = default_dep_type
             else:
-                _yaml.node_validate(<_yaml.Node> dep, ['filename', 'type', 'junction'])
+                (<MappingNode> dep).validate_keys(['filename', 'type', 'junction'])
 
                 # Make type optional, for this we set it to None
-                dep_type = <str> _yaml.node_get(<_yaml.Node> dep, str, <str> Symbol.TYPE, None, None)
+                dep_type = (<MappingNode> dep).get_str(<str> Symbol.TYPE, None)
                 if dep_type is None or dep_type == <str> Symbol.ALL:
                     dep_type = None
                 elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
-                    provenance = _yaml.node_get_provenance(dep, key=Symbol.TYPE)
+                    provenance = dep.get_scalar(Symbol.TYPE).get_provenance()
                     raise LoadError(LoadErrorReason.INVALID_DATA,
                                     "{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
                                     .format(provenance, dep_type))
 
-            self.name = <str> _yaml.node_get(<_yaml.Node> dep, str, <str> Symbol.FILENAME)
+            self.name = (<MappingNode> dep).get_str(<str> Symbol.FILENAME)
             self.dep_type = dep_type
-            self.junction = <str> _yaml.node_get(<_yaml.Node> dep, str, <str> Symbol.JUNCTION, None, None)
+            self.junction = (<MappingNode> dep).get_str(<str> Symbol.JUNCTION, None)
 
         else:
             raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Dependency is not specified as a string or a dictionary".format(provenance))
+                            "{}: Dependency is not specified as a string or a dictionary".format(self.provenance))
 
         # `:` characters are not allowed in filename if a junction was
         # explicitly specified
@@ -137,20 +136,16 @@ cdef class Dependency:
 #    default_dep_type (str): type to give to the dependency
 #    acc (list): a list in which to add the loaded dependencies
 #
-cdef void _extract_depends_from_node(_yaml.Node node, str key, str default_dep_type, list acc) except *:
-    cdef list depends = <list> _yaml.node_get(node, list, key, None, [])
-    cdef int index
-    cdef _yaml.ProvenanceInformation dep_provenance
+cdef void _extract_depends_from_node(Node node, str key, str default_dep_type, list acc) except *:
+    cdef SequenceNode depends = node.get_sequence(key, [])
+    cdef Node dep_node
 
-    for index in range(len(depends)):
-        # FIXME: the provenance information would be obtainable from the Node directly if we stop
-        #        stripping provenance and have proper nodes for str elements
-        dep_provenance = <_yaml.ProvenanceInformation> _yaml.node_get_provenance(node, key=key, indices=[index])
-        dependency = Dependency(depends[index], dep_provenance, default_dep_type=default_dep_type)
+    for dep_node in depends:
+        dependency = Dependency(dep_node, default_dep_type=default_dep_type)
         acc.append(dependency)
 
     # Now delete the field, we dont want it anymore
-    _yaml.node_del(node, key, safe=True)
+    node.safe_del(key)
 
 
 # extract_depends_from_node():
@@ -167,7 +162,7 @@ cdef void _extract_depends_from_node(_yaml.Node node, str key, str default_dep_t
 # Returns:
 #    (list): a list of Dependency objects
 #
-def extract_depends_from_node(_yaml.Node node):
+def extract_depends_from_node(Node node):
     cdef list acc = []
     _extract_depends_from_node(node, <str> Symbol.BUILD_DEPENDS, <str> Symbol.BUILD, acc)
     _extract_depends_from_node(node, <str> Symbol.RUNTIME_DEPENDS, <str> Symbol.RUNTIME, acc)

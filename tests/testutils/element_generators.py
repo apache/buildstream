@@ -59,7 +59,7 @@ def create_element_size(name, project_dir, elements_path, dependencies, size):
         },
         'depends': dependencies
     }
-    _yaml.dump(element, os.path.join(project_dir, elements_path, name))
+    _yaml.roundtrip_dump(element, os.path.join(project_dir, elements_path, name))
 
     # Return the repo, so that it can later be used to add commits
     return repo

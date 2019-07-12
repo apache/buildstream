@@ -30,7 +30,7 @@ import shutil
 import pytest
 
 from buildstream._exceptions import ErrorDomain
-from buildstream import _yaml
+from buildstream import _yaml, Node
 from buildstream.plugin import CoreWarnings
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
@@ -58,7 +58,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
             repo.source_config(ref='5')
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Assert that fetch raises an error here
     result = cli.run(project=project, args=[
@@ -92,7 +92,7 @@ def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
@@ -131,7 +131,7 @@ def test_submodule_fetch_source_enable_explicit(cli, tmpdir, datafiles):
             repo.source_config_extra(ref=ref, checkout_submodules=True)
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
@@ -170,7 +170,7 @@ def test_submodule_fetch_source_disable(cli, tmpdir, datafiles):
             repo.source_config_extra(ref=ref, checkout_submodules=False)
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
@@ -209,7 +209,7 @@ def test_submodule_fetch_submodule_does_override(cli, tmpdir, datafiles):
             repo.source_config_extra(ref=ref, checkout_submodules=False)
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
@@ -253,7 +253,7 @@ def test_submodule_fetch_submodule_individual_checkout(cli, tmpdir, datafiles):
             repo.source_config_extra(ref=ref, checkout_submodules=True)
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
@@ -298,7 +298,7 @@ def test_submodule_fetch_submodule_individual_checkout_explicit(cli, tmpdir, dat
             repo.source_config_extra(ref=ref, checkout_submodules=True)
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
@@ -338,7 +338,7 @@ def test_submodule_fetch_project_override(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
@@ -369,7 +369,7 @@ def test_submodule_track_ignore_inconsistent(cli, tmpdir, datafiles):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Now add a .gitmodules file with an inconsistent submodule,
     # we are calling this inconsistent because the file was created
@@ -409,7 +409,7 @@ def test_submodule_track_no_ref_or_track(cli, tmpdir, datafiles):
         ]
     }
 
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Track will encounter an inconsistent submodule without any ref
     result = cli.run(project=project, args=['show', 'target.bst'])
@@ -429,7 +429,7 @@ def test_ref_not_in_track(cli, tmpdir, datafiles, fail):
             "name": "foo",
             "fatal-warnings": [CoreWarnings.REF_NOT_IN_TRACK]
         }
-        _yaml.dump(project_template, os.path.join(project, 'project.conf'))
+        _yaml.roundtrip_dump(project_template, os.path.join(project, 'project.conf'))
 
     # Create the repo from 'repofiles', create a branch without latest commit
     repo = create_repo('git', str(tmpdir))
@@ -447,7 +447,7 @@ def test_ref_not_in_track(cli, tmpdir, datafiles, fail):
             gitsource
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     result = cli.run(project=project, args=['build', 'target.bst'])
 
@@ -472,7 +472,7 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
             "name": "foo",
             "fatal-warnings": ['git:unlisted-submodule']
         }
-        _yaml.dump(project_template, os.path.join(project, 'project.conf'))
+        _yaml.roundtrip_dump(project_template, os.path.join(project, 'project.conf'))
 
     # Create the submodule first from the 'subrepofiles' subdir
     subrepo = create_repo('git', str(tmpdir), 'subrepo')
@@ -501,7 +501,7 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
             gitsource
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # We will not see the warning or error before the first fetch, because
     # we don't have the repository yet and so we have no knowledge of
@@ -545,7 +545,7 @@ def test_track_unlisted_submodule(cli, tmpdir, datafiles, fail):
             "name": "foo",
             "fatal-warnings": ['git:unlisted-submodule']
         }
-        _yaml.dump(project_template, os.path.join(project, 'project.conf'))
+        _yaml.roundtrip_dump(project_template, os.path.join(project, 'project.conf'))
 
     # Create the submodule first from the 'subrepofiles' subdir
     subrepo = create_repo('git', str(tmpdir), 'subrepo')
@@ -571,7 +571,7 @@ def test_track_unlisted_submodule(cli, tmpdir, datafiles, fail):
             gitsource
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch the repo, we will not see the warning because we
     # are still pointing to a ref which predates the submodules
@@ -608,7 +608,7 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
             "name": "foo",
             "fatal-warnings": ['git:invalid-submodule']
         }
-        _yaml.dump(project_template, os.path.join(project, 'project.conf'))
+        _yaml.roundtrip_dump(project_template, os.path.join(project, 'project.conf'))
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo('git', str(tmpdir))
@@ -635,7 +635,7 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
             gitsource
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # We will not see the warning or error before the first fetch, because
     # we don't have the repository yet and so we have no knowledge of
@@ -680,7 +680,7 @@ def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
             "name": "foo",
             "fatal-warnings": ['git:invalid-submodule']
         }
-        _yaml.dump(project_template, os.path.join(project, 'project.conf'))
+        _yaml.roundtrip_dump(project_template, os.path.join(project, 'project.conf'))
 
     # Create the submodule first from the 'subrepofiles' subdir
     subrepo = create_repo('git', str(tmpdir), 'subrepo')
@@ -707,7 +707,7 @@ def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
             gitsource
         ]
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     # Fetch the repo, we will not see the warning because we
     # are still pointing to a ref which predates the submodules
@@ -753,14 +753,14 @@ def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
     }
     element['sources'][0]['ref-format'] = ref_format
     element_path = os.path.join(project, 'target.bst')
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Track it
     result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     result.assert_success()
 
     element = _yaml.load(element_path)
-    new_ref = _yaml.node_get(_yaml.node_get(element, dict, 'sources', [0]), str, 'ref')
+    new_ref = element.get_sequence('sources').mapping_at(0).get_str('ref')
 
     if ref_format == 'git-describe' and tag:
         # Check and strip prefix
@@ -785,8 +785,8 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
     project = str(datafiles)
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    _yaml.node_set(project_config, 'ref-storage', ref_storage)
-    _yaml.dump(project_config, os.path.join(project, 'project.conf'))
+    project_config['ref-storage'] = ref_storage
+    _yaml.roundtrip_dump(project_config, os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
     os.makedirs(repofiles, exist_ok=True)
@@ -838,7 +838,7 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
         ],
     }
     element_path = os.path.join(project, 'target.bst')
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     if ref_storage == 'inline':
         result = cli.run(project=project, args=['source', 'track', 'target.bst'])
@@ -849,16 +849,16 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
 
     if ref_storage == 'inline':
         element = _yaml.load(element_path)
-        tags = _yaml.node_get(_yaml.node_get(element, dict, 'sources', [0]), list, 'tags')
+        tags = element.get_sequence('sources').mapping_at(0).get_sequence('tags')
         assert len(tags) == 2
         for tag in tags:
             assert 'tag' in tag
             assert 'commit' in tag
             assert 'annotated' in tag
-            assert _yaml.node_get(tag, bool, 'annotated') == (tag_type == 'annotated')
+            assert tag.get_bool('annotated') == (tag_type == 'annotated')
 
-        assert {(_yaml.node_get(tag, str, 'tag'),
-                 _yaml.node_get(tag, str, 'commit'))
+        assert {(tag.get_str('tag'),
+                 tag.get_str('commit'))
                 for tag in tags} == {('tag1', repo.rev_parse('tag1^{commit}')),
                                      ('tag2', repo.rev_parse('tag2^{commit}'))}
 
@@ -899,8 +899,8 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
     project = str(datafiles)
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    _yaml.node_set(project_config, 'ref-storage', ref_storage)
-    _yaml.dump(project_config, os.path.join(project, 'project.conf'))
+    project_config['ref-storage'] = ref_storage
+    _yaml.roundtrip_dump(project_config, os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
     os.makedirs(repofiles, exist_ok=True)
@@ -951,7 +951,7 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
         ],
     }
     element_path = os.path.join(project, 'target.bst')
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     if ref_storage == 'inline':
         result = cli.run(project=project, args=['source', 'track', 'target.bst'])
@@ -962,18 +962,18 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
 
     if ref_storage == 'inline':
         element = _yaml.load(element_path)
-        source = _yaml.node_get(element, dict, 'sources', indices=[0])
-        tags = _yaml.node_get(source, list, 'tags')
+        source = element.get_sequence('sources').mapping_at(0)
+        tags = source.get_sequence('tags')
         assert len(tags) == 1
 
-        tag = _yaml.node_get(source, dict, 'tags', indices=[0])
+        tag = source.get_sequence('tags').mapping_at(0)
         assert 'tag' in tag
         assert 'commit' in tag
         assert 'annotated' in tag
-        assert _yaml.node_get(tag, bool, 'annotated') == (tag_type == 'annotated')
+        assert tag.get_bool('annotated') == (tag_type == 'annotated')
 
-        tag_name = _yaml.node_get(tag, str, 'tag')
-        commit = _yaml.node_get(tag, str, 'commit')
+        tag_name = tag.get_str('tag')
+        commit = tag.get_str('commit')
         assert (tag_name, commit) == ('tag', repo.rev_parse('tag^{commit}'))
 
     checkout = os.path.join(str(tmpdir), 'checkout')
@@ -1014,8 +1014,8 @@ def test_git_describe_relevant_history(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    _yaml.node_set(project_config, 'ref-storage', 'project.refs')
-    _yaml.dump(project_config, os.path.join(project, 'project.conf'))
+    project_config['ref-storage'] = 'project.refs'
+    _yaml.roundtrip_dump(project_config, os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
     os.makedirs(repofiles, exist_ok=True)
@@ -1064,7 +1064,7 @@ def test_git_describe_relevant_history(cli, tmpdir, datafiles):
         ],
     }
     element_path = os.path.join(project, 'target.bst')
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     result = cli.run(project=project, args=['source', 'track', 'target.bst', '--deps', 'all'])
     result.assert_success()
@@ -1094,8 +1094,8 @@ def test_default_do_not_track_tags(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    _yaml.node_set(project_config, 'ref-storage', 'inline')
-    _yaml.dump(project_config, os.path.join(project, 'project.conf'))
+    project_config['ref-storage'] = 'inline'
+    _yaml.roundtrip_dump(project_config, os.path.join(project, 'project.conf'))
 
     repofiles = os.path.join(str(tmpdir), 'repofiles')
     os.makedirs(repofiles, exist_ok=True)
@@ -1119,13 +1119,13 @@ def test_default_do_not_track_tags(cli, tmpdir, datafiles):
         ],
     }
     element_path = os.path.join(project, 'target.bst')
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     result = cli.run(project=project, args=['source', 'track', 'target.bst'])
     result.assert_success()
 
     element = _yaml.load(element_path)
-    source = _yaml.node_get(element, dict, 'sources', indices=[0])
+    source = element.get_sequence('sources').mapping_at(0)
     assert 'tags' not in source
 
 
@@ -1151,18 +1151,18 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
 
     repodir, reponame = os.path.split(repo.repo)
     project_config = _yaml.load(os.path.join(project, 'project.conf'))
-    _yaml.node_set(project_config, 'aliases', _yaml.new_node_from_dict({
+    project_config['aliases'] = Node.from_dict({
         'repo': 'http://example.com/'
-    }))
-    _yaml.node_set(project_config, 'mirrors', [
+    })
+    project_config['mirrors'] = [
         {
             'name': 'middle-earth',
             'aliases': {
                 'repo': ['file://{}/'.format(repodir)]
             }
         }
-    ])
-    _yaml.dump(project_config, os.path.join(project, 'project.conf'))
+    ]
+    _yaml.roundtrip_dump(project_config, os.path.join(project, 'project.conf'))
 
     repo.add_annotated_tag('tag', 'tag')
 
@@ -1184,7 +1184,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
         ],
     }
     element_path = os.path.join(project, 'target.bst')
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()
@@ -1208,7 +1208,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
 
     repodir, reponame = os.path.split(repo.repo)
 
-    _yaml.dump(project_config, os.path.join(project, 'project.conf'))
+    _yaml.roundtrip_dump(project_config, os.path.join(project, 'project.conf'))
 
     config = repo.source_config(ref=new_ref)
     del config['track']
@@ -1220,7 +1220,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
             config
         ],
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_success()

@@ -1,5 +1,6 @@
 import os
 from . import _yaml
+from .node import MappingNode, ScalarNode, SequenceNode
 from ._exceptions import LoadError, LoadErrorReason
 
 
@@ -35,19 +36,15 @@ class Includes:
         if current_loader is None:
             current_loader = self._loader
 
-        includes = _yaml.node_get(node, None, '(@)', default_value=None)
-        if isinstance(includes, str):
-            includes = [includes]
+        includes_node = node.get_node('(@)', allowed_types=[ScalarNode, SequenceNode], allow_none=True)
 
-        if not isinstance(includes, list) and includes is not None:
-            provenance = _yaml.node_get_provenance(node, key='(@)')
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: {} must either be list or str".format(provenance, includes))
+        if includes_node:
+            if type(includes_node) is ScalarNode:  # pylint: disable=unidiomatic-typecheck
+                includes = [includes_node.as_str()]
+            else:
+                includes = includes_node.as_str_list()
 
-        include_provenance = None
-        if includes:
-            include_provenance = _yaml.node_get_provenance(node, key='(@)')
-            _yaml.node_del(node, '(@)')
+            del node['(@)']
 
             for include in reversed(includes):
                 if only_local and ':' in include:
@@ -56,6 +53,7 @@ class Includes:
                     include_node, file_path, sub_loader = self._include_file(include,
                                                                              current_loader)
                 except LoadError as e:
+                    include_provenance = includes_node.get_provenance()
                     if e.reason == LoadErrorReason.MISSING_FILE:
                         message = "{}: Include block references a file that could not be found: '{}'.".format(
                             include_provenance, include)
@@ -68,13 +66,14 @@ class Includes:
                         raise
 
                 if file_path in included:
+                    include_provenance = includes_node.get_provenance()
                     raise LoadError(LoadErrorReason.RECURSIVE_INCLUDE,
                                     "{}: trying to recursively include {}". format(include_provenance,
                                                                                    file_path))
                 # Because the included node will be modified, we need
                 # to copy it so that we do not modify the toplevel
                 # node of the provenance.
-                include_node = _yaml.node_copy(include_node)
+                include_node = include_node.clone()
 
                 try:
                     included.add(file_path)
@@ -84,9 +83,9 @@ class Includes:
                 finally:
                     included.remove(file_path)
 
-                _yaml.composite_and_move(node, include_node)
+                include_node._composite_under(node)
 
-        for _, value in _yaml.node_items(node):
+        for value in node.values():
             self._process_value(value,
                                 included=included,
                                 current_loader=current_loader,
@@ -132,12 +131,14 @@ class Includes:
                        included=set(),
                        current_loader=None,
                        only_local=False):
-        if _yaml.is_node(value):
+        value_type = type(value)
+
+        if value_type is MappingNode:
             self.process(value,
                          included=included,
                          current_loader=current_loader,
                          only_local=only_local)
-        elif isinstance(value, list):
+        elif value_type is SequenceNode:
             for v in value:
                 self._process_value(v,
                                     included=included,

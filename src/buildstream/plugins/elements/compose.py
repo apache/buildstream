@@ -59,16 +59,16 @@ class ComposeElement(Element):
     BST_VIRTUAL_DIRECTORY = True
 
     def configure(self, node):
-        self.node_validate(node, [
+        node.validate_keys([
             'integrate', 'include', 'exclude', 'include-orphans'
         ])
 
         # We name this variable 'integration' only to avoid
         # collision with the Element.integrate() method.
-        self.integration = self.node_get_member(node, bool, 'integrate')
-        self.include = self.node_get_member(node, list, 'include')
-        self.exclude = self.node_get_member(node, list, 'exclude')
-        self.include_orphans = self.node_get_member(node, bool, 'include-orphans')
+        self.integration = node.get_bool('integrate')
+        self.include = node.get_sequence('include').as_str_list()
+        self.exclude = node.get_sequence('exclude').as_str_list()
+        self.include_orphans = node.get_bool('include-orphans')
 
     def preflight(self):
         pass

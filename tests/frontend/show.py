@@ -10,7 +10,7 @@ from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
-from tests.testutils import generate_junction, yaml_file_get_provenance
+from tests.testutils import generate_junction
 
 from . import configure_project
 
@@ -252,7 +252,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name, w
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Dump a project.refs if we're using project.refs storage
     #
@@ -268,7 +268,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name, w
                 }
             }
         }
-        _yaml.dump(project_refs, os.path.join(project, 'junction.refs'))
+        _yaml.roundtrip_dump(project_refs, os.path.join(project, 'junction.refs'))
 
     # Open a workspace if we're testing workspaced behavior
     if workspaced:
@@ -310,7 +310,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage, workspaced):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Open a workspace if we're testing workspaced behavior
     if workspaced:
@@ -333,8 +333,9 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage, workspaced):
         etc_result.assert_success()
     else:
         # Assert that we have the expected provenance encoded into the error
-        provenance = yaml_file_get_provenance(
-            element_path, 'junction-dep.bst', key='depends', indices=[0])
+        element_node = _yaml.load(element_path, shortname='junction-dep.bst')
+        ref_node = element_node.get_sequence('depends').mapping_at(0)
+        provenance = ref_node.get_provenance()
         assert str(provenance) in dep_result.stderr
 
         dep_result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
@@ -365,7 +366,7 @@ def test_fetched_junction(cli, tmpdir, datafiles, element_name, workspaced):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     result = cli.run(project=project, silent=True, args=[
         'source', 'fetch', 'junction.bst'])
@@ -420,7 +421,7 @@ def test_exceed_max_recursion_depth(cli, tmpdir, dependency_depth):
             }
             if i == 0:
                 del element['depends']
-            _yaml.dump(element, os.path.join(element_path, "element{}.bst".format(str(i))))
+            _yaml.roundtrip_dump(element, os.path.join(element_path, "element{}.bst".format(str(i))))
 
             source = os.path.join(sourcefiles_path, "source{}".format(str(i)))
             open(source, 'x').close()

@@ -37,7 +37,7 @@ def create_element(project, name, dependencies):
         ],
         'depends': dependencies
     }
-    _yaml.dump(element, os.path.join(element_path, name))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, name))
 
     return repo
 

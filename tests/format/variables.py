@@ -49,7 +49,7 @@ def test_defaults(cli, datafiles, target, varname, expected):
     ])
     result.assert_success()
     result_vars = _yaml.load_data(result.output)
-    assert _yaml.node_get(result_vars, str, varname) == expected
+    assert result_vars.get_str(varname) == expected
 
 
 ################################################################
@@ -75,7 +75,7 @@ def test_overrides(cli, datafiles, target, varname, expected):
     ])
     result.assert_success()
     result_vars = _yaml.load_data(result.output)
-    assert _yaml.node_get(result_vars, str, varname) == expected
+    assert result_vars.get_str(varname) == expected
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'missing_variables'))
@@ -110,7 +110,7 @@ def test_use_of_protected_var_project_conf(cli, datafiles, protected_var):
             protected_var: 'some-value'
         }
     }
-    _yaml.dump(conf, os.path.join(project, 'project.conf'))
+    _yaml.roundtrip_dump(conf, os.path.join(project, 'project.conf'))
 
     element = {
         'kind': 'import',
@@ -121,7 +121,7 @@ def test_use_of_protected_var_project_conf(cli, datafiles, protected_var):
             }
         ],
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_main_error(ErrorDomain.LOAD,
@@ -142,7 +142,7 @@ def test_use_of_protected_var_element_overrides(cli, datafiles, protected_var):
             }
         }
     }
-    _yaml.dump(conf, os.path.join(project, 'project.conf'))
+    _yaml.roundtrip_dump(conf, os.path.join(project, 'project.conf'))
 
     element = {
         'kind': 'manual',
@@ -153,7 +153,7 @@ def test_use_of_protected_var_element_overrides(cli, datafiles, protected_var):
             }
         ],
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_main_error(ErrorDomain.LOAD,
@@ -176,7 +176,7 @@ def test_use_of_protected_var_in_element(cli, datafiles, protected_var):
             protected_var: 'some-value'
         }
     }
-    _yaml.dump(element, os.path.join(project, 'target.bst'))
+    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
 
     result = cli.run(project=project, args=['build', 'target.bst'])
     result.assert_main_error(ErrorDomain.LOAD,

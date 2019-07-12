@@ -40,7 +40,7 @@ def build_project(datafiles, fatal_warnings):
 
     project = get_project(fatal_warnings)
 
-    _yaml.dump(project, os.path.join(project_path, "project.conf"))
+    _yaml.roundtrip_dump(project, os.path.join(project_path, "project.conf"))
 
     return project_path
 

@@ -17,7 +17,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .. import _yaml
 from .._exceptions import LoadError, LoadErrorReason
 from .option import Option, OPTION_SYMBOLS
 
@@ -44,22 +43,23 @@ class OptionEnum(Option):
         if allow_default_definition:
             valid_symbols += ['default']
 
-        _yaml.node_validate(node, valid_symbols)
+        node.validate_keys(valid_symbols)
 
-        self.values = _yaml.node_get(node, list, 'values', default_value=[])
+        self.values = node.get_sequence('values', default=[]).as_str_list()
         if not self.values:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: No values specified for {} option '{}'"
-                            .format(_yaml.node_get_provenance(node), self.OPTION_TYPE, self.name))
+                            .format(node.get_provenance(), self.OPTION_TYPE, self.name))
 
         # Allow subclass to define the default value
         self.value = self.load_default_value(node)
 
     def load_value(self, node, *, transform=None):
-        self.value = _yaml.node_get(node, str, self.name)
+        value_node = node.get_scalar(self.name)
+        self.value = value_node.as_str()
         if transform:
             self.value = transform(self.value)
-        self.validate(self.value, _yaml.node_get_provenance(node, self.name))
+        self.validate(self.value, value_node)
 
     def set_value(self, value):
         self.validate(value)
@@ -68,17 +68,20 @@ class OptionEnum(Option):
     def get_value(self):
         return self.value
 
-    def validate(self, value, provenance=None):
+    def validate(self, value, node=None):
         if value not in self.values:
-            prefix = ""
-            if provenance:
+            if node is not None:
+                provenance = node.get_provenance()
                 prefix = "{}: ".format(provenance)
+            else:
+                prefix = ""
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}Invalid value for {} option '{}': {}\n"
                             .format(prefix, self.OPTION_TYPE, self.name, value) +
                             "Valid values: {}".format(", ".join(self.values)))
 
     def load_default_value(self, node):
-        value = _yaml.node_get(node, str, 'default')
-        self.validate(value, _yaml.node_get_provenance(node, 'default'))
+        value_node = node.get_scalar('default')
+        value = value_node.as_str()
+        self.validate(value, value_node)
         return value

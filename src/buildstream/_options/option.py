@@ -17,7 +17,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .. import _yaml
+from ..node import _assert_symbol_name
 
 
 # Shared symbols for validation purposes
@@ -59,17 +59,14 @@ class Option():
     #    node (dict): The loaded YAML dictionary describing
     #                 the option
     def load(self, node):
-
         # We don't use the description, but we do require that options have a
         # description.
-        _yaml.node_get(node, str, 'description')
-
-        self.variable = _yaml.node_get(node, str, 'variable', default_value=None)
+        node.get_str('description')
+        self.variable = node.get_str('variable', default=None)
 
         # Assert valid symbol name for variable name
         if self.variable is not None:
-            p = _yaml.node_get_provenance(node, 'variable')
-            _yaml.assert_symbol_name(p, self.variable, 'variable name')
+            _assert_symbol_name(self.variable, 'variable name', ref_node=node.get_node('variable'))
 
     # load_value()
     #

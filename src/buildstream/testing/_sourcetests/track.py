@@ -43,7 +43,7 @@ def generate_element(repo, element_path, dep_name=None):
     if dep_name:
         element['depends'] = [dep_name]
 
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -290,8 +290,8 @@ def test_track_include(cli, tmpdir, datafiles, ref_storage, kind):
         ]
     }
 
-    _yaml.dump(element, os.path.join(element_path, element_name))
-    _yaml.dump(sources, os.path.join(element_path, 'sources.yml'))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(sources, os.path.join(element_path, 'sources.yml'))
 
     # Assert that a fetch is needed
     assert cli.get_element_state(project, element_name) == 'no reference'
@@ -321,13 +321,13 @@ def test_track_include(cli, tmpdir, datafiles, ref_storage, kind):
 
         # Get all of the sources
         assert 'sources' in new_sources
-        sources_list = _yaml.node_get(new_sources, list, 'sources')
+        sources_list = new_sources.get_sequence('sources')
         assert len(sources_list) == 1
 
         # Get the first source from the sources list
-        new_source = _yaml.node_get(new_sources, dict, 'sources', indices=[0])
+        new_source = sources_list.mapping_at(0)
         assert 'ref' in new_source
-        assert ref == _yaml.node_get(new_source, str, 'ref')
+        assert ref == new_source.get_str('ref')
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -363,8 +363,8 @@ def test_track_include_junction(cli, tmpdir, datafiles, ref_storage, kind):
         ]
     }
 
-    _yaml.dump(element, os.path.join(element_path, element_name))
-    _yaml.dump(sources, os.path.join(sub_element_path, 'sources.yml'))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(sources, os.path.join(sub_element_path, 'sources.yml'))
 
     generate_junction(str(tmpdir.join('junction_repo')),
                       subproject_path, junction_path, store_ref=True)

@@ -167,15 +167,16 @@ class FilterElement(Element):
     BST_RUN_COMMANDS = False
 
     def configure(self, node):
-        self.node_validate(node, [
+        node.validate_keys([
             'include', 'exclude', 'include-orphans'
         ])
 
-        self.include = self.node_get_member(node, list, 'include')
-        self.exclude = self.node_get_member(node, list, 'exclude')
-        self.include_orphans = self.node_get_member(node, bool, 'include-orphans')
-        self.include_provenance = self.node_provenance(node, member_name='include')
-        self.exclude_provenance = self.node_provenance(node, member_name='exclude')
+        self.include_node = node.get_sequence('include')
+        self.exclude_node = node.get_sequence('exclude')
+
+        self.include = self.include_node.as_str_list()
+        self.exclude = self.exclude_node.as_str_list()
+        self.include_orphans = node.get_bool('include-orphans')
 
     def preflight(self):
         # Exactly one build-depend is permitted
@@ -217,7 +218,7 @@ class FilterElement(Element):
             for dep in self.dependencies(Scope.BUILD, recurse=False):
                 # Check that all the included/excluded domains exist
                 pub_data = dep.get_public_data('bst')
-                split_rules = self.node_get_member(pub_data, dict, 'split-rules', {})
+                split_rules = pub_data.get_mapping('split-rules', {})
                 unfound_includes = []
                 for domain in self.include:
                     if domain not in split_rules:
@@ -229,11 +230,11 @@ class FilterElement(Element):
 
                 detail = []
                 if unfound_includes:
-                    detail.append("Unknown domains were used in {}".format(self.include_provenance))
+                    detail.append("Unknown domains were used in {}".format(self.include_node.get_provenance()))
                     detail.extend([' - {}'.format(domain) for domain in unfound_includes])
 
                 if unfound_excludes:
-                    detail.append("Unknown domains were used in {}".format(self.exclude_provenance))
+                    detail.append("Unknown domains were used in {}".format(self.exclude_node.get_provenance()))
                     detail.extend([' - {}'.format(domain) for domain in unfound_excludes])
 
                 if detail:

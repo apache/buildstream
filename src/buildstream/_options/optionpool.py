@@ -20,8 +20,8 @@
 
 import jinja2
 
-from .. import _yaml
 from .._exceptions import LoadError, LoadErrorReason
+from ..node import MappingNode, SequenceNode, _assert_symbol_name
 from .optionbool import OptionBool
 from .optionenum import OptionEnum
 from .optionflags import OptionFlags
@@ -65,17 +65,16 @@ class OptionPool():
     #
     def load(self, options):
 
-        for option_name, option_definition in _yaml.node_items(options):
+        for option_name, option_definition in options.items():
 
             # Assert that the option name is a valid symbol
-            p = _yaml.node_get_provenance(options, option_name)
-            _yaml.assert_symbol_name(p, option_name, "option name", allow_dashes=False)
+            _assert_symbol_name(option_name, "option name", ref_node=option_definition, allow_dashes=False)
 
-            opt_type_name = _yaml.node_get(option_definition, str, 'type')
+            opt_type_name = option_definition.get_str('type')
             try:
                 opt_type = _OPTION_TYPES[opt_type_name]
             except KeyError:
-                p = _yaml.node_get_provenance(option_definition, 'type')
+                p = option_definition.get_scalar('type').get_provenance()
                 raise LoadError(LoadErrorReason.INVALID_DATA,
                                 "{}: Invalid option type '{}'".format(p, opt_type_name))
 
@@ -91,11 +90,11 @@ class OptionPool():
     #    node (dict): The loaded YAML options
     #
     def load_yaml_values(self, node, *, transform=None):
-        for option_name in _yaml.node_keys(node):
+        for option_name, option_value in node.items():
             try:
                 option = self._options[option_name]
             except KeyError as e:
-                p = _yaml.node_get_provenance(node, option_name)
+                p = option_value.get_provenance()
                 raise LoadError(LoadErrorReason.INVALID_DATA,
                                 "{}: Unknown option '{}' specified"
                                 .format(p, option_name)) from e
@@ -152,7 +151,7 @@ class OptionPool():
     def export_variables(self, variables):
         for _, option in self._options.items():
             if option.variable:
-                _yaml.node_set(variables, option.variable, option.get_value())
+                variables[option.variable] = option.get_value()
 
     # printable_variables()
     #
@@ -185,10 +184,11 @@ class OptionPool():
         # Now recurse into nested dictionaries and lists
         # and process any indirectly nested conditionals.
         #
-        for _, value in _yaml.node_items(node):
-            if _yaml.is_node(value):
+        for value in node.values():
+            value_type = type(value)
+            if value_type is MappingNode:
                 self.process_node(value)
-            elif isinstance(value, list):
+            elif value_type is SequenceNode:
                 self._process_list(value)
 
     #######################################################
@@ -237,9 +237,10 @@ class OptionPool():
     #
     def _process_list(self, values):
         for value in values:
-            if _yaml.is_node(value):
+            value_type = type(value)
+            if value_type is MappingNode:
                 self.process_node(value)
-            elif isinstance(value, list):
+            elif value_type is SequenceNode:
                 self._process_list(value)
 
     # Process a single conditional, resulting in composition
@@ -248,47 +249,43 @@ class OptionPool():
     # Return true if a conditional was processed.
     #
     def _process_one_node(self, node):
-        conditions = _yaml.node_get(node, list, '(?)', default_value=None)
-        assertion = _yaml.node_get(node, str, '(!)', default_value=None)
+        conditions = node.get_sequence('(?)', default=None)
+        assertion = node.get_str('(!)', default=None)
 
         # Process assersions first, we want to abort on the first encountered
         # assertion in a given dictionary, and not lose an assertion due to
         # it being overwritten by a later assertion which might also trigger.
         if assertion is not None:
-            p = _yaml.node_get_provenance(node, '(!)')
+            p = node.get_scalar('(!)').get_provenance()
             raise LoadError(LoadErrorReason.USER_ASSERTION,
                             "{}: {}".format(p, assertion.strip()))
 
         if conditions is not None:
+            del node['(?)']
 
-            # Collect provenance first, we need to delete the (?) key
-            # before any composition occurs.
-            provenance = [
-                _yaml.node_get_provenance(node, '(?)', indices=[i])
-                for i in range(len(conditions))
-            ]
-            _yaml.node_del(node, '(?)')
-
-            for condition, p in zip(conditions, provenance):
-                tuples = list(_yaml.node_items(condition))
+            for condition in conditions:
+                tuples = list(condition.items())
                 if len(tuples) > 1:
+                    provenance = condition.get_provenance()
                     raise LoadError(LoadErrorReason.INVALID_DATA,
-                                    "{}: Conditional statement has more than one key".format(p))
+                                    "{}: Conditional statement has more than one key".format(provenance))
 
                 expression, value = tuples[0]
                 try:
                     apply_fragment = self._evaluate(expression)
                 except LoadError as e:
                     # Prepend the provenance of the error
-                    raise LoadError(e.reason, "{}: {}".format(p, e)) from e
+                    provenance = condition.get_provenance()
+                    raise LoadError(e.reason, "{}: {}".format(provenance, e)) from e
 
-                if not _yaml.is_node(value):
+                if type(value) is not MappingNode:  # pylint: disable=unidiomatic-typecheck
+                    provenance = condition.get_provenance()
                     raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                                    "{}: Only values of type 'dict' can be composed.".format(p))
+                                    "{}: Only values of type 'dict' can be composed.".format(provenance))
 
                 # Apply the yaml fragment if its condition evaluates to true
                 if apply_fragment:
-                    _yaml.composite(node, value)
+                    value._composite(node)
 
             return True
 

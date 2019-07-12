@@ -17,7 +17,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .. import _yaml
 from .._exceptions import LoadError, LoadErrorReason
 from .option import Option, OPTION_SYMBOLS
 
@@ -44,24 +43,26 @@ class OptionFlags(Option):
         if allow_value_definitions:
             valid_symbols += ['values']
 
-        _yaml.node_validate(node, valid_symbols)
+        node.validate_keys(valid_symbols)
 
         # Allow subclass to define the valid values
         self.values = self.load_valid_values(node)
         if not self.values:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: No values specified for {} option '{}'"
-                            .format(_yaml.node_get_provenance(node), self.OPTION_TYPE, self.name))
+                            .format(node.get_provenance(), self.OPTION_TYPE, self.name))
 
-        self.value = _yaml.node_get(node, list, 'default', default_value=[])
-        self.validate(self.value, _yaml.node_get_provenance(node, 'default'))
+        value_node = node.get_sequence('default', default=[])
+        self.value = value_node.as_str_list()
+        self.validate(self.value, value_node)
 
     def load_value(self, node, *, transform=None):
-        self.value = _yaml.node_get(node, list, self.name)
+        value_node = node.get_sequence(self.name)
+        self.value = value_node.as_str_list()
         if transform:
             self.value = [transform(x) for x in self.value]
         self.value = sorted(self.value)
-        self.validate(self.value, _yaml.node_get_provenance(node, self.name))
+        self.validate(self.value, value_node)
 
     def set_value(self, value):
         # Strip out all whitespace, allowing: "value1, value2 , value3"
@@ -76,12 +77,14 @@ class OptionFlags(Option):
     def get_value(self):
         return ",".join(self.value)
 
-    def validate(self, value, provenance=None):
+    def validate(self, value, node=None):
         for flag in value:
             if flag not in self.values:
-                prefix = ""
-                if provenance:
+                if node is not None:
+                    provenance = node.get_provenance()
                     prefix = "{}: ".format(provenance)
+                else:
+                    prefix = ""
                 raise LoadError(LoadErrorReason.INVALID_DATA,
                                 "{}Invalid value for flags option '{}': {}\n"
                                 .format(prefix, self.name, value) +
@@ -90,4 +93,4 @@ class OptionFlags(Option):
     def load_valid_values(self, node):
         # Allow the more descriptive error to raise when no values
         # exist rather than bailing out here (by specifying default_value)
-        return _yaml.node_get(node, list, 'values', default_value=[])
+        return node.get_sequence('values', default=[]).as_str_list()

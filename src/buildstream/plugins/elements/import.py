@@ -45,7 +45,7 @@ class ImportElement(Element):
     BST_RUN_COMMANDS = False
 
     def configure(self, node):
-        self.node_validate(node, [
+        node.validate_keys([
             'source', 'target'
         ])
 

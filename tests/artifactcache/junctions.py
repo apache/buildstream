@@ -20,11 +20,11 @@ DATA_DIR = os.path.join(
 def project_set_artifacts(project, url):
     project_conf_file = os.path.join(project, 'project.conf')
     project_config = _yaml.load(project_conf_file)
-    _yaml.node_set(project_config, 'artifacts', {
+    project_config['artifacts'] = {
         'url': url,
         'push': True
-    })
-    _yaml.dump(project_config, filename=project_conf_file)
+    }
+    _yaml.roundtrip_dump(project_config._strip_node_info(), file=project_conf_file)
 
 
 @pytest.mark.datafiles(DATA_DIR)

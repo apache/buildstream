@@ -54,7 +54,7 @@ def test_fallback_platform_fails(cli, datafiles):
             ],
         },
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     clean_platform_cache()
 

@@ -17,7 +17,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .. import _yaml
+from ..node import Node
 
 
 class MetaElement():
@@ -48,12 +48,12 @@ class MetaElement():
         self.kind = kind
         self.provenance = provenance
         self.sources = sources
-        self.config = config or _yaml.new_empty_node()
-        self.variables = variables or _yaml.new_empty_node()
-        self.environment = environment or _yaml.new_empty_node()
+        self.config = config or Node.from_dict({})
+        self.variables = variables or Node.from_dict({})
+        self.environment = environment or Node.from_dict({})
         self.env_nocache = env_nocache or []
-        self.public = public or _yaml.new_empty_node()
-        self.sandbox = sandbox or _yaml.new_empty_node()
+        self.public = public or Node.from_dict({})
+        self.sandbox = sandbox or Node.from_dict({})
         self.build_dependencies = []
         self.dependencies = []
         self.first_pass = first_pass
