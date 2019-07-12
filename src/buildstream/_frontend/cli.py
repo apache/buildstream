@@ -987,11 +987,15 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, pull_, direct
     """
     from ..element import Scope
 
-    if hardlinks and tar is not None:
+    if hardlinks and tar:
         click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
         sys.exit(-1)
 
-    if tar is not None and directory is not None:
+    if not tar and not directory:
+        click.echo("ERROR: One of --directory or --tar must be provided", err=True)
+        sys.exit(-1)
+
+    if tar and directory:
         click.echo("ERROR: options --directory and --tar conflict", err=True)
         sys.exit(-1)
 
