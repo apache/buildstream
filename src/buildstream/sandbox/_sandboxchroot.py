@@ -26,7 +26,7 @@ import subprocess
 from contextlib import contextmanager, ExitStack
 import psutil
 
-from .._exceptions import SandboxError
+from .._exceptions import SandboxError, PlatformError
 from .. import utils
 from .. import _signals
 from ._mounter import Mounter
@@ -35,7 +35,6 @@ from . import Sandbox, SandboxFlags
 
 
 class SandboxChroot(Sandbox):
-
     _FUSE_MOUNT_OPTIONS = {'dev': True}
 
     def __init__(self, *args, **kwargs):
@@ -48,6 +47,33 @@ class SandboxChroot(Sandbox):
                                "({},{} were supplied via config)".format(uid, gid))
 
         self.mount_map = None
+
+    @classmethod
+    def check_available(cls):
+        cls._uid = os.getuid()
+        cls._gid = os.getgid()
+
+        available = cls._uid == 0
+        if not available:
+            cls._dummy_reasons += ["uid is not 0"]
+            raise SandboxError("can not run chroot if uid is not 0")
+
+    @classmethod
+    def check_sandbox_config(cls, local_platform, config):
+        # With the chroot sandbox, the UID/GID in the sandbox
+        # will match the host UID/GID (typically 0/0).
+        if config.build_uid != cls._uid or config.build_gid != cls._gid:
+            return False
+
+        host_os = local_platform.get_host_os()
+        host_arch = local_platform.get_host_arch()
+        # Check host os and architecture match
+        if config.build_os != host_os:
+            raise PlatformError("Configured and host OS don't match.")
+        elif config.build_arch != host_arch:
+            raise PlatformError("Configured and host architecture don't match.")
+
+        return True
 
     def _run(self, command, flags, *, cwd, env):
 

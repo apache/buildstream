@@ -108,6 +108,7 @@ class Sandbox():
         '/dev/zero',
         '/dev/null'
     ]
+    _dummy_reasons = []
 
     def __init__(self, context, project, directory, **kwargs):
         self.__context = context

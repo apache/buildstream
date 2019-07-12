@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2019 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -17,6 +18,8 @@
 #  Authors:
 #        Andrew Leeming <andrew.leeming@codethink.co.uk>
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#        William Salmon <will.salmon@codethink.co.uk>
+
 import collections
 import json
 import os
@@ -35,6 +38,7 @@ from .._exceptions import SandboxError
 from .. import utils, _signals
 from ._mount import MountMap
 from . import Sandbox, SandboxFlags
+from .. import _site
 
 
 # SandboxBwrap()
@@ -42,6 +46,7 @@ from . import Sandbox, SandboxFlags
 # Default bubblewrap based sandbox implementation.
 #
 class SandboxBwrap(Sandbox):
+    _have_good_bwrap = None
 
     # Minimal set of devices for the sandbox
     DEVICES = [
@@ -54,10 +59,82 @@ class SandboxBwrap(Sandbox):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.user_ns_available = kwargs['user_ns_available']
-        self.die_with_parent_available = kwargs['die_with_parent_available']
-        self.json_status_available = kwargs['json_status_available']
         self.linux32 = kwargs['linux32']
+
+    @classmethod
+    def check_available(cls):
+        cls._have_fuse = os.path.exists("/dev/fuse")
+        if not cls._have_fuse:
+            cls._dummy_reasons += ['Fuse is unavailable']
+
+        try:
+            utils.get_host_tool('bwrap')
+        except utils.ProgramNotFoundError as Error:
+            cls._bwrap_exists = False
+            cls._have_good_bwrap = False
+            cls._die_with_parent_available = False
+            cls._json_status_available = False
+            cls._dummy_reasons += ['Bubblewrap not found']
+            raise SandboxError(" and ".join(cls._dummy_reasons),
+                               reason="unavailable-local-sandbox") from Error
+
+        bwrap_version = _site.get_bwrap_version()
+
+        cls._bwrap_exists = True
+        cls._have_good_bwrap = (0, 1, 2) <= bwrap_version
+        cls._die_with_parent_available = (0, 1, 8) <= bwrap_version
+        cls._json_status_available = (0, 3, 2) <= bwrap_version
+        if not cls._have_good_bwrap:
+            cls._dummy_reasons += ['Bubblewrap is too old']
+            raise SandboxError(" and ".join(cls._dummy_reasons))
+
+        cls._uid = os.geteuid()
+        cls._gid = os.getegid()
+
+        cls.user_ns_available = cls._check_user_ns_available()
+
+    @staticmethod
+    def _check_user_ns_available():
+        # Here, lets check if bwrap is able to create user namespaces,
+        # issue a warning if it's not available, and save the state
+        # locally so that we can inform the sandbox to not try it
+        # later on.
+        bwrap = utils.get_host_tool('bwrap')
+        try:
+            whoami = utils.get_host_tool('whoami')
+            output = subprocess.check_output([
+                bwrap,
+                '--ro-bind', '/', '/',
+                '--unshare-user',
+                '--uid', '0', '--gid', '0',
+                whoami,
+            ], universal_newlines=True).strip()
+        except subprocess.CalledProcessError:
+            output = ''
+        except utils.ProgramNotFoundError:
+            output = ''
+
+        return output == 'root'
+
+    @classmethod
+    def check_sandbox_config(cls, local_platform, config):
+        if cls.user_ns_available:
+            # User namespace support allows arbitrary build UID/GID settings.
+            pass
+        elif (config.build_uid != local_platform._uid or config.build_gid != local_platform._gid):
+            # Without user namespace support, the UID/GID in the sandbox
+            # will match the host UID/GID.
+            return False
+
+        host_os = local_platform.get_host_os()
+        host_arch = local_platform.get_host_arch()
+        if config.build_os != host_os:
+            raise SandboxError("Configured and host OS don't match.")
+        elif config.build_arch != host_arch:
+            if not local_platform.can_crossbuild(config):
+                raise SandboxError("Configured architecture and host architecture don't match.")
+
+        return True
 
     def _run(self, command, flags, *, cwd, env):
         stdout, stderr = self._get_output()
@@ -94,7 +171,7 @@ class SandboxBwrap(Sandbox):
         bwrap_command += ['--unshare-pid']
 
         # Ensure subprocesses are cleaned up when the bwrap parent dies.
-        if self.die_with_parent_available:
+        if self._die_with_parent_available:
             bwrap_command += ['--die-with-parent']
 
         # Add in the root filesystem stuff first.
@@ -164,7 +241,7 @@ class SandboxBwrap(Sandbox):
         with ExitStack() as stack:
             pass_fds = ()
             # Improve error reporting with json-status if available
-            if self.json_status_available:
+            if self._json_status_available:
                 json_status_file = stack.enter_context(TemporaryFile())
                 pass_fds = (json_status_file.fileno(),)
                 bwrap_command += ['--json-status-fd', str(json_status_file.fileno())]
@@ -246,7 +323,7 @@ class SandboxBwrap(Sandbox):
                         # a bug, bwrap mounted a tempfs here and when it exits, that better be empty.
                         pass
 
-            if self.json_status_available:
+            if self._json_status_available:
                 json_status_file.seek(0, 0)
                 child_exit_code = None
                 # The JSON status file's output is a JSON object per line

@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2018 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -23,7 +24,8 @@ import sys
 
 import psutil
 
-from .._exceptions import PlatformError, ImplError
+from .._exceptions import PlatformError, ImplError, SandboxError
+from .. import utils
 
 
 class Platform():
@@ -34,33 +36,82 @@ class Platform():
     # A class to manage platform-specific details. Currently holds the
     # sandbox factory as well as platform helpers.
     #
-    def __init__(self):
+    # Args:
+    #     force_sandbox (bool): Force bst to use a particular sandbox
+    #
+    def __init__(self, force_sandbox=None):
         self.maximize_open_file_limit()
+        self._local_sandbox = None
+        self.dummy_reasons = []
+        self._setup_sandbox(force_sandbox)
+
+    def _setup_sandbox(self, force_sandbox):
+        sandbox_setups = {'dummy': self._setup_dummy_sandbox}
+        preferred_sandboxes = []
+        self._try_sandboxes(force_sandbox, sandbox_setups, preferred_sandboxes)
+
+    def _try_sandboxes(self, force_sandbox, sandbox_setups, preferred_sandboxes):
+        # Any sandbox from sandbox_setups can be forced by BST_FORCE_SANDBOX
+        # But if a specific sandbox is not forced then only `first class` sandbox are tried before
+        # falling back to the dummy sandbox.
+        # Where `first_class` sandboxes are those in preferred_sandboxes
+        if force_sandbox:
+            try:
+                sandbox_setups[force_sandbox]()
+            except KeyError:
+                raise PlatformError("Forced Sandbox is unavailable on this platform: BST_FORCE_SANDBOX"
+                                    " is set to {} but it is not available".format(force_sandbox))
+            except SandboxError as Error:
+                raise PlatformError("Forced Sandbox Error: BST_FORCE_SANDBOX"
+                                    " is set to {} but cannot be setup".format(force_sandbox),
+                                    detail=" and ".join(self.dummy_reasons)) from Error
+        else:
+            for good_sandbox in preferred_sandboxes:
+                try:
+                    sandbox_setups[good_sandbox]()
+                    return
+                except SandboxError:
+                    continue
+                except utils.ProgramNotFoundError:
+                    continue
+            sandbox_setups['dummy']()
+
+    def _check_sandbox(self, Sandbox):
+        try:
+            Sandbox.check_available()
+        except SandboxError as Error:
+            self.dummy_reasons += Sandbox._dummy_reasons
+            raise Error
 
     @classmethod
     def _create_instance(cls):
         # Meant for testing purposes and therefore hidden in the
         # deepest corners of the source code. Try not to abuse this,
         # please?
+        if os.getenv('BST_FORCE_SANDBOX'):
+            force_sandbox = os.getenv('BST_FORCE_SANDBOX')
+        else:
+            force_sandbox = None
+
         if os.getenv('BST_FORCE_BACKEND'):
             backend = os.getenv('BST_FORCE_BACKEND')
-        elif sys.platform.startswith('linux'):
-            backend = 'linux'
         elif sys.platform.startswith('darwin'):
             backend = 'darwin'
+        elif sys.platform.startswith('linux'):
+            backend = 'linux'
         else:
-            backend = 'unix'
+            backend = 'fallback'
 
         if backend == 'linux':
             from .linux import Linux as PlatformImpl  # pylint: disable=cyclic-import
         elif backend == 'darwin':
             from .darwin import Darwin as PlatformImpl  # pylint: disable=cyclic-import
-        elif backend == 'unix':
-            from .unix import Unix as PlatformImpl  # pylint: disable=cyclic-import
+        elif backend == 'fallback':
+            from .fallback import Fallback as PlatformImpl  # pylint: disable=cyclic-import
         else:
             raise PlatformError("No such platform: '{}'".format(backend))
 
-        cls._instance = PlatformImpl()
+        cls._instance = PlatformImpl(force_sandbox=force_sandbox)
 
     @classmethod
     def get_platform(cls):
@@ -167,3 +218,7 @@ class Platform():
         soft_limit, hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
         if soft_limit != hard_limit:
             resource.setrlimit(resource.RLIMIT_NOFILE, (hard_limit, hard_limit))
+
+    def _setup_dummy_sandbox(self):
+        raise ImplError("Platform {platform} does not implement _setup_dummy_sandbox()"
+                        .format(platform=type(self).__name__))

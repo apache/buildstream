@@ -5,7 +5,7 @@ import os
 import pytest
 
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_BWRAP, HAVE_SANDBOX, IS_LINUX
+from buildstream.testing._utils.site import HAVE_SANDBOX, IS_LINUX
 
 
 pytestmark = pytest.mark.integration
@@ -16,7 +16,7 @@ DATA_DIR = os.path.join(
 )
 
 
-@pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
+@pytest.mark.skipif(not IS_LINUX or HAVE_SANDBOX != "bwrap", reason='Only available on linux with bubblewrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_uid_overridden(cli, datafiles):
     project = str(datafiles)
@@ -35,7 +35,7 @@ def test_build_uid_overridden(cli, datafiles):
     assert result.exit_code == 0
 
 
-@pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubbelwrap')
+@pytest.mark.skipif(not IS_LINUX or HAVE_SANDBOX != "bwrap", reason='Only available on linux with bubbelwrap')
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_uid_in_project(cli, datafiles):
     project = str(datafiles)
@@ -55,7 +55,7 @@ def test_build_uid_in_project(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.skipif(HAVE_SANDBOX != "bwrap", reason='Only available with a functioning sandbox')
 def test_build_uid_default(cli, datafiles):
     project = str(datafiles)
     element_name = 'build-uid/build-uid-default.bst'

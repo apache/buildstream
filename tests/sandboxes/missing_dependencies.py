@@ -43,7 +43,10 @@ def test_missing_brwap_has_nice_error_message(cli, datafiles):
 
     # Build without access to host tools, this should fail with a nice error
     result = cli.run(
-        project=project, args=['build', 'element.bst'], env={'PATH': ''})
+        project=project,
+        args=['build', 'element.bst'],
+        env={'PATH': '', 'BST_FORCE_SANDBOX': None}
+    )
     result.assert_task_error(ErrorDomain.SANDBOX, 'unavailable-local-sandbox')
     assert "not found" in result.stderr
 
@@ -85,6 +88,7 @@ def test_old_brwap_has_nice_error_message(cli, datafiles, tmp_path):
     result = cli.run(
         project=project,
         args=['--debug', '--verbose', 'build', 'element3.bst'],
-        env={'PATH': str(tmp_path.joinpath('bin'))})
+        env={'PATH': str(tmp_path.joinpath('bin')),
+             'BST_FORCE_SANDBOX': None})
     result.assert_task_error(ErrorDomain.SANDBOX, 'unavailable-local-sandbox')
     assert "too old" in result.stderr

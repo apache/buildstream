@@ -63,17 +63,21 @@ try:
 except ImportError:
     HAVE_ARPY = False
 
+try:
+    utils.get_host_tool('buildbox')
+    HAVE_BUILDBOX = True
+except ProgramNotFoundError:
+    HAVE_BUILDBOX = False
+
 IS_LINUX = os.getenv('BST_FORCE_BACKEND', sys.platform).startswith('linux')
 IS_WSL = (IS_LINUX and 'Microsoft' in platform.uname().release)
 IS_WINDOWS = (os.name == 'nt')
 
-if not IS_LINUX:
-    HAVE_SANDBOX = True   # fallback to a chroot sandbox on unix
-elif IS_WSL:
-    HAVE_SANDBOX = False  # Sandboxes are inoperable under WSL due to lack of FUSE
-elif IS_LINUX and HAVE_BWRAP:
-    HAVE_SANDBOX = True
-else:
-    HAVE_SANDBOX = False
-
 MACHINE_ARCH = Platform.get_host_arch()
+
+HAVE_SANDBOX = os.getenv('BST_FORCE_SANDBOX')
+
+if HAVE_SANDBOX is not None:
+    pass
+elif IS_LINUX and HAVE_BWRAP and (not IS_WSL):
+    HAVE_SANDBOX = 'bwrap'

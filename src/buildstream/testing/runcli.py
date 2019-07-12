@@ -775,10 +775,7 @@ def cli_integration(tmpdir, integration_cache):
     directory = os.path.join(str(tmpdir), 'cache')
     os.makedirs(directory)
 
-    if os.environ.get('BST_FORCE_BACKEND') == 'unix':
-        fixture = CliIntegration(directory, default_options=[('linux', 'False')])
-    else:
-        fixture = CliIntegration(directory)
+    fixture = CliIntegration(directory)
 
     # We want to cache sources for integration tests more permanently,
     # to avoid downloading the huge base-sdk repeatedly

@@ -87,7 +87,7 @@ tests-unix:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
   <<: *tests
   variables:
-    BST_FORCE_BACKEND: "unix"
+    BST_FORCE_SANDBOX: "chroot"
 
   script:
 

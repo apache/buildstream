@@ -256,8 +256,8 @@ class ImplError(BstError):
 #
 # Raised if the current platform is not supported.
 class PlatformError(BstError):
-    def __init__(self, message, reason=None):
-        super().__init__(message, domain=ErrorDomain.PLATFORM, reason=reason)
+    def __init__(self, message, reason=None, detail=None):
+        super().__init__(message, domain=ErrorDomain.PLATFORM, reason=reason, detail=detail)
 
 
 # SandboxError

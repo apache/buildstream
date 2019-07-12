@@ -28,16 +28,6 @@ class Darwin(Platform):
     # This value comes from OPEN_MAX in syslimits.h
     OPEN_MAX = 10240
 
-    def create_sandbox(self, *args, **kwargs):
-        kwargs['dummy_reason'] = \
-            "OSXFUSE is not supported and there are no supported sandbox " + \
-            "technologies for MacOS at this time"
-        return SandboxDummy(*args, **kwargs)
-
-    def check_sandbox_config(self, config):
-        # Accept all sandbox configs as it's irrelevant with the dummy sandbox (no Sandbox.run).
-        return True
-
     def get_cpu_count(self, cap=None):
         cpu_count = os.cpu_count()
         if cap is None:
@@ -62,3 +52,17 @@ class Darwin(Platform):
         old_soft_limit, hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
         soft_limit = min(max(self.OPEN_MAX, old_soft_limit), hard_limit)
         resource.setrlimit(resource.RLIMIT_NOFILE, (soft_limit, hard_limit))
+
+    def _setup_dummy_sandbox(self):
+        def _check_dummy_sandbox_config(config):
+            return True
+        self.check_sandbox_config = _check_dummy_sandbox_config
+
+        def _create_dummy_sandbox(*args, **kwargs):
+            kwargs['dummy_reason'] = \
+                "OSXFUSE is not supported and there are no supported sandbox " + \
+                "technologies for MacOS at this time"
+            return SandboxDummy(*args, **kwargs)
+        self.create_sandbox = _create_dummy_sandbox
+
+        return True
