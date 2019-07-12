@@ -354,7 +354,7 @@ class Source(Plugin):
         """Loads the *ref* for this Source from the specified *node*.
 
         Args:
-           node (dict): The YAML node to load the ref from
+           node (:class:`MappingNode <buildstream.node.MappingNode>`): The YAML node to load the ref from
 
         .. note::
 
@@ -391,8 +391,8 @@ class Source(Plugin):
 
         Args:
            ref (simple object): The internal source reference to set, or ``None``
-           node (dict): The same dictionary which was previously passed
-                        to :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
+           node (:class:`MappingNode <buildstream.node.MappingNode>`): The same dictionary which was previously passed
+                to :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
 
         See :func:`Source.get_ref() <buildstream.source.Source.get_ref>`
         for a discussion on the *ref* parameter.
