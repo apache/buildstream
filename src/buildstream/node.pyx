@@ -72,11 +72,11 @@ cdef class Node:
     @classmethod
     def from_dict(cls, dict value):
         if value:
-            return _new_node_from_dict(value, MappingNode.__new__(
-                MappingNode, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter(), {}))
+            return __new_node_from_dict(value, MappingNode.__new__(
+                MappingNode, __SYNTHETIC_FILE_INDEX, 0, __next_synthetic_counter(), {}))
         else:
             # We got an empty dict, we can shortcut
-            return MappingNode.__new__(MappingNode, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter(), {})
+            return MappingNode.__new__(MappingNode, __SYNTHETIC_FILE_INDEX, 0, __next_synthetic_counter(), {})
 
     cpdef ProvenanceInformation get_provenance(self):
         return ProvenanceInformation(self)
@@ -223,10 +223,10 @@ cdef class ScalarNode(Node):
         cdef Node target_value = target.value.get(key)
 
         if target_value is not None and type(target_value) is not ScalarNode:
-            raise _CompositeError(path,
-                                  "{}: Cannot compose scalar on non-scalar at {}".format(
-                                    self.get_provenance(),
-                                    target_value.get_provenance()))
+            raise __CompositeError(path,
+                                   "{}: Cannot compose scalar on non-scalar at {}".format(
+                                       self.get_provenance(),
+                                       target_value.get_provenance()))
 
         target.value[key] = self
 
@@ -254,7 +254,7 @@ cdef class MappingNode(Node):
         if type(value) in [MappingNode, ScalarNode, SequenceNode]:
             self.value[key] = value
         else:
-            node = _create_node_recursive(value, self)
+            node = __create_node_recursive(value, self)
 
             # FIXME: Do we really want to override provenance?
             #
@@ -327,7 +327,7 @@ cdef class MappingNode(Node):
 
         if type(value) is not ScalarNode:
             if value is None:
-                value = ScalarNode.__new__(ScalarNode, self.file_index, 0, next_synthetic_counter(), None)
+                value = ScalarNode.__new__(ScalarNode, self.file_index, 0, __next_synthetic_counter(), None)
             else:
                 provenance = value.get_provenance()
                 raise LoadError(LoadErrorReason.INVALID_DATA,
@@ -420,7 +420,7 @@ cdef class MappingNode(Node):
     cpdef void _composite(self, MappingNode target) except *:
         try:
             self.__composite(target, [])
-        except _CompositeError as e:
+        except __CompositeError as e:
             source_provenance = self.get_provenance()
             error_prefix = ""
             if source_provenance:
@@ -511,10 +511,10 @@ cdef class MappingNode(Node):
                     self._compose_on_composite_dict(target_value)
                 else:
                     # Else composing on top of normal dict or a scalar, so raise...
-                    raise _CompositeError(path,
-                                          "{}: Cannot compose lists onto {}".format(
-                                             self.get_provenance(),
-                                             target_value.get_provenance()))
+                    raise __CompositeError(path,
+                                           "{}: Cannot compose lists onto {}".format(
+                                                self.get_provenance(),
+                                                target_value.get_provenance()))
         else:
             # We're composing a dict into target now
             if key not in target.value:
@@ -630,7 +630,7 @@ cdef class MappingNode(Node):
                 value = None
             else:
                 value = default_constructor.__new__(
-                    default_constructor, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter(), default)
+                    default_constructor, __SYNTHETIC_FILE_INDEX, 0, __next_synthetic_counter(), default)
 
         return value
 
@@ -654,7 +654,7 @@ cdef class SequenceNode(Node):
         if type(value) in [MappingNode, ScalarNode, SequenceNode]:
             self.value[key] = value
         else:
-            node = _create_node_recursive(value, self)
+            node = __create_node_recursive(value, self)
 
             # FIXME: Do we really want to override provenance?
             # See __setitem__ on 'MappingNode' for more context
@@ -674,7 +674,7 @@ cdef class SequenceNode(Node):
         if type(value) in [MappingNode, ScalarNode, SequenceNode]:
             self.value.append(value)
         else:
-            node = _create_node_recursive(value, self)
+            node = __create_node_recursive(value, self)
             self.value.append(node)
 
     cpdef list as_str_list(self):
@@ -762,7 +762,7 @@ cdef class SequenceNode(Node):
         if not (target_value is None or
                 type(target_value) is SequenceNode or
                 target_value._is_composite_list()):
-            raise _CompositeError(path,
+            raise __CompositeError(path,
                                   "{}: List cannot overwrite {} at: {}"
                                   .format(self.get_provenance(),
                                           key,
@@ -793,10 +793,10 @@ cdef class SequenceNode(Node):
 cdef class ProvenanceInformation:
 
     def __init__(self, Node nodeish):
-        cdef _FileInfo fileinfo
+        cdef __FileInfo fileinfo
 
         self._node = nodeish
-        if (nodeish is None) or (nodeish.file_index == _SYNTHETIC_FILE_INDEX):
+        if (nodeish is None) or (nodeish.file_index == __SYNTHETIC_FILE_INDEX):
             self._filename = ""
             self._shortname = ""
             self._displayname = ""
@@ -805,7 +805,7 @@ cdef class ProvenanceInformation:
             self._toplevel = None
             self._project = None
         else:
-            fileinfo = <_FileInfo> _FILE_LIST[nodeish.file_index]
+            fileinfo = <__FileInfo> __FILE_LIST[nodeish.file_index]
             self._filename = fileinfo.filename
             self._shortname = fileinfo.shortname
             self._displayname = fileinfo.displayname
@@ -827,16 +827,6 @@ cdef class ProvenanceInformation:
 #############################################################
 #                BuildStream Private methods                #
 #############################################################
-# Purely synthetic nodes will have _SYNTHETIC_FILE_INDEX for the file number, have line number
-# zero, and a negative column number which comes from inverting the next value
-# out of this counter.  Synthetic nodes created with a reference node will
-# have a file number from the reference node, some unknown line number, and
-# a negative column number from this counter.
-cdef int _SYNTHETIC_FILE_INDEX = -1
-
-# File name handling
-cdef list _FILE_LIST = []
-
 
 # _assert_symbol_name()
 #
@@ -885,18 +875,18 @@ def _assert_symbol_name(str symbol_name, str purpose, *, Node ref_node=None, bin
                         message, detail=detail)
 
 
-cdef Py_ssize_t _create_new_file(str filename, str shortname, str displayname, Node toplevel, object project):
-    cdef Py_ssize_t file_number = len(_FILE_LIST)
-    _FILE_LIST.append(_FileInfo(filename, shortname, displayname, None, project))
+cdef Py_ssize_t _create_new_file(str filename, str shortname, str displayname, object project):
+    cdef Py_ssize_t file_number = len(__FILE_LIST)
+    __FILE_LIST.append(__FileInfo(filename, shortname, displayname, None, project))
 
     return file_number
 
 
 cdef void _set_root_node_for_file(Py_ssize_t file_index, MappingNode contents) except *:
-    cdef _FileInfo f_info
+    cdef __FileInfo f_info
 
-    if file_index != _SYNTHETIC_FILE_INDEX:
-        f_info = <_FileInfo> _FILE_LIST[file_index]
+    if file_index != __SYNTHETIC_FILE_INDEX:
+        f_info = <__FileInfo> __FILE_LIST[file_index]
         f_info.toplevel = contents
 
 
@@ -915,14 +905,14 @@ cdef void _set_root_node_for_file(Py_ssize_t file_index, MappingNode contents) e
 #            synthetic file
 #
 def _new_synthetic_file(str filename, object project=None):
-    cdef Py_ssize_t file_index = len(_FILE_LIST)
+    cdef Py_ssize_t file_index = len(__FILE_LIST)
     cdef Node node = MappingNode.__new__(MappingNode, file_index, 0, 0, {})
 
-    _FILE_LIST.append(_FileInfo(filename,
-                       filename,
-                       "<synthetic {}>".format(filename),
-                       node,
-                       project))
+    __FILE_LIST.append(__FileInfo(filename,
+                                  filename,
+                                  "<synthetic {}>".format(filename),
+                                  node,
+                                  project))
     return node
 
 
@@ -930,11 +920,21 @@ def _new_synthetic_file(str filename, object project=None):
 #                 Module local helper Methods               #
 #############################################################
 
+# Purely synthetic nodes will have _SYNTHETIC_FILE_INDEX for the file number, have line number
+# zero, and a negative column number which comes from inverting the next value
+# out of this counter.  Synthetic nodes created with a reference node will
+# have a file number from the reference node, some unknown line number, and
+# a negative column number from this counter.
+cdef int __SYNTHETIC_FILE_INDEX = -1
+
+# File name handling
+cdef list __FILE_LIST = []
+
 # synthetic counter for synthetic nodes
 cdef int __counter = 0
 
 
-class _CompositeError(Exception):
+class __CompositeError(Exception):
     def __init__(self, path, message):
         super().__init__(message)
         self.path = path
@@ -946,7 +946,7 @@ class _CompositeError(Exception):
 # This class contains metadata around a yaml node in order to be able
 # to trace back the provenance of a node to the file.
 #
-cdef class _FileInfo:
+cdef class __FileInfo:
 
     cdef str filename, shortname, displayname
     cdef MappingNode toplevel,
@@ -960,21 +960,21 @@ cdef class _FileInfo:
         self.project = project
 
 
-cdef int next_synthetic_counter():
+cdef int __next_synthetic_counter():
     global __counter
     __counter -= 1
     return __counter
 
 
-cdef Node _create_node_recursive(object value, Node ref_node):
+cdef Node __create_node_recursive(object value, Node ref_node):
     cdef value_type = type(value)
 
     if value_type is list:
-        node = _new_node_from_list(value, ref_node)
+        node = __new_node_from_list(value, ref_node)
     elif value_type in [int, str, bool]:
-        node = ScalarNode.__new__(ScalarNode, ref_node.file_index, ref_node.line, next_synthetic_counter(), value)
+        node = ScalarNode.__new__(ScalarNode, ref_node.file_index, ref_node.line, __next_synthetic_counter(), value)
     elif value_type is dict:
-        node = _new_node_from_dict(value, ref_node)
+        node = __new_node_from_dict(value, ref_node)
     else:
         raise ValueError(
             "Unable to assign a value of type {} to a Node.".format(value_type))
@@ -991,23 +991,23 @@ cdef Node _create_node_recursive(object value, Node ref_node):
 # Returns:
 #   (Node): A new synthetic YAML tree which represents this dictionary
 #
-cdef Node _new_node_from_dict(dict indict, Node ref_node):
+cdef Node __new_node_from_dict(dict indict, Node ref_node):
     cdef MappingNode ret = MappingNode.__new__(
-        MappingNode, ref_node.file_index, ref_node.line, next_synthetic_counter(), {})
+        MappingNode, ref_node.file_index, ref_node.line, __next_synthetic_counter(), {})
     cdef str k
 
     for k, v in indict.items():
-        ret.value[k] = _create_node_recursive(v, ref_node)
+        ret.value[k] = __create_node_recursive(v, ref_node)
 
     return ret
 
 
 # Internal function to help new_node_from_dict() to handle lists
-cdef Node _new_node_from_list(list inlist, Node ref_node):
+cdef Node __new_node_from_list(list inlist, Node ref_node):
     cdef SequenceNode ret = SequenceNode.__new__(
-        SequenceNode, ref_node.file_index, ref_node.line, next_synthetic_counter(), [])
+        SequenceNode, ref_node.file_index, ref_node.line, __next_synthetic_counter(), [])
 
     for v in inlist:
-        ret.value.append(_create_node_recursive(v, ref_node))
+        ret.value.append(__create_node_recursive(v, ref_node))
 
     return ret
