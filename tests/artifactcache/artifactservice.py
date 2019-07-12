@@ -86,7 +86,7 @@ def _artifact_request(url, queue):
 @pytest.mark.parametrize("files", ["present", "absent", "invalid"])
 def test_update_artifact(tmpdir, files):
     sharedir = os.path.join(str(tmpdir), "share")
-    with create_artifact_share(sharedir) as share:
+    with create_artifact_share(sharedir, casd=True) as share:
         queue = Queue()
         process = Process(target=_queue_wrapper, args=(_update_artifact, queue, share, files))
 
