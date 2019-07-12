@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import multiprocessing
 import os
 import signal
@@ -28,23 +29,26 @@ def _queue_wrapper(target, queue, *args):
     queue.put(None)
 
 
+@contextmanager
 def setup_backend(backend_class, tmpdir):
     if backend_class == FileBasedDirectory:
-        return backend_class(os.path.join(tmpdir, "vdir"))
+        yield backend_class(os.path.join(tmpdir, "vdir"))
     else:
         cas_cache = CASCache(tmpdir)
-        return backend_class(cas_cache)
+        try:
+            yield backend_class(cas_cache)
+        finally:
+            cas_cache.release_resources()
 
 
 def _test_import_subprocess(tmpdir, datafiles, backend):
     original = os.path.join(str(datafiles), "original")
 
-    c = setup_backend(backend, str(tmpdir))
+    with setup_backend(backend, str(tmpdir)) as c:
+        c.import_files(original)
 
-    c.import_files(original)
-
-    assert "bin/bash" in c.list_relative_paths()
-    assert "bin/hello" in c.list_relative_paths()
+        assert "bin/bash" in c.list_relative_paths()
+        assert "bin/hello" in c.list_relative_paths()
 
 
 @pytest.mark.parametrize("backend", [
@@ -71,18 +75,17 @@ def _test_modified_file_list_subprocess(tmpdir, datafiles, backend):
     original = os.path.join(str(datafiles), "original")
     overlay = os.path.join(str(datafiles), "overlay")
 
-    c = setup_backend(backend, str(tmpdir))
+    with setup_backend(backend, str(tmpdir)) as c:
+        c.import_files(original)
 
-    c.import_files(original)
+        c.mark_unmodified()
 
-    c.mark_unmodified()
+        c.import_files(overlay)
 
-    c.import_files(overlay)
-
-    print("List of all paths in imported results: {}".format(c.list_relative_paths()))
-    assert "bin/bash" in c.list_relative_paths()
-    assert "bin/bash" in c.list_modified_paths()
-    assert "bin/hello" not in c.list_modified_paths()
+        print("List of all paths in imported results: {}".format(c.list_relative_paths()))
+        assert "bin/bash" in c.list_relative_paths()
+        assert "bin/bash" in c.list_modified_paths()
+        assert "bin/hello" not in c.list_modified_paths()
 
 
 @pytest.mark.parametrize("backend", [
