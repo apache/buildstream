@@ -570,23 +570,6 @@ cdef class MappingNode(Node):
                 else:
                     target.value["(>)"] = suffix
 
-    cdef Node _get(self, str key, object default, object default_constructor):
-        value = self.value.get(key, _sentinel)
-
-        if value is _sentinel:
-            if default is _sentinel:
-                provenance = self.get_provenance()
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
-
-            if default is None:
-                value = None
-            else:
-                value = default_constructor.__new__(
-                    default_constructor, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter(), default)
-
-        return value
-
     cdef bint _is_composite_list(self) except *:
         cdef bint has_directives = False
         cdef bint has_keys = False
@@ -633,6 +616,23 @@ cdef class MappingNode(Node):
             path.append(key)
             value._compose_on(key, target, path)
             path.pop()
+
+    cdef Node _get(self, str key, object default, object default_constructor):
+        value = self.value.get(key, _sentinel)
+
+        if value is _sentinel:
+            if default is _sentinel:
+                provenance = self.get_provenance()
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
+
+            if default is None:
+                value = None
+            else:
+                value = default_constructor.__new__(
+                    default_constructor, _SYNTHETIC_FILE_INDEX, 0, next_synthetic_counter(), default)
+
+        return value
 
 
 cdef class SequenceNode(Node):
