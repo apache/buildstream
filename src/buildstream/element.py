@@ -80,7 +80,6 @@ from collections import OrderedDict
 import contextlib
 from contextlib import contextmanager
 from functools import partial
-from itertools import chain
 import tempfile
 import string
 
@@ -429,45 +428,54 @@ class Element(Plugin):
             if scope in (Scope.RUN, Scope.ALL):
                 yield from self.__runtime_dependencies
         else:
-            def visit(element, scope, visited):
-                if scope == Scope.ALL:
-                    visited[0].add(element._unique_id)
-                    visited[1].add(element._unique_id)
+            def visit_run(element, visited):
+                visited.add(element._unique_id)
 
-                    for dep in chain(element.__build_dependencies, element.__runtime_dependencies):
-                        if dep._unique_id not in visited[0] and dep._unique_id not in visited[1]:
-                            yield from visit(dep, Scope.ALL, visited)
+                for dep in element.__runtime_dependencies:
+                    if dep._unique_id not in visited:
+                        yield from visit_run(dep, visited)
 
-                    yield element
-                elif scope == Scope.BUILD:
-                    visited[0].add(element._unique_id)
+                yield element
 
-                    for dep in element.__build_dependencies:
-                        if dep._unique_id not in visited[1]:
-                            yield from visit(dep, Scope.RUN, visited)
+            def visit_build(element, visited_build, visited_run):
+                visited_build.add(element._unique_id)
 
-                elif scope == Scope.RUN:
-                    visited[1].add(element._unique_id)
+                for dep in element.__build_dependencies:
+                    if dep._unique_id not in visited_run:
+                        yield from visit_run(dep, visited_run)
 
-                    for dep in element.__runtime_dependencies:
-                        if dep._unique_id not in visited[1]:
-                            yield from visit(dep, Scope.RUN, visited)
+            def visit_all(element, visited):
+                visited.add(element._unique_id)
 
-                    yield element
-                else:
-                    yield element
+                for dep in element.__build_dependencies:
+                    if dep._unique_id not in visited:
+                        yield from visit_all(dep, visited)
+
+                for dep in element.__runtime_dependencies:
+                    if dep._unique_id not in visited:
+                        yield from visit_all(dep, visited)
+
+                yield element
 
             if visited is None:
                 # Visited is of the form (Visited for Scope.BUILD, Visited for Scope.RUN)
                 visited = (BitMap(), BitMap())
-            else:
-                # We have already a visited set passed. we might be able to short-circuit
-                if scope in (Scope.BUILD, Scope.ALL) and self._unique_id in visited[0]:
-                    return
-                if scope in (Scope.RUN, Scope.ALL) and self._unique_id in visited[1]:
-                    return
 
-            yield from visit(self, scope, visited)
+            if scope == Scope.ALL:
+                # We can use only one of the sets when checking for Scope.ALL, as we would get added to
+                # both anyways.
+                # This would break if we start reusing 'visited' and mixing scopes, but that is done
+                # nowhere in the codebase.
+                if self._unique_id not in visited[0]:
+                    yield from visit_all(self, visited[0])
+            elif scope == Scope.BUILD:
+                if self._unique_id not in visited[0]:
+                    yield from visit_build(self, visited[0], visited[1])
+            elif scope == Scope.RUN:
+                if self._unique_id not in visited[1]:
+                    yield from visit_run(self, visited[1])
+            else:
+                yield self
 
     def search(self, scope, name):
         """Search for a dependency by name
