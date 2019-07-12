@@ -176,6 +176,8 @@ class ArtifactShare():
         self.process.terminate()
         self.process.join()
 
+        self.cas.release_resources()
+
         shutil.rmtree(self.directory)
 
     def _mock_statvfs(self, _path):
