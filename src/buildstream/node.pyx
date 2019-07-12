@@ -358,10 +358,7 @@ cdef class MappingNode(Node):
         return list(self.value.keys())
 
     cpdef void safe_del(self, str key):
-        try:
-            del self.value[key]
-        except KeyError:
-            pass
+        self.value.pop(key, None)
 
     # validate_keys()
     #
