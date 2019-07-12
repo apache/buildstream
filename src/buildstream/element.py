@@ -83,8 +83,6 @@ from functools import partial
 import string
 from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, List, Optional
 
-from pyroaring import BitMap  # pylint: disable=no-name-in-module
-
 from . import _yaml
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
@@ -93,6 +91,7 @@ from .exceptions import ErrorDomain, LoadErrorReason
 from .utils import FileListResult
 from . import utils
 from . import _cachekey
+from . import _element
 from . import _site
 from ._platform import Platform
 from .node import Node
@@ -458,63 +457,7 @@ class Element(Plugin):
         Yields:
            The dependencies in `scope`, in deterministic staging order
         """
-        # The format of visited is (BitMap(), BitMap()), with the first BitMap
-        # containing element that have been visited for the `Scope.BUILD` case
-        # and the second one relating to the `Scope.RUN` case.
-        if not recurse:
-            if scope in (Scope.BUILD, Scope.ALL):
-                yield from self.__build_dependencies
-            if scope in (Scope.RUN, Scope.ALL):
-                yield from self.__runtime_dependencies
-        else:
-            def visit_run(element, visited):
-                visited.add(element._unique_id)
-
-                for dep in element.__runtime_dependencies:
-                    if dep._unique_id not in visited:
-                        yield from visit_run(dep, visited)
-
-                yield element
-
-            def visit_build(element, visited_build, visited_run):
-                visited_build.add(element._unique_id)
-
-                for dep in element.__build_dependencies:
-                    if dep._unique_id not in visited_run:
-                        yield from visit_run(dep, visited_run)
-
-            def visit_all(element, visited):
-                visited.add(element._unique_id)
-
-                for dep in element.__build_dependencies:
-                    if dep._unique_id not in visited:
-                        yield from visit_all(dep, visited)
-
-                for dep in element.__runtime_dependencies:
-                    if dep._unique_id not in visited:
-                        yield from visit_all(dep, visited)
-
-                yield element
-
-            if visited is None:
-                # Visited is of the form (Visited for Scope.BUILD, Visited for Scope.RUN)
-                visited = (BitMap(), BitMap())
-
-            if scope == Scope.ALL:
-                # We can use only one of the sets when checking for Scope.ALL, as we would get added to
-                # both anyways.
-                # This would break if we start reusing 'visited' and mixing scopes, but that is done
-                # nowhere in the codebase.
-                if self._unique_id not in visited[0]:
-                    yield from visit_all(self, visited[0])
-            elif scope == Scope.BUILD:
-                if self._unique_id not in visited[0]:
-                    yield from visit_build(self, visited[0], visited[1])
-            elif scope == Scope.RUN:
-                if self._unique_id not in visited[1]:
-                    yield from visit_run(self, visited[1])
-            else:
-                yield self
+        return _element.dependencies(self, scope, recurse=recurse, visited=visited)
 
     def search(self, scope: Scope, name: str) -> Optional["Element"]:
         """Search for a dependency by name

@@ -5,6 +5,7 @@
 # run arbitrary code
 extension-pkg-whitelist=
     buildstream.node,
+    buildstream._element,
     buildstream._loader._loader,
     buildstream._loader.loadelement,
     buildstream._loader.types,
