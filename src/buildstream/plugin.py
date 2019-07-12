@@ -270,7 +270,7 @@ class Plugin():
         """Configure the Plugin from loaded configuration data
 
         Args:
-           node (dict): The loaded configuration dictionary
+           node (:class:`MappingNode <buildstream.node.MappingNode>`): The loaded configuration dictionary
 
         Raises:
            :class:`.SourceError`: If it's a :class:`.Source` implementation
@@ -636,7 +636,7 @@ class Plugin():
     # _get_configuring() state is up to date.
     #
     # Args:
-    #    node (dict): The loaded configuration dictionary
+    #    node (buildstream.node.MappingNode): The loaded configuration dictionary
     #
     def _configure(self, node):
         self.__configuring = True
