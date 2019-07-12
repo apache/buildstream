@@ -2,14 +2,15 @@
 buildstream 1.3.1
 =================
 
+  o BREAKING CHANGE: The yaml API has been rewritten entirely. When accessing
+    configuration from YAML, please use the new `Node` classes exposed in the
+    `buildstream` package. See the documentation for how to use it.
+
+    This change has also removed the need of a YAML cache as it proved to no longer
+    be of benefit.
+
   o BREAKING CHANGE: `bst init` no longer uses the `--directory` or `-C`
     option. Instead, it (optionally) takes a directory as an argument.
-
-  o BREAKING CHANGE: `Plugin.node_items` doesn't accept 'dict' values anymore.
-    Please used `Node`s instead.
-
-  o BREAKING CHANGE: `node_get_member` doesn't accept 'expected_type=Mapping'
-    anymore. Please use 'expected_type=dict' instead.
 
   o BREAKING CHANGE: Artifact as a Proto. The caching of buildstream artifacts
     has changed from a reference based impelementation. Existing artifacts and
@@ -19,14 +20,6 @@ buildstream 1.3.1
 
   o BREAKING CHANGE: ostree plugin has been removed. It now leaves in the
     bst-plugins-experimental repo
-
-  o BREAKING CHANGE: YAML New World Order. The parsing and loading of .bst files
-    and node handling has been completely rewritten and is now faster. This now
-    requires that plugin authors must use the Plugin API to access or modify node
-    members. Regular dictionary accesses are no longer valid.
-
-    This change has also removed the need of a YAML cache as it proved to no longer
-    be of benefit.
 
   o Added `bst artifact delete` subcommand. This command removes artifacts from
     the local cache. Mulitple element names and artifact refs can be specified
