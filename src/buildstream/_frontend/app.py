@@ -169,148 +169,151 @@ class App():
 
         self._session_name = session_name
 
-        #
-        # Load the Context
-        #
-        try:
-            self.context = Context()
-            self.context.load(config)
-        except BstError as e:
-            self._error_exit(e, "Error loading user configuration")
+        # Instantiate Context
+        with Context() as context:
+            self.context = context
 
-        # Override things in the context from our command line options,
-        # the command line when used, trumps the config files.
-        #
-        override_map = {
-            'strict': '_strict_build_plan',
-            'debug': 'log_debug',
-            'verbose': 'log_verbose',
-            'error_lines': 'log_error_lines',
-            'message_lines': 'log_message_lines',
-            'on_error': 'sched_error_action',
-            'fetchers': 'sched_fetchers',
-            'builders': 'sched_builders',
-            'pushers': 'sched_pushers',
-            'network_retries': 'sched_network_retries',
-            'pull_buildtrees': 'pull_buildtrees',
-            'cache_buildtrees': 'cache_buildtrees'
-        }
-        for cli_option, context_attr in override_map.items():
-            option_value = self._main_options.get(cli_option)
-            if option_value is not None:
-                setattr(self.context, context_attr, option_value)
-        try:
-            Platform.get_platform()
-        except BstError as e:
-            self._error_exit(e, "Error instantiating platform")
+            #
+            # Load the configuration
+            #
+            try:
+                self.context.load(config)
+            except BstError as e:
+                self._error_exit(e, "Error loading user configuration")
 
-        # Create the stream right away, we'll need to pass it around.
-        self.stream = Stream(self.context, self._session_start,
-                             session_start_callback=self.session_start_cb,
-                             interrupt_callback=self._interrupt_handler,
-                             ticker_callback=self._tick)
+            # Override things in the context from our command line options,
+            # the command line when used, trumps the config files.
+            #
+            override_map = {
+                'strict': '_strict_build_plan',
+                'debug': 'log_debug',
+                'verbose': 'log_verbose',
+                'error_lines': 'log_error_lines',
+                'message_lines': 'log_message_lines',
+                'on_error': 'sched_error_action',
+                'fetchers': 'sched_fetchers',
+                'builders': 'sched_builders',
+                'pushers': 'sched_pushers',
+                'network_retries': 'sched_network_retries',
+                'pull_buildtrees': 'pull_buildtrees',
+                'cache_buildtrees': 'cache_buildtrees'
+            }
+            for cli_option, context_attr in override_map.items():
+                option_value = self._main_options.get(cli_option)
+                if option_value is not None:
+                    setattr(self.context, context_attr, option_value)
+            try:
+                Platform.get_platform()
+            except BstError as e:
+                self._error_exit(e, "Error instantiating platform")
 
-        self._state = self.stream.get_state()
+            # Create the stream right away, we'll need to pass it around.
+            self.stream = Stream(self.context, self._session_start,
+                                 session_start_callback=self.session_start_cb,
+                                 interrupt_callback=self._interrupt_handler,
+                                 ticker_callback=self._tick)
 
-        # Register callbacks with the State
-        self._state.register_task_failed_callback(self._job_failed)
+            self._state = self.stream.get_state()
 
-        # Create the logger right before setting the message handler
-        self.logger = LogLine(self.context, self._state,
-                              self._content_profile,
-                              self._format_profile,
-                              self._success_profile,
-                              self._error_profile,
-                              self._detail_profile,
-                              indent=INDENT)
+            # Register callbacks with the State
+            self._state.register_task_failed_callback(self._job_failed)
 
-        # Propagate pipeline feedback to the user
-        self.context.messenger.set_message_handler(self._message_handler)
+            # Create the logger right before setting the message handler
+            self.logger = LogLine(self.context, self._state,
+                                  self._content_profile,
+                                  self._format_profile,
+                                  self._success_profile,
+                                  self._error_profile,
+                                  self._detail_profile,
+                                  indent=INDENT)
 
-        # Preflight the artifact cache after initializing logging,
-        # this can cause messages to be emitted.
-        try:
-            self.context.artifactcache.preflight()
-        except BstError as e:
-            self._error_exit(e, "Error instantiating artifact cache")
+            # Propagate pipeline feedback to the user
+            self.context.messenger.set_message_handler(self._message_handler)
 
-        # Now that we have a logger and message handler,
-        # we can override the global exception hook.
-        sys.excepthook = self._global_exception_handler
+            # Preflight the artifact cache after initializing logging,
+            # this can cause messages to be emitted.
+            try:
+                self.context.artifactcache.preflight()
+            except BstError as e:
+                self._error_exit(e, "Error instantiating artifact cache")
 
-        # Initialize the parts of Stream that have side-effects
-        self.stream.init()
+            # Now that we have a logger and message handler,
+            # we can override the global exception hook.
+            sys.excepthook = self._global_exception_handler
 
-        # Create our status printer, only available in interactive
-        self._status = Status(self.context, self._state,
-                              self._content_profile, self._format_profile,
-                              self._success_profile, self._error_profile,
-                              self.stream, colors=self.colors)
+            # Initialize the parts of Stream that have side-effects
+            self.stream.init()
 
-        # Mark the beginning of the session
-        if session_name:
-            self._message(MessageType.START, session_name)
+            # Create our status printer, only available in interactive
+            self._status = Status(self.context, self._state,
+                                  self._content_profile, self._format_profile,
+                                  self._success_profile, self._error_profile,
+                                  self.stream, colors=self.colors)
 
-        #
-        # Load the Project
-        #
-        try:
-            self.project = Project(directory, self.context, cli_options=self._main_options['option'],
-                                   default_mirror=self._main_options.get('default_mirror'),
-                                   fetch_subprojects=self.stream.fetch_subprojects)
-
-            self.stream.set_project(self.project)
-        except LoadError as e:
-
-            # Help users that are new to BuildStream by suggesting 'init'.
-            # We don't want to slow down users that just made a mistake, so
-            # don't stop them with an offer to create a project for them.
-            if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
-                click.echo("No project found. You can create a new project like so:", err=True)
-                click.echo("", err=True)
-                click.echo("    bst init", err=True)
-
-            self._error_exit(e, "Error loading project")
-
-        except BstError as e:
-            self._error_exit(e, "Error loading project")
-
-        # Run the body of the session here, once everything is loaded
-        try:
-            yield
-        except BstError as e:
-
-            # Print a nice summary if this is a session
+            # Mark the beginning of the session
             if session_name:
-                elapsed = self.stream.elapsed_time
+                self._message(MessageType.START, session_name)
 
-                if isinstance(e, StreamError) and e.terminated:  # pylint: disable=no-member
-                    self._message(MessageType.WARN, session_name + ' Terminated', elapsed=elapsed)
-                else:
-                    self._message(MessageType.FAIL, session_name, elapsed=elapsed)
+            #
+            # Load the Project
+            #
+            try:
+                self.project = Project(directory, self.context, cli_options=self._main_options['option'],
+                                       default_mirror=self._main_options.get('default_mirror'),
+                                       fetch_subprojects=self.stream.fetch_subprojects)
 
-                    # Notify session failure
-                    self._notify("{} failed".format(session_name), e)
+                self.stream.set_project(self.project)
+            except LoadError as e:
 
-                if self._started:
-                    self._print_summary()
+                # Help users that are new to BuildStream by suggesting 'init'.
+                # We don't want to slow down users that just made a mistake, so
+                # don't stop them with an offer to create a project for them.
+                if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
+                    click.echo("No project found. You can create a new project like so:", err=True)
+                    click.echo("", err=True)
+                    click.echo("    bst init", err=True)
 
-            # Exit with the error
-            self._error_exit(e)
-        except RecursionError:
-            click.echo("RecursionError: Dependency depth is too large. Maximum recursion depth exceeded.",
-                       err=True)
-            sys.exit(-1)
+                self._error_exit(e, "Error loading project")
 
-        else:
-            # No exceptions occurred, print session time and summary
-            if session_name:
-                self._message(MessageType.SUCCESS, session_name, elapsed=self.stream.elapsed_time)
-                if self._started:
-                    self._print_summary()
+            except BstError as e:
+                self._error_exit(e, "Error loading project")
 
-                # Notify session success
-                self._notify("{} succeeded".format(session_name), "")
+            # Run the body of the session here, once everything is loaded
+            try:
+                yield
+            except BstError as e:
+
+                # Print a nice summary if this is a session
+                if session_name:
+                    elapsed = self.stream.elapsed_time
+
+                    if isinstance(e, StreamError) and e.terminated:  # pylint: disable=no-member
+                        self._message(MessageType.WARN, session_name + ' Terminated', elapsed=elapsed)
+                    else:
+                        self._message(MessageType.FAIL, session_name, elapsed=elapsed)
+
+                        # Notify session failure
+                        self._notify("{} failed".format(session_name), e)
+
+                    if self._started:
+                        self._print_summary()
+
+                # Exit with the error
+                self._error_exit(e)
+            except RecursionError:
+                click.echo("RecursionError: Dependency depth is too large. Maximum recursion depth exceeded.",
+                           err=True)
+                sys.exit(-1)
+
+            else:
+                # No exceptions occurred, print session time and summary
+                if session_name:
+                    self._message(MessageType.SUCCESS, session_name, elapsed=self.stream.elapsed_time)
+                    if self._started:
+                        self._print_summary()
+
+                    # Notify session success
+                    self._notify("{} succeeded".format(session_name), "")
 
     # init_project()
     #

@@ -8,11 +8,11 @@ import signal
 import pytest
 
 from buildstream import _yaml, _signals, utils, Scope
-from buildstream._context import Context
 from buildstream._project import Project
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from buildstream.testing import cli  # pylint: disable=unused-import
-from tests.testutils import create_artifact_share
+
+from tests.testutils import create_artifact_share, dummy_context
 
 
 # Project directory
@@ -20,11 +20,6 @@ DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "project",
 )
-
-
-# Handle messages from the pipeline
-def message_handler(message, is_silenced):
-    pass
 
 
 # Since parent processes wait for queue events, we need
@@ -68,19 +63,15 @@ def test_push(cli, tmpdir, datafiles):
         # Write down the user configuration file
         _yaml.dump(user_config, filename=user_config_file)
 
-        # Fake minimal context
-        context = Context()
-        context.load(config=user_config_file)
-        context.messenger.set_message_handler(message_handler)
+        with dummy_context(config=user_config_file) as context:
+            # Load the project manually
+            project = Project(project_dir, context)
+            project.ensure_fully_loaded()
 
-        # Load the project manually
-        project = Project(project_dir, context)
-        project.ensure_fully_loaded()
-
-        # Assert that the element's artifact is cached
-        element = project.load_elements(['target.bst'])[0]
-        element_key = cli.get_element_key(project_dir, 'target.bst')
-        assert cli.artifact.is_cached(rootcache_dir, element, element_key)
+            # Assert that the element's artifact is cached
+            element = project.load_elements(['target.bst'])[0]
+            element_key = cli.get_element_key(project_dir, 'target.bst')
+            assert cli.artifact.is_cached(rootcache_dir, element, element_key)
 
         queue = multiprocessing.Queue()
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
@@ -105,42 +96,38 @@ def test_push(cli, tmpdir, datafiles):
 
 
 def _test_push(user_config_file, project_dir, element_name, queue):
-    # Fake minimal context
-    context = Context()
-    context.load(config=user_config_file)
-    context.messenger.set_message_handler(message_handler)
+    with dummy_context(config=user_config_file) as context:
+        # Load the project manually
+        project = Project(project_dir, context)
+        project.ensure_fully_loaded()
 
-    # Load the project manually
-    project = Project(project_dir, context)
-    project.ensure_fully_loaded()
+        # Create a local artifact cache handle
+        artifactcache = context.artifactcache
 
-    # Create a local artifact cache handle
-    artifactcache = context.artifactcache
+        # Load the target element
+        element = project.load_elements([element_name])[0]
 
-    # Load the target element
-    element = project.load_elements([element_name])[0]
+        # Ensure the element's artifact memeber is initialised
+        # This is duplicated from Pipeline.resolve_elements()
+        # as this test does not use the cli frontend.
+        for e in element.dependencies(Scope.ALL):
+            # Preflight
+            e._preflight()
+            # Determine initial element state.
+            e._update_state()
 
-    # Ensure the element's artifact memeber is initialised
-    # This is duplicated from Pipeline.resolve_elements()
-    # as this test does not use the cli frontend.
-    for e in element.dependencies(Scope.ALL):
-        # Preflight
-        e._preflight()
-        # Determine initial element state.
-        e._update_state()
+        # Manually setup the CAS remotes
+        artifactcache.setup_remotes(use_config=True)
+        artifactcache.initialize_remotes()
 
-    # Manually setup the CAS remotes
-    artifactcache.setup_remotes(use_config=True)
-    artifactcache.initialize_remotes()
-
-    if artifactcache.has_push_remotes(plugin=element):
-        # Push the element's artifact
-        if not element._push():
-            queue.put("Push operation failed")
+        if artifactcache.has_push_remotes(plugin=element):
+            # Push the element's artifact
+            if not element._push():
+                queue.put("Push operation failed")
+            else:
+                queue.put(None)
         else:
-            queue.put(None)
-    else:
-        queue.put("No remote configured for element {}".format(element_name))
+            queue.put("No remote configured for element {}".format(element_name))
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -191,31 +178,27 @@ def test_push_message(tmpdir, datafiles):
 
 
 def _test_push_message(user_config_file, project_dir, queue):
-    # Fake minimal context
-    context = Context()
-    context.load(config=user_config_file)
-    context.messenger.set_message_handler(message_handler)
+    with dummy_context(config=user_config_file) as context:
+        # Load the project manually
+        project = Project(project_dir, context)
+        project.ensure_fully_loaded()
 
-    # Load the project manually
-    project = Project(project_dir, context)
-    project.ensure_fully_loaded()
+        # Create a local artifact cache handle
+        artifactcache = context.artifactcache
 
-    # Create a local artifact cache handle
-    artifactcache = context.artifactcache
+        # Manually setup the artifact remote
+        artifactcache.setup_remotes(use_config=True)
+        artifactcache.initialize_remotes()
 
-    # Manually setup the artifact remote
-    artifactcache.setup_remotes(use_config=True)
-    artifactcache.initialize_remotes()
+        if artifactcache.has_push_remotes():
+            # Create an example message object
+            command = remote_execution_pb2.Command(arguments=['/usr/bin/gcc', '--help'],
+                                                   working_directory='/buildstream-build',
+                                                   output_directories=['/buildstream-install'])
 
-    if artifactcache.has_push_remotes():
-        # Create an example message object
-        command = remote_execution_pb2.Command(arguments=['/usr/bin/gcc', '--help'],
-                                               working_directory='/buildstream-build',
-                                               output_directories=['/buildstream-install'])
+            # Push the message object
+            command_digest = artifactcache.push_message(project, command)
 
-        # Push the message object
-        command_digest = artifactcache.push_message(project, command)
-
-        queue.put((command_digest.hash, command_digest.size_bytes))
-    else:
-        queue.put("No remote configured")
+            queue.put((command_digest.hash, command_digest.size_bytes))
+        else:
+            queue.put("No remote configured")

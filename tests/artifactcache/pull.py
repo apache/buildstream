@@ -8,12 +8,11 @@ import signal
 import pytest
 
 from buildstream import _yaml, _signals, utils
-from buildstream._context import Context
 from buildstream._project import Project
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from buildstream.testing import cli  # pylint: disable=unused-import
 
-from tests.testutils import create_artifact_share
+from tests.testutils import create_artifact_share, dummy_context
 
 
 # Project directory
@@ -21,11 +20,6 @@ DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "project",
 )
-
-
-# Handle messages from the pipeline
-def message_handler(message, is_silenced):
-    pass
 
 
 # Since parent processes wait for queue events, we need
@@ -92,73 +86,66 @@ def test_pull(cli, tmpdir, datafiles):
         # Assert that we are not cached locally anymore
         assert cli.get_element_state(project_dir, 'target.bst') != 'cached'
 
-        # Fake minimal context
-        context = Context()
-        context.load(config=user_config_file)
-        context.messenger.set_message_handler(message_handler)
+        with dummy_context(config=user_config_file) as context:
+            # Load the project
+            project = Project(project_dir, context)
+            project.ensure_fully_loaded()
 
-        # Load the project
-        project = Project(project_dir, context)
-        project.ensure_fully_loaded()
+            # Assert that the element's artifact is **not** cached
+            element = project.load_elements(['target.bst'])[0]
+            element_key = cli.get_element_key(project_dir, 'target.bst')
+            assert not cli.artifact.is_cached(cache_dir, element, element_key)
 
-        # Assert that the element's artifact is **not** cached
-        element = project.load_elements(['target.bst'])[0]
-        element_key = cli.get_element_key(project_dir, 'target.bst')
-        assert not cli.artifact.is_cached(cache_dir, element, element_key)
+            queue = multiprocessing.Queue()
+            # Use subprocess to avoid creation of gRPC threads in main BuildStream process
+            # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
+            process = multiprocessing.Process(target=_queue_wrapper,
+                                              args=(_test_pull, queue, user_config_file, project_dir,
+                                                    cache_dir, 'target.bst', element_key))
 
-        queue = multiprocessing.Queue()
-        # Use subprocess to avoid creation of gRPC threads in main BuildStream process
-        # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
-        process = multiprocessing.Process(target=_queue_wrapper,
-                                          args=(_test_pull, queue, user_config_file, project_dir,
-                                                cache_dir, 'target.bst', element_key))
+            try:
+                # Keep SIGINT blocked in the child process
+                with _signals.blocked([signal.SIGINT], ignore=False):
+                    process.start()
 
-        try:
-            # Keep SIGINT blocked in the child process
-            with _signals.blocked([signal.SIGINT], ignore=False):
-                process.start()
+                error = queue.get()
+                process.join()
+            except KeyboardInterrupt:
+                utils._kill_process_tree(process.pid)
+                raise
 
-            error = queue.get()
-            process.join()
-        except KeyboardInterrupt:
-            utils._kill_process_tree(process.pid)
-            raise
-
-        assert not error
-        assert cli.artifact.is_cached(cache_dir, element, element_key)
+            assert not error
+            assert cli.artifact.is_cached(cache_dir, element, element_key)
 
 
 def _test_pull(user_config_file, project_dir, cache_dir,
                element_name, element_key, queue):
-    # Fake minimal context
-    context = Context()
-    context.load(config=user_config_file)
-    context.cachedir = cache_dir
-    context.casdir = os.path.join(cache_dir, 'cas')
-    context.tmpdir = os.path.join(cache_dir, 'tmp')
-    context.messenger.set_message_handler(message_handler)
+    with dummy_context(config=user_config_file) as context:
+        context.cachedir = cache_dir
+        context.casdir = os.path.join(cache_dir, 'cas')
+        context.tmpdir = os.path.join(cache_dir, 'tmp')
 
-    # Load the project manually
-    project = Project(project_dir, context)
-    project.ensure_fully_loaded()
+        # Load the project manually
+        project = Project(project_dir, context)
+        project.ensure_fully_loaded()
 
-    # Create a local artifact cache handle
-    artifactcache = context.artifactcache
+        # Create a local artifact cache handle
+        artifactcache = context.artifactcache
 
-    # Load the target element
-    element = project.load_elements([element_name])[0]
+        # Load the target element
+        element = project.load_elements([element_name])[0]
 
-    # Manually setup the CAS remote
-    artifactcache.setup_remotes(use_config=True)
+        # Manually setup the CAS remote
+        artifactcache.setup_remotes(use_config=True)
 
-    if artifactcache.has_push_remotes(plugin=element):
-        # Push the element's artifact
-        if not artifactcache.pull(element, element_key):
-            queue.put("Pull operation failed")
+        if artifactcache.has_push_remotes(plugin=element):
+            # Push the element's artifact
+            if not artifactcache.pull(element, element_key):
+                queue.put("Pull operation failed")
+            else:
+                queue.put(None)
         else:
-            queue.put(None)
-    else:
-        queue.put("No remote configured for element {}".format(element_name))
+            queue.put("No remote configured for element {}".format(element_name))
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -195,23 +182,19 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Assert that we shared/pushed the cached artifact
         assert share.has_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst'))
 
-        # Fake minimal context
-        context = Context()
-        context.load(config=user_config_file)
-        context.messenger.set_message_handler(message_handler)
+        with dummy_context(config=user_config_file) as context:
+            # Load the project and CAS cache
+            project = Project(project_dir, context)
+            project.ensure_fully_loaded()
+            cas = context.get_cascache()
 
-        # Load the project and CAS cache
-        project = Project(project_dir, context)
-        project.ensure_fully_loaded()
-        cas = context.get_cascache()
+            # Assert that the element's artifact is cached
+            element = project.load_elements(['target.bst'])[0]
+            element_key = cli.get_element_key(project_dir, 'target.bst')
+            assert cli.artifact.is_cached(rootcache_dir, element, element_key)
 
-        # Assert that the element's artifact is cached
-        element = project.load_elements(['target.bst'])[0]
-        element_key = cli.get_element_key(project_dir, 'target.bst')
-        assert cli.artifact.is_cached(rootcache_dir, element, element_key)
-
-        # Retrieve the Directory object from the cached artifact
-        artifact_digest = cli.artifact.get_digest(rootcache_dir, element, element_key)
+            # Retrieve the Directory object from the cached artifact
+            artifact_digest = cli.artifact.get_digest(rootcache_dir, element, element_key)
 
         queue = multiprocessing.Queue()
         # Use subprocess to avoid creation of gRPC threads in main BuildStream process
@@ -270,59 +253,51 @@ def test_pull_tree(cli, tmpdir, datafiles):
 
 
 def _test_push_tree(user_config_file, project_dir, artifact_digest, queue):
-    # Fake minimal context
-    context = Context()
-    context.load(config=user_config_file)
-    context.messenger.set_message_handler(message_handler)
+    with dummy_context(config=user_config_file) as context:
+        # Load the project manually
+        project = Project(project_dir, context)
+        project.ensure_fully_loaded()
 
-    # Load the project manually
-    project = Project(project_dir, context)
-    project.ensure_fully_loaded()
+        # Create a local artifact cache and cas handle
+        artifactcache = context.artifactcache
+        cas = context.get_cascache()
 
-    # Create a local artifact cache and cas handle
-    artifactcache = context.artifactcache
-    cas = context.get_cascache()
+        # Manually setup the CAS remote
+        artifactcache.setup_remotes(use_config=True)
 
-    # Manually setup the CAS remote
-    artifactcache.setup_remotes(use_config=True)
+        if artifactcache.has_push_remotes():
+            directory = remote_execution_pb2.Directory()
 
-    if artifactcache.has_push_remotes():
-        directory = remote_execution_pb2.Directory()
+            with open(cas.objpath(artifact_digest), 'rb') as f:
+                directory.ParseFromString(f.read())
 
-        with open(cas.objpath(artifact_digest), 'rb') as f:
-            directory.ParseFromString(f.read())
+            # Build the Tree object while we are still cached
+            tree = remote_execution_pb2.Tree()
+            tree_maker(cas, tree, directory)
 
-        # Build the Tree object while we are still cached
-        tree = remote_execution_pb2.Tree()
-        tree_maker(cas, tree, directory)
+            # Push the Tree as a regular message
+            tree_digest = artifactcache.push_message(project, tree)
 
-        # Push the Tree as a regular message
-        tree_digest = artifactcache.push_message(project, tree)
-
-        queue.put((tree_digest.hash, tree_digest.size_bytes))
-    else:
-        queue.put("No remote configured")
+            queue.put((tree_digest.hash, tree_digest.size_bytes))
+        else:
+            queue.put("No remote configured")
 
 
 def _test_pull_tree(user_config_file, project_dir, artifact_digest, queue):
-    # Fake minimal context
-    context = Context()
-    context.load(config=user_config_file)
-    context.messenger.set_message_handler(message_handler)
+    with dummy_context(config=user_config_file) as context:
+        # Load the project manually
+        project = Project(project_dir, context)
+        project.ensure_fully_loaded()
 
-    # Load the project manually
-    project = Project(project_dir, context)
-    project.ensure_fully_loaded()
+        # Create a local artifact cache handle
+        artifactcache = context.artifactcache
 
-    # Create a local artifact cache handle
-    artifactcache = context.artifactcache
+        # Manually setup the CAS remote
+        artifactcache.setup_remotes(use_config=True)
 
-    # Manually setup the CAS remote
-    artifactcache.setup_remotes(use_config=True)
-
-    if artifactcache.has_push_remotes():
-        # Pull the artifact using the Tree object
-        directory_digest = artifactcache.pull_tree(project, artifact_digest)
-        queue.put((directory_digest.hash, directory_digest.size_bytes))
-    else:
-        queue.put("No remote configured")
+        if artifactcache.has_push_remotes():
+            # Pull the artifact using the Tree object
+            directory_digest = artifactcache.pull_tree(project, artifact_digest)
+            queue.put((directory_digest.hash, directory_digest.size_bytes))
+        else:
+            queue.put("No remote configured")
