@@ -27,7 +27,7 @@ cdef class Node:
     cdef int column
 
     # Public Methods
-    cpdef Node copy(self)
+    cpdef Node clone(self)
     cpdef ProvenanceInformation get_provenance(self)
 
     # Private Methods used in BuildStream
@@ -66,10 +66,10 @@ cdef class MappingNode(Node):
     # Protected Methods
     cdef void _compose_on_composite_dict(self, MappingNode target)
     cdef void _compose_on_list(self, SequenceNode target)
-    cdef Node _get(self, str key, default, default_constructor)
 
     # Private Methods
     cdef void __composite(self, MappingNode target, list path=*) except *
+    cdef Node _get(self, str key, default, default_constructor)
 
 
 cdef class ScalarNode(Node):
@@ -105,3 +105,8 @@ cdef class ProvenanceInformation:
     cdef readonly str _shortname
     cdef readonly int _col
     cdef readonly int _line
+
+
+cdef int _SYNTHETIC_FILE_INDEX
+cdef Py_ssize_t _create_new_file(str filename, str shortname, str displayname, object project)
+cdef void _set_root_node_for_file(Py_ssize_t file_index, MappingNode contents) except *

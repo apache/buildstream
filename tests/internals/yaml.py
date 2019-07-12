@@ -3,7 +3,7 @@ from io import StringIO
 
 import pytest
 
-from buildstream import _yaml
+from buildstream import _yaml, Node, ProvenanceInformation, SequenceNode
 from buildstream._exceptions import LoadError, LoadErrorReason
 
 
@@ -27,7 +27,7 @@ def test_load_yaml(datafiles):
 def assert_provenance(filename, line, col, node):
     provenance = node.get_provenance()
 
-    assert isinstance(provenance, _yaml.ProvenanceInformation)
+    assert isinstance(provenance, ProvenanceInformation)
 
     assert provenance._shortname == filename
     assert provenance._line == line
@@ -104,7 +104,7 @@ def test_node_get(datafiles):
     assert base.get_str('kind') == 'pony'
 
     children = base.get_sequence('children')
-    assert isinstance(children, _yaml.SequenceNode)
+    assert isinstance(children, SequenceNode)
     assert len(children) == 7
 
     child = base.get_sequence('children').mapping_at(6)
@@ -182,7 +182,7 @@ def test_composite_preserve_originals(datafiles):
 
     base = _yaml.load(filename)
     overlay = _yaml.load(overlayfile)
-    base_copy = base.copy()
+    base_copy = base.clone()
     overlay._composite(base_copy)
 
     copy_extra = base_copy.get_mapping('extra')
@@ -528,6 +528,6 @@ def test_node_find_target_fails(datafiles):
                             "traversal.yaml")
     loaded = _yaml.load(filename, copy_tree=True)
 
-    brand_new = _yaml.Node.from_dict({})
+    brand_new = Node.from_dict({})
 
     assert loaded._find(brand_new) is None

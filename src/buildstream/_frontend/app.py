@@ -38,7 +38,7 @@ from .._exceptions import BstError, StreamError, LoadError, LoadErrorReason, App
 from .._message import Message, MessageType, unconditional_messages
 from .._stream import Stream
 from .._versions import BST_FORMAT_VERSION
-from .. import _yaml
+from .. import node
 
 # Import frontend assets
 from .profile import Profile
@@ -349,7 +349,7 @@ class App():
             if project_name:
                 # If project name was specified, user interaction is not desired, just
                 # perform some validation and write the project.conf
-                _yaml.assert_symbol_name(project_name, 'project name')
+                node._assert_symbol_name(project_name, 'project name')
                 self._assert_format_version(format_version)
                 self._assert_element_path(element_path)
 
@@ -801,7 +801,7 @@ class App():
 
         def project_name_proc(user_input):
             try:
-                _yaml.assert_symbol_name(None, user_input, 'project name')
+                node._assert_symbol_name(None, user_input, 'project name')
             except LoadError as e:
                 message = "{}\n\n{}\n".format(e, e.detail)
                 raise UsageError(message) from e

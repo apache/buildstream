@@ -97,6 +97,7 @@ from . import _cachekey
 from . import _signals
 from . import _site
 from ._platform import Platform
+from .node import Node, _sentinel as _node_sentinel
 from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
@@ -487,12 +488,12 @@ class Element(Plugin):
     def substitute_variables(self, value):
         return self.__variables.subst(value)
 
-    def node_subst_member(self, node, member_name, default=_yaml._sentinel):
+    def node_subst_member(self, node, member_name, default=_node_sentinel):
         """Fetch the value of a string node member, substituting any variables
         in the loaded value with the element contextual variables.
 
         Args:
-           node (dict): A dictionary loaded from YAML
+           node (:class:`MappingNode <buildstream.node.MappingNode>`): A MappingNode loaded from YAML
            member_name (str): The name of the member to fetch
            default (str): A value to return when *member_name* is not specified in *node*
 
@@ -521,7 +522,7 @@ class Element(Plugin):
         """Fetch a list from a node member, substituting any variables in the list
 
         Args:
-          node (dict): A dictionary loaded from YAML
+          node (:class:`MappingNode <buildstream.node.MappingNode>`): A MappingNode loaded from YAML
           member_name (str): The name of the member to fetch (a list)
 
         Returns:
@@ -838,7 +839,7 @@ class Element(Plugin):
            domain (str): A public domain name to fetch data for
 
         Returns:
-           (dict): The public data dictionary for the given domain
+           :class:`MappingNode <buildstream.node.MappingNode>`: The public data dictionary for the given domain
 
         .. note::
 
@@ -851,7 +852,7 @@ class Element(Plugin):
 
         data = self.__dynamic_public.get_mapping(domain, default=None)
         if data is not None:
-            data = data.copy()
+            data = data.clone()
 
         return data
 
@@ -860,7 +861,7 @@ class Element(Plugin):
 
         Args:
            domain (str): A public domain name to fetch data for
-           data (dict): The public data dictionary for the given domain
+           data (:class:`MappingNode <buildstream.node.MappingNode>`): The public data dictionary for the given domain
 
         This allows an element to dynamically mutate public data of
         elements or add new domains as the result of success completion
@@ -871,7 +872,7 @@ class Element(Plugin):
             self.__load_public_data()
 
         if data is not None:
-            data = data.copy()
+            data = data.clone()
 
         self.__dynamic_public[domain] = data
 
@@ -1631,7 +1632,7 @@ class Element(Plugin):
 
                 # By default, the dynamic public data is the same as the static public data.
                 # The plugin's assemble() method may modify this, though.
-                self.__dynamic_public = self.__public.copy()
+                self.__dynamic_public = self.__public.clone()
 
                 # Call the abstract plugin methods
 
@@ -2496,11 +2497,11 @@ class Element(Plugin):
         element_splits = element_bst.get_mapping("split-rules", default={})
 
         if is_junction:
-            splits = element_splits.copy()
+            splits = element_splits.clone()
         else:
             assert project._splits is not None
 
-            splits = project._splits.copy()
+            splits = project._splits.clone()
             # Extend project wide split rules with any split rules defined by the element
             element_splits._composite(splits)
 
@@ -2513,7 +2514,7 @@ class Element(Plugin):
         # Defaults are loaded once per class and then reused
         #
         if cls.__defaults is None:
-            defaults = _yaml.Node.from_dict({})
+            defaults = Node.from_dict({})
 
             if plugin_conf is not None:
                 # Load the plugin's accompanying .yaml file if one was provided
@@ -2548,9 +2549,9 @@ class Element(Plugin):
         default_env = cls.__defaults.get_mapping("environment", default={})
 
         if meta.is_junction:
-            environment = _yaml.Node.from_dict({})
+            environment = Node.from_dict({})
         else:
-            environment = project.base_environment.copy()
+            environment = project.base_environment.clone()
 
         default_env._composite(environment)
         meta.environment._composite(environment)
@@ -2594,9 +2595,9 @@ class Element(Plugin):
         default_vars = cls.__defaults.get_mapping('variables', default={})
 
         if meta.is_junction:
-            variables = project.first_pass_config.base_variables.copy()
+            variables = project.first_pass_config.base_variables.clone()
         else:
-            variables = project.base_variables.copy()
+            variables = project.base_variables.clone()
 
         default_vars._composite(variables)
         meta.variables._composite(variables)
@@ -2624,7 +2625,7 @@ class Element(Plugin):
 
         # The default config is already composited with the project overrides
         config = cls.__defaults.get_mapping('config', default={})
-        config = config.copy()
+        config = config.clone()
 
         meta.config._composite(config)
         config._assert_fully_composited()
@@ -2636,12 +2637,12 @@ class Element(Plugin):
     @classmethod
     def __extract_sandbox_config(cls, project, meta):
         if meta.is_junction:
-            sandbox_config = _yaml.Node.from_dict({
+            sandbox_config = Node.from_dict({
                 'build-uid': 0,
                 'build-gid': 0
             })
         else:
-            sandbox_config = project._sandbox.copy()
+            sandbox_config = project._sandbox.clone()
 
         # Get the platform to ask for host architecture
         platform = Platform.get_platform()
@@ -2650,7 +2651,7 @@ class Element(Plugin):
 
         # The default config is already composited with the project overrides
         sandbox_defaults = cls.__defaults.get_mapping('sandbox', default={})
-        sandbox_defaults = sandbox_defaults.copy()
+        sandbox_defaults = sandbox_defaults.clone()
 
         sandbox_defaults._composite(sandbox_config)
         meta.sandbox._composite(sandbox_config)
@@ -2677,12 +2678,12 @@ class Element(Plugin):
     @classmethod
     def __extract_public(cls, meta):
         base_public = cls.__defaults.get_mapping('public', default={})
-        base_public = base_public.copy()
+        base_public = base_public.clone()
 
         base_bst = base_public.get_mapping('bst', default={})
         base_splits = base_bst.get_mapping('split-rules', default={})
 
-        element_public = meta.public.copy()
+        element_public = meta.public.clone()
         element_bst = element_public.get_mapping('bst', default={})
         element_splits = element_bst.get_mapping('split-rules', default={})
 
