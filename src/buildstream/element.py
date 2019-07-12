@@ -229,6 +229,7 @@ class Element(Plugin):
         self.__assemble_done = False            # Element is assembled
         self.__tracking_scheduled = False       # Sources are scheduled to be tracked
         self.__pull_done = False                # Whether pull was attempted
+        self.__cached_successfully = None       # If the Element is known to be successfully cached
         self.__splits = None                    # Resolved regex objects for computing split domains
         self.__whitelist_regex = None           # Resolved regex object to check if file is allowed to overlap
         self.__staged_sources_directory = None  # Location where Element.stage_sources() was called
@@ -1073,11 +1074,22 @@ class Element(Plugin):
     #            the artifact cache and the element assembled successfully
     #
     def _cached_success(self):
+        # FIXME:  _cache() and _cached_success() should be converted to
+        # push based functions where we only update __cached_successfully
+        # once we know this has changed. This will allow us to cheaply check
+        # __cached_successfully instead of calling _cached_success()
+        if self.__cached_successfully:
+            return True
+
         if not self._cached():
             return False
 
         success, _, _ = self._get_build_result()
-        return success
+        if success:
+            self.__cached_successfully = True
+            return True
+        else:
+            return False
 
     # _cached_failure():
     #
