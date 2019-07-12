@@ -493,7 +493,7 @@ class Element(Plugin):
         in the loaded value with the element contextual variables.
 
         Args:
-           node (dict): A dictionary loaded from YAML
+           node (:class:`MappingNode <buildstream.node.MappingNode>`): A MappingNode loaded from YAML
            member_name (str): The name of the member to fetch
            default (str): A value to return when *member_name* is not specified in *node*
 
@@ -522,7 +522,7 @@ class Element(Plugin):
         """Fetch a list from a node member, substituting any variables in the list
 
         Args:
-          node (dict): A dictionary loaded from YAML
+          node (:class:`MappingNode <buildstream.node.MappingNode>`): A MappingNode loaded from YAML
           member_name (str): The name of the member to fetch (a list)
 
         Returns:
@@ -839,7 +839,7 @@ class Element(Plugin):
            domain (str): A public domain name to fetch data for
 
         Returns:
-           (dict): The public data dictionary for the given domain
+           :class:`MappingNode <buildstream.node.MappingNode>`: The public data dictionary for the given domain
 
         .. note::
 
@@ -861,7 +861,7 @@ class Element(Plugin):
 
         Args:
            domain (str): A public domain name to fetch data for
-           data (dict): The public data dictionary for the given domain
+           data (:class:`MappingNode <buildstream.node.MappingNode>`): The public data dictionary for the given domain
 
         This allows an element to dynamically mutate public data of
         elements or add new domains as the result of success completion
