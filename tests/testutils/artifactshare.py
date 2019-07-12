@@ -22,6 +22,7 @@ from buildstream._protos.buildstream.v2 import artifact_pb2
 #    directory (str): The base temp directory for the test
 #    total_space (int): Mock total disk space on artifact server
 #    free_space (int): Mock free disk space on artifact server
+#    casd (bool): Allow write access via casd
 #
 class ArtifactShare():
 
@@ -29,7 +30,8 @@ class ArtifactShare():
                  total_space=None,
                  free_space=None,
                  min_head_size=int(2e9),
-                 max_head_size=int(10e9)):
+                 max_head_size=int(10e9),
+                 casd=False):
 
         # The working directory for the artifact share (in case it
         # needs to do something outside of its backend's storage folder).
@@ -46,7 +48,7 @@ class ArtifactShare():
         self.artifactdir = os.path.join(self.repodir, 'artifacts', 'refs')
         os.makedirs(self.artifactdir)
 
-        self.cas = CASCache(self.repodir, casd=False)
+        self.cas = CASCache(self.repodir, casd=casd)
 
         self.total_space = total_space
         self.free_space = free_space
@@ -199,9 +201,11 @@ class ArtifactShare():
 @contextmanager
 def create_artifact_share(directory, *, total_space=None, free_space=None,
                           min_head_size=int(2e9),
-                          max_head_size=int(10e9)):
+                          max_head_size=int(10e9),
+                          casd=False):
     share = ArtifactShare(directory, total_space=total_space, free_space=free_space,
-                          min_head_size=min_head_size, max_head_size=max_head_size)
+                          min_head_size=min_head_size, max_head_size=max_head_size,
+                          casd=casd)
     try:
         yield share
     finally:
