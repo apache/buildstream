@@ -1,5 +1,6 @@
 import os
 import sys
+import fcntl
 
 import click
 from .. import _yaml
@@ -157,6 +158,17 @@ def override_main(self, args=None, prog_name=None, complete_var=None,
 
         # Regular client return for test cases
         return
+
+    # Check output file descriptor at earliest opportunity, to
+    # provide a reasonable error message instead of a stack trace
+    # in the case that it is blocking
+    for stream in (sys.stdout, sys.stderr):
+        fileno = stream.fileno()
+        flags = fcntl.fcntl(fileno, fcntl.F_GETFL)
+        if flags & os.O_NONBLOCK:
+            click.echo("{} is currently set to O_NONBLOCK, try opening a new shell"
+                       .format(stream.name), err=True)
+            sys.exit(-1)
 
     original_main(self, args=args, prog_name=prog_name, complete_var=None,
                   standalone_mode=standalone_mode, **extra)
