@@ -266,7 +266,7 @@ cpdef MappingNode load(str filename, str shortname=None, bint copy_tree=False, o
     else:
         displayname = shortname
 
-    cdef Py_ssize_t file_number = node._create_new_file(filename, shortname, displayname, None, project)
+    cdef Py_ssize_t file_number = node._create_new_file(filename, shortname, displayname, project)
 
     try:
         with open(filename) as f:
