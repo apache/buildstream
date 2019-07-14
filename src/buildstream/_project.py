@@ -805,8 +805,13 @@ class Project():
         # Based on some testing (mainly on AWS), maximum effective
         # max-jobs value seems to be around 8-10 if we have enough cores
         # users should set values based on workload and build infrastructure
-        platform = Platform.get_platform()
-        output.base_variables['max-jobs'] = str(platform.get_cpu_count(8))
+        if self._context.build_max_jobs == 0:
+            # User requested automatic max-jobs
+            platform = Platform.get_platform()
+            output.base_variables['max-jobs'] = str(platform.get_cpu_count(8))
+        else:
+            # User requested explicit max-jobs setting
+            output.base_variables['max-jobs'] = str(self._context.build_max_jobs)
 
         # Export options into variables, if that was requested
         output.options.export_variables(output.base_variables)
