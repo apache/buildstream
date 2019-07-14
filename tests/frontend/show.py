@@ -465,3 +465,54 @@ def test_format_deps(cli, datafiles, dep_kind, expected_deps):
     if result.output.strip() != expected:
         raise AssertionError("Expected output:\n{}\nInstead received output:\n{}"
                              .format(expected, result.output))
+
+
+# This tests the resolved value of the 'max-jobs' variable,
+# ensuring at least that the variables are resolved according
+# to how the user has configured max-jobs
+#
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
+@pytest.mark.parametrize("cli_value, config_value", [
+    (None, None),
+    (None, '16'),
+    ('16', None),
+    ('5', '16'),
+    ('0', '16'),
+    ('16', '0'),
+])
+def test_max_jobs(cli, datafiles, cli_value, config_value):
+    project = str(datafiles)
+    target = 'target.bst'
+
+    # Specify `--max-jobs` if this test sets it
+    args = []
+    if cli_value is not None:
+        args += ['--max-jobs', cli_value]
+    args += ['show', '--deps', 'none', '--format', '%{vars}', target]
+
+    # Specify `max-jobs` in user configuration if this test sets it
+    if config_value is not None:
+        cli.configure({
+            'build': {
+                'max-jobs': config_value
+            }
+        })
+
+    result = cli.run(project=project, silent=True, args=args)
+    result.assert_success()
+    loaded = _yaml.load_data(result.output)
+    loaded_value = loaded.get_int('max-jobs')
+
+    # We expect the value provided on the command line to take
+    # precedence over the configuration file value, if specified.
+    #
+    # If neither are specified then we expect the default
+    expected_value = cli_value or config_value or '0'
+
+    if expected_value == '0':
+        # If we are expecting the automatic behavior of using the maximum
+        # number of cores available, just check that it is a value > 0
+        assert loaded_value > 0, "Automatic setting of max-jobs didnt work"
+    else:
+        # Check that we got the explicitly set value
+        assert loaded_value == int(expected_value)
