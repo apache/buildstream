@@ -36,7 +36,6 @@ import psutil
 
 from .._exceptions import SandboxError
 from .. import utils, _signals
-from ._mount import MountMap
 from . import Sandbox, SandboxFlags
 from .. import _site
 
@@ -146,6 +145,12 @@ class SandboxBwrap(Sandbox):
             raise SandboxError("Staged artifacts do not provide command "
                                "'{}'".format(command[0]),
                                reason='missing-command')
+
+        # NOTE: MountMap transitively imports `_fuse/fuse.py` which raises an
+        # EnvironmentError when fuse is not found. Since this module is
+        # expected to be imported even in absence of fuse, MountMap is imported
+        # here, and not at the top of the module.
+        from ._mount import MountMap
 
         # Create the mount map, this will tell us where
         # each mount point needs to be mounted from and to
