@@ -104,6 +104,9 @@ class Context():
         # What to do when a build fails in non interactive mode
         self.sched_error_action = 'continue'
 
+        # Maximum jobs per build
+        self.build_max_jobs = None
+
         # Whether elements must be rebuilt when their dependencies have changed
         self._strict_build_plan = None
 
@@ -161,7 +164,7 @@ class Context():
         _yaml.node_validate(defaults, [
             'sourcedir', 'builddir', 'artifactdir', 'logdir',
             'scheduler', 'artifacts', 'logging', 'projects',
-            'cache'
+            'cache', 'build'
         ])
 
         for directory in ['sourcedir', 'builddir', 'artifactdir', 'logdir']:
@@ -212,6 +215,11 @@ class Context():
         self.sched_builders = _yaml.node_get(scheduler, int, 'builders')
         self.sched_pushers = _yaml.node_get(scheduler, int, 'pushers')
         self.sched_network_retries = _yaml.node_get(scheduler, int, 'network-retries')
+
+        # Load build config
+        build = _yaml.node_get(defaults, dict, 'build')
+        _yaml.node_validate(build, ['max-jobs'])
+        self.build_max_jobs = _yaml.node_get(build, int, 'max-jobs')
 
         # Load per-projects overrides
         self._project_overrides = _yaml.node_get(defaults, Mapping, 'projects', default_value={})
