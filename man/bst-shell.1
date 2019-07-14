@@ -1,4 +1,4 @@
-.TH "BST SHELL" "1" "06-Aug-2018" "" "bst shell Manual"
+.TH "BST SHELL" "1" "14-Jul-2019" "" "bst shell Manual"
 .SH NAME
 bst\-shell \- Shell into an element's sandbox environment
 .SH SYNOPSIS
@@ -6,18 +6,18 @@ bst\-shell \- Shell into an element's sandbox environment
 [OPTIONS] ELEMENT [COMMAND]...
 .SH DESCRIPTION
 Run a command in the target element's sandbox environment
-
+.PP
 This will stage a temporary sysroot for running the target
 element, assuming it has already been built and all required
 artifacts are in the local cache.
-
+.PP
 Use the --build option to create a temporary sysroot for
 building the element instead.
-
+.PP
 Use the --sysroot option with an existing failed build
 directory or with a checkout of the given target, in order
 to use a specific sysroot.
-
+.PP
 If no COMMAND is specified, the default is to attempt
 to run an interactive shell.
 .SH OPTIONS

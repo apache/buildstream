@@ -1,4 +1,4 @@
-.TH "BST PULL" "1" "06-Aug-2018" "" "bst pull Manual"
+.TH "BST PULL" "1" "14-Jul-2019" "" "bst pull Manual"
 .SH NAME
 bst\-pull \- Pull a built artifact
 .SH SYNOPSIS
@@ -6,13 +6,13 @@ bst\-pull \- Pull a built artifact
 [OPTIONS] [ELEMENTS]...
 .SH DESCRIPTION
 Pull a built artifact from the configured remote artifact cache.
-
+.PP
 By default the artifact will be pulled one of the configured caches
 if possible, following the usual priority order. If the `--remote` flag
 is given, only the specified cache will be queried.
-
+.PP
 Specify `--deps` to control which artifacts to pull:
-
+.PP
 
     none:  No dependencies, just the element itself
     all:   All dependencies
