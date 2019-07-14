@@ -78,6 +78,20 @@ scheduler:
 
 
 #
+# Build related configuration
+#
+build:
+
+  #
+  # Maximum number of jobs to run per build task.
+  #
+  # The default behavior when this is set to 0, is to use the
+  # maximum number of threads available, with a maximum of 8.
+  #
+  max-jobs: 0
+
+
+#
 #    Logging
 #
 logging:

@@ -121,6 +121,9 @@ class Context():
         # What to do when a build fails in non interactive mode
         self.sched_error_action = None
 
+        # Maximum jobs per build
+        self.build_max_jobs = None
+
         # Size of the artifact cache in bytes
         self.config_cache_quota = None
 
@@ -205,7 +208,7 @@ class Context():
                             "artifactdir is obsolete")
 
         defaults.validate_keys([
-            'cachedir', 'sourcedir', 'builddir', 'logdir', 'scheduler',
+            'cachedir', 'sourcedir', 'builddir', 'logdir', 'scheduler', 'build',
             'artifacts', 'source-caches', 'logging', 'projects', 'cache', 'prompt',
             'workspacedir', 'remote-execution',
         ])
@@ -311,6 +314,11 @@ class Context():
         self.sched_builders = scheduler.get_int('builders')
         self.sched_pushers = scheduler.get_int('pushers')
         self.sched_network_retries = scheduler.get_int('network-retries')
+
+        # Load build config
+        build = defaults.get_mapping('build')
+        build.validate_keys(['max-jobs'])
+        self.build_max_jobs = build.get_int('max-jobs')
 
         # Load per-projects overrides
         self._project_overrides = defaults.get_mapping('projects', default={})
