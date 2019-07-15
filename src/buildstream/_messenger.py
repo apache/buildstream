@@ -283,3 +283,32 @@ class Messenger():
         # Write to the open log file
         self._log_handle.write('{}\n'.format(text))
         self._log_handle.flush()
+
+    # get_state_for_child_job_pickling(self)
+    #
+    # Return data necessary to reconstruct this object in a child job process.
+    #
+    # This should be implemented the same as __getstate__(). We define this
+    # method instead as it is child job specific.
+    #
+    # Returns:
+    #    (dict): This `state` is what we want `self.__dict__` to be restored to
+    #    after instantiation in the child process.
+    #
+    def get_state_for_child_job_pickling(self):
+        state = self.__dict__.copy()
+
+        # When pickling a Messenger over to the ChildJob, we don't want to bring
+        # the whole _message_handler over with it. We also don't want to remove it
+        # in the main process. If we remove it in the child process then we will
+        # already be too late. The only time that seems just right is here, when
+        # preparing the child process' copy of the Messenger.
+        #
+        # Another approach might be to use a context manager on the Messenger,
+        # which removes and restores the _message_handler. This wouldn't require
+        # access to private details of Messenger, but it would open up a window
+        # where messagesw wouldn't be handled as expected.
+        #
+        del state['_message_handler']
+
+        return state
