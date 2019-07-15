@@ -40,7 +40,7 @@ def deps_visit_all(element, visited):
     yield element
 
 
-def dependencies(element, scope, *, recurse=True, visited=None):
+def dependencies(element, scope, *, recurse=True):
     # The format of visited is (BitMap(), BitMap()), with the first BitMap
     # containing element that have been visited for the `Scope.BUILD` case
     # and the second one relating to the `Scope.RUN` case.
@@ -50,22 +50,38 @@ def dependencies(element, scope, *, recurse=True, visited=None):
         if scope in (SCOPE_RUN, SCOPE_ALL):
             yield from element._Element__runtime_dependencies
     else:
-        if visited is None:
-            # Visited is of the form (Visited for Scope.BUILD, Visited for Scope.RUN)
-            visited = (BitMap(), BitMap())
-
         if scope == SCOPE_ALL:
-            # We can use only one of the sets when checking for Scope.ALL, as we would get added to
-            # both anyways.
-            # This would break if we start reusing 'visited' and mixing scopes, but that is done
-            # nowhere in the codebase.
-            if element._unique_id not in visited[0]:
-                yield from deps_visit_all(element, visited[0])
+            yield from deps_visit_all(element, BitMap())
         elif scope == SCOPE_BUILD:
-            if element._unique_id not in visited[0]:
-                yield from deps_visit_build(element, visited[0], visited[1])
+            yield from deps_visit_build(element, BitMap(), BitMap())
         elif scope == SCOPE_RUN:
-            if element._unique_id not in visited[1]:
-                yield from deps_visit_run(element, visited[1])
+            yield from deps_visit_run(element, BitMap())
         else:
             yield element
+
+
+def dependencies_for_targets(elements, scope):
+    if scope == SCOPE_ALL:
+        visited = BitMap()
+
+        for element in elements:
+            if element._unique_id not in visited:
+                yield from deps_visit_all(element, visited)
+
+    elif scope == SCOPE_BUILD:
+        visited_build = BitMap()
+        visited_run = BitMap()
+
+        for element in elements:
+            if element._unique_id not in visited_build:
+                yield from deps_visit_build(element, visited_build, visited_run)
+
+    elif scope == SCOPE_RUN:
+        visited = BitMap()
+
+        for element in elements:
+            if element._unique_id not in visited:
+                yield from deps_visit_run(element, visited)
+
+    else:
+        yield from elements

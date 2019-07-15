@@ -54,7 +54,7 @@ from ._state import State
 from .types import _KeyStrength, _PipelineSelection, _SchedulerErrorAction
 from .plugin import Plugin
 from . import utils, _yaml, _site
-from . import Scope
+from . import Scope, Element
 
 
 # Stream()
@@ -218,7 +218,10 @@ class Stream:
                     "Element must be fetched.".format(element._get_full_name())
                 )
 
-            missing_deps = [dep for dep in self._pipeline.dependencies([element], scope) if not dep._cached()]
+            missing_deps = [
+                dep for dep in element.dependencies(scope)
+                if not dep._cached()
+            ]
             if missing_deps:
                 if not pull_dependencies:
                     raise StreamError(
@@ -1356,7 +1359,7 @@ class Stream:
         # Inform the frontend of the full list of elements
         # and the list of elements which will be processed in this run
         #
-        self.total_elements = list(self._pipeline.dependencies(self.targets, Scope.ALL))
+        self.total_elements = list(Element.dependencies_for_targets(self.targets, Scope.ALL))
 
         if self._session_start_callback is not None:
             self._session_start_callback()

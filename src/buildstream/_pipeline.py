@@ -24,12 +24,10 @@ import itertools
 from operator import itemgetter
 from collections import OrderedDict
 
-from pyroaring import BitMap  # pylint: disable=no-name-in-module
-
 from ._exceptions import PipelineError
 from ._message import Message, MessageType
 from ._profile import Topics, PROFILER
-from . import Scope
+from . import Scope, Element
 from ._project import ProjectRefStorage
 from .types import _PipelineSelection
 
@@ -115,7 +113,7 @@ class Pipeline:
             # to happen, even for large projects (tested with the Debian stack). Although,
             # if it does become a problem we may have to set the recursion limit to a
             # greater value.
-            for element in self.dependencies(targets, Scope.ALL):
+            for element in Element.dependencies_for_targets(targets, Scope.ALL):
                 # Determine initial element state.
                 if not element._resolved_initial_state:
                     element._initialize_state()
@@ -124,44 +122,6 @@ class Pipeline:
                 # cached, if this is the case, we should immediately notify their reverse
                 # dependencies.
                 element._update_ready_for_runtime_and_cached()
-
-                if task:
-                    task.add_current_progress()
-
-    # check_remotes()
-    #
-    # Check if the target artifact is cached in any of the available remotes
-    #
-    # Args:
-    #    targets (list [Element]): The list of element targets
-    #
-    def check_remotes(self, targets):
-        with self._context.messenger.simple_task("Querying remotes for cached status", silent_nested=True) as task:
-            task.set_maximum_progress(len(targets))
-
-            for element in targets:
-                element._cached_remotely()
-
-                task.add_current_progress()
-
-    # dependencies()
-    #
-    # Generator function to iterate over elements and optionally
-    # also iterate over sources.
-    #
-    # Args:
-    #    targets (list of Element): The target Elements to loop over
-    #    scope (Scope): The scope to iterate over
-    #    recurse (bool): Whether to recurse into dependencies
-    #
-    def dependencies(self, targets, scope, *, recurse=True):
-        # Keep track of 'visited' in this scope, so that all targets
-        # share the same context.
-        visited = (BitMap(), BitMap())
-
-        for target in targets:
-            for element in target.dependencies(scope, recurse=recurse, visited=visited):
-                yield element
 
     # plan()
     #
@@ -197,7 +157,9 @@ class Pipeline:
     # the selected option.
     #
     def get_selection(self, targets, mode, *, silent=True):
-        def redirect_and_log():
+        if mode == _PipelineSelection.NONE:
+            elements = targets
+        elif mode == _PipelineSelection.REDIRECT:
             # Redirect and log if permitted
             elements = []
             for t in targets:
@@ -206,21 +168,19 @@ class Pipeline:
                     self._message(MessageType.INFO, "Element '{}' redirected to '{}'".format(t.name, new_elm.name))
                 if new_elm not in elements:
                     elements.append(new_elm)
-            return elements
+        elif mode == _PipelineSelection.PLAN:
+            elements = self.plan(targets)
+        else:
+            if mode == _PipelineSelection.ALL:
+                scope = Scope.ALL
+            elif mode == _PipelineSelection.BUILD:
+                scope = Scope.BUILD
+            elif mode == _PipelineSelection.RUN:
+                scope = Scope.RUN
 
-        # Work around python not having a switch statement; this is
-        # much clearer than the if/elif/else block we used to have.
-        #
-        # Note that the lambda is necessary so that we don't evaluate
-        # all possible values at run time; that would be slow.
-        return {
-            _PipelineSelection.NONE: lambda: targets,
-            _PipelineSelection.REDIRECT: redirect_and_log,
-            _PipelineSelection.PLAN: lambda: self.plan(targets),
-            _PipelineSelection.ALL: lambda: list(self.dependencies(targets, Scope.ALL)),
-            _PipelineSelection.BUILD: lambda: list(self.dependencies(targets, Scope.BUILD)),
-            _PipelineSelection.RUN: lambda: list(self.dependencies(targets, Scope.RUN)),
-        }[mode]()
+            elements = list(Element.dependencies_for_targets(targets, scope))
+
+        return elements
 
     # except_elements():
     #
@@ -241,7 +201,7 @@ class Pipeline:
         if not except_targets:
             return elements
 
-        targeted = list(self.dependencies(targets, Scope.ALL))
+        targeted = list(Element.dependencies_for_targets(targets, Scope.ALL))
         visited = []
 
         def find_intersection(element):
