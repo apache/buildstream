@@ -50,3 +50,6 @@ cdef Py_UNICODE _transl(Py_UNICODE x):
     if ("a" <= x <= "z") or ("A" <= x <= "Z") or ("0" <= x <= "9") or x == "%":
         return x
     return "_"
+
+
+# get_mirror_directory in configure of _downlaodablefilesource
