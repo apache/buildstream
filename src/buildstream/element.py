@@ -391,6 +391,24 @@ class Element(Plugin):
     #############################################################
     #                       Public Methods                      #
     #############################################################
+    @classmethod
+    def dependencies_for_targets(cls, targets, scope):
+        """A generator function which yields the dependencies for the given elements, recursively.
+
+        This ensures that no elements is handed twice and that the order is correct, with the basemost elements
+        in the given `scope` coming first, and the targets last.
+
+        If `scope` is `None`, will simply return all the elements.
+
+        Args:
+            targets (list): list List of elements for which to get the dependencies
+            scope: (:class:`.Scope`): The scope to iterate in
+
+        Yields:
+            (:class:`.Element`): The dependencies in `scope`, in deterministic staging order
+        """
+        return _element.dependencies_for_targets(targets, scope)
+
     def sources(self):
         """A generator function to enumerate the element sources
 
@@ -400,10 +418,8 @@ class Element(Plugin):
         for source in self.__sources:
             yield source
 
-    def dependencies(self, scope, *, recurse=True, visited=None):
-        """dependencies(scope, *, recurse=True)
-
-        A generator function which yields the dependencies of the given element.
+    def dependencies(self, scope, *, recurse=True):
+        """A generator function which yields the dependencies of the given element.
 
         If `recurse` is specified (the default), the full dependencies will be listed
         in deterministic staging order, starting with the basemost elements in the
@@ -418,7 +434,7 @@ class Element(Plugin):
         Yields:
            (:class:`.Element`): The dependencies in `scope`, in deterministic staging order
         """
-        return _element.dependencies(self, scope, recurse=recurse, visited=visited)
+        return _element.dependencies(self, scope, recurse=recurse)
 
     def search(self, scope, name):
         """Search for a dependency by name

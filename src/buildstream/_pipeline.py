@@ -29,7 +29,7 @@ from pyroaring import BitMap  # pylint: disable=no-name-in-module
 from ._exceptions import PipelineError
 from ._message import Message, MessageType
 from ._profile import Topics, PROFILER
-from . import Scope, Consistency
+from . import Scope, Consistency, Element
 from ._project import ProjectRefStorage
 
 
@@ -124,7 +124,7 @@ class Pipeline():
     #
     def resolve_elements(self, targets):
         with self._context.messenger.timed_activity("Resolving cached state", silent_nested=True):
-            for element in self.dependencies(targets, Scope.ALL):
+            for element in Element.dependencies_for_targets(targets, Scope.ALL):
 
                 # Preflight
                 element._preflight()
@@ -136,25 +136,6 @@ class Pipeline():
                 # cached, if this is the case, we should immediately notify their reverse
                 # dependencies.
                 element._update_ready_for_runtime_and_cached()
-
-    # dependencies()
-    #
-    # Generator function to iterate over elements and optionally
-    # also iterate over sources.
-    #
-    # Args:
-    #    targets (list of Element): The target Elements to loop over
-    #    scope (Scope): The scope to iterate over
-    #    recurse (bool): Whether to recurse into dependencies
-    #
-    def dependencies(self, targets, scope, *, recurse=True):
-        # Keep track of 'visited' in this scope, so that all targets
-        # share the same context.
-        visited = (BitMap(), BitMap())
-
-        for target in targets:
-            for element in target.dependencies(scope, recurse=recurse, visited=visited):
-                yield element
 
     # plan()
     #
@@ -214,7 +195,7 @@ class Pipeline():
             elif mode == PipelineSelection.RUN:
                 scope = Scope.RUN
 
-            elements = list(self.dependencies(targets, scope))
+            elements = list(Element.dependencies_for_targets(targets, scope))
 
         return elements
 
@@ -237,7 +218,7 @@ class Pipeline():
         if not except_targets:
             return elements
 
-        targeted = list(self.dependencies(targets, Scope.ALL))
+        targeted = list(Element.dependencies_for_targets(targets, Scope.ALL))
         visited = []
 
         def find_intersection(element):
@@ -297,7 +278,7 @@ class Pipeline():
     #            somehow depended on by `targets`.
     #
     def targets_include(self, targets, elements):
-        target_element_set = set(self.dependencies(targets, Scope.ALL))
+        target_element_set = set(Element.dependencies_for_targets(targets, Scope.ALL))
         element_set = set(elements)
         return element_set.issubset(target_element_set)
 

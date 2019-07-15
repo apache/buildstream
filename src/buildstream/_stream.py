@@ -41,7 +41,7 @@ from ._profile import Topics, PROFILER
 from ._state import State
 from .types import _KeyStrength
 from . import utils, _yaml, _site
-from . import Scope, Consistency
+from . import Scope, Consistency, Element
 
 
 # Stream()
@@ -1193,7 +1193,7 @@ class Stream():
         # final product. Note that this is a superset of the build plan.
         #
         # use partial as we send this to both Artifact and Source caches
-        required_elements = functools.partial(self._pipeline.dependencies, elements, Scope.ALL)
+        required_elements = functools.partial(Element.dependencies_for_targets, elements, Scope.ALL)
         self._artifacts.mark_required_elements(required_elements())
 
         self._sourcecache.mark_required_sources(
@@ -1258,7 +1258,7 @@ class Stream():
         # Inform the frontend of the full list of elements
         # and the list of elements which will be processed in this run
         #
-        self.total_elements = list(self._pipeline.dependencies(self.targets, Scope.ALL))
+        self.total_elements = list(Element.dependencies_for_targets(self.targets, Scope.ALL))
 
         if self._session_start_callback is not None:
             self._session_start_callback()
