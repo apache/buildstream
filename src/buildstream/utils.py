@@ -30,7 +30,6 @@ import shutil
 import signal
 import stat
 from stat import S_ISDIR
-import string
 import subprocess
 import tempfile
 import itertools
@@ -41,6 +40,10 @@ import psutil
 from . import _signals
 from ._exceptions import BstError, ErrorDomain
 from ._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+
+# Contains utils that have been rewritten in Cython for speed benefits
+# This makes them available when importing from utils
+from ._utils import url_directory_name  # pylint: disable=unused-import
 
 # The magic number for timestamps: 2011-11-11 11:11:11
 BST_ARBITRARY_TIMESTAMP = calendar.timegm([2011, 11, 11, 11, 11, 11])
@@ -454,23 +457,6 @@ def get_host_tool(name):
         raise ProgramNotFoundError("Did not find '{}' in PATH: {}".format(name, search_path))
 
     return program_path
-
-
-def url_directory_name(url):
-    """Normalizes a url into a directory name
-
-    Args:
-       url (str): A url string
-
-    Returns:
-       A string which can be used as a directory name
-    """
-    valid_chars = string.digits + string.ascii_letters + '%_'
-
-    def transl(x):
-        return x if x in valid_chars else '_'
-
-    return ''.join([transl(x) for x in url])
 
 
 def get_bst_version():
