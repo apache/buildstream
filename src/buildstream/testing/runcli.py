@@ -85,7 +85,6 @@ class Result():
         # in the case that the exit code reported is 0 (success).
         #
         if self.exit_code != 0:
-
             # Check if buildstream failed to handle an
             # exception, topevel CLI exit should always
             # be a SystemExit exception.
@@ -149,6 +148,7 @@ class Result():
                     self.exception.domain,
                     self.exception.reason
                 ))
+
         assert self.exit_code == -1, fail_message
         assert self.exc is not None, fail_message
         assert self.exception is not None, fail_message

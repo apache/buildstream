@@ -488,6 +488,8 @@ class Job():
             # is currently managed in _exceptions.py
             set_last_task_error(envelope.message['domain'],
                                 envelope.message['reason'])
+            self._scheduler.set_last_task_error(envelope.message['domain'],
+                                                envelope.message['reason'])
         elif envelope.message_type is _MessageType.RESULT:
             assert self._result is None
             self._result = envelope.message

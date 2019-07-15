@@ -711,6 +711,10 @@ def _is_main_process():
     assert _main_pid is not None
     return os.getpid() == _main_pid
 
+def _reset_main_pid():
+    global _main_pid
+    _main_pid = os.getpid()
+
 
 # Recursively remove directories, ignoring file permissions as much as
 # possible.

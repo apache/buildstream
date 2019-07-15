@@ -316,6 +316,7 @@ class Queue():
             # This just allows us stronger testing capability
             #
             set_last_task_error(e.domain, e.reason)
+            self._scheduler.set_last_task_error(e.domain, e.reason)
 
         except Exception:   # pylint: disable=broad-except
 

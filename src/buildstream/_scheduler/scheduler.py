@@ -53,6 +53,8 @@ class NotificationType(enum.Enum):
     JOB_COMPLETE = "job_complete"
     TICK = "tick"
     EXCEPTION = "exception"
+    TASK_ERROR = "task_error"
+    SCHED_TERMINATE = "sched_terminate"
 
 
 class Notification:
@@ -66,7 +68,9 @@ class Notification:
                  failed_element=False,
                  elapsed_time=None,
                  element=None,
-                 exception=None):
+                 exception=None,
+                 domain=None,
+                 reason=None):
 
         self.notification_type = notification_type
         self.full_name = full_name
@@ -76,6 +80,8 @@ class Notification:
         self.elapsed_time = elapsed_time
         self.element = element
         self.exception = exception
+        self.domain = domain
+        self.reason = reason
 
 
 # Scheduler()
@@ -330,6 +336,12 @@ class Scheduler():
         # and we prefer to run it once at the last moment.
         #
         self._cache_size_scheduled = True
+
+    def set_last_task_error(self, domain, reason):
+        notification = Notification(NotificationType.TASK_ERROR,
+                                    domain=domain,
+                                    reason=reason)
+        self._notify(notification)
 
     #######################################################
     #                  Local Private Methods              #
@@ -673,3 +685,16 @@ class Scheduler():
         # a new use-case arises.
         #
         raise TypeError("Scheduler objects should not be pickled.")
+
+    def _loop(self):
+        assert self._notification_queue
+        # Check for and process new messages
+        while True:
+            try:
+                notification = self._notification_queue.get_nowait()
+                if notification.notification_type == NotificationType.SCHED_TERMINATE:
+                    print("handling notifications")
+                    self.terminate_jobs()
+            except queue.Empty:
+                notification = None
+                break

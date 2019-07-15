@@ -238,7 +238,8 @@ class LoadErrorReason(Enum):
 # interpreting project YAML
 #
 class LoadError(BstError):
-    def __init__(self, message, reason, *, detail=None):
+    def __init__(self, message, reason=None, *, detail=None):
+        # Second parameter needs to be a default arg due to unpickling issue, unpleasant.
         super().__init__(message, detail=detail, domain=ErrorDomain.LOAD, reason=reason)
 
 
