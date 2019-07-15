@@ -298,7 +298,7 @@ cdef class MappingNode(Node):
         if type(value) is not MappingNode and value is not None:
             provenance = value.get_provenance()
             raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Value of '{}' is not of the expected type 'Mapping'"
+                            "{}: Value of '{}' is not of the expected type 'dict'"
                             .format(provenance, key))
 
         return value
@@ -316,9 +316,17 @@ cdef class MappingNode(Node):
 
         if allowed_types and type(value) not in allowed_types:
             provenance = self.get_provenance()
+            human_types = []
+            if MappingNode in allowed_types:
+                human_types.append("dict")
+            if SequenceNode in allowed_types:
+                human_types.append('list')
+            if ScalarNode in allowed_types:
+                human_types.append('scalar')
+
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Value of '{}' is not one of the following: {}.".format(
-                                provenance, key, ", ".join(allowed_types)))
+                                provenance, key, ", ".join(human_types)))
 
         return value
 
@@ -331,7 +339,7 @@ cdef class MappingNode(Node):
             else:
                 provenance = value.get_provenance()
                 raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Value of '{}' is not of the expected type 'Scalar'"
+                                "{}: Value of '{}' is not of the expected type 'scalar'"
                                 .format(provenance, key))
 
         return value
@@ -342,7 +350,7 @@ cdef class MappingNode(Node):
         if type(value) is not SequenceNode and value is not None:
             provenance = value.get_provenance()
             raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Value of '{}' is not of the expected type 'Sequence'"
+                            "{}: Value of '{}' is not of the expected type 'list'"
                             .format(provenance, key))
 
         return value
