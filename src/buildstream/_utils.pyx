@@ -22,10 +22,6 @@
 This module contains utilities that have been optimized in Cython
 """
 
-import string
-
-cdef str VALID_DIRECTORY_CHARS = string.digits + string.ascii_letters + "%_"
-
 
 def url_directory_name(str url):
     """Normalizes a url into a directory name
@@ -36,7 +32,21 @@ def url_directory_name(str url):
     Returns:
        A string which can be used as a directory name
     """
-    def transl(x):
-        return x if x in VALID_DIRECTORY_CHARS else '_'
+    return ''.join([_transl(x) for x in url])
 
-    return ''.join([transl(x) for x in url])
+
+#############################################################
+#                 Module local helper Methods               #
+#############################################################
+
+
+# _transl(x)
+#
+# Helper for `url_directory_name`
+#
+# This transforms the value to "_" if is it not a ascii letter, a digit or "%" or "_"
+#
+cdef Py_UNICODE _transl(Py_UNICODE x):
+    if ("a" <= x <= "z") or ("A" <= x <= "Z") or ("0" <= x <= "9") or x == "%":
+        return x
+    return "_"
