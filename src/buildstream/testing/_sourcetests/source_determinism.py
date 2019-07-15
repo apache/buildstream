@@ -91,7 +91,7 @@ def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
             ]
         }
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     def get_value_for_umask(umask):
         checkoutdir = os.path.join(str(tmpdir), 'checkout-{}'.format(umask))

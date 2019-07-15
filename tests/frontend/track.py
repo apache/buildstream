@@ -9,7 +9,7 @@ from buildstream.testing import create_repo
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
-from tests.testutils import generate_junction, yaml_file_get_provenance
+from tests.testutils import generate_junction
 from . import configure_project
 
 # Project directory
@@ -27,7 +27,7 @@ def generate_element(repo, element_path, dep_name=None):
     if dep_name:
         element['depends'] = [dep_name]
 
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -156,7 +156,7 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
         'name': 'test',
         'ref-storage': ref_storage
     }
-    _yaml.dump(project_conf, os.path.join(project, 'project.conf'))
+    _yaml.roundtrip_dump(project_conf, os.path.join(project, 'project.conf'))
 
     #
     # FIXME: This can be simplified when we have support
@@ -267,7 +267,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # Now try to track it, this will bail with the appropriate error
     # informing the user to track the junction first
@@ -275,8 +275,9 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
 
     # Assert that we have the expected provenance encoded into the error
-    provenance = yaml_file_get_provenance(
-        element_path, 'junction-dep.bst', key='depends', indices=[0])
+    element_node = _yaml.load(element_path, shortname='junction-dep.bst')
+    ref_node = element_node.get_sequence('depends').mapping_at(0)
+    provenance = ref_node.get_provenance()
     assert str(provenance) in result.stderr
 
 
@@ -306,15 +307,16 @@ def test_junction_element(cli, tmpdir, datafiles, ref_storage):
             }
         ]
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     # First demonstrate that showing the pipeline yields an error
     result = cli.run(project=project, args=['show', 'junction-dep.bst'])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.SUBPROJECT_INCONSISTENT)
 
     # Assert that we have the expected provenance encoded into the error
-    provenance = yaml_file_get_provenance(
-        element_path, 'junction-dep.bst', key='depends', indices=[0])
+    element_node = _yaml.load(element_path, shortname='junction-dep.bst')
+    ref_node = element_node.get_sequence('depends').mapping_at(0)
+    provenance = ref_node.get_provenance()
     assert str(provenance) in result.stderr
 
     # Now track the junction itself

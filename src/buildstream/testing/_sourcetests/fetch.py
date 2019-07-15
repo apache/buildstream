@@ -53,9 +53,8 @@ def test_fetch(cli, tmpdir, datafiles, kind):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element,
-               os.path.join(element_path,
-                            element_name))
+    _yaml.roundtrip_dump(element,
+                         os.path.join(element_path, element_name))
 
     # Assert that a fetch is needed
     assert cli.get_element_state(project, element_name) == 'fetch needed'
@@ -89,7 +88,7 @@ def test_fetch_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
             repo.source_config(ref=(ref if ref_storage == 'inline' else None))
         ]
     }
-    _yaml.dump(element, import_etc_path)
+    _yaml.roundtrip_dump(element, import_etc_path)
 
     configure_project(project, {
         'ref-storage': ref_storage

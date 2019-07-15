@@ -109,19 +109,19 @@ class PipSource(Source):
     BST_REQUIRES_PREVIOUS_SOURCES_TRACK = True
 
     def configure(self, node):
-        self.node_validate(node, ['url', 'packages', 'ref', 'requirements-files'] +
+        node.validate_keys(['url', 'packages', 'ref', 'requirements-files'] +
                            Source.COMMON_CONFIG_KEYS)
-        self.ref = self.node_get_member(node, str, 'ref', None)
-        self.original_url = self.node_get_member(node, str, 'url', _PYPI_INDEX_URL)
+        self.ref = node.get_str('ref', None)
+        self.original_url = node.get_str('url', _PYPI_INDEX_URL)
         self.index_url = self.translate_url(self.original_url)
-        self.packages = self.node_get_member(node, list, 'packages', [])
-        self.requirements_files = self.node_get_member(node, list, 'requirements-files', [])
+        self.packages = node.get_sequence('packages', []).as_str_list()
+        self.requirements_files = node.get_sequence('requirements-files', []).as_str_list()
 
         if not (self.packages or self.requirements_files):
             raise SourceError("{}: Either 'packages' or 'requirements-files' must be specified". format(self))
 
     def preflight(self):
-        # Try to find a pip version that supports download command
+        # Try to find a pip version that spports download command
         self.host_pip = None
         for python in reversed(_PYTHON_VERSIONS):
             try:
@@ -150,7 +150,7 @@ class PipSource(Source):
         return self.ref
 
     def load_ref(self, node):
-        self.ref = self.node_get_member(node, str, 'ref', None)
+        self.ref = node.get_str('ref', None)
 
     def set_ref(self, ref, node):
         node['ref'] = self.ref = ref

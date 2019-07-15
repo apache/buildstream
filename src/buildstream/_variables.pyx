@@ -24,7 +24,7 @@ import re
 import sys
 
 from ._exceptions import LoadError, LoadErrorReason
-from . cimport _yaml
+from .node cimport MappingNode
 
 # Variables are allowed to have dashes here
 #
@@ -65,11 +65,11 @@ PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
 #
 cdef class Variables:
 
-    cdef _yaml.Node original
+    cdef MappingNode original
     cdef dict _expstr_map
     cdef public dict flat
 
-    def __init__(self, _yaml.Node node):
+    def __init__(self, MappingNode node):
         self.original = node
         self._expstr_map = self._resolve(node)
         self.flat = self._flatten()
@@ -115,20 +115,20 @@ cdef class Variables:
     #
     # Here we resolve all of our inputs into a dictionary, ready for use
     # in subst()
-    cdef dict _resolve(self, _yaml.Node node):
+    cdef dict _resolve(self, MappingNode node):
         # Special case, if notparallel is specified in the variables for this
         # element, then override max-jobs to be 1.
         # Initialize it as a string as all variables are processed as strings.
         #
-        if _yaml.node_get(node, bool, 'notparallel', None, False):
-            _yaml.node_set(node, 'max-jobs', str(1))
+        if node.get_bool('notparallel', False):
+            node['max-jobs'] = str(1)
 
         cdef dict ret = {}
         cdef str key
         cdef str value
 
-        for key in _yaml.node_keys(node):
-            value = <str> _yaml.node_get(node, str, key)
+        for key in node.keys():
+            value = node.get_str(key)
             ret[sys.intern(key)] = _parse_expstr(value)
         return ret
 
@@ -139,7 +139,7 @@ cdef class Variables:
             for var in expstr[1::2]:
                 if var not in self._expstr_map:
                     line = "  unresolved variable '{unmatched}' in declaration of '{variable}' at: {provenance}"
-                    provenance = _yaml.node_get_provenance(self.original, key)
+                    provenance = expstr.get_provenance()
                     summary.append(line.format(unmatched=var, variable=key, provenance=provenance))
         if summary:
             raise LoadError(LoadErrorReason.UNRESOLVED_VARIABLE,
@@ -153,7 +153,7 @@ cdef class Variables:
                     continue
                 if var in visited:
                     raise LoadError(LoadErrorReason.RECURSIVE_VARIABLE,
-                                    "{}: ".format(_yaml.node_get_provenance(self.original, var)) +
+                                    "{}: ".format(self.original.get_scalar(var).get_provenance()) +
                                     ("Variable '{}' expands to contain a reference to itself. " +
                                      "Perhaps '{}' contains '%{{{}}}").format(var, visited[-1], var))
                 visited.append(var)

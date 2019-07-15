@@ -258,8 +258,7 @@ class Source(Plugin):
     All Sources derive from this class, this interface defines how
     the core will be interacting with Sources.
     """
-    __defaults = {}          # The defaults from the project
-    __defaults_set = False   # Flag, in case there are not defaults at all
+    __defaults = None        # The defaults from the project
 
     BST_REQUIRES_PREVIOUS_SOURCES_TRACK = False
     """Whether access to previous sources is required during track
@@ -308,7 +307,7 @@ class Source(Plugin):
     """
 
     def __init__(self, context, project, meta, *, alias_override=None, unique_id=None):
-        provenance = _yaml.node_get_provenance(meta.config)
+        provenance = meta.config.get_provenance()
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
                          context, project, provenance, "source", unique_id=unique_id)
 
@@ -337,7 +336,7 @@ class Source(Plugin):
     """Common source config keys
 
     Source config keys that must not be accessed in configure(), and
-    should be checked for using node_validate().
+    should be checked for using node.validate_keys().
     """
 
     #############################################################
@@ -355,7 +354,7 @@ class Source(Plugin):
         """Loads the *ref* for this Source from the specified *node*.
 
         Args:
-           node (dict): The YAML node to load the ref from
+           node (:class:`MappingNode <buildstream.node.MappingNode>`): The YAML node to load the ref from
 
         .. note::
 
@@ -392,8 +391,8 @@ class Source(Plugin):
 
         Args:
            ref (simple object): The internal source reference to set, or ``None``
-           node (dict): The same dictionary which was previously passed
-                        to :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
+           node (:class:`MappingNode <buildstream.node.MappingNode>`): The same dictionary which was previously passed
+                to :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
 
         See :func:`Source.get_ref() <buildstream.source.Source.get_ref>`
         for a discussion on the *ref* parameter.
@@ -869,27 +868,28 @@ class Source(Plugin):
             node = toplevel_refs.lookup_ref(project.name, element_name, element_idx, write=True)
 
         if project is toplevel and not node:
-            node = provenance.node
+            node = provenance._node
 
         # Ensure the node is not from a junction
-        if not toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS and provenance.project is not toplevel:
-            if provenance.project is project:
+        if not toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS and provenance._project is not toplevel:
+            if provenance._project is project:
                 self.warn("{}: Not persisting new reference in junctioned project".format(self))
-            elif provenance.project is None:
-                assert provenance.filename == ""
-                assert provenance.shortname == ""
+            elif provenance._project is None:
+                assert provenance._filename == ""
+                assert provenance._shortname == ""
                 raise SourceError("{}: Error saving source reference to synthetic node."
                                   .format(self))
             else:
                 raise SourceError("{}: Cannot track source in a fragment from a junction"
-                                  .format(provenance.shortname),
+                                  .format(provenance._shortname),
                                   reason="tracking-junction-fragment")
 
         #
         # Step 2 - Set the ref in memory, and determine changed state
         #
-        clean = _yaml.node_sanitize(node, dict_type=dict)
-        to_modify = _yaml.node_sanitize(node, dict_type=dict)
+        # TODO: we are working on dictionaries here, would be nicer to just work on the nodes themselves
+        clean = node._strip_node_info()
+        to_modify = node._strip_node_info()
 
         current_ref = self.get_ref()  # pylint: disable=assignment-from-no-return
 
@@ -955,22 +955,24 @@ class Source(Plugin):
         for key, action in actions.items():
             # Obtain the top level node and its file
             if action == 'add':
-                provenance = _yaml.node_get_provenance(node)
+                provenance = node.get_provenance()
             else:
-                provenance = _yaml.node_get_provenance(node, key=key)
+                provenance = node.get_node(key).get_provenance()
 
-            toplevel_node = provenance.toplevel
+            toplevel_node = provenance._toplevel
 
             # Get the path to whatever changed
             if action == 'add':
-                path = _yaml.node_find_target(toplevel_node, node)
+                path = toplevel_node._find(node)
             else:
-                path = _yaml.node_find_target(toplevel_node, node, key=key)
+                full_path = toplevel_node._find(node.get_node(key))
+                # We want the path to the node containing the key, not to the key
+                path = full_path[:-1]
 
-            roundtrip_file = roundtrip_cache.get(provenance.filename)
+            roundtrip_file = roundtrip_cache.get(provenance._filename)
             if not roundtrip_file:
-                roundtrip_file = roundtrip_cache[provenance.filename] = _yaml.roundtrip_load(
-                    provenance.filename,
+                roundtrip_file = roundtrip_cache[provenance._filename] = _yaml.roundtrip_load(
+                    provenance._filename,
                     allow_missing=True
                 )
 
@@ -1267,24 +1269,23 @@ class Source(Plugin):
 
     @classmethod
     def __init_defaults(cls, project, meta):
-        if not cls.__defaults_set:
+        if cls.__defaults is None:
             if meta.first_pass:
                 sources = project.first_pass_config.source_overrides
             else:
                 sources = project.source_overrides
-            cls.__defaults = _yaml.node_get(sources, dict, meta.kind, default_value={})
-            cls.__defaults_set = True
+            cls.__defaults = sources.get_mapping(meta.kind, default={})
 
     # This will resolve the final configuration to be handed
     # off to source.configure()
     #
     @classmethod
     def __extract_config(cls, meta):
-        config = _yaml.node_get(cls.__defaults, dict, 'config', default_value={})
-        config = _yaml.node_copy(config)
+        config = cls.__defaults.get_mapping('config', default={})
+        config = config.clone()
 
-        _yaml.composite(config, meta.config)
-        _yaml.node_final_assertions(config)
+        meta.config._composite(config)
+        config._assert_fully_composited()
 
         return config
 

@@ -77,8 +77,8 @@ class DownloadableFileSource(Source):
     __urlopener = None
 
     def configure(self, node):
-        self.original_url = self.node_get_member(node, str, 'url')
-        self.ref = self.node_get_member(node, str, 'ref', None)
+        self.original_url = node.get_str('url')
+        self.ref = node.get_str('ref', None)
         self.url = self.translate_url(self.original_url)
         self._warn_deprecated_etag(node)
 
@@ -99,7 +99,7 @@ class DownloadableFileSource(Source):
             return Consistency.RESOLVED
 
     def load_ref(self, node):
-        self.ref = self.node_get_member(node, str, 'ref', None)
+        self.ref = node.get_str('ref', None)
         self._warn_deprecated_etag(node)
 
     def get_ref(self):
@@ -143,9 +143,9 @@ class DownloadableFileSource(Source):
                                   .format(self.url, sha256, self.ref))
 
     def _warn_deprecated_etag(self, node):
-        etag = self.node_get_member(node, str, 'etag', None)
+        etag = node.get_str('etag', None)
         if etag:
-            provenance = self.node_provenance(node, member_name='etag')
+            provenance = node.get_scalar(etag).get_provenance()
             self.warn('{} "etag" is deprecated and ignored.'.format(provenance))
 
     def _get_etag(self, ref):

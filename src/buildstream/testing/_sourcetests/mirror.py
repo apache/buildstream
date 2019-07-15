@@ -66,7 +66,7 @@ def test_mirror_fetch(cli, tmpdir, datafiles, kind):
     full_mirror = mirror_repo.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
     os.makedirs(element_dir)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     project = {
         'name': 'test',
@@ -84,7 +84,7 @@ def test_mirror_fetch(cli, tmpdir, datafiles, kind):
         ]
     }
     project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     # No obvious ways of checking that the mirror has been fetched
     # But at least we can be sure it succeeds
@@ -124,7 +124,7 @@ def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
     full_mirror = mirror_repo.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
     os.makedirs(element_dir)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     project = {
         'name': 'test',
@@ -142,7 +142,7 @@ def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
         ]
     }
     project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
@@ -179,14 +179,14 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
     full_mirror = mirror_repo.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
     os.makedirs(element_dir)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     config_project_dir = str(tmpdir.join('config'))
     os.makedirs(config_project_dir, exist_ok=True)
     config_project = {
         'name': 'config'
     }
-    _yaml.dump(config_project, os.path.join(config_project_dir, 'project.conf'))
+    _yaml.roundtrip_dump(config_project, os.path.join(config_project_dir, 'project.conf'))
     extra_mirrors = {
         'mirrors': [
             {
@@ -197,7 +197,7 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
             }
         ]
     }
-    _yaml.dump(extra_mirrors, os.path.join(config_project_dir, 'mirrors.yml'))
+    _yaml.roundtrip_dump(extra_mirrors, os.path.join(config_project_dir, 'mirrors.yml'))
     generate_junction(str(tmpdir.join('config_repo')),
                       config_project_dir,
                       os.path.join(element_dir, 'config.bst'))
@@ -213,7 +213,7 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
         ]
     }
     project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     # Now make the upstream unavailable.
     os.rename(upstream_repo.repo, '{}.bak'.format(upstream_repo.repo))
@@ -252,14 +252,14 @@ def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
     full_mirror = mirror_repo.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
     os.makedirs(element_dir)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     config_project_dir = str(tmpdir.join('config'))
     os.makedirs(config_project_dir, exist_ok=True)
     config_project = {
         'name': 'config'
     }
-    _yaml.dump(config_project, os.path.join(config_project_dir, 'project.conf'))
+    _yaml.roundtrip_dump(config_project, os.path.join(config_project_dir, 'project.conf'))
     extra_mirrors = {
         'mirrors': [
             {
@@ -270,7 +270,7 @@ def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
             }
         ]
     }
-    _yaml.dump(extra_mirrors, os.path.join(config_project_dir, 'mirrors.yml'))
+    _yaml.roundtrip_dump(extra_mirrors, os.path.join(config_project_dir, 'mirrors.yml'))
     generate_junction(str(tmpdir.join('config_repo')),
                       config_project_dir,
                       os.path.join(element_dir, 'config.bst'))
@@ -286,7 +286,7 @@ def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
         ]
     }
     project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     # Now make the upstream unavailable.
     os.rename(upstream_repo.repo, '{}.bak'.format(upstream_repo.repo))
@@ -332,7 +332,7 @@ def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
     full_mirror = mirror_repo.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
     os.makedirs(element_dir)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     project = {
         'name': 'test',
@@ -350,16 +350,16 @@ def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
         ]
     }
     project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     result = cli.run(project=project_dir, args=['source', 'track', element_name])
     result.assert_success()
 
     # Tracking tries upstream first. Check the ref is from upstream.
     new_element = _yaml.load(element_path)
-    source = _yaml.node_get(new_element, dict, 'sources', [0])
+    source = new_element.get_sequence('sources').mapping_at(0)
     if 'ref' in source:
-        assert _yaml.node_get(source, str, 'ref') == upstream_ref
+        assert source.get_str('ref') == upstream_ref
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -397,7 +397,7 @@ def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
     full_mirror = mirror_repo.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
     os.makedirs(element_dir)
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     project = {
         'name': 'test',
@@ -415,13 +415,13 @@ def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
         ]
     }
     project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.dump(project, project_file)
+    _yaml.roundtrip_dump(project, project_file)
 
     result = cli.run(project=project_dir, args=['source', 'track', element_name])
     result.assert_success()
 
     # Check that tracking fell back to the mirror
     new_element = _yaml.load(element_path)
-    source = _yaml.node_get(new_element, dict, 'sources', [0])
+    source = new_element.get_sequence('sources').mapping_at(0)
     if 'ref' in source:
-        assert _yaml.node_get(source, str, 'ref') == mirror_ref
+        assert source.get_str('ref') == mirror_ref

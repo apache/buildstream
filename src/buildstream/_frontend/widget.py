@@ -28,7 +28,6 @@ import click
 
 from .profile import Profile
 from .. import Element, Consistency, Scope
-from .. import _yaml
 from .. import __version__ as bst_version
 from .._exceptions import ImplError
 from .._message import MessageType
@@ -387,28 +386,27 @@ class LogLine(Widget):
 
             # Element configuration
             if "%{config" in format_:
-                config = _yaml.node_sanitize(element._Element__config)
                 line = p.fmt_subst(
                     line, 'config',
-                    yaml.round_trip_dump(config, default_flow_style=False, allow_unicode=True))
+                    yaml.round_trip_dump(element._Element__config, default_flow_style=False, allow_unicode=True))
 
             # Variables
             if "%{vars" in format_:
-                variables = _yaml.node_sanitize(element._Element__variables.flat)
+                variables = element._Element__variables.flat
                 line = p.fmt_subst(
                     line, 'vars',
                     yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
 
             # Environment
             if "%{env" in format_:
-                environment = _yaml.node_sanitize(element._Element__environment)
+                environment = element._Element__environment
                 line = p.fmt_subst(
                     line, 'env',
                     yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
 
             # Public
             if "%{public" in format_:
-                environment = _yaml.node_sanitize(element._Element__public)
+                environment = element._Element__public
                 line = p.fmt_subst(
                     line, 'public',
                     yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))

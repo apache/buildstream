@@ -55,9 +55,9 @@ class PatchSource(Source):
     BST_REQUIRES_PREVIOUS_SOURCES_STAGE = True
 
     def configure(self, node):
-        self.path = self.node_get_project_path(node, 'path',
+        self.path = self.node_get_project_path(node.get_scalar('path'),
                                                check_is_file=True)
-        self.strip_level = self.node_get_member(node, int, "strip-level", 1)
+        self.strip_level = node.get_int("strip-level", default=1)
         self.fullpath = os.path.join(self.get_project_directory(), self.path)
 
     def preflight(self):

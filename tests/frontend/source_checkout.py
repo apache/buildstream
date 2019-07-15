@@ -154,7 +154,7 @@ def test_source_checkout_fetch(datafiles, cli):
     element = generate_remote_import_element(
         os.path.join(project, 'files', 'dev-files', 'usr', 'include', 'pony.h'),
         'pony.h')
-    _yaml.dump(element, target_path)
+    _yaml.roundtrip_dump(element, target_path)
 
     # Testing implicit fetching requires that we do not have the sources
     # cached already

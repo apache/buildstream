@@ -22,7 +22,6 @@ import inspect
 
 from ._exceptions import PluginError, LoadError, LoadErrorReason
 from . import utils
-from . import _yaml
 
 
 # A Context for loading plugin types
@@ -138,19 +137,19 @@ class PluginContext():
             loaded_dependency = False
 
             for origin in self._plugin_origins:
-                if kind not in _yaml.node_get(origin, list, 'plugins'):
+                if kind not in origin.get_sequence('plugins').as_str_list():
                     continue
 
-                if _yaml.node_get(origin, str, 'origin') == 'local':
-                    local_path = _yaml.node_get(origin, str, 'path')
+                if origin.get_str('origin') == 'local':
+                    local_path = origin.get_str('path')
                     source = self._get_local_plugin_source(local_path)
-                elif _yaml.node_get(origin, str, 'origin') == 'pip':
-                    package_name = _yaml.node_get(origin, str, 'package-name')
+                elif origin.get_str('origin') == 'pip':
+                    package_name = origin.get_str('package-name')
                     source, defaults = self._get_pip_plugin_source(package_name, kind)
                 else:
                     raise PluginError("Failed to load plugin '{}': "
                                       "Unexpected plugin origin '{}'"
-                                      .format(kind, _yaml.node_get(origin, str, 'origin')))
+                                      .format(kind, origin.get_str('origin')))
                 loaded_dependency = True
                 break
 

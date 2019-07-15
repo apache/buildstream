@@ -63,9 +63,8 @@ def test_fetch_build_checkout(cli, tmpdir, datafiles, strict, kind):
             repo.source_config(ref=ref)
         ]
     }
-    _yaml.dump(element,
-               os.path.join(element_path,
-                            element_name))
+    _yaml.roundtrip_dump(element,
+                         os.path.join(element_path, element_name))
 
     assert cli.get_element_state(project, element_name) == 'fetch needed'
     result = cli.run(project=project, args=strict_args(['build', element_name], strict))

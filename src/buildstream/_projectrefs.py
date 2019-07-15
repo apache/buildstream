@@ -19,6 +19,7 @@
 import os
 
 from . import _yaml
+from .node import _new_synthetic_file
 from ._exceptions import LoadError, LoadErrorReason
 
 
@@ -63,15 +64,15 @@ class ProjectRefs():
     def load(self, options):
         try:
             self._toplevel_node = _yaml.load(self._fullpath, shortname=self._base_name, copy_tree=True)
-            provenance = _yaml.node_get_provenance(self._toplevel_node)
-            self._toplevel_save = provenance.toplevel
+            provenance = self._toplevel_node.get_provenance()
+            self._toplevel_save = provenance._toplevel
 
             # Process any project options immediately
             options.process_node(self._toplevel_node)
 
             # Run any final assertions on the project.refs, just incase there
             # are list composition directives or anything left unprocessed.
-            _yaml.node_final_assertions(self._toplevel_node)
+            self._toplevel_node._assert_fully_composited()
 
         except LoadError as e:
             if e.reason != LoadErrorReason.MISSING_FILE:
@@ -79,15 +80,15 @@ class ProjectRefs():
 
             # Ignore failure if the file doesnt exist, it'll be created and
             # for now just assumed to be empty
-            self._toplevel_node = _yaml.new_synthetic_file(self._fullpath)
+            self._toplevel_node = _new_synthetic_file(self._fullpath)
             self._toplevel_save = self._toplevel_node
 
-        _yaml.node_validate(self._toplevel_node, ['projects'])
+        self._toplevel_node.validate_keys(['projects'])
 
         # Ensure we create our toplevel entry point on the fly here
         for node in [self._toplevel_node, self._toplevel_save]:
             if 'projects' not in node:
-                _yaml.node_set(node, 'projects', _yaml.new_empty_node(ref_node=node))
+                node['projects'] = {}
 
     # lookup_ref()
     #
@@ -121,35 +122,34 @@ class ProjectRefs():
     # Looks up a ref node in the project.refs file, creates one if ensure is True.
     #
     def _lookup(self, toplevel, project, element, source_index, *, ensure=False):
+        projects = toplevel.get_mapping('projects')
+
         # Fetch the project
         try:
-            projects = _yaml.node_get(toplevel, dict, 'projects')
-            project_node = _yaml.node_get(projects, dict, project)
+            project_node = projects.get_mapping(project)
         except LoadError:
             if not ensure:
                 return None
-            project_node = _yaml.new_empty_node(ref_node=projects)
-            _yaml.node_set(projects, project, project_node)
+            projects[project] = {}
+            project_node = projects.get_mapping(project)
 
         # Fetch the element
         try:
-            element_list = _yaml.node_get(project_node, list, element)
+            element_list = project_node.get_sequence(element)
         except LoadError:
             if not ensure:
                 return None
-            element_list = []
-            _yaml.node_set(project_node, element, element_list)
+            project_node[element] = []
+            element_list = project_node.get_sequence(element)
 
         # Fetch the source index
         try:
-            node = element_list[source_index]
+            node = element_list.mapping_at(source_index)
         except IndexError:
             if not ensure:
                 return None
 
-            # Pad the list with empty newly created dictionaries
-            _yaml.node_extend_list(project_node, element, source_index + 1, {})
-
-            node = _yaml.node_get(project_node, dict, element, indices=[source_index])
+            element_list.append({})
+            node = element_list.mapping_at(source_index)
 
         return node

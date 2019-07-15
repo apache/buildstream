@@ -38,13 +38,12 @@ class FetchFetcher(SourceFetcher):
 class FetchSource(Source):
     # Read config to know which URLs to fetch
     def configure(self, node):
-        self.original_urls = self.node_get_member(node, list, 'urls')
-        self.output_file = self.node_get_member(node, str, 'output-text')
-        self.fetch_succeeds = {}
-        if 'fetch-succeeds' in node:
-            fetch_succeeds_node = self.node_get_member(node, dict, 'fetch-succeeds')
-            for key, value in self.node_items(fetch_succeeds_node):
-                self.fetch_succeeds[key] = value in ('True', 'true')
+        self.original_urls = node.get_sequence('urls').as_str_list()
+        self.output_file = node.get_str('output-text')
+        self.fetch_succeeds = {
+            key: value.as_bool()
+            for key, value in node.get_mapping('fetch-succeeds', {}).items()
+        }
 
         # First URL is the primary one for this test
         #

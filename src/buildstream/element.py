@@ -97,6 +97,7 @@ from . import _cachekey
 from . import _signals
 from . import _site
 from ._platform import Platform
+from .node import Node, _sentinel as _node_sentinel
 from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
@@ -253,7 +254,7 @@ class Element(Plugin):
 
         # Collect the composited variables and resolve them
         variables = self.__extract_variables(project, meta)
-        _yaml.node_set(variables, 'element-name', self.name)
+        variables['element-name'] = self.name
         self.__variables = Variables(variables)
 
         # Collect the composited environment now that we have variables
@@ -484,12 +485,15 @@ class Element(Plugin):
 
         return None
 
-    def node_subst_member(self, node, member_name, default=_yaml._sentinel):
+    def substitute_variables(self, value):
+        return self.__variables.subst(value)
+
+    def node_subst_member(self, node, member_name, default=_node_sentinel):
         """Fetch the value of a string node member, substituting any variables
         in the loaded value with the element contextual variables.
 
         Args:
-           node (dict): A dictionary loaded from YAML
+           node (:class:`MappingNode <buildstream.node.MappingNode>`): A MappingNode loaded from YAML
            member_name (str): The name of the member to fetch
            default (str): A value to return when *member_name* is not specified in *node*
 
@@ -499,10 +503,6 @@ class Element(Plugin):
         Raises:
            :class:`.LoadError`: When *member_name* is not found and no *default* was provided
 
-        This is essentially the same as :func:`~buildstream.plugin.Plugin.node_get_member`
-        except that it assumes the expected type is a string and will also perform variable
-        substitutions.
-
         **Example:**
 
         .. code:: python
@@ -511,18 +511,18 @@ class Element(Plugin):
           # variables in the returned string
           name = self.node_subst_member(node, 'name')
         """
-        value = self.node_get_member(node, str, member_name, default)
+        value = node.get_str(member_name, default)
         try:
             return self.__variables.subst(value)
         except LoadError as e:
-            provenance = _yaml.node_get_provenance(node, key=member_name)
+            provenance = node.get_scalar(member_name).get_provenance()
             raise LoadError(e.reason, '{}: {}'.format(provenance, e), detail=e.detail) from e
 
     def node_subst_list(self, node, member_name):
         """Fetch a list from a node member, substituting any variables in the list
 
         Args:
-          node (dict): A dictionary loaded from YAML
+          node (:class:`MappingNode <buildstream.node.MappingNode>`): A MappingNode loaded from YAML
           member_name (str): The name of the member to fetch (a list)
 
         Returns:
@@ -531,60 +531,15 @@ class Element(Plugin):
         Raises:
           :class:`.LoadError`
 
-        This is essentially the same as :func:`~buildstream.plugin.Plugin.node_get_member`
-        except that it assumes the expected type is a list of strings and will also
-        perform variable substitutions.
         """
-        value = self.node_get_member(node, list, member_name)
         ret = []
-        for index, x in enumerate(value):
+        for value in node.get_sequence(member_name):
             try:
-                ret.append(self.__variables.subst(x))
+                ret.append(self.__variables.subst(value.as_str()))
             except LoadError as e:
-                provenance = _yaml.node_get_provenance(node, key=member_name, indices=[index])
+                provenance = value.get_provenance()
                 raise LoadError(e.reason, '{}: {}'.format(provenance, e), detail=e.detail) from e
         return ret
-
-    def node_subst_list_element(self, node, member_name, indices):
-        """Fetch the value of a list element from a node member, substituting any variables
-        in the loaded value with the element contextual variables.
-
-        Args:
-           node (dict): A dictionary loaded from YAML
-           member_name (str): The name of the member to fetch
-           indices (list of int): List of indices to search, in case of nested lists
-
-        Returns:
-           The value of the list element in *member_name* at the specified *indices*
-
-        Raises:
-           :class:`.LoadError`
-
-        This is essentially the same as :func:`~buildstream.plugin.Plugin.node_get_list_element`
-        except that it assumes the expected type is a string and will also perform variable
-        substitutions.
-
-        **Example:**
-
-        .. code:: python
-
-          # Fetch the list itself
-          strings = self.node_get_member(node, list, 'strings')
-
-          # Iterate over the list indices
-          for i in range(len(strings)):
-
-              # Fetch the strings in this list, substituting content
-              # with our element's variables if needed
-              string = self.node_subst_list_element(
-                  node, 'strings', [ i ])
-        """
-        value = self.node_get_list_element(node, str, member_name, indices)
-        try:
-            return self.__variables.subst(value)
-        except LoadError as e:
-            provenance = _yaml.node_get_provenance(node, key=member_name, indices=indices)
-            raise LoadError(e.reason, '{}: {}'.format(provenance, e), detail=e.detail) from e
 
     def compute_manifest(self, *, include=None, exclude=None, orphans=True):
         """Compute and return this element's selective manifest
@@ -853,9 +808,9 @@ class Element(Plugin):
 
         if bstdata is not None:
             with sandbox.batch(SandboxFlags.NONE):
-                commands = self.node_get_member(bstdata, list, 'integration-commands', [])
-                for i in range(len(commands)):
-                    cmd = self.node_subst_list_element(bstdata, 'integration-commands', [i])
+                commands = bstdata.get_sequence('integration-commands', []).as_str_list()
+                for command in commands:
+                    cmd = self.substitute_variables(command)
 
                     sandbox.run(['sh', '-e', '-c', cmd], 0, env=environment, cwd='/',
                                 label=cmd)
@@ -884,7 +839,7 @@ class Element(Plugin):
            domain (str): A public domain name to fetch data for
 
         Returns:
-           (dict): The public data dictionary for the given domain
+           :class:`MappingNode <buildstream.node.MappingNode>`: The public data dictionary for the given domain
 
         .. note::
 
@@ -895,9 +850,9 @@ class Element(Plugin):
         if self.__dynamic_public is None:
             self.__load_public_data()
 
-        data = _yaml.node_get(self.__dynamic_public, dict, domain, default_value=None)
+        data = self.__dynamic_public.get_mapping(domain, default=None)
         if data is not None:
-            data = _yaml.node_copy(data)
+            data = data.clone()
 
         return data
 
@@ -906,7 +861,7 @@ class Element(Plugin):
 
         Args:
            domain (str): A public domain name to fetch data for
-           data (dict): The public data dictionary for the given domain
+           data (:class:`MappingNode <buildstream.node.MappingNode>`): The public data dictionary for the given domain
 
         This allows an element to dynamically mutate public data of
         elements or add new domains as the result of success completion
@@ -917,9 +872,9 @@ class Element(Plugin):
             self.__load_public_data()
 
         if data is not None:
-            data = _yaml.node_copy(data)
+            data = data.clone()
 
-        _yaml.node_set(self.__dynamic_public, domain, data)
+        self.__dynamic_public[domain] = data
 
     def get_environment(self):
         """Fetch the environment suitable for running in the sandbox
@@ -928,7 +883,7 @@ class Element(Plugin):
            (dict): A dictionary of string key/values suitable for passing
            to :func:`Sandbox.run() <buildstream.sandbox.Sandbox.run>`
         """
-        return _yaml.node_sanitize(self.__environment)
+        return self.__environment
 
     def get_variable(self, varname):
         """Fetch the value of a variable resolved for this element.
@@ -1677,7 +1632,7 @@ class Element(Plugin):
 
                 # By default, the dynamic public data is the same as the static public data.
                 # The plugin's assemble() method may modify this, though.
-                self.__dynamic_public = _yaml.node_copy(self.__public)
+                self.__dynamic_public = self.__public.clone()
 
                 # Call the abstract plugin methods
 
@@ -2208,7 +2163,7 @@ class Element(Plugin):
                 'environment': cache_env,
                 'sources': [s._get_unique_key(workspace is None) for s in self.__sources],
                 'workspace': '' if workspace is None else workspace.get_key(self._get_project()),
-                'public': self.__public
+                'public': self.__public._strip_node_info(),
             }
 
             self.__cache_key_dict['fatal-warnings'] = sorted(project._fatal_warnings)
@@ -2534,29 +2489,29 @@ class Element(Plugin):
     @classmethod
     def __compose_default_splits(cls, project, defaults, is_junction):
 
-        element_public = _yaml.node_get(defaults, dict, 'public', default_value={})
-        element_bst = _yaml.node_get(element_public, dict, 'bst', default_value={})
-        element_splits = _yaml.node_get(element_bst, dict, 'split-rules', default_value={})
+        element_public = defaults.get_mapping("public", default={})
+        element_bst = element_public.get_mapping("bst", default={})
+        element_splits = element_bst.get_mapping("split-rules", default={})
 
         if is_junction:
-            splits = _yaml.node_copy(element_splits)
+            splits = element_splits.clone()
         else:
             assert project._splits is not None
 
-            splits = _yaml.node_copy(project._splits)
+            splits = project._splits.clone()
             # Extend project wide split rules with any split rules defined by the element
-            _yaml.composite(splits, element_splits)
+            element_splits._composite(splits)
 
-        _yaml.node_set(element_bst, 'split-rules', splits)
-        _yaml.node_set(element_public, 'bst', element_bst)
-        _yaml.node_set(defaults, 'public', element_public)
+        element_bst['split-rules'] = splits
+        element_public['bst'] = element_bst
+        defaults['public'] = element_public
 
     @classmethod
     def __init_defaults(cls, project, plugin_conf, kind, is_junction):
         # Defaults are loaded once per class and then reused
         #
         if cls.__defaults is None:
-            defaults = _yaml.new_empty_node()
+            defaults = Node.from_dict({})
 
             if plugin_conf is not None:
                 # Load the plugin's accompanying .yaml file if one was provided
@@ -2576,9 +2531,9 @@ class Element(Plugin):
             else:
                 elements = project.element_overrides
 
-            overrides = _yaml.node_get(elements, dict, kind, default_value=None)
+            overrides = elements.get_mapping(kind, default=None)
             if overrides:
-                _yaml.composite(defaults, overrides)
+                overrides._composite(defaults)
 
             # Set the data class wide
             cls.__defaults = defaults
@@ -2588,16 +2543,16 @@ class Element(Plugin):
     #
     @classmethod
     def __extract_environment(cls, project, meta):
-        default_env = _yaml.node_get(cls.__defaults, dict, 'environment', default_value={})
+        default_env = cls.__defaults.get_mapping("environment", default={})
 
         if meta.is_junction:
-            environment = _yaml.new_empty_node()
+            environment = Node.from_dict({})
         else:
-            environment = _yaml.node_copy(project.base_environment)
+            environment = project.base_environment.clone()
 
-        _yaml.composite(environment, default_env)
-        _yaml.composite(environment, meta.environment)
-        _yaml.node_final_assertions(environment)
+        default_env._composite(environment)
+        meta.environment._composite(environment)
+        environment._assert_fully_composited()
 
         return environment
 
@@ -2607,7 +2562,7 @@ class Element(Plugin):
     def __expand_environment(self, environment):
         # Resolve variables in environment value strings
         final_env = {}
-        for key, _ in self.node_items(environment):
+        for key in environment.keys():
             final_env[key] = self.node_subst_member(environment, key)
 
         return final_env
@@ -2619,7 +2574,7 @@ class Element(Plugin):
         else:
             project_nocache = project.base_env_nocache
 
-        default_nocache = _yaml.node_get(cls.__defaults, list, 'environment-nocache', default_value=[])
+        default_nocache = cls.__defaults.get_sequence('environment-nocache', default=[]).as_str_list()
         element_nocache = meta.env_nocache
 
         # Accumulate values from the element default, the project and the element
@@ -2634,21 +2589,25 @@ class Element(Plugin):
     #
     @classmethod
     def __extract_variables(cls, project, meta):
-        default_vars = _yaml.node_get(cls.__defaults, dict, 'variables',
-                                      default_value={})
+        default_vars = cls.__defaults.get_mapping('variables', default={})
 
         if meta.is_junction:
-            variables = _yaml.node_copy(project.first_pass_config.base_variables)
+            variables = project.first_pass_config.base_variables.clone()
         else:
-            variables = _yaml.node_copy(project.base_variables)
+            variables = project.base_variables.clone()
 
-        _yaml.composite(variables, default_vars)
-        _yaml.composite(variables, meta.variables)
-        _yaml.node_final_assertions(variables)
+        default_vars._composite(variables)
+        meta.variables._composite(variables)
+        variables._assert_fully_composited()
 
         for var in ('project-name', 'element-name', 'max-jobs'):
-            provenance = _yaml.node_get_provenance(variables, var)
-            if provenance and not provenance.is_synthetic:
+            node = variables.get_node(var, allow_none=True)
+
+            if node is None:
+                continue
+
+            provenance = node.get_provenance()
+            if not provenance._is_synthetic:
                 raise LoadError(LoadErrorReason.PROTECTED_VARIABLE_REDEFINED,
                                 "{}: invalid redefinition of protected variable '{}'"
                                 .format(provenance, var))
@@ -2662,11 +2621,11 @@ class Element(Plugin):
     def __extract_config(cls, meta):
 
         # The default config is already composited with the project overrides
-        config = _yaml.node_get(cls.__defaults, dict, 'config', default_value={})
-        config = _yaml.node_copy(config)
+        config = cls.__defaults.get_mapping('config', default={})
+        config = config.clone()
 
-        _yaml.composite(config, meta.config)
-        _yaml.node_final_assertions(config)
+        meta.config._composite(config)
+        config._assert_fully_composited()
 
         return config
 
@@ -2675,12 +2634,12 @@ class Element(Plugin):
     @classmethod
     def __extract_sandbox_config(cls, project, meta):
         if meta.is_junction:
-            sandbox_config = _yaml.new_node_from_dict({
+            sandbox_config = Node.from_dict({
                 'build-uid': 0,
                 'build-gid': 0
             })
         else:
-            sandbox_config = _yaml.node_copy(project._sandbox)
+            sandbox_config = project._sandbox.clone()
 
         # Get the platform to ask for host architecture
         platform = Platform.get_platform()
@@ -2688,26 +2647,26 @@ class Element(Plugin):
         host_os = platform.get_host_os()
 
         # The default config is already composited with the project overrides
-        sandbox_defaults = _yaml.node_get(cls.__defaults, dict, 'sandbox', default_value={})
-        sandbox_defaults = _yaml.node_copy(sandbox_defaults)
+        sandbox_defaults = cls.__defaults.get_mapping('sandbox', default={})
+        sandbox_defaults = sandbox_defaults.clone()
 
-        _yaml.composite(sandbox_config, sandbox_defaults)
-        _yaml.composite(sandbox_config, meta.sandbox)
-        _yaml.node_final_assertions(sandbox_config)
+        sandbox_defaults._composite(sandbox_config)
+        meta.sandbox._composite(sandbox_config)
+        sandbox_config._assert_fully_composited()
 
         # Sandbox config, unlike others, has fixed members so we should validate them
-        _yaml.node_validate(sandbox_config, ['build-uid', 'build-gid', 'build-os', 'build-arch'])
+        sandbox_config.validate_keys(['build-uid', 'build-gid', 'build-os', 'build-arch'])
 
-        build_arch = _yaml.node_get(sandbox_config, str, 'build-arch', default_value=None)
+        build_arch = sandbox_config.get_str('build-arch', default=None)
         if build_arch:
             build_arch = Platform.canonicalize_arch(build_arch)
         else:
             build_arch = host_arch
 
         return SandboxConfig(
-            _yaml.node_get(sandbox_config, int, 'build-uid'),
-            _yaml.node_get(sandbox_config, int, 'build-gid'),
-            _yaml.node_get(sandbox_config, str, 'build-os', default_value=host_os),
+            sandbox_config.get_int('build-uid'),
+            sandbox_config.get_int('build-gid'),
+            sandbox_config.get_str('build-os', default=host_os),
             build_arch)
 
     # This makes a special exception for the split rules, which
@@ -2715,48 +2674,48 @@ class Element(Plugin):
     #
     @classmethod
     def __extract_public(cls, meta):
-        base_public = _yaml.node_get(cls.__defaults, dict, 'public', default_value={})
-        base_public = _yaml.node_copy(base_public)
+        base_public = cls.__defaults.get_mapping('public', default={})
+        base_public = base_public.clone()
 
-        base_bst = _yaml.node_get(base_public, dict, 'bst', default_value={})
-        base_splits = _yaml.node_get(base_bst, dict, 'split-rules', default_value={})
+        base_bst = base_public.get_mapping('bst', default={})
+        base_splits = base_bst.get_mapping('split-rules', default={})
 
-        element_public = _yaml.node_copy(meta.public)
-        element_bst = _yaml.node_get(element_public, dict, 'bst', default_value={})
-        element_splits = _yaml.node_get(element_bst, dict, 'split-rules', default_value={})
+        element_public = meta.public.clone()
+        element_bst = element_public.get_mapping('bst', default={})
+        element_splits = element_bst.get_mapping('split-rules', default={})
 
         # Allow elements to extend the default splits defined in their project or
         # element specific defaults
-        _yaml.composite(base_splits, element_splits)
+        element_splits._composite(base_splits)
 
-        _yaml.node_set(element_bst, 'split-rules', base_splits)
-        _yaml.node_set(element_public, 'bst', element_bst)
+        element_bst['split-rules'] = base_splits
+        element_public['bst'] = element_bst
 
-        _yaml.node_final_assertions(element_public)
+        element_public._assert_fully_composited()
 
         return element_public
 
     # Expand the splits in the public data using the Variables in the element
     def __expand_splits(self, element_public):
-        element_bst = _yaml.node_get(element_public, dict, 'bst', default_value={})
-        element_splits = _yaml.node_get(element_bst, dict, 'split-rules', default_value={})
+        element_bst = element_public.get_mapping('bst', default={})
+        element_splits = element_bst.get_mapping('split-rules', default={})
 
         # Resolve any variables in the public split rules directly
-        for domain, splits in self.node_items(element_splits):
+        for domain, splits in element_splits.items():
             splits = [
                 self.__variables.subst(split.strip())
-                for split in splits
+                for split in splits.as_str_list()
             ]
-            _yaml.node_set(element_splits, domain, splits)
+            element_splits[domain] = splits
 
         return element_public
 
     def __init_splits(self):
         bstdata = self.get_public_data('bst')
-        splits = self.node_get_member(bstdata, dict, 'split-rules')
+        splits = bstdata.get_mapping('split-rules')
         self.__splits = {
-            domain: re.compile('^(?:' + '|'.join([utils._glob2re(r) for r in rules]) + ')$')
-            for domain, rules in self.node_items(splits)
+            domain: re.compile('^(?:' + '|'.join([utils._glob2re(r) for r in rules.as_str_list()]) + ')$')
+            for domain, rules in splits.items()
         }
 
     # __split_filter():
@@ -2857,7 +2816,7 @@ class Element(Plugin):
         # If this ever changes, things will go wrong unexpectedly.
         if not self.__whitelist_regex:
             bstdata = self.get_public_data('bst')
-            whitelist = _yaml.node_get(bstdata, list, 'overlap-whitelist', default_value=[])
+            whitelist = bstdata.get_sequence('overlap-whitelist', default=[]).as_str_list()
             whitelist_expressions = [utils._glob2re(self.__variables.subst(exp.strip())) for exp in whitelist]
             expression = ('^(?:' + '|'.join(whitelist_expressions) + ')$')
             self.__whitelist_regex = re.compile(expression)

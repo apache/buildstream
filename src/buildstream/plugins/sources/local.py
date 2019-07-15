@@ -54,8 +54,8 @@ class LocalSource(Source):
         self.__unique_key = None
 
     def configure(self, node):
-        self.node_validate(node, ['path', *Source.COMMON_CONFIG_KEYS])
-        self.path = self.node_get_project_path(node, 'path')
+        node.validate_keys(['path', *Source.COMMON_CONFIG_KEYS])
+        self.path = self.node_get_project_path(node.get_scalar('path'))
         self.fullpath = os.path.join(self.get_project_directory(), self.path)
 
     def preflight(self):

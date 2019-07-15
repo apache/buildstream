@@ -930,7 +930,7 @@ class Stream():
             }
             workspaces.append(workspace_detail)
 
-        _yaml.dump({
+        _yaml.roundtrip_dump({
             'workspaces': workspaces
         })
 

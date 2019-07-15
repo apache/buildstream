@@ -56,7 +56,7 @@ def test_build_remote_failure(cli, datafiles):
             ],
         },
     }
-    _yaml.dump(element, element_path)
+    _yaml.roundtrip_dump(element, element_path)
 
     services = cli.ensure_services()
     assert set(services) == set(['action-cache', 'execution', 'storage'])

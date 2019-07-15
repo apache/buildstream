@@ -33,6 +33,7 @@ from ._exceptions import LoadError, LoadErrorReason
 from ._options import OptionPool
 from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
+from .node import ScalarNode, SequenceNode, _assert_symbol_name
 from .sandbox import SandboxRemote
 from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
@@ -84,7 +85,7 @@ class ProjectConfig:
         self.source_overrides = {}               # Source specific configurations
         self.mirrors = OrderedDict()             # contains dicts of alias-mappings to URIs.
         self.default_mirror = None               # The name of the preferred mirror.
-        self._aliases = {}                       # Aliases dictionary
+        self._aliases = None                     # Aliases dictionary
 
 
 # Project()
@@ -200,7 +201,7 @@ class Project():
 
         if url and utils._ALIAS_SEPARATOR in url:
             url_alias, url_body = url.split(utils._ALIAS_SEPARATOR, 1)
-            alias_url = _yaml.node_get(config._aliases, str, url_alias, default_value=None)
+            alias_url = config._aliases.get_str(url_alias, default=None)
             if alias_url:
                 url = alias_url + url_body
 
@@ -230,7 +231,7 @@ class Project():
 
             # Anything that alters the build goes into the unique key
             # (currently nothing here)
-            self._cache_key = _cachekey.generate_key(_yaml.new_empty_node())
+            self._cache_key = _cachekey.generate_key({})
 
         return self._cache_key
 
@@ -247,8 +248,7 @@ class Project():
     # will always be raised if both parameters are set to ``True``.
     #
     # Args:
-    #    node (dict): A dictionary loaded from YAML
-    #    key (str): The key whose value contains a path to validate
+    #    node (ScalarNode): A Node loaded from YAML containing the path to validate
     #    check_is_file (bool): If ``True`` an error will also be raised
     #                          if path does not point to a regular file.
     #                          Defaults to ``False``
@@ -262,21 +262,21 @@ class Project():
     #    (LoadError): In case that the project path is not valid or does not
     #                 exist
     #
-    def get_path_from_node(self, node, key, *,
+    def get_path_from_node(self, node, *,
                            check_is_file=False, check_is_dir=False):
-        path_str = _yaml.node_get(node, str, key)
+        path_str = node.as_str()
         path = Path(path_str)
         full_path = self._absolute_directory_path / path
 
-        provenance = _yaml.node_get_provenance(node, key=key)
-
         if full_path.is_symlink():
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
                             "{}: Specified path '{}' must not point to "
                             "symbolic links "
                             .format(provenance, path_str))
 
         if path.parts and path.parts[0] == '..':
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
                             "{}: Specified path '{}' first component must "
                             "not be '..'"
@@ -288,6 +288,7 @@ class Project():
             else:
                 full_resolved_path = full_path.resolve(strict=True)  # pylint: disable=unexpected-keyword-arg
         except FileNotFoundError:
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.MISSING_FILE,
                             "{}: Specified path '{}' does not exist"
                             .format(provenance, path_str))
@@ -296,12 +297,14 @@ class Project():
             full_resolved_path == self._absolute_directory_path)
 
         if not is_inside:
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
                             "{}: Specified path '{}' must not lead outside of the "
                             "project directory"
                             .format(provenance, path_str))
 
         if path.is_absolute():
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
                             "{}: Absolute path: '{}' invalid.\n"
                             "Please specify a path relative to the project's root."
@@ -310,17 +313,20 @@ class Project():
         if full_resolved_path.is_socket() or (
                 full_resolved_path.is_fifo() or
                 full_resolved_path.is_block_device()):
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
                             "{}: Specified path '{}' points to an unsupported "
                             "file kind"
                             .format(provenance, path_str))
 
         if check_is_file and not full_resolved_path.is_file():
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
                             "{}: Specified path '{}' is not a regular file"
                             .format(provenance, path_str))
 
         if check_is_dir and not full_resolved_path.is_dir():
+            provenance = node.get_provenance()
             raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
                             "{}: Specified path '{}' is not a directory"
                             .format(provenance, path_str))
@@ -328,7 +334,7 @@ class Project():
         return path_str
 
     def _validate_node(self, node):
-        _yaml.node_validate(node, [
+        node.validate_keys([
             'format-version',
             'element-path', 'variables',
             'environment', 'environment-nocache',
@@ -404,7 +410,7 @@ class Project():
         else:
             config = self.config
 
-        return _yaml.node_get(config._aliases, str, alias, default_value=None)
+        return config._aliases.get_str(alias, default=None)
 
     # get_alias_uris()
     #
@@ -419,7 +425,7 @@ class Project():
         else:
             config = self.config
 
-        if not alias or alias not in config._aliases:
+        if not alias or alias not in config._aliases:  # pylint: disable=unsupported-membership-test
             return [None]
 
         mirror_list = []
@@ -429,7 +435,7 @@ class Project():
                     mirror_list = alias_mapping[alias] + mirror_list
                 else:
                     mirror_list += alias_mapping[alias]
-        mirror_list.append(_yaml.node_get(config._aliases, str, alias))
+        mirror_list.append(config._aliases.get_str(alias))
         return mirror_list
 
     # load_elements()
@@ -569,11 +575,11 @@ class Project():
             else:
                 raise
 
-        pre_config_node = _yaml.node_copy(self._default_config_node)
-        _yaml.composite(pre_config_node, self._project_conf)
+        pre_config_node = self._default_config_node.clone()
+        self._project_conf._composite(pre_config_node)
 
         # Assert project's format version early, before validating toplevel keys
-        format_version = _yaml.node_get(pre_config_node, int, 'format-version')
+        format_version = pre_config_node.get_int('format-version')
         if BST_FORMAT_VERSION < format_version:
             major, minor = utils.get_bst_version()
             raise LoadError(
@@ -585,45 +591,47 @@ class Project():
 
         # The project name, element path and option declarations
         # are constant and cannot be overridden by option conditional statements
-        self.name = _yaml.node_get(self._project_conf, str, 'name')
+        # FIXME: we should be keeping node information for further composition here
+        self.name = self._project_conf.get_str('name')
 
         # Validate that project name is a valid symbol name
-        _yaml.assert_symbol_name(_yaml.node_get_provenance(pre_config_node, 'name'),
-                                 self.name, "project name")
+        _assert_symbol_name(self.name, "project name",
+                            ref_node=pre_config_node.get_node('name'))
 
         self.element_path = os.path.join(
             self.directory,
-            self.get_path_from_node(pre_config_node, 'element-path',
+            self.get_path_from_node(pre_config_node.get_scalar('element-path'),
                                     check_is_dir=True)
         )
 
         self.config.options = OptionPool(self.element_path)
         self.first_pass_config.options = OptionPool(self.element_path)
 
-        defaults = _yaml.node_get(pre_config_node, dict, 'defaults')
-        _yaml.node_validate(defaults, ['targets'])
-        self._default_targets = _yaml.node_get(defaults, list, "targets")
+        defaults = pre_config_node.get_mapping('defaults')
+        defaults.validate_keys(['targets'])
+        self._default_targets = defaults.get_sequence("targets").as_str_list()
 
         # Fatal warnings
-        self._fatal_warnings = _yaml.node_get(pre_config_node, list, 'fatal-warnings', default_value=[])
+        self._fatal_warnings = pre_config_node.get_sequence('fatal-warnings', default=[]).as_str_list()
 
         self.loader = Loader(self._context, self,
                              parent=parent_loader, fetch_subprojects=fetch_subprojects)
 
         self._project_includes = Includes(self.loader, copy_tree=False)
 
-        project_conf_first_pass = _yaml.node_copy(self._project_conf)
+        project_conf_first_pass = self._project_conf.clone()
         self._project_includes.process(project_conf_first_pass, only_local=True)
-        config_no_include = _yaml.node_copy(self._default_config_node)
-        _yaml.composite(config_no_include, project_conf_first_pass)
+        config_no_include = self._default_config_node.clone()
+        project_conf_first_pass._composite(config_no_include)
 
         self._load_pass(config_no_include, self.first_pass_config,
                         ignore_unknown=True)
 
         # Use separate file for storing source references
-        self.ref_storage = _yaml.node_get(pre_config_node, str, 'ref-storage')
+        ref_storage_node = pre_config_node.get_scalar('ref-storage')
+        self.ref_storage = ref_storage_node.as_str()
         if self.ref_storage not in [ProjectRefStorage.INLINE, ProjectRefStorage.PROJECT_REFS]:
-            p = _yaml.node_get_provenance(pre_config_node, 'ref-storage')
+            p = ref_storage_node.get_provenance()
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Invalid value '{}' specified for ref-storage"
                             .format(p, self.ref_storage))
@@ -636,10 +644,10 @@ class Project():
     # Process the second pass of loading the project configuration.
     #
     def _load_second_pass(self):
-        project_conf_second_pass = _yaml.node_copy(self._project_conf)
+        project_conf_second_pass = self._project_conf.clone()
         self._project_includes.process(project_conf_second_pass)
-        config = _yaml.node_copy(self._default_config_node)
-        _yaml.composite(config, project_conf_second_pass)
+        config = self._default_config_node.clone()
+        project_conf_second_pass._composite(config)
 
         self._load_pass(config, self.config)
 
@@ -677,23 +685,20 @@ class Project():
             self.remote_execution_specs = self._context.remote_execution_specs
 
         # Load sandbox environment variables
-        self.base_environment = _yaml.node_get(config, dict, 'environment')
-        self.base_env_nocache = _yaml.node_get(config, list, 'environment-nocache')
+        self.base_environment = config.get_mapping('environment')
+        self.base_env_nocache = config.get_sequence('environment-nocache').as_str_list()
 
         # Load sandbox configuration
-        self._sandbox = _yaml.node_get(config, dict, 'sandbox')
+        self._sandbox = config.get_mapping('sandbox')
 
         # Load project split rules
-        self._splits = _yaml.node_get(config, dict, 'split-rules')
+        self._splits = config.get_mapping('split-rules')
 
         # Support backwards compatibility for fail-on-overlap
-        fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap', default_value=None)
-
-        if (CoreWarnings.OVERLAPS not in self._fatal_warnings) and fail_on_overlap:
-            self._fatal_warnings.append(CoreWarnings.OVERLAPS)
+        fail_on_overlap = config.get_scalar('fail-on-overlap', None)
 
         # Deprecation check
-        if fail_on_overlap is not None:
+        if not fail_on_overlap.is_none():
             self._context.messenger.message(
                 Message(
                     None,
@@ -703,36 +708,37 @@ class Project():
                 )
             )
 
+            if (CoreWarnings.OVERLAPS not in self._fatal_warnings) and fail_on_overlap.as_bool():
+                self._fatal_warnings.append(CoreWarnings.OVERLAPS)
+
         # Load project.refs if it exists, this may be ignored.
         if self.ref_storage == ProjectRefStorage.PROJECT_REFS:
             self.refs.load(self.options)
 
         # Parse shell options
-        shell_options = _yaml.node_get(config, dict, 'shell')
-        _yaml.node_validate(shell_options, ['command', 'environment', 'host-files'])
-        self._shell_command = _yaml.node_get(shell_options, list, 'command')
+        shell_options = config.get_mapping('shell')
+        shell_options.validate_keys(['command', 'environment', 'host-files'])
+        self._shell_command = shell_options.get_sequence('command').as_str_list()
 
         # Perform environment expansion right away
-        shell_environment = _yaml.node_get(shell_options, dict, 'environment', default_value={})
-        for key in _yaml.node_keys(shell_environment):
-            value = _yaml.node_get(shell_environment, str, key)
+        shell_environment = shell_options.get_mapping('environment', default={})
+        for key in shell_environment.keys():
+            value = shell_environment.get_str(key)
             self._shell_environment[key] = os.path.expandvars(value)
 
         # Host files is parsed as a list for convenience
-        host_files = _yaml.node_get(shell_options, list, 'host-files', default_value=[])
+        host_files = shell_options.get_sequence('host-files', default=[])
         for host_file in host_files:
-            if isinstance(host_file, str):
+            if isinstance(host_file, ScalarNode):
                 mount = HostMount(host_file)
             else:
                 # Some validation
-                index = host_files.index(host_file)
-                host_file_desc = _yaml.node_get(shell_options, dict, 'host-files', indices=[index])
-                _yaml.node_validate(host_file_desc, ['path', 'host_path', 'optional'])
+                host_file.validate_keys(['path', 'host_path', 'optional'])
 
                 # Parse the host mount
-                path = _yaml.node_get(host_file_desc, str, 'path')
-                host_path = _yaml.node_get(host_file_desc, str, 'host_path', default_value=None)
-                optional = _yaml.node_get(host_file_desc, bool, 'optional', default_value=False)
+                path = host_file.get_str('path')
+                host_path = host_file.get_str('host_path', default=None)
+                optional = host_file.get_bool('optional', default=False)
                 mount = HostMount(path, host_path, optional)
 
             self._shell_host_files.append(mount)
@@ -753,16 +759,16 @@ class Project():
         # Element and Source  type configurations will be composited later onto
         # element/source types, so we delete it from here and run our final
         # assertion after.
-        output.element_overrides = _yaml.node_get(config, dict, 'elements', default_value={})
-        output.source_overrides = _yaml.node_get(config, dict, 'sources', default_value={})
-        _yaml.node_del(config, 'elements', safe=True)
-        _yaml.node_del(config, 'sources', safe=True)
-        _yaml.node_final_assertions(config)
+        output.element_overrides = config.get_mapping('elements', default={})
+        output.source_overrides = config.get_mapping('sources', default={})
+        config.safe_del('elements')
+        config.safe_del('sources')
+        config._assert_fully_composited()
 
         self._load_plugin_factories(config, output)
 
         # Load project options
-        options_node = _yaml.node_get(config, dict, 'options', default_value={})
+        options_node = config.get_mapping('options', default={})
         output.options.load(options_node)
         if self.junction:
             # load before user configuration
@@ -770,7 +776,7 @@ class Project():
 
         # Collect option values specified in the user configuration
         overrides = self._context.get_overrides(self.name)
-        override_options = _yaml.node_get(overrides, dict, 'options', default_value={})
+        override_options = overrides.get_mapping('options', default={})
         output.options.load_yaml_values(override_options)
         if self._cli_options:
             output.options.load_cli_values(self._cli_options, ignore_unknown=ignore_unknown)
@@ -789,10 +795,10 @@ class Project():
         output.options.process_node(output.source_overrides)
 
         # Load base variables
-        output.base_variables = _yaml.node_get(config, dict, 'variables')
+        output.base_variables = config.get_mapping('variables')
 
         # Add the project name as a default variable
-        _yaml.node_set(output.base_variables, 'project-name', self.name)
+        output.base_variables['project-name'] = self.name
 
         # Extend variables with automatic variables and option exports
         # Initialize it as a string as all variables are processed as strings.
@@ -800,32 +806,32 @@ class Project():
         # max-jobs value seems to be around 8-10 if we have enough cores
         # users should set values based on workload and build infrastructure
         platform = Platform.get_platform()
-        _yaml.node_set(output.base_variables, 'max-jobs', str(platform.get_cpu_count(8)))
+        output.base_variables['max-jobs'] = str(platform.get_cpu_count(8))
 
         # Export options into variables, if that was requested
         output.options.export_variables(output.base_variables)
 
         # Override default_mirror if not set by command-line
-        output.default_mirror = self._default_mirror or _yaml.node_get(overrides, str,
-                                                                       'default-mirror', default_value=None)
+        output.default_mirror = self._default_mirror or overrides.get_str(
+            'default-mirror', default=None)
 
-        mirrors = _yaml.node_get(config, list, 'mirrors', default_value=[])
+        mirrors = config.get_sequence('mirrors', default=[])
         for mirror in mirrors:
             allowed_mirror_fields = [
                 'name', 'aliases'
             ]
-            _yaml.node_validate(mirror, allowed_mirror_fields)
-            mirror_name = _yaml.node_get(mirror, str, 'name')
+            mirror.validate_keys(allowed_mirror_fields)
+            mirror_name = mirror.get_str('name')
             alias_mappings = {}
-            for alias_mapping, uris in _yaml.node_items(_yaml.node_get(mirror, dict, 'aliases')):
-                assert isinstance(uris, list)
-                alias_mappings[alias_mapping] = list(uris)
+            for alias_mapping, uris in mirror.get_mapping('aliases').items():
+                assert type(uris) is SequenceNode  # pylint: disable=unidiomatic-typecheck
+                alias_mappings[alias_mapping] = uris.as_str_list()
             output.mirrors[mirror_name] = alias_mappings
             if not output.default_mirror:
                 output.default_mirror = mirror_name
 
         # Source url aliases
-        output._aliases = _yaml.node_get(config, dict, 'aliases', default_value={})
+        output._aliases = config.get_mapping('aliases', default={})
 
     # _find_project_dir()
     #
@@ -869,7 +875,7 @@ class Project():
         plugin_element_origins = []  # Origins of custom elements
 
         # Plugin origins and versions
-        origins = _yaml.node_get(config, list, 'plugins', default_value=[])
+        origins = config.get_sequence('plugins', default=[])
         source_format_versions = {}
         element_format_versions = {}
         for origin in origins:
@@ -878,9 +884,9 @@ class Project():
                 'package-name', 'path',
             ]
             allowed_origins = ['core', 'local', 'pip']
-            _yaml.node_validate(origin, allowed_origin_fields)
+            origin.validate_keys(allowed_origin_fields)
 
-            origin_value = _yaml.node_get(origin, str, 'origin')
+            origin_value = origin.get_str('origin')
             if origin_value not in allowed_origins:
                 raise LoadError(
                     LoadErrorReason.INVALID_YAML,
@@ -888,26 +894,26 @@ class Project():
                     .format(origin_value))
 
             # Store source versions for checking later
-            source_versions = _yaml.node_get(origin, dict, 'sources', default_value={})
-            for key in _yaml.node_keys(source_versions):
+            source_versions = origin.get_mapping('sources', default={})
+            for key in source_versions.keys():
                 if key in source_format_versions:
                     raise LoadError(
                         LoadErrorReason.INVALID_YAML,
                         "Duplicate listing of source '{}'".format(key))
-                source_format_versions[key] = _yaml.node_get(source_versions, int, key)
+                source_format_versions[key] = source_versions.get_int(key)
 
             # Store element versions for checking later
-            element_versions = _yaml.node_get(origin, dict, 'elements', default_value={})
-            for key in _yaml.node_keys(element_versions):
+            element_versions = origin.get_mapping('elements', default={})
+            for key in element_versions.keys():
                 if key in element_format_versions:
                     raise LoadError(
                         LoadErrorReason.INVALID_YAML,
                         "Duplicate listing of element '{}'".format(key))
-                element_format_versions[key] = _yaml.node_get(element_versions, int, key)
+                element_format_versions[key] = element_versions.get_int(key)
 
             # Store the origins if they're not 'core'.
             # core elements are loaded by default, so storing is unnecessary.
-            if _yaml.node_get(origin, str, 'origin') != 'core':
+            if origin.get_str('origin') != 'core':
                 self._store_origin(origin, 'sources', plugin_source_origins)
                 self._store_origin(origin, 'elements', plugin_element_origins)
 
@@ -938,20 +944,20 @@ class Project():
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "Unexpected plugin group: {}, expecting {}"
                             .format(plugin_group, expected_groups))
-        node_keys = [key for key in _yaml.node_keys(origin)]
-        if plugin_group in node_keys:
-            origin_node = _yaml.node_copy(origin)
-            plugins = _yaml.node_get(origin, dict, plugin_group, default_value={})
-            _yaml.node_set(origin_node, 'plugins', [k for k in _yaml.node_keys(plugins)])
+        if plugin_group in origin.keys():
+            origin_node = origin.clone()
+            plugins = origin.get_mapping(plugin_group, default={})
+            origin_node['plugins'] = plugins.keys()
+
             for group in expected_groups:
                 if group in origin_node:
-                    _yaml.node_del(origin_node, group)
+                    del origin_node[group]
 
-            if _yaml.node_get(origin_node, str, 'origin') == 'local':
-                path = self.get_path_from_node(origin, 'path',
+            if origin_node.get_str('origin') == 'local':
+                path = self.get_path_from_node(origin.get_scalar('path'),
                                                check_is_dir=True)
                 # paths are passed in relative to the project, but must be absolute
-                _yaml.node_set(origin_node, 'path', os.path.join(self.directory, path))
+                origin_node['path'] = os.path.join(self.directory, path)
             destination.append(origin_node)
 
     # _warning_is_fatal():

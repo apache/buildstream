@@ -59,7 +59,7 @@ def test_disable_message_lines(cli, datafiles):
     }
 
     os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
-    _yaml.dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
     # First we check that we get the "Silly message"
     result = cli.run(project=project, args=["build", element_name])
@@ -94,7 +94,7 @@ def test_disable_error_lines(cli, datafiles):
     }
 
     os.makedirs(os.path.dirname(os.path.join(element_path, element_name)), exist_ok=True)
-    _yaml.dump(element, os.path.join(element_path, element_name))
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
     # First we check that we get the syntax error
     result = cli.run(project=project, args=["--error-lines", "0",
