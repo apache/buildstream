@@ -265,7 +265,7 @@ class Element(Plugin):
 
         # Grab public domain data declared for this instance
         unexpanded_public = self.__extract_public(meta)
-        self.__public = self.__expand_splits(unexpanded_public)
+        self.__public = _element.expand_splits(self.__variables, unexpanded_public)
         self.__dynamic_public = None
 
         # Collect the composited element configuration and
@@ -2659,21 +2659,6 @@ class Element(Plugin):
         element_public['bst'] = element_bst
 
         element_public._assert_fully_composited()
-
-        return element_public
-
-    # Expand the splits in the public data using the Variables in the element
-    def __expand_splits(self, element_public):
-        element_bst = element_public.get_mapping('bst', default={})
-        element_splits = element_bst.get_mapping('split-rules', default={})
-
-        # Resolve any variables in the public split rules directly
-        for domain, splits in element_splits.items():
-            splits = [
-                self.__variables.subst(split.strip())
-                for split in splits.as_str_list()
-            ]
-            element_splits[domain] = splits
 
         return element_public
 

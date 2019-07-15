@@ -1,6 +1,9 @@
 from pyroaring import BitMap
 
+from .node cimport MappingNode, SequenceNode
 from .types import Scope
+from ._variables cimport Variables
+
 
 # FIXME: we should make those as enums consumable from Cython
 cdef SCOPE_ALL = Scope.ALL
@@ -85,3 +88,22 @@ def dependencies_for_targets(elements, scope):
 
     else:
         yield from elements
+
+
+def expand_splits(Variables variables, MappingNode element_public):
+    cdef MappingNode element_bst = element_public.get_mapping('bst', default={})
+    cdef MappingNode element_splits = element_bst.get_mapping('split-rules', default={})
+
+    cdef str domain
+    cdef SequenceNode split_nodes
+    cdef list splits
+
+    # Resolve any variables in the public split rules directly
+    for domain, split_nodes in element_splits.items():
+        splits = [
+            variables.subst((<str> split).strip())
+            for split in split_nodes.as_str_list()
+        ]
+        element_splits[domain] = splits
+
+    return element_public
