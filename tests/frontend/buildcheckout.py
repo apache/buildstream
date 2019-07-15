@@ -233,6 +233,24 @@ def test_build_checkout_tarball(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_no_tar_no_directory(datafiles, cli, tmpdir):
+    project = str(datafiles)
+    runtestdir = str(tmpdir)
+
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    result.assert_success()
+
+    checkout_args = ['artifact', 'checkout', 'target.bst']
+
+    result = cli.run(cwd=runtestdir, project=project, args=checkout_args)
+    result.assert_success()
+    filename = os.path.join(runtestdir, 'target', 'usr', 'bin', 'hello')
+    assert os.path.exists(filename)
+    filename = os.path.join(runtestdir, 'target', 'usr', 'include', 'pony.h')
+    assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_tarball_stdout(datafiles, cli):
     project = str(datafiles)
     tarball = os.path.join(cli.directory, 'tarball.tar')

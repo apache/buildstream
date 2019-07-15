@@ -991,10 +991,6 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, pull_, direct
         click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
         sys.exit(-1)
 
-    if tar is None and directory is None:
-        click.echo("ERROR: One of --directory or --tar must be provided", err=True)
-        sys.exit(-1)
-
     if tar is not None and directory is not None:
         click.echo("ERROR: options --directory and --tar conflict", err=True)
         sys.exit(-1)
@@ -1003,7 +999,12 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, pull_, direct
         location = tar
         tar = True
     else:
-        location = os.getcwd() if directory is None else directory
+        if directory is None:
+            location = os.path.abspath(os.path.join(os.getcwd(), element))
+        else:
+            location = directory
+        if location[-4:] == '.bst':
+            location = location[:-4]
         tar = False
 
     if deps == "build":
