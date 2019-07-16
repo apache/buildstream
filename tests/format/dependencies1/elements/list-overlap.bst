@@ -1,4 +1,4 @@
-kind: stack
+kind: manual
 description: This element depends on two elements in different ways
 build-depends:
 - firstdep.bst
