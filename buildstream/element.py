@@ -1253,6 +1253,12 @@ class Element(Plugin):
             # Prepend provenance to the error
             raise ElementError("{}: {}".format(self, e), reason=e.reason) from e
 
+        # Ensure that the first source does not need access to previous soruces
+        if self.__sources and self.__sources[0]._requires_previous_sources():
+            raise ElementError("{}: {} cannot be the first source of an element "
+                               "as it requires access to previous sources"
+                               .format(self, self.__sources[0]))
+
         # Preflight the sources
         for source in self.sources():
             source._preflight()
@@ -1296,9 +1302,9 @@ class Element(Plugin):
     #
     def _track(self):
         refs = []
-        for source in self.__sources:
+        for index, source in enumerate(self.__sources):
             old_ref = source.get_ref()
-            new_ref = source._track()
+            new_ref = source._track(self.__sources[0:index])
             refs.append((source._unique_id, new_ref))
 
             # Complimentary warning that the new ref will be unused.

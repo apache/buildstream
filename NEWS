@@ -1,4 +1,16 @@
 =================
+buildstream 1.3.1
+=================
+
+  o Source plugins may now request access access to previous during track and
+    fetch by setting `BST_REQUIRES_PREVIOUS_SOURCES_TRACK` and/or
+    `BST_REQUIRES_PREVIOUS_SOURCES_FETCH` attributes.
+
+  o Add new `pip` source plugin for downloading python packages using pip,
+    based on requirements files from previous sources.
+
+
+=================
 buildstream 1.2.7
 =================
 
