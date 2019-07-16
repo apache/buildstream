@@ -1,4 +1,12 @@
 =================
+buildstream 1.2.8
+=================
+
+  o Fixed issues with workspaced junctions which need fetches (#1030)
+
+  o Bail out with informative error if stdout/stderr are O_NONBLOCK (#929)
+
+=================
 buildstream 1.2.7
 =================
 
