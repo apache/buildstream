@@ -24,7 +24,6 @@ from collections import OrderedDict
 from pathlib import Path
 from pluginbase import PluginBase
 from . import utils
-from . import _cachekey
 from . import _site
 from . import _yaml
 from ._artifactelement import ArtifactElement
@@ -137,7 +136,6 @@ class Project():
         self._default_mirror = default_mirror    # The name of the preferred mirror.
 
         self._cli_options = cli_options
-        self._cache_key = None
 
         self._fatal_warnings = []             # A list of warnings which should trigger an error
 
@@ -218,22 +216,6 @@ class Project():
     #
     def get_shell_config(self):
         return (self._shell_command, self._shell_environment, self._shell_host_files)
-
-    # get_cache_key():
-    #
-    # Returns the cache key, calculating it if necessary
-    #
-    # Returns:
-    #    (str): A hex digest cache key for the Context
-    #
-    def get_cache_key(self):
-        if self._cache_key is None:
-
-            # Anything that alters the build goes into the unique key
-            # (currently nothing here)
-            self._cache_key = _cachekey.generate_key({})
-
-        return self._cache_key
 
     # get_path_from_node()
     #
