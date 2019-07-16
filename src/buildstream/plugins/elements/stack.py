@@ -36,6 +36,9 @@ class StackElement(Element):
     # This plugin ignores sources, so disallow them
     BST_FORBID_SOURCES = True
 
+    # This plugin does not run any commands using Sandbox.run()
+    BST_RUN_COMMANDS = False
+
     # This plugin has been modified to avoid the use of Sandbox.get_directory
     BST_VIRTUAL_DIRECTORY = True
 
