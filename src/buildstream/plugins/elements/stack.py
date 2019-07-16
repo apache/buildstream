@@ -30,6 +30,12 @@ from buildstream import Element
 # Element implementation for the 'stack' kind.
 class StackElement(Element):
 
+    # This plugin ingores build dependencies, so disallow them
+    BST_FORBID_BDEPENDS = True
+
+    # This plugin ignores sources, so disallow them
+    BST_FORBID_SOURCES = True
+
     # This plugin has been modified to avoid the use of Sandbox.get_directory
     BST_VIRTUAL_DIRECTORY = True
 
