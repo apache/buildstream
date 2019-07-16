@@ -32,7 +32,6 @@ from .. import Scope
 # Import various buildstream internals
 from .._context import Context
 from ..plugin import Plugin
-from .._platform import Platform
 from .._project import Project
 from .._exceptions import BstError, StreamError, LoadError, LoadErrorReason, AppError
 from .._message import Message, MessageType, unconditional_messages
@@ -204,7 +203,7 @@ class App():
                 if option_value is not None:
                     setattr(self.context, context_attr, option_value)
             try:
-                Platform.get_platform()
+                self.context.platform
             except BstError as e:
                 self._error_exit(e, "Error instantiating platform")
 

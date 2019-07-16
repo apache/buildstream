@@ -21,7 +21,6 @@
 #
 import os
 import pytest
-from buildstream._platform.platform import Platform
 
 from buildstream.testing import register_repo_kind, sourcetests_collection_hook
 from buildstream.testing.integration import integration_cache  # pylint: disable=unused-import
@@ -100,22 +99,6 @@ def remote_services(request):
         kwargs['source_service'] = os.environ.get('SOURCE_CACHE_SERVICE')
 
     return RemoteServices(**kwargs)
-
-
-#################################################
-#         Automatically reset the platform      #
-#################################################
-#
-# This might need some refactor, maybe buildstream
-# needs to cleanup more gracefully and we could remove this.
-#
-def clean_platform_cache():
-    Platform._instance = None
-
-
-@pytest.fixture(autouse=True)
-def ensure_platform_cache_is_clean():
-    clean_platform_cache()
 
 
 #################################################
