@@ -124,8 +124,6 @@ def _test_push(user_config_file, project_dir, element_name, queue):
     # This is duplicated from Pipeline.resolve_elements()
     # as this test does not use the cli frontend.
     for e in element.dependencies(Scope.ALL):
-        # Preflight
-        e._preflight()
         # Determine initial element state.
         e._update_state()
 

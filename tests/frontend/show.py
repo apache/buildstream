@@ -390,7 +390,7 @@ def test_fetched_junction(cli, tmpdir, datafiles, element_name, workspaced):
 ###############################################################
 #                   Testing recursion depth                   #
 ###############################################################
-@pytest.mark.parametrize("dependency_depth", [100, 500, 1200])
+@pytest.mark.parametrize("dependency_depth", [100, 150, 1200])
 def test_exceed_max_recursion_depth(cli, tmpdir, dependency_depth):
     project_name = "recursion-test"
     path = str(tmpdir)

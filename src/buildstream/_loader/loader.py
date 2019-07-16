@@ -604,7 +604,6 @@ class Loader():
                                 provenance_str, filename, meta_element.kind))
 
         element = Element._new_from_meta(meta_element)
-        element._preflight()
         element._update_state()
 
         # If this junction element points to a sub-sub-project, we need to

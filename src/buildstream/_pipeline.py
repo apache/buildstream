@@ -124,13 +124,15 @@ class Pipeline():
     #
     def resolve_elements(self, targets):
         with self._context.messenger.timed_activity("Resolving cached state", silent_nested=True):
+            # XXX: Now that Element._update_state() can trigger recursive update_state calls
+            # it is possible that we could get a RecursionError. However, this is unlikely
+            # to happen, even for large projects (tested with the Debian stack). Although,
+            # if it does become a problem we may have to set the recursion limit to a
+            # greater value.
             for element in self.dependencies(targets, Scope.ALL):
-
-                # Preflight
-                element._preflight()
-
                 # Determine initial element state.
-                element._update_state()
+                if not element._resolved_initial_state:
+                    element._update_state()
 
                 # We may already have Elements which are cached and have their runtimes
                 # cached, if this is the case, we should immediately notify their reverse

@@ -102,7 +102,7 @@ from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import Consistency, CoreWarnings, Scope, _KeyStrength, _UniquePriorityQueue
+from .types import Consistency, CoreWarnings, Scope, _KeyStrength
 from ._artifact import Artifact
 
 from .storage.directory import Directory
@@ -209,13 +209,19 @@ class Element(Plugin):
         self.__build_dependencies = []          # Direct build dependency Elements
         self.__reverse_build_deps = set()       # Direct reverse build dependency Elements
         self.__reverse_runtime_deps = set()     # Direct reverse runtime dependency Elements
-        self.__remaining_build_deps_uncached = None    # Built dependencies which are not yet cached
-        self.__remaining_runtime_deps_uncached = None  # Runtime dependencies which are not yet cached
-        self.__ready_for_runtime = False        # Whether the element has all dependencies ready and has a cache key
+        self.__build_deps_without_strict_cache_key = None    # Number of build dependencies without a strict key
+        self.__runtime_deps_without_strict_cache_key = None  # Number of runtime dependencies without a strict key
+        self.__build_deps_without_cache_key = None    # Number of build dependencies without a cache key
+        self.__runtime_deps_without_cache_key = None  # Number of runtime dependencies without a cache key
+        self.__build_deps_uncached = None    # Build dependencies which are not yet cached
+        self.__runtime_deps_uncached = None  # Runtime dependencies which are not yet cached
+        self.__updated_strict_cache_keys_of_rdeps = False  # Whether we've updated strict cache keys of rdeps
+        self.__ready_for_runtime = False        # Whether the element and its runtime dependencies have cache keys
         self.__ready_for_runtime_and_cached = False  # Whether all runtime deps are cached, as well as the element
         self.__sources = []                     # List of Sources
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
+        self.__cache_keys_unstable = None       # Whether the current cache keys can be considered as stable
         self.__artifacts = context.artifactcache  # Artifact cache
         self.__sourcecache = context.sourcecache  # Source cache
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
@@ -223,6 +229,7 @@ class Element(Plugin):
         self.__assemble_done = False            # Element is assembled
         self.__tracking_scheduled = False       # Sources are scheduled to be tracked
         self.__pull_done = False                # Whether pull was attempted
+        self.__cached_successfully = None       # If the Element is known to be successfully cached
         self.__splits = None                    # Resolved regex objects for computing split domains
         self.__whitelist_regex = None           # Resolved regex object to check if file is allowed to overlap
         self.__staged_sources_directory = None  # Location where Element.stage_sources() was called
@@ -248,6 +255,7 @@ class Element(Plugin):
         self.__buildable_callback = None              # Callback to BuildQueue
 
         self._depth = None                            # Depth of Element in its current dependency graph
+        self._resolved_initial_state = False          # Whether the initial state of the Element has been resolved
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults(project, plugin_conf, meta.kind, meta.is_junction)
@@ -961,13 +969,21 @@ class Element(Plugin):
             dependency = Element._new_from_meta(meta_dep)
             element.__runtime_dependencies.append(dependency)
             dependency.__reverse_runtime_deps.add(element)
-        element.__remaining_runtime_deps_uncached = len(element.__runtime_dependencies)
+        no_of_runtime_deps = len(element.__runtime_dependencies)
+        element.__runtime_deps_without_strict_cache_key = no_of_runtime_deps
+        element.__runtime_deps_without_cache_key = no_of_runtime_deps
+        element.__runtime_deps_uncached = no_of_runtime_deps
 
         for meta_dep in meta.build_dependencies:
             dependency = Element._new_from_meta(meta_dep)
             element.__build_dependencies.append(dependency)
             dependency.__reverse_build_deps.add(element)
-        element.__remaining_build_deps_uncached = len(element.__build_dependencies)
+        no_of_build_deps = len(element.__build_dependencies)
+        element.__build_deps_without_strict_cache_key = no_of_build_deps
+        element.__build_deps_without_cache_key = no_of_build_deps
+        element.__build_deps_uncached = no_of_build_deps
+
+        element.__preflight()
 
         return element
 
@@ -1058,11 +1074,22 @@ class Element(Plugin):
     #            the artifact cache and the element assembled successfully
     #
     def _cached_success(self):
+        # FIXME:  _cache() and _cached_success() should be converted to
+        # push based functions where we only update __cached_successfully
+        # once we know this has changed. This will allow us to cheaply check
+        # __cached_successfully instead of calling _cached_success()
+        if self.__cached_successfully:
+            return True
+
         if not self._cached():
             return False
 
         success, _, _ = self._get_build_result()
-        return success
+        if success:
+            self.__cached_successfully = True
+            return True
+        else:
+            return False
 
     # _cached_failure():
     #
@@ -1090,7 +1117,7 @@ class Element(Plugin):
         if not self.__assemble_scheduled:
             return False
 
-        return self.__remaining_build_deps_uncached == 0
+        return self.__build_deps_uncached == 0
 
     # _get_cache_key():
     #
@@ -1137,6 +1164,8 @@ class Element(Plugin):
     # This must be called whenever the state of an element may have changed.
     #
     def _update_state(self):
+        if not self._resolved_initial_state:
+            self._resolved_initial_state = True
         context = self._get_context()
 
         # Compute and determine consistency of sources
@@ -1146,16 +1175,19 @@ class Element(Plugin):
             # Tracking may still be pending
             return
 
-        if self._get_workspace() and self.__assemble_scheduled:
-            # If we have an active workspace and are going to build, then
-            # discard current cache key values and invoke the buildable callback.
-            # The correct keys can only be calculated once the build is complete
-            self.__reset_cache_data()
-
-            return
-
         self.__update_cache_keys()
         self.__update_artifact_state()
+
+        # Workspaces are initially marked with unstable cache keys. Keys will be
+        # marked stable either when we verify that the workspace is already
+        # cached, or when we build/pull the workspaced element.
+        if self.__cache_keys_unstable:
+            if not self._cached_success():
+                self.__reset_cache_data()
+                if not self.__assemble_scheduled:
+                    self._schedule_assemble()
+            else:
+                self.__cache_keys_unstable = False
 
         # Workspaced sources are considered unstable if a build is pending
         # as the build will modify the contents of the workspace.
@@ -1165,7 +1197,7 @@ class Element(Plugin):
         # the cache key.
         if (not self.__assemble_scheduled and not self.__assemble_done and
                 self.__artifact and
-                (self._is_required() or self._get_workspace()) and
+                self._is_required() and
                 not self._cached_success() and
                 not self._pull_pending()):
             self._schedule_assemble()
@@ -1181,10 +1213,6 @@ class Element(Plugin):
 
         if not context.get_strict():
             self.__update_cache_key_non_strict()
-
-        if not self.__ready_for_runtime and self.__cache_key is not None:
-            self.__ready_for_runtime = all(
-                dep.__ready_for_runtime for dep in self.__runtime_dependencies)
 
     # _get_display_key():
     #
@@ -1226,49 +1254,6 @@ class Element(Plugin):
         _, display_key, _ = self._get_display_key()
         return display_key
 
-    # _preflight():
-    #
-    # A wrapper for calling the abstract preflight() method on
-    # the element and its sources.
-    #
-    def _preflight(self):
-
-        if self.BST_FORBID_RDEPENDS and self.BST_FORBID_BDEPENDS:
-            if any(self.dependencies(Scope.RUN, recurse=False)) or any(self.dependencies(Scope.BUILD, recurse=False)):
-                raise ElementError("{}: Dependencies are forbidden for '{}' elements"
-                                   .format(self, self.get_kind()), reason="element-forbidden-depends")
-
-        if self.BST_FORBID_RDEPENDS:
-            if any(self.dependencies(Scope.RUN, recurse=False)):
-                raise ElementError("{}: Runtime dependencies are forbidden for '{}' elements"
-                                   .format(self, self.get_kind()), reason="element-forbidden-rdepends")
-
-        if self.BST_FORBID_BDEPENDS:
-            if any(self.dependencies(Scope.BUILD, recurse=False)):
-                raise ElementError("{}: Build dependencies are forbidden for '{}' elements"
-                                   .format(self, self.get_kind()), reason="element-forbidden-bdepends")
-
-        if self.BST_FORBID_SOURCES:
-            if any(self.sources()):
-                raise ElementError("{}: Sources are forbidden for '{}' elements"
-                                   .format(self, self.get_kind()), reason="element-forbidden-sources")
-
-        try:
-            self.preflight()
-        except BstError as e:
-            # Prepend provenance to the error
-            raise ElementError("{}: {}".format(self, e), reason=e.reason, detail=e.detail) from e
-
-        # Ensure that the first source does not need access to previous soruces
-        if self.__sources and self.__sources[0]._requires_previous_sources():
-            raise ElementError("{}: {} cannot be the first source of an element "
-                               "as it requires access to previous sources"
-                               .format(self, self.__sources[0]))
-
-        # Preflight the sources
-        for source in self.sources():
-            source._preflight()
-
     # _schedule_tracking():
     #
     # Force an element state to be inconsistent. Any sources appear to be
@@ -1292,7 +1277,7 @@ class Element(Plugin):
 
         self.__tracking_scheduled = False
 
-        self.__update_state_recursively()
+        self._update_state()
 
     # _track():
     #
@@ -1537,13 +1522,17 @@ class Element(Plugin):
         self.__assemble_scheduled = False
         self.__assemble_done = True
 
+        # If we've just assembled the Element, we are safe to
+        # consider the cache keys as stable
+        self.__cache_keys_unstable = False
+
         # Artifact may have a cached success now.
         if self.__strict_artifact:
             self.__strict_artifact.reset_cached()
         if self.__artifact:
             self.__artifact.reset_cached()
 
-        self.__update_state_recursively()
+        self._update_state()
         self._update_ready_for_runtime_and_cached()
 
         if self._get_workspace() and self._cached_success():
@@ -1800,7 +1789,12 @@ class Element(Plugin):
         self.__strict_artifact.reset_cached()
         self.__artifact.reset_cached()
 
-        self.__update_state_recursively()
+        # If we've just successfully pulled the element, we are safe
+        # to consider its keys as stable
+        if self.__cache_keys_unstable and self._cached_success():
+            self.__cache_keys_unstable = False
+
+        self._update_state()
         self._update_ready_for_runtime_and_cached()
 
     # _pull():
@@ -2267,13 +2261,14 @@ class Element(Plugin):
 
     # _update_ready_for_runtime_and_cached()
     #
-    # An Element becomes ready for runtime and cached once the following three criteria
+    # An Element becomes ready for runtime and cached once the following criteria
     # are met:
     #  1. The Element has a strong cache key
-    #  2. The Element is cached (locally)
-    #  3. The runtime dependencies of the Element are ready for runtime and cached.
+    #  2. The Element's keys are considered stable
+    #  3. The Element is cached (locally)
+    #  4. The runtime dependencies of the Element are ready for runtime and cached.
     #
-    # These three criteria serve as potential trigger points as to when an Element may have
+    # These criteria serve as potential trigger points as to when an Element may have
     # become ready for runtime and cached.
     #
     # Once an Element becomes ready for runtime and cached, we notify the reverse
@@ -2282,14 +2277,26 @@ class Element(Plugin):
     #
     def _update_ready_for_runtime_and_cached(self):
         if not self.__ready_for_runtime_and_cached:
-            if self.__remaining_runtime_deps_uncached == 0 and self.__cache_key and self._cached_success():
+            if self.__runtime_deps_uncached == 0 and self._cached_success() and \
+               self.__cache_key and not self.__cache_keys_unstable:
                 self.__ready_for_runtime_and_cached = True
 
                 # Notify reverse dependencies
                 for rdep in self.__reverse_runtime_deps:
-                    rdep.__on_runtime_dependency_ready_for_runtime_and_cached()
+                    rdep.__runtime_deps_uncached -= 1
+                    assert not rdep.__runtime_deps_uncached < 0
+
+                    # Try to notify reverse dependencies if all runtime deps are ready
+                    if rdep.__runtime_deps_uncached == 0:
+                        rdep._update_ready_for_runtime_and_cached()
+
                 for rdep in self.__reverse_build_deps:
-                    rdep.__on_build_dependency_ready_for_runtime_and_cached()
+                    rdep.__build_deps_uncached -= 1
+                    assert not rdep.__build_deps_uncached < 0
+
+                    if rdep.__buildable_callback is not None and rdep._buildable():
+                        rdep.__buildable_callback(rdep)
+                        rdep.__buildable_callback = None
 
     #############################################################
     #                   Private Local Methods                   #
@@ -2369,6 +2376,49 @@ class Element(Plugin):
                 # Defer workspace.prepared setting until pending batch commands
                 # have been executed.
                 sandbox._callback(mark_workspace_prepared)
+
+    # __preflight():
+    #
+    # A internal wrapper for calling the abstract preflight() method on
+    # the element and its sources.
+    #
+    def __preflight(self):
+
+        if self.BST_FORBID_RDEPENDS and self.BST_FORBID_BDEPENDS:
+            if any(self.dependencies(Scope.RUN, recurse=False)) or any(self.dependencies(Scope.BUILD, recurse=False)):
+                raise ElementError("{}: Dependencies are forbidden for '{}' elements"
+                                   .format(self, self.get_kind()), reason="element-forbidden-depends")
+
+        if self.BST_FORBID_RDEPENDS:
+            if any(self.dependencies(Scope.RUN, recurse=False)):
+                raise ElementError("{}: Runtime dependencies are forbidden for '{}' elements"
+                                   .format(self, self.get_kind()), reason="element-forbidden-rdepends")
+
+        if self.BST_FORBID_BDEPENDS:
+            if any(self.dependencies(Scope.BUILD, recurse=False)):
+                raise ElementError("{}: Build dependencies are forbidden for '{}' elements"
+                                   .format(self, self.get_kind()), reason="element-forbidden-bdepends")
+
+        if self.BST_FORBID_SOURCES:
+            if any(self.sources()):
+                raise ElementError("{}: Sources are forbidden for '{}' elements"
+                                   .format(self, self.get_kind()), reason="element-forbidden-sources")
+
+        try:
+            self.preflight()
+        except BstError as e:
+            # Prepend provenance to the error
+            raise ElementError("{}: {}".format(self, e), reason=e.reason, detail=e.detail) from e
+
+        # Ensure that the first source does not need access to previous soruces
+        if self.__sources and self.__sources[0]._requires_previous_sources():
+            raise ElementError("{}: {} cannot be the first source of an element "
+                               "as it requires access to previous sources"
+                               .format(self, self.__sources[0]))
+
+        # Preflight the sources
+        for source in self.sources():
+            source._preflight()
 
     # __assert_cached()
     #
@@ -2921,58 +2971,6 @@ class Element(Plugin):
             self.__last_source_requires_previous_ix = last_requires_previous
         return self.__last_source_requires_previous_ix
 
-    # __update_state_recursively()
-    #
-    # Update the state of all reverse dependencies, recursively.
-    #
-    def __update_state_recursively(self):
-        queue = _UniquePriorityQueue()
-        queue.push(self._unique_id, self)
-
-        while queue:
-            element = queue.pop()
-
-            old_ready_for_runtime = element.__ready_for_runtime
-            old_strict_cache_key = element.__strict_cache_key
-            element._update_state()
-
-            if element.__ready_for_runtime != old_ready_for_runtime or \
-               element.__strict_cache_key != old_strict_cache_key:
-                for rdep in element.__reverse_build_deps | element.__reverse_runtime_deps:
-                    queue.push(rdep._unique_id, rdep)
-
-    # __on_runtime_dependency_ready_for_runtime_and_cached()
-    #
-    # This function is called once one of the Element's runtime dependencies has
-    # become ready for runtime and cached.
-    #
-    # On calling this function, we decrement the Element's remaining runtime deps counter.
-    # If this is zero, we attempt to notify all reverse dependencies of the Element.
-    #
-    def __on_runtime_dependency_ready_for_runtime_and_cached(self):
-        self.__remaining_runtime_deps_uncached -= 1
-        assert not self.__remaining_runtime_deps_uncached < 0
-
-        # Try to notify reverse dependencies if all runtime deps are ready
-        if self.__remaining_runtime_deps_uncached == 0:
-            self._update_ready_for_runtime_and_cached()
-
-    # __on_build_dependency_ready_for_runtime_and_cached()
-    #
-    # This function is called once one of the Element's build dependencies has become
-    # ready for runtime and cached.
-    #
-    # On calling this function, we decrement the Element's remaining build deps counter.
-    # If this is zero, we invoke the buildable callback.
-    #
-    def __on_build_dependency_ready_for_runtime_and_cached(self):
-        self.__remaining_build_deps_uncached -= 1
-        assert not self.__remaining_build_deps_uncached < 0
-
-        if self.__buildable_callback is not None and self._buildable():
-            self.__buildable_callback(self)
-            self.__buildable_callback = None
-
     # __reset_cache_data()
     #
     # Resets all data related to cache key calculation and whether an artifact
@@ -3011,6 +3009,14 @@ class Element(Plugin):
     def __update_cache_keys(self):
         context = self._get_context()
 
+        # If the Element is workspaced, we should *initially*
+        # consider its keys unstable
+        if self.__cache_keys_unstable is None:
+            if self._get_workspace():
+                self.__cache_keys_unstable = True
+            else:
+                self.__cache_keys_unstable = False
+
         if self.__weak_cache_key is None:
             # Calculate weak cache key
             # Weak cache key includes names of direct build dependencies
@@ -3038,14 +3044,16 @@ class Element(Plugin):
             ]
             self.__strict_cache_key = self._calculate_cache_key(dependencies)
 
-            # In strict mode, the strong cache key always matches the strict cache key
-            if context.get_strict():
-                self.__cache_key = self.__strict_cache_key
+            if self.__strict_cache_key is not None:
+                # In strict mode, the strong cache key always matches the strict cache key
+                if context.get_strict():
+                    self.__cache_key = self.__strict_cache_key
 
-                # If the element is cached, and has all of its runtime dependencies cached,
-                # now that we have the cache key, we are able to notify reverse dependencies
-                # that the element it ready. This is a likely trigger for workspaced elements.
-                self._update_ready_for_runtime_and_cached()
+                    # The Element may have just become ready for runtime now that the
+                    # strong cache key has just been set
+                    self.__update_ready_for_runtime()
+                else:
+                    self.__update_strict_cache_key_of_rdeps()
 
         if self.__strict_cache_key is not None and self.__can_query_cache_callback is not None:
             self.__can_query_cache_callback(self)
@@ -3080,7 +3088,6 @@ class Element(Plugin):
             self.__strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key,
                                               weak_key=self.__weak_cache_key)
 
-            # In strict mode, the strong cache key always matches the strict cache key
             if context.get_strict():
                 self.__artifact = self.__strict_artifact
 
@@ -3120,13 +3127,81 @@ class Element(Plugin):
                 # Strong cache key could not be calculated yet
                 return
 
-            # If the element is cached, and has all of its runtime dependencies cached,
-            # now that we have the strong cache key, we are able to notify reverse dependencies
-            # that the element it ready. This is a likely trigger for workspaced elements.
-            self._update_ready_for_runtime_and_cached()
+            # The Element may have just become ready for runtime now that the
+            # strong cache key has just been set
+            self.__update_ready_for_runtime()
 
             # Now we have the strong cache key, update the Artifact
             self.__artifact._cache_key = self.__cache_key
+
+    # __update_strict_cache_key_of_rdeps()
+    #
+    # Once an Element is given its strict cache key, immediately inform
+    # its reverse dependencies and see if their strict cache key can be
+    # obtained
+    #
+    def __update_strict_cache_key_of_rdeps(self):
+        if not self.__updated_strict_cache_keys_of_rdeps:
+            if self.__runtime_deps_without_strict_cache_key == 0 and \
+               self.__strict_cache_key is not None and not self.__cache_keys_unstable:
+                self.__updated_strict_cache_keys_of_rdeps = True
+
+                # Notify reverse dependencies
+                for rdep in self.__reverse_runtime_deps:
+                    rdep.__runtime_deps_without_strict_cache_key -= 1
+                    assert not rdep.__runtime_deps_without_strict_cache_key < 0
+
+                    if rdep.__runtime_deps_without_strict_cache_key == 0:
+                        rdep.__update_strict_cache_key_of_rdeps()
+
+                for rdep in self.__reverse_build_deps:
+                    rdep.__build_deps_without_strict_cache_key -= 1
+                    assert not rdep.__build_deps_without_strict_cache_key < 0
+
+                    if rdep.__build_deps_without_strict_cache_key == 0:
+                        rdep._update_state()
+
+    # __update_ready_for_runtime()
+    #
+    # An Element becomes ready for runtime when:
+    #
+    #  1. The Element has a strong cache key
+    #  2. The Element's keys are considered stable
+    #  3. The runtime dependencies of the Element are ready for runtime
+    #
+    # These criteria serve as potential trigger points as to when an Element may have
+    # become ready for runtime.
+    #
+    # Once an Element becomes ready for runtime, we notify the reverse
+    # runtime dependencies and the reverse build dependencies of the Element,
+    # decrementing the appropriate counters.
+    #
+    def __update_ready_for_runtime(self):
+        if not self.__ready_for_runtime:
+            if self.__runtime_deps_without_cache_key == 0 and \
+               self.__cache_key is not None and not self.__cache_keys_unstable:
+                self.__ready_for_runtime = True
+
+                # Notify reverse dependencies
+                for rdep in self.__reverse_runtime_deps:
+                    rdep.__runtime_deps_without_cache_key -= 1
+                    assert not rdep.__runtime_deps_without_cache_key < 0
+
+                    # If all of our runtimes have cache keys, we can calculate ours
+                    if rdep.__runtime_deps_without_cache_key == 0:
+                        rdep.__update_ready_for_runtime()
+
+                for rdep in self.__reverse_build_deps:
+                    rdep.__build_deps_without_cache_key -= 1
+                    assert not rdep.__build_deps_without_cache_key < 0
+
+                    if rdep.__build_deps_without_cache_key == 0:
+                        rdep._update_state()
+
+                # If the element is cached, and has all of its runtime dependencies cached,
+                # now that we have the cache key, we are able to notify reverse dependencies
+                # that the element it ready. This is a likely trigger for workspaced elements.
+                self._update_ready_for_runtime_and_cached()
 
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):
