@@ -22,11 +22,13 @@
 # System imports
 import asyncio
 import datetime
+import io
 import multiprocessing
 import os
 import pickle
 import signal
 import sys
+import time
 import traceback
 
 # BuildStream toplevel imports
@@ -229,12 +231,21 @@ class Job():
         )
 
         if self._scheduler.context.platform.does_multiprocessing_start_require_pickling():
+            then = time.time()
             pickled = pickle_child_job(
                 child_job, self._scheduler.context.get_projects())
+            now = time.time()
+            pickled.seek(0, io.SEEK_END)
+            self.message(MessageType.INFO, "pickled len: {:,}".format(pickled.tell()))
+            self.message(MessageType.INFO, "pickle time: {}s".format(round(now - then, 2)))
+            pickled.seek(0)
+            then = time.time()
             self._process = Process(
                 target=_do_pickled_child_job,
                 args=[pickled, self._queue],
             )
+            now = time.time()
+            self.message(MessageType.INFO, "make process: {}s".format(round(now - then, 2)))
         else:
             self._process = Process(
                 target=child_job.child_action,
@@ -245,11 +256,14 @@ class Job():
         # the child process does not inherit the parent's state, but the main
         # process will be notified of any signal after we launch the child.
         #
+        then = time.time()
         if does_platform_support_signals:
             with _signals.blocked([signal.SIGINT, signal.SIGTSTP, signal.SIGTERM], ignore=False):
                 self._process.start()
         else:
             self._process.start()
+        now = time.time()
+        self.message(MessageType.INFO, "start process: {}s".format(round(now - then, 2)))
 
         # Wait for the child task to complete.
         #
