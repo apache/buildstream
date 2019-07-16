@@ -324,7 +324,7 @@ def test_junction_element(cli, tmpdir, datafiles, ref_storage):
     result.assert_success()
 
     # Now assert element state (via bst show under the hood) of the dep again
-    assert cli.get_element_state(project, 'junction-dep.bst') == 'waiting'
+    assert cli.get_element_state(project, 'junction-dep.bst') == 'buildable'
 
 
 @pytest.mark.datafiles(DATA_DIR)
