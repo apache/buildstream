@@ -85,7 +85,7 @@ def generate_simple_stack(project, name, dependencies):
     element_path = os.path.join(project, 'elements', element_name)
     element = {
         'kind': 'stack',
-        'depends': dependencies
+        'runtime-depends': dependencies
     }
     _yaml.roundtrip_dump(element, element_path)
 

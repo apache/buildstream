@@ -1270,8 +1270,8 @@ TEST_DIR = os.path.join(
 @pytest.mark.parametrize(
     ["case", "non_workspaced_elements_state"],
     [
-        ("workspaced-build-dep", ["waiting", "waiting", "waiting", "waiting", "waiting"]),
-        ("workspaced-runtime-dep", ["buildable", "buildable", "waiting", "waiting", "waiting"])
+        ("workspaced-build-dep", ["waiting", "waiting", "buildable", "waiting", "waiting"]),
+        ("workspaced-runtime-dep", ["buildable", "buildable", "buildable", "waiting", "waiting"])
     ],
 )
 @pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
