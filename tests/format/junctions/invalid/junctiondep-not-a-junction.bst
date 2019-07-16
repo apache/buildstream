@@ -1,4 +1,4 @@
 kind: stack
-depends:
+runtime-depends:
 - junction: app.bst
   filename: target.bst

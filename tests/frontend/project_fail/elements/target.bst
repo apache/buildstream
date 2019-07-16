@@ -3,5 +3,5 @@ description: |
 
   Main stack target for the bst build test
 
-depends:
+runtime-depends:
 - compose-all.bst

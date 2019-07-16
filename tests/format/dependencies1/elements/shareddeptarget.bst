@@ -1,5 +1,5 @@
 kind: stack
 description: This is the main target
-depends:
+runtime-depends:
 - firstdep.bst
 - shareddep.bst

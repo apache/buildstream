@@ -1,5 +1,5 @@
 kind: stack
 description: Stack test
-depends:
+runtime-depends:
   - stack/hi.bst
   - stack/another-hi.bst

@@ -1,5 +1,5 @@
 kind: stack
 
-depends:
+runtime-depends:
 - filename: subtarget.bst
   junction: subproject-junction.bst

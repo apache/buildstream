@@ -1,5 +1,5 @@
 kind: stack
 description: Base stack
 
-depends:
+runtime-depends:
 - base/wanted.bst

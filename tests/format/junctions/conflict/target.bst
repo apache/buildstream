@@ -1,5 +1,5 @@
 kind: stack
-depends:
+runtime-depends:
 - junction: foo.bst
   filename: target.bst
 - junction: bar.bst

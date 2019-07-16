@@ -1,4 +1,4 @@
 kind: stack
 description: This is the first dependency
-depends:
+runtime-depends:
 - firstdep.bst

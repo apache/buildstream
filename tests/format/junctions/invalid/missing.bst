@@ -1,4 +1,4 @@
 kind: stack
-depends:
+runtime-depends:
 - junction: missingfile.bst
   filename: target.bst

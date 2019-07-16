@@ -4,5 +4,5 @@ build-depends:
 - firstdep.bst
 runtime-depends:
 - seconddep.bst
-depends:
+runtime-depends:
 - thirddep.bst

@@ -1,3 +1,3 @@
 kind: stack
-depends:
+runtime-depends:
 - base.bst

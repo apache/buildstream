@@ -1,5 +1,5 @@
 kind: stack
 
-depends:
+runtime-depends:
 - filename: bad-junction-target.bst
   junction: junction-A.bst

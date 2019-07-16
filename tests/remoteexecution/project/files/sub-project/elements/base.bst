@@ -1,5 +1,5 @@
 # elements/base.bst
 
 kind: stack
-depends:
+runtime-depends:
   - base/base-alpine.bst

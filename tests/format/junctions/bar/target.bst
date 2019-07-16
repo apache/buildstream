@@ -1,5 +1,5 @@
 kind: stack
-depends:
+runtime-depends:
 - junction: base.bst
   filename: target.bst
 - app.bst

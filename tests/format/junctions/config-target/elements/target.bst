@@ -1,4 +1,4 @@
 kind: stack
 
-depends:
+runtime-depends:
 - subsubproject.bst:hello.bst

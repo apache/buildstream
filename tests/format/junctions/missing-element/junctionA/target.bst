@@ -1,5 +1,5 @@
 kind: stack
 
-depends:
+runtime-depends:
 - filename: missing.bst
   junction: junction-B.bst

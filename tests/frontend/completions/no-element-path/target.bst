@@ -3,6 +3,6 @@ description: |
 
   Main stack target for the bst build test
 
-depends:
+runtime-depends:
 - import-bin.bst
 - compose-all.bst

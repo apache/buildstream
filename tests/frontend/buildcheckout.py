@@ -485,7 +485,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage):
     #
     element = {
         'kind': 'stack',
-        'depends': [
+        'runtime-depends': [
             {
                 'junction': 'junction.bst',
                 'filename': 'import-etc.bst'
@@ -534,7 +534,7 @@ def test_build_checkout_junction(cli, tmpdir, datafiles):
     #
     element = {
         'kind': 'stack',
-        'depends': [
+        'runtime-depends': [
             {
                 'junction': 'junction.bst',
                 'filename': 'import-etc.bst'
@@ -581,7 +581,7 @@ def test_build_checkout_junction_default_targets(cli, tmpdir, datafiles):
     #
     element = {
         'kind': 'stack',
-        'depends': [
+        'runtime-depends': [
             {
                 'junction': 'junction.bst',
                 'filename': 'import-etc.bst'
@@ -628,7 +628,7 @@ def test_build_checkout_workspaced_junction(cli, tmpdir, datafiles):
     #
     element = {
         'kind': 'stack',
-        'depends': [
+        'runtime-depends': [
             {
                 'junction': 'junction.bst',
                 'filename': 'import-etc.bst'
@@ -710,7 +710,7 @@ def test_build_junction_short_notation(cli, tmpdir, datafiles):
     # colon (:) as the separator
     element = {
         'kind': 'stack',
-        'depends': ['junction.bst:import-etc.bst']
+        'runtime-depends': ['junction.bst:import-etc.bst']
     }
     _yaml.roundtrip_dump(element, element_path)
 
@@ -751,7 +751,7 @@ def test_build_junction_short_notation_filename(cli, tmpdir, datafiles):
     # colon (:) as the separator
     element = {
         'kind': 'stack',
-        'depends': [{'filename': 'junction.bst:import-etc.bst'}]
+        'runtime-depends': [{'filename': 'junction.bst:import-etc.bst'}]
     }
     _yaml.roundtrip_dump(element, element_path)
 
@@ -791,7 +791,7 @@ def test_build_junction_short_notation_with_junction(cli, tmpdir, datafiles):
     # colon (:) as the separator
     element = {
         'kind': 'stack',
-        'depends': [{
+        'runtime-depends': [{
             'filename': 'junction.bst:import-etc.bst',
             'junction': 'junction.bst',
         }]
@@ -818,7 +818,7 @@ def test_build_junction_transitive_short_notation_with_junction(cli, tmpdir, dat
     # colon (:) as the separator
     element = {
         'kind': 'stack',
-        'depends': ['junction.bst:import-etc.bst:foo.bst']
+        'runtime-depends': ['junction.bst:import-etc.bst:foo.bst']
     }
     _yaml.roundtrip_dump(element, element_path)
 

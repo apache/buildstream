@@ -1,4 +1,4 @@
 kind: stack
 
-depends:
+runtime-depends:
 - elem3.bst
