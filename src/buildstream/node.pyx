@@ -295,7 +295,7 @@ cdef class ScalarNode(Node):
 
     cpdef bint as_bool(self) except *:
         """Get the value of the node as a boolean.
-        
+
         .. note:: BuildStream treats the values 'True' and 'true' as True,
                   and the values 'False' and 'false' as False.  Any other
                   string values (such as the valid YAML 'TRUE' or 'FALSE'
@@ -304,7 +304,7 @@ cdef class ScalarNode(Node):
         Raises:
             :class:`buildstream._exceptions.LoadError`: if the value cannot be coerced to
                                                         a bool correctly.
-        
+
         Returns:
             :class:`bool`: the value contained in the node, as a boolean
         """
@@ -325,11 +325,11 @@ cdef class ScalarNode(Node):
 
     cpdef int as_int(self) except *:
         """Get the value of the node as an integer.
-        
+
         Raises:
             :class:`buildstream._exceptions.LoadError`: if the value cannot be coerced to
                                                         an integer correctly.
-        
+
         Returns:
             :class:`int`: the value contained in the node, as a integer
         """
@@ -344,7 +344,7 @@ cdef class ScalarNode(Node):
 
     cpdef str as_str(self):
         """Get the value of the node as a string.
-        
+
         Returns:
             :class:`str`: the value contained in the node, as a string, or `None` if the content
                           is `None`.
@@ -356,7 +356,7 @@ cdef class ScalarNode(Node):
 
     cpdef bint is_none(self):
         """Determine whether the current scalar is `None`.
-        
+
         Returns:
             :class:`bool`: `True` if the value of the scalar is `None`, else `False`
         """
@@ -481,18 +481,18 @@ cdef class MappingNode(Node):
         """get_bool(key, default=sentinel)
 
         Get the value of the node for `key` as a boolean.
-        
+
         This is equivalent to: :code:`mapping.get_scalar(my_key, my_default).as_bool()`.
-                
+
         Args:
             key (str): key for which to get the value
             default (bool): default value to return if `key` is not in the mapping
 
         Raises:
-           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a 
+           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a
                                                        :class:`.ScalarNode` or isn't a
                                                        valid `boolean`
-                                                       
+
         Returns:
             :class:`bool`: the value at `key` or the default
         """
@@ -503,7 +503,7 @@ cdef class MappingNode(Node):
         """get_int(key, default=sentinel)
 
         Get the value of the node for `key` as an integer.
-        
+
         This is equivalent to: :code:`mapping.get_scalar(my_key, my_default).as_int()`.
 
         Args:
@@ -511,7 +511,7 @@ cdef class MappingNode(Node):
             default (int): default value to return if `key` is not in the mapping
 
         Raises:
-           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a 
+           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a
                                                        :class:`.ScalarNode` or isn't a
                                                        valid `integer`
 
@@ -525,16 +525,16 @@ cdef class MappingNode(Node):
         """get_mapping(key, default=sentinel)
 
         Get the value of the node for `key` as a :class:`.MappingNode`.
-        
+
         Args:
             key (str): key for which to get the value
             default (dict): default value to return if `key` is not in the mapping. It will be converted
                             to a :class:`.MappingNode` before being returned
 
         Raises:
-           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a 
+           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a
                                                        :class:`.MappingNode`
-                                                       
+
         Returns:
             :class:`.MappingNode`: the value at `key` or the default
         """
@@ -552,13 +552,13 @@ cdef class MappingNode(Node):
         """get_node(key, allowed_types=None, allow_none=False)
 
         Get the value of the node for `key` as a :class:`.Node`.
-        
+
         This is useful if you have configuration that can be either a :class:`.ScalarNode` or
         a :class:`.MappingNode` for example.
-        
+
         This method will validate that the value is indeed exactly one of those types (not a subclass)
         and raise an exception accordingly.
-        
+
         Args:
             key (str): key for which to get the value
             allowed_types (list): list of valid subtypes of :class:`.Node` that are valid return values.
@@ -569,7 +569,7 @@ cdef class MappingNode(Node):
            :class:`buildstream._exceptions.LoadError`: if the value at `key` is not one
                                                        of the expected types or if it doesn't
                                                        exist.
-                                                       
+
         Returns:
             :class:`.Node`: the value at `key` or `None`
         """
@@ -603,7 +603,7 @@ cdef class MappingNode(Node):
         """get_scalar(key, default=sentinel)
 
         Get the value of the node for `key` as a :class:`.ScalarNode`.
-        
+
         Args:
             key (str): key for which to get the value
             default (str, int, bool, None): default value to return if `key` is not in the mapping.
@@ -611,9 +611,9 @@ cdef class MappingNode(Node):
                                             returned.
 
         Raises:
-           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a 
+           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a
                                                        :class:`.MappingNode`
-                                                       
+
         Returns:
             :class:`.ScalarNode`: the value at `key` or the default
         """
@@ -634,16 +634,16 @@ cdef class MappingNode(Node):
         """get_sequence(key, default=sentinel)
 
         Get the value of the node for `key` as a :class:`.SequenceNode`.
-        
+
         Args:
             key (str): key for which to get the value
             default (list): default value to return if `key` is not in the mapping. It will be converted
                             to a :class:`.SequenceNode` before being returned
 
         Raises:
-           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a 
+           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a
                                                        :class:`.SequenceNode`
-                                                       
+
         Returns:
             :class:`.SequenceNode`: the value at `key` or the default
         """
@@ -661,7 +661,7 @@ cdef class MappingNode(Node):
         """get_str(key, default=sentinel)
 
         Get the value of the node for `key` as an string.
-        
+
         This is equivalent to: :code:`mapping.get_scalar(my_key, my_default).as_str()`.
 
         Args:
@@ -669,7 +669,7 @@ cdef class MappingNode(Node):
             default (str): default value to return if `key` is not in the mapping
 
         Raises:
-           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a 
+           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a
                                                        :class:`.ScalarNode` or isn't a
                                                        valid `str`
 
@@ -683,7 +683,7 @@ cdef class MappingNode(Node):
         """Get a new view of the mapping items ((key, value) pairs).
 
         This is equivalent to running :code:`my_dict.item()` on a `dict`.
-        
+
         Returns:
              :class:`dict_items`: a view on the underlying dictionary
         """
@@ -693,7 +693,7 @@ cdef class MappingNode(Node):
         """Get the list of all keys in the mapping.
 
         This is equivalent to running :code:`my_dict.keys()` on a `dict`.
-        
+
         Returns:
              :class:`list`: a list of all keys in the mapping
         """
@@ -703,10 +703,10 @@ cdef class MappingNode(Node):
         """safe_del(key)
 
         Remove the entry at `key` in the dictionary if it exists.
-        
+
         This method is a safe equivalent to :code:`del mapping[key]`, that doesn't
         throw anything if the key doesn't exist.
-        
+
         Args:
             key (str): key to remove from the mapping
         """
@@ -716,11 +716,11 @@ cdef class MappingNode(Node):
         """validate_keys(valid_keys)
 
         Validate that the node doesn't contain extra keys
-        
+
         This validates the node so as to ensure the user has not specified
         any keys which are unrecognized by BuildStream (usually this
         means a typo which would otherwise not trigger an error).
-        
+
         Args:
            valid_keys (list): A list of valid keys for the specified node
 
@@ -743,7 +743,7 @@ cdef class MappingNode(Node):
         """Get the values in the mapping.
 
         This is equivalent to running :code:`my_dict.values()` on a `dict`.
-        
+
         Returns:
              :class:`dict_values`: a list of all values in the mapping
         """
@@ -1094,17 +1094,17 @@ cdef class SequenceNode(Node):
 
     cpdef void append(self, object value):
         """append(value)
-        
+
         Append the given object to the sequence.
-        
+
         Args:
             value (object): the value to append to the list. This can either be:
-            
+
                                 - a :class:`Node`
                                 - a :class:`int`, :class:`bool`, :class:`str`, :class:`None`,
                                   :class:`dict` or :class:`list`. In which case, this will be
                                   converted into a :class:`Node` beforehand
-                                  
+
         Raises:
             :class:`TypeError`: when the value cannot be converted to a :class:`Node`
         """
@@ -1116,11 +1116,11 @@ cdef class SequenceNode(Node):
 
     cpdef list as_str_list(self):
         """Get the values of the sequence as a list of strings.
-        
+
         Raises:
             :class:`buildstream._exceptions.LoadError`: if the sequence contains more than
                                                         :class:`ScalarNode`
-        
+
         Returns:
             :class:`list`: the content of the sequence as a list of strings
         """
@@ -1130,15 +1130,15 @@ cdef class SequenceNode(Node):
         """mapping_at(index)
 
         Retrieve the entry at `index` as a :class:`.MappingNode`.
-        
+
         Args:
             index (int): index for which to get the value
 
         Raises:
-           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a 
+           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a
                                                        :class:`.MappingNode`
            :class:`IndexError`: if no value exists at this index
-                                                       
+
         Returns:
             :class:`.MappingNode`: the value at `index`
         """
@@ -1156,13 +1156,13 @@ cdef class SequenceNode(Node):
         """node_at(index, allowed_types=None)
 
         Retrieve the entry at `index` as a :class:`.Node`.
-        
+
         This is useful if you have configuration that can be either a :class:`.ScalarNode` or
         a :class:`.MappingNode` for example.
-        
+
         This method will validate that the value is indeed exactly one of those types (not a subclass)
         and raise an exception accordingly.
-        
+
         Args:
             index (int): index for which to get the value
             allowed_types (list): list of valid subtypes of :class:`.Node` that are valid return values.
@@ -1172,7 +1172,7 @@ cdef class SequenceNode(Node):
            :class:`buildstream._exceptions.LoadError`: if the value at `index` is not of one of the
                                                        expected types
            :class:`IndexError`: if no value exists at this index
-           
+
         Returns:
             :class:`.Node`: the value at `index`
         """
@@ -1190,15 +1190,15 @@ cdef class SequenceNode(Node):
         """scalar_at(index)
 
         Retrieve the entry at `index` as a :class:`.ScalarNode`.
-        
+
         Args:
             index (int): index for which to get the value
 
         Raises:
-           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a 
+           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a
                                                        :class:`.ScalarNode`
            :class:`IndexError`: if no value exists at this index
-                                                       
+
         Returns:
             :class:`.ScalarNode`: the value at `index`
         """
@@ -1216,15 +1216,15 @@ cdef class SequenceNode(Node):
         """sequence_at(index)
 
         Retrieve the entry at `index` as a :class:`.SequenceNode`.
-        
+
         Args:
             index (int): index for which to get the value
 
         Raises:
-           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a 
+           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a
                                                        :class:`.SequenceNode`
            :class:`IndexError`: if no value exists at this index
-                                                       
+
         Returns:
             :class:`.SequenceNode`: the value at `index`
         """
