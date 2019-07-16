@@ -98,6 +98,8 @@ class Platform():
             backend = 'darwin'
         elif sys.platform.startswith('linux'):
             backend = 'linux'
+        elif sys.platform == 'win32':
+            backend = 'win32'
         else:
             backend = 'fallback'
 
@@ -105,6 +107,8 @@ class Platform():
             from .linux import Linux as PlatformImpl  # pylint: disable=cyclic-import
         elif backend == 'darwin':
             from .darwin import Darwin as PlatformImpl  # pylint: disable=cyclic-import
+        elif backend == 'win32':
+            from .win32 import Win32 as PlatformImpl  # pylint: disable=cyclic-import
         elif backend == 'fallback':
             from .fallback import Fallback as PlatformImpl  # pylint: disable=cyclic-import
         else:
