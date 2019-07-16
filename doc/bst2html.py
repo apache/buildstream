@@ -368,7 +368,7 @@ def run_session(description, tempdir, source_cache, palette, config_file, force)
             # not a source distribution, no need to complain
             pass
 
-    remove_files = desc.get_sequence('remove-files', default=[]).as_str_list()
+    remove_files = desc.get_str_list('remove-files', default=[])
     for remove_file in remove_files:
         remove_file = os.path.join(desc_dir, remove_file)
         remove_file = os.path.realpath(remove_file)

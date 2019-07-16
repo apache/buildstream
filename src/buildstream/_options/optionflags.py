@@ -93,4 +93,4 @@ class OptionFlags(Option):
     def load_valid_values(self, node):
         # Allow the more descriptive error to raise when no values
         # exist rather than bailing out here (by specifying default_value)
-        return node.get_sequence('values', default=[]).as_str_list()
+        return node.get_str_list('values', default=[])

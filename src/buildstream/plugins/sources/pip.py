@@ -114,8 +114,8 @@ class PipSource(Source):
         self.ref = node.get_str('ref', None)
         self.original_url = node.get_str('url', _PYPI_INDEX_URL)
         self.index_url = self.translate_url(self.original_url)
-        self.packages = node.get_sequence('packages', []).as_str_list()
-        self.requirements_files = node.get_sequence('requirements-files', []).as_str_list()
+        self.packages = node.get_str_list('packages', [])
+        self.requirements_files = node.get_str_list('requirements-files', [])
 
         if not (self.packages or self.requirements_files):
             raise SourceError("{}: Either 'packages' or 'requirements-files' must be specified". format(self))

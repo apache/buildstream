@@ -197,7 +197,7 @@ def test_include_element_overrides_composition(cli, datafiles):
         'element.bst'])
     result.assert_success()
     loaded = _yaml.load_data(result.output)
-    assert loaded.get_sequence('build-commands').as_str_list() == ['first', 'second']
+    assert loaded.get_str_list('build-commands') == ['first', 'second']
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -215,7 +215,7 @@ def test_list_overide_does_not_fail_upon_first_composition(cli, datafiles):
     # Assert that the explicitly overwritten public data is present
     bst = loaded.get_mapping('bst')
     assert 'foo-commands' in bst
-    assert bst.get_sequence('foo-commands').as_str_list() == ['need', 'this']
+    assert bst.get_str_list('foo-commands') == ['need', 'this']
 
 
 @pytest.mark.datafiles(DATA_DIR)

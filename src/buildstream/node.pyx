@@ -679,6 +679,28 @@ cdef class MappingNode(Node):
         cdef ScalarNode scalar = self.get_scalar(key, default)
         return scalar.as_str()
 
+    cpdef list get_str_list(self, str key, object default=_sentinel):
+        """get_str_list(key, default=sentinel)
+
+        Get the value of the node for `key` as a list of strings.
+
+        This is equivalent to: :code:`mapping.get_sequence(my_key, my_default).as_str_list()`.
+
+        Args:
+            key (str): key for which to get the value
+            default (str): default value to return if `key` is not in the mapping
+
+        Raises:
+           :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a
+                                                       :class:`.SequenceNode` or if any
+                                                       of its internal values is not a ScalarNode.
+
+        Returns:
+            :class:`list`: the value at `key` or the default
+        """
+        cdef SequenceNode sequence = self.get_sequence(key, default)
+        return sequence.as_str_list()
+
     cpdef object items(self):
         """Get a new view of the mapping items ((key, value) pairs).
 

@@ -591,10 +591,10 @@ class Project():
 
         defaults = pre_config_node.get_mapping('defaults')
         defaults.validate_keys(['targets'])
-        self._default_targets = defaults.get_sequence("targets").as_str_list()
+        self._default_targets = defaults.get_str_list("targets")
 
         # Fatal warnings
-        self._fatal_warnings = pre_config_node.get_sequence('fatal-warnings', default=[]).as_str_list()
+        self._fatal_warnings = pre_config_node.get_str_list('fatal-warnings', default=[])
 
         self.loader = Loader(self._context, self,
                              parent=parent_loader, fetch_subprojects=fetch_subprojects)
@@ -668,7 +668,7 @@ class Project():
 
         # Load sandbox environment variables
         self.base_environment = config.get_mapping('environment')
-        self.base_env_nocache = config.get_sequence('environment-nocache').as_str_list()
+        self.base_env_nocache = config.get_str_list('environment-nocache')
 
         # Load sandbox configuration
         self._sandbox = config.get_mapping('sandbox')
@@ -700,7 +700,7 @@ class Project():
         # Parse shell options
         shell_options = config.get_mapping('shell')
         shell_options.validate_keys(['command', 'environment', 'host-files'])
-        self._shell_command = shell_options.get_sequence('command').as_str_list()
+        self._shell_command = shell_options.get_str_list('command')
 
         # Perform environment expansion right away
         shell_environment = shell_options.get_mapping('environment', default={})
