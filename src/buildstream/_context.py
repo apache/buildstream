@@ -20,7 +20,6 @@
 import os
 import shutil
 from . import utils
-from . import _cachekey
 from . import _site
 from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason
@@ -154,7 +153,6 @@ class Context():
         self.messenger = Messenger()
 
         # Private variables
-        self._cache_key = None
         self._artifactcache = None
         self._sourcecache = None
         self._projects = []
@@ -454,21 +452,6 @@ class Context():
         # Ditto if we've already computed this, then we return the computed
         # value which we cache here too.
         return self._strict_build_plan
-
-    # get_cache_key():
-    #
-    # Returns the cache key, calculating it if necessary
-    #
-    # Returns:
-    #    (str): A hex digest cache key for the Context
-    #
-    def get_cache_key(self):
-        if self._cache_key is None:
-
-            # Anything that alters the build goes into the unique key
-            self._cache_key = _cachekey.generate_key({})
-
-        return self._cache_key
 
     # set_artifact_directories_optional()
     #
