@@ -570,8 +570,9 @@ class App():
         if not self.stream.terminated:
             if element_job:
                 # look-up queue
+                # Issue with pickling a queue object, so for now only pass action names
                 for q in self.stream.queues:
-                    if q.action_name == action_name:
+                    if q == action_name:
                         queue = q
                 assert queue, "Job action {} does not have a corresponding queue".format(action_name)
 

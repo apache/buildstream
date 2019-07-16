@@ -38,7 +38,7 @@ from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError, set_last_task_error
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, \
-    SourcePushQueue, BuildQueue, PullQueue, ArtifactPushQueue, NotificationType, JobStatus
+    SourcePushQueue, BuildQueue, PullQueue, ArtifactPushQueue, NotificationType, JobStatus, Notification
 from ._pipeline import Pipeline, PipelineSelection
 from ._profile import Topics, PROFILER
 from ._state import State
@@ -114,7 +114,6 @@ class Stream():
         try:
             func(*args, **kwargs)
         except Exception as e:
-            from ._scheduler.scheduler import Notification, NotificationType
             queue.put(Notification(NotificationType.EXCEPTION, exception=e))
 
     def run_in_subprocess(self, func, *args, **kwargs):
@@ -367,6 +366,7 @@ class Stream():
         if track_elements:
             self._enqueue_plan(track_elements, queue=track_queue)
         self._enqueue_plan(elements)
+
         self._run()
 
     # fetch()
@@ -1646,15 +1646,14 @@ class Stream():
         elif notification.notification_type == NotificationType.JOB_COMPLETE:
             self._state.remove_task(notification.job_action, notification.full_name)
             if notification.job_status == JobStatus.FAIL:
-                if notification.failed_element:
-                    unique_id = notification.full_name
-                else:
-                    unique_id = None
-                self._state.fail_task(notification.job_action, notification.full_name, unique_id)
+                self._state.fail_task(notification.job_action, notification.full_name,
+                                      notification.failed_element, notification.element)
         elif notification.notification_type == NotificationType.EXCEPTION:
             raise notification.exception
         elif notification.notification_type == NotificationType.TASK_ERROR:
             set_last_task_error(notification.domain, notification.reason)
+        elif notification.notification_type == NotificationType.QUEUES:
+            self.queues = notification.queues
         else:
             raise StreamError("Unreccognised notification type recieved")
 
