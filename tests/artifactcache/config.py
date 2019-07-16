@@ -7,13 +7,14 @@ import os
 import pytest
 
 from buildstream._artifactcache import ArtifactCacheSpec, ArtifactCache
-from buildstream._context import Context
 from buildstream._project import Project
 from buildstream.utils import _deduplicate
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+
+from tests.testutils import dummy_context
 
 
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -107,17 +108,16 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
     project_config_file = str(project_dir.join('project.conf'))
     _yaml.roundtrip_dump(project_config, file=project_config_file)
 
-    context = Context()
-    context.load(config=user_config_file)
-    project = Project(str(project_dir), context)
-    project.ensure_fully_loaded()
+    with dummy_context(config=user_config_file) as context:
+        project = Project(str(project_dir), context)
+        project.ensure_fully_loaded()
 
-    # Use the helper from the artifactcache module to parse our configuration.
-    parsed_cache_specs = ArtifactCache._configured_remote_cache_specs(context, project)
+        # Use the helper from the artifactcache module to parse our configuration.
+        parsed_cache_specs = ArtifactCache._configured_remote_cache_specs(context, project)
 
-    # Verify that it was correctly read.
-    expected_cache_specs = list(_deduplicate(itertools.chain(override_caches, project_caches, user_caches)))
-    assert parsed_cache_specs == expected_cache_specs
+        # Verify that it was correctly read.
+        expected_cache_specs = list(_deduplicate(itertools.chain(override_caches, project_caches, user_caches)))
+        assert parsed_cache_specs == expected_cache_specs
 
 
 # Assert that if either the client key or client cert is specified

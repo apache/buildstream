@@ -21,10 +21,11 @@ def context_fixture():
     else:
         cache_home = os.path.expanduser('~/.cache')
 
-    return {
-        'xdg-cache': cache_home,
-        'context': Context()
-    }
+    with Context() as context:
+        yield {
+            'xdg-cache': cache_home,
+            'context': context
+        }
 
 
 #######################################

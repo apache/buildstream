@@ -25,18 +25,15 @@ import os
 import shutil
 import pytest
 
-from buildstream._context import Context
 from buildstream._project import Project
 
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+
+from tests.testutils import dummy_context
 from tests.testutils.element_generators import create_element_size
 
 
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
-
-
-def dummy_message_handler(message, is_silenced):
-    pass
 
 
 # walk that removes the root directory from roots
@@ -55,36 +52,32 @@ def test_source_staged(tmpdir, cli, datafiles):
         'cachedir': cachedir
     })
 
-    # set up minimal context
-    context = Context()
-    context.load()
-
-    # load project and sourcecache
-    project = Project(project_dir, context)
-    project.ensure_fully_loaded()
-    context.cachedir = cachedir
-    context.messenger.set_message_handler(dummy_message_handler)
-    sourcecache = context.sourcecache
-    cas = context.get_cascache()
-
     res = cli.run(project=project_dir, args=["build", "import-bin.bst"])
     res.assert_success()
 
-    # now check that the source is in the refs file, this is pretty messy but
-    # seems to be the only way to get the sources?
-    element = project.load_elements(["import-bin.bst"])[0]
-    source = list(element.sources())[0]
-    assert element._source_cached()
-    assert sourcecache.contains(source)
+    with dummy_context() as context:
+        context.cachedir = cachedir
+        # load project and sourcecache
+        project = Project(project_dir, context)
+        project.ensure_fully_loaded()
+        sourcecache = context.sourcecache
+        cas = context.get_cascache()
 
-    # Extract the file and check it's the same as the one we imported
-    digest = sourcecache.export(source)._get_digest()
-    extractdir = os.path.join(str(tmpdir), "extract")
-    cas.checkout(extractdir, digest)
-    dir1 = extractdir
-    dir2 = os.path.join(project_dir, "files", "bin-files")
+        # now check that the source is in the refs file, this is pretty messy but
+        # seems to be the only way to get the sources?
+        element = project.load_elements(["import-bin.bst"])[0]
+        source = list(element.sources())[0]
+        assert element._source_cached()
+        assert sourcecache.contains(source)
 
-    assert list(relative_walk(dir1)) == list(relative_walk(dir2))
+        # Extract the file and check it's the same as the one we imported
+        digest = sourcecache.export(source)._get_digest()
+        extractdir = os.path.join(str(tmpdir), "extract")
+        cas.checkout(extractdir, digest)
+        dir1 = extractdir
+        dir2 = os.path.join(project_dir, "files", "bin-files")
+
+        assert list(relative_walk(dir1)) == list(relative_walk(dir2))
 
 
 # Check sources are staged during a fetch
@@ -97,33 +90,29 @@ def test_source_fetch(tmpdir, cli, datafiles):
         'cachedir': cachedir
     })
 
-    # set up minimal context
-    context = Context()
-    context.load()
-
-    # load project and sourcecache
-    project = Project(project_dir, context)
-    project.ensure_fully_loaded()
-    context.cachedir = cachedir
-    context.messenger.set_message_handler(dummy_message_handler)
-    cas = context.get_cascache()
-    sourcecache = context.sourcecache
-
     res = cli.run(project=project_dir, args=["source", "fetch", "import-dev.bst"])
     res.assert_success()
 
-    element = project.load_elements(["import-dev.bst"])[0]
-    source = list(element.sources())[0]
-    assert element._source_cached()
+    with dummy_context() as context:
+        context.cachedir = cachedir
+        # load project and sourcecache
+        project = Project(project_dir, context)
+        project.ensure_fully_loaded()
+        cas = context.get_cascache()
+        sourcecache = context.sourcecache
 
-    # check that the directory structures are idetical
-    digest = sourcecache.export(source)._get_digest()
-    extractdir = os.path.join(str(tmpdir), "extract")
-    cas.checkout(extractdir, digest)
-    dir1 = extractdir
-    dir2 = os.path.join(project_dir, "files", "dev-files")
+        element = project.load_elements(["import-dev.bst"])[0]
+        source = list(element.sources())[0]
+        assert element._source_cached()
 
-    assert list(relative_walk(dir1)) == list(relative_walk(dir2))
+        # check that the directory structures are identical
+        digest = sourcecache.export(source)._get_digest()
+        extractdir = os.path.join(str(tmpdir), "extract")
+        cas.checkout(extractdir, digest)
+        dir1 = extractdir
+        dir2 = os.path.join(project_dir, "files", "dev-files")
+
+        assert list(relative_walk(dir1)) == list(relative_walk(dir2))
 
 
 # Check that with sources only in the CAS build successfully completes
@@ -141,18 +130,15 @@ def test_staged_source_build(tmpdir, datafiles, cli):
 
     create_element_size('target.bst', project_dir, element_path, [], 10000)
 
-    # get the source object
-    context = Context()
-    context.load()
-    project = Project(project_dir, context)
-    project.ensure_fully_loaded()
-    context.cachedir = cachedir
-    context.messenger.set_message_handler(dummy_message_handler)
+    with dummy_context() as context:
+        context.cachedir = cachedir
+        project = Project(project_dir, context)
+        project.ensure_fully_loaded()
 
-    element = project.load_elements(["import-dev.bst"])[0]
+        element = project.load_elements(["import-dev.bst"])[0]
 
-    # check consistency of the source
-    assert not element._source_cached()
+        # check consistency of the source
+        assert not element._source_cached()
 
     res = cli.run(project=project_dir, args=['build', 'target.bst'])
     res.assert_success()
