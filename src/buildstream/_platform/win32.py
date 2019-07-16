@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
-from ..sandbox import SandboxDummy
+from ..sandbox import SandboxNone
 
 from .platform import Platform
 
@@ -48,7 +48,7 @@ class Win32(Platform):
     @staticmethod
     def _create_dummy_sandbox(*args, **kwargs):
         kwargs['dummy_reason'] = "There are no supported sandbox technologies for Win32 at this time."
-        return SandboxDummy(*args, **kwargs)
+        return SandboxNone(*args, **kwargs)
 
     def _setup_dummy_sandbox(self):
         self.check_sandbox_config = Win32._check_dummy_sandbox_config
