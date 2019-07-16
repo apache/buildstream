@@ -25,7 +25,7 @@ Foundation types
 
 """
 
-from enum import Enum
+from enum import Enum, IntEnum
 
 
 class Scope(Enum):
@@ -56,7 +56,7 @@ class Scope(Enum):
     """
 
 
-class Consistency():
+class Consistency(IntEnum):
     """Defines the various consistency states of a :class:`.Source`.
     """
 
@@ -81,7 +81,7 @@ class Consistency():
     """
 
 
-class CoreWarnings():
+class CoreWarnings(Enum):
     """CoreWarnings()
 
     Some common warnings which are raised by core functionalities within BuildStream are found in this class.
