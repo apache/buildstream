@@ -1,6 +1,6 @@
 kind: stack
 description: Base stack
 
-depends:
+runtime-depends:
 - base/sdk.bst
 - base/usrmerge.bst
