@@ -210,7 +210,7 @@ def test_pull_fail(cli, tmpdir, datafiles):
             # remove files and check that it doesn't build
             shutil.rmtree(repo.repo)
 
-            # Should fail in stream, with a plugin tasks causing the error
+            # Should fail in stream, with a plugin task causing the error
             res = cli.run(project=project_dir, args=['build', 'push.bst'])
             res.assert_main_error(ErrorDomain.STREAM, None)
             res.assert_task_error(ErrorDomain.PLUGIN, None)

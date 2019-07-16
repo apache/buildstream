@@ -91,7 +91,7 @@ def test_source_push(cli, tmpdir, datafiles):
             sourcecache = context.sourcecache
             assert sourcecache.contains(source)
 
-            # check that's the remote CAS now has it
+            # check that the remote CAS now has it
             digest = sourcecache.export(source)._get_digest()
             assert share.has_object(digest)
 

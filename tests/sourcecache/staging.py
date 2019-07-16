@@ -105,7 +105,7 @@ def test_source_fetch(tmpdir, cli, datafiles):
         source = list(element.sources())[0]
         assert element._source_cached()
 
-        # check that the directory structures are idetical
+        # check that the directory structures are identical
         digest = sourcecache.export(source)._get_digest()
         extractdir = os.path.join(str(tmpdir), "extract")
         cas.checkout(extractdir, digest)
