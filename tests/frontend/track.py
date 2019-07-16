@@ -260,7 +260,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
     #
     element = {
         'kind': 'stack',
-        'depends': [
+        'runtime-depends': [
             {
                 'junction': 'junction.bst',
                 'filename': 'import-etc.bst'
@@ -276,7 +276,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage):
 
     # Assert that we have the expected provenance encoded into the error
     element_node = _yaml.load(element_path, shortname='junction-dep.bst')
-    ref_node = element_node.get_sequence('depends').mapping_at(0)
+    ref_node = element_node.get_sequence('runtime-depends').mapping_at(0)
     provenance = ref_node.get_provenance()
     assert str(provenance) in result.stderr
 
@@ -300,7 +300,7 @@ def test_junction_element(cli, tmpdir, datafiles, ref_storage):
     #
     element = {
         'kind': 'stack',
-        'depends': [
+        'runtime-depends': [
             {
                 'junction': 'junction.bst',
                 'filename': 'import-etc.bst'
@@ -315,7 +315,7 @@ def test_junction_element(cli, tmpdir, datafiles, ref_storage):
 
     # Assert that we have the expected provenance encoded into the error
     element_node = _yaml.load(element_path, shortname='junction-dep.bst')
-    ref_node = element_node.get_sequence('depends').mapping_at(0)
+    ref_node = element_node.get_sequence('runtime-depends').mapping_at(0)
     provenance = ref_node.get_provenance()
     assert str(provenance) in result.stderr
 
