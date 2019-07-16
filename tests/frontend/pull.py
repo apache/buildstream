@@ -216,6 +216,7 @@ def test_push_pull_specific_remote(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_pull_non_strict(cli, tmpdir, datafiles):
     project = str(datafiles)
+    target = "target-push-pull-no-strict.bst"
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
         # First build the target element and push to the remote.
@@ -225,12 +226,12 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
                 'test': {'strict': False}
             }
         })
-        result = cli.run(project=project, args=['build', 'target.bst'])
+        result = cli.run(project=project, args=['build', target])
         result.assert_success()
-        assert cli.get_element_state(project, 'target.bst') == 'cached'
+        assert cli.get_element_state(project, target) == 'cached'
 
         # Assert that everything is now cached in the remote.
-        all_elements = ['target.bst', 'import-bin.bst', 'import-dev.bst', 'compose-all.bst']
+        all_elements = [target, 'import-bin.bst', 'import-dev.bst', 'compose-all.bst']
         for element_name in all_elements:
             assert_shared(cli, share, project, element_name)
 
@@ -253,14 +254,14 @@ def test_push_pull_non_strict(cli, tmpdir, datafiles):
         # Assert that the workspaced element requires a rebuild
         assert cli.get_element_state(project, 'import-bin.bst') == 'buildable'
         # Assert that the target is still waiting due to --no-strict
-        assert cli.get_element_state(project, 'target.bst') == 'waiting'
+        assert cli.get_element_state(project, target) == 'waiting'
 
         # Now try bst artifact pull
-        result = cli.run(project=project, args=['artifact', 'pull', '--deps', 'all', 'target.bst'])
+        result = cli.run(project=project, args=['artifact', 'pull', '--deps', 'all', target])
         result.assert_success()
 
         # And assert that the target is again in the local cache, without having built
-        assert cli.get_element_state(project, 'target.bst') == 'cached'
+        assert cli.get_element_state(project, target) == 'cached'
 
 
 # Regression test for https://gitlab.com/BuildStream/buildstream/issues/202
