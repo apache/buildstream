@@ -241,6 +241,8 @@ def print_version(ctx, param, value):
               help="Maximum simultaneous build tasks")
 @click.option('--pushers', type=click.INT, default=None,
               help="Maximum simultaneous upload tasks")
+@click.option('--max-jobs', type=click.INT, default=None,
+              help="Number of parallel jobs allowed for a given build task")
 @click.option('--network-retries', type=click.INT, default=None,
               help="Maximum retries for network tasks")
 @click.option('--no-interactive', is_flag=True, default=False,

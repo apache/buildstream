@@ -191,6 +191,7 @@ class App():
             'fetchers': 'sched_fetchers',
             'builders': 'sched_builders',
             'pushers': 'sched_pushers',
+            'max_jobs': 'build_max_jobs',
             'network_retries': 'sched_network_retries',
             'pull_buildtrees': 'pull_buildtrees',
             'cache_buildtrees': 'cache_buildtrees'
