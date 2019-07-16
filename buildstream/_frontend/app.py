@@ -192,6 +192,7 @@ class App():
             'fetchers': 'sched_fetchers',
             'builders': 'sched_builders',
             'pushers': 'sched_pushers',
+            'max_jobs': 'build_max_jobs',
             'network_retries': 'sched_network_retries'
         }
         for cli_option, context_attr in override_map.items():

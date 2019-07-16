@@ -32,6 +32,7 @@ MAIN_OPTIONS = [
     "--error-lines ",
     "--fetchers ",
     "--log-file ",
+    "--max-jobs ",
     "--message-lines ",
     "--network-retries ",
     "--no-colors ",
