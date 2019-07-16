@@ -245,7 +245,7 @@ def test_unfetched_junction(cli, tmpdir, datafiles, ref_storage, element_name, w
     #
     element = {
         'kind': 'stack',
-        'depends': [
+        'runtime-depends': [
             {
                 'junction': 'junction.bst',
                 'filename': 'import-etc.bst'
@@ -303,7 +303,7 @@ def test_inconsistent_junction(cli, tmpdir, datafiles, ref_storage, workspaced):
     #
     element = {
         'kind': 'stack',
-        'depends': [
+        'runtime-depends': [
             {
                 'junction': 'junction.bst',
                 'filename': 'import-etc.bst'
@@ -359,7 +359,7 @@ def test_fetched_junction(cli, tmpdir, datafiles, element_name, workspaced):
     #
     element = {
         'kind': 'stack',
-        'depends': [
+        'runtime-depends': [
             {
                 'junction': 'junction.bst',
                 'filename': 'import-etc.bst'
