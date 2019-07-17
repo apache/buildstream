@@ -109,7 +109,7 @@ class App():
             self._interactive_failures = self.interactive
 
         # Use color output if we're attached to a tty, unless
-        # otherwise specified on the comand line
+        # otherwise specified on the command line
         if main_options['colors'] is None:
             self.colors = is_a_tty
         elif main_options['colors']:
