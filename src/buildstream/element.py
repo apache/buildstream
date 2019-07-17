@@ -816,7 +816,7 @@ class Element(Plugin):
 
         if bstdata is not None:
             with sandbox.batch(SandboxFlags.NONE):
-                commands = bstdata.get_sequence('integration-commands', []).as_str_list()
+                commands = bstdata.get_str_list('integration-commands', [])
                 for command in commands:
                     cmd = self.substitute_variables(command)
 
@@ -2624,7 +2624,7 @@ class Element(Plugin):
         else:
             project_nocache = project.base_env_nocache
 
-        default_nocache = cls.__defaults.get_sequence('environment-nocache', default=[]).as_str_list()
+        default_nocache = cls.__defaults.get_str_list('environment-nocache', default=[])
         element_nocache = meta.env_nocache
 
         # Accumulate values from the element default, the project and the element
@@ -2866,7 +2866,7 @@ class Element(Plugin):
         # If this ever changes, things will go wrong unexpectedly.
         if not self.__whitelist_regex:
             bstdata = self.get_public_data('bst')
-            whitelist = bstdata.get_sequence('overlap-whitelist', default=[]).as_str_list()
+            whitelist = bstdata.get_str_list('overlap-whitelist', default=[])
             whitelist_expressions = [utils._glob2re(self.__variables.subst(exp.strip())) for exp in whitelist]
             expression = ('^(?:' + '|'.join(whitelist_expressions) + ')$')
             self.__whitelist_regex = re.compile(expression)

@@ -146,7 +146,7 @@ def test_node_set_overwrite(datafiles):
     assert base.get_str('kind') == 'cow'
 
     # Overwrite a list as a string
-    assert base.get_sequence('moods').as_str_list() == ['happy', 'sad']
+    assert base.get_str_list('moods') == ['happy', 'sad']
     base['moods'] = 'unemotional'
     assert base.get_str('moods') == 'unemotional'
 
@@ -160,10 +160,10 @@ def test_node_set_list_element(datafiles):
 
     base = _yaml.load(filename)
 
-    assert base.get_sequence('moods').as_str_list() == ['happy', 'sad']
+    assert base.get_str_list('moods') == ['happy', 'sad']
     base.get_sequence('moods')[0] = 'confused'
 
-    assert base.get_sequence('moods').as_str_list() == ['confused', 'sad']
+    assert base.get_str_list('moods') == ['confused', 'sad']
 
 
 # Really this is testing _yaml.node_copy(), we want to

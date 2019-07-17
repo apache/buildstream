@@ -487,7 +487,7 @@ class Loader():
                                    node.get_mapping(Symbol.CONFIG, default={}),
                                    node.get_mapping(Symbol.VARIABLES, default={}),
                                    node.get_mapping(Symbol.ENVIRONMENT, default={}),
-                                   node.get_sequence(Symbol.ENV_NOCACHE, default=[]).as_str_list(),
+                                   node.get_str_list(Symbol.ENV_NOCACHE, default=[]),
                                    node.get_mapping(Symbol.PUBLIC, default={}),
                                    node.get_mapping(Symbol.SANDBOX, default={}),
                                    element_kind == 'junction')

@@ -137,7 +137,7 @@ class PluginContext():
             loaded_dependency = False
 
             for origin in self._plugin_origins:
-                if kind not in origin.get_sequence('plugins').as_str_list():
+                if kind not in origin.get_str_list('plugins'):
                     continue
 
                 if origin.get_str('origin') == 'local':

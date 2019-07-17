@@ -45,7 +45,7 @@ class OptionEnum(Option):
 
         node.validate_keys(valid_symbols)
 
-        self.values = node.get_sequence('values', default=[]).as_str_list()
+        self.values = node.get_str_list('values', default=[])
         if not self.values:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: No values specified for {} option '{}'"

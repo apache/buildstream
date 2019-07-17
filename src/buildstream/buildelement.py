@@ -281,7 +281,7 @@ class BuildElement(Element):
     #                   Private Local Methods                   #
     #############################################################
     def __get_commands(self, node, name):
-        raw_commands = node.get_sequence(name, []).as_str_list()
+        raw_commands = node.get_str_list(name, [])
         return [
             self.substitute_variables(command)
             for command in raw_commands

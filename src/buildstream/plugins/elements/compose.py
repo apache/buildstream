@@ -66,8 +66,8 @@ class ComposeElement(Element):
         # We name this variable 'integration' only to avoid
         # collision with the Element.integrate() method.
         self.integration = node.get_bool('integrate')
-        self.include = node.get_sequence('include').as_str_list()
-        self.exclude = node.get_sequence('exclude').as_str_list()
+        self.include = node.get_str_list('include')
+        self.exclude = node.get_str_list('exclude')
         self.include_orphans = node.get_bool('include-orphans')
 
     def preflight(self):
