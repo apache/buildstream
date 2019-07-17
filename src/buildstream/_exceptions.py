@@ -231,14 +231,14 @@ class LoadErrorReason(Enum):
 # Raised while loading some YAML.
 #
 # Args:
-#    reason (LoadErrorReason): machine readable error reason
 #    message (str): human readable error explanation
+#    reason (LoadErrorReason): machine readable error reason
 #
 # This exception is raised when loading or parsing YAML, or when
 # interpreting project YAML
 #
 class LoadError(BstError):
-    def __init__(self, reason, message, *, detail=None):
+    def __init__(self, message, reason, *, detail=None):
         super().__init__(message, detail=detail, domain=ErrorDomain.LOAD, reason=reason)
 
 

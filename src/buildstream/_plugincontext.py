@@ -234,6 +234,6 @@ class PluginContext():
     #
     def _assert_plugin_format(self, plugin, version):
         if plugin.BST_FORMAT_VERSION < version:
-            raise LoadError(LoadErrorReason.UNSUPPORTED_PLUGIN,
-                            "{}: Format version {} is too old for requested version {}"
-                            .format(plugin, plugin.BST_FORMAT_VERSION, version))
+            raise LoadError("{}: Format version {} is too old for requested version {}"
+                            .format(plugin, plugin.BST_FORMAT_VERSION, version),
+                            LoadErrorReason.UNSUPPORTED_PLUGIN)

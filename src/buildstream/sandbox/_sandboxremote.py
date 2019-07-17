@@ -116,10 +116,10 @@ class SandboxRemote(Sandbox):
             val = config.get_mapping(keyname, default=None)
             if val is None:
                 provenance = remote_config.get_provenance()
-                raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
-                                      "{}: '{}' was not present in the remote "
+                raise _yaml.LoadError("{}: '{}' was not present in the remote "
                                       "execution configuration (remote-execution). "
-                                      .format(str(provenance), keyname))
+                                      .format(str(provenance), keyname),
+                                      _yaml.LoadErrorReason.INVALID_DATA)
             return val
 
         remote_config = config_node.get_mapping('remote-execution', default=None)
@@ -148,11 +148,10 @@ class SandboxRemote(Sandbox):
                 exec_config = Node.from_dict({'url': remote_config['url']})
             else:
                 provenance = remote_config.get_node('url').get_provenance()
-                raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
-                                      "{}: 'url' and 'execution-service' keys were found in the remote "
+                raise _yaml.LoadError("{}: 'url' and 'execution-service' keys were found in the remote "
                                       "execution configuration (remote-execution). "
                                       "You can only specify one of these."
-                                      .format(str(provenance)))
+                                      .format(str(provenance)), _yaml.LoadErrorReason.INVALID_DATA)
 
         service_configs = [exec_config, storage_config, action_config]
 
@@ -166,11 +165,10 @@ class SandboxRemote(Sandbox):
             # Either both or none of the TLS client key/cert pair must be specified:
             if ('client-key' in config) != ('client-cert' in config):
                 provenance = remote_config.get_node(config_key).get_provenance()
-                raise _yaml.LoadError(_yaml.LoadErrorReason.INVALID_DATA,
-                                      "{}: TLS client key/cert pair is incomplete. "
+                raise _yaml.LoadError("{}: TLS client key/cert pair is incomplete. "
                                       "You must specify both 'client-key' and 'client-cert' "
                                       "for authenticated HTTPS connections."
-                                      .format(str(provenance)))
+                                      .format(str(provenance)), _yaml.LoadErrorReason.INVALID_DATA)
 
             for tls_key in tls_keys:
                 if tls_key in config:

@@ -57,19 +57,18 @@ class Includes:
                     if e.reason == LoadErrorReason.MISSING_FILE:
                         message = "{}: Include block references a file that could not be found: '{}'.".format(
                             include_provenance, include)
-                        raise LoadError(LoadErrorReason.MISSING_FILE, message) from e
+                        raise LoadError(message, LoadErrorReason.MISSING_FILE) from e
                     elif e.reason == LoadErrorReason.LOADING_DIRECTORY:
                         message = "{}: Include block references a directory instead of a file: '{}'.".format(
                             include_provenance, include)
-                        raise LoadError(LoadErrorReason.LOADING_DIRECTORY, message) from e
+                        raise LoadError(message, LoadErrorReason.LOADING_DIRECTORY) from e
                     else:
                         raise
 
                 if file_path in included:
                     include_provenance = includes_node.get_provenance()
-                    raise LoadError(LoadErrorReason.RECURSIVE_INCLUDE,
-                                    "{}: trying to recursively include {}". format(include_provenance,
-                                                                                   file_path))
+                    raise LoadError("{}: trying to recursively include {}". format(include_provenance, file_path),
+                                    LoadErrorReason.RECURSIVE_INCLUDE)
                 # Because the included node will be modified, we need
                 # to copy it so that we do not modify the toplevel
                 # node of the provenance.

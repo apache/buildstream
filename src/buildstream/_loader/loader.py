@@ -98,10 +98,9 @@ class Loader():
             if os.path.isabs(filename):
                 # XXX Should this just be an assertion ?
                 # Expect that the caller gives us the right thing at least ?
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "Target '{}' was not specified as a relative "
+                raise LoadError("Target '{}' was not specified as a relative "
                                 "path to the base project directory: {}"
-                                .format(filename, self._basedir))
+                                .format(filename, self._basedir), LoadErrorReason.INVALID_DATA)
 
         self._warn_invalid_elements(targets)
 
@@ -211,8 +210,7 @@ class Loader():
                 if filename.startswith(elements_dir) and os.path.exists(os.path.join(self._basedir, element_relpath)):
                     detail = "Did you mean '{}'?".format(element_relpath)
 
-                raise LoadError(LoadErrorReason.MISSING_FILE,
-                                message, detail=detail) from e
+                raise LoadError(message, LoadErrorReason.MISSING_FILE, detail=detail) from e
 
             elif e.reason == LoadErrorReason.LOADING_DIRECTORY:
                 # If a <directory>.bst file exists in the element path,
@@ -224,8 +222,7 @@ class Loader():
                 if os.path.exists(os.path.join(self._basedir, filename + '.bst')):
                     element_name = filename + '.bst'
                     detail = "Did you mean '{}'?\n".format(element_name)
-                raise LoadError(LoadErrorReason.LOADING_DIRECTORY,
-                                message, detail=detail) from e
+                raise LoadError(message, LoadErrorReason.LOADING_DIRECTORY, detail=detail) from e
             else:
                 raise
         kind = node.get_str(Symbol.KIND)
@@ -308,9 +305,8 @@ class Loader():
                         loader_queue.append((dep_element, list(reversed(dep_deps)), []))
 
                         if dep_element.node.get_str(Symbol.KIND) == 'junction':
-                            raise LoadError(LoadErrorReason.INVALID_DATA,
-                                            "{}: Cannot depend on junction"
-                                            .format(dep.provenance))
+                            raise LoadError("{}: Cannot depend on junction" .format(dep.provenance),
+                                            LoadErrorReason.INVALID_DATA)
 
                 # All is well, push the dependency onto the LoadElement
                 current_element[0].dependencies.append(
@@ -356,10 +352,10 @@ class Loader():
                     # element from the sequence under consideration.
                     chain = [element.full_name for element in sequence[sequence.index(element):]]
                     chain.append(element.full_name)
-                    raise LoadError(LoadErrorReason.CIRCULAR_DEPENDENCY,
-                                    ("Circular dependency detected at element: {}\n" +
+                    raise LoadError(("Circular dependency detected at element: {}\n" +
                                      "Dependency chain: {}")
-                                    .format(element.full_name, " -> ".join(chain)))
+                                    .format(element.full_name, " -> ".join(chain)),
+                                    LoadErrorReason.CIRCULAR_DEPENDENCY)
                 if element not in validated:
                     # We've not already validated this element, so let's
                     # descend into it to check it out
@@ -565,9 +561,9 @@ class Loader():
             if loader is None:
                 # do not allow junctions with the same name in different
                 # subprojects
-                raise LoadError(LoadErrorReason.CONFLICTING_JUNCTION,
-                                "{}Conflicting junction {} in subprojects, define junction in {}"
-                                .format(provenance_str, filename, self.project.name))
+                raise LoadError("{}Conflicting junction {} in subprojects, define junction in {}"
+                                .format(provenance_str, filename, self.project.name),
+                                LoadErrorReason.CONFLICTING_JUNCTION)
 
             return loader
 
@@ -599,9 +595,9 @@ class Loader():
         # meta junction element
         meta_element = self._collect_element(self._elements[filename])
         if meta_element.kind != 'junction':
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}{}: Expected junction but element kind is {}".format(
-                                provenance_str, filename, meta_element.kind))
+            raise LoadError("{}{}: Expected junction but element kind is {}"
+                            .format(provenance_str, filename, meta_element.kind),
+                            LoadErrorReason.INVALID_DATA)
 
         element = Element._new_from_meta(meta_element)
         element._update_state()
@@ -627,9 +623,8 @@ class Loader():
         #
         elif element._get_consistency() == Consistency.INCONSISTENT:
             detail = "Try tracking the junction element with `bst source track {}`".format(filename)
-            raise LoadError(LoadErrorReason.SUBPROJECT_INCONSISTENT,
-                            "{}Subproject has no ref for junction: {}".format(provenance_str, filename),
-                            detail=detail)
+            raise LoadError("{}Subproject has no ref for junction: {}".format(provenance_str, filename),
+                            LoadErrorReason.SUBPROJECT_INCONSISTENT, detail=detail)
 
         sources = list(element.sources())
         workspace = element._get_workspace()
@@ -663,8 +658,7 @@ class Loader():
                 )
                 if element.path:
                     message += " Was expecting it at path '{}' in the junction's source.".format(element.path)
-                raise LoadError(reason=LoadErrorReason.INVALID_JUNCTION,
-                                message=message) from e
+                raise LoadError(message=message, reason=LoadErrorReason.INVALID_JUNCTION) from e
             else:
                 raise
 
@@ -714,7 +708,7 @@ class Loader():
     def _warn(self, brief, *, warning_token=None):
         if warning_token:
             if self.project._warning_is_fatal(warning_token):
-                raise LoadError(warning_token, brief)
+                raise LoadError(brief, warning_token)
 
         message = Message(None, MessageType.WARN, brief)
         self._context.messenger.message(message)
