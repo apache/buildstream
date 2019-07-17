@@ -52,10 +52,11 @@ CACHE_SIZE_FILE = "cache_size"
 #     path (str): The root directory for the CAS repository
 #     casd (bool): True to spawn buildbox-casd (default) or False (testing only)
 #     cache_quota (int): User configured cache quota
+#     protect_session_blobs (bool): Disable expiry for blobs used in the current session
 #
 class CASCache():
 
-    def __init__(self, path, *, casd=True):
+    def __init__(self, path, *, casd=True, cache_quota=None, protect_session_blobs=True):
         self.casdir = os.path.join(path, 'cas')
         self.tmpdir = os.path.join(path, 'tmp')
         os.makedirs(os.path.join(self.casdir, 'refs', 'heads'), exist_ok=True)
@@ -70,6 +71,13 @@ class CASCache():
 
             casd_args = [utils.get_host_tool('buildbox-casd')]
             casd_args.append('--bind=unix:' + self._casd_socket_path)
+
+            if cache_quota is not None:
+                casd_args.append('--quota-high={}'.format(int(cache_quota)))
+                casd_args.append('--quota-low={}'.format(int(cache_quota / 2)))
+
+                if protect_session_blobs:
+                    casd_args.append('--protect-session-blobs')
 
             casd_args.append(path)
             self._casd_process = subprocess.Popen(casd_args, cwd=path)
