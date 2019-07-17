@@ -25,7 +25,6 @@ from buildstream._exceptions import ErrorDomain
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.testing._utils.site import HAVE_SANDBOX
 
-from tests.conftest import clean_platform_cache
 from tests.testutils import create_artifact_share
 
 
@@ -206,15 +205,10 @@ def test_host_tools_errors_are_not_cached(cli, datafiles):
     }
     _yaml.roundtrip_dump(element, element_path)
 
-    clean_platform_cache()
-
     # Build without access to host tools, this will fail
     result1 = cli.run(project=project, args=['build', 'element.bst'], env={'PATH': '', 'BST_FORCE_SANDBOX': None})
     result1.assert_task_error(ErrorDomain.SANDBOX, 'unavailable-local-sandbox')
     assert cli.get_element_state(project, 'element.bst') == 'buildable'
-
-    # clean the cache before running again
-    clean_platform_cache()
 
     # When rebuilding, this should work
     result2 = cli.run(project=project, args=['build', 'element.bst'])

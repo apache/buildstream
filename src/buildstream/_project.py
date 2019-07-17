@@ -43,7 +43,6 @@ from ._loader import Loader
 from .element import Element
 from ._message import Message, MessageType
 from ._includes import Includes
-from ._platform import Platform
 from ._workspaces import WORKSPACE_PROJECT_FILE
 
 
@@ -789,7 +788,7 @@ class Project():
         # users should set values based on workload and build infrastructure
         if self._context.build_max_jobs == 0:
             # User requested automatic max-jobs
-            platform = Platform.get_platform()
+            platform = self._context.platform
             output.base_variables['max-jobs'] = str(platform.get_cpu_count(8))
         else:
             # User requested explicit max-jobs setting

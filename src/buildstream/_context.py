@@ -25,6 +25,7 @@ from . import _yaml
 from ._exceptions import LoadError, LoadErrorReason
 from ._messenger import Messenger
 from ._profile import Topics, PROFILER
+from ._platform import Platform
 from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASQuota, CASCacheUsage
@@ -153,6 +154,7 @@ class Context():
         self.messenger = Messenger()
 
         # Private variables
+        self._platform = None
         self._artifactcache = None
         self._sourcecache = None
         self._projects = []
@@ -341,6 +343,13 @@ class Context():
             overrides.validate_keys(['artifacts', 'source-caches', 'options',
                                      'strict', 'default-mirror',
                                      'remote-execution'])
+
+    @property
+    def platform(self):
+        if not self._platform:
+            self._platform = Platform.create_instance()
+
+        return self._platform
 
     @property
     def artifactcache(self):

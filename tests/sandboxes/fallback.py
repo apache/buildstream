@@ -23,8 +23,6 @@ from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
 from buildstream.testing import cli  # pylint: disable=unused-import
 
-from tests.conftest import clean_platform_cache
-
 pytestmark = pytest.mark.integration
 
 
@@ -55,8 +53,6 @@ def test_fallback_platform_fails(cli, datafiles):
         },
     }
     _yaml.roundtrip_dump(element, element_path)
-
-    clean_platform_cache()
 
     result = cli.run(project=project, args=['build', 'element.bst'],
                      env={'BST_FORCE_BACKEND': 'fallback',

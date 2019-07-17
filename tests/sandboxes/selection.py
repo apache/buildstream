@@ -23,8 +23,6 @@ from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
 from buildstream.testing import cli  # pylint: disable=unused-import
 
-from tests.conftest import clean_platform_cache
-
 pytestmark = pytest.mark.integration
 
 
@@ -56,8 +54,6 @@ def test_force_sandbox(cli, datafiles):
     }
     _yaml.roundtrip_dump(element, element_path)
 
-    clean_platform_cache()
-
     # Build without access to host tools, this will fail
     result = cli.run(project=project, args=['build', 'element.bst'], env={'PATH': '', 'BST_FORCE_SANDBOX': 'bwrap'})
     result.assert_main_error(ErrorDomain.PLATFORM, None)
@@ -88,8 +84,6 @@ def test_dummy_sandbox_fallback(cli, datafiles):
         },
     }
     _yaml.roundtrip_dump(element, element_path)
-
-    clean_platform_cache()
 
     # Build without access to host tools, this will fail
     result = cli.run(project=project, args=['build', 'element.bst'], env={'PATH': '', 'BST_FORCE_SANDBOX': None})

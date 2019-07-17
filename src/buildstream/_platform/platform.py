@@ -29,8 +29,6 @@ from .. import utils
 
 
 class Platform():
-    _instance = None
-
     # Platform()
     #
     # A class to manage platform-specific details. Currently holds the
@@ -84,7 +82,7 @@ class Platform():
             raise Error
 
     @classmethod
-    def _create_instance(cls):
+    def create_instance(cls):
         # Meant for testing purposes and therefore hidden in the
         # deepest corners of the source code. Try not to abuse this,
         # please?
@@ -111,13 +109,7 @@ class Platform():
         else:
             raise PlatformError("No such platform: '{}'".format(backend))
 
-        cls._instance = PlatformImpl(force_sandbox=force_sandbox)
-
-    @classmethod
-    def get_platform(cls):
-        if not cls._instance:
-            cls._create_instance()
-        return cls._instance
+        return PlatformImpl(force_sandbox=force_sandbox)
 
     def get_cpu_count(self, cap=None):
         cpu_count = len(psutil.Process().cpu_affinity())

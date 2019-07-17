@@ -290,11 +290,11 @@ class Element(Plugin):
             self.__remote_execution_specs = project.remote_execution_specs
 
         # Extract Sandbox config
-        self.__sandbox_config = self.__extract_sandbox_config(project, meta)
+        self.__sandbox_config = self.__extract_sandbox_config(context, project, meta)
 
         self.__sandbox_config_supported = True
         if not self.__use_remote_execution():
-            platform = Platform.get_platform()
+            platform = context.platform
             if not platform.check_sandbox_config(self.__sandbox_config):
                 # Local sandbox does not fully support specified sandbox config.
                 # This will taint the artifact, disable pushing.
@@ -2487,7 +2487,7 @@ class Element(Plugin):
     def __sandbox(self, directory, stdout=None, stderr=None, config=None, allow_remote=True, bare_directory=False):
         context = self._get_context()
         project = self._get_project()
-        platform = Platform.get_platform()
+        platform = context.platform
 
         if directory is not None and allow_remote and self.__use_remote_execution():
 
@@ -2682,7 +2682,7 @@ class Element(Plugin):
     # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
     #
     @classmethod
-    def __extract_sandbox_config(cls, project, meta):
+    def __extract_sandbox_config(cls, context, project, meta):
         if meta.is_junction:
             sandbox_config = Node.from_dict({
                 'build-uid': 0,
@@ -2692,7 +2692,7 @@ class Element(Plugin):
             sandbox_config = project._sandbox.clone()
 
         # Get the platform to ask for host architecture
-        platform = Platform.get_platform()
+        platform = context.platform
         host_arch = platform.get_host_arch()
         host_os = platform.get_host_os()
 
