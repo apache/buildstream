@@ -139,7 +139,7 @@ cdef class Variables:
             for var in expstr[1::2]:
                 if var not in self._expstr_map:
                     line = "  unresolved variable '{unmatched}' in declaration of '{variable}' at: {provenance}"
-                    provenance = expstr.get_provenance()
+                    provenance = self.original.get_scalar(key).get_provenance()
                     summary.append(line.format(unmatched=var, variable=key, provenance=provenance))
         if summary:
             raise LoadError(LoadErrorReason.UNRESOLVED_VARIABLE,
