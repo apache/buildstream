@@ -305,8 +305,8 @@ def get_choices(cli, prog_name, args, incomplete, override):
         # completion for chained commands
         visible_commands = [cmd for cmd in ctx.parent.command.list_commands(ctx.parent)
                             if not ctx.parent.command.get_command(ctx.parent, cmd).hidden]
-        remaining_comands = set(visible_commands) - set(ctx.parent.protected_args)
-        choices.extend([cmd + " " for cmd in remaining_comands])
+        remaining_commands = set(visible_commands) - set(ctx.parent.protected_args)
+        choices.extend([cmd + " " for cmd in remaining_commands])
 
     for item in choices:
         if item.startswith(incomplete):
