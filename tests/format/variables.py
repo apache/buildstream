@@ -78,11 +78,12 @@ def test_overrides(cli, datafiles, target, varname, expected):
     assert result_vars.get_str(varname) == expected
 
 
+@pytest.mark.parametrize("element", ["manual.bst", "manual2.bst"])
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'missing_variables'))
-def test_missing_variable(cli, datafiles):
+def test_missing_variable(cli, datafiles, element):
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=[
-        'show', '--deps', 'none', '--format', '%{config}', 'manual.bst'
+        'show', '--deps', 'none', '--format', '%{config}', element
     ])
     result.assert_main_error(ErrorDomain.LOAD,
                              LoadErrorReason.UNRESOLVED_VARIABLE)
