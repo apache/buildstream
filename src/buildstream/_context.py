@@ -487,7 +487,7 @@ class Context():
 
     def get_cascache(self):
         if self._cascache is None:
-            self._cascache = CASCache(self.cachedir)
+            self._cascache = CASCache(self.cachedir, cache_quota=self.config_cache_quota)
         return self._cascache
 
     # disable_fork():
