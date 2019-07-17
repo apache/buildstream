@@ -75,11 +75,14 @@ class DownloadableFileSource(Source):
     COMMON_CONFIG_KEYS = Source.COMMON_CONFIG_KEYS + ['url', 'ref', 'etag']
 
     __urlopener = None
+    __default_mirror_file = None
 
     def configure(self, node):
         self.original_url = node.get_str('url')
         self.ref = node.get_str('ref', None)
         self.url = self.translate_url(self.original_url)
+        self._mirror_dir = os.path.join(self.get_mirror_directory(),
+                                        utils.url_directory_name(self.original_url))
         self._warn_deprecated_etag(node)
 
     def preflight(self):
@@ -149,7 +152,7 @@ class DownloadableFileSource(Source):
             self.warn('{} "etag" is deprecated and ignored.'.format(provenance))
 
     def _get_etag(self, ref):
-        etagfilename = os.path.join(self._get_mirror_dir(), '{}.etag'.format(ref))
+        etagfilename = os.path.join(self._mirror_dir, '{}.etag'.format(ref))
         if os.path.exists(etagfilename):
             with open(etagfilename, 'r') as etagfile:
                 return etagfile.read()
@@ -157,7 +160,7 @@ class DownloadableFileSource(Source):
         return None
 
     def _store_etag(self, ref, etag):
-        etagfilename = os.path.join(self._get_mirror_dir(), '{}.etag'.format(ref))
+        etagfilename = os.path.join(self._mirror_dir, '{}.etag'.format(ref))
         with utils.save_file_atomic(etagfilename) as etagfile:
             etagfile.write(etag)
 
@@ -192,8 +195,8 @@ class DownloadableFileSource(Source):
                         shutil.copyfileobj(response, dest)
 
                 # Make sure url-specific mirror dir exists.
-                if not os.path.isdir(self._get_mirror_dir()):
-                    os.makedirs(self._get_mirror_dir())
+                if not os.path.isdir(self._mirror_dir):
+                    os.makedirs(self._mirror_dir)
 
                 # Store by sha256sum
                 sha256 = utils.sha256sum(local_file)
@@ -220,12 +223,14 @@ class DownloadableFileSource(Source):
             raise SourceError("{}: Error mirroring {}: {}"
                               .format(self, self.url, e), temporary=True) from e
 
-    def _get_mirror_dir(self):
-        return os.path.join(self.get_mirror_directory(),
-                            utils.url_directory_name(self.original_url))
-
     def _get_mirror_file(self, sha=None):
-        return os.path.join(self._get_mirror_dir(), sha or self.ref)
+        if sha is not None:
+            return os.path.join(self._mirror_dir, sha)
+
+        if self.__default_mirror_file is None:
+            self.__default_mirror_file = os.path.join(self._mirror_dir, self.ref)
+
+        return self.__default_mirror_file
 
     def __get_urlopener(self):
         if not DownloadableFileSource.__urlopener:

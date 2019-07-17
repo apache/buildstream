@@ -330,6 +330,9 @@ class Source(Plugin):
         self.__config = self.__extract_config(meta)
         self.__first_pass = meta.first_pass
 
+        # cached values for commonly access values on the source
+        self.__mirror_directory = None
+
         self._configure(self.__config)
 
     COMMON_CONFIG_KEYS = ['kind', 'directory']
@@ -531,12 +534,14 @@ class Source(Plugin):
         Returns:
            (str): The directory belonging to this source
         """
+        if self.__mirror_directory is None:
+            # Create the directory if it doesnt exist
+            context = self._get_context()
+            directory = os.path.join(context.sourcedir, self.get_kind())
+            os.makedirs(directory, exist_ok=True)
+            self.__mirror_directory = directory
 
-        # Create the directory if it doesnt exist
-        context = self._get_context()
-        directory = os.path.join(context.sourcedir, self.get_kind())
-        os.makedirs(directory, exist_ok=True)
-        return directory
+        return self.__mirror_directory
 
     def translate_url(self, url, *, alias_override=None, primary=True):
         """Translates the given url which may be specified with an alias

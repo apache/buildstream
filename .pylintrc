@@ -7,6 +7,7 @@ extension-pkg-whitelist=
     buildstream.node,
     buildstream._loader._loader,
     buildstream._loader.types,
+    buildstream._utils,
     buildstream._variables,
     buildstream._yaml
 
