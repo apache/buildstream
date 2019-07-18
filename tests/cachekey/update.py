@@ -13,6 +13,7 @@
 #
 import os
 import tempfile
+from unittest import mock
 from buildstream.testing.runcli import Cli
 
 # This weird try / except is needed, because this will be imported differently
@@ -41,7 +42,7 @@ def update_keys():
     with tempfile.TemporaryDirectory(dir=PROJECT_DIR) as tmpdir:
         directory = os.path.join(tmpdir, 'cache')
         os.makedirs(directory)
-        cli = Cli(directory, verbose=False)
+        cli = Cli(directory, verbose=True)
 
         # Run bst show
         result = cli.run(project=PROJECT_DIR, silent=True, args=[
@@ -51,6 +52,9 @@ def update_keys():
         ])
 
         # Load the actual keys, and the expected ones if they exist
+        if not result.output:
+            print("No results from parsing {}:target.bst".format(PROJECT_DIR))
+            return
         actual_keys = parse_output_keys(result.output)
         expected_keys = load_expected_keys(PROJECT_DIR, actual_keys, raise_error=False)
 
@@ -67,4 +71,9 @@ def update_keys():
 
 
 if __name__ == '__main__':
-    update_keys()
+    #  patch the environment BST_TEST_SUITE value to something if it's not
+    #  present. This avoids an exception thrown at the cli level
+    bst = 'BST_TEST_SUITE'
+    mock_bst = os.environ.get(bst, 'True')
+    with mock.patch.dict(os.environ, {**os.environ, bst: mock_bst}):
+        update_keys()
