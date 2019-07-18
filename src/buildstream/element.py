@@ -524,7 +524,7 @@ class Element(Plugin):
             return self.__variables.subst(value)
         except LoadError as e:
             provenance = node.get_scalar(member_name).get_provenance()
-            raise LoadError(e.reason, '{}: {}'.format(provenance, e), detail=e.detail) from e
+            raise LoadError('{}: {}'.format(provenance, e), e.reason, detail=e.detail) from e
 
     def node_subst_list(self, node, member_name):
         """Fetch a list from a node member, substituting any variables in the list
@@ -546,7 +546,7 @@ class Element(Plugin):
                 ret.append(self.__variables.subst(value.as_str()))
             except LoadError as e:
                 provenance = value.get_provenance()
-                raise LoadError(e.reason, '{}: {}'.format(provenance, e), detail=e.detail) from e
+                raise LoadError('{}: {}'.format(provenance, e), e.reason, detail=e.detail) from e
         return ret
 
     def compute_manifest(self, *, include=None, exclude=None, orphans=True):
@@ -2658,9 +2658,8 @@ class Element(Plugin):
 
             provenance = node.get_provenance()
             if not provenance._is_synthetic:
-                raise LoadError(LoadErrorReason.PROTECTED_VARIABLE_REDEFINED,
-                                "{}: invalid redefinition of protected variable '{}'"
-                                .format(provenance, var))
+                raise LoadError("{}: invalid redefinition of protected variable '{}'"
+                                .format(provenance, var), LoadErrorReason.PROTECTED_VARIABLE_REDEFINED)
 
         return variables
 

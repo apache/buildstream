@@ -58,9 +58,8 @@ class OptionArch(OptionEnum):
                 prefix = ""
                 if provenance:
                     prefix = "{}: ".format(provenance)
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}Invalid value for {} option '{}': {}"
-                                .format(prefix, self.OPTION_TYPE, self.name, e))
+                raise LoadError("{}Invalid value for {} option '{}': {}"
+                                .format(prefix, self.OPTION_TYPE, self.name, e), LoadErrorReason.INVALID_DATA)
 
         if default_value is None:
             # Host architecture is not supported by the project.

@@ -214,12 +214,10 @@ class Context():
 
         # Give obsoletion warnings
         if 'builddir' in defaults:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "builddir is obsolete, use cachedir")
+            raise LoadError("builddir is obsolete, use cachedir", LoadErrorReason.INVALID_DATA)
 
         if 'artifactdir' in defaults:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "artifactdir is obsolete")
+            raise LoadError("artifactdir is obsolete", LoadErrorReason.INVALID_DATA)
 
         defaults.validate_keys([
             'cachedir', 'sourcedir', 'builddir', 'logdir', 'scheduler', 'build',
@@ -268,10 +266,9 @@ class Context():
             self.config_cache_quota = utils._parse_size(self.config_cache_quota_string,
                                                         self.casdir)
         except utils.UtilError as e:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}\nPlease specify the value in bytes or as a % of full disk space.\n"
+            raise LoadError("{}\nPlease specify the value in bytes or as a % of full disk space.\n"
                             "\nValid values are, for example: 800M 10G 1T 50%\n"
-                            .format(str(e))) from e
+                            .format(str(e)), LoadErrorReason.INVALID_DATA) from e
 
         # Load artifact share configuration
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(defaults)
@@ -526,7 +523,6 @@ def _node_get_option_str(node, key, allowed_options):
     result = result_node.as_str()
     if result not in allowed_options:
         provenance = result_node.get_provenance()
-        raise LoadError(LoadErrorReason.INVALID_DATA,
-                        "{}: {} should be one of: {}".format(
-                            provenance, key, ", ".join(allowed_options)))
+        raise LoadError("{}: {} should be one of: {}".format(provenance, key, ", ".join(allowed_options)),
+                        LoadErrorReason.INVALID_DATA)
     return result

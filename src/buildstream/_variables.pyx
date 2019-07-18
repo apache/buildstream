@@ -106,7 +106,7 @@ cdef class Variables:
                     ", ".join(unmatched)
                 )
 
-                raise LoadError(LoadErrorReason.UNRESOLVED_VARIABLE, message)
+                raise LoadError(message, LoadErrorReason.UNRESOLVED_VARIABLE)
             # Otherwise, re-raise the KeyError since it clearly came from some
             # other unknowable cause.
             raise
@@ -142,8 +142,8 @@ cdef class Variables:
                     provenance = self.original.get_scalar(key).get_provenance()
                     summary.append(line.format(unmatched=var, variable=key, provenance=provenance))
         if summary:
-            raise LoadError(LoadErrorReason.UNRESOLVED_VARIABLE,
-                            "Failed to resolve one or more variable:\n{}\n".format("\n".join(summary)))
+            raise LoadError("Failed to resolve one or more variable:\n{}\n".format("\n".join(summary)),
+                            LoadErrorReason.UNRESOLVED_VARIABLE)
 
     def _check_for_cycles(self):
         # And now the cycle checks
@@ -152,10 +152,10 @@ cdef class Variables:
                 if var in cleared:
                     continue
                 if var in visited:
-                    raise LoadError(LoadErrorReason.RECURSIVE_VARIABLE,
-                                    "{}: ".format(self.original.get_scalar(var).get_provenance()) +
+                    raise LoadError("{}: ".format(self.original.get_scalar(var).get_provenance()) +
                                     ("Variable '{}' expands to contain a reference to itself. " +
-                                     "Perhaps '{}' contains '%{{{}}}").format(var, visited[-1], var))
+                                     "Perhaps '{}' contains '%{{{}}}").format(var, visited[-1], var),
+                                     LoadErrorReason.RECURSIVE_VARIABLE)
                 visited.append(var)
                 cycle_check(self._expstr_map[var], visited, cleared)
                 visited.pop()

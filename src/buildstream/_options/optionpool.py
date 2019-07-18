@@ -75,8 +75,8 @@ class OptionPool():
                 opt_type = _OPTION_TYPES[opt_type_name]
             except KeyError:
                 p = option_definition.get_scalar('type').get_provenance()
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Invalid option type '{}'".format(p, opt_type_name))
+                raise LoadError("{}: Invalid option type '{}'".format(p, opt_type_name),
+                                LoadErrorReason.INVALID_DATA)
 
             option = opt_type(option_name, option_definition, self)
             self._options[option_name] = option
@@ -95,9 +95,8 @@ class OptionPool():
                 option = self._options[option_name]
             except KeyError as e:
                 p = option_value.get_provenance()
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Unknown option '{}' specified"
-                                .format(p, option_name)) from e
+                raise LoadError("{}: Unknown option '{}' specified"
+                                .format(p, option_name), LoadErrorReason.INVALID_DATA) from e
             option.load_value(node, transform=transform)
 
     # load_cli_values()
@@ -115,9 +114,8 @@ class OptionPool():
                 option = self._options[option_name]
             except KeyError as e:
                 if not ignore_unknown:
-                    raise LoadError(LoadErrorReason.INVALID_DATA,
-                                    "Unknown option '{}' specified on the command line"
-                                    .format(option_name)) from e
+                    raise LoadError("Unknown option '{}' specified on the command line"
+                                    .format(option_name), LoadErrorReason.INVALID_DATA) from e
             else:
                 option.set_value(option_value)
 
@@ -226,11 +224,11 @@ class OptionPool():
             elif val == "False":
                 return False
             else:  # pragma: nocover
-                raise LoadError(LoadErrorReason.EXPRESSION_FAILED,
-                                "Failed to evaluate expression: {}".format(expression))
+                raise LoadError("Failed to evaluate expression: {}".format(expression),
+                                LoadErrorReason.EXPRESSION_FAILED)
         except jinja2.exceptions.TemplateError as e:
-            raise LoadError(LoadErrorReason.EXPRESSION_FAILED,
-                            "Failed to evaluate expression ({}): {}".format(expression, e))
+            raise LoadError("Failed to evaluate expression ({}): {}".format(expression, e),
+                            LoadErrorReason.EXPRESSION_FAILED)
 
     # Recursion assistent for lists, in case there
     # are lists of lists.
@@ -257,8 +255,7 @@ class OptionPool():
         # it being overwritten by a later assertion which might also trigger.
         if assertion is not None:
             p = node.get_scalar('(!)').get_provenance()
-            raise LoadError(LoadErrorReason.USER_ASSERTION,
-                            "{}: {}".format(p, assertion.strip()))
+            raise LoadError("{}: {}".format(p, assertion.strip()), LoadErrorReason.USER_ASSERTION)
 
         if conditions is not None:
             del node['(?)']
@@ -267,8 +264,8 @@ class OptionPool():
                 tuples = list(condition.items())
                 if len(tuples) > 1:
                     provenance = condition.get_provenance()
-                    raise LoadError(LoadErrorReason.INVALID_DATA,
-                                    "{}: Conditional statement has more than one key".format(provenance))
+                    raise LoadError("{}: Conditional statement has more than one key".format(provenance),
+                                    LoadErrorReason.INVALID_DATA)
 
                 expression, value = tuples[0]
                 try:
@@ -276,12 +273,12 @@ class OptionPool():
                 except LoadError as e:
                     # Prepend the provenance of the error
                     provenance = condition.get_provenance()
-                    raise LoadError(e.reason, "{}: {}".format(provenance, e)) from e
+                    raise LoadError("{}: {}".format(provenance, e), e.reason) from e
 
                 if type(value) is not MappingNode:  # pylint: disable=unidiomatic-typecheck
                     provenance = condition.get_provenance()
-                    raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                                    "{}: Only values of type 'dict' can be composed.".format(provenance))
+                    raise LoadError("{}: Only values of type 'dict' can be composed.".format(provenance),
+                                    LoadErrorReason.ILLEGAL_COMPOSITE)
 
                 # Apply the yaml fragment if its condition evaluates to true
                 if apply_fragment:

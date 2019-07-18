@@ -89,32 +89,30 @@ cdef class Dependency:
                     dep_type = None
                 elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
                     provenance = dep.get_scalar(Symbol.TYPE).get_provenance()
-                    raise LoadError(LoadErrorReason.INVALID_DATA,
-                                    "{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
-                                    .format(provenance, dep_type))
+                    raise LoadError("{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
+                                    .format(provenance, dep_type), LoadErrorReason.INVALID_DATA)
 
             self.name = (<MappingNode> dep).get_str(<str> Symbol.FILENAME)
             self.dep_type = dep_type
             self.junction = (<MappingNode> dep).get_str(<str> Symbol.JUNCTION, None)
 
         else:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Dependency is not specified as a string or a dictionary".format(self.provenance))
+            raise LoadError("{}: Dependency is not specified as a string or a dictionary".format(self.provenance),
+                            LoadErrorReason.INVALID_DATA)
 
         # `:` characters are not allowed in filename if a junction was
         # explicitly specified
         if self.junction and ':' in self.name:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Dependency {} contains `:` in its name. "
+            raise LoadError("{}: Dependency {} contains `:` in its name. "
                             "`:` characters are not allowed in filename when "
-                            "junction attribute is specified.".format(self.provenance, self.name))
+                            "junction attribute is specified.".format(self.provenance, self.name),
+                            LoadErrorReason.INVALID_DATA)
 
         # Name of the element should never contain more than one `:` characters
         if self.name.count(':') > 1:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Dependency {} contains multiple `:` in its name. "
+            raise LoadError("{}: Dependency {} contains multiple `:` in its name. "
                             "Recursive lookups for cross-junction elements is not "
-                            "allowed.".format(self.provenance, self.name))
+                            "allowed.".format(self.provenance, self.name), LoadErrorReason.INVALID_DATA)
 
         # Attempt to split name if no junction was specified explicitly
         if not self.junction and self.name.count(':') == 1:

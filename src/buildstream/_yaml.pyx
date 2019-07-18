@@ -279,14 +279,13 @@ cpdef MappingNode load(str filename, str shortname=None, bint copy_tree=False, o
 
         return data
     except FileNotFoundError as e:
-        raise LoadError(LoadErrorReason.MISSING_FILE,
-                        "Could not find file at {}".format(filename)) from e
+        raise LoadError("Could not find file at {}".format(filename),
+                        LoadErrorReason.MISSING_FILE) from e
     except IsADirectoryError as e:
-        raise LoadError(LoadErrorReason.LOADING_DIRECTORY,
-                        "{} is a directory. bst command expects a .bst file."
-                        .format(filename)) from e
+        raise LoadError("{} is a directory. bst command expects a .bst file.".format(filename),
+                        LoadErrorReason.LOADING_DIRECTORY) from e
     except LoadError as e:
-        raise LoadError(e.reason, "{}: {}".format(displayname, e)) from e
+        raise LoadError("{}: {}".format(displayname, e), e.reason) from e
 
 
 # Like load(), but doesnt require the data to be in a file
@@ -306,20 +305,20 @@ cpdef MappingNode load_data(str data, int file_index=node._SYNTHETIC_FILE_INDEX,
 
         contents = rep.get_output()
     except YAMLLoadError as e:
-        raise LoadError(LoadErrorReason.INVALID_YAML,
-                        "Malformed YAML:\n\n{}\n\n".format(e)) from e
+        raise LoadError("Malformed YAML:\n\n{}\n\n".format(e),
+                        LoadErrorReason.INVALID_YAML) from e
     except Exception as e:
-        raise LoadError(LoadErrorReason.INVALID_YAML,
-                        "Severely malformed YAML:\n\n{}\n\n".format(e)) from e
+        raise LoadError("Severely malformed YAML:\n\n{}\n\n".format(e),
+                        LoadErrorReason.INVALID_YAML) from e
 
     if type(contents) != MappingNode:
         # Special case allowance for None, when the loaded file has only comments in it.
         if contents is None:
             contents = MappingNode.__new__(MappingNode, file_index, 0, 0, {})
         else:
-            raise LoadError(LoadErrorReason.INVALID_YAML,
-                            "YAML file has content of type '{}' instead of expected type 'dict': {}"
-                            .format(type(contents[0]).__name__, file_name))
+            raise LoadError("YAML file has content of type '{}' instead of expected type 'dict': {}"
+                            .format(type(contents[0]).__name__, file_name),
+                            LoadErrorReason.INVALID_YAML)
 
     # Store this away because we'll use it later for "top level" provenance
     node._set_root_node_for_file(file_index, contents)
@@ -430,12 +429,11 @@ def roundtrip_load(filename, *, allow_missing=False):
             # Missing files are always empty dictionaries
             return {}
         else:
-            raise LoadError(LoadErrorReason.MISSING_FILE,
-                            "Could not find file at {}".format(filename)) from e
+            raise LoadError("Could not find file at {}".format(filename),
+                            LoadErrorReason.MISSING_FILE) from e
     except IsADirectoryError as e:
-        raise LoadError(LoadErrorReason.LOADING_DIRECTORY,
-                        "{} is a directory."
-                        .format(filename)) from e
+        raise LoadError("{} is a directory.".format(filename),
+                        LoadErrorReason.LOADING_DIRECTORY) from e
     return contents
 
 
@@ -461,8 +459,8 @@ def roundtrip_load_data(contents, *, filename=None):
     try:
         contents = yaml.load(contents, yaml.RoundTripLoader, preserve_quotes=True)
     except (yaml.scanner.ScannerError, yaml.composer.ComposerError, yaml.parser.ParserError) as e:
-        raise LoadError(LoadErrorReason.INVALID_YAML,
-                        "Malformed YAML:\n\n{}\n\n{}\n".format(e.problem, e.problem_mark)) from e
+        raise LoadError("Malformed YAML:\n\n{}\n\n{}\n".format(e.problem, e.problem_mark),
+                        LoadErrorReason.INVALID_YAML) from e
 
     # Special case empty files at this point
     if contents is None:
@@ -470,9 +468,8 @@ def roundtrip_load_data(contents, *, filename=None):
         contents = {}
 
     if not isinstance(contents, Mapping):
-        raise LoadError(LoadErrorReason.INVALID_YAML,
-                        "YAML file has content of type '{}' instead of expected type 'dict': {}"
-                        .format(type(contents).__name__, filename))
+        raise LoadError("YAML file has content of type '{}' instead of expected type 'dict': {}"
+                        .format(type(contents).__name__, filename), LoadErrorReason.INVALID_YAML)
 
     return contents
 

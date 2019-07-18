@@ -216,8 +216,8 @@ class WorkspaceProjectCache():
     def remove(self, directory):
         workspace_project = self.get(directory)
         if not workspace_project:
-            raise LoadError(LoadErrorReason.MISSING_FILE,
-                            "Failed to find a {} file to remove".format(WORKSPACE_PROJECT_FILE))
+            raise LoadError("Failed to find a {} file to remove".format(WORKSPACE_PROJECT_FILE),
+                            LoadErrorReason.MISSING_FILE)
         path = workspace_project.get_filename()
         try:
             os.unlink(path)
@@ -363,8 +363,8 @@ class Workspace():
             try:
                 stat = os.lstat(filename)
             except OSError as e:
-                raise LoadError(LoadErrorReason.MISSING_FILE,
-                                "Failed to stat file in workspace: {}".format(e))
+                raise LoadError("Failed to stat file in workspace: {}".format(e),
+                                LoadErrorReason.MISSING_FILE)
 
             # Use the mtime of any file with sub second precision
             return stat.st_mtime_ns
@@ -574,8 +574,8 @@ class Workspaces():
         try:
             version = workspaces.get_int('format-version', default=0)
         except ValueError:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "Format version is not an integer in workspace configuration")
+            raise LoadError("Format version is not an integer in workspace configuration",
+                            LoadErrorReason.INVALID_DATA)
 
         if version == 0:
             # Pre-versioning format can be of two forms
@@ -591,14 +591,14 @@ class Workspaces():
                         detail = "There are multiple workspaces open for '{}'.\n" + \
                                  "This is not supported anymore.\n" + \
                                  "Please remove this element from '{}'."
-                        raise LoadError(LoadErrorReason.INVALID_DATA,
-                                        detail.format(element, self._get_filename()))
+                        raise LoadError(detail.format(element, self._get_filename()),
+                                        LoadErrorReason.INVALID_DATA)
 
                     workspaces[element] = sources[0]
 
                 else:
-                    raise LoadError(LoadErrorReason.INVALID_DATA,
-                                    "Workspace config is in unexpected format.")
+                    raise LoadError("Workspace config is in unexpected format.",
+                                    LoadErrorReason.INVALID_DATA)
 
             res = {
                 element: Workspace(self._toplevel_project, path=config.as_str())
@@ -611,10 +611,9 @@ class Workspaces():
                    for element, node in workspaces.items()}
 
         else:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "Workspace configuration format version {} not supported."
+            raise LoadError("Workspace configuration format version {} not supported."
                             "Your version of buildstream may be too old. Max supported version: {}"
-                            .format(version, BST_WORKSPACE_FORMAT_VERSION))
+                            .format(version, BST_WORKSPACE_FORMAT_VERSION), LoadErrorReason.INVALID_DATA)
 
         return res
 

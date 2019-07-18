@@ -251,17 +251,15 @@ class Project():
 
         if full_path.is_symlink():
             provenance = node.get_provenance()
-            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
-                            "{}: Specified path '{}' must not point to "
-                            "symbolic links "
-                            .format(provenance, path_str))
+            raise LoadError("{}: Specified path '{}' must not point to "
+                            "symbolic links ".format(provenance, path_str),
+                            LoadErrorReason.PROJ_PATH_INVALID_KIND)
 
         if path.parts and path.parts[0] == '..':
             provenance = node.get_provenance()
-            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
-                            "{}: Specified path '{}' first component must "
-                            "not be '..'"
-                            .format(provenance, path_str))
+            raise LoadError("{}: Specified path '{}' first component must "
+                            "not be '..'".format(provenance, path_str),
+                            LoadErrorReason.PROJ_PATH_INVALID)
 
         try:
             if sys.version_info[0] == 3 and sys.version_info[1] < 6:
@@ -270,47 +268,40 @@ class Project():
                 full_resolved_path = full_path.resolve(strict=True)  # pylint: disable=unexpected-keyword-arg
         except FileNotFoundError:
             provenance = node.get_provenance()
-            raise LoadError(LoadErrorReason.MISSING_FILE,
-                            "{}: Specified path '{}' does not exist"
-                            .format(provenance, path_str))
+            raise LoadError("{}: Specified path '{}' does not exist".format(provenance, path_str),
+                            LoadErrorReason.MISSING_FILE)
 
         is_inside = self._absolute_directory_path in full_resolved_path.parents or (
             full_resolved_path == self._absolute_directory_path)
 
         if not is_inside:
             provenance = node.get_provenance()
-            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
-                            "{}: Specified path '{}' must not lead outside of the "
-                            "project directory"
-                            .format(provenance, path_str))
+            raise LoadError("{}: Specified path '{}' must not lead outside of the "
+                            "project directory".format(provenance, path_str),
+                            LoadErrorReason.PROJ_PATH_INVALID)
 
         if path.is_absolute():
             provenance = node.get_provenance()
-            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID,
-                            "{}: Absolute path: '{}' invalid.\n"
+            raise LoadError("{}: Absolute path: '{}' invalid.\n"
                             "Please specify a path relative to the project's root."
-                            .format(provenance, path))
+                            .format(provenance, path), LoadErrorReason.PROJ_PATH_INVALID)
 
         if full_resolved_path.is_socket() or (
                 full_resolved_path.is_fifo() or
                 full_resolved_path.is_block_device()):
             provenance = node.get_provenance()
-            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
-                            "{}: Specified path '{}' points to an unsupported "
-                            "file kind"
-                            .format(provenance, path_str))
+            raise LoadError("{}: Specified path '{}' points to an unsupported "
+                            "file kind".format(provenance, path_str), LoadErrorReason.PROJ_PATH_INVALID_KIND)
 
         if check_is_file and not full_resolved_path.is_file():
             provenance = node.get_provenance()
-            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
-                            "{}: Specified path '{}' is not a regular file"
-                            .format(provenance, path_str))
+            raise LoadError("{}: Specified path '{}' is not a regular file"
+                            .format(provenance, path_str), LoadErrorReason.PROJ_PATH_INVALID_KIND)
 
         if check_is_dir and not full_resolved_path.is_dir():
             provenance = node.get_provenance()
-            raise LoadError(LoadErrorReason.PROJ_PATH_INVALID_KIND,
-                            "{}: Specified path '{}' is not a directory"
-                            .format(provenance, path_str))
+            raise LoadError("{}: Specified path '{}' is not a directory"
+                            .format(provenance, path_str), LoadErrorReason.PROJ_PATH_INVALID_KIND)
 
         return path_str
 
@@ -552,7 +543,7 @@ class Project():
         except LoadError as e:
             # Raise a more specific error here
             if e.reason == LoadErrorReason.MISSING_FILE:
-                raise LoadError(LoadErrorReason.MISSING_PROJECT_CONF, str(e)) from e
+                raise LoadError(str(e), LoadErrorReason.MISSING_PROJECT_CONF) from e
             else:
                 raise
 
@@ -564,9 +555,8 @@ class Project():
         if BST_FORMAT_VERSION < format_version:
             major, minor = utils.get_bst_version()
             raise LoadError(
-                LoadErrorReason.UNSUPPORTED_PROJECT,
                 "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}"
-                .format(format_version, major, minor, BST_FORMAT_VERSION))
+                .format(format_version, major, minor, BST_FORMAT_VERSION), LoadErrorReason.UNSUPPORTED_PROJECT)
 
         self._validate_node(pre_config_node)
 
@@ -613,9 +603,8 @@ class Project():
         self.ref_storage = ref_storage_node.as_str()
         if self.ref_storage not in [ProjectRefStorage.INLINE, ProjectRefStorage.PROJECT_REFS]:
             p = ref_storage_node.get_provenance()
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Invalid value '{}' specified for ref-storage"
-                            .format(p, self.ref_storage))
+            raise LoadError("{}: Invalid value '{}' specified for ref-storage"
+                            .format(p, self.ref_storage), LoadErrorReason.INVALID_DATA)
 
         if self.ref_storage == ProjectRefStorage.PROJECT_REFS:
             self.junction_refs.load(self.first_pass_config.options)
@@ -849,10 +838,8 @@ class Project():
                 project_directory = workspace_project.get_default_project_path()
                 workspace_element = workspace_project.get_default_element()
         else:
-            raise LoadError(
-                LoadErrorReason.MISSING_PROJECT_CONF,
-                "None of {names} found in '{path}' or any of its parent directories"
-                .format(names=config_filenames, path=directory))
+            raise LoadError("None of {names} found in '{path}' or any of its parent directories"
+                            .format(names=config_filenames, path=directory), LoadErrorReason.MISSING_PROJECT_CONF)
 
         return project_directory, workspace_element
 
@@ -874,27 +861,23 @@ class Project():
 
             origin_value = origin.get_str('origin')
             if origin_value not in allowed_origins:
-                raise LoadError(
-                    LoadErrorReason.INVALID_YAML,
-                    "Origin '{}' is not one of the allowed types"
-                    .format(origin_value))
+                raise LoadError("Origin '{}' is not one of the allowed types"
+                                .format(origin_value), LoadErrorReason.INVALID_YAML)
 
             # Store source versions for checking later
             source_versions = origin.get_mapping('sources', default={})
             for key in source_versions.keys():
                 if key in source_format_versions:
-                    raise LoadError(
-                        LoadErrorReason.INVALID_YAML,
-                        "Duplicate listing of source '{}'".format(key))
+                    raise LoadError("Duplicate listing of source '{}'".format(key),
+                                    LoadErrorReason.INVALID_YAML)
                 source_format_versions[key] = source_versions.get_int(key)
 
             # Store element versions for checking later
             element_versions = origin.get_mapping('elements', default={})
             for key in element_versions.keys():
                 if key in element_format_versions:
-                    raise LoadError(
-                        LoadErrorReason.INVALID_YAML,
-                        "Duplicate listing of element '{}'".format(key))
+                    raise LoadError("Duplicate listing of element '{}'".format(key),
+                                    LoadErrorReason.INVALID_YAML)
                 element_format_versions[key] = element_versions.get_int(key)
 
             # Store the origins if they're not 'core'.
@@ -927,9 +910,9 @@ class Project():
     def _store_origin(self, origin, plugin_group, destination):
         expected_groups = ['sources', 'elements']
         if plugin_group not in expected_groups:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "Unexpected plugin group: {}, expecting {}"
-                            .format(plugin_group, expected_groups))
+            raise LoadError("Unexpected plugin group: {}, expecting {}"
+                            .format(plugin_group, expected_groups),
+                            LoadErrorReason.INVALID_DATA)
         if plugin_group in origin.keys():
             origin_node = origin.clone()
             plugins = origin.get_mapping(plugin_group, default={})

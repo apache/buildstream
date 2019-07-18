@@ -319,9 +319,9 @@ cdef class ScalarNode(Node):
         else:
             provenance = self.get_provenance()
             path = provenance._toplevel._find(self)[-1]
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                "{}: Value of '{}' is not of the expected type '{}'"
-                .format(provenance, path, bool.__name__, self.value))
+            raise LoadError("{}: Value of '{}' is not of the expected type '{}'"
+                            .format(provenance, path, bool.__name__, self.value),
+                            LoadErrorReason.INVALID_DATA)
 
     cpdef int as_int(self) except *:
         """Get the value of the node as an integer.
@@ -338,9 +338,9 @@ cdef class ScalarNode(Node):
         except ValueError:
             provenance = self.get_provenance()
             path = provenance._toplevel._find(self)[-1]
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                "{}: Value of '{}' is not of the expected type '{}'"
-                .format(provenance, path, int.__name__))
+            raise LoadError("{}: Value of '{}' is not of the expected type '{}'"
+                            .format(provenance, path, int.__name__),
+                            LoadErrorReason.INVALID_DATA)
 
     cpdef str as_str(self):
         """Get the value of the node as a string.
@@ -542,9 +542,8 @@ cdef class MappingNode(Node):
 
         if type(value) is not MappingNode and value is not None:
             provenance = value.get_provenance()
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Value of '{}' is not of the expected type 'dict'"
-                            .format(provenance, key))
+            raise LoadError("{}: Value of '{}' is not of the expected type 'dict'"
+                            .format(provenance, key), LoadErrorReason.INVALID_DATA)
 
         return value
 
@@ -580,8 +579,8 @@ cdef class MappingNode(Node):
                 return None
 
             provenance = self.get_provenance()
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
+            raise LoadError("{}: Dictionary did not contain expected key '{}'".format(provenance, key),
+                            LoadErrorReason.INVALID_DATA)
 
         if allowed_types and type(value) not in allowed_types:
             provenance = self.get_provenance()
@@ -593,9 +592,8 @@ cdef class MappingNode(Node):
             if ScalarNode in allowed_types:
                 human_types.append('scalar')
 
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Value of '{}' is not one of the following: {}.".format(
-                                provenance, key, ", ".join(human_types)))
+            raise LoadError("{}: Value of '{}' is not one of the following: {}.".format(
+                            provenance, key, ", ".join(human_types)), LoadErrorReason.INVALID_DATA)
 
         return value
 
@@ -624,9 +622,8 @@ cdef class MappingNode(Node):
                 value = ScalarNode.__new__(ScalarNode, self.file_index, 0, __next_synthetic_counter(), None)
             else:
                 provenance = value.get_provenance()
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Value of '{}' is not of the expected type 'scalar'"
-                                .format(provenance, key))
+                raise LoadError("{}: Value of '{}' is not of the expected type 'scalar'"
+                                .format(provenance, key), LoadErrorReason.INVALID_DATA)
 
         return value
 
@@ -651,9 +648,8 @@ cdef class MappingNode(Node):
 
         if type(value) is not SequenceNode and value is not None:
             provenance = value.get_provenance()
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Value of '{}' is not of the expected type 'list'"
-                            .format(provenance, key))
+            raise LoadError("{}: Value of '{}' is not of the expected type 'list'"
+                            .format(provenance, key), LoadErrorReason.INVALID_DATA)
 
         return value
 
@@ -758,8 +754,8 @@ cdef class MappingNode(Node):
         for key in self.value:
             if key not in valid_keys_set:
                 provenance = self.get_node(key).get_provenance()
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Unexpected key: {}".format(provenance, key))
+                raise LoadError("{}: Unexpected key: {}".format(provenance, key),
+                                LoadErrorReason.INVALID_DATA)
 
     cpdef object values(self):
         """Get the values in the mapping.
@@ -806,11 +802,11 @@ cdef class MappingNode(Node):
             error_prefix = ""
             if source_provenance:
                 error_prefix = "{}: ".format(source_provenance)
-            raise LoadError(LoadErrorReason.ILLEGAL_COMPOSITE,
-                            "{}Failure composing {}: {}"
+            raise LoadError("{}Failure composing {}: {}"
                             .format(error_prefix,
                                     e.path,
-                                    e.message)) from e
+                                    e.message),
+                            LoadErrorReason.ILLEGAL_COMPOSITE) from e
 
     # Like self._composite(target), but where values in the target don't get overridden by values in self.
     #
@@ -859,8 +855,8 @@ cdef class MappingNode(Node):
             #
             if key in ('(>)', '(<)', '(=)'):
                 provenance = value.get_provenance()
-                raise LoadError(LoadErrorReason.TRAILING_LIST_DIRECTIVE,
-                                "{}: Attempt to override non-existing list".format(provenance))
+                raise LoadError("{}: Attempt to override non-existing list".format(provenance),
+                                LoadErrorReason.TRAILING_LIST_DIRECTIVE)
 
             value._assert_fully_composited()
 
@@ -980,9 +976,8 @@ cdef class MappingNode(Node):
 
         if has_keys and has_directives:
             provenance = self.get_provenance()
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Dictionary contains array composition directives and arbitrary keys"
-                            .format(provenance))
+            raise LoadError("{}: Dictionary contains array composition directives and arbitrary keys"
+                            .format(provenance), LoadErrorReason.INVALID_DATA)
 
         return has_directives
 
@@ -1042,8 +1037,8 @@ cdef class MappingNode(Node):
         if value is _sentinel:
             if default is _sentinel:
                 provenance = self.get_provenance()
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}: Dictionary did not contain expected key '{}'".format(provenance, key))
+                raise LoadError("{}: Dictionary did not contain expected key '{}'".format(provenance, key),
+                                LoadErrorReason.INVALID_DATA)
 
             if default is None:
                 value = None
@@ -1169,9 +1164,9 @@ cdef class SequenceNode(Node):
         if type(value) is not MappingNode:
             provenance = self.get_provenance()
             path = ["[{}]".format(p) for p in provenance.toplevel._find(self)] + ["[{}]".format(index)]
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Value of '{}' is not of the expected type '{}'"
-                            .format(provenance, path, MappingNode.__name__))
+            raise LoadError("{}: Value of '{}' is not of the expected type '{}'"
+                            .format(provenance, path, MappingNode.__name__),
+                            LoadErrorReason.INVALID_DATA)
         return value
 
     cpdef Node node_at(self, int index, list allowed_types = None):
@@ -1202,9 +1197,9 @@ cdef class SequenceNode(Node):
 
         if allowed_types and type(value) not in allowed_types:
             provenance = self.get_provenance()
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Value of '{}' is not one of the following: {}.".format(
-                                provenance, index, ", ".join(allowed_types)))
+            raise LoadError("{}: Value of '{}' is not one of the following: {}.".format(
+                            provenance, index, ", ".join(allowed_types)),
+                            LoadErrorReason.INVALID_DATA)
 
         return value
 
@@ -1229,9 +1224,9 @@ cdef class SequenceNode(Node):
         if type(value) is not ScalarNode:
             provenance = self.get_provenance()
             path = ["[{}]".format(p) for p in provenance.toplevel._find(self)] + ["[{}]".format(index)]
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Value of '{}' is not of the expected type '{}'"
-                            .format(provenance, path, ScalarNode.__name__))
+            raise LoadError("{}: Value of '{}' is not of the expected type '{}'"
+                            .format(provenance, path, ScalarNode.__name__),
+                            LoadErrorReason.INVALID_DATA)
         return value
 
     cpdef SequenceNode sequence_at(self, int index):
@@ -1255,9 +1250,9 @@ cdef class SequenceNode(Node):
         if type(value) is not SequenceNode:
             provenance = self.get_provenance()
             path = ["[{}]".format(p) for p in provenance.toplevel._find(self)] + ["[{}]".format(index)]
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: Value of '{}' is not of the expected type '{}'"
-                            .format(provenance, path, SequenceNode.__name__))
+            raise LoadError("{}: Value of '{}' is not of the expected type '{}'"
+                            .format(provenance, path, SequenceNode.__name__),
+                            LoadErrorReason.INVALID_DATA)
 
         return value
 
@@ -1415,8 +1410,7 @@ def _assert_symbol_name(str symbol_name, str purpose, *, Node ref_node=None, bin
             if provenance is not None:
                 message = "{}: {}".format(provenance, message)
 
-        raise LoadError(LoadErrorReason.INVALID_SYMBOL_NAME,
-                        message, detail=detail)
+        raise LoadError(message, LoadErrorReason.INVALID_SYMBOL_NAME, detail=detail)
 
 
 # _create_new_file(filename, shortname, displayname, toplevel, project)

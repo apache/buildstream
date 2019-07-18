@@ -47,9 +47,9 @@ class OptionEnum(Option):
 
         self.values = node.get_str_list('values', default=[])
         if not self.values:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: No values specified for {} option '{}'"
-                            .format(node.get_provenance(), self.OPTION_TYPE, self.name))
+            raise LoadError("{}: No values specified for {} option '{}'"
+                            .format(node.get_provenance(), self.OPTION_TYPE, self.name),
+                            LoadErrorReason.INVALID_DATA,)
 
         # Allow subclass to define the default value
         self.value = self.load_default_value(node)
@@ -75,10 +75,10 @@ class OptionEnum(Option):
                 prefix = "{}: ".format(provenance)
             else:
                 prefix = ""
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}Invalid value for {} option '{}': {}\n"
+            raise LoadError("{}Invalid value for {} option '{}': {}\n"
                             .format(prefix, self.OPTION_TYPE, self.name, value) +
-                            "Valid values: {}".format(", ".join(self.values)))
+                            "Valid values: {}".format(", ".join(self.values)),
+                            LoadErrorReason.INVALID_DATA)
 
     def load_default_value(self, node):
         value_node = node.get_scalar('default')

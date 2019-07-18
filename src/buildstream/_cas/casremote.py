@@ -35,8 +35,7 @@ class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key
         push = spec_node.get_bool('push', default=False)
         if not url:
             provenance = spec_node.get_node('url').get_provenance()
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: empty artifact cache URL".format(provenance))
+            raise LoadError("{}: empty artifact cache URL".format(provenance), LoadErrorReason.INVALID_DATA)
 
         instance_name = spec_node.get_str('instance-name', default=None)
 
@@ -54,13 +53,13 @@ class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key
 
         if client_key and not client_cert:
             provenance = spec_node.get_node('client-key').get_provenance()
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: 'client-key' was specified without 'client-cert'".format(provenance))
+            raise LoadError("{}: 'client-key' was specified without 'client-cert'".format(provenance),
+                            LoadErrorReason.INVALID_DATA)
 
         if client_cert and not client_key:
             provenance = spec_node.get_node('client-cert').get_provenance()
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: 'client-cert' was specified without 'client-key'".format(provenance))
+            raise LoadError("{}: 'client-cert' was specified without 'client-key'".format(provenance),
+                            LoadErrorReason.INVALID_DATA)
 
         return CASRemoteSpec(url, push, server_cert, client_key, client_cert, instance_name)
 

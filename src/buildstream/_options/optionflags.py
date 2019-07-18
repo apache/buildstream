@@ -48,9 +48,9 @@ class OptionFlags(Option):
         # Allow subclass to define the valid values
         self.values = self.load_valid_values(node)
         if not self.values:
-            raise LoadError(LoadErrorReason.INVALID_DATA,
-                            "{}: No values specified for {} option '{}'"
-                            .format(node.get_provenance(), self.OPTION_TYPE, self.name))
+            raise LoadError("{}: No values specified for {} option '{}'"
+                            .format(node.get_provenance(), self.OPTION_TYPE, self.name),
+                            LoadErrorReason.INVALID_DATA)
 
         value_node = node.get_sequence('default', default=[])
         self.value = value_node.as_str_list()
@@ -85,10 +85,10 @@ class OptionFlags(Option):
                     prefix = "{}: ".format(provenance)
                 else:
                     prefix = ""
-                raise LoadError(LoadErrorReason.INVALID_DATA,
-                                "{}Invalid value for flags option '{}': {}\n"
+                raise LoadError("{}Invalid value for flags option '{}': {}\n"
                                 .format(prefix, self.name, value) +
-                                "Valid values: {}".format(", ".join(self.values)))
+                                "Valid values: {}".format(", ".join(self.values)),
+                                LoadErrorReason.INVALID_DATA)
 
     def load_valid_values(self, node):
         # Allow the more descriptive error to raise when no values
