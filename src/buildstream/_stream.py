@@ -771,14 +771,14 @@ class Stream():
                                       .format(target.name, directory), reason='bad-directory')
 
         # So far this function has tried to catch as many issues as possible with out making any changes
-        # Now it dose the bits that can not be made atomic.
+        # Now it does the bits that can not be made atomic.
         targetGenerator = zip(elements, expanded_directories)
         for target, directory in targetGenerator:
             self._message(MessageType.INFO, "Creating workspace for element {}"
                           .format(target.name))
 
             workspace = workspaces.get_workspace(target._get_full_name())
-            if workspace:
+            if workspace and not no_checkout:
                 workspaces.delete_workspace(target._get_full_name())
                 workspaces.save_config()
                 shutil.rmtree(directory)
