@@ -1175,6 +1175,10 @@ class Element(Plugin):
             # Tracking may still be pending
             return
 
+        if self._get_workspace() and self.__assemble_scheduled:
+            self.__reset_cache_data()
+            return
+
         self.__update_cache_keys()
         self.__update_artifact_state()
 
