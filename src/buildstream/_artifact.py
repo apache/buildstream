@@ -37,13 +37,13 @@ from .types import Scope
 from .storage._casbaseddirectory import CasBasedDirectory
 
 
-# An Artifact class to abtract artifact operations
+# An Artifact class to abstract artifact operations
 # from the Element class
 #
 # Args:
 #     element (Element): The Element object
 #     context (Context): The BuildStream context
-#     strong_key (str): The elements strong cache key, dependant on context
+#     strong_key (str): The elements strong cache key, dependent on context
 #     weak_key (str): The elements weak cache key
 #
 class Artifact():
@@ -338,7 +338,7 @@ class Artifact():
     # Check whether the artifact corresponding to the stored cache key is
     # available. This also checks whether all required parts of the artifact
     # are available, which may depend on command and configuration. The cache
-    # key used for querying is dependant on the current context.
+    # key used for querying is dependent on the current context.
     #
     # Returns:
     #     (bool): Whether artifact is in local cache
