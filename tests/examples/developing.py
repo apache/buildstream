@@ -6,7 +6,7 @@ import pytest
 
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.testing.integration import assert_contains
-from buildstream.testing._utils.site import HAVE_BWRAP, IS_LINUX, MACHINE_ARCH
+from buildstream.testing._utils.site import IS_LINUX, MACHINE_ARCH, HAVE_SANDBOX
 import tests.testutils.patch as patch
 
 pytestmark = pytest.mark.integration
@@ -19,7 +19,8 @@ DATA_DIR = os.path.join(
 # Test that the project builds successfully
 @pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
                     reason='Examples are written for x86-64')
-@pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
+@pytest.mark.skipif(not IS_LINUX or not HAVE_SANDBOX, reason='Only available on linux with SANDBOX')
+@pytest.mark.skipif(HAVE_SANDBOX == 'chroot', reason='This is not meant to work with chroot')
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_build(cli, datafiles):
     project = str(datafiles)
@@ -40,7 +41,8 @@ def test_autotools_build(cli, datafiles):
 # Test the unmodified hello command works as expected.
 @pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
                     reason='Examples are written for x86-64')
-@pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
+@pytest.mark.skipif(not IS_LINUX or not HAVE_SANDBOX, reason='Only available on linux with SANDBOX')
+@pytest.mark.skipif(HAVE_SANDBOX == 'chroot', reason='This is not meant to work with chroot')
 @pytest.mark.datafiles(DATA_DIR)
 def test_run_unmodified_hello(cli, datafiles):
     project = str(datafiles)
@@ -73,7 +75,9 @@ def test_open_workspace(cli, tmpdir, datafiles):
 # Test making a change using the workspace
 @pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
                     reason='Examples are written for x86-64')
-@pytest.mark.skipif(not IS_LINUX or not HAVE_BWRAP, reason='Only available on linux with bubblewrap')
+@pytest.mark.skipif(not IS_LINUX or not HAVE_SANDBOX, reason='Only available on linux with SANDBOX')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
+@pytest.mark.skipif(HAVE_SANDBOX == 'chroot', reason='This is not meant to work with chroot')
 @pytest.mark.datafiles(DATA_DIR)
 def test_make_change_in_workspace(cli, tmpdir, datafiles):
     project = str(datafiles)

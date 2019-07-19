@@ -59,8 +59,8 @@ def test_buildtree_staged_forced_true(cli_integration, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-def test_buildtree_staged_warn_non_cached(cli_integration, tmpdir, datafiles):
-    # Test that if we attempt to stage a buildtree that was never cached, we warn the user.
+def test_buildtree_staged_warn_empty_cached(cli_integration, tmpdir, datafiles):
+    # Test that if we stage a cached and empty buildtree, we warn the user.
     project = str(datafiles)
     element_name = 'build-shell/buildtree.bst'
 
