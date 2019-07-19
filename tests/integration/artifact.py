@@ -45,6 +45,8 @@ DATA_DIR = os.path.join(
 # A test to capture the integration of the cachebuildtrees
 # behaviour, which by default is to include the buildtree
 # content of an element on caching.
+
+# Dse this really need a sandbox?
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_cache_buildtrees(cli, tmpdir, datafiles):
