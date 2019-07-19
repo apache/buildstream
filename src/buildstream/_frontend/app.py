@@ -91,7 +91,7 @@ class App():
         self._detail_profile = Profile(dim=True)
 
         #
-        # Earily initialization
+        # Early initialization
         #
         is_a_tty = sys.stdout.isatty() and sys.stderr.isatty()
 
