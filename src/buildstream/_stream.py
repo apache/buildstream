@@ -1366,12 +1366,11 @@ class Stream():
                          tar=False,
                          include_build_scripts=False):
         location = os.path.abspath(location)
-        location_parent = os.path.abspath(os.path.join(location, ".."))
 
         # Stage all our sources in a temporary directory. The this
         # directory can be used to either construct a tarball or moved
         # to the final desired location.
-        temp_source_dir = tempfile.TemporaryDirectory(dir=location_parent)
+        temp_source_dir = tempfile.TemporaryDirectory(dir=self._context.tmpdir)
         try:
             self._write_element_sources(temp_source_dir.name, elements)
             if include_build_scripts:
