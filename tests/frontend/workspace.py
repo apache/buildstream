@@ -355,6 +355,31 @@ def test_open_force_open(cli, tmpdir, datafiles):
     result.assert_success()
 
 
+# Regression test for #1086.
+@pytest.mark.datafiles(DATA_DIR)
+def test_open_force_open_no_checkout(cli, tmpdir, datafiles):
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
+    hello_path = os.path.join(workspace, 'hello.txt')
+
+    # Assert the workspace dir exists
+    assert os.path.exists(workspace)
+
+    # Create a new file in the workspace
+    with open(hello_path, 'w') as f:
+        f.write('hello')
+
+    # Now open the workspace again with --force and --no-checkout
+    result = cli.run(project=project, args=[
+        'workspace', 'open', '--force', '--no-checkout', '--directory', workspace, element_name
+    ])
+    result.assert_success()
+
+    # Ensure that our files were not overwritten
+    assert os.path.exists(hello_path)
+    with open(hello_path) as f:
+        assert f.read() == 'hello'
+
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_force_different_workspace(cli, tmpdir, datafiles):
     _, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False, "-alpha")
