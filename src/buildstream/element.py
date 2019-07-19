@@ -1195,8 +1195,8 @@ class Element(Plugin):
                 self.__reset_cache_data()
                 if not self.__assemble_scheduled:
                     self._schedule_assemble()
-            else:
-                self.__cache_keys_unstable = False
+
+        self.__update_cache_keys_stability()
 
         # Workspaced sources are considered unstable if a build is pending
         # as the build will modify the contents of the workspace.
@@ -1530,10 +1530,7 @@ class Element(Plugin):
 
         self.__assemble_scheduled = False
         self.__assemble_done = True
-
-        # If we've just assembled the Element, we are safe to
-        # consider the cache keys as stable
-        self.__cache_keys_unstable = False
+        self.__update_cache_keys_stability()
 
         # Artifact may have a cached success now.
         if self.__strict_artifact:
@@ -1799,10 +1796,7 @@ class Element(Plugin):
         self.__strict_artifact.reset_cached()
         self.__artifact.reset_cached()
 
-        # If we've just successfully pulled the element, we are safe
-        # to consider its keys as stable
-        if self.__cache_keys_unstable and self._cached_success():
-            self.__cache_keys_unstable = False
+        self.__update_cache_keys_stability()
 
         self._update_state()
         self._update_ready_for_runtime_and_cached()
@@ -3147,6 +3141,22 @@ class Element(Plugin):
 
             if context.get_strict():
                 self.__artifact = self.__strict_artifact
+
+    # __update_cache_keys_stability()
+    #
+    # Update the __cache_keys_unstable attribute.
+    #
+    # Workspaces are considered to be unstable on a new element instance.
+    # Otherwise if the element is cached or the build is done, then keys
+    # are considered to be stable. In other cases there is no change to
+    # the attribute.
+    #
+    def __update_cache_keys_stability(self):
+        if self.__cache_keys_unstable:
+            if self._cached_success():
+                self.__cache_keys_unstable = False
+            elif not self.__assemble_scheduled and self.__assemble_done:
+                self.__cache_keys_unstable = False
 
     # __update_cache_key_non_strict()
     #
