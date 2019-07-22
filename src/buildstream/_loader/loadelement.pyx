@@ -17,9 +17,12 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+from functools import cmp_to_key
+
 from pyroaring import BitMap, FrozenBitMap  # pylint: disable=no-name-in-module
 
 from ..node cimport MappingNode
+from .types import Symbol
 
 
 # Counter to get ids to LoadElements
@@ -45,7 +48,7 @@ cdef class Dependency:
     cdef readonly LoadElement element
     cdef readonly str dep_type
 
-    def __init__(self, element, dep_type):
+    def __cinit__(self, LoadElement element, str dep_type):
         self.element = element
         self.dep_type = dep_type
 
@@ -72,7 +75,7 @@ cdef class LoadElement:
     cdef object _dep_cache
     cdef readonly list dependencies
 
-    def __init__(self, MappingNode node, str filename, object loader):
+    def __cinit__(self, MappingNode node, str filename, object loader):
 
         #
         # Public members
@@ -152,3 +155,74 @@ cdef class LoadElement:
             self._dep_cache.update(elt._dep_cache)
 
         self._dep_cache = FrozenBitMap(self._dep_cache)
+
+
+def _dependency_cmp(Dependency dep_a, Dependency dep_b):
+    cdef LoadElement element_a = dep_a.element
+    cdef LoadElement element_b = dep_b.element
+
+    # Sort on inter element dependency first
+    if element_a.depends(element_b):
+        return 1
+    elif element_b.depends(element_a):
+        return -1
+
+    # If there are no inter element dependencies, place
+    # runtime only dependencies last
+    if dep_a.dep_type != dep_b.dep_type:
+        if dep_a.dep_type == Symbol.RUNTIME:
+            return 1
+        elif dep_b.dep_type == Symbol.RUNTIME:
+            return -1
+
+    # All things being equal, string comparison.
+    if element_a.name > element_b.name:
+        return 1
+    elif element_a.name < element_b.name:
+        return -1
+
+    # Sort local elements before junction elements
+    # and use string comparison between junction elements
+    if element_a.junction and element_b.junction:
+        if element_a.junction > element_b.junction:
+            return 1
+        elif element_a.junction < element_b.junction:
+            return -1
+    elif element_a.junction:
+        return -1
+    elif element_b.junction:
+        return 1
+
+    # This wont ever happen
+    return 0
+
+
+# sort_dependencies():
+#
+# Sort dependencies of each element by their dependencies,
+# so that direct dependencies which depend on other direct
+# dependencies (directly or indirectly) appear later in the
+# list.
+#
+# This avoids the need for performing multiple topological
+# sorts throughout the build process.
+#
+# Args:
+#    element (LoadElement): The element to sort
+#
+def sort_dependencies(LoadElement element):
+    cdef list working_elements = [element]
+    cdef set visited = set(working_elements)
+    cdef Dependency dep
+
+    # Now dependency sort, we ensure that if any direct dependency
+    # directly or indirectly depends on another direct dependency,
+    # it is found later in the list.
+    while working_elements:
+        element = working_elements.pop()
+        for dep in element.dependencies:
+            if dep.element not in visited:
+                visited.add(dep.element)
+                working_elements.append(dep.element)
+
+        element.dependencies.sort(key=cmp_to_key(_dependency_cmp))

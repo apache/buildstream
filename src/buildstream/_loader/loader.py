@@ -18,7 +18,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
-from functools import cmp_to_key
 
 from .._exceptions import LoadError, LoadErrorReason
 from .. import Consistency
@@ -30,6 +29,7 @@ from .._includes import Includes
 
 from ._loader import valid_chars_name
 from .types import Symbol, extract_depends_from_node
+from . import loadelement
 from .loadelement import Dependency, LoadElement
 from .metaelement import MetaElement
 from .metasource import MetaSource
@@ -137,7 +137,7 @@ class Loader():
         for element in target_elements:
             loader = element._loader
             with PROFILER.profile(Topics.SORT_DEPENDENCIES, element.name):
-                loader._sort_dependencies(element)
+                loadelement.sort_dependencies(element)
 
             # Finally, wrap what we have into LoadElements and return the target
             #
@@ -404,77 +404,6 @@ class Loader():
                 sequence_indices.pop()
                 check_elements.remove(this_element)
                 validated.add(this_element)
-
-    # _sort_dependencies():
-    #
-    # Sort dependencies of each element by their dependencies,
-    # so that direct dependencies which depend on other direct
-    # dependencies (directly or indirectly) appear later in the
-    # list.
-    #
-    # This avoids the need for performing multiple topological
-    # sorts throughout the build process.
-    #
-    # Args:
-    #    element (LoadElement): The element to sort
-    #
-    @staticmethod
-    def _sort_dependencies(element):
-
-        working_elements = [element]
-        visited = set(working_elements)
-
-        def dependency_cmp(dep_a, dep_b):
-            element_a = dep_a.element
-            element_b = dep_b.element
-
-            # Sort on inter element dependency first
-            if element_a.depends(element_b):
-                return 1
-            elif element_b.depends(element_a):
-                return -1
-
-            # If there are no inter element dependencies, place
-            # runtime only dependencies last
-            if dep_a.dep_type != dep_b.dep_type:
-                if dep_a.dep_type == Symbol.RUNTIME:
-                    return 1
-                elif dep_b.dep_type == Symbol.RUNTIME:
-                    return -1
-
-            # All things being equal, string comparison.
-            if element_a.name > element_b.name:
-                return 1
-            elif element_a.name < element_b.name:
-                return -1
-
-            # Sort local elements before junction elements
-            # and use string comparison between junction elements
-            if element_a.junction and element_b.junction:
-                if element_a.junction > element_b.junction:
-                    return 1
-                elif element_a.junction < element_b.junction:
-                    return -1
-            elif element_a.junction:
-                return -1
-            elif element_b.junction:
-                return 1
-
-            # This wont ever happen
-            return 0
-
-        # Now dependency sort, we ensure that if any direct dependency
-        # directly or indirectly depends on another direct dependency,
-        # it is found later in the list.
-        while working_elements:
-            element = working_elements.pop()
-            for dep in element.dependencies:
-                dep_element = dep.element
-                if dep_element not in visited:
-                    visited.add(dep_element)
-                    working_elements.append(dep_element)
-
-            element.dependencies.sort(key=cmp_to_key(dependency_cmp))
 
     # _collect_element_no_deps()
     #
