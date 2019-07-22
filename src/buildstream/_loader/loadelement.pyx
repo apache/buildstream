@@ -17,10 +17,37 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-# System imports
-from itertools import count
-
 from pyroaring import BitMap, FrozenBitMap  # pylint: disable=no-name-in-module
+
+from ..node cimport MappingNode
+
+
+# Counter to get ids to LoadElements
+cdef int _counter = 0
+
+cdef int _next_synthetic_counter():
+    global _counter
+    _counter += 1
+    return _counter
+
+
+# Dependency():
+#
+# A link from a LoadElement to its dependencies.
+#
+# Keeps a link to one of the current Element's dependencies, together with
+# its dependency type.
+#
+# Args:
+#    element (LoadElement): a LoadElement on which there is a dependency
+#    dep_type (str): the type of dependency this dependency link is
+cdef class Dependency:
+    cdef readonly LoadElement element
+    cdef readonly str dep_type
+
+    def __init__(self, element, dep_type):
+        self.element = element
+        self.dep_type = dep_type
 
 
 # LoadElement():
@@ -33,25 +60,19 @@ from pyroaring import BitMap, FrozenBitMap  # pylint: disable=no-name-in-module
 #    name (str): The element name
 #    loader (Loader): The Loader object for this element
 #
-class LoadElement():
-    # Dependency():
-    #
-    # A link from a LoadElement to its dependencies.
-    #
-    # Keeps a link to one of the current Element's dependencies, together with
-    # its dependency type.
-    #
-    # Args:
-    #    element (LoadElement): a LoadElement on which there is a dependency
-    #    dep_type (str): the type of dependency this dependency link is
-    class Dependency:
-        def __init__(self, element, dep_type):
-            self.element = element
-            self.dep_type = dep_type
+cdef class LoadElement:
 
-    _counter = count()
+    cdef readonly MappingNode node
+    cdef readonly str name
+    cdef readonly full_name
+    cdef public bint meta_done
+    cdef int node_id
+    cdef readonly object _loader
+    # TODO: if/when pyroaring exports symbols, we could type this statically
+    cdef object _dep_cache
+    cdef readonly list dependencies
 
-    def __init__(self, node, filename, loader):
+    def __init__(self, MappingNode node, str filename, object loader):
 
         #
         # Public members
@@ -60,7 +81,7 @@ class LoadElement():
         self.name = filename    # The element name
         self.full_name = None   # The element full name (with associated junction)
         self.meta_done = False  # If the MetaElement for this LoadElement is done
-        self.node_id = next(self._counter)
+        self.node_id = _next_synthetic_counter()
 
         #
         # Private members
@@ -103,14 +124,15 @@ class LoadElement():
     # Returns:
     #    (bool): True if this LoadElement depends on 'other'
     #
-    def depends(self, other):
+    def depends(self, LoadElement other not None):
         self._ensure_depends_cache()
         return other.node_id in self._dep_cache
 
     ###########################################
     #            Private Methods              #
     ###########################################
-    def _ensure_depends_cache(self):
+    cdef void _ensure_depends_cache(self):
+        cdef Dependency dep
 
         if self._dep_cache:
             return

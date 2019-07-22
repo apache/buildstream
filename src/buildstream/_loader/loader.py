@@ -30,7 +30,7 @@ from .._includes import Includes
 
 from ._loader import valid_chars_name
 from .types import Symbol, extract_depends_from_node
-from .loadelement import LoadElement
+from .loadelement import Dependency, LoadElement
 from .metaelement import MetaElement
 from .metasource import MetaSource
 from ..types import CoreWarnings
@@ -121,8 +121,9 @@ class Loader():
         # Set up a dummy element that depends on all top-level targets
         # to resolve potential circular dependencies between them
         dummy_target = LoadElement(Node.from_dict({}), "", self)
-        dummy_target.dependencies.extend(
-            LoadElement.Dependency(element, Symbol.RUNTIME)
+        # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
+        dummy_target.dependencies.extend(  # pylint: disable=no-member
+            Dependency(element, Symbol.RUNTIME)
             for element in target_elements
         )
 
@@ -334,13 +335,15 @@ class Loader():
                         dep_deps = extract_depends_from_node(dep_element.node)
                         loader_queue.append((dep_element, list(reversed(dep_deps)), []))
 
-                        if dep_element.node.get_str(Symbol.KIND) == 'junction':
+                        # Pylint is not very happy about Cython and can't understand 'node' is a 'MappingNode'
+                        if dep_element.node.get_str(Symbol.KIND) == 'junction':  # pylint: disable=no-member
                             raise LoadError("{}: Cannot depend on junction" .format(dep.provenance),
                                             LoadErrorReason.INVALID_DATA)
 
                 # All is well, push the dependency onto the LoadElement
-                current_element[0].dependencies.append(
-                    LoadElement.Dependency(dep_element, dep.dep_type))
+                # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
+                current_element[0].dependencies.append(  # pylint: disable=no-member
+                    Dependency(dep_element, dep.dep_type))
             else:
                 # We do not have any more dependencies to load for this
                 # element on the queue, report any invalid dep names
