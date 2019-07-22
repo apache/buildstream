@@ -1175,6 +1175,10 @@ class Element(Plugin):
             # Tracking may still be pending
             return
 
+        if self._get_workspace() and self.__assemble_scheduled:
+            self.__reset_cache_data()
+            return
+
         self.__update_cache_keys()
         self.__update_artifact_state()
 
@@ -2155,10 +2159,22 @@ class Element(Plugin):
                 'element-plugin-version': self.BST_ARTIFACT_VERSION,
                 'sandbox': self.__sandbox_config.get_unique_key(),
                 'environment': cache_env,
-                'sources': [s._get_unique_key(workspace is None) for s in self.__sources],
-                'workspace': '' if workspace is None else workspace.get_key(self._get_project()),
-                'public': self.__public._strip_node_info(),
+                'public': self.__public._strip_node_info()
             }
+
+            def __get_source_entry(_source):
+                return {'key': _source._get_unique_key(True),
+                        'name': _source._get_source_name()}
+
+            def __get_workspace_entry(workspace):
+                return {'key': workspace.get_key()}
+
+            if workspace is None:
+                self.__cache_key_dict['sources'] = \
+                    [__get_source_entry(s) for s in self.__sources]
+            else:
+                self.__cache_key_dict['sources'] = \
+                    [__get_workspace_entry(workspace)]
 
             self.__cache_key_dict['fatal-warnings'] = sorted(project._fatal_warnings)
 
