@@ -1,6 +1,7 @@
 About
 -----
 
+
 .. image:: https://docs.buildstream.build/_static/release.svg
    :target: https://gitlab.com/BuildStream/buildstream/commits/bst-1.2
 
