@@ -204,7 +204,6 @@ def test_keep_dependencies(cli, datafiles):
 
 # Assert that we never delete a dependency required for a build tree
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.xfail()
 def test_never_delete_required(cli, datafiles):
     project = str(datafiles)
     element_path = 'elements'
@@ -225,30 +224,19 @@ def test_never_delete_required(cli, datafiles):
     create_element_size('dep3.bst', project, element_path, ['dep2.bst'], 8000000)
     create_element_size('target.bst', project, element_path, ['dep3.bst'], 8000000)
 
+    # Build dep1.bst, which should fit into the cache.
+    res = cli.run(project=project, args=['build', 'dep1.bst'])
+    res.assert_success()
+
     # We try to build this pipeline, but it's too big for the
     # cache. Since all elements are required, the build should fail.
     res = cli.run(project=project, args=['build', 'target.bst'])
     res.assert_main_error(ErrorDomain.STREAM, None)
     res.assert_task_error(ErrorDomain.CAS, 'cache-too-full')
 
-    # Only the first artifact fits in the cache, but we expect
-    # that the first *two* artifacts will be cached.
-    #
-    # This is because after caching the first artifact we must
-    # proceed to build the next artifact, and we cannot really
-    # know how large an artifact will be until we try to cache it.
-    #
-    # In this case, we deem it more acceptable to not delete an
-    # artifact which caused the cache to outgrow the quota.
-    #
-    # Note that this test only works because we have forced
-    # the configuration to build one element at a time, in real
-    # life there may potentially be N-builders cached artifacts
-    # which exceed the quota
-    #
     states = cli.get_element_states(project, ['target.bst'])
     assert states['dep1.bst'] == 'cached'
-    assert states['dep2.bst'] == 'cached'
+    assert states['dep2.bst'] != 'cached'
     assert states['dep3.bst'] != 'cached'
     assert states['target.bst'] != 'cached'
 
