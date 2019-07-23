@@ -46,12 +46,9 @@ variables:
   after_script:
   except:
   - schedules
-  artifacts:
+    artifacts:
     paths:
     - .coverage-reports
-
-  only:
-    - merge_requests
 
 tests-debian-9:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-46405991
@@ -73,8 +70,8 @@ tests-centos-7.6:
   <<: *tests
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.6.1810-master-46405991
 
-overnight-fedora-29-aarch64:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:aarch64-29-master-47052095
+overnight-fedora-30-aarch64:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:aarch64-30-master-59168197
   tags:
     - aarch64
   <<: *tests
@@ -83,12 +80,6 @@ overnight-fedora-29-aarch64:
   except: []
   only:
   - schedules
-  before_script:
-    # grpcio needs to be compiled from source on aarch64 so we additionally
-    # need a C++ compiler here.
-    # FIXME: Ideally this would be provided by the base image. This will be
-    # unblocked by https://gitlab.com/BuildStream/buildstream-docker-images/issues/34
-    - dnf install -y gcc-c++
 
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
@@ -96,7 +87,7 @@ tests-unix:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
   <<: *tests
   variables:
-    BST_FORCE_BACKEND: "unix"
+    BST_FORCE_SANDBOX: "chroot"
 
   script:
 
@@ -178,6 +169,39 @@ lint:
   except:
   - schedules
 
+tests-wsl-master:
+  stage: test
+  variables:
+    LC_ALL: C.UTF-8
+    LANG: C.UTF-8
+  tags:
+  - wsl
+  before_script:
+  - mount
+  - df -h
+  - PATH=/root/.local/bin:$PATH tox --version
+  script:
+  - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
+  only:
+  - master
+
+tests-wsl-non-master:
+  stage: test
+  variables:
+    LC_ALL: C.UTF-8
+    LANG: C.UTF-8
+  tags:
+  - wsl
+  before_script:
+  - mount
+  - df -h
+  - PATH=/root/.local/bin:$PATH tox --version
+  script:
+  - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
+  when: manual
+  except:
+  - master
+
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
 docs:
@@ -193,8 +217,47 @@ docs:
     paths:
     - public/
 
+.overnight-tests: &overnight-tests-template
+  stage: test
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-59168197
+  variables:
+    BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
+    BST_EXT_REF: 0.12.0-40-g7aa1423377629281decc455d1090964417c38f2e
+    FD_SDK_REF: freedesktop-sdk-18.08.31.1-2-g5c639b8d553016ea6c28ea160a572da2e189745e
+  before_script:
+  - |
+    mkdir -p "${HOME}/.config"
+    cat <<EOF >"${HOME}/.config/buildstream.conf"
+    scheduler:
+      fetchers: 2
+    EOF
+  - dnf install -y ostree python3-gobject-base
+  - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
+  - pip3 wheel --wheel-dir wheels/ --no-deps .
+  - pip3 install --no-index wheels/*
+  - pip3 install --user -e ${BST_EXT_URL}@${BST_EXT_REF}#egg=bst_ext
+  - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
+  - git -C freedesktop-sdk checkout ${FD_SDK_REF}
+  artifacts:
+    paths:
+    - "${HOME}/.cache/buildstream/logs"
   only:
-    - merge_requests
+  - schedules
+
+overnight-tests:
+  <<: *overnight-tests-template
+  script:
+  - make -C freedesktop-sdk
+  tags:
+  - overnight-tests
+
+overnight-tests-no-cache:
+  <<: *overnight-tests-template
+  script:
+  - sed -i '/artifacts:/,+1 d' freedesktop-sdk/project.conf
+  - make -C freedesktop-sdk
+  tags:
+  - overnight-tests
 
 # Check code quality with gitlab's built-in feature.
 #
@@ -217,9 +280,6 @@ code_quality:
   - schedules
   artifacts:
     paths: [gl-code-quality-report.json]
-
-  only:
-    - merge_requests
 
 #####################################################
 #                    Post stage                     #
@@ -253,9 +313,6 @@ analysis:
     paths:
     - analysis/
 
-  only:
-    - merge_requests
-
 # Collate coverage reports
 #
 coverage:
@@ -282,5 +339,37 @@ coverage:
     - coverage-sources/
     - coverage-report/
 
+# Deploy, only for merges which land on master branch.
+#
+pages:
+  stage: publish
+  dependencies:
+  - coverage
+  - docs
+  variables:
+    ACME_DIR: public/.well-known/acme-challenge
+    COVERAGE_DIR: public/coverage
+  script:
+  - mkdir -p ${ACME_DIR}
+    # Required to finish the creation of the Let's Encrypt certificate,
+    # which allows using https://docs.buildstream.build/ for accessing
+    # the documentation.
+  - echo ${ACME_CHALLENGE} > ${ACME_DIR}/$(echo ${ACME_CHALLENGE} | cut -c1-43)
+  - mkdir -p ${COVERAGE_DIR}
+  - cp -a ./coverage-report/ ${COVERAGE_DIR}
+  artifacts:
+    paths:
+    - public/
   only:
-    - merge_requests
+  #
+  # FIXME:
+  #
+  # Ideally we want to publish to a different subdir of
+  # pages depending on which stable branch we are building here,
+  # not currently automatically supported but can be worked around.
+  #
+  # See https://gitlab.com/gitlab-org/gitlab-ce/issues/35141
+  #
+  - master
+  except:
+  - schedules
