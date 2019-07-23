@@ -50,6 +50,9 @@ variables:
     paths:
     - .coverage-reports
 
+  only:
+    - merge_requests
+
 tests-debian-9:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-46405991
   <<: *tests
@@ -223,6 +226,9 @@ docs:
     paths:
     - public/
 
+  only:
+    - merge_requests
+
 .overnight-tests: &overnight-tests-template
   stage: test
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-59168197
@@ -287,6 +293,9 @@ code_quality:
   artifacts:
     paths: [gl-code-quality-report.json]
 
+  only:
+    - merge_requests
+
 #####################################################
 #                    Post stage                     #
 #####################################################
@@ -319,6 +328,9 @@ analysis:
     paths:
     - analysis/
 
+  only:
+    - merge_requests
+
 # Collate coverage reports
 #
 coverage:
@@ -344,6 +356,9 @@ coverage:
     paths:
     - coverage-sources/
     - coverage-report/
+
+  only:
+    - merge_requests
 
 # Deploy, only for merges which land on master branch.
 #
