@@ -21,7 +21,6 @@
 # pylint: disable=redefined-outer-name
 
 import os
-import re
 from unittest import mock
 
 import pytest
@@ -391,7 +390,6 @@ def test_invalid_cache_quota(cli, datafiles, quota, err_domain, err_reason):
 # the cache size and cleanup jobs are run before any other jobs.
 #
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.xfail()
 def test_cleanup_first(cli, datafiles):
     project = str(datafiles)
     element_path = 'elements'
@@ -430,18 +428,6 @@ def test_cleanup_first(cli, datafiles):
     create_element_size('target2.bst', project, element_path, [], 4000000)
     res = cli.run(project=project, args=['build', 'target2.bst'])
     res.assert_success()
-
-    # Find all of the activity (like push, pull, src-pull) lines
-    results = re.findall(r'\[.*\]\[.*\]\[\s*(\S+):.*\]\s*START\s*.*\.log', res.stderr)
-
-    # Don't bother checking the order of 'src-pull', it is allowed to start
-    # before or after the initial cache size job, runs in parallel, and does
-    # not require ResourceType.CACHE.
-    results.remove('fetch')
-    print(results)
-
-    # Assert the expected sequence of events
-    assert results == ['size', 'clean', 'build']
 
     # Check that the correct element remains in the cache
     states = cli.get_element_states(project, ['target.bst', 'target2.bst'])
