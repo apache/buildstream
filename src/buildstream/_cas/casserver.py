@@ -56,10 +56,8 @@ _MAX_PAYLOAD_BYTES = 1024 * 1024
 #     enable_push (bool): Whether to allow blob uploads and artifact updates
 #
 @contextmanager
-def create_server(repo, *, enable_push,
-                  max_head_size=int(10e9),
-                  min_head_size=int(2e9)):
-    cas = CASCache(os.path.abspath(repo))
+def create_server(repo, *, enable_push, quota):
+    cas = CASCache(os.path.abspath(repo), cache_quota=quota, protect_session_blobs=False)
 
     try:
         artifactdir = os.path.join(os.path.abspath(repo), 'artifacts', 'refs')
@@ -109,23 +107,19 @@ def create_server(repo, *, enable_push,
 @click.option('--client-certs', help="Public client certificates for TLS (PEM-encoded)")
 @click.option('--enable-push', default=False, is_flag=True,
               help="Allow clients to upload blobs and update artifact cache")
-@click.option('--head-room-min', type=click.INT,
-              help="Disk head room minimum in bytes",
-              default=2e9)
-@click.option('--head-room-max', type=click.INT,
-              help="Disk head room maximum in bytes",
+@click.option('--quota', type=click.INT,
+              help="Maximum disk usage in bytes",
               default=10e9)
 @click.argument('repo')
 def server_main(repo, port, server_key, server_cert, client_certs, enable_push,
-                head_room_min, head_room_max):
+                quota):
     # Handle SIGTERM by calling sys.exit(0), which will raise a SystemExit exception,
     # properly executing cleanup code in `finally` clauses and context managers.
     # This is required to terminate buildbox-casd on SIGTERM.
     signal.signal(signal.SIGTERM, lambda signalnum, frame: sys.exit(0))
 
     with create_server(repo,
-                       max_head_size=head_room_max,
-                       min_head_size=head_room_min,
+                       quota=quota,
                        enable_push=enable_push) as server:
 
         use_tls = bool(server_key)
