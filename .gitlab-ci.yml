@@ -178,39 +178,6 @@ lint:
   except:
   - schedules
 
-tests-wsl-master:
-  stage: test
-  variables:
-    LC_ALL: C.UTF-8
-    LANG: C.UTF-8
-  tags:
-  - wsl
-  before_script:
-  - mount
-  - df -h
-  - PATH=/root/.local/bin:$PATH tox --version
-  script:
-  - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
-  only:
-  - master
-
-tests-wsl-non-master:
-  stage: test
-  variables:
-    LC_ALL: C.UTF-8
-    LANG: C.UTF-8
-  tags:
-  - wsl
-  before_script:
-  - mount
-  - df -h
-  - PATH=/root/.local/bin:$PATH tox --version
-  script:
-  - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
-  when: manual
-  except:
-  - master
-
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
 docs:
@@ -228,48 +195,6 @@ docs:
 
   only:
     - merge_requests
-
-.overnight-tests: &overnight-tests-template
-  stage: test
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-59168197
-  variables:
-    BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
-    BST_EXT_REF: 0.12.0-40-g7aa1423377629281decc455d1090964417c38f2e
-    FD_SDK_REF: freedesktop-sdk-18.08.31.1-2-g5c639b8d553016ea6c28ea160a572da2e189745e
-  before_script:
-  - |
-    mkdir -p "${HOME}/.config"
-    cat <<EOF >"${HOME}/.config/buildstream.conf"
-    scheduler:
-      fetchers: 2
-    EOF
-  - dnf install -y ostree python3-gobject-base
-  - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
-  - pip3 wheel --wheel-dir wheels/ --no-deps .
-  - pip3 install --no-index wheels/*
-  - pip3 install --user -e ${BST_EXT_URL}@${BST_EXT_REF}#egg=bst_ext
-  - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
-  - git -C freedesktop-sdk checkout ${FD_SDK_REF}
-  artifacts:
-    paths:
-    - "${HOME}/.cache/buildstream/logs"
-  only:
-  - schedules
-
-overnight-tests:
-  <<: *overnight-tests-template
-  script:
-  - make -C freedesktop-sdk
-  tags:
-  - overnight-tests
-
-overnight-tests-no-cache:
-  <<: *overnight-tests-template
-  script:
-  - sed -i '/artifacts:/,+1 d' freedesktop-sdk/project.conf
-  - make -C freedesktop-sdk
-  tags:
-  - overnight-tests
 
 # Check code quality with gitlab's built-in feature.
 #
