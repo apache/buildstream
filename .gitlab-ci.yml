@@ -46,6 +46,7 @@ variables:
   after_script:
   except:
   - schedules
+  - master
   artifacts:
     paths:
     - .coverage-reports
