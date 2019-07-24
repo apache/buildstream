@@ -21,17 +21,17 @@ from .platform import Platform
 
 class Fallback(Platform):
 
+    def _check_dummy_sandbox_config(self, config):
+        return True
+
+    def _create_dummy_sandbox(self, *args, **kwargs):
+        kwargs['dummy_reason'] = \
+            ("FallBack platform only implements dummy sandbox, "
+             "Buildstream may be having issues correctly detecting your platform, "
+             "platform can be forced with BST_FORCE_BACKEND")
+        return SandboxDummy(*args, **kwargs)
+
     def _setup_dummy_sandbox(self):
-        def _check_dummy_sandbox_config(config):
-            return True
-        self.check_sandbox_config = _check_dummy_sandbox_config
-
-        def _create_dummy_sandbox(*args, **kwargs):
-            kwargs['dummy_reason'] = \
-                ("FallBack platform only implements dummy sandbox, "
-                 "Buildstream may be having issues correctly detecting your platform, platform "
-                 "can be forced with BST_FORCE_BACKEND")
-            return SandboxDummy(*args, **kwargs)
-        self.create_sandbox = _create_dummy_sandbox
-
+        self.check_sandbox_config = self._check_dummy_sandbox_config
+        self.create_sandbox = self._create_dummy_sandbox
         return True
