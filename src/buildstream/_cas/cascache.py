@@ -792,6 +792,9 @@ class CASCache():
                 directory.ParseFromString(f.read())
 
         except FileNotFoundError:
+            if check_exists:
+                raise
+
             # Just exit early if the file doesn't exist
             return
 
