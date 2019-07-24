@@ -94,46 +94,8 @@ class SourceCache(BaseCache):
     def __init__(self, context):
         super().__init__(context)
 
-        self._required_sources = set()
         self.sourcerefdir = os.path.join(context.cachedir, 'source_protos')
         os.makedirs(self.sourcerefdir, exist_ok=True)
-
-    # mark_required_sources()
-    #
-    # Mark sources that are required by the current run.
-    #
-    # Sources that are in this list will not be removed during the current
-    # pipeline.
-    #
-    # Args:
-    #     sources (iterable): An iterable over sources that are required
-    #
-    def mark_required_sources(self, sources):
-        sources = list(sources)  # in case it's a generator
-
-        self._required_sources.update(sources)
-
-        # update mtimes just in case
-        for source in sources:
-            ref = source._get_source_name()
-            try:
-                self._update_mtime(ref)
-            except SourceCacheError:
-                pass
-
-    # unrequired_sources()
-    #
-    # Yields the refs of all sources not required by the current build plan
-    #
-    # Returns:
-    #     iter (str): iterable over unrequired source keys
-    #
-    def unrequired_sources(self):
-        required_source_names = set(map(
-            lambda x: x._get_source_name(), self._required_sources))
-        for (mtime, source) in self._list_refs_mtimes(self.sourcerefdir):
-            if source not in required_source_names:
-                yield (mtime, source)
 
     # list_sources()
     #
