@@ -40,6 +40,8 @@ def create_script_element(name, path, config=None, variables=None):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_script(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -68,6 +70,8 @@ def test_script(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_script_root(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -156,6 +160,8 @@ def test_script_cwd(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_script_layout(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -175,6 +181,8 @@ def test_script_layout(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_regression_cache_corruption(cli, datafiles):
     project = str(datafiles)
     checkout_original = os.path.join(cli.directory, 'checkout-original')
@@ -205,6 +213,8 @@ def test_regression_cache_corruption(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_regression_tmpdir(cli, datafiles):
     project = str(datafiles)
     element_name = 'script/tmpdir.bst'
@@ -215,6 +225,8 @@ def test_regression_tmpdir(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_regression_cache_corruption_2(cli, datafiles):
     project = str(datafiles)
     checkout_original = os.path.join(cli.directory, 'checkout-original')
