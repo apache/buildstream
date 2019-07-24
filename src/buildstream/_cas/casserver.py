@@ -190,6 +190,8 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
                     context.set_code(grpc.StatusCode.NOT_FOUND)
                     return
 
+                os.utime(f.fileno())
+
                 if request.read_offset > 0:
                     f.seek(request.read_offset)
 
@@ -306,10 +308,13 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
             blob_response.digest.hash = digest.hash
             blob_response.digest.size_bytes = digest.size_bytes
             try:
-                with open(self.cas.objpath(digest), 'rb') as f:
+                objpath = self.cas.objpath(digest)
+                with open(objpath, 'rb') as f:
                     if os.fstat(f.fileno()).st_size != digest.size_bytes:
                         blob_response.status.code = code_pb2.NOT_FOUND
                         continue
+
+                    os.utime(f.fileno())
 
                     blob_response.data = f.read(digest.size_bytes)
             except FileNotFoundError:
