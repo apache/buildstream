@@ -19,8 +19,6 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
-import itertools
-import functools
 import os
 import sys
 import stat
@@ -1241,20 +1239,6 @@ class Stream():
         selected = self._pipeline.except_elements(self.targets,
                                                   selected,
                                                   except_elements)
-
-        # Set the "required" artifacts that should not be removed
-        # while this pipeline is active
-        #
-        # It must include all the artifacts which are required by the
-        # final product. Note that this is a superset of the build plan.
-        #
-        # use partial as we send this to both Artifact and Source caches
-        required_elements = functools.partial(self._pipeline.dependencies, elements, Scope.ALL)
-        self._artifacts.mark_required_elements(required_elements())
-
-        self._sourcecache.mark_required_sources(
-            itertools.chain.from_iterable(
-                [element.sources() for element in required_elements()]))
 
         if selection == PipelineSelection.PLAN and dynamic_plan:
             # We use a dynamic build plan, only request artifacts of top-level targets,
