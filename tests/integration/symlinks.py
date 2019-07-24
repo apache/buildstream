@@ -19,6 +19,8 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_absolute_symlinks(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -40,6 +42,8 @@ def test_absolute_symlinks(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_disallow_overlaps_inside_symlink_with_dangling_target(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -55,6 +59,8 @@ def test_disallow_overlaps_inside_symlink_with_dangling_target(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_detect_symlink_overlaps_pointing_outside_sandbox(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -74,6 +80,8 @@ def test_detect_symlink_overlaps_pointing_outside_sandbox(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_symlink_in_sandbox_path(cli, datafiles):
     project = str(datafiles)
     element_name = 'symlinks/link-on-path-use.bst'

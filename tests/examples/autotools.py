@@ -20,6 +20,8 @@ DATA_DIR = os.path.join(
                     reason='Examples are written for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_SANDBOX, reason='Only available on linux with sandbox')
 @pytest.mark.skipif(HAVE_SANDBOX == 'chroot', reason='This test is not meant to work with chroot sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_build(cli, datafiles):
     project = str(datafiles)

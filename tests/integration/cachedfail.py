@@ -39,6 +39,8 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_build_checkout_cached_fail(cli, datafiles):
     project = str(datafiles)
     element_path = os.path.join(project, 'elements', 'element.bst')

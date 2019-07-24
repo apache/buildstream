@@ -19,6 +19,8 @@ DATA_DIR = os.path.join(
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not IS_LINUX or not HAVE_SANDBOX, reason='Only available on linux with sandbox')
 @pytest.mark.skipif(HAVE_SANDBOX == 'chroot', reason='This test is not meant to work with chroot sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_running_commands_build(cli, datafiles):
     project = str(datafiles)
 
@@ -31,6 +33,8 @@ def test_running_commands_build(cli, datafiles):
                     reason='Examples are written for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_SANDBOX, reason='Only available on linux with sandbox')
 @pytest.mark.skipif(HAVE_SANDBOX == 'chroot', reason='This test is not meant to work with chroot sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 @pytest.mark.datafiles(DATA_DIR)
 def test_running_commands_run(cli, datafiles):
     project = str(datafiles)
