@@ -98,7 +98,7 @@ class ErrorDomain(Enum):
     PROG_NOT_FOUND = 15
 
 
-# BstError is an internal base exception class for BuildSream
+# BstError is an internal base exception class for BuildStream
 # exceptions.
 #
 # The sole purpose of using the base class is to add additional

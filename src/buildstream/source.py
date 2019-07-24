@@ -316,6 +316,7 @@ class Source(Plugin):
         self.__element_kind = meta.element_kind         # The kind of the element owning this source
         self.__directory = meta.directory               # Staging relative directory
         self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
+        self.__meta_kind = meta.kind                    # The kind of this source, required for unpickling
 
         self.__key = None                               # Cache key for source
 
@@ -1074,6 +1075,31 @@ class Source(Plugin):
 
         length = min(len(key), context.log_key_length)
         return key[:length]
+
+    # _get_args_for_child_job_pickling(self)
+    #
+    # Return data necessary to reconstruct this object in a child job process.
+    #
+    # Returns:
+    #    (PluginContext, str, dict): A tuple of (factory, meta_kind, state),
+    #    where `factory` is an object that can use `meta_kind` to create an
+    #    instance of the same type as `self`. `state` is what we want
+    #    `self.__dict__` to be restored to after instantiation in the child
+    #    process.
+    #
+    def _get_args_for_child_job_pickling(self):
+        factory = self._get_project().config.source_factory
+
+        # In case you're wondering, note that it doesn't seem to be necessary
+        # to make a copy of `self.__dict__` here, because:
+        #
+        #   o It seems that the default implementation of `_PyObject_GetState`
+        #     in `typeobject.c` currently works this way, in CPython.
+        #
+        #   o The code sketch of how pickling works also returns `self.__dict__`:
+        #     https://docs.python.org/3/library/pickle.html#pickling-class-instances
+        #
+        return factory, self.__meta_kind, self.__dict__
 
     #############################################################
     #                   Local Private Methods                   #

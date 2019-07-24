@@ -1204,7 +1204,7 @@ class CASQuota:
         # This acts as the minimum size of cache_quota and also
         # is taken from the user requested cache_quota.
         #
-        if 'BST_TEST_SUITE' in os.environ:
+        if self.context.is_running_in_test_suite:
             self._cache_quota_headroom = 0
         else:
             self._cache_quota_headroom = 2e9

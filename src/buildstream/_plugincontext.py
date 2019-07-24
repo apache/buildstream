@@ -58,9 +58,49 @@ class PluginContext():
 
         # The PluginSource object
         self._plugin_base = plugin_base
-        self._site_source = plugin_base.make_plugin_source(searchpath=site_plugin_path)
+        self._site_plugin_path = site_plugin_path
+        self._site_source = plugin_base.make_plugin_source(
+            searchpath=self._site_plugin_path,
+        )
         self._alternate_sources = {}
         self._format_versions = format_versions
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+
+        # PluginSource is not a picklable type, so we must reconstruct this one
+        # as best we can when unpickling.
+        #
+        # Since the values of `_types` depend on the PluginSource, we must also
+        # get rid of those. It is only a cache - we will automatically recreate
+        # them on demand.
+        #
+        # Similarly we must clear out the `_alternate_sources` cache.
+        #
+        # Note that this method of referring to members is error-prone in that
+        # a later 'search and replace' renaming might miss these. Guard against
+        # this by making sure we are not creating new members, only clearing
+        # existing ones.
+        #
+        del state['_site_source']
+        assert '_types' in state
+        state['_types'] = {}
+        assert '_alternate_sources' in state
+        state['_alternate_sources'] = {}
+
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+        # Note that in order to enable plugins to be unpickled along with this
+        # PluginSource, we would also have to set and restore the 'identifier'
+        # of the PluginSource. We would also have to recreate `_types` as it
+        # was before unpickling them. We are not using this method in
+        # BuildStream, so the identifier is not restored here.
+        self._site_source = self._plugin_base.make_plugin_source(
+            searchpath=self._site_plugin_path,
+        )
 
     # lookup():
     #
@@ -75,6 +115,13 @@ class PluginContext():
     #
     def lookup(self, kind):
         return self._ensure_plugin(kind)
+
+    # all_loaded_plugins():
+    #
+    # Returns: an iterable over all the loaded plugins.
+    #
+    def all_loaded_plugins(self):
+        return self._types.values()
 
     def _get_local_plugin_source(self, path):
         if ('local', path) not in self._alternate_sources:

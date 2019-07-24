@@ -235,7 +235,13 @@ class Plugin():
             self._unique_id = unique_id
 
         self.__context = context        # The Context object
+
+        # Note that when pickling jobs over to a child process, we rely on this
+        # reference to the Project, it keeps the plugin factory alive. If the
+        # factory were to be GC'd then we would see undefined behaviour. Make
+        # sure to test plugin pickling if this reference is to be removed.
         self.__project = project        # The Project object
+
         self.__provenance = provenance  # The Provenance information
         self.__type_tag = type_tag      # The type of plugin (element or source)
         self.__configuring = False      # Whether we are currently configuring
@@ -665,6 +671,25 @@ class Plugin():
     #
     def _preflight(self):
         self.preflight()
+
+    # _get_args_for_child_job_pickling(self)
+    #
+    # Return data necessary to reconstruct this object in a child job process.
+    #
+    # Returns:
+    #    (PluginContext, str, dict): A tuple of (factory, meta_kind, state),
+    #    where `factory` is an object that can use `meta_kind` to create an
+    #    instance of the same type as `self`. `state` is what we want
+    #    `self.__dict__` to be restored to after instantiation in the child
+    #    process.
+    #
+    def _get_args_for_child_job_pickling(self):
+        # Note that this is only to be implemented as a BuildStream internal,
+        # so it's not an ImplError - those apply to custom plugins. Direct
+        # descendants of Plugin must implement this, e.g. Element and Source.
+        # Raise NotImplementedError as this would be an internal bug.
+        raise NotImplementedError("{tag} plugin '{kind}' does not implement _get_args_for_child_job_pickling()".format(
+            tag=self.__type_tag, kind=self.get_kind()))
 
     #############################################################
     #                     Local Private Methods                 #

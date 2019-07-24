@@ -1555,3 +1555,18 @@ class Stream():
                 self._message(MessageType.WARN, "No artifacts found for globs: {}".format(', '.join(artifact_globs)))
 
         return element_targets, artifact_refs
+
+    def __getstate__(self):
+        # The only use-cases for pickling in BuildStream at the time of writing
+        # are enabling the 'spawn' method of starting child processes, and
+        # saving jobs to disk for replays.
+        #
+        # In both of these use-cases, a common mistake is that something being
+        # pickled indirectly holds a reference to the Stream, which in turn
+        # holds lots of things that are not pickleable.
+        #
+        # Make this situation easier to debug by failing early, in the
+        # Stream itself. Pickling this is almost certainly a mistake, unless
+        # a new use-case arises.
+        #
+        raise TypeError("Stream objects should not be pickled.")

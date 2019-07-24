@@ -289,6 +289,12 @@ cdef class ScalarNode(Node):
 
         self.value = value
 
+    def __reduce__(self):
+        return (
+            ScalarNode.__new__,
+            (ScalarNode, self.file_index, self.line, self.column, self.value),
+        )
+
     #############################################################
     #                       Public Methods                      #
     #############################################################
@@ -434,6 +440,12 @@ cdef class MappingNode(Node):
 
     def __cinit__(self, int file_index, int line, int column, dict value):
         self.value = value
+
+    def __reduce__(self):
+        return (
+            MappingNode.__new__,
+            (MappingNode, self.file_index, self.line, self.column, self.value),
+        )
 
     def __contains__(self, what):
         return what in self.value
@@ -1077,6 +1089,12 @@ cdef class SequenceNode(Node):
 
     def __cinit__(self, int file_index, int line, int column, list value):
         self.value = value
+
+    def __reduce__(self):
+        return (
+            SequenceNode.__new__,
+            (SequenceNode, self.file_index, self.line, self.column, self.value),
+        )
 
     def __iter__(self):
         return iter(self.value)

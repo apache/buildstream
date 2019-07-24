@@ -67,19 +67,28 @@ class Linux(Platform):
     #              Private Methods                 #
     ################################################
 
-    def _setup_dummy_sandbox(self):
-        dummy_reasons = " and ".join(self.dummy_reasons)
-
-        def _check_dummy_sandbox_config(config):
-            return True
-        self.check_sandbox_config = _check_dummy_sandbox_config
-
-        def _create_dummy_sandbox(*args, **kwargs):
-            kwargs['dummy_reason'] = dummy_reasons
-            return SandboxDummy(*args, **kwargs)
-        self.create_sandbox = _create_dummy_sandbox
-
+    @staticmethod
+    def _check_dummy_sandbox_config(config):
         return True
+
+    def _create_dummy_sandbox(self, *args, **kwargs):
+        dummy_reasons = " and ".join(self.dummy_reasons)
+        kwargs['dummy_reason'] = dummy_reasons
+        return SandboxDummy(*args, **kwargs)
+
+    def _setup_dummy_sandbox(self):
+        self.check_sandbox_config = Linux._check_dummy_sandbox_config
+        self.create_sandbox = self._create_dummy_sandbox
+        return True
+
+    def _check_sandbox_config_bwrap(self, config):
+        from ..sandbox._sandboxbwrap import SandboxBwrap
+        return SandboxBwrap.check_sandbox_config(self, config)
+
+    def _create_bwrap_sandbox(self, *args, **kwargs):
+        from ..sandbox._sandboxbwrap import SandboxBwrap
+        kwargs['linux32'] = self.linux32
+        return SandboxBwrap(*args, **kwargs)
 
     def _setup_bwrap_sandbox(self):
         from ..sandbox._sandboxbwrap import SandboxBwrap
@@ -90,29 +99,22 @@ class Linux(Platform):
 
         SandboxBwrap._have_good_bwrap = None
         self._check_sandbox(SandboxBwrap)
-
-        def _check_sandbox_config_bwrap(config):
-            return SandboxBwrap.check_sandbox_config(self, config)
-        self.check_sandbox_config = _check_sandbox_config_bwrap
-
-        def _create_bwrap_sandbox(*args, **kwargs):
-            kwargs['linux32'] = self.linux32
-            return SandboxBwrap(*args, **kwargs)
-        self.create_sandbox = _create_bwrap_sandbox
-
+        self.check_sandbox_config = self._check_sandbox_config_bwrap
+        self.create_sandbox = self._create_bwrap_sandbox
         return True
+
+    def _check_sandbox_config_chroot(self, config):
+        from ..sandbox._sandboxchroot import SandboxChroot
+        return SandboxChroot.check_sandbox_config(self, config)
+
+    @staticmethod
+    def _create_chroot_sandbox(*args, **kwargs):
+        from ..sandbox._sandboxchroot import SandboxChroot
+        return SandboxChroot(*args, **kwargs)
 
     def _setup_chroot_sandbox(self):
         from ..sandbox._sandboxchroot import SandboxChroot
-
         self._check_sandbox(SandboxChroot)
-
-        def _check_sandbox_config_chroot(config):
-            return SandboxChroot.check_sandbox_config(self, config)
-        self.check_sandbox_config = _check_sandbox_config_chroot
-
-        def _create_chroot_sandbox(*args, **kwargs):
-            return SandboxChroot(*args, **kwargs)
-        self.create_sandbox = _create_chroot_sandbox
-
+        self.check_sandbox_config = self._check_sandbox_config_chroot
+        self.create_sandbox = Linux._create_chroot_sandbox
         return True

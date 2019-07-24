@@ -34,6 +34,8 @@ from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
 from ... import _signals, utils
 
+from .jobpickler import pickle_child_job
+
 
 # Return code values shutdown of job handling child processes
 #
@@ -178,6 +180,11 @@ class Job():
             self._message_unique_id,
             self._task_id,
         )
+
+        # Make sure that picklability doesn't break, by exercising it during
+        # our test suite.
+        if self._scheduler.context.is_running_in_test_suite:
+            pickle_child_job(child_job, self._scheduler.context.get_projects())
 
         self._process = Process(target=child_job.child_action, args=[self._queue])
 

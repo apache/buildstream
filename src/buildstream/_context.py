@@ -49,6 +49,10 @@ class Context():
 
     def __init__(self):
 
+        # Whether we are running as part of a test suite. This is only relevant
+        # for developing BuildStream itself.
+        self.is_running_in_test_suite = 'BST_TEST_SUITE' in os.environ
+
         # Filename indicating which configuration file was used, or None for the defaults
         self.config_origin = None
 
