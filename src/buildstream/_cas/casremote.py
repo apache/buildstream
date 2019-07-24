@@ -365,5 +365,10 @@ class _CASBatchUpdate():
 
         for response in batch_response.responses:
             if response.status.code != code_pb2.OK:
+                if response.status.code == code_pb2.RESOURCE_EXHAUSTED:
+                    reason = "cache-too-full"
+                else:
+                    reason = None
+
                 raise CASRemoteError("Failed to upload blob {}: {}".format(
-                    response.digest.hash, response.status.code))
+                    response.digest.hash, response.status.code), reason=reason)
