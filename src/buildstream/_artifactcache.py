@@ -21,7 +21,6 @@ import os
 import grpc
 
 from ._basecache import BaseCache
-from .types import _KeyStrength
 from ._exceptions import ArtifactError, CASError, CASCacheError
 from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, \
     artifact_pb2, artifact_pb2_grpc
@@ -96,83 +95,15 @@ class ArtifactCache(BaseCache):
     def __init__(self, context):
         super().__init__(context)
 
-        self._required_elements = set()       # The elements required for this session
-
         # create artifact directory
         self.artifactdir = context.artifactdir
         os.makedirs(self.artifactdir, exist_ok=True)
-
-    # mark_required_elements():
-    #
-    # Mark elements whose artifacts are required for the current run.
-    #
-    # Artifacts whose elements are in this list will be locked by the artifact
-    # cache and not touched for the duration of the current pipeline.
-    #
-    # Args:
-    #     elements (iterable): A set of elements to mark as required
-    #
-    def mark_required_elements(self, elements):
-
-        # We risk calling this function with a generator, so we
-        # better consume it first.
-        #
-        elements = list(elements)
-
-        # Mark the elements as required. We cannot know that we know the
-        # cache keys yet, so we only check that later when deleting.
-        #
-        self._required_elements.update(elements)
-
-        # For the cache keys which were resolved so far, we bump
-        # the mtime of them.
-        #
-        # This is just in case we have concurrent instances of
-        # BuildStream running with the same artifact cache, it will
-        # reduce the likelyhood of one instance deleting artifacts
-        # which are required by the other.
-        for element in elements:
-            strong_key = element._get_cache_key(strength=_KeyStrength.STRONG)
-            weak_key = element._get_cache_key(strength=_KeyStrength.WEAK)
-            for key in (strong_key, weak_key):
-                if key:
-                    ref = element.get_artifact_name(key)
-
-                    try:
-                        self.update_mtime(ref)
-                    except ArtifactError:
-                        pass
 
     def update_mtime(self, ref):
         try:
             os.utime(os.path.join(self.artifactdir, ref))
         except FileNotFoundError as e:
             raise ArtifactError("Couldn't find artifact: {}".format(ref)) from e
-
-    # unrequired_artifacts()
-    #
-    # Returns iterator over artifacts that are not required in the build plan
-    #
-    # Returns:
-    #     (iter): Iterator over tuples of (float, str) where float is the time
-    #             and str is the artifact ref
-    #
-    def unrequired_artifacts(self):
-        required_artifacts = set(map(lambda x: x.get_artifact_name(),
-                                     self._required_elements))
-        for (mtime, artifact) in self._list_refs_mtimes(self.artifactdir):
-            if artifact not in required_artifacts:
-                yield (mtime, artifact)
-
-    def required_artifacts(self):
-        # Build a set of the cache keys which are required
-        # based on the required elements at cleanup time
-        #
-        # We lock both strong and weak keys - deleting one but not the
-        # other won't save space, but would be a user inconvenience.
-        for element in self._required_elements:
-            yield element._get_cache_key(strength=_KeyStrength.STRONG)
-            yield element._get_cache_key(strength=_KeyStrength.WEAK)
 
     # preflight():
     #
