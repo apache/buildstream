@@ -21,7 +21,7 @@ import os
 import grpc
 
 from ._basecache import BaseCache
-from ._exceptions import ArtifactError, CASError, CASCacheError
+from ._exceptions import ArtifactError, CASError, CASCacheError, CASRemoteError
 from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, \
     artifact_pb2, artifact_pb2_grpc
 
@@ -440,6 +440,10 @@ class ArtifactCache(BaseCache):
 
             self.cas.send_blobs(remote, digests)
 
+        except CASRemoteError as cas_error:
+            if cas_error.reason != "cache-too-full":
+                raise ArtifactError("Failed to push artifact blobs: {}".format(cas_error))
+            return False
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
                 raise ArtifactError("Failed to push artifact blobs: {}".format(e.details()))
