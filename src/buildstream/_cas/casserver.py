@@ -37,7 +37,7 @@ from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, \
     artifact_pb2, artifact_pb2_grpc, source_pb2, source_pb2_grpc
 
 from .. import utils
-from .._exceptions import CASError
+from .._exceptions import CASError, CASCacheError
 
 from .cascache import CASCache
 
@@ -260,10 +260,20 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
                         context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
                         return response
                     out.flush()
-                    digest = self.cas.add_object(path=out.name, link_directly=True)
+
+                    try:
+                        digest = self.cas.add_object(path=out.name, link_directly=True)
+                    except CASCacheError as e:
+                        if e.reason == "cache-too-full":
+                            context.set_code(grpc.StatusCode.RESOURCE_EXHAUSTED)
+                        else:
+                            context.set_code(grpc.StatusCode.INTERNAL)
+                        return response
+
                     if digest.hash != client_digest.hash:
                         context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
                         return response
+
                     finished = True
 
         assert finished
@@ -350,7 +360,16 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
             with tempfile.NamedTemporaryFile(dir=self.cas.tmpdir) as out:
                 out.write(blob_request.data)
                 out.flush()
-                server_digest = self.cas.add_object(path=out.name)
+
+                try:
+                    server_digest = self.cas.add_object(path=out.name)
+                except CASCacheError as e:
+                    if e.reason == "cache-too-full":
+                        blob_response.status.code = code_pb2.RESOURCE_EXHAUSTED
+                    else:
+                        blob_response.status.code = code_pb2.INTERNAL
+                    continue
+
                 if server_digest.hash != digest.hash:
                     blob_response.status.code = code_pb2.FAILED_PRECONDITION
 
