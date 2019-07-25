@@ -22,6 +22,8 @@ DATA_DIR = os.path.join(
 # amhello project for this.
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_autotools_build(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -44,6 +46,7 @@ def test_autotools_build(cli, datafiles):
 # amhello project for this.
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
 def test_autotools_confroot_build(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -65,6 +68,8 @@ def test_autotools_confroot_build(cli, datafiles):
 # Test running an executable built with autotools
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_autotools_run(cli, datafiles):
     project = str(datafiles)
     element_name = 'autotools/amhello.bst'

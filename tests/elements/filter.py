@@ -8,6 +8,7 @@ import pytest
 
 from buildstream.testing import create_repo
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing._utils.site import HAVE_SANDBOX
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 
@@ -30,6 +31,7 @@ def test_filter_include(datafiles, cli, tmpdir):
     assert not os.path.exists(os.path.join(checkout, "bar"))
 
 
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_include_dynamic(datafiles, cli, tmpdir):
     project = str(datafiles)

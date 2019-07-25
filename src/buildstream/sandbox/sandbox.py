@@ -548,13 +548,17 @@ class Sandbox():
     #     Returns:
     #         (bool): Whether a command exists inside the sandbox.
     def _has_command(self, command, env=None):
+        vroot = self.get_virtual_directory()
+        command_as_parts = command.lstrip(os.sep).split(os.sep)
         if os.path.isabs(command):
-            return os.path.lexists(os.path.join(
-                self._root, command.lstrip(os.sep)))
+            return vroot._exists(*command_as_parts, follow_symlinks=True)
+
+        if len(command_as_parts) > 1:
+            return False
 
         for path in env.get('PATH').split(':'):
-            if os.path.lexists(os.path.join(
-                    self._root, path.lstrip(os.sep), command)):
+            path_as_parts = path.lstrip(os.sep).split(os.sep)
+            if vroot._exists(*path_as_parts, command, follow_symlinks=True):
                 return True
 
         return False
@@ -608,6 +612,22 @@ class Sandbox():
     def _set_build_directory(self, directory, *, always):
         self._build_directory = directory
         self._build_directory_always = always
+
+    # _issue_warning()
+    #
+    # Issue warning with __context that is not available with subclasses
+    #
+    # Args:
+    #    message (str): A message to issue
+    #    details (str): optional, more detatils
+    def _issue_warning(self, message, detail=None):
+        self.__context.messenger.message(
+            Message(None,
+                    MessageType.WARN,
+                    message,
+                    detail=detail
+                    )
+        )
 
 
 # _SandboxBatch()

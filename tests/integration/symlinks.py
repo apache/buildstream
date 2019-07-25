@@ -19,6 +19,8 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_absolute_symlinks(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -40,6 +42,8 @@ def test_absolute_symlinks(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_disallow_overlaps_inside_symlink_with_dangling_target(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -55,6 +59,8 @@ def test_disallow_overlaps_inside_symlink_with_dangling_target(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
 def test_detect_symlink_overlaps_pointing_outside_sandbox(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -70,3 +76,24 @@ def test_detect_symlink_overlaps_pointing_outside_sandbox(cli, datafiles):
     result = cli.run(project=project, args=['artifact', 'checkout', element_name, '--directory', checkout])
     assert result.exit_code == -1
     assert 'Destination is a symlink, not a directory: /opt/escape-hatch' in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
+# Not stricked xfail as only fails in CI
+def test_symlink_in_sandbox_path(cli, datafiles):
+    project = str(datafiles)
+    element_name = 'symlinks/link-on-path-use.bst'
+    base_element_name = 'symlinks/link-on-path.bst'
+    # This test is inspired by how freedesktop-SDK has /bin -> /usr/bin
+
+    # Create a element that has sh in altbin and a link from bin to altbin
+    result1 = cli.run(project=project, args=['build', base_element_name])
+    result1.assert_success()
+    # Build a element that uses the element that has sh in altbin.
+    result2 = cli.run(project=project, args=['build', element_name])
+    result2.assert_success()
+    # When this element is built it demonstrates that the virtual sandbox
+    # can detect sh across links and that the sandbox can find sh accross
+    # the link from its PATH.

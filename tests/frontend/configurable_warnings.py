@@ -9,6 +9,7 @@ from buildstream.plugin import CoreWarnings
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+from buildstream.testing._utils.site import HAVE_SANDBOX
 
 TOP_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -45,6 +46,7 @@ def build_project(datafiles, fatal_warnings):
     return project_path
 
 
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 @pytest.mark.datafiles(TOP_DIR)
 @pytest.mark.parametrize("element_name, fatal_warnings, expect_fatal, error_domain", [
     ("corewarn.bst", [CoreWarnings.OVERLAPS], True, ErrorDomain.STREAM),

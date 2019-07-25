@@ -425,6 +425,49 @@ def test_build_checkout_tarball_is_deterministic(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_tarball_links(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout.tar')
+    extract = os.path.join(cli.directory, 'extract')
+
+    result = cli.run(project=project, args=['build', 'import-links.bst'])
+    result.assert_success()
+
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
+    checkout_args = ['artifact', 'checkout', '--tar', checkout, 'import-links.bst']
+
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    tar = tarfile.open(name=checkout, mode="r:")
+    tar.extractall(extract)
+    assert open(os.path.join(extract, 'basicfolder', 'basicsymlink')).read() == "file contents\n"
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_links(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    result = cli.run(project=project, args=['build', 'import-links.bst'])
+    result.assert_success()
+
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
+    checkout_args = ['artifact', 'checkout', '--directory', checkout, 'import-links.bst']
+
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    assert open(os.path.join(checkout, 'basicfolder', 'basicsymlink')).read() == "file contents\n"
+
+
+@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("hardlinks", [("copies"), ("hardlinks")])
 def test_build_checkout_nonempty(datafiles, cli, hardlinks):
     project = str(datafiles)

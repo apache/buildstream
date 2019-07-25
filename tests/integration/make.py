@@ -22,6 +22,7 @@ DATA_DIR = os.path.join(
 # makehello project for this.
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 def test_make_build(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -40,6 +41,7 @@ def test_make_build(cli, datafiles):
 # Test running an executable built with make
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 def test_make_run(cli, datafiles):
     project = str(datafiles)
     element_name = 'make/makehello.bst'

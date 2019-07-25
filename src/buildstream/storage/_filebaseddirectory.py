@@ -37,6 +37,7 @@ from .. import utils
 from ..utils import link_files, copy_files, list_relative_paths, _get_link_mtime, BST_ARBITRARY_TIMESTAMP
 from ..utils import _set_deterministic_user, _set_deterministic_mtime
 from ..utils import FileListResult
+from .._exceptions import ImplError
 
 # FileBasedDirectory intentionally doesn't call its superclass constuctor,
 # which is meant to be unimplemented.
@@ -47,8 +48,11 @@ class FileBasedDirectory(Directory):
     def __init__(self, external_directory=None):
         self.external_directory = external_directory
 
-    def descend(self, *paths, create=False):
+    def descend(self, *paths, create=False, follow_symlinks=False):
         """ See superclass Directory for arguments """
+
+        if follow_symlinks:
+            ImplError("FileBasedDirectory.Decend dose not implement follow_symlinks=True")
 
         current_dir = self
 
@@ -281,3 +285,12 @@ class FileBasedDirectory(Directory):
                     assert entry.type == _FileType.SYMLINK
                     os.symlink(entry.target, dest_path)
                 result.files_written.append(relative_pathname)
+
+    def _exists(self, *path, follow_symlinks=False):
+        """This is very simple but mirrors the cas based storage were it is less trivial"""
+        if follow_symlinks:
+            # The lexists is not ideal as it cant spot broken symlinks but this is a long
+            # standing bug in buildstream as exists follow absolute syslinks to real root
+            # and incorrectly thinks they are broken the new casbaseddirectory dose not have this bug.
+            return os.path.lexists(os.path.join(self.external_directory, *path))
+        raise ImplError("_exists can only follow symlinks in filebaseddirectory")

@@ -52,7 +52,7 @@ class Directory():
     def __init__(self, external_directory=None):
         raise NotImplementedError()
 
-    def descend(self, *paths, create=False):
+    def descend(self, *paths, create=False, follow_symlinks=False):
         """Descend one or more levels of directory hierarchy and return a new
         Directory object for that directory.
 

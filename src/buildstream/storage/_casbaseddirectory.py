@@ -28,6 +28,9 @@ See also: :ref:`sandboxing`.
 """
 
 import os
+import stat
+import tarfile as tarfilelib
+from io import StringIO
 
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .directory import Directory, VirtualDirectoryError, _FileType
@@ -156,7 +159,15 @@ class CasBasedDirectory(Directory):
 
         self.__invalidate_digest()
 
-    def descend(self, *paths, create=False):
+    def find_root(self):
+        """ Finds the root of this directory tree by following 'parent' until there is
+        no parent. """
+        if self.parent:
+            return self.parent.find_root()
+        else:
+            return self
+
+    def descend(self, *paths, create=False, follow_symlinks=False):
         """Descend one or more levels of directory hierarchy and return a new
         Directory object for that directory.
 
@@ -174,6 +185,7 @@ class CasBasedDirectory(Directory):
         """
 
         current_dir = self
+        paths = list(paths)
 
         for path in paths:
             # Skip empty path segments
@@ -181,20 +193,37 @@ class CasBasedDirectory(Directory):
                 continue
 
             entry = current_dir.index.get(path)
+
             if entry:
                 if entry.type == _FileType.DIRECTORY:
                     current_dir = entry.get_directory(current_dir)
+                elif follow_symlinks and entry.type == _FileType.SYMLINK:
+                    linklocation = entry.target
+                    newpaths = linklocation.split(os.path.sep)
+                    if os.path.isabs(linklocation):
+                        current_dir = current_dir.find_root().descend(*newpaths, follow_symlinks=True)
+                    else:
+                        current_dir = current_dir.descend(*newpaths, follow_symlinks=True)
                 else:
                     error = "Cannot descend into {}, which is a '{}' in the directory {}"
                     raise VirtualDirectoryError(error.format(path,
                                                              current_dir.index[path].type,
-                                                             current_dir))
+                                                             current_dir),
+                                                reason="not-a-directory")
             else:
-                if create:
+                if path == '.':
+                    continue
+                elif path == '..':
+                    if current_dir.parent is not None:
+                        current_dir = current_dir.parent
+                    # In POSIX /.. == / so just stay at the root dir
+                    continue
+                elif create:
                     current_dir = current_dir._add_directory(path)
                 else:
                     error = "'{}' not found in {}"
-                    raise VirtualDirectoryError(error.format(path, str(current_dir)))
+                    raise VirtualDirectoryError(error.format(path, str(current_dir)),
+                                                reason="directory-not-found")
 
         return current_dir
 
@@ -270,8 +299,10 @@ class CasBasedDirectory(Directory):
                     self._copy_link_from_filesystem(source_directory, direntry.name)
                     result.files_written.append(relative_pathname)
 
-    def _partial_import_cas_into_cas(self, source_directory, filter_callback, *, path_prefix="", result):
+    def _partial_import_cas_into_cas(self, source_directory, filter_callback, *, path_prefix="", origin=None, result):
         """ Import files from a CAS-based directory. """
+        if origin is None:
+            origin = self
 
         for name, entry in source_directory.index.items():
             # The destination filename, relative to the root where the import started
@@ -307,6 +338,8 @@ class CasBasedDirectory(Directory):
                     subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
                 else:
                     src_subdir = source_directory.descend(name)
+                    if src_subdir == origin:
+                        continue
 
                     try:
                         dest_subdir = self.descend(name, create=create_subdir)
@@ -316,7 +349,8 @@ class CasBasedDirectory(Directory):
                                                     .format(filetype, relative_pathname))
 
                     dest_subdir._partial_import_cas_into_cas(src_subdir, filter_callback,
-                                                             path_prefix=relative_pathname, result=result)
+                                                             path_prefix=relative_pathname,
+                                                             origin=origin, result=result)
 
             if filter_callback and not filter_callback(relative_pathname):
                 if is_dir and create_subdir and dest_subdir.is_empty():
@@ -408,7 +442,33 @@ class CasBasedDirectory(Directory):
         self.cas_cache.checkout(to_directory, self._get_digest(), can_link=can_link)
 
     def export_to_tar(self, tarfile, destination_dir, mtime=BST_ARBITRARY_TIMESTAMP):
-        raise NotImplementedError()
+        for filename, entry in self.index.items():
+            arcname = os.path.join(destination_dir, filename)
+            if entry.type == _FileType.DIRECTORY:
+                tarinfo = tarfilelib.TarInfo(arcname)
+                tarinfo.mtime = mtime
+                tarinfo.type = tarfilelib.DIRTYPE
+                tarinfo.mode = 0o755
+                tarfile.addfile(tarinfo)
+                self.descend(filename).export_to_tar(tarfile, arcname, mtime)
+            elif entry.type == _FileType.REGULAR_FILE:
+                source_name = self.cas_cache.objpath(entry.digest)
+                tarinfo = tarfilelib.TarInfo(arcname)
+                tarinfo.mtime = mtime
+                tarinfo.mode |= entry.is_executable & stat.S_IXUSR
+                tarinfo.size = os.path.getsize(source_name)
+                with open(source_name, "rb") as f:
+                    tarfile.addfile(tarinfo, f)
+            elif entry.type == _FileType.SYMLINK:
+                tarinfo = tarfilelib.TarInfo(arcname)
+                tarinfo.mtime = mtime
+                tarinfo.mode |= entry.is_executable & stat.S_IXUSR
+                tarinfo.linkname = entry.target
+                tarinfo.type = tarfilelib.SYMTYPE
+                f = StringIO(entry.target)
+                tarfile.addfile(tarinfo, f)
+            else:
+                raise VirtualDirectoryError("can not export file type {} to tar".format(entry.type))
 
     def _mark_changed(self):
         """ It should not be possible to externally modify a CAS-based
@@ -583,6 +643,23 @@ class CasBasedDirectory(Directory):
             self.__digest = self.cas_cache.add_object(buffer=pb2_directory.SerializeToString())
 
         return self.__digest
+
+    def _exists(self, *path, follow_symlinks=False):
+        try:
+            subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
+            target = subdir.index.get(path[-1])
+            if target is not None:
+                if target.type == _FileType.REGULAR_FILE:
+                    return True
+                elif follow_symlinks and target.type == _FileType.SYMLINK:
+                    linklocation = target.target
+                    newpath = linklocation.split(os.path.sep)
+                    if os.path.isabs(linklocation):
+                        return subdir.find_root()._exists(*newpath, follow_symlinks=True)
+                    return subdir._exists(*newpath, follow_symlinks=True)
+            return False
+        except VirtualDirectoryError:
+            return False
 
     def __invalidate_digest(self):
         if self.__digest:

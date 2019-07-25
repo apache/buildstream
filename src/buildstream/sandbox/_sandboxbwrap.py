@@ -336,7 +336,7 @@ class SandboxBwrap(Sandbox):
                 # The only message relevant to us now is the exit-code of the subprocess.
                 for line in json_status_file:
                     with suppress(json.decoder.JSONDecodeError):
-                        o = json.loads(line)
+                        o = json.loads(line.decode())
                         if isinstance(o, collections.abc.Mapping) and 'exit-code' in o:
                             child_exit_code = o['exit-code']
                             break
