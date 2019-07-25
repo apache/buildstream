@@ -113,7 +113,7 @@ class Loader():
             junction, name, loader = self._parse_name(target, rewritable, ticker,
                                                       fetch_subprojects=fetch_subprojects)
             loader._load_file(name, rewritable, ticker, fetch_subprojects)
-            deps.append(Dependency(name, junction=junction))
+            deps.append(Dependency(target, provenance="[command line]"))
             profile_end(Topics.LOAD_PROJECT, target)
 
         #
