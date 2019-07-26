@@ -31,9 +31,9 @@ See also: :ref:`sandboxing`.
 
 """
 
-from enum import Enum
 
 from .._exceptions import BstError, ErrorDomain
+from ..types import FastEnum
 from ..utils import BST_ARBITRARY_TIMESTAMP
 
 
@@ -196,7 +196,7 @@ class Directory():
 #
 # Type of file or directory entry.
 #
-class _FileType(Enum):
+class _FileType(FastEnum):
 
     # Directory
     DIRECTORY = 1
