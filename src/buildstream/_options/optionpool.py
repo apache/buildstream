@@ -22,6 +22,7 @@ import jinja2
 
 from .._exceptions import LoadError, LoadErrorReason
 from ..node import MappingNode, SequenceNode, _assert_symbol_name
+from ..types import FastEnum
 from .optionbool import OptionBool
 from .optionenum import OptionEnum
 from .optionflags import OptionFlags
@@ -38,6 +39,15 @@ _OPTION_TYPES = {
     OptionArch.OPTION_TYPE: OptionArch,
     OptionOS.OPTION_TYPE: OptionOS,
 }
+
+
+class OptionTypes(FastEnum):
+    BOOL = OptionBool.OPTION_TYPE
+    ENUM = OptionEnum.OPTION_TYPE
+    FLAG = OptionFlags.OPTION_TYPE
+    ELT_MASK = OptionEltMask.OPTION_TYPE
+    ARCH = OptionArch.OPTION_TYPE
+    OS = OptionOS.OPTION_TYPE
 
 
 class OptionPool():
@@ -80,13 +90,8 @@ class OptionPool():
             # Assert that the option name is a valid symbol
             _assert_symbol_name(option_name, "option name", ref_node=option_definition, allow_dashes=False)
 
-            opt_type_name = option_definition.get_str('type')
-            try:
-                opt_type = _OPTION_TYPES[opt_type_name]
-            except KeyError:
-                p = option_definition.get_scalar('type').get_provenance()
-                raise LoadError("{}: Invalid option type '{}'".format(p, opt_type_name),
-                                LoadErrorReason.INVALID_DATA)
+            opt_type_name = option_definition.get_enum('type', OptionTypes)
+            opt_type = _OPTION_TYPES[opt_type_name.value]
 
             option = opt_type(option_name, option_definition, self)
             self._options[option_name] = option
