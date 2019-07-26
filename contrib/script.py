@@ -65,9 +65,11 @@ def commit_changes_if_needed():
     git_diff_output = subprocess.check_output('git diff {}'.format(committers_file), shell=True)
     if git_diff_output:
         commit_message = '\'contrib: Update COMMITTERS.rst\''
+        branch_name = 'update_committers'
+        subprocess.call('git checkout -b {}'.format(branch_name), shell=True)
         subprocess.call('git add {}'.format(committers_file), shell=True)
         subprocess.call('git commit -m {}'.format(commit_message), shell=True)
-        git_push_output = subprocess.call('git push origin update-committers',
+        git_push_output = subprocess.call('git push -u origin {}'.format(branch_name),
                                           shell=True)
         print(git_push_output)
 
