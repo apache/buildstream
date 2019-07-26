@@ -1,4 +1,4 @@
-.. _committers:
+ _committers:
 
 Committers
 ==========
