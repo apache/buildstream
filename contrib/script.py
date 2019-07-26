@@ -61,7 +61,9 @@ def create_committers_file(committers: OrderedDict):
             f.write('+-----------------------------------+-----------------------------------+\n')
 
 def commit_changes_if_needed():
-    git_diff_output = subprocess.check_output(['git diff ', ''])
+    contrib_directory = os.path.join(find_repository_root(), 'contrib')
+    git_diff_output = subprocess.check_output(['git diff ',
+                                               os.path.join(contrib_directory, 'COMMITTERS.rst')])
     if git_diff_output:
         print('difera')
     else:
