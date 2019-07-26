@@ -18,7 +18,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
-from functools import cmp_to_key
 
 from .._exceptions import LoadError, LoadErrorReason
 from .. import Consistency
@@ -30,7 +29,8 @@ from .._includes import Includes
 
 from ._loader import valid_chars_name
 from .types import Symbol, extract_depends_from_node
-from .loadelement import LoadElement
+from . import loadelement
+from .loadelement import Dependency, LoadElement
 from .metaelement import MetaElement
 from .metasource import MetaSource
 from ..types import CoreWarnings
@@ -121,8 +121,9 @@ class Loader():
         # Set up a dummy element that depends on all top-level targets
         # to resolve potential circular dependencies between them
         dummy_target = LoadElement(Node.from_dict({}), "", self)
-        dummy_target.dependencies.extend(
-            LoadElement.Dependency(element, Symbol.RUNTIME)
+        # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
+        dummy_target.dependencies.extend(  # pylint: disable=no-member
+            Dependency(element, Symbol.RUNTIME)
             for element in target_elements
         )
 
@@ -136,7 +137,7 @@ class Loader():
         for element in target_elements:
             loader = element._loader
             with PROFILER.profile(Topics.SORT_DEPENDENCIES, element.name):
-                loader._sort_dependencies(element)
+                loadelement.sort_dependencies(element)
 
             # Finally, wrap what we have into LoadElements and return the target
             #
@@ -168,6 +169,11 @@ class Loader():
         # the child process' copy of the Loader.
         #
         del state['_fetch_subprojects']
+
+        # Also there's no gain in pickling over the caches, and they might
+        # contain things which are unpleasantly large or unable to pickle.
+        del state['_elements']
+        del state['_meta_elements']
 
         return state
 
@@ -329,13 +335,15 @@ class Loader():
                         dep_deps = extract_depends_from_node(dep_element.node)
                         loader_queue.append((dep_element, list(reversed(dep_deps)), []))
 
-                        if dep_element.node.get_str(Symbol.KIND) == 'junction':
+                        # Pylint is not very happy about Cython and can't understand 'node' is a 'MappingNode'
+                        if dep_element.node.get_str(Symbol.KIND) == 'junction':  # pylint: disable=no-member
                             raise LoadError("{}: Cannot depend on junction" .format(dep.provenance),
                                             LoadErrorReason.INVALID_DATA)
 
                 # All is well, push the dependency onto the LoadElement
-                current_element[0].dependencies.append(
-                    LoadElement.Dependency(dep_element, dep.dep_type))
+                # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
+                current_element[0].dependencies.append(  # pylint: disable=no-member
+                    Dependency(dep_element, dep.dep_type))
             else:
                 # We do not have any more dependencies to load for this
                 # element on the queue, report any invalid dep names
@@ -396,77 +404,6 @@ class Loader():
                 sequence_indices.pop()
                 check_elements.remove(this_element)
                 validated.add(this_element)
-
-    # _sort_dependencies():
-    #
-    # Sort dependencies of each element by their dependencies,
-    # so that direct dependencies which depend on other direct
-    # dependencies (directly or indirectly) appear later in the
-    # list.
-    #
-    # This avoids the need for performing multiple topological
-    # sorts throughout the build process.
-    #
-    # Args:
-    #    element (LoadElement): The element to sort
-    #
-    @staticmethod
-    def _sort_dependencies(element):
-
-        working_elements = [element]
-        visited = set(working_elements)
-
-        def dependency_cmp(dep_a, dep_b):
-            element_a = dep_a.element
-            element_b = dep_b.element
-
-            # Sort on inter element dependency first
-            if element_a.depends(element_b):
-                return 1
-            elif element_b.depends(element_a):
-                return -1
-
-            # If there are no inter element dependencies, place
-            # runtime only dependencies last
-            if dep_a.dep_type != dep_b.dep_type:
-                if dep_a.dep_type == Symbol.RUNTIME:
-                    return 1
-                elif dep_b.dep_type == Symbol.RUNTIME:
-                    return -1
-
-            # All things being equal, string comparison.
-            if element_a.name > element_b.name:
-                return 1
-            elif element_a.name < element_b.name:
-                return -1
-
-            # Sort local elements before junction elements
-            # and use string comparison between junction elements
-            if element_a.junction and element_b.junction:
-                if element_a.junction > element_b.junction:
-                    return 1
-                elif element_a.junction < element_b.junction:
-                    return -1
-            elif element_a.junction:
-                return -1
-            elif element_b.junction:
-                return 1
-
-            # This wont ever happen
-            return 0
-
-        # Now dependency sort, we ensure that if any direct dependency
-        # directly or indirectly depends on another direct dependency,
-        # it is found later in the list.
-        while working_elements:
-            element = working_elements.pop()
-            for dep in element.dependencies:
-                dep_element = dep.element
-                if dep_element not in visited:
-                    visited.add(dep_element)
-                    working_elements.append(dep_element)
-
-            element.dependencies.sort(key=cmp_to_key(dependency_cmp))
 
     # _collect_element_no_deps()
     #
