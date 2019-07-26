@@ -169,6 +169,11 @@ class Loader():
         #
         del state['_fetch_subprojects']
 
+        # Also there's no gain in pickling over the caches, and they might
+        # contain things which are unpleasantly large or unable to pickle.
+        del state['_elements']
+        del state['_meta_elements']
+
         return state
 
     # clean_caches()
