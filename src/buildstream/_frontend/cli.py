@@ -948,7 +948,7 @@ def workspace_list(app):
 #############################################################
 #                     Artifact Commands                     #
 #############################################################
-@cli.group(short_help="Manipulate cached artifacts")
+@cli.group(short_help="Manipulate cached artifacts.")
 def artifact():
     """Manipulate cached artifacts"""
 

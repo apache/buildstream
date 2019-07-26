@@ -31,7 +31,8 @@ import tempfile
 from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
 
-from ._artifactelement import verify_artifact_ref
+from ._artifact import Artifact
+from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, \
@@ -521,8 +522,7 @@ class Stream():
 
         # if pulling we need to ensure dependency artifacts are also pulled
         selection = PipelineSelection.RUN if pull else PipelineSelection.NONE
-        elements, _ = self._load((target,), (), selection=selection, use_artifact_config=True)
-
+        elements, _ = self._load((target,), (), selection=selection, use_artifact_config=True, load_refs=True)
         target = elements[-1]
 
         self._check_location_writable(location, force=force, tar=tar)
@@ -536,48 +536,58 @@ class Stream():
             self._run()
 
         # Stage deps into a temporary sandbox first
-        try:
-            with target._prepare_sandbox(scope=scope, directory=None,
-                                         integrate=integrate) as sandbox:
+        if isinstance(target, ArtifactElement):
+            try:
+                key = target._get_cache_key()
+                artifact = Artifact(target, self._context, strong_key=key)
+                virdir = artifact.get_files()
+                self._export_artifact(tar, location, compression, target, hardlinks, virdir)
+            except AttributeError as e:
+                raise ArtifactError("Artifact reference '{}' seems to be invalid. "
+                                    "Note that an Element name can also be used.".format(artifact))from e
+        else:
+            try:
+                with target._prepare_sandbox(scope=scope, directory=None,
+                                             integrate=integrate) as sandbox:
+                    # Copy or move the sandbox to the target directory
+                    virdir = sandbox.get_virtual_directory()
+                    self._export_artifact(tar, location, compression, target, hardlinks, virdir)
+            except BstError as e:
+                raise StreamError("Error while staging dependencies into a sandbox"
+                                  ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
 
-                # Copy or move the sandbox to the target directory
-                sandbox_vroot = sandbox.get_virtual_directory()
-
-                if not tar:
-                    with target.timed_activity("Checking out files in '{}'"
-                                               .format(location)):
-                        try:
-                            if hardlinks:
-                                self._checkout_hardlinks(sandbox_vroot, location)
-                            else:
-                                sandbox_vroot.export_files(location)
-                        except OSError as e:
-                            raise StreamError("Failed to checkout files: '{}'"
-                                              .format(e)) from e
-                else:
-                    if location == '-':
-                        mode = 'w|' + compression
-                        with target.timed_activity("Creating tarball"):
-                            # Save the stdout FD to restore later
-                            saved_fd = os.dup(sys.stdout.fileno())
-                            try:
-                                with os.fdopen(sys.stdout.fileno(), 'wb') as fo:
-                                    with tarfile.open(fileobj=fo, mode=mode) as tf:
-                                        sandbox_vroot.export_to_tar(tf, '.')
-                            finally:
-                                # No matter what, restore stdout for further use
-                                os.dup2(saved_fd, sys.stdout.fileno())
-                                os.close(saved_fd)
+    def _export_artifact(self, tar, location, compression, target, hardlinks, virdir):
+        if not tar:
+            with target.timed_activity("Checking out files in '{}'"
+                                       .format(location)):
+                try:
+                    if hardlinks:
+                        self._checkout_hardlinks(virdir, location)
                     else:
-                        mode = 'w:' + compression
-                        with target.timed_activity("Creating tarball '{}'"
-                                                   .format(location)):
-                            with tarfile.open(location, mode=mode) as tf:
-                                sandbox_vroot.export_to_tar(tf, '.')
-
-        except BstError as e:
-            raise StreamError("Error while staging dependencies into a sandbox"
-                              ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
+                        virdir.export_files(location)
+                except OSError as e:
+                    raise StreamError("Failed to checkout files: '{}'"
+                                      .format(e)) from e
+        else:
+            if location == '-':
+                mode = 'w|' + compression
+                with target.timed_activity("Creating tarball"):
+                    # Save the stdout FD to restore later
+                    saved_fd = os.dup(sys.stdout.fileno())
+                    try:
+                        with os.fdopen(sys.stdout.fileno(), 'wb') as fo:
+                            with tarfile.open(fileobj=fo, mode=mode) as tf:
+                                virdir.export_to_tar(tf, '.')
+                    finally:
+                        # No matter what, restore stdout for further use
+                        os.dup2(saved_fd, sys.stdout.fileno())
+                        os.close(saved_fd)
+            else:
+                mode = 'w:' + compression
+                with target.timed_activity("Creating tarball '{}'"
+                                           .format(location)):
+                    with tarfile.open(location, mode=mode) as tf:
+                        virdir.export_to_tar(tf, '.')
 
     # artifact_log()
     #

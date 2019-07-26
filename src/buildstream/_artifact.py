@@ -75,7 +75,6 @@ class Artifact():
     #
     def get_files(self):
         files_digest = self._get_field_digest("files")
-
         return CasBasedDirectory(self._cas, digest=files_digest)
 
     # get_buildtree():
