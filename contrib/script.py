@@ -64,7 +64,7 @@ def commit_changes_if_needed():
     committers_file = os.path.join(find_repository_root(), 'contrib/COMMITTERS.rst')
     git_diff_output = subprocess.check_output('git diff {}'.format(committers_file), shell=True)
     if git_diff_output:
-        commit_message = 'contrib: Update COMMITTERS.rst'
+        commit_message = '\'contrib: Update COMMITTERS.rst\''
         subprocess.call('git add {}'.format(committers_file), shell=True)
         subprocess.call('git commit -m {}'.format(commit_message), shell=True)
 
