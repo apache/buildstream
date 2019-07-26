@@ -208,3 +208,20 @@ class _SchedulerErrorAction(FastEnum):
 
     # Abort immediately
     TERMINATE = "terminate"
+
+
+# _CacheBuildTrees()
+#
+# When to cache build trees
+#
+class _CacheBuildTrees(FastEnum):
+
+    # Always store build trees
+    ALWAYS = "always"
+
+    # Store build trees when they might be useful for BuildStream
+    # (eg: on error, to allow for a shell to debug that)
+    AUTO = "auto"
+
+    # Never cache build trees
+    NEVER = "never"

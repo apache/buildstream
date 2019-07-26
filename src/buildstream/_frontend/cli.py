@@ -10,7 +10,7 @@ from .. import _yaml
 from .._exceptions import BstError, LoadError, AppError
 from .._versions import BST_FORMAT_VERSION
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
-from ..types import _SchedulerErrorAction
+from ..types import _CacheBuildTrees, _SchedulerErrorAction
 from ..utils import _get_compression, UtilError
 
 
@@ -285,7 +285,7 @@ def print_version(ctx, param, value):
 @click.option('--pull-buildtrees', is_flag=True, default=None,
               help="Include an element's build tree when pulling remote element artifacts")
 @click.option('--cache-buildtrees', default=None,
-              type=click.Choice(['always', 'auto', 'never']),
+              type=FastEnumType(_CacheBuildTrees),
               help="Cache artifact build tree content on creation")
 @click.pass_context
 def cli(context, **kwargs):
