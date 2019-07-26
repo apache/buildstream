@@ -3,7 +3,7 @@
 Committers
 ==========
 
-xFull commit access
+Full commit access
 -------------------
 List of people with full commit access, i.e. blanket commit access to
 the BuildStream codebase. Note that this is not a full list of all
