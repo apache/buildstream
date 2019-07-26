@@ -116,7 +116,7 @@ class Loader():
                 target_elements.append(element)
 
         #
-        # Now that we've resolve the dependencies, scan them for circular dependencies
+        # Now that we've resolved the dependencies, scan them for circular dependencies
         #
 
         # Set up a dummy element that depends on all top-level targets

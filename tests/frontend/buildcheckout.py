@@ -303,6 +303,65 @@ def test_build_checkout_tarball(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_using_ref(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    result = cli.run(project=project, args=['build', 'checkout-deps.bst'])
+    result.assert_success()
+
+    checkout_args = ['artifact', 'checkout', '--directory', checkout,
+                     'test/checkout-deps/602d6859b2e4bdc2af7f3ff34113c4e49219291c0b5c3be8642f85e94322ce49']
+
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    filename = os.path.join(checkout, 'etc', 'buildstream', 'config')
+    assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_tarball_using_ref(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout.tar')
+
+    result = cli.run(project=project, args=['build', 'checkout-deps.bst'])
+    result.assert_success()
+
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
+    checkout_args = ['artifact', 'checkout', '--deps', 'none', '--tar', checkout,
+                     'test/checkout-deps/602d6859b2e4bdc2af7f3ff34113c4e49219291c0b5c3be8642f85e94322ce49']
+
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    tar = tarfile.TarFile(checkout)
+    assert os.path.join('.', 'etc', 'buildstream', 'config') in tar.getnames()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_invalid_ref(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout.tar')
+
+    result = cli.run(project=project, args=['build', 'checkout-deps.bst'])
+    result.assert_success()
+
+    builddir = os.path.join(cli.directory, 'build')
+    assert os.path.isdir(builddir)
+    assert not os.listdir(builddir)
+
+    checkout_args = ['artifact', 'checkout', '--deps', 'none', '--tar', checkout,
+                     'test/checkout-deps/602d6859b2e4bdc2af7f3ff34113c4e49219291c0b5c3be8642f85e94322ce48']
+
+    result = cli.run(project=project, args=checkout_args)
+    assert "seems to be invalid. Note that an Element name can also be used." in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_no_tar_no_directory(datafiles, cli, tmpdir):
     project = str(datafiles)
     runtestdir = str(tmpdir)
