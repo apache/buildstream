@@ -181,6 +181,8 @@ tests-remote-execution:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_DRIVER: overlay2
+    # Required to be able to connect to the docker daemon. See https://gitlab.com/gitlab-org/gitlab-runner/issues/4501
+    DOCKER_TLS_CERTDIR: ""
     COMPOSE_MANIFEST: .gitlab-ci/buildgrid-compose.yml
     ARTIFACT_CACHE_SERVICE: http://docker:50052
     REMOTE_EXECUTION_SERVICE: http://docker:50051
@@ -298,6 +300,8 @@ code_quality:
   stage: test
   variables:
     DOCKER_DRIVER: overlay2
+    # Required to be able to connect to the docker daemon. See https://gitlab.com/gitlab-org/gitlab-runner/issues/4501
+    DOCKER_TLS_CERTDIR: ""
   allow_failure: true
   services:
     - docker:stable-dind
