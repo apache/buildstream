@@ -104,7 +104,7 @@ class Scope(FastEnum):
     """
 
 
-class Consistency():
+class Consistency(FastEnum):
     """Defines the various consistency states of a :class:`.Source`.
     """
 
@@ -127,6 +127,16 @@ class Consistency():
 
     Sources have a cached unstaged copy in the source directory.
     """
+
+    def __ge__(self, other):
+        if self.__class__ is not other.__class__:
+            raise ValueError("Unexpected comparison between {} and {}".format(self, repr(other)))
+        return self.value >= other.value
+
+    def __lt__(self, other):
+        if self.__class__ is not other.__class__:
+            raise ValueError("Unexpected comparison between {} and {}".format(self, repr(other)))
+        return self.value < other.value
 
 
 class CoreWarnings():
