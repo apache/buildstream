@@ -29,6 +29,7 @@ from ._platform import Platform
 from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASQuota, CASCacheUsage
+from .types import _SchedulerErrorAction
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .node import Node
 from .sandbox import SandboxRemote
@@ -323,8 +324,7 @@ class Context():
             'on-error', 'fetchers', 'builders',
             'pushers', 'network-retries'
         ])
-        self.sched_error_action = _node_get_option_str(
-            scheduler, 'on-error', ['continue', 'quit', 'terminate'])
+        self.sched_error_action = scheduler.get_enum('on-error', _SchedulerErrorAction)
         self.sched_fetchers = scheduler.get_int('fetchers')
         self.sched_builders = scheduler.get_int('builders')
         self.sched_pushers = scheduler.get_int('pushers')

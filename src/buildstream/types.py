@@ -192,3 +192,19 @@ class _KeyStrength(FastEnum):
     # Includes names of direct build dependencies but does not include
     # cache keys of dependencies.
     WEAK = 2
+
+
+# _SchedulerErrorAction()
+#
+# Actions the scheduler can take on error
+#
+class _SchedulerErrorAction(FastEnum):
+
+    # Continue building the rest of the tree
+    CONTINUE = "continue"
+
+    # finish ongoing work and quit
+    QUIT = "quit"
+
+    # Abort immediately
+    TERMINATE = "terminate"

@@ -37,6 +37,7 @@ from .._exceptions import BstError, StreamError, LoadError, LoadErrorReason, App
 from .._message import Message, MessageType, unconditional_messages
 from .._stream import Stream
 from .._versions import BST_FORMAT_VERSION
+from ..types import _SchedulerErrorAction
 from .. import node
 
 # Import frontend assets
@@ -597,11 +598,11 @@ class App():
         # Handle non interactive mode setting of what to do when a job fails.
         if not self._interactive_failures:
 
-            if self.context.sched_error_action == 'terminate':
+            if self.context.sched_error_action == _SchedulerErrorAction.TERMINATE:
                 self.stream.terminate()
-            elif self.context.sched_error_action == 'quit':
+            elif self.context.sched_error_action == _SchedulerErrorAction.QUIT:
                 self.stream.quit()
-            elif self.context.sched_error_action == 'continue':
+            elif self.context.sched_error_action == _SchedulerErrorAction.CONTINUE:
                 pass
             return
 
