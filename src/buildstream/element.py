@@ -936,12 +936,13 @@ class Element(Plugin):
     #
     # Args:
     #    meta (MetaElement): The meta element
+    #    task (Task): A task object to report progress to
     #
     # Returns:
     #    (Element): A newly created Element instance
     #
     @classmethod
-    def _new_from_meta(cls, meta):
+    def _new_from_meta(cls, meta, task=None):
 
         if not meta.first_pass:
             meta.project.ensure_fully_loaded()
@@ -967,7 +968,7 @@ class Element(Plugin):
 
         # Instantiate dependencies
         for meta_dep in meta.dependencies:
-            dependency = Element._new_from_meta(meta_dep)
+            dependency = Element._new_from_meta(meta_dep, task)
             element.__runtime_dependencies.append(dependency)
             dependency.__reverse_runtime_deps.add(element)
         no_of_runtime_deps = len(element.__runtime_dependencies)
@@ -976,7 +977,7 @@ class Element(Plugin):
         element.__runtime_deps_uncached = no_of_runtime_deps
 
         for meta_dep in meta.build_dependencies:
-            dependency = Element._new_from_meta(meta_dep)
+            dependency = Element._new_from_meta(meta_dep, task)
             element.__build_dependencies.append(dependency)
             dependency.__reverse_build_deps.add(element)
         no_of_build_deps = len(element.__build_dependencies)
@@ -985,6 +986,9 @@ class Element(Plugin):
         element.__build_deps_uncached = no_of_build_deps
 
         element.__preflight()
+
+        if task:
+            task.add_current_progress()
 
         return element
 

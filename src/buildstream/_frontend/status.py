@@ -19,6 +19,7 @@
 import os
 import sys
 import curses
+from collections import OrderedDict
 import click
 
 # Import a widget internal for formatting time codes
@@ -64,7 +65,7 @@ class Status():
         self._success_profile = success_profile
         self._error_profile = error_profile
         self._stream = stream
-        self._jobs = []
+        self._jobs = OrderedDict()
         self._last_lines = 0  # Number of status lines we last printed to console
         self._spacing = 1
         self._colors = colors
@@ -81,6 +82,7 @@ class Status():
 
         state.register_task_added_callback(self._add_job)
         state.register_task_removed_callback(self._remove_job)
+        state.register_task_changed_callback(self._job_changed)
 
     # clear()
     #
@@ -161,6 +163,21 @@ class Status():
     ###################################################
     #                 Private Methods                 #
     ###################################################
+
+    # _job_changed()
+    #
+    # Reacts to a specified job being changed
+    #
+    # Args:
+    #    action_name (str): The action name for this job
+    #    full_name (str): The name of this specific job (e.g. element name)
+    #
+    def _job_changed(self, action_name, full_name):
+        job_key = (action_name, full_name)
+        task = self._state.tasks[job_key]
+        job = self._jobs[job_key]
+        if job.update(task):
+            self._need_alloc = True
 
     # _init_terminal()
     #
@@ -260,8 +277,9 @@ class Status():
         self._need_alloc = False
 
     def _job_lines(self, columns):
+        jobs_list = list(self._jobs.values())
         for i in range(0, len(self._jobs), columns):
-            yield self._jobs[i:i + columns]
+            yield jobs_list[i:i + columns]
 
     # Returns an array of integers representing the maximum
     # length in characters for each column, given the current
@@ -290,11 +308,11 @@ class Status():
     #
     def _add_job(self, action_name, full_name):
         task = self._state.tasks[(action_name, full_name)]
-        start_time = task.start_time
+        elapsed = task.elapsed_offset
         job = _StatusJob(self._context, action_name, full_name,
                          self._content_profile, self._format_profile,
-                         start_time)
-        self._jobs.append(job)
+                         elapsed)
+        self._jobs[(action_name, full_name)] = job
         self._need_alloc = True
 
     # _remove_job()
@@ -306,11 +324,7 @@ class Status():
     #    full_name (str): The name of this specific job (e.g. element name)
     #
     def _remove_job(self, action_name, full_name):
-        self._jobs = [
-            job for job in self._jobs
-            if not (job.full_name == full_name and
-                    job.action_name == action_name)
-        ]
+        del self._jobs[(action_name, full_name)]
         self._need_alloc = True
 
 
@@ -486,12 +500,59 @@ class _StatusJob():
         self._content_profile = content_profile
         self._format_profile = format_profile
         self._time_code = TimeCode(context, content_profile, format_profile)
+        self._current_progress = None  # Progress tally to render
+        self._maximum_progress = None  # Progress tally to render
 
+        self.size = self.calculate_size()
+
+    # calculate_size()
+    #
+    # Calculates the amount of space the job takes up when rendered
+    #
+    # Returns:
+    #    int: The size of the job when rendered
+    #
+    def calculate_size(self):
         # Calculate the size needed to display
-        self.size = 10  # Size of time code with brackets
-        self.size += len(action_name)
-        self.size += len(self.full_name)
-        self.size += 3  # '[' + ':' + ']'
+        size = 10  # Size of time code with brackets
+        size += len(self.action_name)
+        size += len(self.full_name)
+        size += 3  # '[' + ':' + ']'
+        if self._current_progress is not None:
+            size += len(str(self._current_progress))
+            size += 1  # ':'
+            if self._maximum_progress is not None:
+                size += len(str(self._maximum_progress))
+                size += 1  # '/'
+        return size
+
+    # update()
+    #
+    # Synchronises its internal data with the provided Task,
+    # and returns whether its size has changed
+    #
+    # Args:
+    #    task (Task): The task associated with this job
+    #
+    # Returns:
+    #    bool: Whether the size of the job has changed
+    #
+    def update(self, task):
+        changed = False
+        size_changed = False
+        if task.current_progress != self._current_progress:
+            changed = True
+            self._current_progress = task.current_progress
+        if task.maximum_progress != self._maximum_progress:
+            changed = True
+            self._maximum_progress = task.maximum_progress
+        if changed:
+            old_size = self.size
+            self.size = self.calculate_size()
+            if self.size != old_size:
+                size_changed = True
+
+        return size_changed
 
     # render()
     #
@@ -506,12 +567,20 @@ class _StatusJob():
             self._time_code.render_time(elapsed - self._offset) + \
             self._format_profile.fmt(']')
 
-        # Add padding after the display name, before terminating ']'
-        name = self.full_name + (' ' * padding)
         text += self._format_profile.fmt('[') + \
             self._content_profile.fmt(self.action_name) + \
             self._format_profile.fmt(':') + \
-            self._content_profile.fmt(name) + \
-            self._format_profile.fmt(']')
+            self._content_profile.fmt(self.full_name)
+
+        if self._current_progress is not None:
+            text += self._format_profile.fmt(':') + \
+                self._content_profile.fmt(str(self._current_progress))
+            if self._maximum_progress is not None:
+                text += self._format_profile.fmt('/') + \
+                    self._content_profile.fmt(str(self._maximum_progress))
+
+        # Add padding before terminating ']'
+        terminator = (' ' * padding) + ']'
+        text += terminator
 
         return text

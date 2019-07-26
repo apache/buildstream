@@ -78,7 +78,10 @@ class Stream():
         self._sourcecache = None
         self._project = None
         self._pipeline = None
-        self._state = State()        # Owned by Stream, used by Core to set state
+        self._state = State(session_start)  # Owned by Stream, used by Core to set state
+
+        context.messenger.set_state(self._state)
+
         self._scheduler = Scheduler(context, session_start, self._state,
                                     interrupt_callback=interrupt_callback,
                                     ticker_callback=ticker_callback)
