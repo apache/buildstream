@@ -395,6 +395,13 @@ class Messenger():
         #
         del state['_message_handler']
 
+        # The render status callback is only used in the main process
+        #
+        del state['_render_status_cb']
+
+        # The State object is not needed outside the main process
+        del state['_state']
+
         return state
 
     # _render_status()
