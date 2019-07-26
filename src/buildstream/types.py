@@ -46,6 +46,15 @@ class FastEnum(metaclass=MetaFastEnum):
 
     _value_to_entry = dict()  # A dict of all values mapping to the entries in the enum
 
+    @classmethod
+    def values(cls):
+        """Get all the possible values for the enum.
+
+        Returns:
+            list: the list of all possible values for the enum
+        """
+        return cls._value_to_entry.keys()
+
     def __new__(cls, value):
         try:
             return cls._value_to_entry[value]

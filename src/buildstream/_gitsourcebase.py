@@ -32,6 +32,7 @@ from configparser import RawConfigParser
 from .source import Source, SourceError, SourceFetcher
 from .types import Consistency, CoreWarnings
 from . import utils
+from .types import FastEnum
 from .utils import move_atomic, DirectoryExistsError
 
 GIT_MODULES = '.gitmodules'
@@ -40,6 +41,11 @@ GIT_MODULES = '.gitmodules'
 WARN_INCONSISTENT_SUBMODULE = "inconsistent-submodule"
 WARN_UNLISTED_SUBMODULE = "unlisted-submodule"
 WARN_INVALID_SUBMODULE = "invalid-submodule"
+
+
+class _RefFormat(FastEnum):
+    SHA1 = "sha1"
+    GIT_DESCRIBE = "git-describe"
 
 
 # Because of handling of submodules, we maintain a _GitMirror
@@ -156,7 +162,7 @@ class _GitMirror(SourceFetcher):
             cwd=self.mirror)
         ref = output.rstrip('\n')
 
-        if self.source.ref_format == 'git-describe':
+        if self.source.ref_format == _RefFormat.GIT_DESCRIBE:
             # Prefix the ref with the closest tag, if available,
             # to make the ref human readable
             exit_code, output = self.source.check_output(
@@ -394,10 +400,7 @@ class _GitSourceBase(Source):
         self.mirror = self.BST_MIRROR_CLASS(self, '', self.original_url, ref, tags=tags, primary=True)
         self.tracking = node.get_str('track', None)
 
-        self.ref_format = node.get_str('ref-format', 'sha1')
-        if self.ref_format not in ['sha1', 'git-describe']:
-            provenance = node.get_scalar('ref-format').get_provenance()
-            raise SourceError("{}: Unexpected value for ref-format: {}".format(provenance, self.ref_format))
+        self.ref_format = node.get_enum('ref-format', _RefFormat, _RefFormat.SHA1)
 
         # At this point we now know if the source has a ref and/or a track.
         # If it is missing both then we will be unable to track or build.

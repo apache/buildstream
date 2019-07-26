@@ -41,6 +41,7 @@ from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._versions import BST_FORMAT_VERSION
 from ._loader import Loader
 from .element import Element
+from .types import FastEnum
 from ._message import Message, MessageType
 from ._includes import Includes
 from ._workspaces import WORKSPACE_PROJECT_FILE
@@ -48,6 +49,13 @@ from ._workspaces import WORKSPACE_PROJECT_FILE
 
 # Project Configuration file
 _PROJECT_CONF_FILE = 'project.conf'
+
+
+# List of all places plugins can come from
+class PluginOrigins(FastEnum):
+    CORE = "core"
+    LOCAL = "local"
+    PIP = "pip"
 
 
 # HostMount()
@@ -862,13 +870,7 @@ class Project():
                 'origin', 'sources', 'elements',
                 'package-name', 'path',
             ]
-            allowed_origins = ['core', 'local', 'pip']
             origin.validate_keys(allowed_origin_fields)
-
-            origin_value = origin.get_str('origin')
-            if origin_value not in allowed_origins:
-                raise LoadError("Origin '{}' is not one of the allowed types"
-                                .format(origin_value), LoadErrorReason.INVALID_YAML)
 
             # Store source versions for checking later
             source_versions = origin.get_mapping('sources', default={})
@@ -888,7 +890,9 @@ class Project():
 
             # Store the origins if they're not 'core'.
             # core elements are loaded by default, so storing is unnecessary.
-            if origin.get_str('origin') != 'core':
+            origin_value = origin.get_enum('origin', PluginOrigins)
+
+            if origin_value != PluginOrigins.CORE:
                 self._store_origin(origin, 'sources', plugin_source_origins)
                 self._store_origin(origin, 'elements', plugin_element_origins)
 
@@ -928,7 +932,7 @@ class Project():
                 if group in origin_node:
                     del origin_node[group]
 
-            if origin_node.get_str('origin') == 'local':
+            if origin_node.get_enum('origin', PluginOrigins) == PluginOrigins.LOCAL:
                 path = self.get_path_from_node(origin.get_scalar('path'),
                                                check_is_dir=True)
                 # paths are passed in relative to the project, but must be absolute

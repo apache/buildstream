@@ -77,3 +77,6 @@ class MetaFastEnum(type):
 
     def __setattr__(self, key, value):
         raise ValueError("Adding new values dynamically is not supported")
+
+    def __iter__(self):
+        return iter(self._value_to_entry.values())
