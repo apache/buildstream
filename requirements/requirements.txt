@@ -3,7 +3,7 @@ grpcio==1.18.0
 pluginbase==0.7
 protobuf==3.6.1
 psutil==5.4.8
-ruamel.yaml==0.15.51
+ruamel.yaml==0.16.0
 setuptools==40.6.2
 ujson==1.35
 ## The following requirements were added by pip freeze:
