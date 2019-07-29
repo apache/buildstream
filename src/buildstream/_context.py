@@ -29,6 +29,7 @@ from ._platform import Platform
 from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASQuota, CASCacheUsage
+from .types import _CacheBuildTrees, _SchedulerErrorAction
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .node import Node
 from .sandbox import SandboxRemote
@@ -298,8 +299,7 @@ class Context():
         self.pull_buildtrees = cache.get_bool('pull-buildtrees')
 
         # Load cache build trees configuration
-        self.cache_buildtrees = _node_get_option_str(
-            cache, 'cache-buildtrees', ['always', 'auto', 'never'])
+        self.cache_buildtrees = cache.get_enum('cache-buildtrees', _CacheBuildTrees)
 
         # Load logging config
         logging = defaults.get_mapping('logging')
@@ -323,8 +323,7 @@ class Context():
             'on-error', 'fetchers', 'builders',
             'pushers', 'network-retries'
         ])
-        self.sched_error_action = _node_get_option_str(
-            scheduler, 'on-error', ['continue', 'quit', 'terminate'])
+        self.sched_error_action = scheduler.get_enum('on-error', _SchedulerErrorAction)
         self.sched_fetchers = scheduler.get_int('fetchers')
         self.sched_builders = scheduler.get_int('builders')
         self.sched_pushers = scheduler.get_int('pushers')
@@ -503,30 +502,3 @@ class Context():
         if self._casquota is None:
             self._casquota = CASQuota(self)
         return self._casquota
-
-
-# _node_get_option_str()
-#
-# Like Node.get_scalar().as_str(), but also checks value is one of the allowed option
-# strings. Fetches a value from a dictionary node, and makes sure it's one of
-# the pre-defined options.
-#
-# Args:
-#    node (dict): The dictionary node
-#    key (str): The key to get a value for in node
-#    allowed_options (iterable): Only accept these values
-#
-# Returns:
-#    The value, if found in 'node'.
-#
-# Raises:
-#    LoadError, when the value is not of the expected type, or is not found.
-#
-def _node_get_option_str(node, key, allowed_options):
-    result_node = node.get_scalar(key)
-    result = result_node.as_str()
-    if result not in allowed_options:
-        provenance = result_node.get_provenance()
-        raise LoadError("{}: {} should be one of: {}".format(provenance, key, ", ".join(allowed_options)),
-                        LoadErrorReason.INVALID_DATA)
-    return result

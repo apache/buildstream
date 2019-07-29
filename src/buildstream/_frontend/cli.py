@@ -10,7 +10,22 @@ from .. import _yaml
 from .._exceptions import BstError, LoadError, AppError
 from .._versions import BST_FORMAT_VERSION
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
+from ..types import _CacheBuildTrees, _SchedulerErrorAction
 from ..utils import _get_compression, UtilError
+
+
+##################################################################
+#              Helper classes and methods for Click              #
+##################################################################
+
+class FastEnumType(click.Choice):
+
+    def __init__(self, enum):
+        self._enum = enum
+        super().__init__(enum.values())
+
+    def convert(self, value, param, ctx):
+        return self._enum(super().convert(value, param, ctx))
 
 
 ##################################################################
@@ -234,7 +249,7 @@ def print_version(ctx, param, value):
               type=click.Path(file_okay=False, readable=True),
               help="Project directory (default: current directory)")
 @click.option('--on-error', default=None,
-              type=click.Choice(['continue', 'quit', 'terminate']),
+              type=FastEnumType(_SchedulerErrorAction),
               help="What to do when an error is encountered")
 @click.option('--fetchers', type=click.INT, default=None,
               help="Maximum simultaneous download tasks")
@@ -270,7 +285,7 @@ def print_version(ctx, param, value):
 @click.option('--pull-buildtrees', is_flag=True, default=None,
               help="Include an element's build tree when pulling remote element artifacts")
 @click.option('--cache-buildtrees', default=None,
-              type=click.Choice(['always', 'auto', 'never']),
+              type=FastEnumType(_CacheBuildTrees),
               help="Cache artifact build tree content on creation")
 @click.pass_context
 def cli(context, **kwargs):

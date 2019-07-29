@@ -21,7 +21,6 @@
 # System imports
 import os
 from collections import deque
-from enum import Enum
 import heapq
 import traceback
 
@@ -32,12 +31,13 @@ from ..resources import ResourceType
 # BuildStream toplevel imports
 from ..._exceptions import BstError, ImplError, set_last_task_error
 from ..._message import Message, MessageType
+from ...types import FastEnum
 
 
 # Queue status for a given element
 #
 #
-class QueueStatus(Enum):
+class QueueStatus(FastEnum):
     # The element is not yet ready to be processed in the queue.
     PENDING = 1
 

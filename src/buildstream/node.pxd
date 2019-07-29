@@ -46,6 +46,7 @@ cdef class MappingNode(Node):
 
     # Public Methods
     cpdef bint get_bool(self, str key, default=*) except *
+    cpdef object get_enum(self, str key, object constraint, object default=*)
     cpdef int get_int(self, str key, default=*) except *
     cpdef MappingNode get_mapping(self, str key, default=*)
     cpdef Node get_node(self, str key, list allowed_types=*, bint allow_none=*)
@@ -78,6 +79,7 @@ cdef class ScalarNode(Node):
 
     # Public Methods
     cpdef bint as_bool(self) except *
+    cpdef object as_enum(self, object constraint)
     cpdef int as_int(self) except *
     cpdef str as_str(self)
     cpdef bint is_none(self)

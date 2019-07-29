@@ -25,10 +25,67 @@ Foundation types
 
 """
 
-from enum import Enum
+from ._types import MetaFastEnum
 
 
-class Scope(Enum):
+class FastEnum(metaclass=MetaFastEnum):
+    """
+    A reimplementation of a subset of the `Enum` functionality, which is far quicker than `Enum`.
+
+    :class:`enum.Enum` attributes accesses can be really slow, and slow down the execution noticeably.
+    This reimplementation doesn't suffer the same problems, but also does not reimplement everything.
+    """
+
+    name = None
+    """The name of the current Enum entry, same as :func:`enum.Enum.name`
+    """
+
+    value = None
+    """The value of the current Enum entry, same as :func:`enum.Enum.value`
+    """
+
+    _value_to_entry = dict()  # A dict of all values mapping to the entries in the enum
+
+    @classmethod
+    def values(cls):
+        """Get all the possible values for the enum.
+
+        Returns:
+            list: the list of all possible values for the enum
+        """
+        return cls._value_to_entry.keys()
+
+    def __new__(cls, value):
+        try:
+            return cls._value_to_entry[value]
+        except KeyError:
+            if type(value) is cls:  # pylint: disable=unidiomatic-typecheck
+                return value
+            raise ValueError("Unknown enum value: {}".format(value))
+
+    def __eq__(self, other):
+        if self.__class__ is not other.__class__:
+            raise ValueError("Unexpected comparison between {} and {}".format(self, repr(other)))
+        # Enums instances are unique, so creating an instance with the same value as another will just
+        # send back the other one, hence we can use an identity comparison, which is much faster than '=='
+        return self is other
+
+    def __ne__(self, other):
+        if self.__class__ is not other.__class__:
+            raise ValueError("Unexpected comparison between {} and {}".format(self, repr(other)))
+        return self is not other
+
+    def __hash__(self):
+        return hash(id(self))
+
+    def __str__(self):
+        return "{}.{}".format(self.__class__.__name__, self.name)
+
+    def __reduce__(self):
+        return self.__class__, (self.value,)
+
+
+class Scope(FastEnum):
     """Defines the scope of dependencies to include for a given element
     when iterating over the dependency graph in APIs like
     :func:`Element.dependencies() <buildstream.element.Element.dependencies>`
@@ -56,7 +113,7 @@ class Scope(Enum):
     """
 
 
-class Consistency():
+class Consistency(FastEnum):
     """Defines the various consistency states of a :class:`.Source`.
     """
 
@@ -79,6 +136,16 @@ class Consistency():
 
     Sources have a cached unstaged copy in the source directory.
     """
+
+    def __ge__(self, other):
+        if self.__class__ is not other.__class__:
+            raise ValueError("Unexpected comparison between {} and {}".format(self, repr(other)))
+        return self.value >= other.value
+
+    def __lt__(self, other):
+        if self.__class__ is not other.__class__:
+            raise ValueError("Unexpected comparison between {} and {}".format(self, repr(other)))
+        return self.value < other.value
 
 
 class CoreWarnings():
@@ -116,7 +183,7 @@ class CoreWarnings():
 #
 # Strength of cache key
 #
-class _KeyStrength(Enum):
+class _KeyStrength(FastEnum):
 
     # Includes strong cache keys of all build dependencies and their
     # runtime dependencies.
@@ -125,3 +192,36 @@ class _KeyStrength(Enum):
     # Includes names of direct build dependencies but does not include
     # cache keys of dependencies.
     WEAK = 2
+
+
+# _SchedulerErrorAction()
+#
+# Actions the scheduler can take on error
+#
+class _SchedulerErrorAction(FastEnum):
+
+    # Continue building the rest of the tree
+    CONTINUE = "continue"
+
+    # finish ongoing work and quit
+    QUIT = "quit"
+
+    # Abort immediately
+    TERMINATE = "terminate"
+
+
+# _CacheBuildTrees()
+#
+# When to cache build trees
+#
+class _CacheBuildTrees(FastEnum):
+
+    # Always store build trees
+    ALWAYS = "always"
+
+    # Store build trees when they might be useful for BuildStream
+    # (eg: on error, to allow for a shell to debug that)
+    AUTO = "auto"
+
+    # Never cache build trees
+    NEVER = "never"

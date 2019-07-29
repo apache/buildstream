@@ -102,7 +102,7 @@ from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import Consistency, CoreWarnings, Scope, _KeyStrength
+from .types import Consistency, CoreWarnings, Scope, _CacheBuildTrees, _KeyStrength
 from ._artifact import Artifact
 
 from .storage.directory import Directory
@@ -1617,8 +1617,8 @@ class Element(Plugin):
                 # download when it's not needed.
                 buildroot = self.get_variable('build-root')
                 cache_buildtrees = context.cache_buildtrees
-                if cache_buildtrees != 'never':
-                    always_cache_buildtrees = cache_buildtrees == 'always'
+                if cache_buildtrees != _CacheBuildTrees.NEVER:
+                    always_cache_buildtrees = cache_buildtrees == _CacheBuildTrees.ALWAYS
                     sandbox._set_build_directory(buildroot, always=always_cache_buildtrees)
 
                 if not self.BST_RUN_COMMANDS:
@@ -1701,7 +1701,8 @@ class Element(Plugin):
         # result. Element types without a build-root dir will be cached
         # with an empty buildtreedir regardless of this configuration.
 
-        if cache_buildtrees == 'always' or (cache_buildtrees == 'auto' and not build_success):
+        if cache_buildtrees == _CacheBuildTrees.ALWAYS or \
+                (cache_buildtrees == _CacheBuildTrees.AUTO and not build_success):
             try:
                 sandbox_build_dir = sandbox_vroot.descend(
                     *self.get_variable('build-root').lstrip(os.sep).split(os.sep))

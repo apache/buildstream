@@ -329,6 +329,45 @@ cdef class ScalarNode(Node):
                             .format(provenance, path, bool.__name__, self.value),
                             LoadErrorReason.INVALID_DATA)
 
+    cpdef object as_enum(self, object constraint):
+        """Get the value of the node as an enum member from `constraint`
+
+        The constraint must be a :class:`buildstream.types.FastEnum` or a plain python Enum.
+
+        For example you could do:
+
+        .. code-block:: python
+
+            from buildstream.types import FastEnum
+
+            class SupportedCompressions(FastEnum):
+              NONE = "none"
+              GZIP = "gzip"
+              XZ = "xz"
+
+
+            x = config.get_scalar('compress').as_enum(SupportedCompressions)
+
+            if x == SupportedCompressions.GZIP:
+                print("Using GZIP")
+
+        Args:
+            constraint (:class:`buildstream.types.FastEnum` or :class:`Enum`): an enum from which to extract the value
+                                                                               for the current node.
+
+        Returns:
+            :class:`FastEnum` or :class:`Enum`: the value contained in the node, as a member of `constraint`
+        """
+        try:
+            return constraint(self.value)
+        except ValueError:
+            provenance = self.get_provenance()
+            path = provenance._toplevel._find(self)[-1]
+            valid_values = [str(v.value) for v in constraint]
+            raise LoadError("{}: Value of '{}' should be one of '{}'".format(
+                                provenance, path, ", ".join(valid_values)),
+                            LoadErrorReason.INVALID_DATA)
+
     cpdef int as_int(self) except *:
         """Get the value of the node as an integer.
 
@@ -510,6 +549,44 @@ cdef class MappingNode(Node):
         """
         cdef ScalarNode scalar = self.get_scalar(key, default)
         return scalar.as_bool()
+
+    cpdef object get_enum(self, str key, object constraint, object default=_sentinel):
+        """Get the value of the node as an enum member from `constraint`
+
+        Args:
+            key (str): key for which to get the value
+            constraint (:class:`buildstream.types.FastEnum` or :class:`Enum`): an enum from which to extract the value
+                                                                               for the current node.
+            default (object): default value to return if `key` is not in the mapping
+
+        Raises:
+            :class:`buildstream._exceptions.LoadError`: if the value is not is not found or not part of the
+                                                        provided enum.
+
+        Returns:
+            :class:`buildstream.types.Enum` or :class:`Enum`: the value contained in the node, as a member of
+                                                              `constraint`
+        """
+        cdef object value = self.value.get(key, _sentinel)
+
+        if value is _sentinel:
+            if default is _sentinel:
+                provenance = self.get_provenance()
+                raise LoadError("{}: Dictionary did not contain expected key '{}'".format(provenance, key),
+                                LoadErrorReason.INVALID_DATA)
+
+            if default is None:
+                return None
+            else:
+                return constraint(default)
+
+        if type(value) is not ScalarNode:
+            provenance = value.get_provenance()
+            raise LoadError("{}: Value of '{}' is not of the expected type 'scalar'"
+                                .format(provenance, key),
+                            LoadErrorReason.INVALID_DATA)
+
+        return (<ScalarNode> value).as_enum(constraint)
 
     cpdef int get_int(self, str key, object default=_sentinel) except *:
         """get_int(key, default=sentinel)

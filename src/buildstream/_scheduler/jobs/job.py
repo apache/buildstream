@@ -20,7 +20,6 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 # System imports
-import enum
 import os
 import sys
 import signal
@@ -32,6 +31,7 @@ import multiprocessing
 # BuildStream toplevel imports
 from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
+from ...types import FastEnum
 from ... import _signals, utils
 
 from .jobpickler import pickle_child_job
@@ -39,8 +39,7 @@ from .jobpickler import pickle_child_job
 
 # Return code values shutdown of job handling child processes
 #
-@enum.unique
-class _ReturnCode(enum.IntEnum):
+class _ReturnCode(FastEnum):
     OK = 0
     FAIL = 1
     PERM_FAIL = 2
@@ -52,8 +51,7 @@ class _ReturnCode(enum.IntEnum):
 # The job completion status, passed back through the
 # complete callbacks.
 #
-@enum.unique
-class JobStatus(enum.Enum):
+class JobStatus(FastEnum):
     # Job succeeded
     OK = 0
 
@@ -80,8 +78,7 @@ class Process(multiprocessing.Process):
         self._sentinel = self._popen.sentinel
 
 
-@enum.unique
-class _MessageType(enum.Enum):
+class _MessageType(FastEnum):
     LOG_MESSAGE = 1
     ERROR = 2
     RESULT = 3
@@ -442,6 +439,11 @@ class Job():
     #
     def _parent_child_completed(self, pid, returncode):
         self._parent_shutdown()
+
+        try:
+            returncode = _ReturnCode(returncode)
+        except KeyError:  # An unexpected return code was returned, let's fail permanently
+            returncode = _ReturnCode.PERM_FAIL
 
         # We don't want to retry if we got OK or a permanent fail.
         retry_flag = returncode == _ReturnCode.FAIL
@@ -834,7 +836,7 @@ class ChildJob():
     def _child_shutdown(self, exit_code):
         self._queue.close()
         assert isinstance(exit_code, _ReturnCode)
-        sys.exit(int(exit_code))
+        sys.exit(exit_code.value)
 
     # _child_message_handler()
     #
