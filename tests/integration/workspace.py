@@ -37,6 +37,20 @@ def test_workspace_mount(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_workspace_mount_on_read_only_directory(cli, datafiles):
+    project = str(datafiles)
+    workspace = os.path.join(cli.directory, 'workspace')
+    os.makedirs(workspace)
+    element_name = 'workspace/workspace-mount.bst'
+
+    # make directory RO
+    os.chmod(workspace, 0o555)
+
+    res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
+    assert res.exit_code == 0
+
+
+@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 @pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
 def test_workspace_commanddir(cli, datafiles):
