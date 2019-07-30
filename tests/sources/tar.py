@@ -279,9 +279,10 @@ def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
 # Test that tarballs with read-only files work
 # a - contains read-only files in a writable directory
 # b - root directory has read-only permission
+# c - contains one file that has no read nor write permissions. Base-dir set to '' to extract root of tarball
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'read-only'))
-@pytest.mark.parametrize("tar_name", ["a", "b"])
-def test_read_only_dir(cli, tmpdir, datafiles, tar_name):
+@pytest.mark.parametrize("tar_name, base_dir", [("a", "*"), ("b", '*'), ("c", '')])
+def test_read_only_dir(cli, tmpdir, datafiles, tar_name, base_dir):
     try:
         project = str(datafiles)
         generate_project(project, tmpdir)
@@ -295,7 +296,8 @@ def test_read_only_dir(cli, tmpdir, datafiles, tar_name):
                 {
                     'kind': 'tar',
                     'url': 'tmpdir:/{}'.format(tar_file),
-                    'ref': 'foo'
+                    'ref': 'foo',
+                    'base-dir': base_dir
                 }
             ]
         }, bst_path)
