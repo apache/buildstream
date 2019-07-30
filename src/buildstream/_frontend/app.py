@@ -706,7 +706,17 @@ class App():
     #
     def _error_exit(self, error, prefix=None):
         click.echo("", err=True)
-        main_error = str(error)
+
+        if self.context is None or self.context.log_debug is None:  # Context might not be initialized, default to cmd
+            debug = self._main_options["debug"]
+        else:
+            debug = self.context.log_debug
+
+        if debug:
+            main_error = "\n\n" + traceback.format_exc()
+        else:
+            main_error = str(error)
+
         if prefix is not None:
             main_error = "{}: {}".format(prefix, main_error)
 
