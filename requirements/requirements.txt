@@ -4,14 +4,7 @@ Jinja2==2.10
 pluginbase==0.7
 protobuf==3.6.1
 psutil==5.4.8
-# According to ruamel.yaml's PyPI page, we are suppose to use
-# "<=0.15" in production until 0.15 becomes API stable.
-# However we need ruamel.yaml 0.15.41 or greater for Python 3.7.
-# We know that ruamel.yaml 0.15.52 breaks API in a way that
-# is incompatible with BuildStream.
-#
-# See issues #571 and #790.
-ruamel.yaml==0.15.51
+ruamel.yaml==0.16.0
 setuptools==39.0.1
 pyroaring==0.2.6
 ujson==1.35
