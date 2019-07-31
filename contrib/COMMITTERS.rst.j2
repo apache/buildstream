@@ -1,0 +1,18 @@
+.. _committers:
+
+Committers
+==========
+
+Full commit access
+-------------------
+List of people with full commit access, i.e. blanket commit access to
+the BuildStream codebase. Note that this is not a full list of all
+contributors.
+
++-----------------------------------+-----------------------------------+
+| Full Name                         | GitLab User                       |
++===================================+===================================+
+{% for name, username in committers.items() -%}
+| {{ get_table_entry(name) }}| {{ get_table_entry(username)}}|
++-----------------------------------+-----------------------------------+
+{% endfor %}
