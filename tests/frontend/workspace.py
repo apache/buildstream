@@ -1333,3 +1333,37 @@ def test_build_all(cli, tmpdir, datafiles, case, strict, non_workspaced_elements
     # Assert that the target is built
     assert cli.get_element_states(project, all_elements) == \
         {elem: "cached" for elem in all_elements}
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize('strict', ['strict', 'non-strict'])
+def test_show_workspace_logs(cli, tmpdir, datafiles, strict):
+    project = str(datafiles)
+    workspace = os.path.join(str(tmpdir), 'workspace')
+    target = 'manual.bst'
+
+    # Configure strict mode
+    strict_mode = True
+    if strict != 'strict':
+        strict_mode = False
+    cli.configure({
+        'projects': {
+            'test': {
+                'strict': strict_mode
+            }
+        }
+    })
+
+    # First open the workspace
+    result = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, target])
+    result.assert_success()
+
+    # Build the element
+    result = cli.run(project=project, args=['build', target])
+    result.assert_task_error(ErrorDomain.SANDBOX, 'missing-command')
+
+    result = cli.run(project=project, args=['artifact', 'log', target])
+    result.assert_success()
+
+    # Assert that the log is not empty
+    assert result.output != ""
