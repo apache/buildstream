@@ -31,7 +31,6 @@ from .. import Scope
 
 # Import various buildstream internals
 from .._context import Context
-from ..plugin import Plugin
 from .._project import Project
 from .._exceptions import BstError, StreamError, LoadError, LoadErrorReason, AppError
 from .._message import Message, MessageType, unconditional_messages
@@ -212,7 +211,8 @@ class App():
             self.stream = Stream(self.context, self._session_start,
                                  session_start_callback=self.session_start_cb,
                                  interrupt_callback=self._interrupt_handler,
-                                 ticker_callback=self._tick)
+                                 ticker_callback=self._tick,
+                                 interactive_failure=self._interactive_failures)
 
             self._state = self.stream.get_state()
 
@@ -474,7 +474,7 @@ class App():
     def _message(self, message_type, message, **kwargs):
         args = dict(kwargs)
         self.context.messenger.message(
-            Message(None, message_type, message, **args))
+            Message(message_type, message, **args))
 
     # Exception handler
     #
@@ -559,25 +559,24 @@ class App():
     # Args:
     #    action_name (str): The name of the action being performed,
     #                       same as the task group, if it exists
-    #    full_name (str): The name of this specific task, e.g. the element name
-    #    unique_id (int): If an element job failed, the unique ID of the element.
+    #    full_name (str): The name of this specific task, e.g. the element full name
+    #    element_job (bool): If an element job failed
+    #    element (Element): If an element job failed and interactive failure
+    #                       handling, the Element instance
     #
-    def _job_failed(self, action_name, full_name, unique_id=None):
+    def _job_failed(self, action_name, full_name, element_job=False, element=None):
         # Dont attempt to handle a failure if the user has already opted to
         # terminate
         if not self.stream.terminated:
-            if unique_id:
+            if element_job:
                 # look-up queue
                 for q in self.stream.queues:
                     if q.action_name == action_name:
                         queue = q
                 assert queue, "Job action {} does not have a corresponding queue".format(action_name)
 
-                # look-up element
-                element = Plugin._lookup(unique_id)
-
                 # Get the last failure message for additional context
-                failure = self._fail_messages.get(element._unique_id)
+                failure = self._fail_messages.get(full_name)
 
                 # XXX This is dangerous, sometimes we get the job completed *before*
                 # the failure message reaches us ??
@@ -585,11 +584,12 @@ class App():
                     self._status.clear()
                     click.echo("\n\n\nBUG: Message handling out of sync, " +
                                "unable to retrieve failure message for element {}\n\n\n\n\n"
-                               .format(element), err=True)
+                               .format(full_name), err=True)
                 else:
                     self._handle_failure(element, queue, failure)
 
             else:
+                # Not an element_job, we don't handle the failure
                 click.echo("\nTerminating all jobs\n", err=True)
                 self.stream.terminate()
 
@@ -739,8 +739,8 @@ class App():
             return
 
         # Hold on to the failure messages
-        if message.message_type in [MessageType.FAIL, MessageType.BUG] and message.unique_id is not None:
-            self._fail_messages[message.unique_id] = message
+        if message.message_type in [MessageType.FAIL, MessageType.BUG] and message.element_name is not None:
+            self._fail_messages[message.element_name] = message
 
         # Send to frontend if appropriate
         if is_silenced and (message.message_type not in unconditional_messages):

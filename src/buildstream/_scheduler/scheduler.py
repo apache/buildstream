@@ -28,7 +28,7 @@ from contextlib import contextmanager
 
 # Local imports
 from .resources import Resources, ResourceType
-from .jobs import JobStatus, CacheSizeJob, CleanupJob, ElementJob
+from .jobs import JobStatus, CacheSizeJob, CleanupJob
 from .._profile import Topics, PROFILER
 
 
@@ -64,13 +64,15 @@ _ACTION_NAME_CACHE_SIZE = 'size'
 #    state: The state that can be made available to the frontend
 #    interrupt_callback: A callback to handle ^C
 #    ticker_callback: A callback call once per second
+#    interactive_failure: If the session is set to handle interactive failures
 #
 class Scheduler():
 
     def __init__(self, context,
                  start_time, state,
                  interrupt_callback=None,
-                 ticker_callback=None):
+                 ticker_callback=None,
+                 interactive_failure=False):
 
         #
         # Public members
@@ -92,6 +94,7 @@ class Scheduler():
         self._suspendtime = None              # Session time compensation for suspended state
         self._queue_jobs = True               # Whether we should continue to queue jobs
         self._state = state
+        self._interactive_failure = interactive_failure  # If the session is set to handle interactive failures
 
         # State of cache management related jobs
         self._cache_size_scheduled = False    # Whether we have a cache size job scheduled
@@ -253,10 +256,11 @@ class Scheduler():
 
         self._state.remove_task(job.action_name, job.name)
         if status == JobStatus.FAIL:
-            unique_id = None
-            if isinstance(job, ElementJob):
-                unique_id = job._element._unique_id
-            self._state.fail_task(job.action_name, job.name, unique_id)
+            # If it's an elementjob, we want to compare against the failure messages
+            # and send the Element() instance if interactive failure handling. Note
+            # this may change if the frontend is run in a separate process for pickling
+            element = job._element if (job.element_job and self._interactive_failure) else None
+            self._state.fail_task(job.action_name, job.name, element_job=job.element_job, element=element)
 
         # Now check for more jobs
         self._sched()

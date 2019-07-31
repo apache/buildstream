@@ -107,7 +107,7 @@ class SandboxRemote(Sandbox):
         self.operation_name = None
 
     def info(self, msg):
-        self._get_context().messenger.message(Message(None, MessageType.INFO, msg))
+        self._get_context().messenger.message(Message(MessageType.INFO, msg))
 
     @staticmethod
     def specs_from_config_node(config_node, basedir=None):

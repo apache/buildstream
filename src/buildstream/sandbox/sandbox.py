@@ -120,12 +120,12 @@ class Sandbox():
         self.__allow_real_directory = kwargs['allow_real_directory']
         self.__allow_run = True
 
-        # Plugin ID for logging
+        # Plugin element full name for logging
         plugin = kwargs.get('plugin', None)
         if plugin:
-            self.__plugin_id = plugin._unique_id
+            self.__element_name = plugin._get_full_name()
         else:
-            self.__plugin_id = None
+            self.__element_name = None
 
         # Configuration from kwargs common to all subclasses
         self.__config = kwargs['config']
@@ -563,12 +563,12 @@ class Sandbox():
 
         return False
 
-    # _get_plugin_id()
+    # _get_element_name()
     #
-    # Get the plugin's unique identifier
+    # Get the plugin's element full name
     #
-    def _get_plugin_id(self):
-        return self.__plugin_id
+    def _get_element_name(self):
+        return self.__element_name
 
     # _callback()
     #
@@ -622,8 +622,7 @@ class Sandbox():
     #    details (str): optional, more detatils
     def _issue_warning(self, message, detail=None):
         self.__context.messenger.message(
-            Message(None,
-                    MessageType.WARN,
+            Message(MessageType.WARN,
                     message,
                     detail=detail
                     )
@@ -649,7 +648,7 @@ class _SandboxBatch():
     def execute_group(self, group):
         if group.label:
             context = self.sandbox._get_context()
-            cm = context.messenger.timed_activity(group.label, unique_id=self.sandbox._get_plugin_id())
+            cm = context.messenger.timed_activity(group.label, element_name=self.sandbox._get_element_name())
         else:
             cm = contextlib.suppress()
 
@@ -659,8 +658,8 @@ class _SandboxBatch():
     def execute_command(self, command):
         if command.label:
             context = self.sandbox._get_context()
-            message = Message(self.sandbox._get_plugin_id(), MessageType.STATUS,
-                              'Running command', detail=command.label)
+            message = Message(MessageType.STATUS, 'Running command', detail=command.label,
+                              element_name=self.sandbox._get_element_name())
             context.messenger.message(message)
 
         exitcode = self.sandbox._run(command.command, self.flags, cwd=command.cwd, env=command.env)

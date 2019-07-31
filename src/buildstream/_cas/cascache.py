@@ -1248,7 +1248,6 @@ class CASQuota:
                 available = utils._pretty_size(available_space)
 
             self._message(Message(
-                None,
                 MessageType.WARN,
                 "Your system does not have enough available " +
                 "space to support the cache quota specified.",
@@ -1294,7 +1293,7 @@ class CASQuota:
         # Start off with an announcement with as much info as possible
         volume_size, volume_avail = self._get_cache_volume_size()
         self._message(Message(
-            None, MessageType.STATUS, "Starting cache cleanup",
+            MessageType.STATUS, "Starting cache cleanup",
             detail=("Elements required by the current build plan:\n" + "{}\n" +
                     "User specified quota: {} ({})\n" +
                     "Cache usage: {}\n" +
@@ -1310,7 +1309,7 @@ class CASQuota:
         # Do a real computation of the cache size once, just in case
         self.compute_cache_size()
         usage = CASCacheUsage(self)
-        self._message(Message(None, MessageType.STATUS,
+        self._message(Message(MessageType.STATUS,
                               "Cache usage recomputed: {}".format(usage)))
 
         # Collect digests and their remove method
@@ -1330,7 +1329,7 @@ class CASQuota:
             space_saved += size
 
             self._message(Message(
-                None, MessageType.STATUS,
+                MessageType.STATUS,
                 "Freed {: <7} {}".format(
                     utils._pretty_size(size, dec_places=2),
                     ref)))
@@ -1373,7 +1372,7 @@ class CASQuota:
 
         # Informational message about the side effects of the cleanup
         self._message(Message(
-            None, MessageType.INFO, "Cleanup completed",
+            MessageType.INFO, "Cleanup completed",
             detail=("Removed {} refs and saving {} disk space.\n" +
                     "Cache usage is now: {}")
             .format(removed_ref_count,

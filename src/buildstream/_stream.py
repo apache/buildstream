@@ -55,13 +55,15 @@ from . import Scope, Consistency
 #    session_start_callback (callable): A callback to invoke when the session starts
 #    interrupt_callback (callable): A callback to invoke when we get interrupted
 #    ticker_callback (callable): Invoked every second while running the scheduler
+#    interactive_failure: If the session is set to handle interactive failures
 #
 class Stream():
 
     def __init__(self, context, session_start, *,
                  session_start_callback=None,
                  interrupt_callback=None,
-                 ticker_callback=None):
+                 ticker_callback=None,
+                 interactive_failure=False):
 
         #
         # Public members
@@ -85,7 +87,8 @@ class Stream():
 
         self._scheduler = Scheduler(context, session_start, self._state,
                                     interrupt_callback=interrupt_callback,
-                                    ticker_callback=ticker_callback)
+                                    ticker_callback=ticker_callback,
+                                    interactive_failure=interactive_failure)
         self._first_non_track_queue = None
         self._session_start_callback = session_start_callback
 
@@ -1235,7 +1238,7 @@ class Stream():
     def _message(self, message_type, message, **kwargs):
         args = dict(kwargs)
         self._context.messenger.message(
-            Message(None, message_type, message, **args))
+            Message(message_type, message, **args))
 
     # _add_queue()
     #

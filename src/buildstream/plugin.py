@@ -428,6 +428,9 @@ class Plugin():
 
         Note: Informative messages tell the user something they might want
               to know, like if refreshing an element caused it to change.
+              The instance full name of the plugin will be generated with the
+              message, this being the name of the given element, as appose to
+              the class name of the underlying plugin __kind identifier.
         """
         self.__message(MessageType.INFO, brief, detail=detail)
 
@@ -491,7 +494,7 @@ class Plugin():
               self.call(... command which takes time ...)
         """
         with self.__context.messenger.timed_activity(activity_name,
-                                                     unique_id=self._unique_id,
+                                                     element_name=self._get_full_name(),
                                                      detail=detail,
                                                      silent_nested=silent_nested):
             yield
@@ -733,7 +736,7 @@ class Plugin():
         return (exit_code, output)
 
     def __message(self, message_type, brief, **kwargs):
-        message = Message(self._unique_id, message_type, brief, **kwargs)
+        message = Message(message_type, brief, element_name=self._get_full_name(), **kwargs)
         self.__context.messenger.message(message)
 
     def __note_command(self, output, *popenargs, **kwargs):
@@ -761,10 +764,12 @@ class Plugin():
 
     def __set_full_name(self):
         project = self.__project
+        # Set the name, depending on element or source plugin type
+        name = self._element_name if self.__type_tag == "source" else self.name  # pylint: disable=no-member
         if project.junction:
-            return '{}:{}'.format(project.junction.name, self.name)
+            return '{}:{}'.format(project.junction.name, name)
         else:
-            return self.name
+            return name
 
 
 # A local table for _prefix_warning()

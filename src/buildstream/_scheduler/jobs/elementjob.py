@@ -68,14 +68,15 @@ class ElementJob(Job):
     def __init__(self, *args, element, queue, action_cb, complete_cb, **kwargs):
         super().__init__(*args, **kwargs)
         self.set_name(element._get_full_name())
+        self.element_job = True
         self.queue = queue
         self._element = element
         self._action_cb = action_cb            # The action callable function
         self._complete_cb = complete_cb        # The complete callable function
 
-        # Set the ID for logging purposes
-        self.set_message_unique_id(element._unique_id)
-        self.set_task_id(element._unique_id)
+        # Set the plugin element name & key for logging purposes
+        self.set_message_element_name(self.name)
+        self.set_message_element_key(self._element._get_display_key())
 
     @property
     def element(self):

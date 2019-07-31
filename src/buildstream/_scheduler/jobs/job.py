@@ -131,6 +131,7 @@ class Job():
         self.name = None                 # The name of the job, set by the job's subclass
         self.action_name = action_name   # The action name for the Queue
         self.child_data = None           # Data to be sent to the main process
+        self.element_job = False         # If the job is an ElementJob
 
         #
         # Private members
@@ -147,8 +148,8 @@ class Job():
         self._terminated = False               # Whether this job has been explicitly terminated
 
         self._logfile = logfile
-        self._message_unique_id = None
-        self._task_id = None
+        self._message_element_name = None      # The plugin instance element name for messaging
+        self._message_element_key = None      # The element key for messaging
 
     # set_name()
     #
@@ -174,8 +175,8 @@ class Job():
             self._logfile,
             self._max_retries,
             self._tries,
-            self._message_unique_id,
-            self._task_id,
+            self._message_element_name,
+            self._message_element_key
         )
 
         # Make sure that picklability doesn't break, by exercising it during
@@ -311,36 +312,27 @@ class Job():
             os.kill(self._process.pid, signal.SIGCONT)
             self._suspended = False
 
-    # set_message_unique_id()
+    # set_message_element_name()
     #
-    # This is called by Job subclasses to set the plugin ID
-    # issuing the message (if an element is related to the Job).
+    # This is called by Job subclasses to set the plugin instance element
+    # name issuing the message (if an element is related to the Job).
     #
     # Args:
-    #     unique_id (int): The id to be supplied to the Message() constructor
+    #     element_name (int): The element_name to be supplied to the Message() constructor
     #
-    def set_message_unique_id(self, unique_id):
-        self._message_unique_id = unique_id
+    def set_message_element_name(self, element_name):
+        self._message_element_name = element_name
 
-    # set_task_id()
+    # set_message_element_key()
     #
-    # This is called by Job subclasses to set a plugin ID
-    # associated with the task at large (if any element is related
-    # to the task).
-    #
-    # This will only be used in the child process running the task.
-    #
-    # The task ID helps keep messages in the frontend coherent
-    # in the case that multiple plugins log in the context of
-    # a single task (e.g. running integration commands should appear
-    # in the frontend for the element being built, not the element
-    # running the integration commands).
+    # This is called by Job subclasses to set the element
+    # key for for the issuing message (if an element is related to the Job).
     #
     # Args:
-    #     task_id (int): The plugin identifier for this task
+    #     element_key (tuple): The element_key tuple to be supplied to the Message() constructor
     #
-    def set_task_id(self, task_id):
-        self._task_id = task_id
+    def set_message_element_key(self, element_key):
+        self._message_element_key = element_key
 
     # message():
     #
@@ -351,16 +343,18 @@ class Job():
     #    message_type (MessageType): The type of message to send
     #    message (str): The message
     #    kwargs: Remaining Message() constructor arguments, note that you can
-    #            override 'unique_id' this way.
+    #            override 'element_name' and 'element_key' this way.
     #
-    def message(self, message_type, message, **kwargs):
+    def message(self, message_type, message, element_name=None, element_key=None, **kwargs):
         kwargs['scheduler'] = True
-        unique_id = self._message_unique_id
-        if "unique_id" in kwargs:
-            unique_id = kwargs["unique_id"]
-            del kwargs["unique_id"]
+        kwargs['scheduler'] = True
+        # If default name & key values not provided, set as given job attributes
+        if element_name is None:
+            element_name = self._message_element_name
+        if element_key is None:
+            element_key = self._message_element_key
         self._scheduler.context.messenger.message(
-            Message(unique_id, message_type, message, **kwargs))
+            Message(message_type, message, element_name=element_name, element_key=element_key, **kwargs))
 
     #######################################################
     #                  Abstract Methods                   #
@@ -573,13 +567,16 @@ class Job():
 #                   that should be used - should contain {pid}.
 #    max_retries (int): The maximum number of retries.
 #    tries (int): The number of retries so far.
-#    message_unique_id (int): None, or the id to be supplied to the Message() constructor.
-#    task_id (int): None, or the plugin identifier for this job.
+#    message_element_name (str): None, or the plugin instance element name
+#                                to be supplied to the Message() constructor.
+#    message_element_key (tuple): None, or the element display key tuple
+#                                to be supplied to the Message() constructor.
 #
 class ChildJob():
 
     def __init__(
-            self, action_name, messenger, logdir, logfile, max_retries, tries, message_unique_id, task_id):
+            self, action_name, messenger, logdir, logfile, max_retries, tries,
+            message_element_name, message_element_key):
 
         self.action_name = action_name
 
@@ -588,8 +585,8 @@ class ChildJob():
         self._logfile = logfile
         self._max_retries = max_retries
         self._tries = tries
-        self._message_unique_id = message_unique_id
-        self._task_id = task_id
+        self._message_element_name = message_element_name
+        self._message_element_key = message_element_key
 
         self._queue = None
 
@@ -601,17 +598,20 @@ class ChildJob():
     # Args:
     #    message_type (MessageType): The type of message to send
     #    message (str): The message
-    #    kwargs: Remaining Message() constructor arguments, note that you can
-    #            override 'unique_id' this way.
+    #    kwargs: Remaining Message() constructor arguments, note
+    #            element_key is set in _child_message_handler
+    #            for front end display if not already set or explicitly
+    #            overriden here.
     #
-    def message(self, message_type, message, **kwargs):
+    def message(self, message_type, message, element_name=None, element_key=None, **kwargs):
         kwargs['scheduler'] = True
-        unique_id = self._message_unique_id
-        if "unique_id" in kwargs:
-            unique_id = kwargs["unique_id"]
-            del kwargs["unique_id"]
-        self._messenger.message(
-            Message(unique_id, message_type, message, **kwargs))
+        # If default name & key values not provided, set as given job attributes
+        if element_name is None:
+            element_name = self._message_element_name
+        if element_key is None:
+            element_key = self._message_element_key
+        self._messenger.message(Message(message_type, message, element_name=element_name,
+                                        element_key=element_key, **kwargs))
 
     # send_message()
     #
@@ -844,6 +844,8 @@ class ChildJob():
     # frontend's main message handler in the context of a child task
     # and performs local logging to the local log file before sending
     # the message back to the parent process for further propagation.
+    # The related element display key is added to the message for
+    # widget rendering if not already set for an element childjob.
     #
     # Args:
     #    message     (Message): The message to log
@@ -852,7 +854,12 @@ class ChildJob():
     def _child_message_handler(self, message, is_silenced):
 
         message.action_name = self.action_name
-        message.task_id = self._task_id
+
+        # If no key has been set at this point, and the element job has
+        # a related key, set it. This is needed for messages going
+        # straight to the message handler from the child process.
+        if message.element_key is None and self._message_element_key:
+            message.element_key = self._message_element_key
 
         # Send to frontend if appropriate
         if is_silenced and (message.message_type not in unconditional_messages):
