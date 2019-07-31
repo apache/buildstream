@@ -442,7 +442,7 @@ class Job():
 
         try:
             returncode = _ReturnCode(returncode)
-        except KeyError:  # An unexpected return code was returned, let's fail permanently
+        except ValueError:  # An unexpected return code was returned, let's fail permanently
             returncode = _ReturnCode.PERM_FAIL
 
         # We don't want to retry if we got OK or a permanent fail.
