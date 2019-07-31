@@ -586,6 +586,7 @@ class App():
                                "unable to retrieve failure message for element {}\n\n\n\n\n"
                                .format(full_name), err=True)
                 else:
+                    # Note element will be given if in interactive failure mode
                     self._handle_failure(element, queue, failure)
 
             else:
