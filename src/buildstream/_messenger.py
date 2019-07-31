@@ -25,7 +25,6 @@ from . import _signals
 from . import utils
 from ._exceptions import BstError
 from ._message import Message, MessageType
-from .plugin import Plugin
 
 
 _RENDER_INTERVAL = datetime.timedelta(seconds=1)
@@ -149,16 +148,16 @@ class Messenger():
     #
     # Args:
     #    activity_name (str): The name of the activity
-    #    unique_id (int): Optionally, the unique id of the plugin related to the message
+    #    element_name (str): Optionally, the element full name of the plugin related to the message
     #    detail (str): An optional detailed message, can be multiline output
     #    silent_nested (bool): If True, all but _message.unconditional_messages are silenced
     #
     @contextmanager
-    def timed_activity(self, activity_name, *, unique_id=None, detail=None, silent_nested=False):
+    def timed_activity(self, activity_name, *, element_name=None, detail=None, silent_nested=False):
         with self._timed_suspendable() as timedata:
             try:
                 # Push activity depth for status messages
-                message = Message(unique_id, MessageType.START, activity_name, detail=detail)
+                message = Message(MessageType.START, activity_name, detail=detail, element_name=element_name)
                 self.message(message)
                 with self.silence(actually_silence=silent_nested):
                     yield
@@ -167,12 +166,12 @@ class Messenger():
                 # Note the failure in status messages and reraise, the scheduler
                 # expects an error when there is an error.
                 elapsed = datetime.datetime.now() - timedata.start_time
-                message = Message(unique_id, MessageType.FAIL, activity_name, elapsed=elapsed)
+                message = Message(MessageType.FAIL, activity_name, elapsed=elapsed, element_name=element_name)
                 self.message(message)
                 raise
 
             elapsed = datetime.datetime.now() - timedata.start_time
-            message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed)
+            message = Message(MessageType.SUCCESS, activity_name, elapsed=elapsed, element_name=element_name)
             self.message(message)
 
     # simple_task()
@@ -181,7 +180,7 @@ class Messenger():
     #
     # Args:
     #    activity_name (str): The name of the activity
-    #    unique_id (int): Optionally, the unique id of the plugin related to the message
+    #    element_name (str): Optionally, the element full name of the plugin related to the message
     #    full_name (str): Optionally, the distinguishing name of the activity, e.g. element name
     #    silent_nested (bool): If True, all but _message.unconditional_messages are silenced
     #
@@ -189,10 +188,10 @@ class Messenger():
     #    Task: A Task object that represents this activity, principally used to report progress
     #
     @contextmanager
-    def simple_task(self, activity_name, *, unique_id=None, full_name=None, silent_nested=False):
+    def simple_task(self, activity_name, *, element_name=None, full_name=None, silent_nested=False):
         # Bypass use of State when none exists (e.g. tests)
         if not self._state:
-            with self.timed_activity(activity_name, unique_id=unique_id, silent_nested=silent_nested):
+            with self.timed_activity(activity_name, element_name=element_name, silent_nested=silent_nested):
                 yield
             return
 
@@ -201,7 +200,7 @@ class Messenger():
 
         with self._timed_suspendable() as timedata:
             try:
-                message = Message(unique_id, MessageType.START, activity_name)
+                message = Message(MessageType.START, activity_name, element_name=element_name)
                 self.message(message)
 
                 task = self._state.add_task(activity_name, full_name)
@@ -215,7 +214,7 @@ class Messenger():
 
             except BstError:
                 elapsed = datetime.datetime.now() - timedata.start_time
-                message = Message(unique_id, MessageType.FAIL, activity_name, elapsed=elapsed)
+                message = Message(MessageType.FAIL, activity_name, elapsed=elapsed, element_name=element_name)
                 self.message(message)
                 raise
             finally:
@@ -232,7 +231,8 @@ class Messenger():
                     detail = "{} subtasks processed".format(task.current_progress)
             else:
                 detail = None
-            message = Message(unique_id, MessageType.SUCCESS, activity_name, elapsed=elapsed, detail=detail)
+            message = Message(MessageType.SUCCESS, activity_name, elapsed=elapsed, detail=detail,
+                              element_name=element_name)
             self.message(message)
 
     # recorded_messages()
@@ -336,13 +336,12 @@ class Messenger():
         EMPTYTIME = "--:--:--"
         template = "[{timecode: <8}] {type: <7}"
 
-        # If this message is associated with a plugin, print what
-        # we know about the plugin.
-        plugin_name = ""
-        if message.unique_id:
-            template += " {plugin}"
-            plugin = Plugin._lookup(message.unique_id)
-            plugin_name = plugin.name
+        # If this message is associated with an element or source plugin, print the
+        # full element name of the instance.
+        element_name = ""
+        if message.element_name:
+            template += " {element_name}"
+            element_name = message.element_name
 
         template += ": {message}"
 
@@ -359,7 +358,7 @@ class Messenger():
             timecode = "{0:02d}:{1:02d}:{2:02d}".format(hours, minutes, seconds)
 
         text = template.format(timecode=timecode,
-                               plugin=plugin_name,
+                               element_name=element_name,
                                type=message.message_type.upper(),
                                message=message.message,
                                detail=detail)

@@ -208,8 +208,7 @@ class State():
     #    full_name (str): The full name of the task, distinguishing
     #                     it from other tasks with the same action name
     #                     e.g. an element's name.
-    #    unique_id (int): (optionally) the element's unique ID, if the failure
-    #                     came from an element
+    #    element_job (bool): (optionally) If an element job failed.
     #
     def register_task_failed_callback(self, callback):
         self._task_failed_cbs.append(callback)
@@ -324,11 +323,11 @@ class State():
     #    full_name (str): The full name of the task, distinguishing
     #                     it from other tasks with the same action name
     #                     e.g. an element's name.
-    #    unique_id (int): (optionally) the element's unique ID, if the failure came from an element
+    #    element (Element): (optionally) The element instance if an element job
     #
-    def fail_task(self, action_name, full_name, unique_id=None):
+    def fail_task(self, action_name, full_name, element=None):
         for cb in self._task_failed_cbs:
-            cb(action_name, full_name, unique_id)
+            cb(action_name, full_name, element)
 
 
 # _Task

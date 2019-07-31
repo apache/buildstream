@@ -459,7 +459,7 @@ class Project():
             ]
             detail += "\n".join(lines)
             self._context.messenger.message(
-                Message(None, MessageType.WARN, "Ignoring redundant source references", detail=detail))
+                Message(MessageType.WARN, "Ignoring redundant source references", detail=detail))
 
         return elements
 
@@ -687,7 +687,6 @@ class Project():
         if not fail_on_overlap.is_none():
             self._context.messenger.message(
                 Message(
-                    None,
                     MessageType.WARN,
                     "Use of fail-on-overlap within project.conf " +
                     "is deprecated. Consider using fatal-warnings instead."

@@ -1235,7 +1235,7 @@ class Stream():
     def _message(self, message_type, message, **kwargs):
         args = dict(kwargs)
         self._context.messenger.message(
-            Message(None, message_type, message, **args))
+            Message(message_type, message, **args))
 
     # _add_queue()
     #
