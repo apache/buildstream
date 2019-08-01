@@ -31,6 +31,27 @@ class QueueManager:
         return _PlainQueueWrapper(multiprocessing.Queue())
 
 
+# PicklableQueueManager()
+#
+# A QueueManager that creates pickable types.
+#
+# Note that the requirement of being picklable adds extra runtime burden, as we
+# must create and maintain a `SyncManager` process that will create and manage
+# the real objects.
+#
+class PicklableQueueManager(QueueManager):
+    def __init__(self):
+        super().__init__()
+        self._manager = None
+
+    def make_queue_wrapper(self):
+        # Only SyncManager Queues are picklable, so we must make those. Avoid
+        # creating multiple expensive SyncManagers, by keeping this one around.
+        if self._manager is None:
+            self._manager = multiprocessing.Manager()
+        return _SyncManagerQueueWrapper(self._manager.Queue())
+
+
 # QueueWrapper()
 #
 # This abstracts our choice of using picklable or non-picklable Queues.
@@ -63,3 +84,25 @@ class _PlainQueueWrapper(QueueWrapper):
 
     def close(self):
         self.queue.close()
+
+
+class _SyncManagerQueueWrapper(QueueWrapper):
+    def __init__(self, queue):
+        super().__init__()
+        self.queue = queue
+
+    def set_potential_callback_on_queue_event(self, event_loop, callback):
+        # We can't easily support these callbacks for Queues managed by a
+        # SyncManager, so don't support them for now. In later work we should
+        # be able to support them with threading.
+        pass
+
+    def clear_potential_callback_on_queue_event(self, event_loop):
+        pass
+
+    def close(self):
+        # SyncManager queue proxies do not have a `close()` method, they rely
+        # on a callback on garbage collection to release resources. For our
+        # purposes the queue is invalid after closing, so it's ok to release it
+        # here.
+        self.queue = None

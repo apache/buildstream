@@ -18,6 +18,7 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+import multiprocessing
 import os
 import platform
 import sys
@@ -27,7 +28,7 @@ import psutil
 from .._exceptions import PlatformError, ImplError, SandboxError
 from .. import utils
 
-from .multiprocessing import QueueManager
+from .multiprocessing import QueueManager, PicklableQueueManager
 
 
 class Platform():
@@ -175,7 +176,23 @@ class Platform():
         return Platform.canonicalize_arch(uname_machine)
 
     def make_queue_manager(self):
-        return QueueManager()
+        if self.does_multiprocessing_start_require_pickling():
+            return PicklableQueueManager()
+        else:
+            return QueueManager()
+
+    # does_multiprocessing_start_require_pickling():
+    #
+    # Returns True if the multiprocessing start method will pickle arguments
+    # to new processes.
+    #
+    # Returns:
+    #    (bool): Whether pickling is required or not
+    #
+    def does_multiprocessing_start_require_pickling(self):
+        # Note that if the start method has not been set before now, it will be
+        # set to the platform default by `get_start_method`.
+        return multiprocessing.get_start_method() != 'fork'
 
     ##################################################################
     #                        Sandbox functions                       #
