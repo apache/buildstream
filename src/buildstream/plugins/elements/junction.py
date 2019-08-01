@@ -55,10 +55,16 @@ Overview
      # Note that this option cannot be used in conjunction with sources.
      target: sub-project.bst:sub-sub-project.bst
 
+     # Optionally declare whether elements within the junction project
+     # should interact with project remotes (default: False).
+     cache-junction-elements: False
+
 .. note::
 
    The configuration option to allow specifying junction targets is available
-   since :ref:`format version 24 <project_format_version>`.
+   since :ref:`format version 24 <project_format_version>` and the configuration
+   option allowing junction project elements to interact with parent remotes is
+   available since :ref:`format version 25 <project_format_version>`.
 
 .. note::
 
@@ -180,6 +186,7 @@ class JunctionElement(Element):
         self.target = node.get_str('target', default=None)
         self.target_element = None
         self.target_junction = None
+        self.cache_junction_elements = node.get_bool('cache-junction-elements', default=False)
 
     def preflight(self):
         # "target" cannot be used in conjunction with:
