@@ -27,6 +27,8 @@ import psutil
 from .._exceptions import PlatformError, ImplError, SandboxError
 from .. import utils
 
+from .multiprocessing import QueueManager
+
 
 class Platform():
     # Platform()
@@ -171,6 +173,9 @@ class Platform():
         # get the hardware identifier from uname
         uname_machine = platform.uname().machine
         return Platform.canonicalize_arch(uname_machine)
+
+    def make_queue_manager(self):
+        return QueueManager()
 
     ##################################################################
     #                        Sandbox functions                       #
