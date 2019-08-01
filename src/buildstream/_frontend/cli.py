@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import sys
 from functools import partial
@@ -216,6 +217,18 @@ def override_main(self, args=None, prog_name=None, complete_var=None,
             click.echo("{} is currently set to O_NONBLOCK, try opening a new shell"
                        .format(stream.name), err=True)
             sys.exit(-1)
+
+    # We can only set the global multiprocessing start method once; for that
+    # reason we're advised to do it inside the entrypoint, where it is easy to
+    # ensure the code path is only followed once.
+    if 'BST_FORCE_START_METHOD' in os.environ:
+        multiprocessing.set_start_method(os.environ['BST_FORCE_START_METHOD'])
+        print(
+            "BST_FORCE_START_METHOD: multiprocessing start method forced to:",
+            os.environ['BST_FORCE_START_METHOD'],
+            file=sys.stderr,
+            flush=True,
+        )
 
     original_main(self, args=args, prog_name=prog_name, complete_var=None,
                   standalone_mode=standalone_mode, **extra)
