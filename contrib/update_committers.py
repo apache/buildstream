@@ -61,7 +61,7 @@ def create_committers_file(committers: OrderedDict):
     contrib_directory = os.path.join(find_repository_root(), 'contrib')
     file_loader = FileSystemLoader(contrib_directory)
     env = Environment(loader=file_loader)
-    template = env.get_template('COMITTERS.rst.j2')
+    template = env.get_template('COMMITTERS.rst.j2')
     render_output = template.render(committers=committers, get_table_entry=get_table_entry)
     committers_file = os.path.join(contrib_directory, 'COMMITTERS.rst')
 
