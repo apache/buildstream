@@ -2,6 +2,14 @@
 buildstream 1.3.1
 =================
 
+  o BREAKING CHANGE: Reverted the default behaviour of junctions. Subproject
+    elements will no longer interact with the parent project's remote (by
+    default). To enable this behaviour, a new "cache-junction-elements" boolean
+    can be optionally declared as part of your junction element's configuration.
+    Additionally, a new "ignore-junction-remotes" option has also been
+    introduced. This allows you to completely ignore subproject remotes when
+    using the parent project.
+
   o Added Basic support for the BuildBox sandbox. The sand box will only be used if the
     environment variable BST_FORCE_SANDBOX is set to `buildbox`. This is the first step in
     transitioning to only using BuildBox for local sandboxing.
