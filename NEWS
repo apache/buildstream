@@ -9,6 +9,21 @@ buildstream 1.3.2
   o Elements may now specify cross-junction dependencies as simple strings
     using the format '{junction-name}:{element-name}'.
 
+  o New `fatal-warnings` has been added to the project.conf format, allowing
+    projects to specify which warnings they want to consider as fatal.
+
+    Support for the following warnings is included:
+
+      o overlaps: When staged artifact files overlap
+                  (deprecates: 'fail-on-overlap')
+
+      o ref-not-in-track: When the source implementation finds that
+                          the ref is out of bounds for the tracking config
+
+      o git:inconsistent-submodule: A .gitmodules file is present but the
+                                    submodule was never added to the repo.
+
+
 =================
 buildstream 1.3.1
 =================
