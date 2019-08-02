@@ -548,6 +548,7 @@ class Plugin():
             project = self._get_project()
 
             if project._warning_is_fatal(warning_token):
+                detail = detail if detail else ""
                 raise PluginError(message="{}\n{}".format(brief, detail), reason=warning_token)
 
         self.__message(MessageType.WARN, brief=brief, detail=detail)
