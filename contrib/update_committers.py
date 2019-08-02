@@ -58,22 +58,23 @@ def find_repository_root() -> str:
 
 
 def create_committers_file(committers: OrderedDict):
-    contrib_directory = os.path.join(find_repository_root(), 'contrib')
+    repository_root = find_repository_root()
+    contrib_directory = os.path.join(repository_root, 'contrib')
     file_loader = FileSystemLoader(contrib_directory)
     env = Environment(loader=file_loader)
-    template = env.get_template('COMITTERS.rst.j2')
+    template = env.get_template('COMMITTERS.rst.j2')
     render_output = template.render(committers=committers, get_table_entry=get_table_entry)
-    committers_file = os.path.join(contrib_directory, 'COMMITTERS.rst')
+    committers_file = os.path.join(repository_root, 'COMMITTERS.rst')
 
     with open(committers_file, 'w') as f:
         f.write(render_output)
 
 
 def commit_changes_if_needed(token: str):
-    committers_file = os.path.join(find_repository_root(), 'contrib/COMMITTERS.rst')
+    committers_file = os.path.join(find_repository_root(), 'COMMITTERS.rst')
     git_diff = subprocess.call('git diff --quiet {}'.format(committers_file), shell=True)
     if git_diff:
-        commit_message = '\'contrib: Update COMMITTERS.rst\''
+        commit_message = '\'Update COMMITTERS.rst\''
         branch_name = 'update_committers'
         subprocess.call('git add {}'.format(committers_file), shell=True)
         subprocess.call('git commit -m {}'.format(commit_message), shell=True)
