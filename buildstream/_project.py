@@ -31,6 +31,7 @@ from ._options import OptionPool
 from ._artifactcache import ArtifactCache
 from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
+from .plugin import CoreWarnings
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._versions import BST_FORMAT_VERSION
 from ._loader import Loader
@@ -105,7 +106,7 @@ class Project():
         self.first_pass_config = ProjectConfig()
 
         self.junction = junction                 # The junction Element object, if this is a subproject
-        self.fail_on_overlap = False             # Whether overlaps are treated as errors
+
         self.ref_storage = None                  # ProjectRefStorage setting
         self.base_environment = {}               # The base set of environment variables
         self.base_env_nocache = None             # The base nocache mask (list) for the environment
@@ -119,6 +120,8 @@ class Project():
 
         self._cli_options = cli_options
         self._cache_key = None
+
+        self._fatal_warnings = []             # A list of warnings which should trigger an error
 
         self._shell_command = []      # The default interactive shell command
         self._shell_environment = {}  # Statically set environment vars
@@ -470,7 +473,7 @@ class Project():
             'split-rules', 'elements', 'plugins',
             'aliases', 'name',
             'artifacts', 'options',
-            'fail-on-overlap', 'shell',
+            'fail-on-overlap', 'shell', 'fatal-warnings',
             'ref-storage', 'sandbox', 'mirrors'
         ])
 
@@ -492,8 +495,25 @@ class Project():
         # Load project split rules
         self._splits = _yaml.node_get(config, Mapping, 'split-rules')
 
-        # Fail on overlap
-        self.fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap')
+        # Fatal warnings
+        self._fatal_warnings = _yaml.node_get(config, list, 'fatal-warnings', default_value=[])
+
+        # Support backwards compatibility for fail-on-overlap
+        fail_on_overlap = _yaml.node_get(config, bool, 'fail-on-overlap', default_value=None)
+
+        if (CoreWarnings.OVERLAPS not in self._fatal_warnings) and fail_on_overlap:
+            self._fatal_warnings.append(CoreWarnings.OVERLAPS)
+
+        # Deprecation check
+        if fail_on_overlap is not None:
+            self._context.message(
+                Message(
+                    None,
+                    MessageType.WARN,
+                    "Use of fail-on-overlap within project.conf " +
+                    "is deprecated. Consider using fatal-warnings instead."
+                )
+            )
 
         # Load project.refs if it exists, this may be ignored.
         if self.ref_storage == ProjectRefStorage.PROJECT_REFS:
@@ -734,3 +754,17 @@ class Project():
                 # paths are passed in relative to the project, but must be absolute
                 origin_dict['path'] = os.path.join(self.directory, path)
             destination.append(origin_dict)
+
+    # _warning_is_fatal():
+    #
+    # Returns true if the warning in question should be considered fatal based on
+    # the project configuration.
+    #
+    # Args:
+    #   warning_str (str): The warning configuration string to check against
+    #
+    # Returns:
+    #    (bool): True if the warning should be considered fatal and cause an error.
+    #
+    def _warning_is_fatal(self, warning_str):
+        return warning_str in self._fatal_warnings

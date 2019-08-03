@@ -47,6 +47,23 @@ it is mandatory to implement the following abstract methods:
   Once all configuration has been loaded and preflight checks have passed,
   this method is used to inform the core of a plugin's unique configuration.
 
+Configurable Warnings
+---------------------
+Warnings raised through calling :func:`Plugin.warn() <buildstream.plugin.Plugin.warn>` can provide an optional
+parameter ``warning_token``, this will raise a :class:`PluginError` if the warning is configured as fatal within
+the project configuration.
+
+Configurable warnings will be prefixed with :func:`Plugin.get_kind() <buildstream.plugin.Plugin.get_kind>`
+within buildstream and must be prefixed as such in project configurations. For more detail on project configuration
+see :ref:`Configurable Warnings <configurable_warnings>`.
+
+It is important to document these warnings in your plugin documentation to allow users to make full use of them
+while configuring their projects.
+
+Example
+~~~~~~~
+If the :class:`git <buildstream.plugins.sources.git.GitSource>` plugin uses the warning ``"inconsistent-submodule"``
+then it could be referenced in project configuration as ``"git:inconsistent-submodule"``.
 
 Plugin Structure
 ----------------
@@ -206,7 +223,6 @@ class Plugin():
         # Infer the kind identifier
         modulename = type(self).__module__
         self.__kind = modulename.split('.')[-1]
-
         self.debug("Created: {}".format(self))
 
     def __del__(self):
@@ -513,14 +529,29 @@ class Plugin():
         """
         self.__message(MessageType.INFO, brief, detail=detail)
 
-    def warn(self, brief, *, detail=None):
-        """Print a warning message
+    def warn(self, brief, *, detail=None, warning_token=None):
+        """Print a warning message, checks warning_token against project configuration
 
         Args:
            brief (str): The brief message
            detail (str): An optional detailed message, can be multiline output
+           warning_token (str): An optional configurable warning assosciated with this warning,
+                                this will cause PluginError to be raised if this warning is configured as fatal.
+                                (*Since 1.4*)
+
+        Raises:
+           (:class:`.PluginError`): When warning_token is considered fatal by the project configuration
         """
-        self.__message(MessageType.WARN, brief, detail=detail)
+        if warning_token:
+            warning_token = _prefix_warning(self, warning_token)
+            brief = "[{}]: {}".format(warning_token, brief)
+            project = self._get_project()
+
+            if project._warning_is_fatal(warning_token):
+                detail = detail if detail else ""
+                raise PluginError(message="{}\n{}".format(brief, detail), reason=warning_token)
+
+        self.__message(MessageType.WARN, brief=brief, detail=detail)
 
     def log(self, brief, *, detail=None):
         """Log a message into the plugin's log file
@@ -784,3 +815,46 @@ class Plugin():
             return '{}:{}'.format(project.junction.name, self.name)
         else:
             return self.name
+
+
+class CoreWarnings():
+    """CoreWarnings()
+
+    Some common warnings which are raised by core functionalities within BuildStream are found in this class.
+    """
+
+    OVERLAPS = "overlaps"
+    """
+    This warning will be produced when buildstream detects an overlap on an element
+        which is not whitelisted. See :ref:`Overlap Whitelist <public_overlap_whitelist>`
+    """
+
+    REF_NOT_IN_TRACK = "ref-not-in-track"
+    """
+    This warning will be produced when a source is configured with a reference
+    which is found to be invalid based on the configured track
+    """
+
+
+__CORE_WARNINGS = [
+    value
+    for name, value in CoreWarnings.__dict__.items()
+    if not name.startswith("__")
+]
+
+
+# _prefix_warning():
+#
+# Prefix a warning with the plugin kind. CoreWarnings are not prefixed.
+#
+# Args:
+#   plugin (Plugin): The plugin which raised the warning
+#   warning (str): The warning to prefix
+#
+# Returns:
+#    (str): A prefixed warning
+#
+def _prefix_warning(plugin, warning):
+    if any((warning is core_warning for core_warning in __CORE_WARNINGS)):
+        return warning
+    return "{}:{}".format(plugin.get_kind(), warning)

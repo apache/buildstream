@@ -13,10 +13,6 @@ element-path: .
 # Store source references in element files
 ref-storage: inline
 
-# Overlaps are just warnings
-fail-on-overlap: False
-
-
 # Variable Configuration
 #
 variables:

@@ -126,22 +126,29 @@ following to your ``project.conf``:
    The ``ref-storage`` configuration is available since :ref:`format version 8 <project_format_version>`
 
 
-Fail on overlaps
-~~~~~~~~~~~~~~~~
-When multiple elements are staged, there's a possibility that different
-elements will try and stage different versions of the same file.
+.. _configurable_warnings:
 
-When ``fail-on-overlap`` is true, if an overlap is detected
-that hasn't been allowed by the element's
-:ref:`overlap whitelist<public_overlap_whitelist>`,
-then an error will be raised and the build will fail.
+Configurable Warnings
+~~~~~~~~~~~~~~~~~~~~~
+Warnings can be configured as fatal using the ``fatal-warnings`` configuration item.
+When a warning is configured as fatal, where a warning would usually be thrown instead an error will be thrown
+causing the build to fail.
 
-otherwise, a warning will be raised indicating which files had overlaps,
-and the order that the elements were overlapped.
+Individual warnings can be configured as fatal by setting ``fatal-warnings`` to a list of warnings.
 
 .. code:: yaml
 
-  fail-on-overlap: true
+  fatal-warnings:
+  - overlaps
+  - ref-not-in-track
+  - <plugin>:<warning>
+
+BuildStream provides a collection of :class:`Core Warnings <buildstream.plugin.CoreWarnings>` which may be raised
+by a variety of plugins. Other configurable warnings are plugin specific and should be noted within their individual documentation.
+
+.. note::
+
+  The ``fatal-warnings`` configuration is available since :ref:`format version 16 <project_format_version>`
 
 
 .. _project_source_aliases:

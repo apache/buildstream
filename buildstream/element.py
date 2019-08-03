@@ -96,6 +96,7 @@ from . import _cachekey
 from . import _signals
 from . import _site
 from ._platform import Platform
+from .plugin import CoreWarnings
 from .sandbox._config import SandboxConfig
 
 
@@ -768,31 +769,23 @@ class Element(Plugin):
                 ignored[dep.name] = result.ignored
 
         if overlaps:
-            overlap_error = overlap_warning = False
-            error_detail = warning_detail = "Staged files overwrite existing files in staging area:\n"
+            overlap_warning = False
+            warning_detail = "Staged files overwrite existing files in staging area:\n"
             for f, elements in overlaps.items():
-                overlap_error_elements = []
                 overlap_warning_elements = []
                 # The bottom item overlaps nothing
                 overlapping_elements = elements[1:]
                 for elm in overlapping_elements:
                     element = self.search(scope, elm)
                     if not element.__file_is_whitelisted(f):
-                        if project.fail_on_overlap:
-                            overlap_error_elements.append(elm)
-                            overlap_error = True
-                        else:
-                            overlap_warning_elements.append(elm)
-                            overlap_warning = True
+                        overlap_warning_elements.append(elm)
+                        overlap_warning = True
 
                 warning_detail += _overlap_error_detail(f, overlap_warning_elements, elements)
-                error_detail += _overlap_error_detail(f, overlap_error_elements, elements)
 
             if overlap_warning:
-                self.warn("Non-whitelisted overlaps detected", detail=warning_detail)
-            if overlap_error:
-                raise ElementError("Non-whitelisted overlaps detected and fail-on-overlaps is set",
-                                   detail=error_detail, reason="overlap-error")
+                self.warn("Non-whitelisted overlaps detected", detail=warning_detail,
+                          warning_token=CoreWarnings.OVERLAPS)
 
         if ignored:
             detail = "Not staging files which would replace non-empty directories:\n"
@@ -2012,9 +2005,7 @@ class Element(Plugin):
                 'cache': type(self.__artifacts).__name__
             }
 
-            # fail-on-overlap setting cannot affect elements without dependencies
-            if project.fail_on_overlap and dependencies:
-                self.__cache_key_dict['fail-on-overlap'] = True
+            self.__cache_key_dict['fatal-warnings'] = sorted(project._fatal_warnings)
 
         cache_key_dict = self.__cache_key_dict.copy()
         cache_key_dict['dependencies'] = dependencies
