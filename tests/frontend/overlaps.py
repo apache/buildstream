@@ -110,7 +110,7 @@ def test_overlap_subproject(cli, tmpdir, datafiles, project_policy, subproject_p
     result = cli.run(project=project_dir, silent=True, args=['build', 'sub-collect.bst'])
     if project_policy == 'fail':
         result.assert_main_error(ErrorDomain.STREAM, None)
-        result.assert_task_error(ErrorDomain.ELEMENT, "overlap-error")
+        result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
     else:
         result.assert_success()
-        assert "WARNING Non-whitelisted overlaps detected" in result.stderr
+        assert "WARNING [overlaps]" in result.stderr
