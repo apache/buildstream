@@ -23,6 +23,12 @@ buildstream 1.3.2
       o git:inconsistent-submodule: A .gitmodules file is present but the
                                     submodule was never added to the repo.
 
+      o git:unlisted-submodule: A submodule exists but is not specified
+                                in the YAML declaration.
+
+      o git:invalid-submodule: A submodule is specified in the YAML
+                               declaration but does not exist at the
+			       given ref in the git repository.
 
 =================
 buildstream 1.3.1
