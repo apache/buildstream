@@ -43,6 +43,12 @@ git - stage files from a git repository
    # will be used to update the 'ref' when refreshing the pipeline.
    track: master
 
+   # Optionally specify the ref format used for tracking.
+   # The default is 'sha1' for the raw commit hash.
+   # If you specify 'git-describe', the commit hash will be prefixed
+   # with the closest tag.
+   ref-format: sha1
+
    # Specify the commit ref, this must be specified in order to
    # checkout sources and build, but can be automatically updated
    # if the 'track' attribute was specified.
@@ -229,7 +235,18 @@ class GitMirror(SourceFetcher):
             [self.source.host_git, 'rev-parse', tracking],
             fail="Unable to find commit for specified branch name '{}'".format(tracking),
             cwd=self.mirror)
-        return output.rstrip('\n')
+        ref = output.rstrip('\n')
+
+        if self.source.ref_format == 'git-describe':
+            # Prefix the ref with the closest tag, if available,
+            # to make the ref human readable
+            exit_code, output = self.source.check_output(
+                [self.source.host_git, 'describe', '--tags', '--abbrev=40', '--long', ref],
+                cwd=self.mirror)
+            if exit_code == 0:
+                ref = output.rstrip('\n')
+
+        return ref
 
     def stage(self, directory):
         fullpath = os.path.join(directory, self.path)
@@ -332,12 +349,17 @@ class GitSource(Source):
     def configure(self, node):
         ref = self.node_get_member(node, str, 'ref', None)
 
-        config_keys = ['url', 'track', 'ref', 'submodules', 'checkout-submodules']
+        config_keys = ['url', 'track', 'ref', 'submodules', 'checkout-submodules', 'ref-format']
         self.node_validate(node, config_keys + Source.COMMON_CONFIG_KEYS)
 
         self.original_url = self.node_get_member(node, str, 'url')
         self.mirror = GitMirror(self, '', self.original_url, ref, primary=True)
         self.tracking = self.node_get_member(node, str, 'track', None)
+
+        self.ref_format = self.node_get_member(node, str, 'ref-format', 'sha1')
+        if self.ref_format not in ['sha1', 'git-describe']:
+            provenance = self.node_provenance(node, member_name='ref-format')
+            raise SourceError("{}: Unexpected value for ref-format: {}".format(provenance, self.ref_format))
 
         # At this point we now know if the source has a ref and/or a track.
         # If it is missing both then we will be unable to track or build.

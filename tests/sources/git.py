@@ -481,6 +481,53 @@ def test_ref_not_in_track_warn_error(cli, tmpdir, datafiles):
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+@pytest.mark.parametrize("ref_format", ['sha1', 'git-describe'])
+@pytest.mark.parametrize("tag,extra_commit", [(False, False), (True, False), (True, True)])
+def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    # Create the repo from 'repofiles' subdir
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(os.path.join(project, 'repofiles'))
+    if tag:
+        repo.add_tag('tag')
+    if extra_commit:
+        repo.add_commit()
+
+    # Write out our test target
+    element = {
+        'kind': 'import',
+        'sources': [
+            repo.source_config()
+        ]
+    }
+    element['sources'][0]['ref-format'] = ref_format
+    element_path = os.path.join(project, 'target.bst')
+    _yaml.dump(element, element_path)
+
+    # Track it
+    result = cli.run(project=project, args=['track', 'target.bst'])
+    result.assert_success()
+
+    element = _yaml.load(element_path)
+    new_ref = element['sources'][0]['ref']
+
+    if ref_format == 'git-describe' and tag:
+        # Check and strip prefix
+        prefix = 'tag-{}-g'.format(0 if not extra_commit else 1)
+        assert new_ref.startswith(prefix)
+        new_ref = new_ref[len(prefix):]
+
+    # 40 chars for SHA-1
+    assert len(new_ref) == 40
+
+    # Fetch it
+    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result.assert_success()
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
 @pytest.mark.parametrize("fail", ['warn', 'error'])
 def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
     project = os.path.join(datafiles.dirname, datafiles.basename)

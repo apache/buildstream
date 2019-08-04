@@ -33,6 +33,9 @@ class Git(Repo):
         subprocess.call(['git', 'commit', '-m', 'Initial commit'], env=GIT_ENV, cwd=self.repo)
         return self.latest_commit()
 
+    def add_tag(self, tag):
+        subprocess.call(['git', 'tag', tag], env=GIT_ENV, cwd=self.repo)
+
     def add_commit(self):
         subprocess.call(['git', 'commit', '--allow-empty', '-m', 'Additional commit'],
                         env=GIT_ENV, cwd=self.repo)
