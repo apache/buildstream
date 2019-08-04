@@ -30,6 +30,8 @@ buildstream 1.3.2
                                declaration but does not exist at the
 			       given ref in the git repository.
 
+  o BuildStream now depends on python3 ujson (for some internal serializations)
+
 =================
 buildstream 1.3.1
 =================
