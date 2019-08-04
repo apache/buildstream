@@ -32,6 +32,11 @@ buildstream 1.3.2
 
   o BuildStream now depends on python3 ujson (for some internal serializations)
 
+  o Workspaces can now be opened as relative paths.
+
+    Existing open workspaces will not be converted to relative paths,
+    (they need to be closed and opened again to get the new behavior).
+
 =================
 buildstream 1.3.1
 =================
@@ -210,7 +215,6 @@ buildstream 1.1.5
   o Added new `remote` source plugin for downloading file blobs
 
   o Add support for the new include '(@)' directive in project.conf and .bst files
-
 
 =================
 buildstream 1.1.4

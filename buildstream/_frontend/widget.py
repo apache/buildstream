@@ -416,7 +416,9 @@ class LogLine(Widget):
             if "%{workspace-dirs" in format_:
                 workspace = element._get_workspace()
                 if workspace is not None:
-                    path = workspace.path.replace(os.getenv('HOME', '/root'), '~')
+                    path = workspace.get_absolute_path()
+                    if path.startswith("~/"):
+                        path = os.path.join(os.getenv('HOME', '/root'), path[2:])
                     line = p.fmt_subst(line, 'workspace-dirs', "Workspace: {}".format(path))
                 else:
                     line = p.fmt_subst(

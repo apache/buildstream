@@ -1385,7 +1385,8 @@ class Element(Plugin):
                 # If mount_workspaces is set and we're doing incremental builds,
                 # the workspace is already mounted into the sandbox.
                 if not (mount_workspaces and self.__can_build_incrementally()):
-                    with self.timed_activity("Staging local files at {}".format(workspace.path)):
+                    with self.timed_activity("Staging local files at {}"
+                                             .format(workspace.get_absolute_path())):
                         workspace.stage(directory)
             else:
                 # No workspace, stage directly
@@ -1559,7 +1560,7 @@ class Element(Plugin):
                         sandbox_path = os.path.join(sandbox_root,
                                                     self.__staged_sources_directory.lstrip(os.sep))
                         try:
-                            utils.copy_files(workspace.path, sandbox_path)
+                            utils.copy_files(workspace.get_absolute_path(), sandbox_path)
                         except UtilError as e:
                             self.warn("Failed to preserve workspace state for failed build sysroot: {}"
                                       .format(e))
@@ -1864,7 +1865,7 @@ class Element(Plugin):
                 source._init_workspace(temp)
 
             # Now hardlink the files into the workspace target.
-            utils.link_files(temp, workspace.path)
+            utils.link_files(temp, workspace.get_absolute_path())
 
     # _get_workspace():
     #
