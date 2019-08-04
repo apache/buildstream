@@ -72,7 +72,22 @@ git - stage files from a git repository
 
 This plugin provides the following configurable warnings:
 
-- 'git:inconsistent-submodule' - A submodule was found to be missing from the underlying git repository.
+- ``git:inconsistent-submodule`` - A submodule present in the git repository's .gitmodules was never
+  added with `git submodule add`.
+
+- ``git:unlisted-submodule`` - A submodule is present in the git repository but was not specified in
+  the source configuration and was not disabled for checkout.
+
+  .. note::
+
+     The ``git:unlisted-submodule`` warning is available since :ref:`format version 20 <project_format_version>`
+
+- ``git:invalid-submodule`` - A submodule is specified in the source configuration but does not exist
+  in the repository.
+
+  .. note::
+
+     The ``git:invalid-submodule`` warning is available since :ref:`format version 20 <project_format_version>`
 
 This plugin also utilises the following configurable core plugin warnings:
 
@@ -94,7 +109,9 @@ from buildstream.plugin import CoreWarnings
 GIT_MODULES = '.gitmodules'
 
 # Warnings
-INCONSISTENT_SUBMODULE = "inconsistent-submodules"
+WARN_INCONSISTENT_SUBMODULE = "inconsistent-submodule"
+WARN_UNLISTED_SUBMODULE = "unlisted-submodule"
+WARN_INVALID_SUBMODULE = "invalid-submodule"
 
 
 # Because of handling of submodules, we maintain a GitMirror
@@ -214,7 +231,7 @@ class GitMirror(SourceFetcher):
             cwd=self.mirror)
         return output.rstrip('\n')
 
-    def stage(self, directory, track=None):
+    def stage(self, directory):
         fullpath = os.path.join(directory, self.path)
 
         # We need to pass '--no-hardlinks' because there's nothing to
@@ -228,11 +245,7 @@ class GitMirror(SourceFetcher):
                          fail="Failed to checkout git ref {}".format(self.ref),
                          cwd=fullpath)
 
-        # Check that the user specified ref exists in the track if provided & not already tracked
-        if track:
-            self.assert_ref_in_track(fullpath, track)
-
-    def init_workspace(self, directory, track=None):
+    def init_workspace(self, directory):
         fullpath = os.path.join(directory, self.path)
         url = self.source.translate_url(self.url)
 
@@ -247,10 +260,6 @@ class GitMirror(SourceFetcher):
         self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
                          fail="Failed to checkout git ref {}".format(self.ref),
                          cwd=fullpath)
-
-        # Check that the user specified ref exists in the track if provided & not already tracked
-        if track:
-            self.assert_ref_in_track(fullpath, track)
 
     # List the submodules (path/url tuples) present at the given ref of this repo
     def submodule_list(self):
@@ -312,31 +321,9 @@ class GitMirror(SourceFetcher):
                      "underlying git repository with `git submodule add`."
 
             self.source.warn("{}: Ignoring inconsistent submodule '{}'"
-                             .format(self.source, submodule), detail=detail, warning_token=INCONSISTENT_SUBMODULE)
+                             .format(self.source, submodule), detail=detail, warning_token=WARN_INCONSISTENT_SUBMODULE)
 
             return None
-
-    # Assert that ref exists in track, if track has been specified.
-    def assert_ref_in_track(self, fullpath, track):
-        _, branch = self.source.check_output([self.source.host_git, 'branch', '--list', track,
-                                              '--contains', self.ref],
-                                             cwd=fullpath,)
-        if branch:
-            return True
-        else:
-            _, tag = self.source.check_output([self.source.host_git, 'tag', '--list', track,
-                                               '--contains', self.ref],
-                                              cwd=fullpath,)
-            if tag:
-                return True
-
-        detail = "The ref provided for the element does not exist locally in the provided track branch / tag " + \
-                 "'{}'.\nYou may wish to track the element to update the ref from '{}' ".format(track, track) + \
-                 "with `bst track`,\nor examine the upstream at '{}' for the specific ref.".format(self.url)
-
-        self.source.warn("{}: expected ref '{}' was not found in given track '{}' for staged repository: '{}'\n"
-                         .format(self.source, self.ref, track, self.url),
-                         detail=detail, warning_token=CoreWarnings.REF_NOT_IN_TRACK)
 
 
 class GitSource(Source):
@@ -380,7 +367,6 @@ class GitSource(Source):
                 self.submodule_checkout_overrides[path] = checkout
 
         self.mark_download_url(self.original_url)
-        self.tracked = False
 
     def preflight(self):
         # Check if git is installed, get the binary at the same time
@@ -440,8 +426,6 @@ class GitSource(Source):
             # Update self.mirror.ref and node.ref from the self.tracking branch
             ret = self.mirror.latest_commit(self.tracking)
 
-        # Set tracked attribute, parameter for if self.mirror.assert_ref_in_track is needed
-        self.tracked = True
         return ret
 
     def init_workspace(self, directory):
@@ -449,7 +433,7 @@ class GitSource(Source):
         self.refresh_submodules()
 
         with self.timed_activity('Setting up workspace "{}"'.format(directory), silent_nested=True):
-            self.mirror.init_workspace(directory, track=(self.tracking if not self.tracked else None))
+            self.mirror.init_workspace(directory)
             for mirror in self.submodules:
                 mirror.init_workspace(directory)
 
@@ -465,7 +449,7 @@ class GitSource(Source):
         # Stage the main repo in the specified directory
         #
         with self.timed_activity("Staging {}".format(self.mirror.url), silent_nested=True):
-            self.mirror.stage(directory, track=(self.tracking if not self.tracked else None))
+            self.mirror.stage(directory)
             for mirror in self.submodules:
                 mirror.stage(directory)
 
@@ -474,6 +458,74 @@ class GitSource(Source):
         self.refresh_submodules()
         for submodule in self.submodules:
             yield submodule
+
+    def validate_cache(self):
+        discovered_submodules = {}
+        unlisted_submodules = []
+        invalid_submodules = []
+
+        for path, url in self.mirror.submodule_list():
+            discovered_submodules[path] = url
+            if self.ignore_submodule(path):
+                continue
+
+            override_url = self.submodule_overrides.get(path)
+            if not override_url:
+                unlisted_submodules.append((path, url))
+
+        # Warn about submodules which are explicitly configured but do not exist
+        for path, url in self.submodule_overrides.items():
+            if path not in discovered_submodules:
+                invalid_submodules.append((path, url))
+
+        if invalid_submodules:
+            detail = []
+            for path, url in invalid_submodules:
+                detail.append("  Submodule URL '{}' at path '{}'".format(url, path))
+
+            self.warn("{}: Invalid submodules specified".format(self),
+                      warning_token=WARN_INVALID_SUBMODULE,
+                      detail="The following submodules are specified in the source "
+                      "description but do not exist according to the repository\n\n" +
+                      "\n".join(detail))
+
+        # Warn about submodules which exist but have not been explicitly configured
+        if unlisted_submodules:
+            detail = []
+            for path, url in unlisted_submodules:
+                detail.append("  Submodule URL '{}' at path '{}'".format(url, path))
+
+            self.warn("{}: Unlisted submodules exist".format(self),
+                      warning_token=WARN_UNLISTED_SUBMODULE,
+                      detail="The following submodules exist but are not specified " +
+                      "in the source description\n\n" +
+                      "\n".join(detail))
+
+        # Assert that the ref exists in the track tag/branch, if track has been specified.
+        ref_in_track = False
+        if self.tracking:
+            _, branch = self.check_output([self.host_git, 'branch', '--list', self.tracking,
+                                           '--contains', self.mirror.ref],
+                                          cwd=self.mirror.mirror)
+            if branch:
+                ref_in_track = True
+            else:
+                _, tag = self.check_output([self.host_git, 'tag', '--list', self.tracking,
+                                            '--contains', self.mirror.ref],
+                                           cwd=self.mirror.mirror)
+                if tag:
+                    ref_in_track = True
+
+            if not ref_in_track:
+                detail = "The ref provided for the element does not exist locally " + \
+                         "in the provided track branch / tag '{}'.\n".format(self.tracking) + \
+                         "You may wish to track the element to update the ref from '{}' ".format(self.tracking) + \
+                         "with `bst track`,\n" + \
+                         "or examine the upstream at '{}' for the specific ref.".format(self.mirror.url)
+
+                self.warn("{}: expected ref '{}' was not found in given track '{}' for staged repository: '{}'\n"
+                          .format(self, self.mirror.ref, self.tracking, self.mirror.url),
+                          detail=detail, warning_token=CoreWarnings.REF_NOT_IN_TRACK)
 
     ###########################################################
     #                     Local Functions                     #
@@ -499,10 +551,6 @@ class GitSource(Source):
         self.mirror.ensure()
         submodules = []
 
-        # XXX Here we should issue a warning if either:
-        #   A.) A submodule exists but is not defined in the element configuration
-        #   B.) The element configuration configures submodules which dont exist at the current ref
-        #
         for path, url in self.mirror.submodule_list():
 
             # Completely ignore submodules which are disabled for checkout
@@ -521,6 +569,16 @@ class GitSource(Source):
                 submodules.append(mirror)
 
         self.submodules = submodules
+
+    # Checks whether the plugin configuration has explicitly
+    # configured this submodule to be ignored
+    def ignore_submodule(self, path):
+        try:
+            checkout = self.submodule_checkout_overrides[path]
+        except KeyError:
+            checkout = self.checkout_submodules
+
+        return not checkout
 
     # Checks whether the plugin configuration has explicitly
     # configured this submodule to be ignored
