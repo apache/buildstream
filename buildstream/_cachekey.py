@@ -19,7 +19,8 @@
 
 
 import hashlib
-import pickle
+
+import ujson
 
 from . import _yaml
 
@@ -38,5 +39,5 @@ from . import _yaml
 #
 def generate_key(value):
     ordered = _yaml.node_sanitize(value)
-    string = pickle.dumps(ordered)
-    return hashlib.sha256(string).hexdigest()
+    ustring = ujson.dumps(ordered, sort_keys=True, escape_forward_slashes=False).encode('utf-8')
+    return hashlib.sha256(ustring).hexdigest()
