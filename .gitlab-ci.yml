@@ -99,7 +99,7 @@ docs:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-55318540
   variables:
     bst_ext_url: git+https://gitlab.com/BuildStream/bst-external.git
-    bst_ext_ref: 0.15.0-0-g4915bda740e628f35d55d60d27523492c0ee7be7
+    bst_ext_ref: nanonyme/git-tag-no-f-strings
     fd_sdk_ref: freedesktop-sdk-18.08.34-0-g9282304d0d932032b8297fb049f44d6a079dc2ea
   before_script:
   - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
@@ -107,8 +107,6 @@ docs:
   - pip3 install --user -e ${bst_ext_url}@${bst_ext_ref}#egg=bst_ext
   - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
   - git -C freedesktop-sdk checkout ${fd_sdk_ref}
-  only:
-  - schedules
 
 overnight-tests:
   <<: *overnight-tests-template
