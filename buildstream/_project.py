@@ -31,7 +31,7 @@ from ._options import OptionPool
 from ._artifactcache import ArtifactCache
 from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
-from .plugin import CoreWarnings
+from .types import CoreWarnings
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._versions import BST_FORMAT_VERSION
 from ._loader import Loader

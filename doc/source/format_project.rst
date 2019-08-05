@@ -143,7 +143,7 @@ Individual warnings can be configured as fatal by setting ``fatal-warnings`` to 
   - ref-not-in-track
   - <plugin>:<warning>
 
-BuildStream provides a collection of :class:`Core Warnings <buildstream.plugin.CoreWarnings>` which may be raised
+BuildStream provides a collection of :class:`Core Warnings <buildstream.types.CoreWarnings>` which may be raised
 by a variety of plugins. Other configurable warnings are plugin specific and should be noted within their individual documentation.
 
 .. note::
