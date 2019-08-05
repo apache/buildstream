@@ -1,3 +1,6 @@
+include:
+  - template: Code-Quality.gitlab-ci.yml
+
 image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-46405991
 
 cache:
@@ -292,30 +295,6 @@ overnight-tests-no-cache:
   - make -C freedesktop-sdk
   tags:
   - overnight-tests
-
-# Check code quality with gitlab's built-in feature.
-#
-code_quality:
-  image: docker:stable
-  stage: test
-  variables:
-    DOCKER_DRIVER: overlay2
-    # Required to be able to connect to the docker daemon. See https://gitlab.com/gitlab-org/gitlab-runner/issues/4501
-    DOCKER_TLS_CERTDIR: ""
-  allow_failure: true
-  services:
-    - docker:stable-dind
-  script:
-    - export SP_VERSION=$(echo "$CI_SERVER_VERSION" | sed 's/^\([0-9]*\)\.\([0-9]*\).*/\1-\2-stable/')
-    - docker run
-        --env SOURCE_CODE="$PWD"
-        --volume "$PWD":/code
-        --volume /var/run/docker.sock:/var/run/docker.sock
-        "registry.gitlab.com/gitlab-org/security-products/codequality:$SP_VERSION" /code
-  except:
-  - schedules
-  artifacts:
-    paths: [gl-code-quality-report.json]
 
 #####################################################
 #                    Post stage                     #
