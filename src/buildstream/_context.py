@@ -180,7 +180,8 @@ class Context():
     # Called when exiting the with-statement context.
     #
     def __exit__(self, exc_type, exc_value, traceback):
-        return None
+        if self._cascache:
+            self._cascache.release_resources(self.messenger)
 
     # load()
     #
