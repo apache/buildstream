@@ -204,6 +204,7 @@ with an artifact share.
       server-cert: server.crt
     # A remote cache from which to upload/download built/prebuilt artifacts
     - url: https://foo.com:11002
+      push: true
       server-cert: server.crt
       client-cert: client.crt
       client-key: client.key
@@ -241,6 +242,7 @@ Exactly the same as artifact servers, source cache servers can be specified.
       server.cert: server.crt
     # A remote cache from which to upload/download prestaged sources
     - url: https://foo.com:11002
+      push: true
       server-cert: server.crt
       client-cert: client.crt
       client-key: client.key
