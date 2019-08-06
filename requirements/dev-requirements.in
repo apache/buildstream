@@ -1,3 +1,4 @@
+cython
 pylint
 pycodestyle
 pytest >= 3.9
