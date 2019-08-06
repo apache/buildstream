@@ -246,6 +246,9 @@ class Plugin():
         self.__type_tag = type_tag      # The type of plugin (element or source)
         self.__configuring = False      # Whether we are currently configuring
 
+        # Get the full_name as project & type_tag are resolved
+        self.__full_name = self.__get_full_name()
+
         # Infer the kind identifier
         modulename = type(self).__module__
         self.__kind = modulename.split('.')[-1]
@@ -672,6 +675,18 @@ class Plugin():
     def _preflight(self):
         self.preflight()
 
+    # _get_full_name():
+    #
+    # The instance full name of the plugin prepended with the owning
+    # junction if appropriate. This being the name of the given element,
+    # as appose to the class name of the underlying plugin __kind identifier.
+    #
+    # Returns:
+    #    (str): element full name, with prepended owning junction if appropriate
+    #
+    def _get_full_name(self):
+        return self.__full_name
+
     # _get_args_for_child_job_pickling(self)
     #
     # Return data necessary to reconstruct this object in a child job process.
@@ -728,13 +743,6 @@ class Plugin():
         output.flush()
         self.status('Running host command', detail=command)
 
-    def _get_full_name(self):
-        project = self.__project
-        if project.junction:
-            return '{}:{}'.format(project.junction.name, self.name)
-        else:
-            return self.name
-
     def __deprecation_warning_silenced(self):
         if not self.BST_PLUGIN_DEPRECATED:
             return False
@@ -750,6 +758,13 @@ class Plugin():
                     silenced_warnings.add(key)
 
             return self.get_kind() in silenced_warnings
+
+    def __get_full_name(self):
+        project = self.__project
+        if project.junction:
+            return '{}:{}'.format(project.junction.name, self.name)
+        else:
+            return self.name
 
 
 # A local table for _prefix_warning()
