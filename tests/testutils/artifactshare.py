@@ -84,23 +84,23 @@ class ArtifactShare():
                     self.free_space = self.total_space
                 os.statvfs = self._mock_statvfs
 
-            server = create_server(self.repodir,
-                                   max_head_size=self.max_head_size,
-                                   min_head_size=self.min_head_size,
-                                   enable_push=True)
-            port = server.add_insecure_port('localhost:0')
+            with create_server(self.repodir,
+                               max_head_size=self.max_head_size,
+                               min_head_size=self.min_head_size,
+                               enable_push=True) as server:
+                port = server.add_insecure_port('localhost:0')
 
-            server.start()
+                server.start()
 
-            # Send port to parent
-            q.put(port)
+                # Send port to parent
+                q.put(port)
+
+                # Sleep until termination by signal
+                signal.pause()
 
         except Exception:
             q.put(None)
             raise
-
-        # Sleep until termination by signal
-        signal.pause()
 
     # has_object():
     #

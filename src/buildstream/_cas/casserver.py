@@ -18,6 +18,7 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 from concurrent import futures
+from contextlib import contextmanager
 import os
 import signal
 import sys
@@ -54,45 +55,51 @@ _MAX_PAYLOAD_BYTES = 1024 * 1024
 #     repo (str): Path to CAS repository
 #     enable_push (bool): Whether to allow blob uploads and artifact updates
 #
+@contextmanager
 def create_server(repo, *, enable_push,
                   max_head_size=int(10e9),
                   min_head_size=int(2e9)):
     cas = CASCache(os.path.abspath(repo))
-    artifactdir = os.path.join(os.path.abspath(repo), 'artifacts', 'refs')
-    sourcedir = os.path.join(os.path.abspath(repo), 'source_protos')
 
-    # Use max_workers default from Python 3.5+
-    max_workers = (os.cpu_count() or 1) * 5
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers))
+    try:
+        artifactdir = os.path.join(os.path.abspath(repo), 'artifacts', 'refs')
+        sourcedir = os.path.join(os.path.abspath(repo), 'source_protos')
 
-    bytestream_pb2_grpc.add_ByteStreamServicer_to_server(
-        _ByteStreamServicer(cas, enable_push=enable_push), server)
+        # Use max_workers default from Python 3.5+
+        max_workers = (os.cpu_count() or 1) * 5
+        server = grpc.server(futures.ThreadPoolExecutor(max_workers))
 
-    remote_execution_pb2_grpc.add_ContentAddressableStorageServicer_to_server(
-        _ContentAddressableStorageServicer(cas, enable_push=enable_push), server)
+        bytestream_pb2_grpc.add_ByteStreamServicer_to_server(
+            _ByteStreamServicer(cas, enable_push=enable_push), server)
 
-    remote_execution_pb2_grpc.add_CapabilitiesServicer_to_server(
-        _CapabilitiesServicer(), server)
+        remote_execution_pb2_grpc.add_ContentAddressableStorageServicer_to_server(
+            _ContentAddressableStorageServicer(cas, enable_push=enable_push), server)
 
-    buildstream_pb2_grpc.add_ReferenceStorageServicer_to_server(
-        _ReferenceStorageServicer(cas, enable_push=enable_push), server)
+        remote_execution_pb2_grpc.add_CapabilitiesServicer_to_server(
+            _CapabilitiesServicer(), server)
 
-    artifact_pb2_grpc.add_ArtifactServiceServicer_to_server(
-        _ArtifactServicer(cas, artifactdir), server)
+        buildstream_pb2_grpc.add_ReferenceStorageServicer_to_server(
+            _ReferenceStorageServicer(cas, enable_push=enable_push), server)
 
-    source_pb2_grpc.add_SourceServiceServicer_to_server(
-        _SourceServicer(sourcedir), server)
+        artifact_pb2_grpc.add_ArtifactServiceServicer_to_server(
+            _ArtifactServicer(cas, artifactdir), server)
 
-    # Create up reference storage and artifact capabilities
-    artifact_capabilities = buildstream_pb2.ArtifactCapabilities(
-        allow_updates=enable_push)
-    source_capabilities = buildstream_pb2.SourceCapabilities(
-        allow_updates=enable_push)
-    buildstream_pb2_grpc.add_CapabilitiesServicer_to_server(
-        _BuildStreamCapabilitiesServicer(artifact_capabilities, source_capabilities),
-        server)
+        source_pb2_grpc.add_SourceServiceServicer_to_server(
+            _SourceServicer(sourcedir), server)
 
-    return server
+        # Create up reference storage and artifact capabilities
+        artifact_capabilities = buildstream_pb2.ArtifactCapabilities(
+            allow_updates=enable_push)
+        source_capabilities = buildstream_pb2.SourceCapabilities(
+            allow_updates=enable_push)
+        buildstream_pb2_grpc.add_CapabilitiesServicer_to_server(
+            _BuildStreamCapabilitiesServicer(artifact_capabilities, source_capabilities),
+            server)
+
+        yield server
+
+    finally:
+        cas.release_resources()
 
 
 @click.command(short_help="CAS Artifact Server")
@@ -111,48 +118,53 @@ def create_server(repo, *, enable_push,
 @click.argument('repo')
 def server_main(repo, port, server_key, server_cert, client_certs, enable_push,
                 head_room_min, head_room_max):
-    server = create_server(repo,
-                           max_head_size=head_room_max,
-                           min_head_size=head_room_min,
-                           enable_push=enable_push)
+    # Handle SIGTERM by calling sys.exit(0), which will raise a SystemExit exception,
+    # properly executing cleanup code in `finally` clauses and context managers.
+    # This is required to terminate buildbox-casd on SIGTERM.
+    signal.signal(signal.SIGTERM, lambda signalnum, frame: sys.exit(0))
 
-    use_tls = bool(server_key)
+    with create_server(repo,
+                       max_head_size=head_room_max,
+                       min_head_size=head_room_min,
+                       enable_push=enable_push) as server:
 
-    if bool(server_cert) != use_tls:
-        click.echo("ERROR: --server-key and --server-cert are both required for TLS", err=True)
-        sys.exit(-1)
+        use_tls = bool(server_key)
 
-    if client_certs and not use_tls:
-        click.echo("ERROR: --client-certs can only be used with --server-key", err=True)
-        sys.exit(-1)
+        if bool(server_cert) != use_tls:
+            click.echo("ERROR: --server-key and --server-cert are both required for TLS", err=True)
+            sys.exit(-1)
 
-    if use_tls:
-        # Read public/private key pair
-        with open(server_key, 'rb') as f:
-            server_key_bytes = f.read()
-        with open(server_cert, 'rb') as f:
-            server_cert_bytes = f.read()
+        if client_certs and not use_tls:
+            click.echo("ERROR: --client-certs can only be used with --server-key", err=True)
+            sys.exit(-1)
 
-        if client_certs:
-            with open(client_certs, 'rb') as f:
-                client_certs_bytes = f.read()
+        if use_tls:
+            # Read public/private key pair
+            with open(server_key, 'rb') as f:
+                server_key_bytes = f.read()
+            with open(server_cert, 'rb') as f:
+                server_cert_bytes = f.read()
+
+            if client_certs:
+                with open(client_certs, 'rb') as f:
+                    client_certs_bytes = f.read()
+            else:
+                client_certs_bytes = None
+
+            credentials = grpc.ssl_server_credentials([(server_key_bytes, server_cert_bytes)],
+                                                      root_certificates=client_certs_bytes,
+                                                      require_client_auth=bool(client_certs))
+            server.add_secure_port('[::]:{}'.format(port), credentials)
         else:
-            client_certs_bytes = None
+            server.add_insecure_port('[::]:{}'.format(port))
 
-        credentials = grpc.ssl_server_credentials([(server_key_bytes, server_cert_bytes)],
-                                                  root_certificates=client_certs_bytes,
-                                                  require_client_auth=bool(client_certs))
-        server.add_secure_port('[::]:{}'.format(port), credentials)
-    else:
-        server.add_insecure_port('[::]:{}'.format(port))
-
-    # Run artifact server
-    server.start()
-    try:
-        while True:
-            signal.pause()
-    except KeyboardInterrupt:
-        server.stop(0)
+        # Run artifact server
+        server.start()
+        try:
+            while True:
+                signal.pause()
+        finally:
+            server.stop(0)
 
 
 class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
