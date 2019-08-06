@@ -279,30 +279,23 @@ class Scheduler():
     #    queue (Queue): The Queue holding a complete job
     #    job (Job): The completed Job
     #    status (JobStatus): The status of the completed job
-    #    process_jobs (bool): If the scheduler should also process the
-    #                         job, else just generate the notification
     #
-    def job_completed(self, job, status, process_jobs=True):
+    def job_completed(self, job, status):
+        self._active_jobs.remove(job)
 
-        if process_jobs:
-            # Remove from the active jobs list
-            self._active_jobs.remove(job)
-
+        element = None
         if status == JobStatus.FAIL:
             # If it's an elementjob, we want to compare against the failure messages
             # and send the Element() instance. Note this will change if the frontend
             # is run in a separate process for pickling
             element = job.get_element()
-        message = Notification(NotificationType.JOB_COMPLETE,
-                                   full_name=job.name,
-                                   job_action=job.action_name,
-                                   job_status=status,
-                                   element=element)
-        self.message(message)
-
-        if process_jobs:
-            # Now check for more jobs
-            self._sched()
+        notification = Notification(NotificationType.JOB_COMPLETE,
+                                    full_name=job.name,
+                                    job_action=job.action_name,
+                                    job_status=status,
+                                    element=element)
+        self.notify(notification)
+        self._sched()
 
     # check_cache_size():
     #

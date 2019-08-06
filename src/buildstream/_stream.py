@@ -1597,11 +1597,8 @@ class Stream():
         elif notification.notification_type == NotificationType.JOB_COMPLETE:
             self._state.remove_task(notification.job_action, notification.full_name)
             if notification.job_status == JobStatus.FAIL:
-                if notification.element:
-                    unique_id = notification.full_name
-                else:
-                    unique_id = None
-                self._state.fail_task(notification.job_action, notification.full_name, unique_id)
+                self._state.fail_task(notification.job_action, notification.full_name,
+                                      notification.element)
         else:
             raise StreamError("Unreccognised notification type recieved")
 
