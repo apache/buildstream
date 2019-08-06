@@ -66,6 +66,13 @@ class CASCache():
         if not (os.path.isdir(headdir) and os.path.isdir(objdir)):
             raise CASCacheError("CAS repository check failed for '{}'".format(self.casdir))
 
+    # release_resources():
+    #
+    # Release resources used by CASCache.
+    #
+    def release_resources(self, messenger=None):
+        pass
+
     # contains():
     #
     # Check whether the specified ref is already available in the local CAS cache.
