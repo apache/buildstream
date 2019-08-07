@@ -223,6 +223,8 @@ class Stream():
             else:
                 buildtree = True
 
+        self._context.disable_fork()
+
         return element._shell(scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command,
                               usebuildtree=buildtree)
 
