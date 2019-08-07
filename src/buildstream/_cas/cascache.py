@@ -118,7 +118,7 @@ class CASCache():
 
     # contains_directory():
     #
-    # Check whether the specified directory and subdirecotires are in the cache,
+    # Check whether the specified directory and subdirectories are in the cache,
     # i.e non dangling.
     #
     # Args:
