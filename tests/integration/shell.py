@@ -80,7 +80,6 @@ def test_executable(cli, datafiles):
 @pytest.mark.parametrize("animal", [("Horse"), ("Pony")])
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 # This test seems to fail or pass depending on if this file is run or the hole test suite
 def test_env_assign(cli, datafiles, animal):
     project = str(datafiles)
@@ -102,7 +101,6 @@ def test_env_assign(cli, datafiles, animal):
 @pytest.mark.parametrize("animal", [("Horse"), ("Pony")])
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 # This test seems to fail or pass depending on if this file is run or the hole test suite
 def test_env_assign_expand_host_environ(cli, datafiles, animal):
     project = str(datafiles)
@@ -127,7 +125,6 @@ def test_env_assign_expand_host_environ(cli, datafiles, animal):
 @pytest.mark.parametrize("animal", [("Horse"), ("Pony")])
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 # This test seems to faili or pass depending on if this file is run or the hole test suite
 def test_env_assign_isolated(cli, datafiles, animal):
     project = str(datafiles)
@@ -229,7 +226,6 @@ def test_host_files_expand_environ(cli, datafiles, path):
 @pytest.mark.parametrize("path", [("/etc/pony.conf"), ("/usr/share/pony/pony.txt")])
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 def test_isolated_no_mount(cli, datafiles, path):
     project = str(datafiles)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
@@ -253,7 +249,6 @@ def test_isolated_no_mount(cli, datafiles, path):
 @pytest.mark.parametrize("optional", [("mandatory"), ("optional")])
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 def test_host_files_missing(cli, datafiles, optional):
     project = str(datafiles)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'horsy.txt')
