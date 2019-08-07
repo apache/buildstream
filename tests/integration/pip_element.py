@@ -25,8 +25,6 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
-# Not stricked xfail as only fails in CI
 def test_pip_build(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -64,8 +62,6 @@ def test_pip_build(cli, datafiles):
 # Test running an executable built with pip
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
-# Not stricked xfail as only fails in CI
 def test_pip_run(cli, datafiles):
     # Create and build our test element
     test_pip_build(cli, datafiles)
@@ -80,8 +76,6 @@ def test_pip_run(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
-# Not stricked xfail as only fails in CI
 def test_pip_element_should_install_pip_deps(cli, datafiles, setup_pypi_repo):
     project = str(datafiles)
     elements_path = os.path.join(project, 'elements')

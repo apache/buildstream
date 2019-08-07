@@ -24,8 +24,6 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
-# Not stricked xfail as only fails in CI
 def test_buildtree_staged(cli_integration, datafiles):
     # We can only test the non interacitve case
     # The non interactive case defaults to not using buildtrees
@@ -44,8 +42,6 @@ def test_buildtree_staged(cli_integration, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
-# Not stricked xfail as only fails in CI
 def test_buildtree_staged_forced_true(cli_integration, datafiles):
     # Test that if we ask for a build tree it is there.
     project = str(datafiles)
@@ -63,8 +59,6 @@ def test_buildtree_staged_forced_true(cli_integration, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
-# Not stricked xfail as only fails in CI
 def test_buildtree_staged_warn_empty_cached(cli_integration, tmpdir, datafiles):
     # Test that if we stage a cached and empty buildtree, we warn the user.
     project = str(datafiles)
@@ -96,8 +90,6 @@ def test_buildtree_staged_warn_empty_cached(cli_integration, tmpdir, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
-# Not stricked xfail as only fails in CI
 def test_buildtree_staged_if_available(cli_integration, datafiles):
     # Test that a build tree can be correctly detected.
     project = str(datafiles)
@@ -115,8 +107,6 @@ def test_buildtree_staged_if_available(cli_integration, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
-# Not stricked xfail as only fails in CI
 def test_buildtree_staged_forced_false(cli_integration, datafiles):
     # Test that if we ask not to have a build tree it is not there
     project = str(datafiles)
@@ -135,8 +125,6 @@ def test_buildtree_staged_forced_false(cli_integration, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
-# Not stricked xfail as only fails in CI
 def test_buildtree_from_failure(cli_integration, datafiles):
     # Test that we can use a build tree after a failure
     project = str(datafiles)
@@ -179,8 +167,6 @@ def test_buildtree_from_failure_option_never(cli_integration, tmpdir, datafiles)
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
-# Not stricked xfail as only fails in CI
 def test_buildtree_from_failure_option_always(cli_integration, tmpdir, datafiles):
 
     project = str(datafiles)
@@ -208,8 +194,6 @@ def test_buildtree_from_failure_option_always(cli_integration, tmpdir, datafiles
 # This is to roughly simulate remote execution
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
-# Not stricked xfail as only fails in CI
 def test_buildtree_pulled(cli, tmpdir, datafiles):
     project = str(datafiles)
     element_name = 'build-shell/buildtree.bst'
@@ -243,8 +227,6 @@ def test_buildtree_pulled(cli, tmpdir, datafiles):
 # This test checks for correct behaviour if a buildtree is not present in the local cache.
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
-# Not stricked xfail as only fails in CI
 def test_buildtree_options(cli, tmpdir, datafiles):
     project = str(datafiles)
     element_name = 'build-shell/buildtree.bst'
@@ -328,8 +310,6 @@ def test_buildtree_options(cli, tmpdir, datafiles):
 # Tests running pull and pull-buildtree options at the same time.
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
-# Not stricked xfail as only fails in CI
 def test_pull_buildtree_pulled(cli, tmpdir, datafiles):
     project = str(datafiles)
     element_name = 'build-shell/buildtree.bst'
