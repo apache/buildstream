@@ -111,10 +111,7 @@ tests-buildbox:
 
   script:
 
-    # We remove the Bubblewrap package here so that we catch any
-    # codepaths that try to use them.
     - dnf install -y fuse3
-    - dnf erase -y bubblewrap
 
     # Before buildbox is a first class citizen we need a good install story for users and this test
     # should mirror that story, for now we build in the test as it is quick and easy.
