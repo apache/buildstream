@@ -150,6 +150,8 @@ class Context():
         # Whether file contents are required for all artifacts in the local cache
         self.require_artifact_files = True
 
+        self.fork_allowed = True
+
         # Whether elements must be rebuilt when their dependencies have changed
         self._strict_build_plan = None
 
@@ -487,3 +489,13 @@ class Context():
         if self._cascache is None:
             self._cascache = CASCache(self.cachedir)
         return self._cascache
+
+    # disable_fork():
+    #
+    # This will prevent the scheduler from running but will allow communication
+    # with casd in the main process.
+    #
+    def disable_fork(self):
+        self.fork_allowed = False
+        cascache = self.get_cascache()
+        cascache.notify_fork_disabled()
