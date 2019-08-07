@@ -214,6 +214,7 @@ def test_never_delete_required(cli, datafiles):
             'quota': 10000000
         },
         'scheduler': {
+            'fetchers': 1,
             'builders': 1
         }
     })
@@ -266,6 +267,7 @@ def test_never_delete_required_track(cli, datafiles):
             'quota': 10000000
         },
         'scheduler': {
+            'fetchers': 1,
             'builders': 1
         }
     })
