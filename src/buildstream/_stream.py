@@ -555,6 +555,8 @@ class Stream():
             self._enqueue_plan(uncached_elts)
             self._run()
 
+        self._context.disable_fork()
+
         # Stage deps into a temporary sandbox first
         if isinstance(target, ArtifactElement):
             try:
