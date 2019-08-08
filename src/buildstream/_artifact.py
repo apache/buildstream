@@ -425,7 +425,7 @@ class Artifact():
 
         return self._proto
 
-    # _get_artifact_field()
+    # _get_field_digest()
     #
     # Returns:
     #     (Digest): Digest of field specified
