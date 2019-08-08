@@ -603,7 +603,7 @@ class Stream():
         # Return list of Element and/or ArtifactElement objects
         target_objects = self.load_selection(targets, selection=PipelineSelection.NONE, load_refs=True)
 
-        logsdirs = []
+        log_file_paths = []
         for obj in target_objects:
             ref = obj.get_artifact_name()
             if not obj._cached():
@@ -613,9 +613,9 @@ class Stream():
                 self._message(MessageType.WARN, "{} is cached without log files".format(ref))
                 continue
 
-            logsdirs.append(self._artifacts.get_artifact_logs(ref))
+            log_file_paths.extend(obj.get_logs())
 
-        return logsdirs
+        return log_file_paths
 
     # artifact_delete()
     #

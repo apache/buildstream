@@ -401,7 +401,7 @@ class Artifact():
         artifact = self._get_proto()
 
         for logfile in artifact.logs:
-            if not self._cas.contains(logfile.digest.hash):
+            if not self._cas.contains_file(logfile.digest):
                 return False
 
         return True

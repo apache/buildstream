@@ -1,8 +1,6 @@
 import os
 import sys
-from contextlib import ExitStack
 from functools import partial
-from tempfile import TemporaryDirectory
 import fcntl
 
 import click
@@ -1196,23 +1194,13 @@ def artifact_log(app, artifacts):
     # they are not somehow escaped.
 
     with app.initialized():
-        logsdirs = app.stream.artifact_log(artifacts)
+        log_file_paths = app.stream.artifact_log(artifacts)
 
-        with ExitStack() as stack:
-            extractdirs = []
-            for logsdir in logsdirs:
-                # NOTE: If reading the logs feels unresponsive, here would be a good place
-                # to provide progress information.
-                td = stack.enter_context(TemporaryDirectory())
-                logsdir.export_files(td, can_link=True)
-                extractdirs.append(td)
+        for log in log_file_paths:
+            with open(log) as f:
+                data = f.read()
 
-            for extractdir in extractdirs:
-                for log in (os.path.join(extractdir, log) for log in os.listdir(extractdir)):
-                    # NOTE: Should click gain the ability to pass files to the pager this can be optimised.
-                    with open(log) as f:
-                        data = f.read()
-                        click.echo_via_pager(data)
+            click.echo_via_pager(data)
 
 
 ###################################################################
