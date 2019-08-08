@@ -1703,6 +1703,7 @@ class Element(Plugin):
             try:
                 sandbox_build_dir = sandbox_vroot.descend(
                     *self.get_variable('build-root').lstrip(os.sep).split(os.sep))
+                sandbox._fetch_missing_blobs(sandbox_build_dir)
             except VirtualDirectoryError:
                 # Directory could not be found. Pre-virtual
                 # directory behaviour was to continue silently
@@ -1712,6 +1713,7 @@ class Element(Plugin):
         if collect is not None:
             try:
                 collectvdir = sandbox_vroot.descend(*collect.lstrip(os.sep).split(os.sep))
+                sandbox._fetch_missing_blobs(collectvdir)
             except VirtualDirectoryError:
                 pass
 

@@ -124,24 +124,33 @@ class CASCache():
     # Args:
     #     digest (Digest): The directory digest to check
     #     with_files (bool): Whether to check files as well
+    #     update_mtime (bool): Whether to update the timestamp
     #
     # Returns: True if the directory is available in the local cache
     #
-    def contains_directory(self, digest, *, with_files):
+    def contains_directory(self, digest, *, with_files, update_mtime=False):
         try:
             directory = remote_execution_pb2.Directory()
-            with open(self.objpath(digest), 'rb') as f:
+            path = self.objpath(digest)
+            with open(path, 'rb') as f:
                 directory.ParseFromString(f.read())
+                if update_mtime:
+                    os.utime(f.fileno())
 
             # Optionally check presence of files
             if with_files:
                 for filenode in directory.files:
-                    if not os.path.exists(self.objpath(filenode.digest)):
+                    path = self.objpath(filenode.digest)
+                    if update_mtime:
+                        # No need for separate `exists()` call as this will raise
+                        # FileNotFoundError if the file does not exist.
+                        os.utime(path)
+                    elif not os.path.exists(path):
                         return False
 
             # Check subdirectories
             for dirnode in directory.directories:
-                if not self.contains_directory(dirnode.digest, with_files=with_files):
+                if not self.contains_directory(dirnode.digest, with_files=with_files, update_mtime=update_mtime):
                     return False
 
             return True
@@ -792,6 +801,9 @@ class CASCache():
                 directory.ParseFromString(f.read())
 
         except FileNotFoundError:
+            if check_exists:
+                raise
+
             # Just exit early if the file doesn't exist
             return
 
@@ -960,6 +972,8 @@ class CASCache():
     #
     def fetch_blobs(self, remote, digests):
         missing_blobs = []
+
+        remote.init()
 
         batch = _CASBatchRead(remote)
 

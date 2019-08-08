@@ -496,9 +496,6 @@ def show(app, elements, deps, except_, order, format_):
             $'---------- %{name} ----------\\n%{vars}'
     """
     with app.initialized():
-        # Do not require artifact directory trees or file contents to be present for `bst show`
-        app.context.set_artifact_directories_optional()
-
         if not elements:
             elements = app.project.get_default_targets()
 

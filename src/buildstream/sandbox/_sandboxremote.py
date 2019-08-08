@@ -30,7 +30,6 @@ from .. import utils
 from ..node import Node
 from .._message import Message, MessageType
 from .sandbox import Sandbox, SandboxCommandError, _SandboxBatch
-from ..storage.directory import VirtualDirectoryError
 from ..storage._casbaseddirectory import CasBasedDirectory
 from .. import _signals
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
@@ -280,7 +279,6 @@ class SandboxRemote(Sandbox):
             raise SandboxError("Output directory structure had no digest attached.")
 
         context = self._get_context()
-        project = self._get_project()
         cascache = context.get_cascache()
         artifactcache = context.artifactcache
         casremote = CASRemote(self.storage_remote_spec)
@@ -294,27 +292,20 @@ class SandboxRemote(Sandbox):
         # to replace the sandbox's virtual directory with that. Creating a new virtual directory object
         # from another hash will be interesting, though...
 
-        new_dir = CasBasedDirectory(context.artifactcache.cas, digest=dir_digest)
+        new_dir = CasBasedDirectory(artifactcache.cas, digest=dir_digest)
         self._set_virtual_directory(new_dir)
+
+    def _fetch_missing_blobs(self, vdir):
+        context = self._get_context()
+        project = self._get_project()
+        cascache = context.get_cascache()
+        artifactcache = context.artifactcache
+        casremote = CASRemote(self.storage_remote_spec)
 
         # Fetch the file blobs if needed
         if self._output_files_required or artifactcache.has_push_remotes():
-            required_blobs = []
-            directories = []
-
-            directories.append(self._output_directory)
-            if self._build_directory and (self._build_directory_always or failure):
-                directories.append(self._build_directory)
-
-            for directory in directories:
-                try:
-                    vdir = new_dir.descend(*directory.strip(os.sep).split(os.sep))
-                    dir_digest = vdir._get_digest()
-                    required_blobs += cascache.required_blobs_for_directory(dir_digest)
-                except VirtualDirectoryError:
-                    # If the directory does not exist, there is no need to
-                    # download file blobs.
-                    pass
+            dir_digest = vdir._get_digest()
+            required_blobs = cascache.required_blobs_for_directory(dir_digest)
 
             local_missing_blobs = cascache.local_missing_blobs(required_blobs)
             if local_missing_blobs:

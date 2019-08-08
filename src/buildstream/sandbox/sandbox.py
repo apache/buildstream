@@ -410,6 +410,17 @@ class Sandbox():
 
         return 'BST_CAS_DIRECTORIES' in os.environ
 
+    # _fetch_missing_blobs()
+    #
+    # Fetch required file blobs missing from the local cache for sandboxes using
+    # remote execution. This is a no-op for local sandboxes.
+    #
+    # Args:
+    #    vdir (Directory): The virtual directory whose blobs to fetch
+    #
+    def _fetch_missing_blobs(self, vdir):
+        pass
+
     ################################################
     #               Private methods                #
     ################################################
