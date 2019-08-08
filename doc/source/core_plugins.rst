@@ -33,7 +33,6 @@ Build elements
    elements/manual
    elements/make
    elements/autotools
-   elements/cmake
    elements/qmake
    elements/distutils
    elements/makemaker
