@@ -961,6 +961,8 @@ class CASCache():
     def fetch_blobs(self, remote, digests):
         missing_blobs = []
 
+        remote.init()
+
         batch = _CASBatchRead(remote)
 
         for digest in digests:
