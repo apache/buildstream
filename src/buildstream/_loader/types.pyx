@@ -133,13 +133,31 @@ cdef class Dependency:
 #    key (str): the key on the Node corresponding to the dependency type
 #    default_dep_type (str): type to give to the dependency
 #    acc (list): a list in which to add the loaded dependencies
+#    rundeps (dict): a dictionary mapping dependency (junction, name) to dependency for runtime deps
+#    builddeps (dict): a dictionary mapping dependency (junction, name) to dependency for build deps
 #
-cdef void _extract_depends_from_node(Node node, str key, str default_dep_type, list acc) except *:
+cdef void _extract_depends_from_node(Node node, str key, str default_dep_type, list acc, dict rundeps, dict builddeps) except *:
     cdef SequenceNode depends = node.get_sequence(key, [])
     cdef Node dep_node
+    cdef tuple deptup
 
     for dep_node in depends:
         dependency = Dependency(dep_node, default_dep_type=default_dep_type)
+        deptup = (dependency.junction, dependency.name)
+        if dependency.dep_type in [Symbol.BUILD, None]:
+            if deptup in builddeps:
+                raise LoadError("{}: Duplicate build dependency found at {}."
+                                .format(dependency.provenance, builddeps[deptup].provenance),
+                                LoadErrorReason.DUPLICATE_DEPENDENCY)
+            else:
+                builddeps[deptup] = dependency
+        if dependency.dep_type in [Symbol.RUNTIME, None]:
+            if deptup in rundeps:
+                raise LoadError("{}: Duplicate runtime dependency found at {}."
+                                .format(dependency.provenance, rundeps[deptup].provenance),
+                                LoadErrorReason.DUPLICATE_DEPENDENCY)
+            else:
+                rundeps[deptup] = dependency
         acc.append(dependency)
 
     # Now delete the field, we dont want it anymore
@@ -162,7 +180,9 @@ cdef void _extract_depends_from_node(Node node, str key, str default_dep_type, l
 #
 def extract_depends_from_node(Node node):
     cdef list acc = []
-    _extract_depends_from_node(node, <str> Symbol.BUILD_DEPENDS, <str> Symbol.BUILD, acc)
-    _extract_depends_from_node(node, <str> Symbol.RUNTIME_DEPENDS, <str> Symbol.RUNTIME, acc)
-    _extract_depends_from_node(node, <str> Symbol.DEPENDS, None, acc)
+    cdef dict rundeps = {}
+    cdef dict builddeps = {}
+    _extract_depends_from_node(node, <str> Symbol.BUILD_DEPENDS, <str> Symbol.BUILD, acc, rundeps, builddeps)
+    _extract_depends_from_node(node, <str> Symbol.RUNTIME_DEPENDS, <str> Symbol.RUNTIME, acc, rundeps, builddeps)
+    _extract_depends_from_node(node, <str> Symbol.DEPENDS, None, acc, rundeps, builddeps)
     return acc
