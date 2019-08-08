@@ -815,7 +815,7 @@ class App():
 
         def project_name_proc(user_input):
             try:
-                node._assert_symbol_name(None, user_input, 'project name')
+                node._assert_symbol_name(user_input, 'project name')
             except LoadError as e:
                 message = "{}\n\n{}\n".format(e, e.detail)
                 raise UsageError(message) from e
