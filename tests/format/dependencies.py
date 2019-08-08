@@ -218,3 +218,26 @@ def test_no_recurse(cli, datafiles):
         'dep-two.bst',
         'target.bst',
     ]
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(("element", "asserts"), [
+    ('build-runtime', False),
+    ('build-build', True),
+    ('build-all', True),
+    ('runtime-runtime', True),
+    ('runtime-all', True),
+    ('all-all', True),
+])
+def test_duplicate_deps(cli, datafiles, element, asserts):
+    project = os.path.join(str(datafiles), 'dependencies3')
+
+    result = cli.run(project=project, args=['show', '{}.bst'.format(element)])
+
+    if asserts:
+        result.assert_main_error(ErrorDomain.LOAD,
+                                 LoadErrorReason.DUPLICATE_DEPENDENCY)
+        assert '[line 10 column 2]' in result.stderr
+        assert '[line 8 column 2]' in result.stderr
+    else:
+        result.assert_success()
