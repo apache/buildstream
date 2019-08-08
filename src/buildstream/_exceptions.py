@@ -225,6 +225,9 @@ class LoadErrorReason(Enum):
     # An attempt so set the value of a protected variable
     PROTECTED_VARIABLE_REDEFINED = 23
 
+    # A duplicate dependency was detected
+    DUPLICATE_DEPENDENCY = 24
+
 
 # LoadError
 #
