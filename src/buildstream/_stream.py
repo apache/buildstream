@@ -632,6 +632,30 @@ class Stream():
 
         return log_file_paths
 
+    # artifact_list_contents()
+    #
+    # Show a list of content of an artifact
+    #
+    # Args:
+    #    targets (str): Targets to view the contents of
+    #
+    # Returns:
+    #    elements_to_files (list): A list of tuples of the artifact name and it's contents
+    #
+    def artifact_list_contents(self, targets):
+        # Return list of Element and/or ArtifactElement objects
+        target_objects = self.load_selection(targets, selection=PipelineSelection.NONE, load_refs=True)
+
+        elements_to_files = {}
+        for obj in target_objects:
+            if isinstance(obj, ArtifactElement):
+                obj.name = obj.get_artifact_name()
+            files = obj._get_artifact_relative_file_paths()
+            if files == []:
+                files = ["This element has no associated artifacts"]
+            elements_to_files[obj.name] = files
+        return elements_to_files
+
     # artifact_delete()
     #
     # Remove artifacts from the local cache

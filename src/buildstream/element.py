@@ -2360,6 +2360,16 @@ class Element(Plugin):
         factory = self._get_project().config.element_factory
         return factory, self.__meta_kind, state
 
+    # _get_artifact_relative_path_files()
+    #
+    # Gets the file paths in the artifact and return them in a list
+    #
+    # Returns:
+    #   (list): A list of the file paths in the artifact
+    def _get_artifact_relative_file_paths(self):
+        casbd = self.__artifact.get_files()
+        return [f for f in casbd.list_relative_paths()]
+
     #############################################################
     #                   Private Local Methods                   #
     #############################################################

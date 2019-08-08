@@ -2,6 +2,10 @@
 buildstream 1.3.1
 =================
 
+  o Added `bst artifact list-contents` subcommand which can display the names
+    of files in artifacts in your artifact cache, either by element name
+    or by direct artifact reference.
+
   o BREAKING CHANGE: Reverted the default behaviour of junctions. Subproject
     elements will no longer interact with the parent project's remote (by
     default). To enable this behaviour, a new "cache-junction-elements" boolean
