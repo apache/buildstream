@@ -37,7 +37,6 @@ Build elements
    elements/distutils
    elements/makemaker
    elements/modulebuild
-   elements/meson
    elements/pip
 
 
