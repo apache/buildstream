@@ -679,7 +679,7 @@ class Loader():
             if self.project._warning_is_fatal(warning_token):
                 raise LoadError(brief, warning_token)
 
-        message = Message(None, MessageType.WARN, brief)
+        message = Message(MessageType.WARN, brief)
         self._context.messenger.message(message)
 
     # Print warning messages if any of the specified elements have invalid names.

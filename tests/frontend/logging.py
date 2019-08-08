@@ -124,7 +124,7 @@ def test_failed_build_listing(cli, datafiles):
         assert m.end() in failure_summary_range
     assert len(matches) == 3  # each element should be matched once.
 
-    # Note that if we mess up the 'unique_id' of Messages, they won't be printed
+    # Note that if we mess up the 'element_name' of Messages, they won't be printed
     # with the name of the relevant element, e.g. 'testfail-1.bst'. Check that
     # they have the name as expected.
     pattern = r"\[..:..:..\] FAILURE testfail-.\.bst: Staged artifacts do not provide command 'sh'"

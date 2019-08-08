@@ -27,11 +27,10 @@ from ruamel import yaml
 import click
 
 from .profile import Profile
-from .. import Element, Consistency, Scope
+from .. import Consistency, Scope
 from .. import __version__ as bst_version
 from .._exceptions import ImplError
 from .._message import MessageType
-from ..plugin import Plugin
 
 
 # These messages are printed a bit differently
@@ -110,12 +109,12 @@ class WallclockTime(Widget):
 class Debug(Widget):
 
     def render(self, message):
-        unique_id = 0 if message.unique_id is None else message.unique_id
+        element_name = "n/a" if message.element_name is None else message.element_name
 
         text = self.format_profile.fmt('pid:')
         text += self.content_profile.fmt("{: <5}".format(message.pid))
-        text += self.format_profile.fmt(" id:")
-        text += self.content_profile.fmt("{:0>3}".format(unique_id))
+        text += self.format_profile.fmt("element name:")
+        text += self.content_profile.fmt("{: <30}".format(element_name))
 
         return text
 
@@ -181,11 +180,9 @@ class ElementName(Widget):
 
     def render(self, message):
         action_name = message.action_name
-        element_id = message.task_id or message.unique_id
-        if element_id is not None:
-            plugin = Plugin._lookup(element_id)
-            name = plugin._get_full_name()
-            name = '{: <30}'.format(name)
+        element_name = message.element_name
+        if element_name is not None:
+            name = '{: <30}'.format(element_name)
         else:
             name = 'core activity'
             name = '{: <30}'.format(name)
@@ -215,18 +212,16 @@ class CacheKey(Widget):
 
     def render(self, message):
 
-        element_id = message.task_id or message.unique_id
         if not self._key_length:
             return ""
 
-        if element_id is None:
+        if message.element_name is None:
             return ' ' * self._key_length
 
         missing = False
         key = ' ' * self._key_length
-        plugin = Plugin._lookup(element_id)
-        if isinstance(plugin, Element):
-            _, key, missing = plugin._get_display_key()
+        if message.element_key:
+            _, key, missing = message.element_key
 
         if message.message_type in ERROR_MESSAGES:
             text = self._err_profile.fmt(key)
@@ -557,12 +552,12 @@ class LogLine(Widget):
         if self._failure_messages:
             values = OrderedDict()
 
-            for element, messages in sorted(self._failure_messages.items(), key=lambda x: x[0].name):
+            for element_name, messages in sorted(self._failure_messages.items()):
                 for group in self._state.task_groups.values():
                     # Exclude the failure messages if the job didn't ultimately fail
                     # (e.g. succeeded on retry)
-                    if element.name in group.failed_tasks:
-                        values[element.name] = ''.join(self._render(v) for v in messages)
+                    if element_name in group.failed_tasks:
+                        values[element_name] = ''.join(self._render(v) for v in messages)
 
             if values:
                 text += self.content_profile.fmt("Failure Summary\n", bold=True)
@@ -616,10 +611,9 @@ class LogLine(Widget):
     def render(self, message):
 
         # Track logfiles for later use
-        element_id = message.task_id or message.unique_id
-        if message.message_type in ERROR_MESSAGES and element_id is not None:
-            plugin = Plugin._lookup(element_id)
-            self._failure_messages[plugin].append(message)
+        element_name = message.element_name
+        if message.message_type in ERROR_MESSAGES and element_name is not None:
+            self._failure_messages[element_name].append(message)
 
         return self._render(message)
 
@@ -666,7 +660,7 @@ class LogLine(Widget):
         if message.detail:
 
             # Identify frontend messages, we never abbreviate these
-            frontend_message = not (message.task_id or message.unique_id)
+            frontend_message = not message.element_name
 
             # Split and truncate message detail down to message_lines lines
             lines = message.detail.splitlines(True)

@@ -1242,7 +1242,7 @@ class Element(Plugin):
 
         if not cache_key:
             cache_key = "{:?<64}".format('')
-        elif self._get_cache_key() == self.__strict_cache_key:
+        elif cache_key == self.__strict_cache_key:
             # Strong cache key used in this session matches cache key
             # that would be used in strict build mode
             dim_key = False

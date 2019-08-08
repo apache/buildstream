@@ -246,6 +246,9 @@ class Plugin():
         self.__type_tag = type_tag      # The type of plugin (element or source)
         self.__configuring = False      # Whether we are currently configuring
 
+        # Get the full_name as project & type_tag are resolved
+        self.__full_name = self.__get_full_name()
+
         # Infer the kind identifier
         modulename = type(self).__module__
         self.__kind = modulename.split('.')[-1]
@@ -425,6 +428,9 @@ class Plugin():
 
         Note: Informative messages tell the user something they might want
               to know, like if refreshing an element caused it to change.
+              The instance full name of the plugin will be generated with the
+              message, this being the name of the given element, as appose to
+              the class name of the underlying plugin __kind identifier.
         """
         self.__message(MessageType.INFO, brief, detail=detail)
 
@@ -488,7 +494,7 @@ class Plugin():
               self.call(... command which takes time ...)
         """
         with self.__context.messenger.timed_activity(activity_name,
-                                                     unique_id=self._unique_id,
+                                                     element_name=self._get_full_name(),
                                                      detail=detail,
                                                      silent_nested=silent_nested):
             yield
@@ -672,6 +678,18 @@ class Plugin():
     def _preflight(self):
         self.preflight()
 
+    # _get_full_name():
+    #
+    # The instance full name of the plugin prepended with the owning
+    # junction if appropriate. This being the name of the given element,
+    # as appose to the class name of the underlying plugin __kind identifier.
+    #
+    # Returns:
+    #    (str): element full name, with prepended owning junction if appropriate
+    #
+    def _get_full_name(self):
+        return self.__full_name
+
     # _get_args_for_child_job_pickling(self)
     #
     # Return data necessary to reconstruct this object in a child job process.
@@ -718,7 +736,7 @@ class Plugin():
         return (exit_code, output)
 
     def __message(self, message_type, brief, **kwargs):
-        message = Message(self._unique_id, message_type, brief, **kwargs)
+        message = Message(message_type, brief, element_name=self._get_full_name(), **kwargs)
         self.__context.messenger.message(message)
 
     def __note_command(self, output, *popenargs, **kwargs):
@@ -727,13 +745,6 @@ class Plugin():
         output.write('Running host command {}: {}\n'.format(workdir, command))
         output.flush()
         self.status('Running host command', detail=command)
-
-    def _get_full_name(self):
-        project = self.__project
-        if project.junction:
-            return '{}:{}'.format(project.junction.name, self.name)
-        else:
-            return self.name
 
     def __deprecation_warning_silenced(self):
         if not self.BST_PLUGIN_DEPRECATED:
@@ -750,6 +761,15 @@ class Plugin():
                     silenced_warnings.add(key)
 
             return self.get_kind() in silenced_warnings
+
+    def __get_full_name(self):
+        project = self.__project
+        # Set the name, depending on element or source plugin type
+        name = self._element_name if self.__type_tag == "source" else self.name  # pylint: disable=no-member
+        if project.junction:
+            return '{}:{}'.format(project.junction.name, name)
+        else:
+            return name
 
 
 # A local table for _prefix_warning()

@@ -54,8 +54,9 @@ unconditional_messages = [
 #
 class Message():
 
-    def __init__(self, unique_id, message_type, message,
-                 task_id=None,
+    def __init__(self, message_type, message, *,
+                 element_name=None,
+                 element_key=None,
                  detail=None,
                  action_name=None,
                  elapsed=None,
@@ -64,14 +65,14 @@ class Message():
                  scheduler=False):
         self.message_type = message_type  # Message type
         self.message = message            # The message string
+        self.element_name = element_name   # The instance element name of the issuing plugin
+        self.element_key = element_key    # The display key of the issuing plugin element
         self.detail = detail              # An additional detail string
         self.action_name = action_name    # Name of the task queue (fetch, refresh, build, etc)
         self.elapsed = elapsed            # The elapsed time, in timed messages
         self.logfile = logfile            # The log file path where commands took place
         self.sandbox = sandbox            # The error that caused this message used a sandbox
         self.pid = os.getpid()            # The process pid
-        self.unique_id = unique_id        # The plugin object ID issueing the message
-        self.task_id = task_id            # The plugin object ID of the task
         self.scheduler = scheduler        # Whether this is a scheduler level message
         self.creation_time = datetime.datetime.now()
         if message_type in (MessageType.SUCCESS, MessageType.FAIL):

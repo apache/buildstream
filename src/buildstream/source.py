@@ -308,10 +308,11 @@ class Source(Plugin):
 
     def __init__(self, context, project, meta, *, alias_override=None, unique_id=None):
         provenance = meta.config.get_provenance()
+        # Set element_name member before parent init, as needed for debug messaging
+        self.__element_name = meta.element_name         # The name of the element owning this source
         super().__init__("{}-{}".format(meta.element_name, meta.element_index),
                          context, project, provenance, "source", unique_id=unique_id)
 
-        self.__element_name = meta.element_name         # The name of the element owning this source
         self.__element_index = meta.element_index       # The index of the source in the owning element's source list
         self.__element_kind = meta.element_kind         # The kind of the element owning this source
         self.__directory = meta.directory               # Staging relative directory
@@ -1075,6 +1076,10 @@ class Source(Plugin):
 
         length = min(len(key), context.log_key_length)
         return key[:length]
+
+    @property
+    def _element_name(self):
+        return self.__element_name
 
     # _get_args_for_child_job_pickling(self)
     #

@@ -28,7 +28,7 @@ from contextlib import contextmanager
 
 # Local imports
 from .resources import Resources, ResourceType
-from .jobs import JobStatus, CacheSizeJob, CleanupJob, ElementJob
+from .jobs import JobStatus, CacheSizeJob, CleanupJob
 from .._profile import Topics, PROFILER
 
 
@@ -253,10 +253,11 @@ class Scheduler():
 
         self._state.remove_task(job.action_name, job.name)
         if status == JobStatus.FAIL:
-            unique_id = None
-            if isinstance(job, ElementJob):
-                unique_id = job._element._unique_id
-            self._state.fail_task(job.action_name, job.name, unique_id)
+            # If it's an elementjob, we want to compare against the failure messages
+            # and send the Element() instance. Note this will change if the frontend
+            # is run in a separate process for pickling
+            element = job.get_element()
+            self._state.fail_task(job.action_name, job.name, element=element)
 
         # Now check for more jobs
         self._sched()
