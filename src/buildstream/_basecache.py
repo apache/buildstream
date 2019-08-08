@@ -86,7 +86,7 @@ class BaseCache():
     # Parses the configuration of remote artifact caches from a config block.
     #
     # Args:
-    #   config_node (dict): The config block, which may contain the 'artifacts' key
+    #   config_node (dict): The config block, which may contain a key defined by cls.config_node_name
     #   basedir (str): The base directory for relative paths
     #
     # Returns:
@@ -106,8 +106,8 @@ class BaseCache():
                 artifacts = config_node.get_sequence(cls.config_node_name, default=[])
             except LoadError:
                 provenance = config_node.get_node(cls.config_node_name).get_provenance()
-                raise _yaml.LoadError("{}: 'artifacts' must be a single 'url:' mapping, or a list of mappings"
-                                      .format(provenance), _yaml.LoadErrorReason.INVALID_DATA)
+                raise _yaml.LoadError("{}: '{}' must be a single remote mapping, or a list of mappings"
+                                      .format(provenance, cls.config_node_name), _yaml.LoadErrorReason.INVALID_DATA)
 
         for spec_node in artifacts:
             cache_specs.append(cls.spec_class._new_from_config_node(spec_node, basedir))
