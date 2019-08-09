@@ -56,6 +56,9 @@ def test_artifact_log(cli, datafiles):
     assert result.exit_code == 0
     log = result.output
 
+    # Assert that there actually was a log file
+    assert log != ''
+
     # Read the log via the key
     result = cli.run(project=project, args=['artifact', 'log', 'test/target/' + key])
     assert result.exit_code == 0

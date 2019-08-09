@@ -925,6 +925,14 @@ class Element(Plugin):
         self.__batch_prepare_assemble_flags = flags
         self.__batch_prepare_assemble_collect = collect
 
+    def get_logs(self):
+        """Obtain a list of log file paths
+
+        Returns:
+           (list): A list of log file paths
+        """
+        return self.__artifact.get_logs()
+
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################

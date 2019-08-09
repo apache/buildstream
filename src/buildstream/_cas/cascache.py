@@ -116,9 +116,21 @@ class CASCache():
         # This assumes that the repository doesn't have any dangling pointers
         return os.path.exists(refpath)
 
+    # contains_file():
+    #
+    # Check whether a digest corresponds to a file which exists in CAS
+    #
+    # Args:
+    #     digest (Digest): The file digest to check
+    #
+    # Returns: True if the file is in the cache, False otherwise
+    #
+    def contains_file(self, digest):
+        return os.path.exists(self.objpath(digest))
+
     # contains_directory():
     #
-    # Check whether the specified directory and subdirecotires are in the cache,
+    # Check whether the specified directory and subdirectories are in the cache,
     # i.e non dangling.
     #
     # Args:

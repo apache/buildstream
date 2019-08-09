@@ -89,6 +89,22 @@ class Artifact():
 
         return CasBasedDirectory(self._cas, digest=buildtree_digest)
 
+    # get_logs():
+    #
+    # Get the paths of the artifact's logs
+    #
+    # Returns:
+    #    (list): A list of object paths
+    #
+    def get_logs(self):
+        artifact = self._get_proto()
+
+        logfile_paths = []
+        for logfile in artifact.logs:
+            logfile_paths.append(self._cas.objpath(logfile.digest))
+
+        return logfile_paths
+
     # get_extract_key():
     #
     # Get the key used to extract the artifact
@@ -385,7 +401,7 @@ class Artifact():
         artifact = self._get_proto()
 
         for logfile in artifact.logs:
-            if not self._cas.contains(logfile.digest.hash):
+            if not self._cas.contains_file(logfile.digest):
                 return False
 
         return True
@@ -425,7 +441,7 @@ class Artifact():
 
         return self._proto
 
-    # _get_artifact_field()
+    # _get_field_digest()
     #
     # Returns:
     #     (Digest): Digest of field specified
