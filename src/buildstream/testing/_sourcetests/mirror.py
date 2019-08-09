@@ -25,8 +25,9 @@ import pytest
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
 from .._utils import generate_junction
-from .. import create_repo, ALL_REPO_KINDS
+from .. import create_repo
 from .. import cli  # pylint: disable=unused-import
+from .utils import kind  # pylint: disable=unused-import
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -34,7 +35,6 @@ DATA_DIR = os.path.join(TOP_DIR, 'project')
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_mirror_fetch(cli, tmpdir, datafiles, kind):
     bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
     dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')
@@ -93,7 +93,6 @@ def test_mirror_fetch(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
     dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')
     upstream_repodir = os.path.join(str(tmpdir), 'upstream')
@@ -149,7 +148,6 @@ def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
     bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
     upstream_repodir = os.path.join(str(tmpdir), 'upstream')
@@ -222,7 +220,6 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
     bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
     upstream_repodir = os.path.join(str(tmpdir), 'upstream')
@@ -299,7 +296,6 @@ def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
     bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
     dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')
@@ -363,7 +359,6 @@ def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
     bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
     dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')

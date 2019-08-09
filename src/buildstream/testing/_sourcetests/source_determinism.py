@@ -24,8 +24,9 @@ import pytest
 
 from buildstream import _yaml
 from .._utils.site import HAVE_SANDBOX
-from .. import create_repo, ALL_REPO_KINDS
+from .. import create_repo
 from .. import cli  # pylint: disable=unused-import
+from .utils import kind  # pylint: disable=unused-import
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -48,7 +49,6 @@ def create_test_directory(*path, mode=0o644):
 
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [*ALL_REPO_KINDS])
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 @pytest.mark.skipif(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox, Must Fix')
 def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):

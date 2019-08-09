@@ -20,12 +20,15 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
 from buildstream import _yaml
 from .._utils import generate_junction
 from .. import create_repo, ALL_REPO_KINDS
 from .. import cli  # pylint: disable=unused-import
+from .utils import add_plugins_conf
+
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -62,7 +65,7 @@ def generate_import_element(tmpdir, kind, project, name):
     return element_name
 
 
-def generate_project(tmpdir, name, config=None):
+def generate_project(tmpdir, name, kind, config=None):
     if config is None:
         config = {}
 
@@ -76,6 +79,7 @@ def generate_project(tmpdir, name, config=None):
     }
     project_conf.update(config)
     _yaml.roundtrip_dump(project_conf, os.path.join(subproject_path, 'project.conf'))
+    add_plugins_conf(subproject_path, kind)
 
     return project_name, subproject_path
 
@@ -101,14 +105,14 @@ def generate_cross_element(project, subproject_name, import_name):
                                  }])
 
 
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+@pytest.mark.parametrize("kind", ALL_REPO_KINDS.keys())
 def test_cross_junction_multiple_projects(cli, tmpdir, kind):
     tmpdir = tmpdir.join(kind)
 
     # Generate 3 projects: main, a, b
-    _, project = generate_project(tmpdir, 'main', {'ref-storage': 'project.refs'})
-    project_a, project_a_path = generate_project(tmpdir, 'a')
-    project_b, project_b_path = generate_project(tmpdir, 'b')
+    _, project = generate_project(tmpdir, 'main', kind, {'ref-storage': 'project.refs'})
+    project_a, project_a_path = generate_project(tmpdir, 'a', kind)
+    project_b, project_b_path = generate_project(tmpdir, 'b', kind)
 
     # Generate an element with a trackable source for each project
     element_a = generate_import_element(tmpdir, kind, project_a_path, 'a')
@@ -152,12 +156,12 @@ def test_cross_junction_multiple_projects(cli, tmpdir, kind):
     assert set(result.get_tracked_elements()) == set(expected)
 
 
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+@pytest.mark.parametrize("kind", ALL_REPO_KINDS.keys())
 def test_track_exceptions(cli, tmpdir, kind):
     tmpdir = tmpdir.join(kind)
 
-    _, project = generate_project(tmpdir, 'main', {'ref-storage': 'project.refs'})
-    project_a, project_a_path = generate_project(tmpdir, 'a')
+    _, project = generate_project(tmpdir, 'main', kind, {'ref-storage': 'project.refs'})
+    project_a, project_a_path = generate_project(tmpdir, 'a', kind)
 
     element_a = generate_import_element(tmpdir, kind, project_a_path, 'a')
     element_b = generate_import_element(tmpdir, kind, project_a_path, 'b')

@@ -24,8 +24,10 @@ import pytest
 
 from buildstream import _yaml
 from .._utils import generate_junction, configure_project
-from .. import create_repo, ALL_REPO_KINDS
+from .. import create_repo
 from .. import cli  # pylint: disable=unused-import
+from .utils import kind  # pylint: disable=unused-import
+
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -33,7 +35,6 @@ DATA_DIR = os.path.join(TOP_DIR, 'project')
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_fetch(cli, tmpdir, datafiles, kind):
     project = str(datafiles)
     bin_files_path = os.path.join(project, 'files', 'bin-files')
@@ -69,8 +70,7 @@ def test_fetch(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+@pytest.mark.parametrize("ref_storage", ['inline', 'project.refs'])
 def test_fetch_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
     project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')

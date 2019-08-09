@@ -22,17 +22,14 @@
 import os
 import pytest
 
-from buildstream.testing import create_repo, ALL_REPO_KINDS
+from buildstream.testing import create_repo
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
+from .utils import kind  # pylint: disable=unused-import
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = os.path.join(TOP_DIR, 'project')
-
-fetch_build_checkout_combos = \
-    [("strict", kind) for kind in ALL_REPO_KINDS] + \
-    [("non-strict", kind) for kind in ALL_REPO_KINDS]
 
 
 def strict_args(args, strict):
@@ -42,7 +39,7 @@ def strict_args(args, strict):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("strict,kind", fetch_build_checkout_combos)
+@pytest.mark.parametrize("strict", ["strict", "non-strict"])
 def test_fetch_build_checkout(cli, tmpdir, datafiles, strict, kind):
     checkout = os.path.join(cli.directory, 'checkout')
     project = str(datafiles)
