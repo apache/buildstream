@@ -31,7 +31,6 @@ Build elements
    :maxdepth: 1
 
    elements/manual
-   elements/make
    elements/autotools
    elements/qmake
    elements/distutils
