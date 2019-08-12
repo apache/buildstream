@@ -34,7 +34,6 @@ Build elements
    elements/autotools
    elements/qmake
    elements/distutils
-   elements/makemaker
    elements/modulebuild
    elements/pip
 
