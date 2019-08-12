@@ -449,7 +449,11 @@ class Job():
 
         try:
             returncode = _ReturnCode(returncode)
-        except ValueError:  # An unexpected return code was returned, let's fail permanently
+        except ValueError:
+            # An unexpected return code was returned; fail permanently and report
+            self.message(MessageType.ERROR,
+                         "Internal job process unexpectedly died with exit code {}".format(returncode),
+                         logfile=self._logfile)
             returncode = _ReturnCode.PERM_FAIL
 
         # We don't want to retry if we got OK or a permanent fail.
