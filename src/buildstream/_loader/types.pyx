@@ -44,6 +44,7 @@ class Symbol():
     DIRECTORY = "directory"
     JUNCTION = "junction"
     SANDBOX = "sandbox"
+    STRICT = "strict"
 
 
 # Dependency()
@@ -63,6 +64,7 @@ cdef class Dependency:
     cdef public str name
     cdef public str dep_type
     cdef public str junction
+    cdef public bint strict
 
     def __init__(self,
                  Node dep,
@@ -75,13 +77,14 @@ cdef class Dependency:
             self.name = dep.as_str()
             self.dep_type = default_dep_type
             self.junction = None
+            self.strict = False
 
         elif type(dep) is MappingNode:
             if default_dep_type:
-                (<MappingNode> dep).validate_keys(['filename', 'junction'])
+                (<MappingNode> dep).validate_keys(['filename', 'junction', 'strict'])
                 dep_type = default_dep_type
             else:
-                (<MappingNode> dep).validate_keys(['filename', 'type', 'junction'])
+                (<MappingNode> dep).validate_keys(['filename', 'type', 'junction', 'strict'])
 
                 # Make type optional, for this we set it to None
                 dep_type = (<MappingNode> dep).get_str(<str> Symbol.TYPE, None)
@@ -95,10 +98,18 @@ cdef class Dependency:
             self.name = (<MappingNode> dep).get_str(<str> Symbol.FILENAME)
             self.dep_type = dep_type
             self.junction = (<MappingNode> dep).get_str(<str> Symbol.JUNCTION, None)
+            self.strict = (<MappingNode> dep).get_bool(<str> Symbol.STRICT, False)
 
         else:
             raise LoadError("{}: Dependency is not specified as a string or a dictionary".format(self.provenance),
                             LoadErrorReason.INVALID_DATA)
+
+        # Only build dependencies are allowed to be strict
+        #
+        if self.strict and self.dep_type == Symbol.RUNTIME:
+            raise LoadError("{}: Runtime dependency {} specified as `strict`.".format(self.provenance, self.name),
+                            LoadErrorReason.INVALID_DATA,
+                            detail="Only dependencies required at build time may be declared `strict`.")
 
         # `:` characters are not allowed in filename if a junction was
         # explicitly specified

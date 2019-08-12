@@ -56,5 +56,6 @@ class MetaElement():
         self.sandbox = sandbox or Node.from_dict({})
         self.build_dependencies = []
         self.dependencies = []
+        self.strict_dependencies = []
         self.first_pass = first_pass
         self.is_junction = kind == "junction"
