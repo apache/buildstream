@@ -976,7 +976,32 @@ def workspace_list(app):
 #############################################################
 @cli.group(short_help="Manipulate cached artifacts.")
 def artifact():
-    """Manipulate cached artifacts"""
+    """Manipulate cached artifacts
+
+    Some subcommands take artifact references as arguments. Artifacts
+    can be specified in two ways:
+
+    \b
+    - artifact refs: triples of the form <project name>/<element name>/<cache key>
+    - element paths
+
+    When elements are given, the artifact corresponding to the element is used.
+
+    The commands also support shell-style wildcard expansion: `?` matches a
+    single character, and `*` matches zero or more. The patterns are matched
+    against artifact refs by default. If the pattern ends with `.bst` then
+    it matches element paths instead. Some example arguments are:
+
+    \b
+    - `myproject/hello/8276376b077eda104c812e6ec2f488c7c9eea211ce572c83d734c10bf241209f`
+    - `myproject/he*/827637*`
+    - `*.bst` (all elements)
+    - `myproject/*` (all artifacts from myproject)
+    """
+    # Note that the backticks in the above docstring are important for the
+    # generated docs. When sphinx is generating rst output from the help output
+    # of this command, the asterisks will be interpreted as emphasis tokens if
+    # they are not somehow escaped.
 
 
 #####################################################################
@@ -1173,41 +1198,7 @@ def artifact_push(app, elements, deps, remote):
 @click.argument('artifacts', type=click.Path(), nargs=-1)
 @click.pass_obj
 def artifact_log(app, artifacts):
-    """Show logs of artifacts.
-
-    Note that 'artifacts' can be element references like "hello.bst", and they
-    can also be artifact references. You may use shell-style wildcards for
-    either.
-
-    Here are some examples of element references:
-
-    \b
-    - `hello.bst`
-    - `*.bst`
-
-    Note that element references must end with '.bst' to distinguish them from
-    artifact references. Anything that does not end in '.bst' is an artifact
-    ref.
-
-    Artifact references follow the format `<project_name>/<element>/<key>`.
-    Note that 'element' is without the `.bst` extension.
-
-    Here are some examples of artifact references:
-
-    \b
-    - `myproject/hello/*`
-    - `myproject/*`
-    - `*`
-    - `myproject/hello/827637*`
-    - `myproject/he*/827637*`
-    - `myproject/he??o/827637*`
-    - `m*/h*/8276376b077eda104c812e6ec2f488c7c9eea211ce572c83d734c10bf241209f`
-
-    """
-    # Note that the backticks in the above docstring are important for the
-    # generated docs. When sphinx is generating rst output from the help output
-    # of this command, the asterisks will be interpreted as emphasis tokens if
-    # they are not somehow escaped.
+    """Show build logs of artifacts"""
 
     with app.initialized():
         log_file_paths = app.stream.artifact_log(artifacts)
