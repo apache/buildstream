@@ -26,6 +26,7 @@ from itertools import chain
 import signal
 import datetime
 from contextlib import contextmanager
+import time
 
 # Local imports
 from .resources import Resources, ResourceType
@@ -95,7 +96,7 @@ class Notification:
 class Scheduler():
 
     def __init__(self, context,
-                 start_time, state, notification_handler,
+                 start_time, state, notification_queue, notifier,
                  interrupt_callback=None,
                  ticker_callback=None):
 
@@ -126,8 +127,9 @@ class Scheduler():
         self._cleanup_scheduled = False       # Whether we have a cleanup job scheduled
         self._cleanup_running = None          # A running CleanupJob, or None
 
-        # Callback to send notifications to report back to the Scheduler's owner
-        self.notify = notification_handler
+        # Message to send notifications back to the Scheduler's owner
+        self._notification_queue = notification_queue
+        self._notifier = notifier
 
         # Whether our exclusive jobs, like 'cleanup' are currently already
         # waiting or active.
@@ -294,7 +296,7 @@ class Scheduler():
                                     job_action=job.action_name,
                                     job_status=status,
                                     element=element)
-        self.notify(notification)
+        self._notify(notification)
         self._sched()
 
     # check_cache_size():
@@ -355,7 +357,7 @@ class Scheduler():
                                     full_name=job.name,
                                     job_action=job.action_name,
                                     elapsed_time=self.elapsed_time())
-        self.notify(notification)
+        self._notify(notification)
         job.start()
 
     # Callback for the cache size job
@@ -575,7 +577,7 @@ class Scheduler():
             return
 
         notification = Notification(NotificationType.INTERRUPT)
-        self.notify(notification)
+        self._notify(notification)
 
     # _terminate_event():
     #
@@ -635,8 +637,18 @@ class Scheduler():
     # Regular timeout for driving status in the UI
     def _tick(self):
         notification = Notification(NotificationType.TICK)
-        self.notify(notification)
+        self._notify(notification)
         self.loop.call_later(1, self._tick)
+
+    def _notify(self, notification):
+        self._notification_queue.put(notification)
+        x = 0
+        while self._notification_queue.empty():
+            time.sleep(0.1)
+            x = x +1
+            if x == 10:
+                raise ValueError("queue still empty")
+        self._notifier()
 
     def __getstate__(self):
         # The only use-cases for pickling in BuildStream at the time of writing
