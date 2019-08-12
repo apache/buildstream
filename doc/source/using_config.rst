@@ -65,6 +65,8 @@ by the project.
 If you give a list of URLs, earlier entries in the list will have higher
 priority than later ones.
 
+.. _user_config_strict_mode:
+
 Strict build plan
 ~~~~~~~~~~~~~~~~~
 The strict build plan option decides whether you want elements
