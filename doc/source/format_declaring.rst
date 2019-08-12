@@ -370,6 +370,7 @@ Dependency dictionary:
    - filename: foo.bst
      type: build
      junction: baseproject.bst
+     strict: false
 
 Attributes:
 
@@ -399,6 +400,16 @@ Attributes:
   .. note::
 
      The ``junction`` attribute is available since :ref:`format version 1 <project_format_version>`
+
+* ``strict``
+
+  This attribute can be used to specify that this element should
+  be rebuilt when the dependency changes, even when
+  :ref:`strict mode <user_config_strict_mode>` has been turned off.
+
+  This is appropriate whenever a dependency's output is consumed
+  verbatim in the output of the depending element, for instance
+  when static linking is in use.
 
 
 Cross-junction dependencies
