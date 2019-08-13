@@ -408,14 +408,15 @@ class App():
     # if they are available in the execution context.
     #
     # Args:
-    #    element (Element): The Element object to resolve a prompt for
+    #    element_name (str): The element's full name
+    #    element_key (tuple): The element's display key
     #
     # Returns:
     #    (str): The formatted prompt to display in the shell
     #
-    def shell_prompt(self, element):
-        _, key, dim = element._get_display_key()
-        element_name = element._get_full_name()
+    def shell_prompt(self, element_name, element_key):
+
+        _, key, dim = element_key
 
         if self.colors:
             prompt = self._format_profile.fmt('[') + \
@@ -645,7 +646,7 @@ class App():
                 if choice == 'shell':
                     click.echo("\nDropping into an interactive shell in the failed build sandbox\n", err=True)
                     try:
-                        prompt = self.shell_prompt(element)
+                        prompt = self.shell_prompt(element._get_full_name(), element._get_display_key())
                         self.stream.shell(element, Scope.BUILD, prompt, isolate=True, usebuildtree='always')
                     except BstError as e:
                         click.echo("Error while attempting to create interactive shell: {}".format(e), err=True)
