@@ -323,7 +323,8 @@ class State():
     #    full_name (str): The full name of the task, distinguishing
     #                     it from other tasks with the same action name
     #                     e.g. an element's name.
-    #    element (Element): (optionally) The element instance if an element job
+    #    element (tuple): (optionally) The element unique_id and display keys if an
+    #                                  element job
     #
     def fail_task(self, action_name, full_name, element=None):
         for cb in self._task_failed_cbs:

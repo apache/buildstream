@@ -41,6 +41,7 @@ from ._pipeline import Pipeline, PipelineSelection
 from ._profile import Topics, PROFILER
 from ._state import State
 from .types import _KeyStrength, _SchedulerErrorAction
+from .plugin import Plugin
 from . import utils, _yaml, _site
 from . import Scope, Consistency
 
@@ -160,6 +161,7 @@ class Stream():
     #    command (list): An argv to launch in the sandbox, or None
     #    usebuildtree (str): Whether to use a buildtree as the source, given cli option
     #    pull_dependencies ([Element]|None): Elements to attempt to pull
+    #    unique_id: (str): Whether to use a unique_id to load an Element instance
     #
     # Returns:
     #    (int): The exit code of the launched shell
@@ -170,7 +172,12 @@ class Stream():
               isolate=False,
               command=None,
               usebuildtree=None,
-              pull_dependencies=None):
+              pull_dependencies=None,
+              unique_id=None):
+
+        # Load the Element via the unique_id if given
+        if unique_id and element is None:
+            element = Plugin._lookup(unique_id)
 
         # Assert we have everything we need built, unless the directory is specified
         # in which case we just blindly trust the directory, using the element
@@ -1303,6 +1310,21 @@ class Stream():
 
         queue.enqueue(plan)
         self.session_elements += plan
+
+    # _failure_retry()
+    #
+    # Enqueues given element via unique_id to the specified queue and
+    # remove the related failed task from the related group
+    #
+    #
+    # Args:
+    #    queue (Queue): The target queue
+    #    unique_id (str): A unique_id to load an Element instance
+    #
+    def _failure_retry(self, queue, unique_id):
+        element = Plugin._lookup(unique_id)
+        queue._task_group.failed_tasks.remove(element._get_full_name())
+        queue.enqueue([element])
 
     # _run()
     #

@@ -560,7 +560,7 @@ class App():
     #    action_name (str): The name of the action being performed,
     #                       same as the task group, if it exists
     #    full_name (str): The name of this specific task, e.g. the element full name
-    #    element (Element): If an element job failed the Element instance
+    #    element (tuple): If an element job failed a tuple of Element instance unique_id & display key
     #
     def _job_failed(self, action_name, full_name, element=None):
         # Dont attempt to handle a failure if the user has already opted to
@@ -584,14 +584,14 @@ class App():
                                "unable to retrieve failure message for element {}\n\n\n\n\n"
                                .format(full_name), err=True)
                 else:
-                    self._handle_failure(element, queue, failure)
+                    self._handle_failure(element, queue, failure, full_name)
 
             else:
                 # Not an element_job, we don't handle the failure
                 click.echo("\nTerminating all jobs\n", err=True)
                 self.stream.terminate()
 
-    def _handle_failure(self, element, queue, failure):
+    def _handle_failure(self, element, queue, failure, full_name):
 
         # Handle non interactive mode setting of what to do when a job fails.
         if not self._interactive_failures:
@@ -607,7 +607,7 @@ class App():
         # Interactive mode for element failures
         with self._interrupted():
 
-            summary = ("\n{} failure on element: {}\n".format(failure.action_name, element.name) +
+            summary = ("\n{} failure on element: {}\n".format(failure.action_name, full_name) +
                        "\n" +
                        "Choose one of the following options:\n" +
                        "  (c)ontinue  - Continue queueing jobs as much as possible\n" +
@@ -631,7 +631,7 @@ class App():
                 click.echo(summary, err=True)
 
                 self._notify("BuildStream failure", "{} on element {}"
-                             .format(failure.action_name, element.name))
+                             .format(failure.action_name, full_name))
 
                 try:
                     choice = click.prompt("Choice:", default='continue', err=True,
@@ -646,8 +646,10 @@ class App():
                 if choice == 'shell':
                     click.echo("\nDropping into an interactive shell in the failed build sandbox\n", err=True)
                     try:
-                        prompt = self.shell_prompt(element._get_full_name(), element._get_display_key())
-                        self.stream.shell(element, Scope.BUILD, prompt, isolate=True, usebuildtree='always')
+                        unique_id, element_key = element
+                        prompt = self.shell_prompt(full_name, element_key)
+                        self.stream.shell(None, Scope.BUILD, prompt, isolate=True,
+                                          usebuildtree='always', unique_id=unique_id)
                     except BstError as e:
                         click.echo("Error while attempting to create interactive shell: {}".format(e), err=True)
                 elif choice == 'log':
@@ -666,9 +668,8 @@ class App():
                     click.echo("\nContinuing with other non failing elements\n", err=True)
                 elif choice == 'retry':
                     click.echo("\nRetrying failed job\n", err=True)
-                    # FIXME: Outstandingly nasty modification of core state
-                    queue._task_group.failed_tasks.remove(element._get_full_name())
-                    queue.enqueue([element])
+                    unique_id = element[0]
+                    self.stream._failure_retry(queue, unique_id)
 
     #
     # Print the session heading if we've loaded a pipeline and there
