@@ -30,6 +30,7 @@ artifact composite interaction away from Element class
 
 import os
 
+from ._exceptions import ArtifactError
 from ._protos.buildstream.v2.artifact_pb2 import Artifact as ArtifactProto
 from . import _yaml
 from . import utils
@@ -348,6 +349,49 @@ class Artifact():
                                                   if dep.was_workspaced]
 
         return self._metadata_workspaced_dependencies
+
+    # get_dependency_refs()
+    #
+    # Retrieve the artifact refs of the artifact's dependencies
+    #
+    # Args:
+    #    deps (Scope): The scope of dependencies
+    #
+    # Returns:
+    #    (list [str]): A list of refs of all build dependencies in staging order.
+    #
+    def get_dependency_refs(self, deps=Scope.BUILD):
+        # XXX: The pylint disable is necessary due to upstream issue:
+        # https://github.com/PyCQA/pylint/issues/850
+        from .element import _get_normal_name  # pylint: disable=cyclic-import
+
+        # Extract the proto
+        artifact = self._get_proto()
+
+        if deps == Scope.BUILD:
+            try:
+                dependency_refs = [
+                    os.path.join(dep.project_name, _get_normal_name(dep.element_name), dep.cache_key)
+                    for dep in artifact.build_deps
+                ]
+            except AttributeError:
+                # If the artifact has no dependencies
+                dependency_refs = []
+        elif deps == Scope.NONE:
+            dependency_refs = [self._element.get_artifact_name()]
+        else:
+            # XXX: We can only support obtaining the build dependencies of
+            #      an artifact. This is because this is the only information we store
+            #      in the proto. If we were to add runtime deps to the proto, we'd need
+            #      to include these in cache key calculation.
+            #
+            #      This would have some undesirable side effects:
+            #          1. It might trigger unnecessary rebuilds.
+            #          2. It would be impossible to support cyclic runtime dependencies
+            #             in the future
+            raise ArtifactError("Dependency scope: {} is not supported for artifacts".format(deps))
+
+        return dependency_refs
 
     # cached():
     #
