@@ -293,46 +293,46 @@ DESCRIPTOR.message_types_by_name['CancelOperationRequest'] = _CANCELOPERATIONREQ
 DESCRIPTOR.message_types_by_name['DeleteOperationRequest'] = _DELETEOPERATIONREQUEST
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Operation = _reflection.GeneratedProtocolMessageType('Operation', (_message.Message,), dict(
-  DESCRIPTOR = _OPERATION,
-  __module__ = 'google.longrunning.operations_pb2'
+Operation = _reflection.GeneratedProtocolMessageType('Operation', (_message.Message,), {
+  'DESCRIPTOR' : _OPERATION,
+  '__module__' : 'google.longrunning.operations_pb2'
   # @@protoc_insertion_point(class_scope:google.longrunning.Operation)
-  ))
+  })
 _sym_db.RegisterMessage(Operation)
 
-GetOperationRequest = _reflection.GeneratedProtocolMessageType('GetOperationRequest', (_message.Message,), dict(
-  DESCRIPTOR = _GETOPERATIONREQUEST,
-  __module__ = 'google.longrunning.operations_pb2'
+GetOperationRequest = _reflection.GeneratedProtocolMessageType('GetOperationRequest', (_message.Message,), {
+  'DESCRIPTOR' : _GETOPERATIONREQUEST,
+  '__module__' : 'google.longrunning.operations_pb2'
   # @@protoc_insertion_point(class_scope:google.longrunning.GetOperationRequest)
-  ))
+  })
 _sym_db.RegisterMessage(GetOperationRequest)
 
-ListOperationsRequest = _reflection.GeneratedProtocolMessageType('ListOperationsRequest', (_message.Message,), dict(
-  DESCRIPTOR = _LISTOPERATIONSREQUEST,
-  __module__ = 'google.longrunning.operations_pb2'
+ListOperationsRequest = _reflection.GeneratedProtocolMessageType('ListOperationsRequest', (_message.Message,), {
+  'DESCRIPTOR' : _LISTOPERATIONSREQUEST,
+  '__module__' : 'google.longrunning.operations_pb2'
   # @@protoc_insertion_point(class_scope:google.longrunning.ListOperationsRequest)
-  ))
+  })
 _sym_db.RegisterMessage(ListOperationsRequest)
 
-ListOperationsResponse = _reflection.GeneratedProtocolMessageType('ListOperationsResponse', (_message.Message,), dict(
-  DESCRIPTOR = _LISTOPERATIONSRESPONSE,
-  __module__ = 'google.longrunning.operations_pb2'
+ListOperationsResponse = _reflection.GeneratedProtocolMessageType('ListOperationsResponse', (_message.Message,), {
+  'DESCRIPTOR' : _LISTOPERATIONSRESPONSE,
+  '__module__' : 'google.longrunning.operations_pb2'
   # @@protoc_insertion_point(class_scope:google.longrunning.ListOperationsResponse)
-  ))
+  })
 _sym_db.RegisterMessage(ListOperationsResponse)
 
-CancelOperationRequest = _reflection.GeneratedProtocolMessageType('CancelOperationRequest', (_message.Message,), dict(
-  DESCRIPTOR = _CANCELOPERATIONREQUEST,
-  __module__ = 'google.longrunning.operations_pb2'
+CancelOperationRequest = _reflection.GeneratedProtocolMessageType('CancelOperationRequest', (_message.Message,), {
+  'DESCRIPTOR' : _CANCELOPERATIONREQUEST,
+  '__module__' : 'google.longrunning.operations_pb2'
   # @@protoc_insertion_point(class_scope:google.longrunning.CancelOperationRequest)
-  ))
+  })
 _sym_db.RegisterMessage(CancelOperationRequest)
 
-DeleteOperationRequest = _reflection.GeneratedProtocolMessageType('DeleteOperationRequest', (_message.Message,), dict(
-  DESCRIPTOR = _DELETEOPERATIONREQUEST,
-  __module__ = 'google.longrunning.operations_pb2'
+DeleteOperationRequest = _reflection.GeneratedProtocolMessageType('DeleteOperationRequest', (_message.Message,), {
+  'DESCRIPTOR' : _DELETEOPERATIONREQUEST,
+  '__module__' : 'google.longrunning.operations_pb2'
   # @@protoc_insertion_point(class_scope:google.longrunning.DeleteOperationRequest)
-  ))
+  })
 _sym_db.RegisterMessage(DeleteOperationRequest)
 
 

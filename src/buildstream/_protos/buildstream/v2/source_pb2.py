@@ -156,25 +156,25 @@ DESCRIPTOR.message_types_by_name['GetSourceRequest'] = _GETSOURCEREQUEST
 DESCRIPTOR.message_types_by_name['UpdateSourceRequest'] = _UPDATESOURCEREQUEST
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Source = _reflection.GeneratedProtocolMessageType('Source', (_message.Message,), dict(
-  DESCRIPTOR = _SOURCE,
-  __module__ = 'buildstream.v2.source_pb2'
+Source = _reflection.GeneratedProtocolMessageType('Source', (_message.Message,), {
+  'DESCRIPTOR' : _SOURCE,
+  '__module__' : 'buildstream.v2.source_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.Source)
-  ))
+  })
 _sym_db.RegisterMessage(Source)
 
-GetSourceRequest = _reflection.GeneratedProtocolMessageType('GetSourceRequest', (_message.Message,), dict(
-  DESCRIPTOR = _GETSOURCEREQUEST,
-  __module__ = 'buildstream.v2.source_pb2'
+GetSourceRequest = _reflection.GeneratedProtocolMessageType('GetSourceRequest', (_message.Message,), {
+  'DESCRIPTOR' : _GETSOURCEREQUEST,
+  '__module__' : 'buildstream.v2.source_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.GetSourceRequest)
-  ))
+  })
 _sym_db.RegisterMessage(GetSourceRequest)
 
-UpdateSourceRequest = _reflection.GeneratedProtocolMessageType('UpdateSourceRequest', (_message.Message,), dict(
-  DESCRIPTOR = _UPDATESOURCEREQUEST,
-  __module__ = 'buildstream.v2.source_pb2'
+UpdateSourceRequest = _reflection.GeneratedProtocolMessageType('UpdateSourceRequest', (_message.Message,), {
+  'DESCRIPTOR' : _UPDATESOURCEREQUEST,
+  '__module__' : 'buildstream.v2.source_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.UpdateSourceRequest)
-  ))
+  })
 _sym_db.RegisterMessage(UpdateSourceRequest)
 
 
