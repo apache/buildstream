@@ -1199,7 +1199,7 @@ class Element(Plugin):
         # marked stable either when we verify that the workspace is already
         # cached, or when we build/pull the workspaced element.
         if self.__cache_keys_unstable:
-            if not self._cached_success():
+            if not self._cached():
                 self.__reset_cache_data()
                 if not self.__assemble_scheduled:
                     self._schedule_assemble()
@@ -1215,7 +1215,7 @@ class Element(Plugin):
         if (not self.__assemble_scheduled and not self.__assemble_done and
                 self.__artifact and
                 self._is_required() and
-                not self._cached_success() and
+                not self._cached() and
                 not self._pull_pending()):
             self._schedule_assemble()
 
@@ -3163,7 +3163,7 @@ class Element(Plugin):
     #
     def __update_cache_keys_stability(self):
         if self.__cache_keys_unstable:
-            if self._cached_success():
+            if self._cached():
                 self.__cache_keys_unstable = False
             elif not self.__assemble_scheduled and self.__assemble_done:
                 self.__cache_keys_unstable = False

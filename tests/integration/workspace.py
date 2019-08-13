@@ -7,6 +7,7 @@ import pytest
 from buildstream import _yaml
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream._exceptions import ErrorDomain
 
 
 pytestmark = pytest.mark.integration
@@ -314,3 +315,31 @@ def test_workspace_missing_last_successful(cli, datafiles):
     # Build again, ensure we dont crash just because the artifact went missing
     res = cli.run(project=project, args=['build', element_name])
     assert res.exit_code == 0
+
+
+# Check that we can still read failed workspace logs
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
+def test_workspace_failed_logs(cli, datafiles):
+    project = str(datafiles)
+    workspace = os.path.join(cli.directory, 'failing_amhello')
+    element_name = 'autotools/amhello-failure.bst'
+
+    # Open workspace
+    res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
+    res.assert_success()
+
+    # Try to build and ensure the build fails
+    res = cli.run(project=project, args=['build', element_name])
+    res.assert_main_error(ErrorDomain.STREAM, None)
+    assert cli.get_element_state(project, element_name) == 'failed'
+
+    res = cli.run(project=project, args=['artifact', 'log', element_name])
+    res.assert_success()
+
+    log = res.output
+    # Assert that we can get the log
+    assert log != ""
+    fail_str = "FAILURE {}: Running build-commands".format(element_name)
+    assert fail_str in log
