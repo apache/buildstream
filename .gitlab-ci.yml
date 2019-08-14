@@ -221,6 +221,10 @@ tests-wsl-master:
   - df -h
   - PATH=/root/.local/bin:$PATH tox --version
   script:
+  # Install static buildbox-casd binary
+  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20190813-20d41af4.tar.xz
+  - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20190813-20d41af4.tar.xz
+
   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
   only:
   - master
@@ -237,6 +241,10 @@ tests-wsl-non-master:
   - df -h
   - PATH=/root/.local/bin:$PATH tox --version
   script:
+  # Install static buildbox-casd binary
+  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20190813-20d41af4.tar.xz
+  - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20190813-20d41af4.tar.xz
+
   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
   when: manual
   except:
