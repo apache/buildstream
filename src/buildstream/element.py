@@ -3111,7 +3111,8 @@ class Element(Plugin):
 
         if self.__strict_cache_key is None:
             dependencies = [
-                e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
+                [e.name, e.__strict_cache_key] if e.__strict_cache_key is not None else None
+                for e in self.dependencies(Scope.BUILD)
             ]
             self.__strict_cache_key = self._calculate_cache_key(dependencies)
 
