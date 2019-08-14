@@ -20,6 +20,7 @@ from . import Element
 from . import _cachekey
 from ._exceptions import ArtifactElementError
 from ._loader.metaelement import MetaElement
+from .types import Scope
 
 
 # ArtifactElement()
@@ -54,6 +55,20 @@ class ArtifactElement(Element):
     # Dummy preflight method
     def preflight(self):
         pass
+
+    # get_dependency_refs()
+    #
+    # Obtain the refs of a particular scope of dependencies
+    #
+    # Args:
+    #   scope (Scope): The scope of dependencies for which we want to obtain the refs
+    #
+    # Returns:
+    #   (list [str]): A list of artifact refs
+    #
+    def get_dependency_refs(self, scope=Scope.BUILD):
+        artifact = self._get_artifact()
+        return artifact.get_dependency_refs(deps=scope)
 
     # Override Element._calculate_cache_key
     def _calculate_cache_key(self, dependencies=None):
