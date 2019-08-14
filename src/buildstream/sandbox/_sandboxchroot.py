@@ -31,7 +31,7 @@ from .. import utils
 from .. import _signals
 from ._mounter import Mounter
 from ._mount import MountMap
-from . import Sandbox, SandboxFlags
+from . import Sandbox, SandboxFlags, SandboxCommandError
 
 
 class SandboxChroot(Sandbox):
@@ -78,9 +78,9 @@ class SandboxChroot(Sandbox):
     def _run(self, command, flags, *, cwd, env):
 
         if not self._has_command(command[0], env):
-            raise SandboxError("Staged artifacts do not provide command "
-                               "'{}'".format(command[0]),
-                               reason='missing-command')
+            raise SandboxCommandError("Staged artifacts do not provide command "
+                                      "'{}'".format(command[0]),
+                                      reason='missing-command')
 
         stdout, stderr = self._get_output()
 
