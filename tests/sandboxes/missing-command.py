@@ -20,3 +20,4 @@ def test_missing_command(cli, datafiles):
     project = str(datafiles)
     result = cli.run(project=project, args=['build', 'no-runtime.bst'])
     result.assert_task_error(ErrorDomain.SANDBOX, 'missing-command')
+    assert cli.get_element_state(project, 'no-runtime.bst') == 'failed'
