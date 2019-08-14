@@ -23,7 +23,7 @@ from contextlib import ExitStack
 import psutil
 
 from .. import utils, _signals, ProgramNotFoundError
-from . import Sandbox, SandboxFlags
+from . import Sandbox, SandboxFlags, SandboxCommandError
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from ..storage._casbaseddirectory import CasBasedDirectory
 from .._exceptions import SandboxError
@@ -73,9 +73,9 @@ class SandboxBuildBox(Sandbox):
         scratch_directory = self._get_scratch_directory()
 
         if not self._has_command(command[0], env):
-            raise SandboxError("Staged artifacts do not provide command "
-                               "'{}'".format(command[0]),
-                               reason='missing-command')
+            raise SandboxCommandError("Staged artifacts do not provide command "
+                                      "'{}'".format(command[0]),
+                                      reason='missing-command')
 
         # Grab the full path of the buildbox binary
         try:
