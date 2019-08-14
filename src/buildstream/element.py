@@ -2355,6 +2355,17 @@ class Element(Plugin):
         casbd = self.__artifact.get_files()
         return [f for f in casbd.list_relative_paths()]
 
+    # _get_artifact()
+    #
+    # Return the Element's Artifact object
+    #
+    # Returns:
+    #    (Artifact): The Artifact object of the Element
+    #
+    def _get_artifact(self):
+        assert self.__artifact, "{}: has no Artifact object".format(self.name)
+        return self.__artifact
+
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
