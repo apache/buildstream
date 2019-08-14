@@ -88,9 +88,10 @@ class SandboxCommandError(SandboxError):
        message (str): The error message to report to the user
        detail (str): The detailed error string
        collect (str): An optional directory containing partial install contents
+       reason (str): An optional reason string (defaults to 'command-failed')
     """
-    def __init__(self, message, *, detail=None, collect=None):
-        super().__init__(message, detail=detail, reason='command-failed')
+    def __init__(self, message, *, detail=None, collect=None, reason='command-failed'):
+        super().__init__(message, detail=detail, reason=reason)
 
         self.collect = collect
 
