@@ -98,6 +98,91 @@ def test_push(cli, tmpdir, datafiles):
             assert_shared(cli, share1, project, 'target.bst')
             assert_shared(cli, share2, project, 'target.bst')
 
+# Tests that:
+#
+#  * `bst artifact push` fails if the element is not cached locally
+#  * `bst artifact push` fails if multiple elements are not cached locally
+#
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_fails(cli, tmpdir, datafiles):
+    project = str(datafiles)
+
+    # Set up the share
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+        # Configure bst to be able to push to the share
+        cli.configure({
+            'artifacts': [
+                {'url': share.repo, 'push': True},
+            ]
+        })
+
+        # First ensure that the target is *NOT* cache
+        assert cli.get_element_state(project, 'target.bst') != 'cached'
+
+        # Now try and push the target
+        result = cli.run(project=project, args=['artifact', 'push', 'target.bst'])
+        result.assert_main_error(ErrorDomain.STREAM, None)
+
+        assert "Push failed: target.bst is not cached" in result.stderr
+
+        # Now ensure that deps are also not cached
+        assert cli.get_element_state(project, 'import-bin.bst') != 'cached'
+        assert cli.get_element_state(project, 'import-dev.bst') != 'cached'
+        assert cli.get_element_state(project, 'compose-all.bst') != 'cached'
+
+
+# Tests that:
+#
+#  * `bst artifact push` fails when one of the targets is not cached, but still pushes the others
+#
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_fails_with_on_error_continue(cli, tmpdir, datafiles):
+    project = str(datafiles)
+
+    # Set up the share
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+
+        # First build the target (and its deps)
+        result = cli.run(project=project, args=['build', 'target.bst'])
+        assert cli.get_element_state(project, 'target.bst') == 'cached'
+        assert cli.get_element_state(project, 'import-dev.bst') == 'cached'
+
+        # Now delete the artifact of a dependency and ensure it is not in the cache
+        result = cli.run(project=project, args=['artifact', 'delete', 'import-dev.bst'])
+        assert cli.get_element_state(project, 'import-dev.bst') != 'cached'
+
+        # Configure bst to be able to push to the share
+        cli.configure({
+            'artifacts': [
+                {'url': share.repo, 'push': True},
+            ]
+        })
+
+        # Now try and push the target with its deps using --on-error continue
+        # and assert that push failed, but what could be pushed was pushed
+        result = cli.run(project=project,
+                         args=['--on-error=continue', 'artifact', 'push', '--deps', 'all', 'target.bst'])
+
+        # The overall process should return as failed
+        result.assert_main_error(ErrorDomain.STREAM, None)
+
+        # We should still have pushed what we could
+        assert_shared(cli, share, project, 'import-bin.bst')
+        assert_shared(cli, share, project, 'compose-all.bst')
+        assert_shared(cli, share, project, 'target.bst')
+
+        assert_not_shared(cli, share, project, 'import-dev.bst')
+        errors = [
+            "import-dev.bst is not cached",
+            (
+                "Error while pushing. The following elements were not pushed as they are not yet cached:\n"
+                "\n"
+                "\timport-dev.bst\n"
+            )
+        ]
+        for error in errors:
+            assert error in result.stderr
+
 
 # Tests that `bst artifact push --deps all` pushes all dependencies of the given element.
 #
