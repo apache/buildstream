@@ -1313,15 +1313,25 @@ class Stream():
 
     # _failure_retry()
     #
-    # Enqueues given element via unique_id to the specified queue and
-    # remove the related failed task from the related group
-    #
+    # Enqueues given element via unique_id to the specified queue
+    # matched against provided action_name & removes the related
+    # failed task from the tasks group.
     #
     # Args:
-    #    queue (Queue): The target queue
+    #    action_name (str): The name of the action being performed
     #    unique_id (str): A unique_id to load an Element instance
     #
-    def _failure_retry(self, queue, unique_id):
+    # Raises:
+    #    (StreamError): If the related queue cannot be found
+    #
+    def _failure_retry(self, action_name, unique_id):
+        queue = None
+        # Attempt to resolve the required queue
+        for queue in self.queues:
+            if queue.action_name == action_name:
+                queue = queue
+        if not queue:
+            raise StreamError()
         element = Plugin._lookup(unique_id)
         queue._task_group.failed_tasks.remove(element._get_full_name())
         queue.enqueue([element])
