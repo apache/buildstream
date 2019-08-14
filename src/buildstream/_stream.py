@@ -40,7 +40,7 @@ from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, \
 from ._pipeline import Pipeline, PipelineSelection
 from ._profile import Topics, PROFILER
 from ._state import State
-from .types import _KeyStrength
+from .types import _KeyStrength, _SchedulerErrorAction
 from . import utils, _yaml, _site
 from . import Scope, Consistency
 
@@ -469,26 +469,41 @@ class Stream():
             self._message(MessageType.INFO, "Attempting to fetch missing artifact buildtrees")
             self._add_queue(PullQueue(self._scheduler))
             self._enqueue_plan(require_buildtrees)
-        else:
-            # FIXME: This hack should be removed as a result of refactoring
-            #        Element._update_state()
-            #
-            # This workaround marks all dependencies of all selected elements as
-            # "pulled" before trying to push.
-            #
-            # Instead of lying to the elements and telling them they have already
-            # been pulled, we should have something more consistent with how other
-            # state bits are handled; and explicitly tell the elements that they
-            # need to be pulled with something like Element._schedule_pull().
-            #
-            for element in elements:
-                element._pull_done()
 
-        self._scheduler.clear_queues()
-        push_queue = ArtifactPushQueue(self._scheduler)
-        self._add_queue(push_queue)
-        self._enqueue_plan(elements, queue=push_queue)
-        self._run()
+        # Before we try to push the artifacts, ensure they're cached
+        cached_elements = []
+        uncached_elements = []
+        self._message(MessageType.INFO, "Verifying that elements are cached")
+        for element in elements:
+            if element._cached():
+                cached_elements.append(element)
+            else:
+                msg = "{} is not cached".format(element.name)
+                if self._context.sched_error_action != _SchedulerErrorAction.CONTINUE:
+                    raise StreamError("Push failed: " + msg)
+                else:
+                    self._message(MessageType.WARN, msg)
+                    uncached_elements.append(element)
+
+        if cached_elements:
+            self._scheduler.clear_queues()
+            push_queue = ArtifactPushQueue(self._scheduler)
+            self._add_queue(push_queue)
+            self._enqueue_plan(cached_elements, queue=push_queue)
+            self._run()
+
+        # If the user has selected to continue on error, fail the command
+        # and print a summary of artifacts which could not be pushed
+        #
+        # NOTE: Usually we check the _SchedulerErrorAction when a *job* has failed.
+        #       However, we cannot create a PushQueue job unless we intentionally
+        #       ready an uncached element in the PushQueue.
+        if self._context.sched_error_action == _SchedulerErrorAction.CONTINUE and uncached_elements:
+            names = [element.name for element in uncached_elements]
+            fail_str = "Error while pushing. The following elements were not pushed as they are " \
+                "not yet cached:\n\n\t{}\n".format("\n\t".join(names))
+
+            raise StreamError(fail_str)
 
     # checkout()
     #
