@@ -354,11 +354,11 @@ def test_build_checkout_invalid_ref(datafiles, cli):
     assert os.path.isdir(builddir)
     assert not os.listdir(builddir)
 
-    checkout_args = ['artifact', 'checkout', '--deps', 'none', '--tar', checkout,
-                     'test/checkout-deps/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']
-
+    non_existent_artifact = 'test/checkout-deps/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    checkout_args = ['artifact', 'checkout', '--deps', 'none', '--tar', checkout, non_existent_artifact]
     result = cli.run(project=project, args=checkout_args)
-    assert "seems to be invalid. Note that an Element name can also be used." in result.stderr
+
+    assert "{}\nis not present in the artifact cache".format(non_existent_artifact) in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)

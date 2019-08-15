@@ -1172,8 +1172,8 @@ class Stream():
             self._pipeline.load([target_elements, except_targets, track_targets, track_except_targets],
                                 rewritable=rewritable)
 
-        # Obtain the ArtifactElement objects
-        artifacts = [self._project.create_artifact_element(ref) for ref in target_artifacts]
+        # Load all target artifacts
+        artifacts = self._pipeline.load_artifacts(target_artifacts) if target_artifacts else []
 
         # Optionally filter out junction elements
         if ignore_junction_targets:

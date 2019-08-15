@@ -115,6 +115,21 @@ class Pipeline():
 
             return tuple(element_groups)
 
+    # load_artifacts()
+    #
+    # Loads ArtifactElements from target artifacts.
+    #
+    # Args:
+    #    target (list [str]): Target artifacts to load
+    #
+    # Returns:
+    #    (list [ArtifactElement]): A list of ArtifactElement objects
+    #
+    def load_artifacts(self, targets):
+        # XXX: This is not included as part of the "load-pipeline" profiler, we could move
+        #      the profiler to Stream?
+        return self._project.load_artifacts(targets)
+
     # resolve_elements()
     #
     # Resolve element state and cache keys.
