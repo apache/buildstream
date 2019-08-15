@@ -1098,7 +1098,7 @@ cdef class MappingNode(Node):
     #   path (list): path from the root of the target when composing recursively
     #                in order to give accurate error reporting.
     #
-    cdef void __composite(self, MappingNode target, list path=None) except *:
+    cdef void __composite(self, MappingNode target, list path) except *:
         cdef str key
         cdef Node value
 
@@ -1106,6 +1106,13 @@ cdef class MappingNode(Node):
             path.append(key)
             value._compose_on(key, target, path)
             path.pop()
+
+        # Clobber the provenance of the target mapping node if we're not
+        # synthetic.
+        if self.file_index != __SYNTHETIC_FILE_INDEX:
+            target.file_index = self.file_index
+            target.line = self.line
+            target.column = self.column
 
     # _get(key, default, default_constructor)
     #

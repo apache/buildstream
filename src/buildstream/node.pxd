@@ -70,7 +70,7 @@ cdef class MappingNode(Node):
     cdef void _compose_on_list(self, SequenceNode target)
 
     # Private Methods
-    cdef void __composite(self, MappingNode target, list path=*) except *
+    cdef void __composite(self, MappingNode target, list path) except *
     cdef Node _get(self, str key, default, default_constructor)
 
 
