@@ -189,6 +189,12 @@ tests-remote-execution:
     SOURCE_CACHE_SERVICE: http://docker:50052
     PYTEST_ARGS: "--color=yes --remote-execution"
 
+tests-spawn-multiprocessing-start-method:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-47052095
+  <<: *tests
+  variables:
+    BST_FORCE_START_METHOD: "spawn"
+
 
 # Lint separately from testing
 lint:

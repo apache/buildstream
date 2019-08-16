@@ -52,6 +52,9 @@ BST_ARBITRARY_TIMESTAMP = calendar.timegm([2011, 11, 11, 11, 11, 11])
 _ALIAS_SEPARATOR = ':'
 _URI_SCHEMES = ["http", "https", "ftp", "file", "git", "sftp", "ssh"]
 
+# Main process pid
+_MAIN_PID = os.getpid()
+
 
 class UtilError(BstError):
     """Raised by utility functions when system calls fail.
@@ -699,17 +702,13 @@ def _pretty_size(size, dec_places=0):
     return "{size:g}{unit}".format(size=round(psize, dec_places), unit=unit)
 
 
-# Main process pid
-_main_pid = os.getpid()
-
-
 # _is_main_process()
 #
 # Return whether we are in the main process or not.
 #
 def _is_main_process():
-    assert _main_pid is not None
-    return os.getpid() == _main_pid
+    assert _MAIN_PID is not None
+    return os.getpid() == _MAIN_PID
 
 
 # Recursively remove directories, ignoring file permissions as much as
