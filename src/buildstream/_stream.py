@@ -613,6 +613,28 @@ class Stream():
                     with tarfile.open(location, mode=mode) as tf:
                         virdir.export_to_tar(tf, '.')
 
+    # artifact_show()
+    #
+    # Show cached artifacts
+    #
+    # Args:
+    #    targets (str): Targets to show the cached state of
+    #
+    def artifact_show(self, targets, *,
+                      selection=PipelineSelection.NONE):
+        # Obtain list of Element and/or ArtifactElement objects
+        target_objects = self.load_selection(targets,
+                                             selection=selection,
+                                             load_refs=True)
+
+        # XXX: We need to set the name of an ArtifactElement to its ref in order
+        #      to display the expected result in the frontend
+        for obj in target_objects:
+            if isinstance(obj, ArtifactElement):
+                obj.name = obj.get_artifact_name()
+
+        return target_objects
+
     # artifact_log()
     #
     # Show the full log of an artifact

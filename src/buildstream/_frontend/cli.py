@@ -1004,6 +1004,23 @@ def artifact():
     # they are not somehow escaped.
 
 
+#############################################################
+#                    Artifact show Command                  #
+#############################################################
+@artifact.command(name='show', short_help="Show the cached state of artifacts")
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['build', 'run', 'all', 'none']),
+              help='The dependencies we also want to show (default: none)')
+@click.argument('artifacts', type=click.Path(), nargs=-1)
+@click.pass_obj
+def artifact_show(app, deps, artifacts):
+    """show the cached state of artifacts"""
+    with app.initialized():
+        targets = app.stream.artifact_show(artifacts, selection=deps)
+        click.echo(app.logger.show_state_of_artifacts(targets))
+        sys.exit(0)
+
+
 #####################################################################
 #                     Artifact Checkout Command                     #
 #####################################################################
