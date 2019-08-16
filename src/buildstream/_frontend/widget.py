@@ -795,3 +795,36 @@ class LogLine(Widget):
             text += '\n'
 
         return text
+
+    # _pretty_print_dictionary()
+    #
+    # Formats a dictionary so it can be easily read by the user
+    #
+    # Args:
+    #    values: A dictionary
+    #    style_value: Whether to use the content profile for the values
+    #
+    # Returns:
+    #    (str): The formatted values
+    #
+    def _pretty_print_dictionary(self, values, style_value=True):
+        text = ''
+        max_key_len = 0
+        max_key_len = max(len(key) for key in values.keys())
+
+        for key, value in values.items():
+            if isinstance(value, str) and '\n' in value:
+                text += self.format_profile.fmt("  {}:".format(key))
+                text += textwrap.indent(value, self._indent)
+                continue
+
+            text += self.format_profile.fmt("  {}:{}".format(key, ' ' * (max_key_len - len(key))))
+
+            value_list = "\n\t" + "\n\t".join(value)
+            if style_value:
+                text += self.content_profile.fmt(value_list)
+            else:
+                text += value_list
+            text += '\n'
+
+        return text

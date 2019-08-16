@@ -1203,6 +1203,25 @@ def artifact_log(app, artifacts):
             click.echo_via_pager(data)
 
 
+################################################################
+#                Artifact List-Contents Command                #
+################################################################
+@artifact.command(name='list-contents', short_help="List the contents of an artifact")
+@click.argument('artifacts', type=click.Path(), nargs=-1)
+@click.pass_obj
+def artifact_list_contents(app, artifacts):
+    """List the contents of an artifact.
+
+    Note that 'artifacts' can be element names, which must end in '.bst',
+    or artifact references, which must be in the format `<project_name>/<element>/<key>`.
+
+    """
+    with app.initialized():
+        elements_to_files = app.stream.artifact_list_contents(artifacts)
+        click.echo(app.logger._pretty_print_dictionary(elements_to_files))
+        sys.exit(0)
+
+
 ###################################################################
 #                     Artifact Delete Command                     #
 ###################################################################

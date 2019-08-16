@@ -71,6 +71,73 @@ def test_artifact_log(cli, datafiles):
     assert (log + log) == result.output
 
 
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_list_exact_contents_element(cli, datafiles):
+    project = str(datafiles)
+
+    # Ensure we have an artifact to read
+    result = cli.run(project=project, args=['build', 'import-bin.bst'])
+    assert result.exit_code == 0
+
+    # List the contents via the element name
+    result = cli.run(project=project, args=['artifact', 'list-contents', 'import-bin.bst'])
+    assert result.exit_code == 0
+    expected_output = ("import-bin.bst:\n"
+                       "\tusr\n"
+                       "\tusr/bin\n"
+                       "\tusr/bin/hello\n\n")
+    assert expected_output in result.output
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_list_exact_contents_ref(cli, datafiles):
+    project = str(datafiles)
+
+    # Get the cache key of our test element
+    key = cli.get_element_key(project, 'import-bin.bst')
+
+    # Ensure we have an artifact to read
+    result = cli.run(project=project, args=['build', 'import-bin.bst'])
+    assert result.exit_code == 0
+
+    # List the contents via the key
+    result = cli.run(project=project, args=['artifact', 'list-contents', 'test/import-bin/' + key])
+    assert result.exit_code == 0
+
+    expected_output = ("test/import-bin/" + key + ":\n"
+                       "\tusr\n"
+                       "\tusr/bin\n"
+                       "\tusr/bin/hello\n\n")
+    assert expected_output in result.output
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_list_exact_contents_glob(cli, datafiles):
+    project = str(datafiles)
+
+    # Ensure we have an artifact to read
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    assert result.exit_code == 0
+
+    # List the contents via glob
+    result = cli.run(project=project, args=['artifact', 'list-contents', 'test/*'])
+    assert result.exit_code == 0
+
+    # get the cahe keys for each element in the glob
+    import_bin_key = cli.get_element_key(project, 'import-bin.bst')
+    import_dev_key = cli.get_element_key(project, 'import-dev.bst')
+    compose_all_key = cli.get_element_key(project, 'compose-all.bst')
+    target_key = cli.get_element_key(project, 'target.bst')
+
+    expected_artifacts = ["test/import-bin/" + import_bin_key,
+                          "test/import-dev/" + import_dev_key,
+                          "test/compose-all/" + compose_all_key,
+                          "test/target/" + target_key]
+
+    for artifact in expected_artifacts:
+        assert artifact in result.output
+
+
 # Test that we can delete the artifact of the element which corresponds
 # to the current project state
 @pytest.mark.datafiles(DATA_DIR)
