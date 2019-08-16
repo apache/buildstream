@@ -672,9 +672,10 @@ class Stream():
     # Args:
     #    targets (str): Targets to remove
     #
-    def artifact_delete(self, targets):
+    def artifact_delete(self, targets, *,
+                        selection=PipelineSelection.NONE):
         # Return list of Element and/or ArtifactElement objects
-        target_objects = self.load_selection(targets, selection=PipelineSelection.NONE, load_refs=True)
+        target_objects = self.load_selection(targets, selection=selection, load_refs=True)
 
         # Some of the targets may refer to the same key, so first obtain a
         # set of the refs to be removed.
