@@ -14,10 +14,15 @@ DATA_DIR = os.path.join(
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_compositied_node_fails_usefully(cli, datafiles):
+@pytest.mark.parametrize(("element", "location"), [
+    ("no-path-specified.bst", "line 4 column 4"),
+    ("optional-source.bst", "line 6 column 10"),
+    ("included-source.bst", "line 4 column 4"),
+])
+def test_compositied_node_fails_usefully(cli, datafiles, element, location):
     project = str(datafiles)
-    result = cli.run(project=project, args=['show', 'no-path-specified.bst'])
+    result = cli.run(project=project, args=['show', element])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
     assert "synthetic node" not in result.stderr
-    assert "no-path-specified.bst [line 4 column 4]: Dictionary did not contain expected key 'path'" in result.stderr
+    assert "{} [{}]: Dictionary did not contain expected key 'path'".format(element, location) in result.stderr
