@@ -1168,9 +1168,12 @@ class Stream():
             rewritable = True
 
         # Load all target elements
-        elements, except_elements, track_elements, track_except_elements = \
-            self._pipeline.load([target_elements, except_targets, track_targets, track_except_targets],
-                                rewritable=rewritable)
+        loadable = [target_elements, except_targets, track_targets, track_except_targets]
+        if any(loadable):
+            elements, except_elements, track_elements, track_except_elements = \
+                self._pipeline.load(loadable, rewritable=rewritable)
+        else:
+            elements, except_elements, track_elements, track_except_elements = [], [], [], []
 
         # Load all target artifacts
         artifacts = self._pipeline.load_artifacts(target_artifacts) if target_artifacts else []
