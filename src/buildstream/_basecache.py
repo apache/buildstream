@@ -177,45 +177,29 @@ class BaseCache():
     #     on_failure (callable): Called if we fail to contact one of the caches.
     #
     def initialize_remotes(self, *, on_failure=None):
-        remote_specs = self.global_remote_specs.copy()
+        remotes = self._create_remote_instances(on_failure=on_failure)
 
-        for project in self.project_remote_specs:
-            remote_specs.extend(self.project_remote_specs[project])
-
-        remote_specs = list(utils._deduplicate(remote_specs))
-
-        remotes = {}
-        q = multiprocessing.Queue()
-        for remote_spec in remote_specs:
-
-            error = self.remote_class.check_remote(remote_spec, self.cas, q)
-
-            if error and on_failure:
-                on_failure(remote_spec.url, error)
-                continue
-            elif error:
-                raise self.spec_error(error)  # pylint: disable=not-callable
-
-            self._has_fetch_remotes = True
-            if remote_spec.push:
-                self._has_push_remotes = True
-
-            remotes[remote_spec.url] = self.remote_class(remote_spec, self.cas)
-
+        # Assign remote instances to their respective projects
         for project in self.context.get_projects():
-            remote_specs = self.global_remote_specs
+            # Get the list of specs that should be considered for this
+            # project
+            remote_specs = self.global_remote_specs.copy()
             if project in self.project_remote_specs:
-                remote_specs = list(utils._deduplicate(remote_specs + self.project_remote_specs[project]))
+                remote_specs.extend(self.project_remote_specs[project])
+
+            # De-duplicate the list
+            remote_specs = utils._deduplicate(remote_specs)
 
             project_remotes = []
 
             for remote_spec in remote_specs:
-                # Errors are already handled in the loop above,
-                # skip unreachable remotes here.
-                if remote_spec.url not in remotes:
+                # If a remote_spec didn't make it into the remotes
+                # dict, that means we can't access it, and it has been
+                # disabled for this session.
+                if remote_spec not in remotes:
                     continue
 
-                remote = remotes[remote_spec.url]
+                remote = remotes[remote_spec]
                 project_remotes.append(remote)
 
             self._remotes[project] = project_remotes
@@ -265,6 +249,59 @@ class BaseCache():
     ################################################
     #               Local Private Methods          #
     ################################################
+
+    # _create_remote_instances():
+    #
+    # Create the global set of Remote instances, including
+    # project-specific and global instances, ensuring that all of them
+    # are accessible.
+    #
+    # Args:
+    #     on_failure (Callable[[self.remote_class,Exception],None]):
+    #     What do do when a remote doesn't respond.
+    #
+    # Returns:
+    #    (Dict[RemoteSpec, self.remote_class]) -
+    #    The created remote instances.
+    #
+    def _create_remote_instances(self, *, on_failure=None):
+        # Create a flat list of all remote specs, global or
+        # project-specific
+        remote_specs = self.global_remote_specs.copy()
+        for project in self.project_remote_specs:
+            remote_specs.extend(self.project_remote_specs[project])
+
+        # By de-duplicating it after we flattened the list, we ensure
+        # that we never instantiate the same remote twice. This
+        # de-duplication also preserves their order.
+        remote_specs = list(utils._deduplicate(remote_specs))
+
+        # Now let's create a dict of this, indexed by their specs, so
+        # that we can later assign them to the right projects.
+        remotes = {}
+        q = multiprocessing.Queue()
+        for remote_spec in remote_specs:
+            # First, let's check if the remote works
+            error = self.remote_class.check_remote(remote_spec, self.cas, q)
+
+            # If it doesn't, report the error in some way
+            if error and on_failure:
+                on_failure(remote_spec.url, error)
+                continue
+            elif error:
+                raise self.spec_error(error)  # pylint: disable=not-callable
+
+            # If it does, we have fetch remotes, and potentially push remotes
+            self._has_fetch_remotes = True
+            if remote_spec.push:
+                self._has_push_remotes = True
+
+            # Finally, we can instantiate the remote. Note that
+            # NamedTuples are hashable, so we can use them as pretty
+            # low-overhead keys.
+            remotes[remote_spec] = self.remote_class(remote_spec, self.cas)
+
+        return remotes
 
     # _message()
     #
