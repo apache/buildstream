@@ -116,6 +116,30 @@ cdef class LoadElement:
     def junction(self):
         return self._loader.project.junction
 
+    # add_dependency()
+    #
+    # Add a dependency to the current element.
+    #
+    # This helper functions keeps the underlying list sorted at all times to remove the need for filtering.
+    #
+    # Args:
+    #   dep (Dependency): the dependency to add to the list
+    #
+    def add_dependency(self, Dependency dep not None):
+        cdef int low = 0
+        cdef int high = len(self.dependencies)
+        cdef int mid
+
+        while low < high:
+            mid = (low + high) // 2
+
+            if _dependency_cmp(<Dependency> self.dependencies[mid], dep) < 0:
+                low = mid + 1
+            else:
+                high = mid
+
+        self.dependencies.insert(low, dep)
+
     # depends():
     #
     # Checks if this element depends on another element, directly
@@ -195,34 +219,3 @@ def _dependency_cmp(Dependency dep_a, Dependency dep_b):
 
     # This wont ever happen
     return 0
-
-
-# sort_dependencies():
-#
-# Sort dependencies of each element by their dependencies,
-# so that direct dependencies which depend on other direct
-# dependencies (directly or indirectly) appear later in the
-# list.
-#
-# This avoids the need for performing multiple topological
-# sorts throughout the build process.
-#
-# Args:
-#    element (LoadElement): The element to sort
-#
-def sort_dependencies(LoadElement element):
-    cdef list working_elements = [element]
-    cdef set visited = set(working_elements)
-    cdef Dependency dep
-
-    # Now dependency sort, we ensure that if any direct dependency
-    # directly or indirectly depends on another direct dependency,
-    # it is found later in the list.
-    while working_elements:
-        element = working_elements.pop()
-        for dep in element.dependencies:
-            if dep.element not in visited:
-                visited.add(dep.element)
-                working_elements.append(dep.element)
-
-        element.dependencies.sort(key=cmp_to_key(_dependency_cmp))

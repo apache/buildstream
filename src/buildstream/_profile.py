@@ -41,7 +41,6 @@ import time
 # The special 'all' value will enable all profiles.
 class Topics():
     CIRCULAR_CHECK = 'circ-dep-check'
-    SORT_DEPENDENCIES = 'sort-deps'
     LOAD_CONTEXT = 'load-context'
     LOAD_PROJECT = 'load-project'
     LOAD_PIPELINE = 'load-pipeline'

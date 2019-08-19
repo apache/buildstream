@@ -131,18 +131,12 @@ class Loader():
         with PROFILER.profile(Topics.CIRCULAR_CHECK, "_".join(targets)):
             self._check_circular_deps(dummy_target)
 
-        ret = []
+        # Finally, wrap what we have into LoadElements and return the target
         #
-        # Sort direct dependencies of elements by their dependency ordering
-        #
-        for element in target_elements:
-            loader = element._loader
-            with PROFILER.profile(Topics.SORT_DEPENDENCIES, element.name):
-                loadelement.sort_dependencies(element)
-
-            # Finally, wrap what we have into LoadElements and return the target
-            #
-            ret.append(loader._collect_element(element, task))
+        ret = [
+            element._loader._collect_element(element, task)
+            for element in target_elements
+        ]
 
         self._clean_caches()
 
@@ -342,9 +336,7 @@ class Loader():
                                             LoadErrorReason.INVALID_DATA)
 
                 # All is well, push the dependency onto the LoadElement
-                # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
-                current_element[0].dependencies.append(  # pylint: disable=no-member
-                    Dependency(dep_element, dep.dep_type))
+                current_element[0].add_dependency(Dependency(dep_element, dep.dep_type))
             else:
                 # We do not have any more dependencies to load for this
                 # element on the queue, report any invalid dep names
