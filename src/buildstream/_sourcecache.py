@@ -20,7 +20,7 @@
 import os
 import grpc
 
-from ._cas import CASRemote, CASRemoteSpec
+from ._cas import CASRemote
 from .storage._casbaseddirectory import CasBasedDirectory
 from ._basecache import BaseCache
 from ._exceptions import CASError, CASRemoteError, SourceCacheError
@@ -29,16 +29,6 @@ from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, \
     source_pb2, source_pb2_grpc
 
 
-# Holds configuration for a remote used for the source cache.
-#
-# Args:
-#     url (str): Location of the remote source cache
-#     push (bool): Whether we should attempt to push sources to this cache,
-#                  in addition to pulling from it.
-#     instance-name (str): Name if any, of instance of server
-#
-class SourceCacheSpec(CASRemoteSpec):
-    pass
 
 
 class SourceRemote(CASRemote):
@@ -85,7 +75,6 @@ class SourceRemote(CASRemote):
 #
 class SourceCache(BaseCache):
 
-    spec_class = SourceCacheSpec
     spec_name = "source_cache_specs"
     spec_error = SourceCacheError
     config_node_name = "source-caches"

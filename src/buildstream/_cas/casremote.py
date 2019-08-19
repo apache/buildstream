@@ -20,52 +20,6 @@ from .. import utils
 _MAX_PAYLOAD_BYTES = 1024 * 1024
 
 
-class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key client_cert instance_name')):
-
-    # _new_from_config_node
-    #
-    # Creates an CASRemoteSpec() from a YAML loaded node
-    #
-    @staticmethod
-    def _new_from_config_node(spec_node, basedir=None):
-        spec_node.validate_keys(['url', 'push', 'server-cert', 'client-key', 'client-cert', 'instance-name'])
-        url = spec_node.get_str('url')
-        push = spec_node.get_bool('push', default=False)
-        if not url:
-            provenance = spec_node.get_node('url').get_provenance()
-            raise LoadError("{}: empty artifact cache URL".format(provenance), LoadErrorReason.INVALID_DATA)
-
-        instance_name = spec_node.get_str('instance-name', default=None)
-
-        server_cert = spec_node.get_str('server-cert', default=None)
-        if server_cert and basedir:
-            server_cert = os.path.join(basedir, server_cert)
-
-        client_key = spec_node.get_str('client-key', default=None)
-        if client_key and basedir:
-            client_key = os.path.join(basedir, client_key)
-
-        client_cert = spec_node.get_str('client-cert', default=None)
-        if client_cert and basedir:
-            client_cert = os.path.join(basedir, client_cert)
-
-        if client_key and not client_cert:
-            provenance = spec_node.get_node('client-key').get_provenance()
-            raise LoadError("{}: 'client-key' was specified without 'client-cert'".format(provenance),
-                            LoadErrorReason.INVALID_DATA)
-
-        if client_cert and not client_key:
-            provenance = spec_node.get_node('client-cert').get_provenance()
-            raise LoadError("{}: 'client-cert' was specified without 'client-key'".format(provenance),
-                            LoadErrorReason.INVALID_DATA)
-
-        return CASRemoteSpec(url, push, server_cert, client_key, client_cert, instance_name)
-
-
-# Disable type-checking since "Callable[...] has no attributes __defaults__"
-CASRemoteSpec.__new__.__defaults__ = (None, None, None, None)   # type: ignore
-
-
 class BlobNotFound(CASRemoteError):
 
     def __init__(self, blob, msg):

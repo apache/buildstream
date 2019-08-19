@@ -26,11 +26,11 @@ from . import _yaml
 from ._cas import CASRemote
 from ._message import Message, MessageType
 from ._exceptions import LoadError
+from ._remote import RemoteSpec
 
 if TYPE_CHECKING:
     from typing import Optional, Type
     from ._exceptions import BstError
-    from ._cas import CASRemoteSpec
 
 
 # Base Cache for Caches to derive from
@@ -39,11 +39,10 @@ class BaseCache():
 
     # None of these should ever be called in the base class, but this appeases
     # pylint to some degree
-    spec_class = None           # type: Type[CASRemoteSpec]
-    spec_name = None            # type: str
-    spec_error = None           # type: Type[BstError]
-    config_node_name = None     # type: str
-    remote_class = CASRemote    # type: Type[CASRemote]
+    spec_name = None           # type: Type[RemoteSpec]
+    spec_error = None          # type: Type[BstError]
+    config_node_name = None    # type: str
+    remote_class = CASRemote   # type: Type[CASRemote]
 
     def __init__(self, context):
         self.context = context
@@ -90,7 +89,7 @@ class BaseCache():
     #   basedir (str): The base directory for relative paths
     #
     # Returns:
-    #   A list of ArtifactCacheSpec instances.
+    #   A list of RemoteSpec instances.
     #
     # Raises:
     #   LoadError, if the config block contains invalid keys.
@@ -110,7 +109,7 @@ class BaseCache():
                                       .format(provenance, cls.config_node_name), _yaml.LoadErrorReason.INVALID_DATA)
 
         for spec_node in artifacts:
-            cache_specs.append(cls.spec_class._new_from_config_node(spec_node, basedir))
+            cache_specs.append(RemoteSpec.new_from_config_node(spec_node))
 
         return cache_specs
 
@@ -124,7 +123,7 @@ class BaseCache():
     #     project (Project): The BuildStream project
     #
     # Returns:
-    #   A list of ArtifactCacheSpec instances describing the remote artifact caches.
+    #   A list of RemoteSpec instances describing the remote caches.
     #
     @classmethod
     def _configured_remote_cache_specs(cls, context, project):
@@ -159,12 +158,12 @@ class BaseCache():
         has_remote_caches = False
         if remote_url:
             # pylint: disable=not-callable
-            self._set_remotes([self.spec_class(remote_url, push=True)])
+            self._set_remotes([RemoteSpec(remote_url, push=True)])
             has_remote_caches = True
         if use_config:
             for project in self.context.get_projects():
                 caches = self._configured_remote_cache_specs(self.context, project)
-                if caches:  # caches is a list of spec_class instances
+                if caches:  # caches is a list of RemoteSpec instances
                     self._set_remotes(caches, project=project)
                     has_remote_caches = True
         if has_remote_caches:

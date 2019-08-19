@@ -6,7 +6,8 @@ import os
 
 import pytest
 
-from buildstream._artifactcache import ArtifactCacheSpec, ArtifactCache
+from buildstream._remote import RemoteSpec
+from buildstream._artifactcache import ArtifactCache
 from buildstream._project import Project
 from buildstream.utils import _deduplicate
 from buildstream import _yaml
@@ -18,12 +19,12 @@ from tests.testutils import dummy_context
 
 
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
-cache1 = ArtifactCacheSpec(url='https://example.com/cache1', push=True)
-cache2 = ArtifactCacheSpec(url='https://example.com/cache2', push=False)
-cache3 = ArtifactCacheSpec(url='https://example.com/cache3', push=False)
-cache4 = ArtifactCacheSpec(url='https://example.com/cache4', push=False)
-cache5 = ArtifactCacheSpec(url='https://example.com/cache5', push=False)
-cache6 = ArtifactCacheSpec(url='https://example.com/cache6', push=True)
+cache1 = RemoteSpec(url='https://example.com/cache1', push=True)
+cache2 = RemoteSpec(url='https://example.com/cache2', push=False)
+cache3 = RemoteSpec(url='https://example.com/cache3', push=False)
+cache4 = RemoteSpec(url='https://example.com/cache4', push=False)
+cache5 = RemoteSpec(url='https://example.com/cache5', push=False)
+cache6 = RemoteSpec(url='https://example.com/cache6', push=True)
 
 
 # Generate cache configuration fragments for the user config and project config files.

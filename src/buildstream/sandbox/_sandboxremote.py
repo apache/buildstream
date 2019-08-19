@@ -37,7 +37,8 @@ from .._protos.google.rpc import code_pb2
 from .._exceptions import BstError, SandboxError
 from .. import _yaml
 from .._protos.google.longrunning import operations_pb2, operations_pb2_grpc
-from .._cas import CASRemote, CASRemoteSpec
+from .._cas import CASRemote
+from .._remote import RemoteSpec
 
 
 class RemoteExecutionSpec(namedtuple('RemoteExecutionSpec', 'exec_service storage_service action_service')):
@@ -98,11 +99,11 @@ class SandboxRemote(Sandbox):
         self.exec_instance = config.exec_service.get('instance-name', None)
         self.storage_instance = config.storage_service.get('instance-name', None)
 
-        self.storage_remote_spec = CASRemoteSpec(self.storage_url, push=True,
-                                                 server_cert=config.storage_service.get('server-cert'),
-                                                 client_key=config.storage_service.get('client-key'),
-                                                 client_cert=config.storage_service.get('client-cert'),
-                                                 instance_name=self.storage_instance)
+        self.storage_remote_spec = RemoteSpec(self.storage_url, push=True,
+                                              server_cert=config.storage_service.get('server-cert'),
+                                              client_key=config.storage_service.get('client-key'),
+                                              client_cert=config.storage_service.get('client-cert'),
+                                              instance_name=self.storage_instance)
         self.operation_name = None
 
     def info(self, msg):

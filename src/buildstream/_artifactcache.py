@@ -25,22 +25,12 @@ from ._exceptions import ArtifactError, CASError, CASCacheError, CASRemoteError
 from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, \
     artifact_pb2, artifact_pb2_grpc
 
-from ._cas import CASRemoteSpec, CASRemote
+from ._cas import CASRemote
 from .storage._casbaseddirectory import CasBasedDirectory
 from ._artifact import Artifact
 from . import utils
 
 
-# An ArtifactCacheSpec holds the user configuration for a single remote
-# artifact cache.
-#
-# Args:
-#     url (str): Location of the remote artifact cache
-#     push (bool): Whether we should attempt to push artifacts to this cache,
-#                  in addition to pulling from it.
-#
-class ArtifactCacheSpec(CASRemoteSpec):
-    pass
 
 
 # ArtifactRemote extends CASRemote to check during initialisation that there is
@@ -86,7 +76,6 @@ class ArtifactRemote(CASRemote):
 #
 class ArtifactCache(BaseCache):
 
-    spec_class = ArtifactCacheSpec
     spec_name = "artifact_cache_specs"
     spec_error = ArtifactError
     config_node_name = "artifacts"

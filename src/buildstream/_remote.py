@@ -25,7 +25,7 @@ import grpc
 
 from . import _signals
 from . import utils
-from ._exceptions import RemoteError, LoadError, LoadErrorReason, ImplError
+from ._exceptions import LoadError, LoadErrorReason, ImplError
 from ._protos.google.bytestream import bytestream_pb2_grpc
 
 
@@ -88,6 +88,8 @@ class RemoteSpec(namedtuple('RemoteSpec', 'url push server_cert client_key clien
 #
 # Note that defaults are specified from the right, and ommitted values
 # are considered mandatory.
+#
+# Disable type-checking since "Callable[...] has no attributes __defaults__"
 RemoteSpec.__new__.__defaults__ = (
     # mandatory          # url            - The url of the remote
     # mandatory          # push           - Whether the remote should be used for pushing
@@ -95,7 +97,7 @@ RemoteSpec.__new__.__defaults__ = (
     None,                # client_key     - The (private) client key
     None,                # client_cert    - The (public) client certificate
     None                 # instance_name  - The (grpc) instance name of the remote
-)
+)   # type: ignore
 
 
 # BaseRemote():
