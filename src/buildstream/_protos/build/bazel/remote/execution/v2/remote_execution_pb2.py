@@ -2190,326 +2190,326 @@ DESCRIPTOR.message_types_by_name['RequestMetadata'] = _REQUESTMETADATA
 DESCRIPTOR.enum_types_by_name['DigestFunction'] = _DIGESTFUNCTION
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Action = _reflection.GeneratedProtocolMessageType('Action', (_message.Message,), dict(
-  DESCRIPTOR = _ACTION,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+Action = _reflection.GeneratedProtocolMessageType('Action', (_message.Message,), {
+  'DESCRIPTOR' : _ACTION,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.Action)
-  ))
+  })
 _sym_db.RegisterMessage(Action)
 
-Command = _reflection.GeneratedProtocolMessageType('Command', (_message.Message,), dict(
+Command = _reflection.GeneratedProtocolMessageType('Command', (_message.Message,), {
 
-  EnvironmentVariable = _reflection.GeneratedProtocolMessageType('EnvironmentVariable', (_message.Message,), dict(
-    DESCRIPTOR = _COMMAND_ENVIRONMENTVARIABLE,
-    __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'EnvironmentVariable' : _reflection.GeneratedProtocolMessageType('EnvironmentVariable', (_message.Message,), {
+    'DESCRIPTOR' : _COMMAND_ENVIRONMENTVARIABLE,
+    '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
     # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.Command.EnvironmentVariable)
-    ))
+    })
   ,
-  DESCRIPTOR = _COMMAND,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'DESCRIPTOR' : _COMMAND,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.Command)
-  ))
+  })
 _sym_db.RegisterMessage(Command)
 _sym_db.RegisterMessage(Command.EnvironmentVariable)
 
-Platform = _reflection.GeneratedProtocolMessageType('Platform', (_message.Message,), dict(
+Platform = _reflection.GeneratedProtocolMessageType('Platform', (_message.Message,), {
 
-  Property = _reflection.GeneratedProtocolMessageType('Property', (_message.Message,), dict(
-    DESCRIPTOR = _PLATFORM_PROPERTY,
-    __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'Property' : _reflection.GeneratedProtocolMessageType('Property', (_message.Message,), {
+    'DESCRIPTOR' : _PLATFORM_PROPERTY,
+    '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
     # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.Platform.Property)
-    ))
+    })
   ,
-  DESCRIPTOR = _PLATFORM,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'DESCRIPTOR' : _PLATFORM,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.Platform)
-  ))
+  })
 _sym_db.RegisterMessage(Platform)
 _sym_db.RegisterMessage(Platform.Property)
 
-Directory = _reflection.GeneratedProtocolMessageType('Directory', (_message.Message,), dict(
-  DESCRIPTOR = _DIRECTORY,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+Directory = _reflection.GeneratedProtocolMessageType('Directory', (_message.Message,), {
+  'DESCRIPTOR' : _DIRECTORY,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.Directory)
-  ))
+  })
 _sym_db.RegisterMessage(Directory)
 
-FileNode = _reflection.GeneratedProtocolMessageType('FileNode', (_message.Message,), dict(
-  DESCRIPTOR = _FILENODE,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+FileNode = _reflection.GeneratedProtocolMessageType('FileNode', (_message.Message,), {
+  'DESCRIPTOR' : _FILENODE,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.FileNode)
-  ))
+  })
 _sym_db.RegisterMessage(FileNode)
 
-DirectoryNode = _reflection.GeneratedProtocolMessageType('DirectoryNode', (_message.Message,), dict(
-  DESCRIPTOR = _DIRECTORYNODE,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+DirectoryNode = _reflection.GeneratedProtocolMessageType('DirectoryNode', (_message.Message,), {
+  'DESCRIPTOR' : _DIRECTORYNODE,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.DirectoryNode)
-  ))
+  })
 _sym_db.RegisterMessage(DirectoryNode)
 
-SymlinkNode = _reflection.GeneratedProtocolMessageType('SymlinkNode', (_message.Message,), dict(
-  DESCRIPTOR = _SYMLINKNODE,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+SymlinkNode = _reflection.GeneratedProtocolMessageType('SymlinkNode', (_message.Message,), {
+  'DESCRIPTOR' : _SYMLINKNODE,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.SymlinkNode)
-  ))
+  })
 _sym_db.RegisterMessage(SymlinkNode)
 
-Digest = _reflection.GeneratedProtocolMessageType('Digest', (_message.Message,), dict(
-  DESCRIPTOR = _DIGEST,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+Digest = _reflection.GeneratedProtocolMessageType('Digest', (_message.Message,), {
+  'DESCRIPTOR' : _DIGEST,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.Digest)
-  ))
+  })
 _sym_db.RegisterMessage(Digest)
 
-ExecutedActionMetadata = _reflection.GeneratedProtocolMessageType('ExecutedActionMetadata', (_message.Message,), dict(
-  DESCRIPTOR = _EXECUTEDACTIONMETADATA,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+ExecutedActionMetadata = _reflection.GeneratedProtocolMessageType('ExecutedActionMetadata', (_message.Message,), {
+  'DESCRIPTOR' : _EXECUTEDACTIONMETADATA,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.ExecutedActionMetadata)
-  ))
+  })
 _sym_db.RegisterMessage(ExecutedActionMetadata)
 
-ActionResult = _reflection.GeneratedProtocolMessageType('ActionResult', (_message.Message,), dict(
-  DESCRIPTOR = _ACTIONRESULT,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+ActionResult = _reflection.GeneratedProtocolMessageType('ActionResult', (_message.Message,), {
+  'DESCRIPTOR' : _ACTIONRESULT,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.ActionResult)
-  ))
+  })
 _sym_db.RegisterMessage(ActionResult)
 
-OutputFile = _reflection.GeneratedProtocolMessageType('OutputFile', (_message.Message,), dict(
-  DESCRIPTOR = _OUTPUTFILE,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+OutputFile = _reflection.GeneratedProtocolMessageType('OutputFile', (_message.Message,), {
+  'DESCRIPTOR' : _OUTPUTFILE,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.OutputFile)
-  ))
+  })
 _sym_db.RegisterMessage(OutputFile)
 
-Tree = _reflection.GeneratedProtocolMessageType('Tree', (_message.Message,), dict(
-  DESCRIPTOR = _TREE,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+Tree = _reflection.GeneratedProtocolMessageType('Tree', (_message.Message,), {
+  'DESCRIPTOR' : _TREE,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.Tree)
-  ))
+  })
 _sym_db.RegisterMessage(Tree)
 
-OutputDirectory = _reflection.GeneratedProtocolMessageType('OutputDirectory', (_message.Message,), dict(
-  DESCRIPTOR = _OUTPUTDIRECTORY,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+OutputDirectory = _reflection.GeneratedProtocolMessageType('OutputDirectory', (_message.Message,), {
+  'DESCRIPTOR' : _OUTPUTDIRECTORY,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.OutputDirectory)
-  ))
+  })
 _sym_db.RegisterMessage(OutputDirectory)
 
-ExecutionPolicy = _reflection.GeneratedProtocolMessageType('ExecutionPolicy', (_message.Message,), dict(
-  DESCRIPTOR = _EXECUTIONPOLICY,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+ExecutionPolicy = _reflection.GeneratedProtocolMessageType('ExecutionPolicy', (_message.Message,), {
+  'DESCRIPTOR' : _EXECUTIONPOLICY,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.ExecutionPolicy)
-  ))
+  })
 _sym_db.RegisterMessage(ExecutionPolicy)
 
-ResultsCachePolicy = _reflection.GeneratedProtocolMessageType('ResultsCachePolicy', (_message.Message,), dict(
-  DESCRIPTOR = _RESULTSCACHEPOLICY,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+ResultsCachePolicy = _reflection.GeneratedProtocolMessageType('ResultsCachePolicy', (_message.Message,), {
+  'DESCRIPTOR' : _RESULTSCACHEPOLICY,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.ResultsCachePolicy)
-  ))
+  })
 _sym_db.RegisterMessage(ResultsCachePolicy)
 
-ExecuteRequest = _reflection.GeneratedProtocolMessageType('ExecuteRequest', (_message.Message,), dict(
-  DESCRIPTOR = _EXECUTEREQUEST,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+ExecuteRequest = _reflection.GeneratedProtocolMessageType('ExecuteRequest', (_message.Message,), {
+  'DESCRIPTOR' : _EXECUTEREQUEST,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.ExecuteRequest)
-  ))
+  })
 _sym_db.RegisterMessage(ExecuteRequest)
 
-LogFile = _reflection.GeneratedProtocolMessageType('LogFile', (_message.Message,), dict(
-  DESCRIPTOR = _LOGFILE,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+LogFile = _reflection.GeneratedProtocolMessageType('LogFile', (_message.Message,), {
+  'DESCRIPTOR' : _LOGFILE,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.LogFile)
-  ))
+  })
 _sym_db.RegisterMessage(LogFile)
 
-ExecuteResponse = _reflection.GeneratedProtocolMessageType('ExecuteResponse', (_message.Message,), dict(
+ExecuteResponse = _reflection.GeneratedProtocolMessageType('ExecuteResponse', (_message.Message,), {
 
-  ServerLogsEntry = _reflection.GeneratedProtocolMessageType('ServerLogsEntry', (_message.Message,), dict(
-    DESCRIPTOR = _EXECUTERESPONSE_SERVERLOGSENTRY,
-    __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'ServerLogsEntry' : _reflection.GeneratedProtocolMessageType('ServerLogsEntry', (_message.Message,), {
+    'DESCRIPTOR' : _EXECUTERESPONSE_SERVERLOGSENTRY,
+    '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
     # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.ExecuteResponse.ServerLogsEntry)
-    ))
+    })
   ,
-  DESCRIPTOR = _EXECUTERESPONSE,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'DESCRIPTOR' : _EXECUTERESPONSE,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.ExecuteResponse)
-  ))
+  })
 _sym_db.RegisterMessage(ExecuteResponse)
 _sym_db.RegisterMessage(ExecuteResponse.ServerLogsEntry)
 
-ExecuteOperationMetadata = _reflection.GeneratedProtocolMessageType('ExecuteOperationMetadata', (_message.Message,), dict(
-  DESCRIPTOR = _EXECUTEOPERATIONMETADATA,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+ExecuteOperationMetadata = _reflection.GeneratedProtocolMessageType('ExecuteOperationMetadata', (_message.Message,), {
+  'DESCRIPTOR' : _EXECUTEOPERATIONMETADATA,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.ExecuteOperationMetadata)
-  ))
+  })
 _sym_db.RegisterMessage(ExecuteOperationMetadata)
 
-WaitExecutionRequest = _reflection.GeneratedProtocolMessageType('WaitExecutionRequest', (_message.Message,), dict(
-  DESCRIPTOR = _WAITEXECUTIONREQUEST,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+WaitExecutionRequest = _reflection.GeneratedProtocolMessageType('WaitExecutionRequest', (_message.Message,), {
+  'DESCRIPTOR' : _WAITEXECUTIONREQUEST,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.WaitExecutionRequest)
-  ))
+  })
 _sym_db.RegisterMessage(WaitExecutionRequest)
 
-GetActionResultRequest = _reflection.GeneratedProtocolMessageType('GetActionResultRequest', (_message.Message,), dict(
-  DESCRIPTOR = _GETACTIONRESULTREQUEST,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+GetActionResultRequest = _reflection.GeneratedProtocolMessageType('GetActionResultRequest', (_message.Message,), {
+  'DESCRIPTOR' : _GETACTIONRESULTREQUEST,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.GetActionResultRequest)
-  ))
+  })
 _sym_db.RegisterMessage(GetActionResultRequest)
 
-UpdateActionResultRequest = _reflection.GeneratedProtocolMessageType('UpdateActionResultRequest', (_message.Message,), dict(
-  DESCRIPTOR = _UPDATEACTIONRESULTREQUEST,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+UpdateActionResultRequest = _reflection.GeneratedProtocolMessageType('UpdateActionResultRequest', (_message.Message,), {
+  'DESCRIPTOR' : _UPDATEACTIONRESULTREQUEST,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.UpdateActionResultRequest)
-  ))
+  })
 _sym_db.RegisterMessage(UpdateActionResultRequest)
 
-FindMissingBlobsRequest = _reflection.GeneratedProtocolMessageType('FindMissingBlobsRequest', (_message.Message,), dict(
-  DESCRIPTOR = _FINDMISSINGBLOBSREQUEST,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+FindMissingBlobsRequest = _reflection.GeneratedProtocolMessageType('FindMissingBlobsRequest', (_message.Message,), {
+  'DESCRIPTOR' : _FINDMISSINGBLOBSREQUEST,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.FindMissingBlobsRequest)
-  ))
+  })
 _sym_db.RegisterMessage(FindMissingBlobsRequest)
 
-FindMissingBlobsResponse = _reflection.GeneratedProtocolMessageType('FindMissingBlobsResponse', (_message.Message,), dict(
-  DESCRIPTOR = _FINDMISSINGBLOBSRESPONSE,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+FindMissingBlobsResponse = _reflection.GeneratedProtocolMessageType('FindMissingBlobsResponse', (_message.Message,), {
+  'DESCRIPTOR' : _FINDMISSINGBLOBSRESPONSE,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.FindMissingBlobsResponse)
-  ))
+  })
 _sym_db.RegisterMessage(FindMissingBlobsResponse)
 
-BatchUpdateBlobsRequest = _reflection.GeneratedProtocolMessageType('BatchUpdateBlobsRequest', (_message.Message,), dict(
+BatchUpdateBlobsRequest = _reflection.GeneratedProtocolMessageType('BatchUpdateBlobsRequest', (_message.Message,), {
 
-  Request = _reflection.GeneratedProtocolMessageType('Request', (_message.Message,), dict(
-    DESCRIPTOR = _BATCHUPDATEBLOBSREQUEST_REQUEST,
-    __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'Request' : _reflection.GeneratedProtocolMessageType('Request', (_message.Message,), {
+    'DESCRIPTOR' : _BATCHUPDATEBLOBSREQUEST_REQUEST,
+    '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
     # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.BatchUpdateBlobsRequest.Request)
-    ))
+    })
   ,
-  DESCRIPTOR = _BATCHUPDATEBLOBSREQUEST,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'DESCRIPTOR' : _BATCHUPDATEBLOBSREQUEST,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.BatchUpdateBlobsRequest)
-  ))
+  })
 _sym_db.RegisterMessage(BatchUpdateBlobsRequest)
 _sym_db.RegisterMessage(BatchUpdateBlobsRequest.Request)
 
-BatchUpdateBlobsResponse = _reflection.GeneratedProtocolMessageType('BatchUpdateBlobsResponse', (_message.Message,), dict(
+BatchUpdateBlobsResponse = _reflection.GeneratedProtocolMessageType('BatchUpdateBlobsResponse', (_message.Message,), {
 
-  Response = _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), dict(
-    DESCRIPTOR = _BATCHUPDATEBLOBSRESPONSE_RESPONSE,
-    __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'Response' : _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), {
+    'DESCRIPTOR' : _BATCHUPDATEBLOBSRESPONSE_RESPONSE,
+    '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
     # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.BatchUpdateBlobsResponse.Response)
-    ))
+    })
   ,
-  DESCRIPTOR = _BATCHUPDATEBLOBSRESPONSE,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'DESCRIPTOR' : _BATCHUPDATEBLOBSRESPONSE,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.BatchUpdateBlobsResponse)
-  ))
+  })
 _sym_db.RegisterMessage(BatchUpdateBlobsResponse)
 _sym_db.RegisterMessage(BatchUpdateBlobsResponse.Response)
 
-BatchReadBlobsRequest = _reflection.GeneratedProtocolMessageType('BatchReadBlobsRequest', (_message.Message,), dict(
-  DESCRIPTOR = _BATCHREADBLOBSREQUEST,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+BatchReadBlobsRequest = _reflection.GeneratedProtocolMessageType('BatchReadBlobsRequest', (_message.Message,), {
+  'DESCRIPTOR' : _BATCHREADBLOBSREQUEST,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.BatchReadBlobsRequest)
-  ))
+  })
 _sym_db.RegisterMessage(BatchReadBlobsRequest)
 
-BatchReadBlobsResponse = _reflection.GeneratedProtocolMessageType('BatchReadBlobsResponse', (_message.Message,), dict(
+BatchReadBlobsResponse = _reflection.GeneratedProtocolMessageType('BatchReadBlobsResponse', (_message.Message,), {
 
-  Response = _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), dict(
-    DESCRIPTOR = _BATCHREADBLOBSRESPONSE_RESPONSE,
-    __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'Response' : _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), {
+    'DESCRIPTOR' : _BATCHREADBLOBSRESPONSE_RESPONSE,
+    '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
     # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.BatchReadBlobsResponse.Response)
-    ))
+    })
   ,
-  DESCRIPTOR = _BATCHREADBLOBSRESPONSE,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'DESCRIPTOR' : _BATCHREADBLOBSRESPONSE,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.BatchReadBlobsResponse)
-  ))
+  })
 _sym_db.RegisterMessage(BatchReadBlobsResponse)
 _sym_db.RegisterMessage(BatchReadBlobsResponse.Response)
 
-GetTreeRequest = _reflection.GeneratedProtocolMessageType('GetTreeRequest', (_message.Message,), dict(
-  DESCRIPTOR = _GETTREEREQUEST,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+GetTreeRequest = _reflection.GeneratedProtocolMessageType('GetTreeRequest', (_message.Message,), {
+  'DESCRIPTOR' : _GETTREEREQUEST,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.GetTreeRequest)
-  ))
+  })
 _sym_db.RegisterMessage(GetTreeRequest)
 
-GetTreeResponse = _reflection.GeneratedProtocolMessageType('GetTreeResponse', (_message.Message,), dict(
-  DESCRIPTOR = _GETTREERESPONSE,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+GetTreeResponse = _reflection.GeneratedProtocolMessageType('GetTreeResponse', (_message.Message,), {
+  'DESCRIPTOR' : _GETTREERESPONSE,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.GetTreeResponse)
-  ))
+  })
 _sym_db.RegisterMessage(GetTreeResponse)
 
-GetCapabilitiesRequest = _reflection.GeneratedProtocolMessageType('GetCapabilitiesRequest', (_message.Message,), dict(
-  DESCRIPTOR = _GETCAPABILITIESREQUEST,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+GetCapabilitiesRequest = _reflection.GeneratedProtocolMessageType('GetCapabilitiesRequest', (_message.Message,), {
+  'DESCRIPTOR' : _GETCAPABILITIESREQUEST,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.GetCapabilitiesRequest)
-  ))
+  })
 _sym_db.RegisterMessage(GetCapabilitiesRequest)
 
-ServerCapabilities = _reflection.GeneratedProtocolMessageType('ServerCapabilities', (_message.Message,), dict(
-  DESCRIPTOR = _SERVERCAPABILITIES,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+ServerCapabilities = _reflection.GeneratedProtocolMessageType('ServerCapabilities', (_message.Message,), {
+  'DESCRIPTOR' : _SERVERCAPABILITIES,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.ServerCapabilities)
-  ))
+  })
 _sym_db.RegisterMessage(ServerCapabilities)
 
-ActionCacheUpdateCapabilities = _reflection.GeneratedProtocolMessageType('ActionCacheUpdateCapabilities', (_message.Message,), dict(
-  DESCRIPTOR = _ACTIONCACHEUPDATECAPABILITIES,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+ActionCacheUpdateCapabilities = _reflection.GeneratedProtocolMessageType('ActionCacheUpdateCapabilities', (_message.Message,), {
+  'DESCRIPTOR' : _ACTIONCACHEUPDATECAPABILITIES,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.ActionCacheUpdateCapabilities)
-  ))
+  })
 _sym_db.RegisterMessage(ActionCacheUpdateCapabilities)
 
-PriorityCapabilities = _reflection.GeneratedProtocolMessageType('PriorityCapabilities', (_message.Message,), dict(
+PriorityCapabilities = _reflection.GeneratedProtocolMessageType('PriorityCapabilities', (_message.Message,), {
 
-  PriorityRange = _reflection.GeneratedProtocolMessageType('PriorityRange', (_message.Message,), dict(
-    DESCRIPTOR = _PRIORITYCAPABILITIES_PRIORITYRANGE,
-    __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'PriorityRange' : _reflection.GeneratedProtocolMessageType('PriorityRange', (_message.Message,), {
+    'DESCRIPTOR' : _PRIORITYCAPABILITIES_PRIORITYRANGE,
+    '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
     # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.PriorityCapabilities.PriorityRange)
-    ))
+    })
   ,
-  DESCRIPTOR = _PRIORITYCAPABILITIES,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+  'DESCRIPTOR' : _PRIORITYCAPABILITIES,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.PriorityCapabilities)
-  ))
+  })
 _sym_db.RegisterMessage(PriorityCapabilities)
 _sym_db.RegisterMessage(PriorityCapabilities.PriorityRange)
 
-CacheCapabilities = _reflection.GeneratedProtocolMessageType('CacheCapabilities', (_message.Message,), dict(
-  DESCRIPTOR = _CACHECAPABILITIES,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+CacheCapabilities = _reflection.GeneratedProtocolMessageType('CacheCapabilities', (_message.Message,), {
+  'DESCRIPTOR' : _CACHECAPABILITIES,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.CacheCapabilities)
-  ))
+  })
 _sym_db.RegisterMessage(CacheCapabilities)
 
-ExecutionCapabilities = _reflection.GeneratedProtocolMessageType('ExecutionCapabilities', (_message.Message,), dict(
-  DESCRIPTOR = _EXECUTIONCAPABILITIES,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+ExecutionCapabilities = _reflection.GeneratedProtocolMessageType('ExecutionCapabilities', (_message.Message,), {
+  'DESCRIPTOR' : _EXECUTIONCAPABILITIES,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.ExecutionCapabilities)
-  ))
+  })
 _sym_db.RegisterMessage(ExecutionCapabilities)
 
-ToolDetails = _reflection.GeneratedProtocolMessageType('ToolDetails', (_message.Message,), dict(
-  DESCRIPTOR = _TOOLDETAILS,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+ToolDetails = _reflection.GeneratedProtocolMessageType('ToolDetails', (_message.Message,), {
+  'DESCRIPTOR' : _TOOLDETAILS,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.ToolDetails)
-  ))
+  })
 _sym_db.RegisterMessage(ToolDetails)
 
-RequestMetadata = _reflection.GeneratedProtocolMessageType('RequestMetadata', (_message.Message,), dict(
-  DESCRIPTOR = _REQUESTMETADATA,
-  __module__ = 'build.bazel.remote.execution.v2.remote_execution_pb2'
+RequestMetadata = _reflection.GeneratedProtocolMessageType('RequestMetadata', (_message.Message,), {
+  'DESCRIPTOR' : _REQUESTMETADATA,
+  '__module__' : 'build.bazel.remote.execution.v2.remote_execution_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.remote.execution.v2.RequestMetadata)
-  ))
+  })
 _sym_db.RegisterMessage(RequestMetadata)
 
 

@@ -310,8 +310,8 @@ def test_build_checkout_using_ref(datafiles, cli):
     result = cli.run(project=project, args=['build', 'checkout-deps.bst'])
     result.assert_success()
 
-    checkout_args = ['artifact', 'checkout', '--directory', checkout,
-                     'test/checkout-deps/602d6859b2e4bdc2af7f3ff34113c4e49219291c0b5c3be8642f85e94322ce49']
+    key = cli.get_element_key(project, 'checkout-deps.bst')
+    checkout_args = ['artifact', 'checkout', '--directory', checkout, 'test/checkout-deps/' + key]
 
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
@@ -332,8 +332,8 @@ def test_build_checkout_tarball_using_ref(datafiles, cli):
     assert os.path.isdir(builddir)
     assert not os.listdir(builddir)
 
-    checkout_args = ['artifact', 'checkout', '--deps', 'none', '--tar', checkout,
-                     'test/checkout-deps/602d6859b2e4bdc2af7f3ff34113c4e49219291c0b5c3be8642f85e94322ce49']
+    key = cli.get_element_key(project, 'checkout-deps.bst')
+    checkout_args = ['artifact', 'checkout', '--deps', 'none', '--tar', checkout, 'test/checkout-deps/' + key]
 
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
@@ -355,7 +355,7 @@ def test_build_checkout_invalid_ref(datafiles, cli):
     assert not os.listdir(builddir)
 
     checkout_args = ['artifact', 'checkout', '--deps', 'none', '--tar', checkout,
-                     'test/checkout-deps/602d6859b2e4bdc2af7f3ff34113c4e49219291c0b5c3be8642f85e94322ce48']
+                     'test/checkout-deps/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']
 
     result = cli.run(project=project, args=checkout_args)
     assert "seems to be invalid. Note that an Element name can also be used." in result.stderr

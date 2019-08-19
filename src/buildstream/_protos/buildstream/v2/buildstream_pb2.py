@@ -375,74 +375,74 @@ DESCRIPTOR.message_types_by_name['SourceCapabilities'] = _SOURCECAPABILITIES
 DESCRIPTOR.message_types_by_name['ServerCapabilities'] = _SERVERCAPABILITIES
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-GetReferenceRequest = _reflection.GeneratedProtocolMessageType('GetReferenceRequest', (_message.Message,), dict(
-  DESCRIPTOR = _GETREFERENCEREQUEST,
-  __module__ = 'buildstream.v2.buildstream_pb2'
+GetReferenceRequest = _reflection.GeneratedProtocolMessageType('GetReferenceRequest', (_message.Message,), {
+  'DESCRIPTOR' : _GETREFERENCEREQUEST,
+  '__module__' : 'buildstream.v2.buildstream_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.GetReferenceRequest)
-  ))
+  })
 _sym_db.RegisterMessage(GetReferenceRequest)
 
-GetReferenceResponse = _reflection.GeneratedProtocolMessageType('GetReferenceResponse', (_message.Message,), dict(
-  DESCRIPTOR = _GETREFERENCERESPONSE,
-  __module__ = 'buildstream.v2.buildstream_pb2'
+GetReferenceResponse = _reflection.GeneratedProtocolMessageType('GetReferenceResponse', (_message.Message,), {
+  'DESCRIPTOR' : _GETREFERENCERESPONSE,
+  '__module__' : 'buildstream.v2.buildstream_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.GetReferenceResponse)
-  ))
+  })
 _sym_db.RegisterMessage(GetReferenceResponse)
 
-UpdateReferenceRequest = _reflection.GeneratedProtocolMessageType('UpdateReferenceRequest', (_message.Message,), dict(
-  DESCRIPTOR = _UPDATEREFERENCEREQUEST,
-  __module__ = 'buildstream.v2.buildstream_pb2'
+UpdateReferenceRequest = _reflection.GeneratedProtocolMessageType('UpdateReferenceRequest', (_message.Message,), {
+  'DESCRIPTOR' : _UPDATEREFERENCEREQUEST,
+  '__module__' : 'buildstream.v2.buildstream_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.UpdateReferenceRequest)
-  ))
+  })
 _sym_db.RegisterMessage(UpdateReferenceRequest)
 
-UpdateReferenceResponse = _reflection.GeneratedProtocolMessageType('UpdateReferenceResponse', (_message.Message,), dict(
-  DESCRIPTOR = _UPDATEREFERENCERESPONSE,
-  __module__ = 'buildstream.v2.buildstream_pb2'
+UpdateReferenceResponse = _reflection.GeneratedProtocolMessageType('UpdateReferenceResponse', (_message.Message,), {
+  'DESCRIPTOR' : _UPDATEREFERENCERESPONSE,
+  '__module__' : 'buildstream.v2.buildstream_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.UpdateReferenceResponse)
-  ))
+  })
 _sym_db.RegisterMessage(UpdateReferenceResponse)
 
-StatusRequest = _reflection.GeneratedProtocolMessageType('StatusRequest', (_message.Message,), dict(
-  DESCRIPTOR = _STATUSREQUEST,
-  __module__ = 'buildstream.v2.buildstream_pb2'
+StatusRequest = _reflection.GeneratedProtocolMessageType('StatusRequest', (_message.Message,), {
+  'DESCRIPTOR' : _STATUSREQUEST,
+  '__module__' : 'buildstream.v2.buildstream_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.StatusRequest)
-  ))
+  })
 _sym_db.RegisterMessage(StatusRequest)
 
-StatusResponse = _reflection.GeneratedProtocolMessageType('StatusResponse', (_message.Message,), dict(
-  DESCRIPTOR = _STATUSRESPONSE,
-  __module__ = 'buildstream.v2.buildstream_pb2'
+StatusResponse = _reflection.GeneratedProtocolMessageType('StatusResponse', (_message.Message,), {
+  'DESCRIPTOR' : _STATUSRESPONSE,
+  '__module__' : 'buildstream.v2.buildstream_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.StatusResponse)
-  ))
+  })
 _sym_db.RegisterMessage(StatusResponse)
 
-GetCapabilitiesRequest = _reflection.GeneratedProtocolMessageType('GetCapabilitiesRequest', (_message.Message,), dict(
-  DESCRIPTOR = _GETCAPABILITIESREQUEST,
-  __module__ = 'buildstream.v2.buildstream_pb2'
+GetCapabilitiesRequest = _reflection.GeneratedProtocolMessageType('GetCapabilitiesRequest', (_message.Message,), {
+  'DESCRIPTOR' : _GETCAPABILITIESREQUEST,
+  '__module__' : 'buildstream.v2.buildstream_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.GetCapabilitiesRequest)
-  ))
+  })
 _sym_db.RegisterMessage(GetCapabilitiesRequest)
 
-ArtifactCapabilities = _reflection.GeneratedProtocolMessageType('ArtifactCapabilities', (_message.Message,), dict(
-  DESCRIPTOR = _ARTIFACTCAPABILITIES,
-  __module__ = 'buildstream.v2.buildstream_pb2'
+ArtifactCapabilities = _reflection.GeneratedProtocolMessageType('ArtifactCapabilities', (_message.Message,), {
+  'DESCRIPTOR' : _ARTIFACTCAPABILITIES,
+  '__module__' : 'buildstream.v2.buildstream_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.ArtifactCapabilities)
-  ))
+  })
 _sym_db.RegisterMessage(ArtifactCapabilities)
 
-SourceCapabilities = _reflection.GeneratedProtocolMessageType('SourceCapabilities', (_message.Message,), dict(
-  DESCRIPTOR = _SOURCECAPABILITIES,
-  __module__ = 'buildstream.v2.buildstream_pb2'
+SourceCapabilities = _reflection.GeneratedProtocolMessageType('SourceCapabilities', (_message.Message,), {
+  'DESCRIPTOR' : _SOURCECAPABILITIES,
+  '__module__' : 'buildstream.v2.buildstream_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.SourceCapabilities)
-  ))
+  })
 _sym_db.RegisterMessage(SourceCapabilities)
 
-ServerCapabilities = _reflection.GeneratedProtocolMessageType('ServerCapabilities', (_message.Message,), dict(
-  DESCRIPTOR = _SERVERCAPABILITIES,
-  __module__ = 'buildstream.v2.buildstream_pb2'
+ServerCapabilities = _reflection.GeneratedProtocolMessageType('ServerCapabilities', (_message.Message,), {
+  'DESCRIPTOR' : _SERVERCAPABILITIES,
+  '__module__' : 'buildstream.v2.buildstream_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.ServerCapabilities)
-  ))
+  })
 _sym_db.RegisterMessage(ServerCapabilities)
 
 

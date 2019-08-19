@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='buildstream.v2',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x1d\x62uildstream/v2/artifact.proto\x12\x0e\x62uildstream.v2\x1a\x36\x62uild/bazel/remote/execution/v2/remote_execution.proto\x1a\x1cgoogle/api/annotations.proto\"\xde\x04\n\x08\x41rtifact\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x15\n\rbuild_success\x18\x02 \x01(\x08\x12\x13\n\x0b\x62uild_error\x18\x03 \x01(\t\x12\x1b\n\x13\x62uild_error_details\x18\x04 \x01(\t\x12\x12\n\nstrong_key\x18\x05 \x01(\t\x12\x10\n\x08weak_key\x18\x06 \x01(\t\x12\x16\n\x0ewas_workspaced\x18\x07 \x01(\x08\x12\x36\n\x05\x66iles\x18\x08 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x37\n\nbuild_deps\x18\t \x03(\x0b\x32#.buildstream.v2.Artifact.Dependency\x12<\n\x0bpublic_data\x18\n \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12.\n\x04logs\x18\x0b \x03(\x0b\x32 .buildstream.v2.Artifact.LogFile\x12:\n\tbuildtree\x18\x0c \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x1aM\n\nDependency\x12\x14\n\x0c\x65lement_name\x18\x01 \x01(\t\x12\x11\n\tcache_key\x18\x02 \x01(\t\x12\x16\n\x0ewas_workspaced\x18\x03 \x01(\x08\x1aP\n\x07LogFile\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\">\n\x12GetArtifactRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x11\n\tcache_key\x18\x02 \x01(\t\"m\n\x15UpdateArtifactRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x11\n\tcache_key\x18\x02 \x01(\t\x12*\n\x08\x61rtifact\x18\x03 \x01(\x0b\x32\x18.buildstream.v2.Artifact2\xb5\x01\n\x0f\x41rtifactService\x12M\n\x0bGetArtifact\x12\".buildstream.v2.GetArtifactRequest\x1a\x18.buildstream.v2.Artifact\"\x00\x12S\n\x0eUpdateArtifact\x12%.buildstream.v2.UpdateArtifactRequest\x1a\x18.buildstream.v2.Artifact\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x1d\x62uildstream/v2/artifact.proto\x12\x0e\x62uildstream.v2\x1a\x36\x62uild/bazel/remote/execution/v2/remote_execution.proto\x1a\x1cgoogle/api/annotations.proto\"\xf4\x04\n\x08\x41rtifact\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x15\n\rbuild_success\x18\x02 \x01(\x08\x12\x13\n\x0b\x62uild_error\x18\x03 \x01(\t\x12\x1b\n\x13\x62uild_error_details\x18\x04 \x01(\t\x12\x12\n\nstrong_key\x18\x05 \x01(\t\x12\x10\n\x08weak_key\x18\x06 \x01(\t\x12\x16\n\x0ewas_workspaced\x18\x07 \x01(\x08\x12\x36\n\x05\x66iles\x18\x08 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x37\n\nbuild_deps\x18\t \x03(\x0b\x32#.buildstream.v2.Artifact.Dependency\x12<\n\x0bpublic_data\x18\n \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12.\n\x04logs\x18\x0b \x03(\x0b\x32 .buildstream.v2.Artifact.LogFile\x12:\n\tbuildtree\x18\x0c \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x1a\x63\n\nDependency\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x14\n\x0c\x65lement_name\x18\x02 \x01(\t\x12\x11\n\tcache_key\x18\x03 \x01(\t\x12\x16\n\x0ewas_workspaced\x18\x04 \x01(\x08\x1aP\n\x07LogFile\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\">\n\x12GetArtifactRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x11\n\tcache_key\x18\x02 \x01(\t\"m\n\x15UpdateArtifactRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x11\n\tcache_key\x18\x02 \x01(\t\x12*\n\x08\x61rtifact\x18\x03 \x01(\x0b\x32\x18.buildstream.v2.Artifact2\xb5\x01\n\x0f\x41rtifactService\x12M\n\x0bGetArtifact\x12\".buildstream.v2.GetArtifactRequest\x1a\x18.buildstream.v2.Artifact\"\x00\x12S\n\x0eUpdateArtifact\x12%.buildstream.v2.UpdateArtifactRequest\x1a\x18.buildstream.v2.Artifact\"\x00\x62\x06proto3')
   ,
   dependencies=[build_dot_bazel_dot_remote_dot_execution_dot_v2_dot_remote__execution__pb2.DESCRIPTOR,google_dot_api_dot_annotations__pb2.DESCRIPTOR,])
 
@@ -37,22 +37,29 @@ _ARTIFACT_DEPENDENCY = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='element_name', full_name='buildstream.v2.Artifact.Dependency.element_name', index=0,
+      name='project_name', full_name='buildstream.v2.Artifact.Dependency.project_name', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='cache_key', full_name='buildstream.v2.Artifact.Dependency.cache_key', index=1,
+      name='element_name', full_name='buildstream.v2.Artifact.Dependency.element_name', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='was_workspaced', full_name='buildstream.v2.Artifact.Dependency.was_workspaced', index=2,
-      number=3, type=8, cpp_type=7, label=1,
+      name='cache_key', full_name='buildstream.v2.Artifact.Dependency.cache_key', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='was_workspaced', full_name='buildstream.v2.Artifact.Dependency.was_workspaced', index=3,
+      number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -70,7 +77,7 @@ _ARTIFACT_DEPENDENCY = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=583,
-  serialized_end=660,
+  serialized_end=682,
 )
 
 _ARTIFACT_LOGFILE = _descriptor.Descriptor(
@@ -106,8 +113,8 @@ _ARTIFACT_LOGFILE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=662,
-  serialized_end=742,
+  serialized_start=684,
+  serialized_end=764,
 )
 
 _ARTIFACT = _descriptor.Descriptor(
@@ -214,7 +221,7 @@ _ARTIFACT = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=136,
-  serialized_end=742,
+  serialized_end=764,
 )
 
 
@@ -251,8 +258,8 @@ _GETARTIFACTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=744,
-  serialized_end=806,
+  serialized_start=766,
+  serialized_end=828,
 )
 
 
@@ -296,8 +303,8 @@ _UPDATEARTIFACTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=808,
-  serialized_end=917,
+  serialized_start=830,
+  serialized_end=939,
 )
 
 _ARTIFACT_DEPENDENCY.containing_type = _ARTIFACT
@@ -314,41 +321,41 @@ DESCRIPTOR.message_types_by_name['GetArtifactRequest'] = _GETARTIFACTREQUEST
 DESCRIPTOR.message_types_by_name['UpdateArtifactRequest'] = _UPDATEARTIFACTREQUEST
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Artifact = _reflection.GeneratedProtocolMessageType('Artifact', (_message.Message,), dict(
+Artifact = _reflection.GeneratedProtocolMessageType('Artifact', (_message.Message,), {
 
-  Dependency = _reflection.GeneratedProtocolMessageType('Dependency', (_message.Message,), dict(
-    DESCRIPTOR = _ARTIFACT_DEPENDENCY,
-    __module__ = 'buildstream.v2.artifact_pb2'
+  'Dependency' : _reflection.GeneratedProtocolMessageType('Dependency', (_message.Message,), {
+    'DESCRIPTOR' : _ARTIFACT_DEPENDENCY,
+    '__module__' : 'buildstream.v2.artifact_pb2'
     # @@protoc_insertion_point(class_scope:buildstream.v2.Artifact.Dependency)
-    ))
+    })
   ,
 
-  LogFile = _reflection.GeneratedProtocolMessageType('LogFile', (_message.Message,), dict(
-    DESCRIPTOR = _ARTIFACT_LOGFILE,
-    __module__ = 'buildstream.v2.artifact_pb2'
+  'LogFile' : _reflection.GeneratedProtocolMessageType('LogFile', (_message.Message,), {
+    'DESCRIPTOR' : _ARTIFACT_LOGFILE,
+    '__module__' : 'buildstream.v2.artifact_pb2'
     # @@protoc_insertion_point(class_scope:buildstream.v2.Artifact.LogFile)
-    ))
+    })
   ,
-  DESCRIPTOR = _ARTIFACT,
-  __module__ = 'buildstream.v2.artifact_pb2'
+  'DESCRIPTOR' : _ARTIFACT,
+  '__module__' : 'buildstream.v2.artifact_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.Artifact)
-  ))
+  })
 _sym_db.RegisterMessage(Artifact)
 _sym_db.RegisterMessage(Artifact.Dependency)
 _sym_db.RegisterMessage(Artifact.LogFile)
 
-GetArtifactRequest = _reflection.GeneratedProtocolMessageType('GetArtifactRequest', (_message.Message,), dict(
-  DESCRIPTOR = _GETARTIFACTREQUEST,
-  __module__ = 'buildstream.v2.artifact_pb2'
+GetArtifactRequest = _reflection.GeneratedProtocolMessageType('GetArtifactRequest', (_message.Message,), {
+  'DESCRIPTOR' : _GETARTIFACTREQUEST,
+  '__module__' : 'buildstream.v2.artifact_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.GetArtifactRequest)
-  ))
+  })
 _sym_db.RegisterMessage(GetArtifactRequest)
 
-UpdateArtifactRequest = _reflection.GeneratedProtocolMessageType('UpdateArtifactRequest', (_message.Message,), dict(
-  DESCRIPTOR = _UPDATEARTIFACTREQUEST,
-  __module__ = 'buildstream.v2.artifact_pb2'
+UpdateArtifactRequest = _reflection.GeneratedProtocolMessageType('UpdateArtifactRequest', (_message.Message,), {
+  'DESCRIPTOR' : _UPDATEARTIFACTREQUEST,
+  '__module__' : 'buildstream.v2.artifact_pb2'
   # @@protoc_insertion_point(class_scope:buildstream.v2.UpdateArtifactRequest)
-  ))
+  })
 _sym_db.RegisterMessage(UpdateArtifactRequest)
 
 
@@ -359,8 +366,8 @@ _ARTIFACTSERVICE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=920,
-  serialized_end=1101,
+  serialized_start=942,
+  serialized_end=1123,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetArtifact',
