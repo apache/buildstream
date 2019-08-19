@@ -597,7 +597,10 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, pull_, c
         element = elements[-1]
         pull_dependencies = elements[:-1] if pull_ else None
 
-        prompt = app.shell_prompt(element)
+        element_name = element._get_full_name()
+        element_key = element._get_display_key()
+
+        prompt = app.shell_prompt(element_name, element_key)
         mounts = [
             HostMount(path, host_path)
             for host_path, path in mount

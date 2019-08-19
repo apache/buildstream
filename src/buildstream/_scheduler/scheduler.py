@@ -259,10 +259,14 @@ class Scheduler():
         self._state.remove_task(job.action_name, job.name)
         if status == JobStatus.FAIL:
             # If it's an elementjob, we want to compare against the failure messages
-            # and send the Element() instance. Note this will change if the frontend
-            # is run in a separate process for pickling
+            # and send the unique_id and display key tuple of the Element. This can then
+            # be used to load the element instance relative to the process it is running in.
             element = job.get_element()
-            self._state.fail_task(job.action_name, job.name, element=element)
+            if element:
+                element_info = element._unique_id, element._get_display_key()
+            else:
+                element_info = None
+            self._state.fail_task(job.action_name, job.name, element=element_info)
 
         # Now check for more jobs
         self._sched()
