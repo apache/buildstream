@@ -80,11 +80,11 @@ _SEMVER = _descriptor.Descriptor(
 DESCRIPTOR.message_types_by_name['SemVer'] = _SEMVER
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-SemVer = _reflection.GeneratedProtocolMessageType('SemVer', (_message.Message,), dict(
-  DESCRIPTOR = _SEMVER,
-  __module__ = 'build.bazel.semver.semver_pb2'
+SemVer = _reflection.GeneratedProtocolMessageType('SemVer', (_message.Message,), {
+  'DESCRIPTOR' : _SEMVER,
+  '__module__' : 'build.bazel.semver.semver_pb2'
   # @@protoc_insertion_point(class_scope:build.bazel.semver.SemVer)
-  ))
+  })
 _sym_db.RegisterMessage(SemVer)
 
 

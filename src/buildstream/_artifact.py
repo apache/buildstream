@@ -170,6 +170,7 @@ class Artifact():
         # store build dependencies
         for e in element.dependencies(Scope.BUILD):
             new_build = artifact.build_deps.add()
+            new_build.project_name = e.project_name
             new_build.element_name = e.name
             new_build.cache_key = e._get_cache_key()
             new_build.was_workspaced = bool(e._get_workspace())

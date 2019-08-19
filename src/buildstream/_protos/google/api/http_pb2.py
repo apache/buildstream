@@ -217,25 +217,25 @@ DESCRIPTOR.message_types_by_name['HttpRule'] = _HTTPRULE
 DESCRIPTOR.message_types_by_name['CustomHttpPattern'] = _CUSTOMHTTPPATTERN
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Http = _reflection.GeneratedProtocolMessageType('Http', (_message.Message,), dict(
-  DESCRIPTOR = _HTTP,
-  __module__ = 'google.api.http_pb2'
+Http = _reflection.GeneratedProtocolMessageType('Http', (_message.Message,), {
+  'DESCRIPTOR' : _HTTP,
+  '__module__' : 'google.api.http_pb2'
   # @@protoc_insertion_point(class_scope:google.api.Http)
-  ))
+  })
 _sym_db.RegisterMessage(Http)
 
-HttpRule = _reflection.GeneratedProtocolMessageType('HttpRule', (_message.Message,), dict(
-  DESCRIPTOR = _HTTPRULE,
-  __module__ = 'google.api.http_pb2'
+HttpRule = _reflection.GeneratedProtocolMessageType('HttpRule', (_message.Message,), {
+  'DESCRIPTOR' : _HTTPRULE,
+  '__module__' : 'google.api.http_pb2'
   # @@protoc_insertion_point(class_scope:google.api.HttpRule)
-  ))
+  })
 _sym_db.RegisterMessage(HttpRule)
 
-CustomHttpPattern = _reflection.GeneratedProtocolMessageType('CustomHttpPattern', (_message.Message,), dict(
-  DESCRIPTOR = _CUSTOMHTTPPATTERN,
-  __module__ = 'google.api.http_pb2'
+CustomHttpPattern = _reflection.GeneratedProtocolMessageType('CustomHttpPattern', (_message.Message,), {
+  'DESCRIPTOR' : _CUSTOMHTTPPATTERN,
+  '__module__' : 'google.api.http_pb2'
   # @@protoc_insertion_point(class_scope:google.api.CustomHttpPattern)
-  ))
+  })
 _sym_db.RegisterMessage(CustomHttpPattern)
 
 

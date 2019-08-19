@@ -264,46 +264,46 @@ DESCRIPTOR.message_types_by_name['QueryWriteStatusRequest'] = _QUERYWRITESTATUSR
 DESCRIPTOR.message_types_by_name['QueryWriteStatusResponse'] = _QUERYWRITESTATUSRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-ReadRequest = _reflection.GeneratedProtocolMessageType('ReadRequest', (_message.Message,), dict(
-  DESCRIPTOR = _READREQUEST,
-  __module__ = 'google.bytestream.bytestream_pb2'
+ReadRequest = _reflection.GeneratedProtocolMessageType('ReadRequest', (_message.Message,), {
+  'DESCRIPTOR' : _READREQUEST,
+  '__module__' : 'google.bytestream.bytestream_pb2'
   # @@protoc_insertion_point(class_scope:google.bytestream.ReadRequest)
-  ))
+  })
 _sym_db.RegisterMessage(ReadRequest)
 
-ReadResponse = _reflection.GeneratedProtocolMessageType('ReadResponse', (_message.Message,), dict(
-  DESCRIPTOR = _READRESPONSE,
-  __module__ = 'google.bytestream.bytestream_pb2'
+ReadResponse = _reflection.GeneratedProtocolMessageType('ReadResponse', (_message.Message,), {
+  'DESCRIPTOR' : _READRESPONSE,
+  '__module__' : 'google.bytestream.bytestream_pb2'
   # @@protoc_insertion_point(class_scope:google.bytestream.ReadResponse)
-  ))
+  })
 _sym_db.RegisterMessage(ReadResponse)
 
-WriteRequest = _reflection.GeneratedProtocolMessageType('WriteRequest', (_message.Message,), dict(
-  DESCRIPTOR = _WRITEREQUEST,
-  __module__ = 'google.bytestream.bytestream_pb2'
+WriteRequest = _reflection.GeneratedProtocolMessageType('WriteRequest', (_message.Message,), {
+  'DESCRIPTOR' : _WRITEREQUEST,
+  '__module__' : 'google.bytestream.bytestream_pb2'
   # @@protoc_insertion_point(class_scope:google.bytestream.WriteRequest)
-  ))
+  })
 _sym_db.RegisterMessage(WriteRequest)
 
-WriteResponse = _reflection.GeneratedProtocolMessageType('WriteResponse', (_message.Message,), dict(
-  DESCRIPTOR = _WRITERESPONSE,
-  __module__ = 'google.bytestream.bytestream_pb2'
+WriteResponse = _reflection.GeneratedProtocolMessageType('WriteResponse', (_message.Message,), {
+  'DESCRIPTOR' : _WRITERESPONSE,
+  '__module__' : 'google.bytestream.bytestream_pb2'
   # @@protoc_insertion_point(class_scope:google.bytestream.WriteResponse)
-  ))
+  })
 _sym_db.RegisterMessage(WriteResponse)
 
-QueryWriteStatusRequest = _reflection.GeneratedProtocolMessageType('QueryWriteStatusRequest', (_message.Message,), dict(
-  DESCRIPTOR = _QUERYWRITESTATUSREQUEST,
-  __module__ = 'google.bytestream.bytestream_pb2'
+QueryWriteStatusRequest = _reflection.GeneratedProtocolMessageType('QueryWriteStatusRequest', (_message.Message,), {
+  'DESCRIPTOR' : _QUERYWRITESTATUSREQUEST,
+  '__module__' : 'google.bytestream.bytestream_pb2'
   # @@protoc_insertion_point(class_scope:google.bytestream.QueryWriteStatusRequest)
-  ))
+  })
 _sym_db.RegisterMessage(QueryWriteStatusRequest)
 
-QueryWriteStatusResponse = _reflection.GeneratedProtocolMessageType('QueryWriteStatusResponse', (_message.Message,), dict(
-  DESCRIPTOR = _QUERYWRITESTATUSRESPONSE,
-  __module__ = 'google.bytestream.bytestream_pb2'
+QueryWriteStatusResponse = _reflection.GeneratedProtocolMessageType('QueryWriteStatusResponse', (_message.Message,), {
+  'DESCRIPTOR' : _QUERYWRITESTATUSRESPONSE,
+  '__module__' : 'google.bytestream.bytestream_pb2'
   # @@protoc_insertion_point(class_scope:google.bytestream.QueryWriteStatusResponse)
-  ))
+  })
 _sym_db.RegisterMessage(QueryWriteStatusResponse)
 
 

@@ -197,6 +197,7 @@ class Element(Plugin):
         if not meta.is_junction:
             project.ensure_fully_loaded()
 
+        self.project_name = self._get_project().name
         self.normal_name = _get_normal_name(self.name)
         """A normalized element name
 
@@ -586,13 +587,12 @@ class Element(Plugin):
         Returns:
            (str): The relative path for the artifact
         """
-        project = self._get_project()
         if key is None:
             key = self._get_cache_key()
 
         assert key is not None
 
-        return _compose_artifact_name(project.name, self.normal_name, key)
+        return _compose_artifact_name(self.project_name, self.normal_name, key)
 
     def stage_artifact(self, sandbox, *, path=None, include=None, exclude=None, orphans=True, update_mtimes=None):
         """Stage this element's output artifact in the sandbox
@@ -3099,7 +3099,7 @@ class Element(Plugin):
                 ]
             else:
                 dependencies = [
-                    e.name for e in self.dependencies(Scope.BUILD, recurse=False)
+                    [e.project_name, e.name] for e in self.dependencies(Scope.BUILD, recurse=False)
                 ]
 
             self.__weak_cache_key = self._calculate_cache_key(dependencies)
@@ -3111,7 +3111,8 @@ class Element(Plugin):
 
         if self.__strict_cache_key is None:
             dependencies = [
-                e.__strict_cache_key for e in self.dependencies(Scope.BUILD)
+                [e.project_name, e.name, e.__strict_cache_key] if e.__strict_cache_key is not None else None
+                for e in self.dependencies(Scope.BUILD)
             ]
             self.__strict_cache_key = self._calculate_cache_key(dependencies)
 
