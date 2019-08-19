@@ -1528,7 +1528,7 @@ class Stream():
             element_source_dir = self._get_element_dirname(directory, element)
             if list(element.sources()):
                 os.makedirs(element_source_dir)
-                element._stage_sources_at(element_source_dir, mount_workspaces=False)
+                element._stage_sources_at(element_source_dir)
 
     # Create a tarball from the content of directory
     def _create_tarball(self, directory, tar_name, compression):

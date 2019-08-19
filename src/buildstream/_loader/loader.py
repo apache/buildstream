@@ -641,7 +641,7 @@ class Loader():
                                    filename, element._get_cache_key())
             if not os.path.exists(basedir):
                 os.makedirs(basedir, exist_ok=True)
-                element._stage_sources_at(basedir, mount_workspaces=False)
+                element._stage_sources_at(basedir)
 
         # Load the project
         project_dir = os.path.join(basedir, element.path)

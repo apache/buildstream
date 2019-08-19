@@ -75,7 +75,7 @@ class ImportElement(Element):
 
         # Stage sources into the input directory
         # Do not mount workspaces as the files are copied from outside the sandbox
-        self._stage_sources_in_sandbox(sandbox, 'input', mount_workspaces=False)
+        self._stage_sources_in_sandbox(sandbox, 'input')
 
         rootdir = sandbox.get_virtual_directory()
         inputdir = rootdir.descend('input')
