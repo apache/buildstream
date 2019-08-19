@@ -34,14 +34,33 @@ TOP_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = os.path.join(TOP_DIR, 'project')
 
 
+def _set_project_mirrors_and_aliases(project_path, mirrors, aliases):
+    project_conf_path = os.path.join(project_path, 'project.conf')
+    project_conf = _yaml.roundtrip_load(project_conf_path)
+
+    project_conf['mirrors'] = mirrors
+    project_conf['aliases'].update(aliases)
+
+    _yaml.roundtrip_dump(project_conf, project_conf_path)
+
+
+def _set_project_includes_and_aliases(project_path, includes, aliases):
+    project_conf_path = os.path.join(project_path, 'project.conf')
+    project_conf = _yaml.roundtrip_load(project_conf_path)
+
+    project_conf['aliases'].update(aliases)
+    project_conf['(@)'] = includes
+
+    _yaml.roundtrip_dump(project_conf, project_conf_path)
+
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_mirror_fetch(cli, tmpdir, datafiles, kind):
-    bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
-    dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')
+    project_dir = str(datafiles)
+    bin_files_path = os.path.join(project_dir, 'files', 'bin-files', 'usr')
+    dev_files_path = os.path.join(project_dir, 'files', 'dev-files', 'usr')
     upstream_repodir = os.path.join(str(tmpdir), 'upstream')
     mirror_repodir = os.path.join(str(tmpdir), 'mirror')
-    project_dir = os.path.join(str(tmpdir), 'project')
-    os.makedirs(project_dir)
     element_dir = os.path.join(project_dir, 'elements')
 
     # Create repo objects of the upstream and mirror
@@ -65,26 +84,20 @@ def test_mirror_fetch(cli, tmpdir, datafiles, kind):
     element['sources'][0]['url'] = aliased_repo
     full_mirror = mirror_repo.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
-    os.makedirs(element_dir)
     _yaml.roundtrip_dump(element, element_path)
 
-    project = {
-        'name': 'test',
-        'element-path': 'elements',
-        'aliases': {
-            alias: upstream_map + "/"
-        },
-        'mirrors': [
+    _set_project_mirrors_and_aliases(
+        project_dir,
+        [
             {
                 'name': 'middle-earth',
                 'aliases': {
-                    alias: [mirror_map + "/"],
+                    alias: [mirror_map + '/'],
                 },
             },
-        ]
-    }
-    project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.roundtrip_dump(project, project_file)
+        ],
+        {alias: upstream_map + '/'},
+    )
 
     # No obvious ways of checking that the mirror has been fetched
     # But at least we can be sure it succeeds
@@ -94,11 +107,10 @@ def test_mirror_fetch(cli, tmpdir, datafiles, kind):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
-    dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')
-    upstream_repodir = os.path.join(str(tmpdir), 'upstream')
+    project_dir = str(datafiles)
+    dev_files_path = os.path.join(project_dir, 'files', 'dev-files', 'usr')
+    upstream_repodir = os.path.join(project_dir, 'upstream')
     mirror_repodir = os.path.join(str(tmpdir), 'mirror')
-    project_dir = os.path.join(str(tmpdir), 'project')
-    os.makedirs(project_dir)
     element_dir = os.path.join(project_dir, 'elements')
 
     # Create repo objects of the upstream and mirror
@@ -122,26 +134,20 @@ def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
     element['sources'][0]['url'] = aliased_repo
     full_mirror = mirror_repo.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
-    os.makedirs(element_dir)
     _yaml.roundtrip_dump(element, element_path)
 
-    project = {
-        'name': 'test',
-        'element-path': 'elements',
-        'aliases': {
-            alias: 'http://www.example.com/'
-        },
-        'mirrors': [
+    _set_project_mirrors_and_aliases(
+        project_dir,
+        [
             {
                 'name': 'middle-earth',
                 'aliases': {
-                    alias: [mirror_map + "/"],
+                    alias: [mirror_map + "/"]
                 },
             },
-        ]
-    }
-    project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.roundtrip_dump(project, project_file)
+        ],
+        {alias: 'http://www.example.com'},
+    )
 
     result = cli.run(project=project_dir, args=['source', 'fetch', element_name])
     result.assert_success()
@@ -149,11 +155,10 @@ def test_mirror_fetch_upstream_absent(cli, tmpdir, datafiles, kind):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
-    bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
+    project_dir = str(datafiles)
+    bin_files_path = os.path.join(project_dir, 'files', 'bin-files', 'usr')
     upstream_repodir = os.path.join(str(tmpdir), 'upstream')
     mirror_repodir = os.path.join(str(tmpdir), 'mirror')
-    project_dir = os.path.join(str(tmpdir), 'project')
-    os.makedirs(project_dir)
     element_dir = os.path.join(project_dir, 'elements')
 
     # Create repo objects of the upstream and mirror
@@ -176,7 +181,6 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
     element['sources'][0]['url'] = aliased_repo
     full_mirror = mirror_repo.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
-    os.makedirs(element_dir)
     _yaml.roundtrip_dump(element, element_path)
 
     config_project_dir = str(tmpdir.join('config'))
@@ -200,18 +204,11 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
                       config_project_dir,
                       os.path.join(element_dir, 'config.bst'))
 
-    project = {
-        'name': 'test',
-        'element-path': 'elements',
-        'aliases': {
-            alias: upstream_map + "/"
-        },
-        '(@)': [
-            'config.bst:mirrors.yml'
-        ]
-    }
-    project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.roundtrip_dump(project, project_file)
+    _set_project_includes_and_aliases(
+        project_dir,
+        ['config.bst:mirrors.yml'],
+        {alias: upstream_map + '/'},
+    )
 
     # Now make the upstream unavailable.
     os.rename(upstream_repo.repo, '{}.bak'.format(upstream_repo.repo))
@@ -221,11 +218,10 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
-    bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
+    project_dir = str(datafiles)
+    bin_files_path = os.path.join(project_dir, 'files', 'bin-files', 'usr')
     upstream_repodir = os.path.join(str(tmpdir), 'upstream')
     mirror_repodir = os.path.join(str(tmpdir), 'mirror')
-    project_dir = os.path.join(str(tmpdir), 'project')
-    os.makedirs(project_dir)
     element_dir = os.path.join(project_dir, 'elements')
 
     # Create repo objects of the upstream and mirror
@@ -248,7 +244,6 @@ def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
     element['sources'][0]['url'] = aliased_repo
     full_mirror = mirror_repo.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
-    os.makedirs(element_dir)
     _yaml.roundtrip_dump(element, element_path)
 
     config_project_dir = str(tmpdir.join('config'))
@@ -272,18 +267,11 @@ def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
                       config_project_dir,
                       os.path.join(element_dir, 'config.bst'))
 
-    project = {
-        'name': 'test',
-        'element-path': 'elements',
-        'aliases': {
-            alias: upstream_map + "/"
-        },
-        '(@)': [
-            'config.bst:mirrors.yml'
-        ]
-    }
-    project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.roundtrip_dump(project, project_file)
+    _set_project_includes_and_aliases(
+        project_dir,
+        ['config.bst:mirrors.yml'],
+        {alias: upstream_map + '/'}
+    )
 
     # Now make the upstream unavailable.
     os.rename(upstream_repo.repo, '{}.bak'.format(upstream_repo.repo))
@@ -297,12 +285,11 @@ def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
-    bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
-    dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')
+    project_dir = str(datafiles)
+    bin_files_path = os.path.join(project_dir, 'files', 'bin-files', 'usr')
+    dev_files_path = os.path.join(project_dir, 'files', 'dev-files', 'usr')
     upstream_repodir = os.path.join(str(tmpdir), 'upstream')
     mirror_repodir = os.path.join(str(tmpdir), 'mirror')
-    project_dir = os.path.join(str(tmpdir), 'project')
-    os.makedirs(project_dir)
     element_dir = os.path.join(project_dir, 'elements')
 
     # Create repo objects of the upstream and mirror
@@ -327,26 +314,20 @@ def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
     element['sources'][0]['url'] = aliased_repo
     full_mirror = mirror_repo.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
-    os.makedirs(element_dir)
     _yaml.roundtrip_dump(element, element_path)
 
-    project = {
-        'name': 'test',
-        'element-path': 'elements',
-        'aliases': {
-            alias: upstream_map + "/"
-        },
-        'mirrors': [
+    _set_project_mirrors_and_aliases(
+        project_dir,
+        [
             {
                 'name': 'middle-earth',
                 'aliases': {
-                    alias: [mirror_map + "/"],
+                    alias: [mirror_map + '/'],
                 },
             },
-        ]
-    }
-    project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.roundtrip_dump(project, project_file)
+        ],
+        {alias: upstream_map + '/'},
+    )
 
     result = cli.run(project=project_dir, args=['source', 'track', element_name])
     result.assert_success()
@@ -360,12 +341,11 @@ def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
-    bin_files_path = os.path.join(str(datafiles), 'files', 'bin-files', 'usr')
-    dev_files_path = os.path.join(str(datafiles), 'files', 'dev-files', 'usr')
+    project_dir = str(datafiles)
+    bin_files_path = os.path.join(project_dir, 'files', 'bin-files', 'usr')
+    dev_files_path = os.path.join(project_dir, 'files', 'dev-files', 'usr')
     upstream_repodir = os.path.join(str(tmpdir), 'upstream')
     mirror_repodir = os.path.join(str(tmpdir), 'mirror')
-    project_dir = os.path.join(str(tmpdir), 'project')
-    os.makedirs(project_dir)
     element_dir = os.path.join(project_dir, 'elements')
 
     # Create repo objects of the upstream and mirror
@@ -391,26 +371,20 @@ def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
     element['sources'][0]['url'] = aliased_repo
     full_mirror = mirror_repo.source_config()['url']
     mirror_map, _ = os.path.split(full_mirror)
-    os.makedirs(element_dir)
     _yaml.roundtrip_dump(element, element_path)
 
-    project = {
-        'name': 'test',
-        'element-path': 'elements',
-        'aliases': {
-            alias: 'http://www.example.com/'
-        },
-        'mirrors': [
+    _set_project_mirrors_and_aliases(
+        project_dir,
+        [
             {
                 'name': 'middle-earth',
                 'aliases': {
-                    alias: [mirror_map + "/"],
+                    alias: [mirror_map + '/'],
                 },
             },
-        ]
-    }
-    project_file = os.path.join(project_dir, 'project.conf')
-    _yaml.roundtrip_dump(project, project_file)
+        ],
+        {alias: 'http://www.example.com'},
+    )
 
     result = cli.run(project=project_dir, args=['source', 'track', element_name])
     result.assert_success()
