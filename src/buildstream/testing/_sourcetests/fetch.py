@@ -23,9 +23,10 @@ import os
 import pytest
 
 from buildstream import _yaml
-from .._utils import generate_junction, configure_project
+from .._utils import generate_junction
 from .. import create_repo
 from .. import cli  # pylint: disable=unused-import
+from .utils import update_project_configuration
 from .utils import kind  # pylint: disable=unused-import
 
 
@@ -90,7 +91,7 @@ def test_fetch_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
     }
     _yaml.roundtrip_dump(element, import_etc_path)
 
-    configure_project(project, {
+    update_project_configuration(project, {
         'ref-storage': ref_storage
     })
 

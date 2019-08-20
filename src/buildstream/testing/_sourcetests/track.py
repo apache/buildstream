@@ -24,9 +24,10 @@ import pytest
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
-from .._utils import generate_junction, configure_project
+from .._utils import generate_junction
 from .. import create_repo
 from .. import cli  # pylint: disable=unused-import
+from .utils import update_project_configuration
 from .utils import kind  # pylint: disable=unused-import
 
 
@@ -56,7 +57,7 @@ def test_track(cli, tmpdir, datafiles, ref_storage, kind):
     element_path = os.path.join(project, 'elements')
     element_name = 'track-test-{}.bst'.format(kind)
 
-    configure_project(project, {
+    update_project_configuration(project, {
         'ref-storage': ref_storage
     })
 
@@ -226,7 +227,7 @@ def test_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
     repo_element_path = os.path.join(subproject_path, 'elements',
                                      'import-etc-repo.bst')
 
-    configure_project(project, {
+    update_project_configuration(project, {
         'ref-storage': ref_storage
     })
 
@@ -266,7 +267,7 @@ def test_track_include(cli, tmpdir, datafiles, ref_storage, kind):
     element_path = os.path.join(project, 'elements')
     element_name = 'track-test-{}.bst'.format(kind)
 
-    configure_project(project, {
+    update_project_configuration(project, {
         'ref-storage': ref_storage
     })
 
@@ -338,7 +339,7 @@ def test_track_include_junction(cli, tmpdir, datafiles, ref_storage, kind):
     sub_element_path = os.path.join(subproject_path, 'elements')
     junction_path = os.path.join(element_path, 'junction.bst')
 
-    configure_project(project, {
+    update_project_configuration(project, {
         'ref-storage': ref_storage
     })
 
@@ -403,7 +404,7 @@ def test_track_junction_included(cli, tmpdir, datafiles, ref_storage, kind):
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(element_path, 'junction.bst')
 
-    configure_project(project, {
+    update_project_configuration(project, {
         'ref-storage': ref_storage,
         '(@)': ['junction.bst:test.yml']
     })
