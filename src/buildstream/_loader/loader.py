@@ -627,11 +627,7 @@ class Loader():
                             LoadErrorReason.SUBPROJECT_INCONSISTENT, detail=detail)
 
         sources = list(element.sources())
-        workspace = element._get_workspace()
-        if workspace:
-            # If a workspace is open, load it from there instead
-            basedir = workspace.get_absolute_path()
-        elif len(sources) == 1 and sources[0]._get_local_path():
+        if len(sources) == 1 and sources[0]._get_local_path():
             # Optimization for junctions with a single local source
             basedir = sources[0]._get_local_path()
         else:
