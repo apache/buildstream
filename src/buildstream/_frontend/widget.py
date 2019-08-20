@@ -475,7 +475,6 @@ class LogLine(Widget):
         values["Session Start"] = starttime.strftime('%A, %d-%m-%Y at %H:%M:%S')
         values["Project"] = "{} ({})".format(project.name, project.directory)
         values["Targets"] = ", ".join([t.name for t in stream.targets])
-        values["Cache Usage"] = str(context.get_cache_usage())
         text += self._format_values(values)
 
         # User configurations

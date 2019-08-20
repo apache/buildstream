@@ -17,22 +17,25 @@
 #  Authors:
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-import hashlib
 import itertools
 import os
 import stat
 import errno
-import uuid
 import contextlib
+import shutil
+import subprocess
+import tempfile
+import time
 
 import grpc
 
-from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+from .._protos.google.rpc import code_pb2
+from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
+from .._protos.build.buildgrid import local_cas_pb2, local_cas_pb2_grpc
 from .._protos.buildstream.v2 import buildstream_pb2
 
 from .. import utils
-from .._exceptions import CASCacheError, LoadError, LoadErrorReason
-from .._message import Message, MessageType
+from .._exceptions import CASCacheError
 
 from .casremote import BlobNotFound, _CASBatchRead, _CASBatchUpdate
 
@@ -42,54 +45,86 @@ _BUFFER_SIZE = 65536
 CACHE_SIZE_FILE = "cache_size"
 
 
-# CASCacheUsage
-#
-# A simple object to report the current CAS cache usage details.
-#
-# Note that this uses the user configured cache quota
-# rather than the internal quota with protective headroom
-# removed, to provide a more sensible value to display to
-# the user.
-#
-# Args:
-#    cas (CASQuota): The CAS cache to get the status of
-#
-class CASCacheUsage():
-
-    def __init__(self, casquota):
-        self.quota_config = casquota._config_cache_quota          # Configured quota
-        self.quota_size = casquota._cache_quota_original          # Resolved cache quota in bytes
-        self.used_size = casquota.get_cache_size()                # Size used by artifacts in bytes
-        self.used_percent = 0                                # Percentage of the quota used
-        if self.quota_size is not None:
-            self.used_percent = int(self.used_size * 100 / self.quota_size)
-
-    # Formattable into a human readable string
-    #
-    def __str__(self):
-        return "{} / {} ({}%)" \
-            .format(utils._pretty_size(self.used_size, dec_places=1),
-                    self.quota_config,
-                    self.used_percent)
-
-
 # A CASCache manages a CAS repository as specified in the Remote Execution API.
 #
 # Args:
 #     path (str): The root directory for the CAS repository
+#     casd (bool): True to spawn buildbox-casd (default) or False (testing only)
 #     cache_quota (int): User configured cache quota
+#     protect_session_blobs (bool): Disable expiry for blobs used in the current session
 #
 class CASCache():
 
-    def __init__(self, path):
+    def __init__(self, path, *, casd=True, cache_quota=None, protect_session_blobs=True):
         self.casdir = os.path.join(path, 'cas')
         self.tmpdir = os.path.join(path, 'tmp')
         os.makedirs(os.path.join(self.casdir, 'refs', 'heads'), exist_ok=True)
         os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
 
-        self.__reachable_directory_callbacks = []
-        self.__reachable_digest_callbacks = []
+        if casd:
+            # Place socket in global/user temporary directory to avoid hitting
+            # the socket path length limit.
+            self._casd_socket_tempdir = tempfile.mkdtemp(prefix='buildstream')
+            self._casd_socket_path = os.path.join(self._casd_socket_tempdir, 'casd.sock')
+
+            casd_args = [utils.get_host_tool('buildbox-casd')]
+            casd_args.append('--bind=unix:' + self._casd_socket_path)
+
+            if cache_quota is not None:
+                casd_args.append('--quota-high={}'.format(int(cache_quota)))
+                casd_args.append('--quota-low={}'.format(int(cache_quota / 2)))
+
+                if protect_session_blobs:
+                    casd_args.append('--protect-session-blobs')
+
+            casd_args.append(path)
+            self._casd_process = subprocess.Popen(casd_args, cwd=path)
+            self._casd_start_time = time.time()
+        else:
+            self._casd_process = None
+
+        self._casd_channel = None
+        self._local_cas = None
+        self._fork_disabled = False
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+
+        # Popen objects are not pickle-able, however, child processes only
+        # need the information whether a casd subprocess was started or not.
+        assert '_casd_process' in state
+        state['_casd_process'] = bool(self._casd_process)
+
+        return state
+
+    def _get_local_cas(self):
+        assert self._casd_process, "CASCache was instantiated without buildbox-casd"
+
+        if not self._local_cas:
+            # gRPC doesn't support fork without exec, which is used in the main process.
+            assert self._fork_disabled or not utils._is_main_process()
+
+            self._casd_channel = grpc.insecure_channel('unix:' + self._casd_socket_path)
+            self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
+
+            # Call GetCapabilities() to establish connection to casd
+            capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self._casd_channel)
+            while True:
+                try:
+                    capabilities.GetCapabilities(remote_execution_pb2.GetCapabilitiesRequest())
+                    break
+                except grpc.RpcError as e:
+                    if e.code() == grpc.StatusCode.UNAVAILABLE:
+                        # casd is not ready yet, try again after a 10ms delay,
+                        # but don't wait for more than 15s
+                        if time.time() < self._casd_start_time + 15:
+                            time.sleep(1 / 100)
+                            continue
+
+                    raise
+
+        return self._local_cas
 
     # preflight():
     #
@@ -100,6 +135,39 @@ class CASCache():
         objdir = os.path.join(self.casdir, 'objects')
         if not (os.path.isdir(headdir) and os.path.isdir(objdir)):
             raise CASCacheError("CAS repository check failed for '{}'".format(self.casdir))
+
+    # notify_fork_disabled():
+    #
+    # Called by Context when fork() is disabled. This will enable communication
+    # with casd via gRPC in the main process.
+    #
+    def notify_fork_disabled(self):
+        self._fork_disabled = True
+
+    # release_resources():
+    #
+    # Release resources used by CASCache.
+    #
+    def release_resources(self, messenger=None):
+        if self._casd_process:
+            self._casd_process.terminate()
+            try:
+                # Don't print anything if buildbox-casd terminates quickly
+                self._casd_process.wait(timeout=0.5)
+            except subprocess.TimeoutExpired:
+                if messenger:
+                    cm = messenger.timed_activity("Terminating buildbox-casd")
+                else:
+                    cm = contextlib.suppress()
+                with cm:
+                    try:
+                        self._casd_process.wait(timeout=15)
+                    except subprocess.TimeoutExpired:
+                        self._casd_process.kill()
+                        self._casd_process.wait(timeout=15)
+            self._casd_process = None
+
+            shutil.rmtree(self._casd_socket_tempdir)
 
     # contains():
     #
@@ -365,13 +433,14 @@ class CASCache():
     #     path (str): Path to file to add
     #     buffer (bytes): Byte buffer to add
     #     link_directly (bool): Whether file given by path can be linked
+    #     instance_name (str): casd instance_name for remote CAS
     #
     # Returns:
     #     (Digest): The digest of the added object
     #
     # Either `path` or `buffer` must be passed, but not both.
     #
-    def add_object(self, *, digest=None, path=None, buffer=None, link_directly=False):
+    def add_object(self, *, digest=None, path=None, buffer=None, link_directly=False, instance_name=None):
         # Exactly one of the two parameters has to be specified
         assert (path is None) != (buffer is None)
 
@@ -381,42 +450,32 @@ class CASCache():
         if digest is None:
             digest = remote_execution_pb2.Digest()
 
-        try:
-            h = hashlib.sha256()
-            # Always write out new file to avoid corruption if input file is modified
-            with contextlib.ExitStack() as stack:
-                if path is not None and link_directly:
-                    tmp = stack.enter_context(open(path, 'rb'))
-                    for chunk in iter(lambda: tmp.read(_BUFFER_SIZE), b""):
-                        h.update(chunk)
-                else:
-                    tmp = stack.enter_context(self._temporary_object())
+        with contextlib.ExitStack() as stack:
+            if path is None:
+                tmp = stack.enter_context(self._temporary_object())
+                tmp.write(buffer)
+                tmp.flush()
+                path = tmp.name
 
-                    if path:
-                        with open(path, 'rb') as f:
-                            for chunk in iter(lambda: f.read(_BUFFER_SIZE), b""):
-                                h.update(chunk)
-                                tmp.write(chunk)
-                    else:
-                        h.update(buffer)
-                        tmp.write(buffer)
+            request = local_cas_pb2.CaptureFilesRequest()
+            if instance_name:
+                request.instance_name = instance_name
 
-                    tmp.flush()
+            request.path.append(path)
 
-                digest.hash = h.hexdigest()
-                digest.size_bytes = os.fstat(tmp.fileno()).st_size
+            local_cas = self._get_local_cas()
 
-                # Place file at final location
-                objpath = self.objpath(digest)
-                os.makedirs(os.path.dirname(objpath), exist_ok=True)
-                os.link(tmp.name, objpath)
+            response = local_cas.CaptureFiles(request)
 
-        except FileExistsError:
-            # We can ignore the failed link() if the object is already in the repo.
-            pass
+            if len(response.responses) != 1:
+                raise CASCacheError("Expected 1 response from CaptureFiles, got {}".format(len(response.responses)))
 
-        except OSError as e:
-            raise CASCacheError("Failed to hash object: {}".format(e)) from e
+            blob_response = response.responses[0]
+            if blob_response.status.code == code_pb2.RESOURCE_EXHAUSTED:
+                raise CASCacheError("Cache too full", reason="cache-too-full")
+            elif blob_response.status.code != code_pb2.OK:
+                raise CASCacheError("Failed to capture blob {}: {}".format(path, blob_response.status.code))
+            digest.CopyFrom(blob_response.digest)
 
         return digest
 
@@ -472,41 +531,6 @@ class CASCache():
         except FileNotFoundError as e:
             raise CASCacheError("Attempt to access unavailable ref: {}".format(e)) from e
 
-    # list_objects():
-    #
-    # List cached objects in Least Recently Modified (LRM) order.
-    #
-    # Returns:
-    #     (list) - A list of objects and timestamps in LRM order
-    #
-    def list_objects(self):
-        objs = []
-        mtimes = []
-
-        for root, _, files in os.walk(os.path.join(self.casdir, 'objects')):
-            for filename in files:
-                obj_path = os.path.join(root, filename)
-                try:
-                    mtimes.append(os.path.getmtime(obj_path))
-                except FileNotFoundError:
-                    pass
-                else:
-                    objs.append(obj_path)
-
-        # NOTE: Sorted will sort from earliest to latest, thus the
-        # first element of this list will be the file modified earliest.
-        return sorted(zip(mtimes, objs))
-
-    def clean_up_refs_until(self, time):
-        ref_heads = os.path.join(self.casdir, 'refs', 'heads')
-
-        for root, _, files in os.walk(ref_heads):
-            for filename in files:
-                ref_path = os.path.join(root, filename)
-                # Obtain the mtime (the time a file was last modified)
-                if os.path.getmtime(ref_path) < time:
-                    os.unlink(ref_path)
-
     # remove():
     #
     # Removes the given symbolic ref from the repo.
@@ -515,74 +539,13 @@ class CASCache():
     #    ref (str): A symbolic ref
     #    basedir (str): Path of base directory the ref is in, defaults to
     #                   CAS refs heads
-    #    defer_prune (bool): Whether to defer pruning to the caller. NOTE:
-    #                        The space won't be freed until you manually
-    #                        call prune.
     #
-    # Returns:
-    #    (int|None) The amount of space pruned from the repository in
-    #               Bytes, or None if defer_prune is True
-    #
-    def remove(self, ref, *, basedir=None, defer_prune=False):
+    def remove(self, ref, *, basedir=None):
 
         if basedir is None:
             basedir = os.path.join(self.casdir, 'refs', 'heads')
         # Remove cache ref
         self._remove_ref(ref, basedir)
-
-        if not defer_prune:
-            pruned = self.prune()
-            return pruned
-
-        return None
-
-    # adds callback of iterator over reachable directory digests
-    def add_reachable_directories_callback(self, callback):
-        self.__reachable_directory_callbacks.append(callback)
-
-    # adds callbacks of iterator over reachable file digests
-    def add_reachable_digests_callback(self, callback):
-        self.__reachable_digest_callbacks.append(callback)
-
-    # prune():
-    #
-    # Prune unreachable objects from the repo.
-    #
-    def prune(self):
-        ref_heads = os.path.join(self.casdir, 'refs', 'heads')
-
-        pruned = 0
-        reachable = set()
-
-        # Check which objects are reachable
-        for root, _, files in os.walk(ref_heads):
-            for filename in files:
-                ref_path = os.path.join(root, filename)
-                ref = os.path.relpath(ref_path, ref_heads)
-
-                tree = self.resolve_ref(ref)
-                self._reachable_refs_dir(reachable, tree)
-
-        # check callback directory digests that are reachable
-        for digest_callback in self.__reachable_directory_callbacks:
-            for digest in digest_callback():
-                self._reachable_refs_dir(reachable, digest)
-
-        # check callback file digests that are reachable
-        for digest_callback in self.__reachable_digest_callbacks:
-            for digest in digest_callback():
-                reachable.add(digest.hash)
-
-        # Prune unreachable objects
-        for root, _, files in os.walk(os.path.join(self.casdir, 'objects')):
-            for filename in files:
-                objhash = os.path.basename(root) + filename
-                if objhash not in reachable:
-                    obj_path = os.path.join(root, filename)
-                    pruned += os.stat(obj_path).st_size
-                    os.unlink(obj_path)
-
-        return pruned
 
     def update_tree_mtime(self, tree):
         reachable = set()
@@ -860,26 +823,13 @@ class CASCache():
             # already in local repository
             return objpath
 
-        with self._temporary_object() as f:
-            remote._fetch_blob(digest, f)
-
-            added_digest = self.add_object(path=f.name, link_directly=True)
-            assert added_digest.hash == digest.hash
+        remote._fetch_blob(digest)
 
         return objpath
 
-    def _batch_download_complete(self, batch, *, missing_blobs=None):
-        for digest, data in batch.send(missing_blobs=missing_blobs):
-            with self._temporary_object() as f:
-                f.write(data)
-                f.flush()
-
-                added_digest = self.add_object(path=f.name, link_directly=True)
-                assert added_digest.hash == digest.hash
-
     # Helper function for _fetch_directory().
     def _fetch_directory_batch(self, remote, batch, fetch_queue, fetch_next_queue):
-        self._batch_download_complete(batch)
+        batch.send()
 
         # All previously scheduled directories are now locally available,
         # move them to the processing queue.
@@ -894,17 +844,8 @@ class CASCache():
         if in_local_cache:
             # Skip download, already in local cache.
             pass
-        elif (digest.size_bytes >= remote.max_batch_total_size_bytes or
-              not remote.batch_read_supported):
-            # Too large for batch request, download in independent request.
-            self._ensure_blob(remote, digest)
-            in_local_cache = True
         else:
-            if not batch.add(digest):
-                # Not enough space left in batch request.
-                # Complete pending batch first.
-                batch = self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
-                batch.add(digest)
+            batch.add(digest)
 
         if recursive:
             if in_local_cache:
@@ -955,20 +896,18 @@ class CASCache():
         self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
 
     def _fetch_tree(self, remote, digest):
-        # download but do not store the Tree object
-        with utils._tempnamedfile(dir=self.tmpdir) as out:
-            remote._fetch_blob(digest, out)
+        objpath = self._ensure_blob(remote, digest)
 
-            tree = remote_execution_pb2.Tree()
+        tree = remote_execution_pb2.Tree()
 
-            with open(out.name, 'rb') as f:
-                tree.ParseFromString(f.read())
+        with open(objpath, 'rb') as f:
+            tree.ParseFromString(f.read())
 
-            tree.children.extend([tree.root])
-            for directory in tree.children:
-                dirbuffer = directory.SerializeToString()
-                dirdigest = self.add_object(buffer=dirbuffer)
-                assert dirdigest.size_bytes == len(dirbuffer)
+        tree.children.extend([tree.root])
+        for directory in tree.children:
+            dirbuffer = directory.SerializeToString()
+            dirdigest = self.add_object(buffer=dirbuffer)
+            assert dirdigest.size_bytes == len(dirbuffer)
 
         return dirdigest
 
@@ -990,27 +929,9 @@ class CASCache():
         batch = _CASBatchRead(remote)
 
         for digest in digests:
-            if (digest.size_bytes >= remote.max_batch_total_size_bytes or
-                    not remote.batch_read_supported):
-                # Too large for batch request, download in independent request.
-                try:
-                    self._ensure_blob(remote, digest)
-                except grpc.RpcError as e:
-                    if e.code() == grpc.StatusCode.NOT_FOUND:
-                        missing_blobs.append(digest)
-                    else:
-                        raise CASCacheError("Failed to fetch blob: {}".format(e)) from e
-            else:
-                if not batch.add(digest):
-                    # Not enough space left in batch request.
-                    # Complete pending batch first.
-                    self._batch_download_complete(batch, missing_blobs=missing_blobs)
+            batch.add(digest)
 
-                    batch = _CASBatchRead(remote)
-                    batch.add(digest)
-
-        # Complete last pending batch
-        self._batch_download_complete(batch, missing_blobs=missing_blobs)
+        batch.send(missing_blobs=missing_blobs)
 
         return missing_blobs
 
@@ -1022,390 +943,19 @@ class CASCache():
     #    remote (CASRemote): The remote repository to upload to
     #    digests (list): The Digests of Blobs to upload
     #
-    def send_blobs(self, remote, digests, u_uid=uuid.uuid4()):
+    def send_blobs(self, remote, digests):
         batch = _CASBatchUpdate(remote)
 
         for digest in digests:
-            with open(self.objpath(digest), 'rb') as f:
-                assert os.fstat(f.fileno()).st_size == digest.size_bytes
+            batch.add(digest)
 
-                if (digest.size_bytes >= remote.max_batch_total_size_bytes or
-                        not remote.batch_update_supported):
-                    # Too large for batch request, upload in independent request.
-                    remote._send_blob(digest, f, u_uid=u_uid)
-                else:
-                    if not batch.add(digest, f):
-                        # Not enough space left in batch request.
-                        # Complete pending batch first.
-                        batch.send()
-                        batch = _CASBatchUpdate(remote)
-                        batch.add(digest, f)
-
-        # Send final batch
         batch.send()
 
-    def _send_directory(self, remote, digest, u_uid=uuid.uuid4()):
+    def _send_directory(self, remote, digest):
         missing_blobs = self.remote_missing_blobs_for_directory(remote, digest)
 
         # Upload any blobs missing on the server
-        self.send_blobs(remote, missing_blobs, u_uid)
-
-
-class CASQuota:
-    def __init__(self, context):
-        self.context = context
-        self.cas = context.get_cascache()
-        self.casdir = self.cas.casdir
-        self._config_cache_quota = context.config_cache_quota
-        self._config_cache_quota_string = context.config_cache_quota_string
-        self._cache_size = None               # The current cache size, sometimes it's an estimate
-        self._cache_quota = None              # The cache quota
-        self._cache_quota_original = None     # The cache quota as specified by the user, in bytes
-        self._cache_quota_headroom = None     # The headroom in bytes before reaching the quota or full disk
-        self._cache_lower_threshold = None    # The target cache size for a cleanup
-
-        self._message = context.messenger.message
-
-        self._remove_callbacks = []   # Callbacks to remove unrequired refs and their remove method
-        self._list_refs_callbacks = []  # Callbacks to all refs
-
-        self._calculate_cache_quota()
-
-    # compute_cache_size()
-    #
-    # Computes the real artifact cache size.
-    #
-    # Returns:
-    #    (int): The size of the artifact cache.
-    #
-    def compute_cache_size(self):
-        self._cache_size = utils._get_dir_size(self.casdir)
-        return self._cache_size
-
-    # get_cache_size()
-    #
-    # Fetches the cached size of the cache, this is sometimes
-    # an estimate and periodically adjusted to the real size
-    # when a cache size calculation job runs.
-    #
-    # When it is an estimate, the value is either correct, or
-    # it is greater than the actual cache size.
-    #
-    # Returns:
-    #     (int) An approximation of the artifact cache size, in bytes.
-    #
-    def get_cache_size(self):
-
-        # If we don't currently have an estimate, figure out the real cache size.
-        if self._cache_size is None:
-            stored_size = self._read_cache_size()
-            if stored_size is not None:
-                self._cache_size = stored_size
-            else:
-                self.compute_cache_size()
-
-        return self._cache_size
-
-    # set_cache_size()
-    #
-    # Forcefully set the overall cache size.
-    #
-    # This is used to update the size in the main process after
-    # having calculated in a cleanup or a cache size calculation job.
-    #
-    # Args:
-    #     cache_size (int): The size to set.
-    #     write_to_disk (bool): Whether to write the value to disk.
-    #
-    def set_cache_size(self, cache_size, *, write_to_disk=True):
-
-        assert cache_size is not None
-
-        self._cache_size = cache_size
-        if write_to_disk:
-            self._write_cache_size(self._cache_size)
-
-    # full()
-    #
-    # Checks if the artifact cache is full, either
-    # because the user configured quota has been exceeded
-    # or because the underlying disk is almost full.
-    #
-    # Returns:
-    #    (bool): True if the artifact cache is full
-    #
-    def full(self):
-
-        if self.get_cache_size() > self._cache_quota:
-            return True
-
-        _, volume_avail = self._get_cache_volume_size()
-        if volume_avail < self._cache_quota_headroom:
-            return True
-
-        return False
-
-    # add_remove_callbacks()
-    #
-    # This adds tuples of iterators over unrequired objects (currently
-    # artifacts and source refs), and a callback to remove them.
-    #
-    # Args:
-    #    callback (iter(unrequired), remove): tuple of iterator and remove
-    #        method associated.
-    #
-    def add_remove_callbacks(self, list_unrequired, remove_method):
-        self._remove_callbacks.append((list_unrequired, remove_method))
-
-    def add_list_refs_callback(self, list_callback):
-        self._list_refs_callbacks.append(list_callback)
-
-    ################################################
-    #             Local Private Methods            #
-    ################################################
-
-    # _read_cache_size()
-    #
-    # Reads and returns the size of the artifact cache that's stored in the
-    # cache's size file
-    #
-    # Returns:
-    #    (int): The size of the artifact cache, as recorded in the file
-    #
-    def _read_cache_size(self):
-        size_file_path = os.path.join(self.casdir, CACHE_SIZE_FILE)
-
-        if not os.path.exists(size_file_path):
-            return None
-
-        with open(size_file_path, "r") as f:
-            size = f.read()
-
-        try:
-            num_size = int(size)
-        except ValueError as e:
-            raise CASCacheError("Size '{}' parsed from '{}' was not an integer".format(
-                size, size_file_path)) from e
-
-        return num_size
-
-    # _write_cache_size()
-    #
-    # Writes the given size of the artifact to the cache's size file
-    #
-    # Args:
-    #    size (int): The size of the artifact cache to record
-    #
-    def _write_cache_size(self, size):
-        assert isinstance(size, int)
-        size_file_path = os.path.join(self.casdir, CACHE_SIZE_FILE)
-        with utils.save_file_atomic(size_file_path, "w", tempdir=self.cas.tmpdir) as f:
-            f.write(str(size))
-
-    # _get_cache_volume_size()
-    #
-    # Get the available space and total space for the volume on
-    # which the artifact cache is located.
-    #
-    # Returns:
-    #    (int): The total number of bytes on the volume
-    #    (int): The number of available bytes on the volume
-    #
-    # NOTE: We use this stub to allow the test cases
-    #       to override what an artifact cache thinks
-    #       about it's disk size and available bytes.
-    #
-    def _get_cache_volume_size(self):
-        return utils._get_volume_size(self.casdir)
-
-    # _calculate_cache_quota()
-    #
-    # Calculates and sets the cache quota and lower threshold based on the
-    # quota set in Context.
-    # It checks that the quota is both a valid expression, and that there is
-    # enough disk space to satisfy that quota
-    #
-    def _calculate_cache_quota(self):
-        # Headroom intended to give BuildStream a bit of leeway.
-        # This acts as the minimum size of cache_quota and also
-        # is taken from the user requested cache_quota.
-        #
-        if self.context.is_running_in_test_suite:
-            self._cache_quota_headroom = 0
-        else:
-            self._cache_quota_headroom = 2e9
-
-        total_size, available_space = self._get_cache_volume_size()
-        cache_size = self.get_cache_size()
-
-        # Ensure system has enough storage for the cache_quota
-        #
-        # If cache_quota is none, set it to the maximum it could possibly be.
-        #
-        # Also check that cache_quota is at least as large as our headroom.
-        #
-        cache_quota = self._config_cache_quota
-        if cache_quota is None:
-            # The user has set no limit, so we may take all the space.
-            cache_quota = min(cache_size + available_space, total_size)
-        if cache_quota < self._cache_quota_headroom:  # Check minimum
-            raise LoadError("Invalid cache quota ({}): BuildStream requires a minimum cache quota of {}."
-                            .format(utils._pretty_size(cache_quota), utils._pretty_size(self._cache_quota_headroom)),
-                            LoadErrorReason.INVALID_DATA)
-        elif cache_quota > total_size:
-            # A quota greater than the total disk size is certianly an error
-            raise CASCacheError("Your system does not have enough available " +
-                                "space to support the cache quota specified.",
-                                detail=("You have specified a quota of {quota} total disk space.\n" +
-                                        "The filesystem containing {local_cache_path} only " +
-                                        "has {total_size} total disk space.")
-                                .format(
-                                    quota=self._config_cache_quota,
-                                    local_cache_path=self.casdir,
-                                    total_size=utils._pretty_size(total_size)),
-                                reason='insufficient-storage-for-quota')
-
-        elif cache_quota > cache_size + available_space:
-            # The quota does not fit in the available space, this is a warning
-            if '%' in self._config_cache_quota_string:
-                available = (available_space / total_size) * 100
-                available = '{}% of total disk space'.format(round(available, 1))
-            else:
-                available = utils._pretty_size(available_space)
-
-            self._message(Message(
-                MessageType.WARN,
-                "Your system does not have enough available " +
-                "space to support the cache quota specified.",
-                detail=("You have specified a quota of {quota} total disk space.\n" +
-                        "The filesystem containing {local_cache_path} only " +
-                        "has {available_size} available.")
-                .format(quota=self._config_cache_quota,
-                        local_cache_path=self.casdir,
-                        available_size=available)))
-
-        # Place a slight headroom (2e9 (2GB) on the cache_quota) into
-        # cache_quota to try and avoid exceptions.
-        #
-        # Of course, we might still end up running out during a build
-        # if we end up writing more than 2G, but hey, this stuff is
-        # already really fuzzy.
-        #
-        self._cache_quota_original = cache_quota
-        self._cache_quota = cache_quota - self._cache_quota_headroom
-        self._cache_lower_threshold = self._cache_quota / 2
-
-    # clean():
-    #
-    # Clean the artifact cache as much as possible.
-    #
-    # Args:
-    #    progress (callable): A callback to call when a ref is removed
-    #
-    # Returns:
-    #    (int): The size of the cache after having cleaned up
-    #
-    def clean(self, progress=None):
-        context = self.context
-
-        # Some accumulative statistics
-        removed_ref_count = 0
-        space_saved = 0
-
-        total_refs = 0
-        for refs in self._list_refs_callbacks:
-            total_refs += len(list(refs()))
-
-        # Start off with an announcement with as much info as possible
-        volume_size, volume_avail = self._get_cache_volume_size()
-        self._message(Message(
-            MessageType.STATUS, "Starting cache cleanup",
-            detail=("Elements required by the current build plan:\n" + "{}\n" +
-                    "User specified quota: {} ({})\n" +
-                    "Cache usage: {}\n" +
-                    "Cache volume: {} total, {} available")
-            .format(
-                total_refs,
-                context.config_cache_quota,
-                utils._pretty_size(self._cache_quota, dec_places=2),
-                utils._pretty_size(self.get_cache_size(), dec_places=2),
-                utils._pretty_size(volume_size, dec_places=2),
-                utils._pretty_size(volume_avail, dec_places=2))))
-
-        # Do a real computation of the cache size once, just in case
-        self.compute_cache_size()
-        usage = CASCacheUsage(self)
-        self._message(Message(MessageType.STATUS,
-                              "Cache usage recomputed: {}".format(usage)))
-
-        # Collect digests and their remove method
-        all_unrequired_refs = []
-        for (unrequired_refs, remove) in self._remove_callbacks:
-            for (mtime, ref) in unrequired_refs():
-                all_unrequired_refs.append((mtime, ref, remove))
-
-        # Pair refs and their remove method sorted in time order
-        all_unrequired_refs = [(ref, remove) for (_, ref, remove) in sorted(all_unrequired_refs)]
-
-        # Go through unrequired refs and remove them, oldest first
-        made_space = False
-        for (ref, remove) in all_unrequired_refs:
-            size = remove(ref)
-            removed_ref_count += 1
-            space_saved += size
-
-            self._message(Message(
-                MessageType.STATUS,
-                "Freed {: <7} {}".format(
-                    utils._pretty_size(size, dec_places=2),
-                    ref)))
-
-            self.set_cache_size(self._cache_size - size)
-
-            # User callback
-            #
-            # Currently this process is fairly slow, but we should
-            # think about throttling this progress() callback if this
-            # becomes too intense.
-            if progress:
-                progress()
-
-            if self.get_cache_size() < self._cache_lower_threshold:
-                made_space = True
-                break
-
-        if not made_space and self.full():
-            # If too many artifacts are required, and we therefore
-            # can't remove them, we have to abort the build.
-            #
-            # FIXME: Asking the user what to do may be neater
-            #
-            default_conf = os.path.join(os.environ['XDG_CONFIG_HOME'],
-                                        'buildstream.conf')
-            detail = ("Aborted after removing {} refs and saving {} disk space.\n"
-                      "The remaining {} in the cache is required by the {} references in your build plan\n\n"
-                      "There is not enough space to complete the build.\n"
-                      "Please increase the cache-quota in {} and/or make more disk space."
-                      .format(removed_ref_count,
-                              utils._pretty_size(space_saved, dec_places=2),
-                              utils._pretty_size(self.get_cache_size(), dec_places=2),
-                              total_refs,
-                              (context.config_origin or default_conf)))
-
-            raise CASCacheError("Cache too full. Aborting.",
-                                detail=detail,
-                                reason="cache-too-full")
-
-        # Informational message about the side effects of the cleanup
-        self._message(Message(
-            MessageType.INFO, "Cleanup completed",
-            detail=("Removed {} refs and saving {} disk space.\n" +
-                    "Cache usage is now: {}")
-            .format(removed_ref_count,
-                    utils._pretty_size(space_saved, dec_places=2),
-                    utils._pretty_size(self.get_cache_size(), dec_places=2))))
-
-        return self.get_cache_size()
+        self.send_blobs(remote, missing_blobs)
 
 
 def _grouper(iterable, n):

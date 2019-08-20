@@ -18,14 +18,13 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 from concurrent import futures
-import logging
+from contextlib import contextmanager
 import os
 import signal
 import sys
 import tempfile
 import uuid
 import errno
-import threading
 
 import grpc
 from google.protobuf.message import DecodeError
@@ -38,7 +37,7 @@ from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, \
     artifact_pb2, artifact_pb2_grpc, source_pb2, source_pb2_grpc
 
 from .. import utils
-from .._exceptions import CASError
+from .._exceptions import CASError, CASCacheError
 
 from .cascache import CASCache
 
@@ -46,11 +45,6 @@ from .cascache import CASCache
 # The default limit for gRPC messages is 4 MiB.
 # Limit payload to 1 MiB to leave sufficient headroom for metadata.
 _MAX_PAYLOAD_BYTES = 1024 * 1024
-
-
-# Trying to push an artifact that is too large
-class ArtifactTooLargeException(Exception):
-    pass
 
 
 # create_server():
@@ -61,47 +55,49 @@ class ArtifactTooLargeException(Exception):
 #     repo (str): Path to CAS repository
 #     enable_push (bool): Whether to allow blob uploads and artifact updates
 #
-def create_server(repo, *, enable_push,
-                  max_head_size=int(10e9),
-                  min_head_size=int(2e9)):
-    cas = CASCache(os.path.abspath(repo))
-    artifactdir = os.path.join(os.path.abspath(repo), 'artifacts', 'refs')
-    sourcedir = os.path.join(os.path.abspath(repo), 'source_protos')
+@contextmanager
+def create_server(repo, *, enable_push, quota):
+    cas = CASCache(os.path.abspath(repo), cache_quota=quota, protect_session_blobs=False)
 
-    # Use max_workers default from Python 3.5+
-    max_workers = (os.cpu_count() or 1) * 5
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers))
+    try:
+        artifactdir = os.path.join(os.path.abspath(repo), 'artifacts', 'refs')
+        sourcedir = os.path.join(os.path.abspath(repo), 'source_protos')
 
-    cache_cleaner = _CacheCleaner(cas, max_head_size, min_head_size)
+        # Use max_workers default from Python 3.5+
+        max_workers = (os.cpu_count() or 1) * 5
+        server = grpc.server(futures.ThreadPoolExecutor(max_workers))
 
-    bytestream_pb2_grpc.add_ByteStreamServicer_to_server(
-        _ByteStreamServicer(cas, cache_cleaner, enable_push=enable_push), server)
+        bytestream_pb2_grpc.add_ByteStreamServicer_to_server(
+            _ByteStreamServicer(cas, enable_push=enable_push), server)
 
-    remote_execution_pb2_grpc.add_ContentAddressableStorageServicer_to_server(
-        _ContentAddressableStorageServicer(cas, cache_cleaner, enable_push=enable_push), server)
+        remote_execution_pb2_grpc.add_ContentAddressableStorageServicer_to_server(
+            _ContentAddressableStorageServicer(cas, enable_push=enable_push), server)
 
-    remote_execution_pb2_grpc.add_CapabilitiesServicer_to_server(
-        _CapabilitiesServicer(), server)
+        remote_execution_pb2_grpc.add_CapabilitiesServicer_to_server(
+            _CapabilitiesServicer(), server)
 
-    buildstream_pb2_grpc.add_ReferenceStorageServicer_to_server(
-        _ReferenceStorageServicer(cas, enable_push=enable_push), server)
+        buildstream_pb2_grpc.add_ReferenceStorageServicer_to_server(
+            _ReferenceStorageServicer(cas, enable_push=enable_push), server)
 
-    artifact_pb2_grpc.add_ArtifactServiceServicer_to_server(
-        _ArtifactServicer(cas, artifactdir), server)
+        artifact_pb2_grpc.add_ArtifactServiceServicer_to_server(
+            _ArtifactServicer(cas, artifactdir), server)
 
-    source_pb2_grpc.add_SourceServiceServicer_to_server(
-        _SourceServicer(sourcedir), server)
+        source_pb2_grpc.add_SourceServiceServicer_to_server(
+            _SourceServicer(sourcedir), server)
 
-    # Create up reference storage and artifact capabilities
-    artifact_capabilities = buildstream_pb2.ArtifactCapabilities(
-        allow_updates=enable_push)
-    source_capabilities = buildstream_pb2.SourceCapabilities(
-        allow_updates=enable_push)
-    buildstream_pb2_grpc.add_CapabilitiesServicer_to_server(
-        _BuildStreamCapabilitiesServicer(artifact_capabilities, source_capabilities),
-        server)
+        # Create up reference storage and artifact capabilities
+        artifact_capabilities = buildstream_pb2.ArtifactCapabilities(
+            allow_updates=enable_push)
+        source_capabilities = buildstream_pb2.SourceCapabilities(
+            allow_updates=enable_push)
+        buildstream_pb2_grpc.add_CapabilitiesServicer_to_server(
+            _BuildStreamCapabilitiesServicer(artifact_capabilities, source_capabilities),
+            server)
 
-    return server
+        yield server
+
+    finally:
+        cas.release_resources()
 
 
 @click.command(short_help="CAS Artifact Server")
@@ -111,65 +107,65 @@ def create_server(repo, *, enable_push,
 @click.option('--client-certs', help="Public client certificates for TLS (PEM-encoded)")
 @click.option('--enable-push', default=False, is_flag=True,
               help="Allow clients to upload blobs and update artifact cache")
-@click.option('--head-room-min', type=click.INT,
-              help="Disk head room minimum in bytes",
-              default=2e9)
-@click.option('--head-room-max', type=click.INT,
-              help="Disk head room maximum in bytes",
+@click.option('--quota', type=click.INT,
+              help="Maximum disk usage in bytes",
               default=10e9)
 @click.argument('repo')
 def server_main(repo, port, server_key, server_cert, client_certs, enable_push,
-                head_room_min, head_room_max):
-    server = create_server(repo,
-                           max_head_size=head_room_max,
-                           min_head_size=head_room_min,
-                           enable_push=enable_push)
+                quota):
+    # Handle SIGTERM by calling sys.exit(0), which will raise a SystemExit exception,
+    # properly executing cleanup code in `finally` clauses and context managers.
+    # This is required to terminate buildbox-casd on SIGTERM.
+    signal.signal(signal.SIGTERM, lambda signalnum, frame: sys.exit(0))
 
-    use_tls = bool(server_key)
+    with create_server(repo,
+                       quota=quota,
+                       enable_push=enable_push) as server:
 
-    if bool(server_cert) != use_tls:
-        click.echo("ERROR: --server-key and --server-cert are both required for TLS", err=True)
-        sys.exit(-1)
+        use_tls = bool(server_key)
 
-    if client_certs and not use_tls:
-        click.echo("ERROR: --client-certs can only be used with --server-key", err=True)
-        sys.exit(-1)
+        if bool(server_cert) != use_tls:
+            click.echo("ERROR: --server-key and --server-cert are both required for TLS", err=True)
+            sys.exit(-1)
 
-    if use_tls:
-        # Read public/private key pair
-        with open(server_key, 'rb') as f:
-            server_key_bytes = f.read()
-        with open(server_cert, 'rb') as f:
-            server_cert_bytes = f.read()
+        if client_certs and not use_tls:
+            click.echo("ERROR: --client-certs can only be used with --server-key", err=True)
+            sys.exit(-1)
 
-        if client_certs:
-            with open(client_certs, 'rb') as f:
-                client_certs_bytes = f.read()
+        if use_tls:
+            # Read public/private key pair
+            with open(server_key, 'rb') as f:
+                server_key_bytes = f.read()
+            with open(server_cert, 'rb') as f:
+                server_cert_bytes = f.read()
+
+            if client_certs:
+                with open(client_certs, 'rb') as f:
+                    client_certs_bytes = f.read()
+            else:
+                client_certs_bytes = None
+
+            credentials = grpc.ssl_server_credentials([(server_key_bytes, server_cert_bytes)],
+                                                      root_certificates=client_certs_bytes,
+                                                      require_client_auth=bool(client_certs))
+            server.add_secure_port('[::]:{}'.format(port), credentials)
         else:
-            client_certs_bytes = None
+            server.add_insecure_port('[::]:{}'.format(port))
 
-        credentials = grpc.ssl_server_credentials([(server_key_bytes, server_cert_bytes)],
-                                                  root_certificates=client_certs_bytes,
-                                                  require_client_auth=bool(client_certs))
-        server.add_secure_port('[::]:{}'.format(port), credentials)
-    else:
-        server.add_insecure_port('[::]:{}'.format(port))
-
-    # Run artifact server
-    server.start()
-    try:
-        while True:
-            signal.pause()
-    except KeyboardInterrupt:
-        server.stop(0)
+        # Run artifact server
+        server.start()
+        try:
+            while True:
+                signal.pause()
+        finally:
+            server.stop(0)
 
 
 class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
-    def __init__(self, cas, cache_cleaner, *, enable_push):
+    def __init__(self, cas, *, enable_push):
         super().__init__()
         self.cas = cas
         self.enable_push = enable_push
-        self.cache_cleaner = cache_cleaner
 
     def Read(self, request, context):
         resource_name = request.resource_name
@@ -187,6 +183,8 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
                 if os.fstat(f.fileno()).st_size != client_digest.size_bytes:
                     context.set_code(grpc.StatusCode.NOT_FOUND)
                     return
+
+                os.utime(f.fileno())
 
                 if request.read_offset > 0:
                     f.seek(request.read_offset)
@@ -230,12 +228,6 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
                     while True:
                         if client_digest.size_bytes == 0:
                             break
-                        try:
-                            self.cache_cleaner.clean_up(client_digest.size_bytes)
-                        except ArtifactTooLargeException as e:
-                            context.set_code(grpc.StatusCode.RESOURCE_EXHAUSTED)
-                            context.set_details(str(e))
-                            return response
 
                         try:
                             os.posix_fallocate(out.fileno(), 0, client_digest.size_bytes)
@@ -262,10 +254,20 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
                         context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
                         return response
                     out.flush()
-                    digest = self.cas.add_object(path=out.name, link_directly=True)
+
+                    try:
+                        digest = self.cas.add_object(path=out.name, link_directly=True)
+                    except CASCacheError as e:
+                        if e.reason == "cache-too-full":
+                            context.set_code(grpc.StatusCode.RESOURCE_EXHAUSTED)
+                        else:
+                            context.set_code(grpc.StatusCode.INTERNAL)
+                        return response
+
                     if digest.hash != client_digest.hash:
                         context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
                         return response
+
                     finished = True
 
         assert finished
@@ -275,11 +277,10 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
 
 
 class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddressableStorageServicer):
-    def __init__(self, cas, cache_cleaner, *, enable_push):
+    def __init__(self, cas, *, enable_push):
         super().__init__()
         self.cas = cas
         self.enable_push = enable_push
-        self.cache_cleaner = cache_cleaner
 
     def FindMissingBlobs(self, request, context):
         response = remote_execution_pb2.FindMissingBlobsResponse()
@@ -311,10 +312,13 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
             blob_response.digest.hash = digest.hash
             blob_response.digest.size_bytes = digest.size_bytes
             try:
-                with open(self.cas.objpath(digest), 'rb') as f:
+                objpath = self.cas.objpath(digest)
+                with open(objpath, 'rb') as f:
                     if os.fstat(f.fileno()).st_size != digest.size_bytes:
                         blob_response.status.code = code_pb2.NOT_FOUND
                         continue
+
+                    os.utime(f.fileno())
 
                     blob_response.data = f.read(digest.size_bytes)
             except FileNotFoundError:
@@ -347,18 +351,21 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
                 blob_response.status.code = code_pb2.FAILED_PRECONDITION
                 continue
 
-            try:
-                self.cache_cleaner.clean_up(digest.size_bytes)
+            with tempfile.NamedTemporaryFile(dir=self.cas.tmpdir) as out:
+                out.write(blob_request.data)
+                out.flush()
 
-                with tempfile.NamedTemporaryFile(dir=self.cas.tmpdir) as out:
-                    out.write(blob_request.data)
-                    out.flush()
+                try:
                     server_digest = self.cas.add_object(path=out.name)
-                    if server_digest.hash != digest.hash:
-                        blob_response.status.code = code_pb2.FAILED_PRECONDITION
+                except CASCacheError as e:
+                    if e.reason == "cache-too-full":
+                        blob_response.status.code = code_pb2.RESOURCE_EXHAUSTED
+                    else:
+                        blob_response.status.code = code_pb2.INTERNAL
+                    continue
 
-            except ArtifactTooLargeException:
-                blob_response.status.code = code_pb2.RESOURCE_EXHAUSTED
+                if server_digest.hash != digest.hash:
+                    blob_response.status.code = code_pb2.FAILED_PRECONDITION
 
         return response
 
@@ -394,7 +401,7 @@ class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
             try:
                 self.cas.update_tree_mtime(tree)
             except FileNotFoundError:
-                self.cas.remove(request.key, defer_prune=True)
+                self.cas.remove(request.key)
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 return response
 
@@ -602,81 +609,3 @@ def _digest_from_upload_resource_name(resource_name):
         return digest
     except ValueError:
         return None
-
-
-class _CacheCleaner:
-
-    __cleanup_cache_lock = threading.Lock()
-
-    def __init__(self, cas, max_head_size, min_head_size=int(2e9)):
-        self.__cas = cas
-        self.__max_head_size = max_head_size
-        self.__min_head_size = min_head_size
-
-    def __has_space(self, object_size):
-        stats = os.statvfs(self.__cas.casdir)
-        free_disk_space = (stats.f_bavail * stats.f_bsize) - self.__min_head_size
-        total_disk_space = (stats.f_blocks * stats.f_bsize) - self.__min_head_size
-
-        if object_size > total_disk_space:
-            raise ArtifactTooLargeException("Artifact of size: {} is too large for "
-                                            "the filesystem which mounts the remote "
-                                            "cache".format(object_size))
-
-        return object_size <= free_disk_space
-
-    # _clean_up_cache()
-    #
-    # Keep removing Least Recently Pushed (LRP) artifacts in a cache until there
-    # is enough space for the incoming artifact
-    #
-    # Args:
-    #   object_size: The size of the object being received in bytes
-    #
-    # Returns:
-    #   int: The total bytes removed on the filesystem
-    #
-    def clean_up(self, object_size):
-        if self.__has_space(object_size):
-            return 0
-
-        with _CacheCleaner.__cleanup_cache_lock:
-            if self.__has_space(object_size):
-                # Another thread has done the cleanup for us
-                return 0
-
-            stats = os.statvfs(self.__cas.casdir)
-            target_disk_space = (stats.f_bavail * stats.f_bsize) - self.__max_head_size
-
-            # obtain a list of LRP artifacts
-            LRP_objects = self.__cas.list_objects()
-
-            removed_size = 0  # in bytes
-            last_mtime = 0
-
-            while object_size - removed_size > target_disk_space:
-                try:
-                    last_mtime, to_remove = LRP_objects.pop(0)  # The first element in the list is the LRP artifact
-                except IndexError:
-                    # This exception is caught if there are no more artifacts in the list
-                    # LRP_artifacts. This means the the artifact is too large for the filesystem
-                    # so we abort the process
-                    raise ArtifactTooLargeException("Artifact of size {} is too large for "
-                                                    "the filesystem which mounts the remote "
-                                                    "cache".format(object_size))
-
-                try:
-                    size = os.stat(to_remove).st_size
-                    os.unlink(to_remove)
-                    removed_size += size
-                except FileNotFoundError:
-                    pass
-
-            self.__cas.clean_up_refs_until(last_mtime)
-
-            if removed_size > 0:
-                logging.info("Successfully removed %d bytes from the cache", removed_size)
-            else:
-                logging.info("No artifacts were removed from the cache.")
-
-            return removed_size

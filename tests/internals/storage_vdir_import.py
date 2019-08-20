@@ -14,11 +14,14 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 from hashlib import sha256
+import multiprocessing
 import os
 import random
+import signal
 
 import pytest
 
+from buildstream import utils, _signals
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
 from buildstream._cas import CASCache
@@ -53,6 +56,34 @@ root_filesets = [
 empty_hash_ref = sha256().hexdigest()
 RANDOM_SEED = 69105
 NUM_RANDOM_TESTS = 10
+
+
+# Since parent processes wait for queue events, we need
+# to put something on it if the called process raises an
+# exception.
+def _queue_wrapper(target, queue, *args):
+    try:
+        target(*args)
+    except Exception as e:
+        queue.put(str(e))
+        raise
+
+    queue.put(None)
+
+
+def _run_test_in_subprocess(func, *args):
+    queue = multiprocessing.Queue()
+    process = multiprocessing.Process(target=_queue_wrapper, args=(func, queue, *args))
+    try:
+        with _signals.blocked([signal.SIGINT], ignore=False):
+            process.start()
+        error = queue.get()
+        process.join()
+    except KeyboardInterrupt:
+        utils._kill_process_tree(process.pid)
+        raise
+
+    assert not error
 
 
 def generate_import_roots(rootno, directory):
@@ -182,56 +213,64 @@ def directory_not_empty(path):
     return os.listdir(path)
 
 
-def _import_test(tmpdir, original, overlay, generator_function, verify_contents=False):
+def _import_test_subprocess(tmpdir, original, overlay, generator_function, verify_contents=False):
     cas_cache = CASCache(tmpdir)
-    # Create some fake content
-    generator_function(original, tmpdir)
-    if original != overlay:
-        generator_function(overlay, tmpdir)
+    try:
+        # Create some fake content
+        generator_function(original, tmpdir)
+        if original != overlay:
+            generator_function(overlay, tmpdir)
 
-    d = create_new_casdir(original, cas_cache, tmpdir)
+        d = create_new_casdir(original, cas_cache, tmpdir)
 
-    duplicate_cas = create_new_casdir(original, cas_cache, tmpdir)
+        duplicate_cas = create_new_casdir(original, cas_cache, tmpdir)
 
-    assert duplicate_cas._get_digest().hash == d._get_digest().hash
+        assert duplicate_cas._get_digest().hash == d._get_digest().hash
 
-    d2 = create_new_casdir(overlay, cas_cache, tmpdir)
-    d.import_files(d2)
-    export_dir = os.path.join(tmpdir, "output-{}-{}".format(original, overlay))
-    roundtrip_dir = os.path.join(tmpdir, "roundtrip-{}-{}".format(original, overlay))
-    d2.export_files(roundtrip_dir)
-    d.export_files(export_dir)
+        d2 = create_new_casdir(overlay, cas_cache, tmpdir)
+        d.import_files(d2)
+        export_dir = os.path.join(tmpdir, "output-{}-{}".format(original, overlay))
+        roundtrip_dir = os.path.join(tmpdir, "roundtrip-{}-{}".format(original, overlay))
+        d2.export_files(roundtrip_dir)
+        d.export_files(export_dir)
 
-    if verify_contents:
-        for item in root_filesets[overlay - 1]:
-            (path, typename, content) = item
-            realpath = resolve_symlinks(path, export_dir)
-            if typename == 'F':
-                if os.path.isdir(realpath) and directory_not_empty(realpath):
-                    # The file should not have overwritten the directory in this case.
-                    pass
-                else:
-                    assert os.path.isfile(realpath), "{} did not exist in the combined virtual directory".format(path)
-                    assert file_contents_are(realpath, content)
-            elif typename == 'S':
-                if os.path.isdir(realpath) and directory_not_empty(realpath):
-                    # The symlink should not have overwritten the directory in this case.
-                    pass
-                else:
-                    assert os.path.islink(realpath)
-                    assert os.readlink(realpath) == content
-            elif typename == 'D':
-                # We can't do any more tests than this because it
-                # depends on things present in the original. Blank
-                # directories here will be ignored and the original
-                # left in place.
-                assert os.path.lexists(realpath)
+        if verify_contents:
+            for item in root_filesets[overlay - 1]:
+                (path, typename, content) = item
+                realpath = resolve_symlinks(path, export_dir)
+                if typename == 'F':
+                    if os.path.isdir(realpath) and directory_not_empty(realpath):
+                        # The file should not have overwritten the directory in this case.
+                        pass
+                    else:
+                        assert os.path.isfile(realpath), \
+                            "{} did not exist in the combined virtual directory".format(path)
+                        assert file_contents_are(realpath, content)
+                elif typename == 'S':
+                    if os.path.isdir(realpath) and directory_not_empty(realpath):
+                        # The symlink should not have overwritten the directory in this case.
+                        pass
+                    else:
+                        assert os.path.islink(realpath)
+                        assert os.readlink(realpath) == content
+                elif typename == 'D':
+                    # We can't do any more tests than this because it
+                    # depends on things present in the original. Blank
+                    # directories here will be ignored and the original
+                    # left in place.
+                    assert os.path.lexists(realpath)
 
-    # Now do the same thing with filebaseddirectories and check the contents match
+        # Now do the same thing with filebaseddirectories and check the contents match
 
-    duplicate_cas.import_files(roundtrip_dir)
+        duplicate_cas.import_files(roundtrip_dir)
 
-    assert duplicate_cas._get_digest().hash == d._get_digest().hash
+        assert duplicate_cas._get_digest().hash == d._get_digest().hash
+    finally:
+        cas_cache.release_resources()
+
+
+def _import_test(tmpdir, original, overlay, generator_function, verify_contents=False):
+    _run_test_in_subprocess(_import_test_subprocess, tmpdir, original, overlay, generator_function, verify_contents)
 
 
 # It's possible to parameterize on both original and overlay values,
@@ -249,18 +288,25 @@ def test_random_cas_import(tmpdir, original):
         _import_test(str(tmpdir), original, overlay, generate_random_root, verify_contents=False)
 
 
-def _listing_test(tmpdir, root, generator_function):
+def _listing_test_subprocess(tmpdir, root, generator_function):
     cas_cache = CASCache(tmpdir)
-    # Create some fake content
-    generator_function(root, tmpdir)
+    try:
+        # Create some fake content
+        generator_function(root, tmpdir)
 
-    d = create_new_filedir(root, tmpdir)
-    filelist = list(d.list_relative_paths())
+        d = create_new_filedir(root, tmpdir)
+        filelist = list(d.list_relative_paths())
 
-    d2 = create_new_casdir(root, cas_cache, tmpdir)
-    filelist2 = list(d2.list_relative_paths())
+        d2 = create_new_casdir(root, cas_cache, tmpdir)
+        filelist2 = list(d2.list_relative_paths())
 
-    assert filelist == filelist2
+        assert filelist == filelist2
+    finally:
+        cas_cache.release_resources()
+
+
+def _listing_test(tmpdir, root, generator_function):
+    _run_test_in_subprocess(_listing_test_subprocess, tmpdir, root, generator_function)
 
 
 @pytest.mark.parametrize("root", range(1, 11))
@@ -274,120 +320,155 @@ def test_fixed_directory_listing(tmpdir, root):
 
 
 # Check that the vdir is decending and readable
-def test_descend(tmpdir):
+def _test_descend_subprocess(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
-    d = CasBasedDirectory(cas_cache)
+    try:
+        d = CasBasedDirectory(cas_cache)
 
-    Content_to_check = 'You got me'
-    test_dir = os.path.join(str(tmpdir), 'importfrom')
-    filesys_discription = [
-        ('a', 'D', ''),
-        ('a/l', 'D', ''),
-        ('a/l/g', 'F', Content_to_check)
-    ]
-    generate_import_root(test_dir, filesys_discription)
+        Content_to_check = 'You got me'
+        test_dir = os.path.join(str(tmpdir), 'importfrom')
+        filesys_discription = [
+            ('a', 'D', ''),
+            ('a/l', 'D', ''),
+            ('a/l/g', 'F', Content_to_check)
+        ]
+        generate_import_root(test_dir, filesys_discription)
 
-    d.import_files(test_dir)
-    digest = d.descend('a', 'l').index['g'].get_digest()
+        d.import_files(test_dir)
+        digest = d.descend('a', 'l').index['g'].get_digest()
 
-    assert Content_to_check == open(cas_cache.objpath(digest)).read()
+        assert Content_to_check == open(cas_cache.objpath(digest)).read()
+    finally:
+        cas_cache.release_resources()
+
+
+def test_descend(tmpdir):
+    _run_test_in_subprocess(_test_descend_subprocess, tmpdir)
 
 
 # Check symlink logic for edgecases
 # Make sure the correct erros are raised when trying
 # to decend in to files or links to files
-def test_bad_symlinks(tmpdir):
+def _test_bad_symlinks_subprocess(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
-    d = CasBasedDirectory(cas_cache)
+    try:
+        d = CasBasedDirectory(cas_cache)
 
-    test_dir = os.path.join(str(tmpdir), 'importfrom')
-    filesys_discription = [
-        ('a', 'D', ''),
-        ('a/l', 'S', '../target'),
-        ('target', 'F', 'You got me')
-    ]
-    generate_import_root(test_dir, filesys_discription)
-    d.import_files(test_dir)
-    exp_reason = "not-a-directory"
+        test_dir = os.path.join(str(tmpdir), 'importfrom')
+        filesys_discription = [
+            ('a', 'D', ''),
+            ('a/l', 'S', '../target'),
+            ('target', 'F', 'You got me')
+        ]
+        generate_import_root(test_dir, filesys_discription)
+        d.import_files(test_dir)
+        exp_reason = "not-a-directory"
 
-    with pytest.raises(VirtualDirectoryError) as error:
-        d.descend('a', 'l', follow_symlinks=True)
-        assert error.reason == exp_reason
+        with pytest.raises(VirtualDirectoryError) as error:
+            d.descend('a', 'l', follow_symlinks=True)
+            assert error.reason == exp_reason
 
-    with pytest.raises(VirtualDirectoryError) as error:
-        d.descend('a', 'l')
-        assert error.reason == exp_reason
+        with pytest.raises(VirtualDirectoryError) as error:
+            d.descend('a', 'l')
+            assert error.reason == exp_reason
 
-    with pytest.raises(VirtualDirectoryError) as error:
-        d.descend('a', 'f')
-        assert error.reason == exp_reason
+        with pytest.raises(VirtualDirectoryError) as error:
+            d.descend('a', 'f')
+            assert error.reason == exp_reason
+    finally:
+        cas_cache.release_resources()
+
+
+def test_bad_symlinks(tmpdir):
+    _run_test_in_subprocess(_test_bad_symlinks_subprocess, tmpdir)
 
 
 # Check symlink logic for edgecases
 # Check decend accross relitive link
-def test_relitive_symlink(tmpdir):
+def _test_relative_symlink_subprocess(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
-    d = CasBasedDirectory(cas_cache)
+    try:
+        d = CasBasedDirectory(cas_cache)
 
-    Content_to_check = 'You got me'
-    test_dir = os.path.join(str(tmpdir), 'importfrom')
-    filesys_discription = [
-        ('a', 'D', ''),
-        ('a/l', 'S', '../target'),
-        ('target', 'D', ''),
-        ('target/file', 'F', Content_to_check)
-    ]
-    generate_import_root(test_dir, filesys_discription)
-    d.import_files(test_dir)
+        Content_to_check = 'You got me'
+        test_dir = os.path.join(str(tmpdir), 'importfrom')
+        filesys_discription = [
+            ('a', 'D', ''),
+            ('a/l', 'S', '../target'),
+            ('target', 'D', ''),
+            ('target/file', 'F', Content_to_check)
+        ]
+        generate_import_root(test_dir, filesys_discription)
+        d.import_files(test_dir)
 
-    digest = d.descend('a', 'l', follow_symlinks=True).index['file'].get_digest()
-    assert Content_to_check == open(cas_cache.objpath(digest)).read()
+        digest = d.descend('a', 'l', follow_symlinks=True).index['file'].get_digest()
+        assert Content_to_check == open(cas_cache.objpath(digest)).read()
+    finally:
+        cas_cache.release_resources()
+
+
+def test_relative_symlink(tmpdir):
+    _run_test_in_subprocess(_test_relative_symlink_subprocess, tmpdir)
 
 
 # Check symlink logic for edgecases
 # Check deccend accross abs link
-def test_abs_symlink(tmpdir):
+def _test_abs_symlink_subprocess(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
-    d = CasBasedDirectory(cas_cache)
+    try:
+        d = CasBasedDirectory(cas_cache)
 
-    Content_to_check = 'two step file'
-    test_dir = os.path.join(str(tmpdir), 'importfrom')
-    filesys_discription = [
-        ('a', 'D', ''),
-        ('a/l', 'S', '/target'),
-        ('target', 'D', ''),
-        ('target/file', 'F', Content_to_check)
-    ]
-    generate_import_root(test_dir, filesys_discription)
-    d.import_files(test_dir)
+        Content_to_check = 'two step file'
+        test_dir = os.path.join(str(tmpdir), 'importfrom')
+        filesys_discription = [
+            ('a', 'D', ''),
+            ('a/l', 'S', '/target'),
+            ('target', 'D', ''),
+            ('target/file', 'F', Content_to_check)
+        ]
+        generate_import_root(test_dir, filesys_discription)
+        d.import_files(test_dir)
 
-    digest = d.descend('a', 'l', follow_symlinks=True).index['file'].get_digest()
+        digest = d.descend('a', 'l', follow_symlinks=True).index['file'].get_digest()
 
-    assert Content_to_check == open(cas_cache.objpath(digest)).read()
+        assert Content_to_check == open(cas_cache.objpath(digest)).read()
+    finally:
+        cas_cache.release_resources()
+
+
+def test_abs_symlink(tmpdir):
+    _run_test_in_subprocess(_test_abs_symlink_subprocess, tmpdir)
 
 
 # Check symlink logic for edgecases
 # Check symlink can not escape root
-def test_bad_sym_escape(tmpdir):
+def _test_bad_sym_escape_subprocess(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
-    d = CasBasedDirectory(cas_cache)
+    try:
+        d = CasBasedDirectory(cas_cache)
 
-    test_dir = os.path.join(str(tmpdir), 'importfrom')
-    filesys_discription = [
-        ('jail', 'D', ''),
-        ('jail/a', 'D', ''),
-        ('jail/a/l', 'S', '../../target'),
-        ('target', 'D', ''),
-        ('target/file', 'F', 'two step file')
-    ]
-    generate_import_root(test_dir, filesys_discription)
-    d.import_files(os.path.join(test_dir, 'jail'))
+        test_dir = os.path.join(str(tmpdir), 'importfrom')
+        filesys_discription = [
+            ('jail', 'D', ''),
+            ('jail/a', 'D', ''),
+            ('jail/a/l', 'S', '../../target'),
+            ('target', 'D', ''),
+            ('target/file', 'F', 'two step file')
+        ]
+        generate_import_root(test_dir, filesys_discription)
+        d.import_files(os.path.join(test_dir, 'jail'))
 
-    with pytest.raises(VirtualDirectoryError) as error:
-        d.descend('a', 'l', follow_symlinks=True)
-        assert error.reason == "directory-not-found"
+        with pytest.raises(VirtualDirectoryError) as error:
+            d.descend('a', 'l', follow_symlinks=True)
+            assert error.reason == "directory-not-found"
+    finally:
+        cas_cache.release_resources()
+
+
+def test_bad_sym_escape(tmpdir):
+    _run_test_in_subprocess(_test_bad_sym_escape_subprocess, tmpdir)

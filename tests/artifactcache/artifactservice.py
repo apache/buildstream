@@ -86,19 +86,9 @@ def _artifact_request(url, queue):
 @pytest.mark.parametrize("files", ["present", "absent", "invalid"])
 def test_update_artifact(tmpdir, files):
     sharedir = os.path.join(str(tmpdir), "share")
-    with create_artifact_share(sharedir) as share:
-        # put files object
-        if files == "present":
-            directory = re_pb2.Directory()
-            digest = share.cas.add_object(buffer=directory.SerializeToString())
-        elif files == "invalid":
-            digest = share.cas.add_object(buffer="abcdefghijklmnop".encode("utf-8"))
-        elif files == "absent":
-            digest = utils._message_digest("abcdefghijklmnop".encode("utf-8"))
-
-        url = urlparse(share.repo)
+    with create_artifact_share(sharedir, casd=True) as share:
         queue = Queue()
-        process = Process(target=_queue_wrapper, args=(_get_artifact, queue, url, files, digest))
+        process = Process(target=_queue_wrapper, args=(_update_artifact, queue, share, files))
 
         try:
             with _signals.blocked([signal.SIGINT], ignore=False):
@@ -112,7 +102,18 @@ def test_update_artifact(tmpdir, files):
         assert not error
 
 
-def _get_artifact(url, files, digest, queue):
+def _update_artifact(share, files, *, queue):
+    # put files object
+    if files == "present":
+        directory = re_pb2.Directory()
+        digest = share.cas.add_object(buffer=directory.SerializeToString())
+    elif files == "invalid":
+        digest = share.cas.add_object(buffer="abcdefghijklmnop".encode("utf-8"))
+    elif files == "absent":
+        digest = utils._message_digest("abcdefghijklmnop".encode("utf-8"))
+
+    url = urlparse(share.repo)
+
     channel = grpc.insecure_channel("{}:{}".format(url.hostname, url.port))
     artifact_stub = ArtifactServiceStub(channel)
 

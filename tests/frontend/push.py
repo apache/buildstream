@@ -292,19 +292,17 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     element_path = 'elements'
 
     # Create an artifact share (remote artifact cache) in the tmpdir/artifactshare
-    # Mock a file system with 12 MB free disk space
+    # Set a 22 MB quota
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'),
-                               min_head_size=int(2e9),
-                               max_head_size=int(2e9),
-                               total_space=int(10e9), free_space=(int(12e6) + int(2e9))) as share:
+                               quota=int(22e6)) as share:
 
         # Configure bst to push to the cache
         cli.configure({
             'artifacts': {'url': share.repo, 'push': True},
         })
 
-        # Create and build an element of 5 MB
-        create_element_size('element1.bst', project, element_path, [], int(5e6))
+        # Create and build an element of 15 MB
+        create_element_size('element1.bst', project, element_path, [], int(15e6))
         result = cli.run(project=project, args=['build', 'element1.bst'])
         result.assert_success()
 
@@ -349,7 +347,7 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
     # Create an artifact share (remote cache) in tmpdir/artifactshare
     # Mock a file system with 5 MB total space
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'),
-                               total_space=int(5e6) + int(2e9)) as share:
+                               quota=int(5e6)) as share:
 
         # Configure bst to push to the remote cache
         cli.configure({
@@ -383,23 +381,21 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
     element_path = 'elements'
 
     # Create an artifact share (remote cache) in tmpdir/artifactshare
-    # Mock a file system with 12 MB free disk space
+    # Set a 22 MB quota
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare'),
-                               min_head_size=int(2e9),
-                               max_head_size=int(2e9),
-                               total_space=int(10e9), free_space=(int(12e6) + int(2e9))) as share:
+                               quota=int(22e6)) as share:
 
         # Configure bst to push to the cache
         cli.configure({
             'artifacts': {'url': share.repo, 'push': True},
         })
 
-        # Create and build 2 elements, each of 5 MB.
+        # Create and build 2 elements, one 5 MB and one 15 MB.
         create_element_size('element1.bst', project, element_path, [], int(5e6))
         result = cli.run(project=project, args=['build', 'element1.bst'])
         result.assert_success()
 
-        create_element_size('element2.bst', project, element_path, [], int(5e6))
+        create_element_size('element2.bst', project, element_path, [], int(15e6))
         result = cli.run(project=project, args=['build', 'element2.bst'])
         result.assert_success()
 

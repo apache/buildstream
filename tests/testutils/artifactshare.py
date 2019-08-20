@@ -20,16 +20,12 @@ from buildstream._protos.buildstream.v2 import artifact_pb2
 #
 # Args:
 #    directory (str): The base temp directory for the test
-#    total_space (int): Mock total disk space on artifact server
-#    free_space (int): Mock free disk space on artifact server
+#    cache_quota (int): Maximum amount of disk space to use
+#    casd (bool): Allow write access via casd
 #
 class ArtifactShare():
 
-    def __init__(self, directory, *,
-                 total_space=None,
-                 free_space=None,
-                 min_head_size=int(2e9),
-                 max_head_size=int(10e9)):
+    def __init__(self, directory, *, quota=None, casd=False):
 
         # The working directory for the artifact share (in case it
         # needs to do something outside of its backend's storage folder).
@@ -46,13 +42,9 @@ class ArtifactShare():
         self.artifactdir = os.path.join(self.repodir, 'artifacts', 'refs')
         os.makedirs(self.artifactdir)
 
-        self.cas = CASCache(self.repodir)
+        self.cas = CASCache(self.repodir, casd=casd)
 
-        self.total_space = total_space
-        self.free_space = free_space
-
-        self.max_head_size = max_head_size
-        self.min_head_size = min_head_size
+        self.quota = quota
 
         q = Queue()
 
@@ -78,29 +70,22 @@ class ArtifactShare():
             pytest_cov.embed.cleanup_on_sigterm()
 
         try:
-            # Optionally mock statvfs
-            if self.total_space:
-                if self.free_space is None:
-                    self.free_space = self.total_space
-                os.statvfs = self._mock_statvfs
+            with create_server(self.repodir,
+                               quota=self.quota,
+                               enable_push=True) as server:
+                port = server.add_insecure_port('localhost:0')
 
-            server = create_server(self.repodir,
-                                   max_head_size=self.max_head_size,
-                                   min_head_size=self.min_head_size,
-                                   enable_push=True)
-            port = server.add_insecure_port('localhost:0')
+                server.start()
 
-            server.start()
+                # Send port to parent
+                q.put(port)
 
-            # Send port to parent
-            q.put(port)
+                # Sleep until termination by signal
+                signal.pause()
 
         except Exception:
             q.put(None)
             raise
-
-        # Sleep until termination by signal
-        signal.pause()
 
     # has_object():
     #
@@ -176,18 +161,9 @@ class ArtifactShare():
         self.process.terminate()
         self.process.join()
 
+        self.cas.release_resources()
+
         shutil.rmtree(self.directory)
-
-    def _mock_statvfs(self, _path):
-        repo_size = 0
-        for root, _, files in os.walk(self.repodir):
-            for filename in files:
-                repo_size += os.path.getsize(os.path.join(root, filename))
-
-        return statvfs_result(f_blocks=self.total_space,
-                              f_bfree=self.free_space - repo_size,
-                              f_bavail=self.free_space - repo_size,
-                              f_bsize=1)
 
 
 # create_artifact_share()
@@ -195,11 +171,8 @@ class ArtifactShare():
 # Create an ArtifactShare for use in a test case
 #
 @contextmanager
-def create_artifact_share(directory, *, total_space=None, free_space=None,
-                          min_head_size=int(2e9),
-                          max_head_size=int(10e9)):
-    share = ArtifactShare(directory, total_space=total_space, free_space=free_space,
-                          min_head_size=min_head_size, max_head_size=max_head_size)
+def create_artifact_share(directory, *, quota=None, casd=False):
+    share = ArtifactShare(directory, quota=quota, casd=casd)
     try:
         yield share
     finally:
