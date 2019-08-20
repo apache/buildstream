@@ -1265,9 +1265,11 @@ def artifact_log(app, artifacts, out):
 #                Artifact List-Contents Command                #
 ################################################################
 @artifact.command(name='list-contents', short_help="List the contents of an artifact")
+@click.option('--long', '-l', 'long_', default=False, is_flag=True,
+              help="Provides more information about the contents of the artifact.")
 @click.argument('artifacts', type=click.Path(), nargs=-1)
 @click.pass_obj
-def artifact_list_contents(app, artifacts):
+def artifact_list_contents(app, artifacts, long_):
     """List the contents of an artifact.
 
     Note that 'artifacts' can be element names, which must end in '.bst',
@@ -1276,8 +1278,12 @@ def artifact_list_contents(app, artifacts):
     """
     with app.initialized():
         elements_to_files = app.stream.artifact_list_contents(artifacts)
-        click.echo(app.logger._pretty_print_dictionary(elements_to_files))
-        sys.exit(0)
+        if not elements_to_files:
+            click.echo("None of the specified artifacts are cached.", err=True)
+            sys.exit(1)
+        else:
+            click.echo(app.logger._pretty_print_dictionary(elements_to_files, long_))
+            sys.exit(0)
 
 
 ###################################################################

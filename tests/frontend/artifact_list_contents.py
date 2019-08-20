@@ -96,3 +96,45 @@ def test_artifact_list_exact_contents_glob(cli, datafiles):
 
     for artifact in expected_artifacts:
         assert artifact in result.output
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_list_exact_contents_element_long(cli, datafiles):
+    project = str(datafiles)
+
+    # Ensure we have an artifact to read
+    result = cli.run(project=project, args=['build', 'import-bin.bst'])
+    assert result.exit_code == 0
+
+    # List the contents via the element name
+    result = cli.run(project=project, args=['artifact', 'list-contents', '--long', 'import-bin.bst'])
+    assert result.exit_code == 0
+    expected_output = ("import-bin.bst:\n"
+                       "\tdrwxr-xr-x  dir    1           usr\n"
+                       "\tdrwxr-xr-x  dir    1           usr/bin\n"
+                       "\t-rw-r--r--  reg    107         usr/bin/hello\n\n")
+
+    assert expected_output in result.output
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_list_exact_contents_ref_long(cli, datafiles):
+    project = str(datafiles)
+
+    # Get the cache key of our test element
+    key = cli.get_element_key(project, 'import-bin.bst')
+
+    # Ensure we have an artifact to read
+    result = cli.run(project=project, args=['build', 'import-bin.bst'])
+    assert result.exit_code == 0
+
+    # List the contents via the key
+    result = cli.run(project=project, args=['artifact', 'list-contents', '-l', 'test/import-bin/' + key])
+    assert result.exit_code == 0
+
+    expected_output = ("  test/import-bin/" + key + ":\n"
+                       "\tdrwxr-xr-x  dir    1           usr\n"
+                       "\tdrwxr-xr-x  dir    1           usr/bin\n"
+                       "\t-rw-r--r--  reg    107         usr/bin/hello\n\n")
+
+    assert expected_output in result.output
