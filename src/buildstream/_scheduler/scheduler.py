@@ -74,11 +74,6 @@ class Scheduler():
         self.terminated = False     # Whether the scheduler was asked to terminate or has terminated
         self.suspended = False      # Whether the scheduler is currently suspended
 
-        # A manager for creating and monitoring IPC queues, note that this
-        # can't be part of the platform or context as it is not always
-        # picklable.
-        self.ipc_queue_manager = self.context.platform.make_queue_manager()
-
         # These are shared with the Job, but should probably be removed or made private in some way.
         self.loop = None            # Shared for Job access to observe the message queue
         self.internal_stops = 0     # Amount of SIGSTP signals we've introduced, this is shared with job.py

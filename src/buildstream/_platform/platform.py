@@ -28,8 +28,6 @@ import psutil
 from .._exceptions import PlatformError, ImplError, SandboxError
 from .. import utils
 
-from .multiprocessing import QueueManager, PicklableQueueManager
-
 
 class Platform():
     # Platform()
@@ -174,12 +172,6 @@ class Platform():
         # get the hardware identifier from uname
         uname_machine = platform.uname().machine
         return Platform.canonicalize_arch(uname_machine)
-
-    def make_queue_manager(self):
-        if self.does_multiprocessing_start_require_pickling():
-            return PicklableQueueManager()
-        else:
-            return QueueManager()
 
     # does_multiprocessing_start_require_pickling():
     #
