@@ -80,6 +80,7 @@ class Stream():
         self._pipeline = None
         self._state = State(session_start)  # Owned by Stream, used by Core to set state
         self._notification_queue = deque()
+        self._starttime = session_start  # Synchronised with Scheduler's relative start time
 
         context.messenger.set_state(self._state)
 
@@ -1100,7 +1101,7 @@ class Stream():
     #
     @property
     def elapsed_time(self):
-        return self._scheduler.elapsed_time()
+        return self._state.elapsed_time(start_time=self._starttime)
 
     # terminate()
     #
@@ -1658,12 +1659,14 @@ class Stream():
         elif notification.notification_type == NotificationType.TICK:
             self._ticker_callback()
         elif notification.notification_type == NotificationType.JOB_START:
-            self._state.add_task(notification.job_action, notification.full_name, notification.elapsed_time)
+            self._state.add_task(notification.job_action, notification.full_name, notification.time)
         elif notification.notification_type == NotificationType.JOB_COMPLETE:
             self._state.remove_task(notification.job_action, notification.full_name)
             if notification.job_status == JobStatus.FAIL:
                 self._state.fail_task(notification.job_action, notification.full_name,
                                       notification.element)
+        elif notification.notification_type == NotificationType.SCHED_START_TIME:
+            self._starttime = notification.time
         else:
             raise StreamError("Unrecognised notification type received")
 

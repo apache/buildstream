@@ -54,6 +54,7 @@ class NotificationType(FastEnum):
     TICK = "tick"
     TERMINATE = "terminate"
     QUIT = "quit"
+    SCHED_START_TIME = "sched_start_time"
 
 
 # Notification()
@@ -72,13 +73,13 @@ class Notification():
                  full_name=None,
                  job_action=None,
                  job_status=None,
-                 elapsed_time=None,
+                 time=None,
                  element=None):
         self.notification_type = notification_type
         self.full_name = full_name
         self.job_action = job_action
         self.job_status = job_status
-        self.elapsed_time = elapsed_time
+        self.time = time
         self.element = element
 
 
@@ -249,21 +250,6 @@ class Scheduler():
     def stop_queueing(self):
         self._queue_jobs = False
 
-    # elapsed_time()
-    #
-    # Fetches the current session elapsed time
-    #
-    # Returns:
-    #    (timedelta): The amount of time since the start of the session,
-    #                discounting any time spent while jobs were suspended.
-    #
-    def elapsed_time(self):
-        timenow = datetime.datetime.now()
-        starttime = self._starttime
-        if not starttime:
-            starttime = timenow
-        return timenow - starttime
-
     # job_completed():
     #
     # Called when a Job completes
@@ -313,7 +299,7 @@ class Scheduler():
         notification = Notification(NotificationType.JOB_START,
                                     full_name=job.name,
                                     job_action=job.action_name,
-                                    elapsed_time=self.elapsed_time())
+                                    time=self._state.elapsed_time(start_time=self._starttime))
         self._notify(notification)
         job.start()
 
@@ -411,6 +397,7 @@ class Scheduler():
                 job.resume()
             self.suspended = False
             self._starttime += (datetime.datetime.now() - self._suspendtime)
+            self._notify(Notification(NotificationType.SCHED_START_TIME, time=self._starttime))
             self._suspendtime = None
 
     # _interrupt_event():
