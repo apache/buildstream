@@ -28,7 +28,7 @@ from ._profile import Topics, PROFILER
 from ._platform import Platform
 from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
-from ._cas import CASCache, CASQuota, CASCacheUsage
+from ._cas import CASCache
 from .types import _CacheBuildTrees, _SchedulerErrorAction
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .node import Node
@@ -150,6 +150,8 @@ class Context():
         # Whether file contents are required for all artifacts in the local cache
         self.require_artifact_files = True
 
+        self.fork_allowed = True
+
         # Whether elements must be rebuilt when their dependencies have changed
         self._strict_build_plan = None
 
@@ -167,7 +169,6 @@ class Context():
         self._workspaces = None
         self._workspace_project_cache = WorkspaceProjectCache()
         self._cascache = None
-        self._casquota = None
 
     # __enter__()
     #
@@ -181,7 +182,8 @@ class Context():
     # Called when exiting the with-statement context.
     #
     def __exit__(self, exc_type, exc_value, traceback):
-        return None
+        if self._cascache:
+            self._cascache.release_resources(self.messenger)
 
     # load()
     #
@@ -358,16 +360,6 @@ class Context():
 
         return self._artifactcache
 
-    # get_cache_usage()
-    #
-    # Fetches the current usage of the artifact cache
-    #
-    # Returns:
-    #     (CASCacheUsage): The current status
-    #
-    def get_cache_usage(self):
-        return CASCacheUsage(self.get_casquota())
-
     @property
     def sourcecache(self):
         if not self._sourcecache:
@@ -495,10 +487,15 @@ class Context():
 
     def get_cascache(self):
         if self._cascache is None:
-            self._cascache = CASCache(self.cachedir)
+            self._cascache = CASCache(self.cachedir, cache_quota=self.config_cache_quota)
         return self._cascache
 
-    def get_casquota(self):
-        if self._casquota is None:
-            self._casquota = CASQuota(self)
-        return self._casquota
+    # disable_fork():
+    #
+    # This will prevent the scheduler from running but will allow communication
+    # with casd in the main process.
+    #
+    def disable_fork(self):
+        self.fork_allowed = False
+        cascache = self.get_cascache()
+        cascache.notify_fork_disabled()

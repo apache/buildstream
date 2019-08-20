@@ -1566,21 +1566,6 @@ class Element(Plugin):
             workspace.clear_running_files()
             self._get_context().get_workspaces().save_config()
 
-            # This element will have already been marked as
-            # required, but we bump the atime again, in case
-            # we did not know the cache key until now.
-            #
-            # FIXME: This is not exactly correct, we should be
-            #        doing this at the time which we have discovered
-            #        a new cache key, this just happens to be the
-            #        last place where that can happen.
-            #
-            #        Ultimately, we should be refactoring
-            #        Element._update_state() such that we know
-            #        when a cache key is actually discovered.
-            #
-            self.__artifacts.mark_required_elements([self])
-
     # _assemble():
     #
     # Internal method for running the entire build phase.

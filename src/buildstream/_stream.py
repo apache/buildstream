@@ -19,8 +19,6 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
-import itertools
-import functools
 import os
 import sys
 import stat
@@ -224,6 +222,8 @@ class Stream():
                         self._message(MessageType.INFO, message + ", shell will be loaded without it")
             else:
                 buildtree = True
+
+        self._context.disable_fork()
 
         return element._shell(scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command,
                               usebuildtree=buildtree)
@@ -557,6 +557,8 @@ class Stream():
             self._enqueue_plan(uncached_elts)
             self._run()
 
+        self._context.disable_fork()
+
         # Stage deps into a temporary sandbox first
         if isinstance(target, ArtifactElement):
             try:
@@ -669,9 +671,8 @@ class Stream():
     #
     # Args:
     #    targets (str): Targets to remove
-    #    no_prune (bool): Whether to prune the unreachable refs, default False
     #
-    def artifact_delete(self, targets, no_prune):
+    def artifact_delete(self, targets):
         # Return list of Element and/or ArtifactElement objects
         target_objects = self.load_selection(targets, selection=PipelineSelection.NONE, load_refs=True)
 
@@ -686,18 +687,13 @@ class Stream():
         ref_removed = False
         for ref in remove_refs:
             try:
-                self._artifacts.remove(ref, defer_prune=True)
+                self._artifacts.remove(ref)
             except ArtifactError as e:
                 self._message(MessageType.WARN, str(e))
                 continue
 
             self._message(MessageType.INFO, "Removed: {}".format(ref))
             ref_removed = True
-
-        # Prune the artifact cache
-        if ref_removed and not no_prune:
-            with self._context.messenger.timed_activity("Pruning artifact cache"):
-                self._artifacts.prune()
 
         if not ref_removed:
             self._message(MessageType.INFO, "No artifacts were removed")
@@ -1247,20 +1243,6 @@ class Stream():
         selected = self._pipeline.except_elements(self.targets,
                                                   selected,
                                                   except_elements)
-
-        # Set the "required" artifacts that should not be removed
-        # while this pipeline is active
-        #
-        # It must include all the artifacts which are required by the
-        # final product. Note that this is a superset of the build plan.
-        #
-        # use partial as we send this to both Artifact and Source caches
-        required_elements = functools.partial(self._pipeline.dependencies, elements, Scope.ALL)
-        self._artifacts.mark_required_elements(required_elements())
-
-        self._sourcecache.mark_required_sources(
-            itertools.chain.from_iterable(
-                [element.sources() for element in required_elements()]))
 
         if selection == PipelineSelection.PLAN and dynamic_plan:
             # We use a dynamic build plan, only request artifacts of top-level targets,
