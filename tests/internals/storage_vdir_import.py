@@ -40,19 +40,14 @@ from buildstream.storage.directory import VirtualDirectoryError
 root_filesets = [
     [('a/b/c/textfile1', 'F', 'This is textfile 1\n')],
     [('a/b/c/textfile1', 'F', 'This is the replacement textfile 1\n')],
-    [('a/b/d', 'D', '')],
-    [('a/b/e', 'S', '/a/b/d')],
     [('a/b/f', 'S', '/a/b/c')],
-    [('a/b/d', 'D', ''), ('a/b/e', 'S', '/a/b/d')],
     [('a/b/c', 'D', ''), ('a/b/f', 'S', '/a/b/c')],
-    [('a/c', 'F', 'This is textfile 1\n')],
-    [('a/b/e', 'F', 'This is textfile 1\n')],
-    [('a/b/c', 'D', '')]
+    [('a/b/f', 'F', 'This is textfile 1\n')],
 ]
 
 empty_hash_ref = sha256().hexdigest()
 RANDOM_SEED = 69105
-NUM_RANDOM_TESTS = 10
+NUM_RANDOM_TESTS = 4
 
 
 def generate_import_roots(rootno, directory):
@@ -269,14 +264,14 @@ def _listing_test(tmpdir, root, generator_function):
         cas_cache.release_resources()
 
 
-@pytest.mark.parametrize("root", range(1, 11))
 @pytest.mark.in_subprocess
+@pytest.mark.parametrize("root", range(1, NUM_RANDOM_TESTS + 1))
 def test_random_directory_listing(tmpdir, root):
     _listing_test(str(tmpdir), root, generate_random_root)
 
 
-@pytest.mark.parametrize("root", [1, 2, 3, 4, 5])
 @pytest.mark.in_subprocess
+@pytest.mark.parametrize("root", range(1, len(root_filesets) + 1))
 def test_fixed_directory_listing(tmpdir, root):
     _listing_test(str(tmpdir), root, generate_import_roots)
 
