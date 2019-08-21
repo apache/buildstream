@@ -1,0 +1,48 @@
+# Default configuration for the Perl ExtUtil::MakeMaker
+# build system 
+
+variables:
+
+  # To install perl distributions into the correct location
+  # in our chroot we need to set PREFIX to <destdir>/<prefix>
+  # in the configure-commands.
+  #
+  # The mapping between PREFIX and the final installation
+  # directories is complex and depends upon the configuration
+  # of perl see,
+  # https://metacpan.org/pod/distribution/perl/INSTALL#Installation-Directories
+  # and ExtUtil::MakeMaker's documentation for more details.
+  configure: |
+
+    perl Makefile.PL PREFIX=%{install-root}%{prefix}
+
+  make: make
+  make-install: make install
+
+config:
+
+  # Commands for configuring the software
+  #
+  configure-commands:
+  - |
+    %{configure}
+
+  # Commands for building the software
+  #
+  build-commands:
+  - |
+    %{make}
+
+  # Commands for installing the software into a
+  # destination folder
+  #
+  install-commands:
+  - |
+    %{make-install}
+
+  # Commands for stripping debugging information out of
+  # installed binaries
+  #
+  strip-commands:
+  - |
+    %{strip-binaries}

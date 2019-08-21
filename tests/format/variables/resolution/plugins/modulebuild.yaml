@@ -1,0 +1,48 @@
+# Default configuration for the Perl Module::Build
+# build system.
+
+variables:
+
+  # To install perl distributions into the correct location
+  # in our chroot we need to set PREFIX to <destdir>/<prefix>
+  # in the configure-commands.
+  #
+  # The mapping between PREFIX and the final installation
+  # directories is complex and depends upon the configuration
+  # of perl see,
+  # https://metacpan.org/pod/distribution/perl/INSTALL#Installation-Directories
+  # and ExtUtil::MakeMaker's documentation for more details.
+  configure: |
+
+    perl Build.PL --prefix "%{install-root}%{prefix}"
+
+  perl-build: ./Build
+  perl-install: ./Build install
+
+config:
+
+  # Commands for configuring the software
+  #
+  configure-commands:
+  - |
+    %{configure}
+
+  # Commands for building the software
+  #
+  build-commands:
+  - |
+    %{perl-build}
+
+  # Commands for installing the software into a
+  # destination folder
+  #
+  install-commands:
+  - |
+    %{perl-install}
+
+  # Commands for stripping debugging information out of
+  # installed binaries
+  #
+  strip-commands:
+  - |
+    %{strip-binaries}

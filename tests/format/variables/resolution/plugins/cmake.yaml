@@ -1,0 +1,72 @@
+# CMake default configuration
+
+variables:
+
+  build-dir: _builddir
+
+  # Project-wide extra arguments to be passed to `cmake`
+  cmake-global: ''
+
+  # Element-specific extra arguments to be passed to `cmake`.
+  cmake-local: ''
+
+  # For backwards compatibility only, do not use.
+  cmake-extra: ''
+
+  # The cmake generator to use
+  generator: Unix Makefiles
+
+  cmake-args: |
+
+    -DCMAKE_INSTALL_PREFIX:PATH="%{prefix}" \
+    -DCMAKE_INSTALL_LIBDIR:PATH="%{lib}" %{cmake-extra} %{cmake-global} %{cmake-local}
+
+  cmake: |
+
+    cmake -B%{build-dir} -H"%{conf-root}" -G"%{generator}" %{cmake-args}
+
+  make: cmake --build %{build-dir} -- ${JOBS}
+  make-install: env DESTDIR="%{install-root}" cmake --build %{build-dir} --target install
+
+  # Set this if the sources cannot handle parallelization.
+  #
+  # notparallel: True
+
+config:
+
+  # Commands for configuring the software
+  #
+  configure-commands:
+  - |
+    %{cmake}
+
+  # Commands for building the software
+  #
+  build-commands:
+  - |
+    %{make}
+
+  # Commands for installing the software into a
+  # destination folder
+  #
+  install-commands:
+  - |
+    %{make-install}
+
+  # Commands for stripping debugging information out of
+  # installed binaries
+  #
+  strip-commands:
+  - |
+    %{strip-binaries}
+
+# Use max-jobs CPUs for building and enable verbosity
+environment:
+  JOBS: -j%{max-jobs}
+  V: 1
+
+# And dont consider JOBS or V as something which may
+# affect build output.
+environment-nocache:
+- JOBS
+- V

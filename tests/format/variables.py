@@ -41,11 +41,11 @@ def print_warning(msg):
     ('modulebuild.bst', 'configure', "perl Build.PL --prefix \"/buildstream-install/usr\""),
     ('qmake.bst', 'make-install', "make -j1 INSTALL_ROOT=\"/buildstream-install\" install"),
 ])
-@pytest.mark.datafiles(os.path.join(DATA_DIR, 'defaults'))
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'resolution'))
 def test_defaults(cli, datafiles, target, varname, expected):
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=[
-        'show', '--deps', 'none', '--format', '%{vars}', target
+        'show', '--deps', 'none', '--format', '%{vars}', 'defaults/{}'.format(target)
     ])
     result.assert_success()
     result_vars = _yaml.load_data(result.output)
@@ -67,11 +67,12 @@ def test_defaults(cli, datafiles, target, varname, expected):
     ('modulebuild.bst', 'configure', "perl Build.PL --prefix \"/custom/install/root/opt\""),
     ('qmake.bst', 'make-install', "make -j1 INSTALL_ROOT=\"/custom/install/root\" install"),
 ])
-@pytest.mark.datafiles(os.path.join(DATA_DIR, 'overrides'))
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'resolution'))
 def test_overrides(cli, datafiles, target, varname, expected):
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=[
-        'show', '--deps', 'none', '--format', '%{vars}', target
+        'show', '--deps', 'none', '--format', '%{vars}',
+        'overrides/{}'.format(target)
     ])
     result.assert_success()
     result_vars = _yaml.load_data(result.output)
