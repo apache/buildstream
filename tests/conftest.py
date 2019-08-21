@@ -23,6 +23,7 @@ import os
 import pytest
 
 from buildstream.testing import register_repo_kind, sourcetests_collection_hook
+from buildstream.testing._forked import forked_run_report
 from buildstream.testing.integration import integration_cache  # pylint: disable=unused-import
 
 
@@ -65,6 +66,27 @@ def pytest_runtest_setup(item):
     else:
         if item.get_closest_marker('remoteexecution'):
             pytest.skip('skipping remote-execution test')
+
+
+#################################################
+#              in_subprocess mark               #
+#################################################
+#
+# Various issues can occur when forking the Python process and using gRPC,
+# due to its multithreading. As BuildStream forks for parallelisation, gRPC
+# features are restricted to child processes, so tests using them must also
+# run as child processes. The in_subprocess mark handles this.
+# See <https://github.com/grpc/grpc/blob/master/doc/fork_support.md>.
+#
+@pytest.mark.tryfirst
+def pytest_runtest_protocol(item):
+    if item.get_closest_marker('in_subprocess') is not None:
+        reports = forked_run_report(item)
+        for rep in reports:
+            item.ihook.pytest_runtest_logreport(report=rep)
+        return True
+    else:
+        return None
 
 
 #################################################
