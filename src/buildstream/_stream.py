@@ -1158,9 +1158,12 @@ class Stream():
         # Classify element and artifact strings
         target_elements, target_artifacts = self._classify_artifacts(targets)
 
-        if target_artifacts and not load_refs:
-            detail = '\n'.join(target_artifacts)
-            raise ArtifactElementError("Cannot perform this operation with artifact refs:", detail=detail)
+        if target_artifacts:
+            if not load_refs:
+                detail = '\n'.join(target_artifacts)
+                raise ArtifactElementError("Cannot perform this operation with artifact refs:", detail=detail)
+            if selection in (PipelineSelection.ALL, PipelineSelection.RUN):
+                raise StreamError("Error: '--deps {}' is not supported for artifact refs".format(selection))
 
         # Load rewritable if we have any tracking selection to make
         rewritable = False
