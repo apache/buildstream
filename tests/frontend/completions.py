@@ -146,7 +146,8 @@ def test_commands(cli, cmd, word_idx, expected):
     ('bst --l', 1, ['--log-file ']),
 
     # Test that options of subcommands also complete
-    ('bst --no-colors build -', 3, ['--all ', '--track ', '--track-all ',
+    ('bst --no-colors build -', 3, ['--deps ', '-d ',
+                                    '--track ', '--track-all ',
                                     '--track-except ',
                                     '--track-cross-junctions ', '-J ',
                                     '--track-save ',

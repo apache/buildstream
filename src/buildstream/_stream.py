@@ -234,29 +234,23 @@ class Stream():
     #
     # Args:
     #    targets (list of str): Targets to build
+    #    selection (PipelineSelection): The selection mode for the specified targets
     #    track_targets (list of str): Specified targets for tracking
     #    track_except (list of str): Specified targets to except from tracking
     #    track_cross_junctions (bool): Whether tracking should cross junction boundaries
     #    ignore_junction_targets (bool): Whether junction targets should be filtered out
-    #    build_all (bool): Whether to build all elements, or only those
-    #                      which are required to build the target.
     #    remote (str): The URL of a specific remote server to push to, or None
     #
     # If `remote` specified as None, then regular configuration will be used
     # to determine where to push artifacts to.
     #
     def build(self, targets, *,
+              selection=PipelineSelection.PLAN,
               track_targets=None,
               track_except=None,
               track_cross_junctions=False,
               ignore_junction_targets=False,
-              build_all=False,
               remote=None):
-
-        if build_all:
-            selection = PipelineSelection.ALL
-        else:
-            selection = PipelineSelection.PLAN
 
         use_config = True
         if remote:
@@ -286,7 +280,7 @@ class Stream():
 
             # fetch blobs of targets if options set
             if self._context.pull_artifact_files:
-                scope = Scope.ALL if build_all else Scope.RUN
+                scope = Scope.ALL if selection == PipelineSelection.ALL else Scope.RUN
                 for element in self.targets:
                     element._set_artifact_files_required(scope=scope)
 
