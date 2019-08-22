@@ -464,7 +464,16 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
         # Create and try to push a 6MB element.
         create_element_size('large_element.bst', project, element_path, [], int(6e6))
         result = cli.run(project=project, args=['build', 'large_element.bst'])
-        result.assert_success()
+        # This should fail; the server will refuse to store the CAS
+        # blobs for the artifact, and then fail to find the files for
+        # the uploaded artifact proto.
+        #
+        # FIXME: This should be extremely uncommon in practice, since
+        # the artifact needs to be at least half the cache size for
+        # this to happen. Nonetheless, a nicer error message would be
+        # nice (perhaps we should just disallow uploading artifacts
+        # that large).
+        result.assert_main_error(ErrorDomain.STREAM, None)
 
         # Ensure that the small artifact is still in the share
         states = cli.get_element_states(project, ['small_element.bst', 'large_element.bst'])

@@ -25,7 +25,7 @@ from buildstream._protos.buildstream.v2 import artifact_pb2
 #
 class ArtifactShare():
 
-    def __init__(self, directory, *, quota=None, casd=False):
+    def __init__(self, directory, *, quota=None, casd=False, index_only=False):
 
         # The working directory for the artifact share (in case it
         # needs to do something outside of its backend's storage folder).
@@ -45,6 +45,7 @@ class ArtifactShare():
         self.cas = CASCache(self.repodir, casd=casd)
 
         self.quota = quota
+        self.index_only = index_only
 
         q = Queue()
 
@@ -72,7 +73,8 @@ class ArtifactShare():
         try:
             with create_server(self.repodir,
                                quota=self.quota,
-                               enable_push=True) as server:
+                               enable_push=True,
+                               index_only=self.index_only) as server:
                 port = server.add_insecure_port('localhost:0')
 
                 server.start()
@@ -104,17 +106,7 @@ class ArtifactShare():
 
         return os.path.exists(object_path)
 
-    # has_artifact():
-    #
-    # Checks whether the artifact is present in the share
-    #
-    # Args:
-    #    artifact_name (str): The composed complete artifact name
-    #
-    # Returns:
-    #    (str): artifact digest if the artifact exists in the share, otherwise None.
-    def has_artifact(self, artifact_name):
-
+    def get_artifact_proto(self, artifact_name):
         artifact_proto = artifact_pb2.Artifact()
         artifact_path = os.path.join(self.artifactdir, artifact_name)
 
@@ -123,6 +115,10 @@ class ArtifactShare():
                 artifact_proto.ParseFromString(f.read())
         except FileNotFoundError:
             return None
+
+        return artifact_proto
+
+    def get_cas_files(self, artifact_proto):
 
         reachable = set()
 
@@ -153,6 +149,21 @@ class ArtifactShare():
         except FileNotFoundError:
             return None
 
+    # has_artifact():
+    #
+    # Checks whether the artifact is present in the share
+    #
+    # Args:
+    #    artifact_name (str): The composed complete artifact name
+    #
+    # Returns:
+    #    (str): artifact digest if the artifact exists in the share, otherwise None.
+    def has_artifact(self, artifact_name):
+        artifact_proto = self.get_artifact_proto(artifact_name)
+        if not artifact_proto:
+            return None
+        return self.get_cas_files(artifact_proto)
+
     # close():
     #
     # Remove the artifact share.
@@ -177,6 +188,18 @@ def create_artifact_share(directory, *, quota=None, casd=False):
         yield share
     finally:
         share.close()
+
+
+@contextmanager
+def create_split_share(directory1, directory2, *, quota=None, casd=False):
+    index = ArtifactShare(directory1, quota=quota, casd=casd, index_only=True)
+    storage = ArtifactShare(directory2, quota=quota, casd=casd)
+
+    try:
+        yield index, storage
+    finally:
+        index.close()
+        storage.close()
 
 
 statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize f_bavail')
