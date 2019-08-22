@@ -856,6 +856,8 @@ class LogLine(Widget):
                 line = p.fmt_subst(line, 'state', "cached", fg='magenta')
             elif element._cached():
                 line = p.fmt_subst(line, 'state', "failed", fg='red')
+            elif element._cached_remotely():
+                line = p.fmt_subst(line, 'state', "available", fg='green')
             else:
                 line = p.fmt_subst(line, 'state', "not cached", fg='bright_red')
 
