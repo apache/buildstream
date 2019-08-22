@@ -117,6 +117,9 @@ service LocalContentAddressableStorage {
   // This returns a string that can be used as instance_name to access the
   // specified endpoint in further requests.
   rpc GetInstanceNameForRemote(GetInstanceNameForRemoteRequest) returns (GetInstanceNameForRemoteResponse) {}
+
+  // Query total space used by the local cache.
+  rpc GetLocalDiskUsage(GetLocalDiskUsageRequest) returns (GetLocalDiskUsageResponse) {}
 }
 
 // A request message for
@@ -370,4 +373,19 @@ message GetInstanceNameForRemoteRequest {
 // [LocalContentAddressableStorage.GetInstanceNameForRemote][build.buildgrid.v2.LocalContentAddressableStorage.GetInstanceNameForRemote].
 message GetInstanceNameForRemoteResponse {
   string instance_name = 1;
+}
+
+// A request message for
+// [LocalContentAddressableStorage.GetLocalDiskUsage][build.buildgrid.v2.LocalContentAddressableStorage.GetLocalDiskUsage].
+message GetLocalDiskUsageRequest {
+}
+
+// A response message for
+// [LocalContentAddressableStorage.GetLocalDiskUsage][build.buildgrid.v2.LocalContentAddressableStorage.GetLocalDiskUsage].
+message GetLocalDiskUsageResponse {
+  // Total size used by the local cache, in bytes.
+  int64 size_bytes = 1;
+
+  // Disk quota for the local cache, in bytes. A value of 0 means no quota is set.
+  int64 quota_bytes = 2;
 }

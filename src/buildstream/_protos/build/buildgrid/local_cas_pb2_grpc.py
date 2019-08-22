@@ -54,6 +54,11 @@ class LocalContentAddressableStorageStub(object):
         request_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemoteRequest.SerializeToString,
         response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemoteResponse.FromString,
         )
+    self.GetLocalDiskUsage = channel.unary_unary(
+        '/build.buildgrid.LocalContentAddressableStorage/GetLocalDiskUsage',
+        request_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetLocalDiskUsageRequest.SerializeToString,
+        response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetLocalDiskUsageResponse.FromString,
+        )
 
 
 class LocalContentAddressableStorageServicer(object):
@@ -189,6 +194,13 @@ class LocalContentAddressableStorageServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def GetLocalDiskUsage(self, request, context):
+    """Query total space used by the local cache.
+    """
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_LocalContentAddressableStorageServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -231,6 +243,11 @@ def add_LocalContentAddressableStorageServicer_to_server(servicer, server):
           servicer.GetInstanceNameForRemote,
           request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemoteRequest.FromString,
           response_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemoteResponse.SerializeToString,
+      ),
+      'GetLocalDiskUsage': grpc.unary_unary_rpc_method_handler(
+          servicer.GetLocalDiskUsage,
+          request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetLocalDiskUsageRequest.FromString,
+          response_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetLocalDiskUsageResponse.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(
