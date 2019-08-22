@@ -91,9 +91,6 @@ class CASRemote():
 
     def init(self):
         if not self._initialized:
-            # gRPC doesn't support fork without exec, which is used in the main process.
-            assert not utils._is_main_process()
-
             server_cert_bytes = None
             client_key_bytes = None
             client_cert_bytes = None
