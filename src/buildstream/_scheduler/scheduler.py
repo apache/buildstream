@@ -55,6 +55,7 @@ class NotificationType(FastEnum):
     TERMINATE = "terminate"
     QUIT = "quit"
     SCHED_START_TIME = "sched_start_time"
+    RUNNING = "running"
 
 
 # Notification()
@@ -162,6 +163,9 @@ class Scheduler():
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
+        # Notify that the loop has been created
+        self._notify(Notification(NotificationType.RUNNING))
+
         # Add timeouts
         self.loop.call_later(1, self._tick)
 
@@ -180,6 +184,9 @@ class Scheduler():
 
         failed = any(queue.any_failed_elements() for queue in self.queues)
         self.loop = None
+
+        # Notify that the loop has been reset
+        self._notify(Notification(NotificationType.RUNNING))
 
         if failed:
             status = SchedStatus.ERROR

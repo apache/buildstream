@@ -91,6 +91,7 @@ class Stream():
         self._ticker_callback = ticker_callback
         self._interrupt_callback = interrupt_callback
         self._notifier = self._scheduler._stream_notification_handler  # Assign the schedulers notification handler
+        self._scheduler_running = False
 
     # init()
     #
@@ -1077,7 +1078,7 @@ class Stream():
     #
     @property
     def running(self):
-        return self._scheduler.loop is not None
+        return self._scheduler_running
 
     # suspended
     #
@@ -1650,8 +1651,8 @@ class Stream():
         return element_targets, artifact_refs
 
     def _scheduler_notification_handler(self):
-        # Check the queue is there and a scheduler is running
-        assert self._notification_queue and self.running
+        # Check the queue is there
+        assert self._notification_queue
         notification = self._notification_queue.pop()
 
         if notification.notification_type == NotificationType.INTERRUPT:
@@ -1667,6 +1668,8 @@ class Stream():
                                       notification.element)
         elif notification.notification_type == NotificationType.SCHED_START_TIME:
             self._starttime = notification.time
+        elif notification.notification_type == NotificationType.RUNNING:
+            self._scheduler_running = not self._scheduler_running
         else:
             raise StreamError("Unrecognised notification type received")
 
