@@ -92,6 +92,7 @@ class Stream():
         self._interrupt_callback = interrupt_callback
         self._notifier = self._scheduler._stream_notification_handler  # Assign the schedulers notification handler
         self._scheduler_running = False
+        self._scheduler_terminated = False
 
     # init()
     #
@@ -1094,7 +1095,7 @@ class Stream():
     #
     @property
     def terminated(self):
-        return self._scheduler.terminated
+        return self._scheduler_terminated
 
     # elapsed_time
     #
@@ -1670,6 +1671,8 @@ class Stream():
             self._starttime = notification.time
         elif notification.notification_type == NotificationType.RUNNING:
             self._scheduler_running = not self._scheduler_running
+        elif notification.notification_type == NotificationType.TERMINATED:
+            self._scheduler_terminated = True
         else:
             raise StreamError("Unrecognised notification type received")
 

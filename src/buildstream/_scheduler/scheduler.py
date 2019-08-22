@@ -56,6 +56,7 @@ class NotificationType(FastEnum):
     QUIT = "quit"
     SCHED_START_TIME = "sched_start_time"
     RUNNING = "running"
+    TERMINATED = "terminated"
 
 
 # Notification()
@@ -229,6 +230,10 @@ class Scheduler():
         # attribute to decide whether or not to print status info
         # etc and the following code block will trigger some callbacks.
         self.terminated = True
+
+        # Notify the frontend that we're terminated as it might be
+        # from an interactive prompt callback or SIGTERM
+        self._notify(Notification(NotificationType.TERMINATED))
         self.loop.call_soon(self._terminate_jobs_real)
 
         # Block this until we're finished terminating jobs,
