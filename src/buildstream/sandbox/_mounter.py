@@ -28,8 +28,13 @@ from .. import utils, _signals
 class Mounter():
     @classmethod
     def _mount(cls, dest, src=None, mount_type=None,
-               stdout=sys.stdout, stderr=sys.stderr, options=None,
+               stdout=None, stderr=None, options=None,
                flags=None):
+
+        if stdout is None:
+            stdout = sys.stdout
+        if stderr is None:
+            stderr = sys.stderr
 
         argv = [utils.get_host_tool('mount')]
         if mount_type:
@@ -57,7 +62,11 @@ class Mounter():
         return dest
 
     @classmethod
-    def _umount(cls, path, stdout=sys.stdout, stderr=sys.stderr):
+    def _umount(cls, path, stdout=None, stderr=None):
+        if stdout is None:
+            stdout = sys.stdout
+        if stderr is None:
+            stderr = sys.stderr
 
         cmd = [utils.get_host_tool('umount'), '-R', path]
         status, _ = utils._call(
@@ -89,8 +98,12 @@ class Mounter():
     #
     @classmethod
     @contextmanager
-    def mount(cls, dest, src=None, stdout=sys.stdout,
-              stderr=sys.stderr, mount_type=None, **kwargs):
+    def mount(cls, dest, src=None, stdout=None,
+              stderr=None, mount_type=None, **kwargs):
+        if stdout is None:
+            stdout = sys.stdout
+        if stderr is None:
+            stderr = sys.stderr
 
         def kill_proc():
             cls._umount(dest, stdout, stderr)
@@ -126,8 +139,12 @@ class Mounter():
     #
     @classmethod
     @contextmanager
-    def bind_mount(cls, dest, src=None, stdout=sys.stdout,
-                   stderr=sys.stderr, **kwargs):
+    def bind_mount(cls, dest, src=None, stdout=None,
+                   stderr=None, **kwargs):
+        if stdout is None:
+            stdout = sys.stdout
+        if stderr is None:
+            stderr = sys.stderr
 
         def kill_proc():
             cls._umount(dest, stdout, stderr)
