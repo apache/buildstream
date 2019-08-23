@@ -1129,8 +1129,13 @@ class Stream():
     #
     @contextmanager
     def suspend(self):
-        with self._scheduler.jobs_suspended():
-            yield
+        # Send the notification to suspend jobs
+        notification = Notification(NotificationType.SUSPEND)
+        self._notify(notification)
+        yield
+        # Unsuspend jobs on context exit
+        notification = Notification(NotificationType.UNSUSPEND)
+        self._notify(notification)
 
     #############################################################
     #                    Private Methods                        #

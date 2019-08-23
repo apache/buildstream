@@ -24,7 +24,6 @@ import asyncio
 from itertools import chain
 import signal
 import datetime
-from contextlib import contextmanager
 
 # Local imports
 from .resources import Resources
@@ -57,6 +56,8 @@ class NotificationType(FastEnum):
     SCHED_START_TIME = "sched_start_time"
     RUNNING = "running"
     TERMINATED = "terminated"
+    SUSPEND = "suspend"
+    UNSUSPEND = "unsuspend"
 
 
 # Notification()
@@ -242,15 +243,17 @@ class Scheduler():
 
     # jobs_suspended()
     #
-    # A context manager for running with jobs suspended
+    # Suspend jobs after being notified
     #
-    @contextmanager
     def jobs_suspended(self):
         self._disconnect_signals()
         self._suspend_jobs()
 
-        yield
-
+    # jobs_unsuspended()
+    #
+    # Unsuspend jobs after being notified
+    #
+    def jobs_unsuspended(self):
         self._resume_jobs()
         self._connect_signals()
 
@@ -500,6 +503,10 @@ class Scheduler():
             self.terminate_jobs()
         elif notification.notification_type == NotificationType.QUIT:
             self.stop_queueing()
+        elif notification.notification_type == NotificationType.SUSPEND:
+            self.jobs_suspended()
+        elif notification.notification_type == NotificationType.UNSUSPEND:
+            self.jobs_unsuspended()
         else:
             # Do not raise exception once scheduler process is separated
             # as we don't want to pickle exceptions between processes
