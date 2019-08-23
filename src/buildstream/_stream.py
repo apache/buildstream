@@ -36,7 +36,7 @@ from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, \
-    SourcePushQueue, BuildQueue, PullQueue, ArtifactPushQueue
+    SourcePushQueue, SourcePullQueue, BuildQueue, PullQueue, ArtifactPushQueue
 from ._pipeline import Pipeline, PipelineSelection
 from ._profile import Topics, PROFILER
 from ._state import State
@@ -309,6 +309,52 @@ class Stream():
         if track_elements:
             self._enqueue_plan(track_elements, queue=track_queue)
         self._enqueue_plan(elements)
+        self._run()
+
+    def push_sources(self, targets, *,
+                     selection=PipelineSelection.NONE,
+                     ignore_junction_targets=False,
+                     remote=None):
+        use_config = True
+        if remote:
+            use_config = False
+
+        elements, _ = self._load(targets, (),
+                                 selection=selection,
+                                 ignore_junction_targets=ignore_junction_targets,
+                                 source_remote_url=remote,
+                                 use_source_config=use_config)
+
+        if not self._sourcecache.has_push_remotes():
+            raise StreamError("No source caches available for pushing sources")
+
+        self._scheduler.clear_queues()
+        push_queue = SourcePushQueue(self._scheduler)
+        self._add_queue(push_queue)
+        self._enqueue_plan(elements, queue=push_queue)
+        self._run()
+
+    def pull_sources(self, targets, *,
+                     selection=PipelineSelection.NONE,
+                     ignore_junction_targets=False,
+                     remote=None):
+        use_config = True
+        if remote:
+            use_config = False
+
+        elements, _ = self._load(targets, (),
+                                 selection=selection,
+                                 ignore_junction_targets=ignore_junction_targets,
+                                 source_remote_url=remote,
+                                 use_source_config=use_config)
+
+        if not self._sourcecache.has_fetch_remotes():
+            raise StreamError("No source caches available for pulling sources")
+
+        self._scheduler.clear_queues()
+        pull_queue = SourcePullQueue(self._scheduler)
+        self._add_queue(push_queue)
+        self._enqueue_plan(elements, queue=push_queue)
         self._run()
 
     # fetch()

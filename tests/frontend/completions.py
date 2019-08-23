@@ -56,6 +56,8 @@ MAIN_OPTIONS = [
 SOURCE_COMMANDS = [
     'checkout ',
     'fetch ',
+    'pull ',
+    'push ',
     'track ',
 ]
 

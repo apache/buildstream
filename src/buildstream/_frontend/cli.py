@@ -664,6 +664,90 @@ def source():
     """Manipulate sources for an element"""
 
 
+@source.command(name="push", short_help="Push an element's sources")
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependencies to push (default: none)')
+@click.option('--remote', '-r', default=None,
+              help="The URL of the remote cache (defaults to the first configured cache)")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def source_push(app, elements, deps, remote):
+    """Push an element's sources to a remote source cache.
+
+    Specifying no elements will result in pushing the default targets
+    of the project. If no default targets are configured, all project
+    elements will be pushed.
+
+    When this command is executed from a workspace directory, the default
+    is to push the workspace element.
+
+    The default destination is the highest priority configured cache. You can
+    override this by passing a different cache URL with the `--remote` flag.
+
+    Specify `--deps` to control which sources to push:
+
+    \b
+        none:  No dependencies, just the element itself
+        all:   All dependencies
+    """
+    with app.initialized(session_name="Push"):
+        ignore_junction_targets = False
+
+        if not elements:
+            elements = app.project.get_default_targets()
+            # Junction elements cannot be pushed, exclude them from default targets
+            ignore_junction_targets = True
+
+        app.stream.push_sources(elements, selection=deps, remote=remote,
+                                ignore_junction_targets=ignore_junction_targets)
+
+
+@source.command(name="pull", short_help="Pull an element's sources")
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'all']),
+              help='The dependency sources to pull (default: none)')
+@click.option('--remote', '-r', default=None,
+              help="The URL of the remote cache (defaults to the first configured cache)")
+@click.argument('elements', nargs=-1,
+                type=click.Path(readable=False))
+@click.pass_obj
+def source_pull(app, elements, deps, remote):
+    """Pull sources from the configured remote source cache.
+
+    Specifying no elements will result in pulling the default targets
+    of the project. If no default targets are configured, all project
+    elements will be pulled.
+
+    When this command is executed from a workspace directory, the default
+    is to pull the workspace element.
+
+    By default the sources will be pulled from one of the configured
+    caches if possible, following the usual priority order. If the
+    `--remote` flag is given, only the specified cache will be
+    queried.
+
+    Specify `--deps` to control which sources to pull:
+
+    \b
+        none:  No dependencies, just the element itself
+        all:   All dependencies
+
+    """
+
+    with app.initialized(session_name="Pull"):
+        ignore_junction_targets = False
+
+        if not elements:
+            elements = app.project.get_default_targets()
+            # Junction elements cannot be pulled, exclude them from default targets
+            ignore_junction_targets = True
+
+        app.stream.pull_sources(elements, selection=deps, remote=remote,
+                                ignore_junction_targets=ignore_junction_targets)
+
+
 ##################################################################
 #                     Source Fetch Command                       #
 ##################################################################

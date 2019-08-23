@@ -1836,6 +1836,22 @@ class Element(Plugin):
         # Notify successfull download
         return True
 
+    def _skip_source_pull(self):
+        if not self.__sources or self._get_workspace():
+            return True
+        return self._source_cached() or not self.__sourcecache.has_fetch_remotes(plugin=self)
+
+    def _source_pull(self):
+        if self.__sourcecache.has_fetch_remotes(plugin=self) and not self._source_cached():
+            for source in self.sources():
+                if self.__sourcecache.pull(source):
+                    # Once we find a cache with the source and manage
+                    # to pull from it, we're done
+                    return True
+
+        # If no caches gave us the source, this failed
+        return False
+
     def _skip_source_push(self):
         if not self.__sources or self._get_workspace():
             return True

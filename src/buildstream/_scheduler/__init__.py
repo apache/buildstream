@@ -21,6 +21,7 @@ from .queues import Queue, QueueStatus
 
 from .queues.fetchqueue import FetchQueue
 from .queues.sourcepushqueue import SourcePushQueue
+from .queues.sourcepullqueue import SourcePullQueue
 from .queues.trackqueue import TrackQueue
 from .queues.buildqueue import BuildQueue
 from .queues.artifactpushqueue import ArtifactPushQueue
