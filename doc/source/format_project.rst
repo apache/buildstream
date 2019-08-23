@@ -225,6 +225,44 @@ and keys, please see: :ref:`Key pair for the server <server_authentication>`.
    new server API. As a result newer buildstream clients won't work with older
    servers.
 
+.. _project_essentials_split_artifacts:
+
+Split cache servers
+~~~~~~~~~~~~~~~~~~~
+
+Should you need to configure an artifact cache to work with a CAS
+server that does not support BuildStream's artifact format, you can
+"split" that cache and run an artifacts-only server separately. The
+format for that is as such:
+
+.. code:: yaml
+
+  #
+  # Artifacts
+  #
+  artifacts:
+    # A remote cache from which to download prebuilt artifacts
+    - url: https://storage.foo.com:11001
+      server-cert: server.crt
+      # "storage" remotes store the artifact contents only - this can
+      # be a normal CAS implementation such as those provided by
+      # Buildbarn or Bazel Buildfarm
+      type: storage
+    - url: https://index.foo.com:11001
+      server-cert: server.crt
+      # "index" remotes store only artifact metadata. This is
+      # currently only provided by the bst-artifact-server and BuildGrid
+      type: index
+    # A remote cache from which to upload/download built/prebuilt artifacts
+    - url: https://foo.com:11002
+      push: true
+      server-cert: server.crt
+      client-cert: client.crt
+      client-key: client.key
+      # Caches that support both can omit the type, or set it to "both" -
+      # currently, also only supported by bst-artifact-server and BuildGrid
+      type: both
+
 .. _project_source_cache:
 
 Source cache server
@@ -246,6 +284,11 @@ Exactly the same as artifact servers, source cache servers can be specified.
       server-cert: server.crt
       client-cert: client.crt
       client-key: client.key
+
+.. note::
+
+   Source caches also support "splitting" like :ref:`artifact servers
+   <project_essentials_split_artifacts>`.
 
 .. _project_remote_execution:
 
