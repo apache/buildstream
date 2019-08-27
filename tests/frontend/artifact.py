@@ -24,7 +24,9 @@
 import os
 import pytest
 
+from buildstream.element import _get_normal_name
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream._exceptions import ErrorDomain
 from tests.testutils import create_artifact_share
 
 
@@ -278,3 +280,92 @@ def test_artifact_delete_pulled_artifact_without_buildtree(cli, tmpdir, datafile
         result = cli.run(project=project, args=['artifact', 'delete', element])
         result.assert_success()
         assert cli.get_element_state(project, element) != 'cached'
+
+
+# Test that we can delete the build deps of an element
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_delete_elements_build_deps(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element = 'target.bst'
+
+    # Build the element and ensure it's cached
+    result = cli.run(project=project, args=['build', element])
+    result.assert_success()
+
+    # Assert element and build deps are cached
+    assert cli.get_element_state(project, element) == 'cached'
+    bdep_states = cli.get_element_states(project, [element], deps='build')
+    for state in bdep_states.values():
+        assert state == 'cached'
+
+    result = cli.run(project=project, args=['artifact', 'delete', '--deps', 'build', element])
+    result.assert_success()
+
+    # Assert that the build deps have been deleted and that the artifact remains cached
+    assert cli.get_element_state(project, element) == 'cached'
+    bdep_states = cli.get_element_states(project, [element], deps='build')
+    for state in bdep_states.values():
+        assert state != 'cached'
+
+
+# Test that we can delete the build deps of an artifact by providing an artifact ref
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_delete_artifacts_build_deps(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element = 'target.bst'
+
+    # Configure a local cache
+    local_cache = os.path.join(str(tmpdir), 'cache')
+    cli.configure({'cachedir': local_cache})
+
+    # First build an element so that we can find its artifact
+    result = cli.run(project=project, args=['build', element])
+    result.assert_success()
+
+    # Obtain the artifact ref
+    cache_key = cli.get_element_key(project, element)
+    artifact = os.path.join('test', os.path.splitext(element)[0], cache_key)
+
+    # Explicitly check that the ARTIFACT exists in the cache
+    assert os.path.exists(os.path.join(local_cache, 'artifacts', 'refs', artifact))
+
+    # get the artifact refs of the build dependencies
+    bdep_refs = []
+    bdep_states = cli.get_element_states(project, [element], deps='build')
+    for bdep in bdep_states.keys():
+        bdep_refs.append(os.path.join('test', _get_normal_name(bdep), cli.get_element_key(project, bdep)))
+
+    # Assert build dependencies are cached
+    for ref in bdep_refs:
+        assert os.path.exists(os.path.join(local_cache, 'artifacts', 'refs', ref))
+
+    # Delete the artifact
+    result = cli.run(project=project, args=['artifact', 'delete', '--deps', 'build', artifact])
+    result.assert_success()
+
+    # Check that the artifact's build deps are no longer in the cache
+    # Assert build dependencies have been deleted and that the artifact remains
+    for ref in bdep_refs:
+        assert not os.path.exists(os.path.join(local_cache, 'artifacts', 'refs', ref))
+    assert os.path.exists(os.path.join(local_cache, 'artifacts', 'refs', artifact))
+
+
+# Test that `--deps all` option fails if an artifact ref is specified
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_delete_artifact_with_deps_all_fails(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element = 'target.bst'
+
+    # First build an element so that we can find its artifact
+    result = cli.run(project=project, args=['build', element])
+    result.assert_success()
+
+    # Obtain the artifact ref
+    cache_key = cli.get_element_key(project, element)
+    artifact = os.path.join('test', os.path.splitext(element)[0], cache_key)
+
+    # Try to delete the artifact with all of its dependencies
+    result = cli.run(project=project, args=['artifact', 'delete', '--deps', 'all', artifact])
+    result.assert_main_error(ErrorDomain.STREAM, None)
+
+    assert "Error: '--deps all' is not supported for artifact refs" in result.stderr

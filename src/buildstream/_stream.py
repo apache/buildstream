@@ -672,9 +672,10 @@ class Stream():
     # Args:
     #    targets (str): Targets to remove
     #
-    def artifact_delete(self, targets):
+    def artifact_delete(self, targets, *,
+                        selection=PipelineSelection.NONE):
         # Return list of Element and/or ArtifactElement objects
-        target_objects = self.load_selection(targets, selection=PipelineSelection.NONE, load_refs=True)
+        target_objects = self.load_selection(targets, selection=selection, load_refs=True)
 
         # Some of the targets may refer to the same key, so first obtain a
         # set of the refs to be removed.
@@ -1158,9 +1159,12 @@ class Stream():
         # Classify element and artifact strings
         target_elements, target_artifacts = self._classify_artifacts(targets)
 
-        if target_artifacts and not load_refs:
-            detail = '\n'.join(target_artifacts)
-            raise ArtifactElementError("Cannot perform this operation with artifact refs:", detail=detail)
+        if target_artifacts:
+            if not load_refs:
+                detail = '\n'.join(target_artifacts)
+                raise ArtifactElementError("Cannot perform this operation with artifact refs:", detail=detail)
+            if selection in (PipelineSelection.ALL, PipelineSelection.RUN):
+                raise StreamError("Error: '--deps {}' is not supported for artifact refs".format(selection))
 
         # Load rewritable if we have any tracking selection to make
         rewritable = False
@@ -1168,12 +1172,15 @@ class Stream():
             rewritable = True
 
         # Load all target elements
-        elements, except_elements, track_elements, track_except_elements = \
-            self._pipeline.load([target_elements, except_targets, track_targets, track_except_targets],
-                                rewritable=rewritable)
+        loadable = [target_elements, except_targets, track_targets, track_except_targets]
+        if any(loadable):
+            elements, except_elements, track_elements, track_except_elements = \
+                self._pipeline.load(loadable, rewritable=rewritable)
+        else:
+            elements, except_elements, track_elements, track_except_elements = [], [], [], []
 
-        # Obtain the ArtifactElement objects
-        artifacts = [self._project.create_artifact_element(ref) for ref in target_artifacts]
+        # Load all target artifacts
+        artifacts = self._pipeline.load_artifacts(target_artifacts) if target_artifacts else []
 
         # Optionally filter out junction elements
         if ignore_junction_targets:

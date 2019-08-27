@@ -1233,12 +1233,15 @@ def artifact_list_contents(app, artifacts):
 #                     Artifact Delete Command                     #
 ###################################################################
 @artifact.command(name='delete', short_help="Remove artifacts from the local cache")
+@click.option('--deps', '-d', default='none',
+              type=click.Choice(['none', 'run', 'build', 'all']),
+              help="The dependencies to delete (default: none)")
 @click.argument('artifacts', type=click.Path(), nargs=-1)
 @click.pass_obj
-def artifact_delete(app, artifacts):
+def artifact_delete(app, artifacts, deps):
     """Remove artifacts from the local cache"""
     with app.initialized():
-        app.stream.artifact_delete(artifacts)
+        app.stream.artifact_delete(artifacts, selection=deps)
 
 
 ##################################################################

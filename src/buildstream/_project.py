@@ -463,6 +463,38 @@ class Project():
 
         return elements
 
+    # load_artifacts()
+    #
+    # Loads artifacts from target artifact refs
+    #
+    # Args:
+    #    targets (list): Target artifact refs
+    #
+    # Returns:
+    #    (list): A list of loaded ArtifactElement
+    #
+    def load_artifacts(self, targets):
+        with self._context.messenger.simple_task("Loading artifacts") as task:
+            # XXX: Here, we are explicitly checking for refs in the artifactdir
+            #      for two reasons:
+            #          1. The Project, or the Context, do not currently have
+            #             access to the ArtifactCache
+            #          2. The ArtifactCache.contains() method expects an Element
+            #             and a key, not a ref.
+            #
+            artifactdir = self._context.artifactdir
+            artifacts = []
+            for ref in targets:
+                if not os.path.exists(os.path.join(artifactdir, ref)):
+                    raise LoadError("{}\nis not present in the artifact cache ({})".format(ref, artifactdir),
+                                    LoadErrorReason.MISSING_FILE)
+
+                artifacts.append(ArtifactElement._new_from_artifact_ref(ref, self._context, task))
+
+        ArtifactElement._clear_artifact_refs_cache()
+
+        return artifacts
+
     # ensure_fully_loaded()
     #
     # Ensure project has finished loading. At first initialization, a
