@@ -104,10 +104,10 @@ def remote_services(request):
 #################################################
 # Setup for templated source tests              #
 #################################################
-register_repo_kind('git', Git)
-register_repo_kind('bzr', Bzr)
-register_repo_kind('tar', Tar)
-register_repo_kind('zip', Zip)
+register_repo_kind('git', Git, None)
+register_repo_kind('bzr', Bzr, None)
+register_repo_kind('tar', Tar, None)
+register_repo_kind('zip', Zip, None)
 
 
 # This hook enables pytest to collect the templated source tests from

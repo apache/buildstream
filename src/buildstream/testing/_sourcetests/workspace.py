@@ -24,8 +24,9 @@ import shutil
 import pytest
 
 from buildstream import _yaml
-from .. import create_repo, ALL_REPO_KINDS
+from .. import create_repo
 from .. import cli  # pylint: disable=unused-import
+from .utils import kind  # pylint: disable=unused-import
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -155,6 +156,5 @@ def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", ALL_REPO_KINDS)
 def test_open(cli, tmpdir, datafiles, kind):
     open_workspace(cli, tmpdir, datafiles, kind, False)

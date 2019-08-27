@@ -21,7 +21,6 @@ This package contains various utilities which make it easier to test plugins.
 
 import os
 from collections import OrderedDict
-from . import _sourcetests
 from .repo import Repo
 from .runcli import cli, cli_integration, cli_remote_execution
 from .integration import integration_cache
@@ -38,6 +37,7 @@ except ImportError:
     raise ImportError(msg)
 
 
+# Of the form plugin_name -> (repo_class, plugin_package)
 ALL_REPO_KINDS = OrderedDict()
 
 
@@ -58,10 +58,10 @@ def create_repo(kind, directory, subdir='repo'):
     except KeyError as e:
         raise AssertionError("Unsupported repo kind {}".format(kind)) from e
 
-    return constructor(directory, subdir=subdir)
+    return constructor[0](directory, subdir=subdir)
 
 
-def register_repo_kind(kind, cls):
+def register_repo_kind(kind, cls, plugin_package):
     """Register a new repo kind.
 
     Registering a repo kind will allow the use of the `create_repo`
@@ -75,9 +75,10 @@ def register_repo_kind(kind, cls):
     Args:
        kind (str): The kind of repo to create (a source plugin basename)
        cls (cls) : A class derived from Repo.
+       plugin_package (str): The name of the python package containing the plugin
 
     """
-    ALL_REPO_KINDS[kind] = cls
+    ALL_REPO_KINDS[kind] = (cls, plugin_package)
 
 
 def sourcetests_collection_hook(session):
@@ -110,12 +111,13 @@ def sourcetests_collection_hook(session):
         # spot and is less likely to result in bug not being found.
         return True
 
-    SOURCE_TESTS_PATH = os.path.dirname(_sourcetests.__file__)
+    from . import _sourcetests
+    source_test_path = os.path.dirname(_sourcetests.__file__)
     # Add the location of the source tests to the session's
     # python_files config. Without this, pytest may filter out these
     # tests during collection.
-    session.config.addinivalue_line("python_files", os.path.join(SOURCE_TESTS_PATH, "*.py"))
+    session.config.addinivalue_line("python_files", os.path.join(source_test_path, "*.py"))
     # If test invocation has specified specic tests, don't
     # automatically collect templated tests.
     if should_collect_tests(session.config):
-        session.config.args.append(SOURCE_TESTS_PATH)
+        session.config.args.append(source_test_path)

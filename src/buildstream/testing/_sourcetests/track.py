@@ -24,9 +24,12 @@ import pytest
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
-from .._utils import generate_junction, configure_project
-from .. import create_repo, ALL_REPO_KINDS
+from .._utils import generate_junction
+from .. import create_repo
 from .. import cli  # pylint: disable=unused-import
+from .utils import update_project_configuration
+from .utils import kind  # pylint: disable=unused-import
+
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -47,15 +50,14 @@ def generate_element(repo, element_path, dep_name=None):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+@pytest.mark.parametrize("ref_storage", ['inline', 'project.refs'])
 def test_track(cli, tmpdir, datafiles, ref_storage, kind):
     project = str(datafiles)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
     element_name = 'track-test-{}.bst'.format(kind)
 
-    configure_project(project, {
+    update_project_configuration(project, {
         'ref-storage': ref_storage
     })
 
@@ -107,8 +109,7 @@ def test_track(cli, tmpdir, datafiles, ref_storage, kind):
 #    please refactor that aspect into another test.
 #
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("amount", [(1), (10)])
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+@pytest.mark.parametrize("amount", [1, 10])
 def test_track_recurse(cli, tmpdir, datafiles, kind, amount):
     project = str(datafiles)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
@@ -172,7 +173,6 @@ def test_track_recurse(cli, tmpdir, datafiles, kind, amount):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
 def test_track_recurse_except(cli, tmpdir, datafiles, kind):
     project = str(datafiles)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
@@ -218,8 +218,7 @@ def test_track_recurse_except(cli, tmpdir, datafiles, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+@pytest.mark.parametrize("ref_storage", ['inline', 'project.refs'])
 def test_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
     project = str(datafiles)
     subproject_path = os.path.join(project, 'files', 'sub-project')
@@ -228,7 +227,7 @@ def test_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
     repo_element_path = os.path.join(subproject_path, 'elements',
                                      'import-etc-repo.bst')
 
-    configure_project(project, {
+    update_project_configuration(project, {
         'ref-storage': ref_storage
     })
 
@@ -261,15 +260,14 @@ def test_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+@pytest.mark.parametrize("ref_storage", ['inline', 'project.refs'])
 def test_track_include(cli, tmpdir, datafiles, ref_storage, kind):
     project = str(datafiles)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
     element_path = os.path.join(project, 'elements')
     element_name = 'track-test-{}.bst'.format(kind)
 
-    configure_project(project, {
+    update_project_configuration(project, {
         'ref-storage': ref_storage
     })
 
@@ -331,8 +329,7 @@ def test_track_include(cli, tmpdir, datafiles, ref_storage, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+@pytest.mark.parametrize("ref_storage", ['inline', 'project.refs'])
 def test_track_include_junction(cli, tmpdir, datafiles, ref_storage, kind):
     project = str(datafiles)
     dev_files_path = os.path.join(project, 'files', 'dev-files')
@@ -342,7 +339,7 @@ def test_track_include_junction(cli, tmpdir, datafiles, ref_storage, kind):
     sub_element_path = os.path.join(subproject_path, 'elements')
     junction_path = os.path.join(element_path, 'junction.bst')
 
-    configure_project(project, {
+    update_project_configuration(project, {
         'ref-storage': ref_storage
     })
 
@@ -400,15 +397,14 @@ def test_track_include_junction(cli, tmpdir, datafiles, ref_storage, kind):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("ref_storage", [('inline'), ('project.refs')])
-@pytest.mark.parametrize("kind", [(kind) for kind in ALL_REPO_KINDS])
+@pytest.mark.parametrize("ref_storage", ['inline', 'project.refs'])
 def test_track_junction_included(cli, tmpdir, datafiles, ref_storage, kind):
     project = str(datafiles)
     element_path = os.path.join(project, 'elements')
     subproject_path = os.path.join(project, 'files', 'sub-project')
     junction_path = os.path.join(element_path, 'junction.bst')
 
-    configure_project(project, {
+    update_project_configuration(project, {
         'ref-storage': ref_storage,
         '(@)': ['junction.bst:test.yml']
     })
