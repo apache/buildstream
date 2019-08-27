@@ -154,6 +154,18 @@ class Pipeline():
                 # dependencies.
                 element._update_ready_for_runtime_and_cached()
 
+    # check_remotes()
+    #
+    # Check if the target artifact is cached in any of the available remotes
+    #
+    # Args:
+    #    targets (list [Element]): The list of element targets
+    #
+    def check_remotes(self, targets):
+        with self._context.messenger.timed_activity("Querying remotes for cached status", silent_nested=True):
+            for element in targets:
+                element._cached_remotely()
+
     # dependencies()
     #
     # Generator function to iterate over elements and optionally
