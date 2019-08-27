@@ -22,7 +22,9 @@ import os
 import stat
 import errno
 import contextlib
+import multiprocessing
 import shutil
+import signal
 import subprocess
 import tempfile
 import time
@@ -40,6 +42,10 @@ from .._exceptions import CASCacheError
 from .casremote import BlobNotFound, _CASBatchRead, _CASBatchUpdate
 
 _BUFFER_SIZE = 65536
+
+
+# Refresh interval for disk usage of local cache in seconds
+_CACHE_USAGE_REFRESH = 5
 
 
 # A CASCache manages a CAS repository as specified in the Remote Execution API.
@@ -83,6 +89,7 @@ class CASCache():
 
         self._casd_channel = None
         self._local_cas = None
+        self._cache_usage_monitor = None
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -142,6 +149,9 @@ class CASCache():
     # Release resources used by CASCache.
     #
     def release_resources(self, messenger=None):
+        if self._cache_usage_monitor:
+            self._cache_usage_monitor.release_resources()
+
         if self._casd_process:
             if self._casd_channel:
                 self._local_cas = None
@@ -956,6 +966,114 @@ class CASCache():
 
         # Upload any blobs missing on the server
         self.send_blobs(remote, missing_blobs)
+
+    # get_cache_usage():
+    #
+    # Fetches the current usage of the CAS local cache.
+    #
+    # Returns:
+    #     (CASCacheUsage): The current status
+    #
+    def get_cache_usage(self):
+        if not self._cache_usage_monitor:
+            self._cache_usage_monitor = _CASCacheUsageMonitor(self)
+
+        return self._cache_usage_monitor.get_cache_usage()
+
+
+# _CASCacheUsage
+#
+# A simple object to report the current CAS cache usage details.
+#
+# Args:
+#    used_size (int): Total size used by the local cache, in bytes.
+#    quota_size (int): Disk quota for the local cache, in bytes.
+#
+class _CASCacheUsage():
+
+    def __init__(self, used_size, quota_size):
+        self.used_size = used_size
+        self.quota_size = quota_size
+        if self.quota_size is None:
+            self.used_percent = 0
+        else:
+            self.used_percent = int(self.used_size * 100 / self.quota_size)
+
+    # Formattable into a human readable string
+    #
+    def __str__(self):
+        if self.used_size is None:
+            return "unknown"
+        elif self.quota_size is None:
+            return utils._pretty_size(self.used_size, dec_places=1)
+        else:
+            return "{} / {} ({}%)" \
+                .format(utils._pretty_size(self.used_size, dec_places=1),
+                        utils._pretty_size(self.quota_size, dec_places=1),
+                        self.used_percent)
+
+
+# _CASCacheUsageMonitor
+#
+# This manages the subprocess that tracks cache usage information via
+# buildbox-casd.
+#
+class _CASCacheUsageMonitor:
+    def __init__(self, cas):
+        self.cas = cas
+
+        # Shared memory (64-bit signed integer) for current disk usage and quota
+        self._disk_usage = multiprocessing.Value('q', -1)
+        self._disk_quota = multiprocessing.Value('q', -1)
+
+        # multiprocessing.Process will fork without exec on Unix.
+        # This can't be allowed with background threads or open gRPC channels.
+        assert utils._is_single_threaded() and not cas.has_open_grpc_channels()
+
+        self._subprocess = multiprocessing.Process(target=self._subprocess_run)
+        self._subprocess.start()
+
+    def get_cache_usage(self):
+        disk_usage = self._disk_usage.value
+        disk_quota = self._disk_quota.value
+
+        if disk_usage < 0:
+            # Disk usage still unknown
+            disk_usage = None
+
+        if disk_quota <= 0:
+            # No disk quota
+            disk_quota = None
+
+        return _CASCacheUsage(disk_usage, disk_quota)
+
+    def release_resources(self):
+        # Simply terminate the subprocess, no cleanup required in the subprocess
+        self._subprocess.terminate()
+
+    def _subprocess_run(self):
+        # Reset SIGTERM in subprocess to default as no cleanup is necessary
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+
+        disk_usage = self._disk_usage
+        disk_quota = self._disk_quota
+        local_cas = self.cas._get_local_cas()
+
+        while True:
+            try:
+                # Ask buildbox-casd for current value
+                request = local_cas_pb2.GetLocalDiskUsageRequest()
+                response = local_cas.GetLocalDiskUsage(request)
+
+                # Update values in shared memory
+                disk_usage.value = response.size_bytes
+                disk_quota.value = response.quota_bytes
+            except grpc.RpcError:
+                # Terminate loop when buildbox-casd becomes unavailable
+                break
+
+            # Sleep until next refresh
+            time.sleep(_CACHE_USAGE_REFRESH)
 
 
 def _grouper(iterable, n):
