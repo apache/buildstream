@@ -53,9 +53,6 @@ run "ln -s /usr/bin/tcc /usr/bin/cc"
 # Install stuff for tests/integration/autotools
 run "apk add autoconf automake"
 
-# Install stuff for tests/integration/cmake
-run "apk add cmake"
-
 # Install stuff for tests/integration/pip
 run "apk add python3"
 
