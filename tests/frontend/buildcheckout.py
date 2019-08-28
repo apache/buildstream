@@ -358,7 +358,7 @@ def test_build_checkout_invalid_ref(datafiles, cli):
     checkout_args = ['artifact', 'checkout', '--deps', 'none', '--tar', checkout, non_existent_artifact]
     result = cli.run(project=project, args=checkout_args)
 
-    assert "Artifact reference '{}' seems to be invalid".format(non_existent_artifact) in result.stderr
+    assert "Error while staging dependencies into a sandbox: 'No artifacts to stage'" in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
