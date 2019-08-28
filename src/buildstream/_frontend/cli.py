@@ -1102,23 +1102,17 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
         if not compression:
             compression = inferred_compression
 
-    if deps == "build":
-        scope = Scope.BUILD
-    elif deps == "none":
-        scope = Scope.NONE
-    else:
-        scope = Scope.RUN
-
     with app.initialized():
         if not element:
             element = app.project.get_default_target()
             if not element:
                 raise AppError('Missing argument "ELEMENT".')
 
+        scope = {'run': Scope.RUN, 'build': Scope.BUILD, 'none': Scope.NONE}
         app.stream.checkout(element,
                             location=location,
                             force=force,
-                            scope=scope,
+                            scope=scope[deps],
                             integrate=True if integrate is None else integrate,
                             hardlinks=hardlinks,
                             pull=pull_,
