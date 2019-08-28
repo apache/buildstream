@@ -42,9 +42,6 @@ from .casremote import BlobNotFound, _CASBatchRead, _CASBatchUpdate
 _BUFFER_SIZE = 65536
 
 
-CACHE_SIZE_FILE = "cache_size"
-
-
 # A CASCache manages a CAS repository as specified in the Remote Execution API.
 #
 # Args:
