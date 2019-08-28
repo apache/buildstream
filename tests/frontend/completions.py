@@ -66,6 +66,7 @@ ARTIFACT_COMMANDS = [
     'pull ',
     'log ',
     'list-contents ',
+    'show ',
 ]
 
 WORKSPACE_COMMANDS = [

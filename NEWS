@@ -2,6 +2,11 @@
 buildstream 1.3.1
 =================
 
+  o Added `bst artifact show` subcommand which shows the cached status
+    of an artifact. If project/user remotes are available, they are checked
+    for the target elements (and their deps, if specified). Artifacts available
+    in remotes are displayed as "available".
+
   o BREAKING CHANGE: The project name of dependencies have been included when
     calculating the cache key. This was required to keep inline with the
     artifact proto. Additionally, for strict mode, the name of dependencies have

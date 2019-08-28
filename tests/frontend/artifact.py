@@ -25,8 +25,8 @@ import os
 import pytest
 
 from buildstream.element import _get_normal_name
-from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream._exceptions import ErrorDomain
+from buildstream.testing import cli  # pylint: disable=unused-import
 from tests.testutils import create_artifact_share
 
 
@@ -369,3 +369,106 @@ def test_artifact_delete_artifact_with_deps_all_fails(cli, tmpdir, datafiles):
     result.assert_main_error(ErrorDomain.STREAM, None)
 
     assert "Error: '--deps all' is not supported for artifact refs" in result.stderr
+
+
+# Test artifact show
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_show_element_name(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element = 'target.bst'
+
+    result = cli.run(project=project, args=['artifact', 'show', element])
+    result.assert_success()
+    assert 'not cached {}'.format(element) in result.output
+
+    result = cli.run(project=project, args=['build', element])
+    result.assert_success()
+
+    result = cli.run(project=project, args=['artifact', 'show', element])
+    result.assert_success()
+    assert 'cached {}'.format(element) in result.output
+
+
+# Test artifact show on a failed element
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_show_failed_element(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element = 'manual.bst'
+
+    result = cli.run(project=project, args=['artifact', 'show', element])
+    result.assert_success()
+    assert 'not cached {}'.format(element) in result.output
+
+    result = cli.run(project=project, args=['build', element])
+    result.assert_task_error(ErrorDomain.SANDBOX, 'missing-command')
+
+    result = cli.run(project=project, args=['artifact', 'show', element])
+    result.assert_success()
+    assert 'failed {}'.format(element) in result.output
+
+
+# Test artifact show with a deleted dependency
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_show_element_missing_deps(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element = 'target.bst'
+    dependency = 'import-bin.bst'
+
+    result = cli.run(project=project, args=['build', element])
+    result.assert_success()
+
+    result = cli.run(project=project, args=['artifact', 'delete', dependency])
+    result.assert_success()
+
+    result = cli.run(project=project, args=['artifact', 'show', '--deps', 'all', element])
+    result.assert_success()
+    assert 'not cached {}'.format(dependency) in result.output
+    assert 'cached {}'.format(element) in result.output
+
+
+# Test artifact show with artifact ref
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_show_artifact_ref(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element = 'target.bst'
+
+    result = cli.run(project=project, args=['build', element])
+    result.assert_success()
+
+    cache_key = cli.get_element_key(project, element)
+    artifact_ref = 'test/target/' + cache_key
+
+    result = cli.run(project=project, args=['artifact', 'show', artifact_ref])
+    result.assert_success()
+    assert 'cached {}'.format(artifact_ref) in result.output
+
+
+# Test artifact show artifact in remote
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_show_element_available_remotely(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element = 'target.bst'
+
+    # Set up remote and local shares
+    local_cache = os.path.join(str(tmpdir), 'artifacts')
+    with create_artifact_share(os.path.join(str(tmpdir), 'remote')) as remote:
+        cli.configure({
+            'artifacts': {'url': remote.repo, 'push': True},
+            'cachedir': local_cache,
+        })
+
+        # Build the element
+        result = cli.run(project=project, args=['build', element])
+        result.assert_success()
+
+        # Make sure it's in the share
+        assert remote.has_artifact(cli.get_artifact_name(project, 'test', element))
+
+        # Delete the artifact from the local cache
+        result = cli.run(project=project, args=['artifact', 'delete', element])
+        result.assert_success()
+        assert cli.get_element_state(project, element) != 'cached'
+
+        result = cli.run(project=project, args=['artifact', 'show', element])
+        result.assert_success()
+        assert 'available {}'.format(element) in result.output

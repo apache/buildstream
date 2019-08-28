@@ -219,6 +219,7 @@ class Element(Plugin):
         self.__updated_strict_cache_keys_of_rdeps = False  # Whether we've updated strict cache keys of rdeps
         self.__ready_for_runtime = False        # Whether the element and its runtime dependencies have cache keys
         self.__ready_for_runtime_and_cached = False  # Whether all runtime deps are cached, as well as the element
+        self.__cached_remotely = None           # Whether the element is cached remotely
         self.__sources = []                     # List of Sources
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
@@ -1054,6 +1055,16 @@ class Element(Plugin):
             return False
 
         return self.__artifact.cached()
+
+    # _cached_remotely():
+    #
+    # Returns:
+    #    (bool): Whether this element is present in a remote cache
+    #
+    def _cached_remotely(self):
+        if self.__cached_remotely is None:
+            self.__cached_remotely = self.__artifacts.check_remotes_for_element(self)
+        return self.__cached_remotely
 
     # _get_build_result():
     #

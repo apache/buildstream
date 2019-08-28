@@ -383,6 +383,31 @@ class ArtifactCache(BaseCache):
 
         return remote_missing_blobs_list
 
+    # check_remotes_for_element()
+    #
+    # Check if the element is available in any of the remotes
+    #
+    # Args:
+    #    element (Element): The element to check
+    #
+    # Returns:
+    #    (bool): True if the element is available remotely
+    #
+    def check_remotes_for_element(self, element):
+        # If there are no remotes
+        if not self._remotes:
+            return False
+
+        project = element._get_project()
+        ref = element.get_artifact_name()
+        for remote in self._remotes[project]:
+            remote.init()
+
+            if self._query_remote(ref, remote):
+                return True
+
+        return False
+
     ################################################
     #             Local Private Methods            #
     ################################################
@@ -518,5 +543,27 @@ class ArtifactCache(BaseCache):
         os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
         with utils.save_file_atomic(artifact_path, mode='wb') as f:
             f.write(artifact.SerializeToString())
+
+        return True
+
+    # _query_remote()
+    #
+    # Args:
+    #    ref (str): The artifact ref
+    #    remote (ArtifactRemote): The remote we want to check
+    #
+    # Returns:
+    #    (bool): True if the ref exists in the remote, False otherwise.
+    #
+    def _query_remote(self, ref, remote):
+        request = artifact_pb2.GetArtifactRequest()
+        request.cache_key = ref
+        try:
+            artifact_service = artifact_pb2_grpc.ArtifactServiceStub(remote.channel)
+            artifact_service.GetArtifact(request)
+        except grpc.RpcError as e:
+            if e.code() != grpc.StatusCode.NOT_FOUND:
+                raise ArtifactError("Error when querying: {}".format(e.details()))
+            return False
 
         return True

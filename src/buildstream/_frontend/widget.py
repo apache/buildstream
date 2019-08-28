@@ -827,3 +827,40 @@ class LogLine(Widget):
             text += '\n'
 
         return text
+
+    # show_state_of_artifacts()
+    #
+    # Show the cached status of artifacts
+    #
+    # Example output:
+    #
+    #    "cached      foo.bst"      <- If cached locally
+    #    "failed      foo.bst"      <- If cached locally as a failure
+    #    "available   foo.bst"      <- If available to download from a remote
+    #    "not cached  foo.bst"      <- If not cached/available remotely.
+    #
+    # Note that artifact names may also be displayed here.
+    #
+    # Args:
+    #    targets (list [Element]): Elements (or ArtifactElements) we wish to show the
+    #                              cached status of
+    #
+    def show_state_of_artifacts(self, targets):
+        report = ''
+        p = Profile()
+        for element in targets:
+            line = '%{state: >12} %{name}'
+            line = p.fmt_subst(line, 'name', element.name, fg='yellow')
+
+            if element._cached_success():
+                line = p.fmt_subst(line, 'state', "cached", fg='magenta')
+            elif element._cached():
+                line = p.fmt_subst(line, 'state', "failed", fg='red')
+            elif element._cached_remotely():
+                line = p.fmt_subst(line, 'state', "available", fg='green')
+            else:
+                line = p.fmt_subst(line, 'state', "not cached", fg='bright_red')
+
+            report += line + '\n'
+
+        return report
