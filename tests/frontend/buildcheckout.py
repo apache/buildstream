@@ -311,7 +311,7 @@ def test_build_checkout_using_ref(datafiles, cli):
     result.assert_success()
 
     key = cli.get_element_key(project, 'checkout-deps.bst')
-    checkout_args = ['artifact', 'checkout', '--directory', checkout, 'test/checkout-deps/' + key]
+    checkout_args = ['artifact', 'checkout', '--directory', checkout, '--deps', 'none', 'test/checkout-deps/' + key]
 
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()

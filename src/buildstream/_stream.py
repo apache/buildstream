@@ -540,6 +540,10 @@ class Stream():
         elements, _ = self._load((target,), (), selection=selection, use_artifact_config=True, load_refs=True)
         target = elements[-1]
 
+        # Verify that --deps run has not been specified for an ArtifactElement
+        if isinstance(target, ArtifactElement) and scope == Scope.RUN:
+            raise StreamError("Unable to determine the runtime dependencies of an ArtifactElement")
+
         self._check_location_writable(location, force=force, tar=tar)
 
         uncached_elts = [elt for elt in elements if not elt._cached()]
