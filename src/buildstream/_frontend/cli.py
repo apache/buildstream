@@ -371,8 +371,9 @@ def init(app, project_name, format_version, element_path, force, target_director
 #                          Build Command                         #
 ##################################################################
 @cli.command(short_help="Build elements in a pipeline")
-@click.option('--all', 'all_', default=False, is_flag=True,
-              help="Build elements that would not be needed for the current build plan")
+@click.option('--deps', '-d', default='plan',
+              type=click.Choice(['plan', 'all']),
+              help='The dependencies to build (default: plan)')
 @click.option('--track', 'track_', multiple=True,
               type=click.Path(readable=False),
               help="Specify elements to track during the build. Can be used "
@@ -391,7 +392,7 @@ def init(app, project_name, format_version, element_path, force, target_director
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
 @click.pass_obj
-def build(app, elements, all_, track_, track_save, track_all, track_except, track_cross_junctions, remote):
+def build(app, elements, deps, track_, track_save, track_all, track_except, track_cross_junctions, remote):
     """Build elements in a pipeline
 
     Specifying no elements will result in building the default targets
@@ -400,6 +401,12 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
 
     When this command is executed from a workspace directory, the default
     is to build the workspace element.
+
+    Specify `--deps` to control which dependencies to build:
+
+    \b
+        plan:  Only dependencies required for the build plan
+        all:   All dependencies
     """
 
     if (track_except or track_cross_junctions) and not (track_ or track_all):
@@ -422,11 +429,11 @@ def build(app, elements, all_, track_, track_save, track_all, track_except, trac
             track_ = elements
 
         app.stream.build(elements,
+                         selection=deps,
                          track_targets=track_,
                          track_except=track_except,
                          track_cross_junctions=track_cross_junctions,
                          ignore_junction_targets=ignore_junction_targets,
-                         build_all=all_,
                          remote=remote)
 
 
