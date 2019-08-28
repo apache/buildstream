@@ -304,7 +304,7 @@ def test_push_pull_track_non_strict(cli, tmpdir, datafiles):
         # However, pulling has to be deferred until the dependencies have been
         # tracked as the strict cache key needs to be calculated before querying
         # the caches.
-        result = cli.run(project=project, args=['build', '--track-all', '--all', 'target.bst'])
+        result = cli.run(project=project, args=['build', '--track-all', '--deps', 'all', 'target.bst'])
         result.assert_success()
         assert set(result.get_pulled_elements()) == all_elements
 
