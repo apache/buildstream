@@ -343,6 +343,43 @@ def test_build_checkout_tarball_using_ref(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_build_deps_using_ref(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    result = cli.run(project=project, args=['build', 'checkout-deps.bst'])
+    result.assert_success()
+
+    key = cli.get_element_key(project, 'checkout-deps.bst')
+    checkout_args = ['artifact', 'checkout', '--directory', checkout, '--deps', 'build', 'test/checkout-deps/' + key]
+
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_success()
+
+    build_dep_files = os.path.join(checkout, 'usr', 'include', 'pony.h')
+    runtime_dep_files = os.path.join(checkout, 'usr', 'bin', 'hello')
+    target_files = os.path.join(checkout, 'etc', 'buildstream', 'config')
+    assert os.path.exists(build_dep_files)
+    assert not os.path.exists(runtime_dep_files)
+    assert not os.path.exists(target_files)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_checkout_runtime_deps_using_ref_fails(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'checkout')
+
+    result = cli.run(project=project, args=['build', 'checkout-deps.bst'])
+    result.assert_success()
+
+    key = cli.get_element_key(project, 'checkout-deps.bst')
+    checkout_args = ['artifact', 'checkout', '--directory', checkout, '--deps', 'run', 'test/checkout-deps/' + key]
+
+    result = cli.run(project=project, args=checkout_args)
+    result.assert_main_error(ErrorDomain.STREAM, None)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_invalid_ref(datafiles, cli):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout.tar')
