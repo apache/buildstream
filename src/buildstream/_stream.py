@@ -1338,20 +1338,11 @@ class Stream():
     #    action_name (str): The name of the action being performed
     #    unique_id (str): A unique_id to load an Element instance
     #
-    # Raises:
-    #    (StreamError): If the related queue cannot be found
-    #
     def _failure_retry(self, action_name, unique_id):
-        queue = None
-        # Attempt to resolve the required queue
-        for queue in self.queues:
-            if queue.action_name == action_name:
-                queue = queue
-        if not queue:
-            raise StreamError()
-        element = Plugin._lookup(unique_id)
-        queue._task_group.failed_tasks.remove(element._get_full_name())
-        queue.enqueue([element])
+        notification = Notification(NotificationType.RETRY,
+                                    job_action=action_name,
+                                    element=unique_id)
+        self._notify(notification)
 
     # _run()
     #

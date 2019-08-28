@@ -30,6 +30,7 @@ from .resources import Resources
 from .jobs import JobStatus
 from ..types import FastEnum
 from .._profile import Topics, PROFILER
+from ..plugin import Plugin
 
 
 # A decent return code for Scheduler.run()
@@ -59,6 +60,7 @@ class NotificationType(FastEnum):
     SUSPEND = "suspend"
     UNSUSPEND = "unsuspend"
     SUSPENDED = "suspended"
+    RETRY = "retry"
 
 
 # Notification()
@@ -497,6 +499,18 @@ class Scheduler():
         self._notify(Notification(NotificationType.TICK))
         self.loop.call_later(1, self._tick)
 
+    def _failure_retry(self, action_name, unique_id):
+        queue = None
+        for q in self.queues:
+            if q.action_name == action_name:
+                queue = q
+                break
+        # Assert queue found, we should only be retrying a queued job
+        assert queue
+        element = Plugin._lookup(unique_id)
+        queue._task_group.failed_tasks.remove(element._get_full_name())
+        queue.enqueue([element])
+
     def _notify(self, notification):
         # Scheduler to Stream notifcations on right side
         self._notification_queue.append(notification)
@@ -512,6 +526,8 @@ class Scheduler():
             self.jobs_suspended()
         elif notification.notification_type == NotificationType.UNSUSPEND:
             self.jobs_unsuspended()
+        elif notification.notification_type == NotificationType.RETRY:
+            self._failure_retry(notification.job_action, notification.element)
         else:
             # Do not raise exception once scheduler process is separated
             # as we don't want to pickle exceptions between processes

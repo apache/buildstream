@@ -663,11 +663,7 @@ class App():
                 elif choice == 'retry':
                     click.echo("\nRetrying failed job\n", err=True)
                     unique_id = element[0]
-                    try:
-                        self.stream._failure_retry(action_name, unique_id)
-                    except StreamError:
-                        click.echo("Job action {} does not have a corresponding queue".format(action_name), err=True)
-                        self.stream.terminate()
+                    self.stream._failure_retry(action_name, unique_id)
 
     #
     # Print the session heading if we've loaded a pipeline and there
