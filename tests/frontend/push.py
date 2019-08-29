@@ -285,6 +285,167 @@ def test_push_all(cli, tmpdir, datafiles):
         assert_shared(cli, share, project, 'import-dev.bst')
         assert_shared(cli, share, project, 'compose-all.bst')
 
+# Tests that `bst artifact push --deps run` pushes all runtime dependencies
+# of the given element.
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_runtime_deps(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element = "checkout-deps.bst"
+    build_dep = "import-dev.bst"
+    runtime_dep = "import-bin.bst"
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+        # First build it without the artifact cache configured
+        result = cli.run(project=project, args=['build', element])
+        result.assert_success()
+
+        # Assert that we are now cached locally
+        for e in [element, build_dep, runtime_dep]:
+            assert cli.get_element_state(project, e) == 'cached'
+
+        # Configure artifact share
+        cli.configure({
+            #
+            # FIXME: This test hangs "sometimes" if we allow
+            #        concurrent push.
+            #
+            #        It's not too bad to ignore since we're
+            #        using the local artifact cache functionality
+            #        only, but it should probably be fixed.
+            #
+            'scheduler': {
+                'pushers': 1
+            },
+            'artifacts': {
+                'url': share.repo,
+                'push': True,
+            }
+        })
+
+        # Now try bst artifact push all the deps
+        result = cli.run(project=project, args=[
+            'artifact', 'push', element,
+            '--deps', 'run'
+        ])
+        result.assert_success()
+
+        # And finally assert that all the artifacts are in the share
+        assert_shared(cli, share, project, element)
+        assert_shared(cli, share, project, runtime_dep)
+        assert_not_shared(cli, share, project, build_dep)
+
+
+# Tests that `bst artifact push --deps build` pushes build dependencies
+# of the given element.
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_build_deps(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element = "checkout-deps.bst"
+    build_dep = "import-dev.bst"
+    runtime_dep = "import-bin.bst"
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+        # First build it without the artifact cache configured
+        result = cli.run(project=project, args=['build', element])
+        result.assert_success()
+
+        # Assert that we are now cached locally
+        for e in [element, build_dep, runtime_dep]:
+            assert cli.get_element_state(project, e) == 'cached'
+
+        # Configure artifact share
+        cli.configure({
+            #
+            # FIXME: This test hangs "sometimes" if we allow
+            #        concurrent push.
+            #
+            #        It's not too bad to ignore since we're
+            #        using the local artifact cache functionality
+            #        only, but it should probably be fixed.
+            #
+            'scheduler': {
+                'pushers': 1
+            },
+            'artifacts': {
+                'url': share.repo,
+                'push': True,
+            }
+        })
+
+        # Now try bst artifact push all the deps
+        result = cli.run(project=project, args=[
+            'artifact', 'push', element,
+            '--deps', 'build'
+        ])
+        result.assert_success()
+
+        # And finally assert that all the artifacts are in the share
+        assert_not_shared(cli, share, project, element)
+        assert_not_shared(cli, share, project, runtime_dep)
+        assert_shared(cli, share, project, build_dep)
+
+
+# Tests `bst artifact push --deps build $artifact_ref`
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_artifacts_build_deps(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element = 'checkout-deps.bst'
+    build_dep = 'import-dev.bst'
+    runtime_dep = 'import-bin.bst'
+
+    # Configure a local cache
+    local_cache = os.path.join(str(tmpdir), 'cache')
+    cli.configure({'cachedir': local_cache})
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+
+        # First build it without the artifact cache configured
+        result = cli.run(project=project, args=['build', element])
+        result.assert_success()
+
+        # Assert that the *artifact* is cached locally
+        cache_key = cli.get_element_key(project, element)
+        artifact_ref = os.path.join('test', os.path.splitext(element)[0], cache_key)
+        assert os.path.exists(os.path.join(local_cache, 'artifacts', 'refs', artifact_ref))
+
+        build_dep_cache_key = cli.get_element_key(project, build_dep)
+        build_dep_artifact_ref = os.path.join('test', os.path.splitext(build_dep)[0], build_dep_cache_key)
+        assert os.path.exists(os.path.join(local_cache, 'artifacts', 'refs', build_dep_artifact_ref))
+
+        # Configure artifact share
+        cli.configure({
+            #
+            # FIXME: This test hangs "sometimes" if we allow
+            #        concurrent push.
+            #
+            #        It's not too bad to ignore since we're
+            #        using the local artifact cache functionality
+            #        only, but it should probably be fixed.
+            #
+            'scheduler': {
+                'pushers': 1
+            },
+            'artifacts': {
+                'url': share.repo,
+                'push': True,
+            }
+        })
+
+        # Now try bst artifact push all the deps
+        result = cli.run(project=project, args=[
+            'artifact', 'push', '--deps', 'build', artifact_ref
+        ])
+        result.assert_success()
+
+        # And finally assert that all the artifacts are in the share
+        #
+        # Note that assert shared tests that an element is shared by obtaining
+        # the artifact ref and asserting that the path exists in the share
+        assert_not_shared(cli, share, project, element)
+        assert_not_shared(cli, share, project, runtime_dep)
+        assert_shared(cli, share, project, build_dep)
+
+
 # Tests that `bst artifact push --deps run $artifact_ref` fails
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_artifacts_all_deps_fails(cli, tmpdir, datafiles):

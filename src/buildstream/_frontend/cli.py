@@ -1173,7 +1173,7 @@ def artifact_pull(app, elements, deps, remote):
 ##################################################################
 @artifact.command(name="push", short_help="Push a built artifact")
 @click.option('--deps', '-d', default='none',
-              type=click.Choice(['none', 'all']),
+              type=click.Choice(['none', 'all', 'build', 'run']),
               help='The dependencies to push (default: none)')
 @click.option('--remote', '-r', default=None,
               help="The URL of the remote cache (defaults to the first configured cache)")
@@ -1202,6 +1202,8 @@ def artifact_push(app, artifacts, deps, remote):
     \b
         none:  No dependencies, just the element itself
         all:   All dependencies
+        run:   All runtime dependencies
+        build: All build dependencies
     """
     with app.initialized(session_name="Push"):
         ignore_junction_targets = False
