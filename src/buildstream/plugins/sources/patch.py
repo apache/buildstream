@@ -55,6 +55,7 @@ class PatchSource(Source):
     BST_REQUIRES_PREVIOUS_SOURCES_STAGE = True
 
     def configure(self, node):
+        node.validate_keys(["path", "strip-level", *Source.COMMON_CONFIG_KEYS])
         self.path = self.node_get_project_path(node.get_scalar('path'),
                                                check_is_file=True)
         self.strip_level = node.get_int("strip-level", default=1)
