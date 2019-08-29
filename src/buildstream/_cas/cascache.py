@@ -69,11 +69,12 @@ class CASCache():
         if casd:
             # Place socket in global/user temporary directory to avoid hitting
             # the socket path length limit.
-            self._casd_socket_tempdir = tempfile.mkdtemp(prefix='buildstream')
-            self._casd_socket_path = os.path.join(self._casd_socket_tempdir, 'casd.sock')
+            # self._casd_socket_tempdir = tempfile.mkdtemp(prefix='buildstream')
+            # self._casd_socket_path = os.path.join(self._casd_socket_tempdir, 'casd.sock')
+            self._casd_socket_connectstr = 'localhost:9000'
 
             casd_args = [utils.get_host_tool('buildbox-casd')]
-            casd_args.append('--bind=unix:' + self._casd_socket_path)
+            casd_args.append('--bind=' + self._casd_socket_connectstr)
 
             if cache_quota is not None:
                 casd_args.append('--quota-high={}'.format(int(cache_quota)))
@@ -82,7 +83,12 @@ class CASCache():
                 if protect_session_blobs:
                     casd_args.append('--protect-session-blobs')
 
-            casd_args.append(path)
+            # casd_args.append('--verbose')
+
+            # print("casd path:", os.path.abspath(path))
+            casd_args.append( os.path.abspath(path))
+            # casd_logfile = open("casd.logfile", "w")
+            # self._casd_process = subprocess.Popen(casd_args, cwd=path, stdout=casd_logfile, stderr=casd_logfile)
             self._casd_process = subprocess.Popen(casd_args, cwd=path)
             self._casd_start_time = time.time()
         else:
@@ -107,7 +113,7 @@ class CASCache():
         assert self._casd_process, "CASCache was instantiated without buildbox-casd"
 
         if not self._casd_channel:
-            self._casd_channel = grpc.insecure_channel('unix:' + self._casd_socket_path)
+            self._casd_channel = grpc.insecure_channel(self._casd_socket_connectstr)
             self._casd_cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self._casd_channel)
             self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
 
@@ -200,7 +206,8 @@ class CASCache():
                         self._casd_process.wait(timeout=15)
             self._casd_process = None
 
-            shutil.rmtree(self._casd_socket_tempdir)
+            # TODO: only rmtree if not on Windows
+            # shutil.rmtree(self._casd_socket_tempdir)
 
     # contains():
     #
@@ -248,7 +255,8 @@ class CASCache():
             with open(path, 'rb') as f:
                 directory.ParseFromString(f.read())
                 if update_mtime:
-                    os.utime(f.fileno())
+                    # Seems like this is not supported on Windows.
+                    os.utime(f.name)
 
             # Optionally check presence of files
             if with_files:
@@ -394,10 +402,14 @@ class CASCache():
 
         with contextlib.ExitStack() as stack:
             if path is None:
-                tmp = stack.enter_context(self._temporary_object())
-                tmp.write(buffer)
-                tmp.flush()
-                path = tmp.name
+                tmpname = stack.enter_context(self._temporary_object())
+                with open(tmpname, "wb") as tmp:
+                    tmp.write(buffer)
+                    tmp.flush()  # Not necessary?
+                path = tmpname
+                # print("Temporary object:", path)
+
+            path = os.path.abspath(path)
 
             request = local_cas_pb2.CaptureFilesRequest()
             if instance_name:
@@ -418,6 +430,8 @@ class CASCache():
             if blob_response.status.code != code_pb2.OK:
                 raise CASCacheError("Failed to capture blob {}: {}".format(path, blob_response.status.code))
             digest.CopyFrom(blob_response.digest)
+
+            # print("Saved temporary object:", path)
 
         return digest
 
@@ -752,10 +766,10 @@ class CASCache():
     # Create a named temporary file with 0o0644 access rights.
     @contextlib.contextmanager
     def _temporary_object(self):
-        with utils._tempnamedfile(dir=self.tmpdir) as f:
-            os.chmod(f.name,
+        with utils._tempnamedfile_name(dir=self.tmpdir) as fname:
+            os.chmod(fname,
                      stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
-            yield f
+            yield fname
 
     # _ensure_blob():
     #
