@@ -242,6 +242,12 @@ class Context():
             path = os.path.normpath(path)
             setattr(self, directory, path)
 
+            # Relative paths don't make sense in user configuration. The exception is
+            # workspacedir where `.` is useful as it will be combined with the name
+            # specified on the command line.
+            if not os.path.isabs(path) and not (directory == 'workspacedir' and path == '.'):
+                raise LoadError("{} must be an absolute path".format(directory), LoadErrorReason.INVALID_DATA)
+
         # add directories not set by users
         self.tmpdir = os.path.join(self.cachedir, 'tmp')
         self.casdir = os.path.join(self.cachedir, 'cas')
