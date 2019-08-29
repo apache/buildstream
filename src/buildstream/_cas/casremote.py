@@ -247,25 +247,6 @@ class CASRemote():
 
         return self.cascache.add_object(buffer=message_buffer, instance_name=self.local_cas_instance_name)
 
-    ################################################
-    #             Local Private Methods            #
-    ################################################
-    def _fetch_blob(self, digest):
-        local_cas = self.cascache._get_local_cas()
-        request = local_cas_pb2.FetchMissingBlobsRequest()
-        request.instance_name = self.local_cas_instance_name
-        request_digest = request.blob_digests.add()
-        request_digest.CopyFrom(digest)
-        response = local_cas.FetchMissingBlobs(request)
-        for blob_response in response.responses:
-            if blob_response.status.code == code_pb2.NOT_FOUND:
-                raise BlobNotFound(response.digest.hash, "Failed to download blob {}: {}".format(
-                    blob_response.digest.hash, blob_response.status.code))
-
-            if blob_response.status.code != code_pb2.OK:
-                raise CASRemoteError("Failed to download blob {}: {}".format(
-                    blob_response.digest.hash, blob_response.status.code))
-
 
 # Represents a batch of blobs queued for fetching.
 #
