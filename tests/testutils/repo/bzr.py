@@ -14,15 +14,18 @@ class Bzr(Repo):
         super().__init__(directory, subdir)
         self.bzr = BZR
 
+        self.env = os.environ.copy()
+        self.env.update(BZR_ENV)
+
     def create(self, directory):
         branch_dir = os.path.join(self.repo, 'trunk')
 
-        subprocess.call([self.bzr, 'init-repo', self.repo], env=BZR_ENV)
-        subprocess.call([self.bzr, 'init', branch_dir], env=BZR_ENV)
+        subprocess.call([self.bzr, 'init-repo', self.repo], env=self.env)
+        subprocess.call([self.bzr, 'init', branch_dir], env=self.env)
         self.copy_directory(directory, branch_dir)
-        subprocess.call([self.bzr, 'add', '.'], env=BZR_ENV, cwd=branch_dir)
+        subprocess.call([self.bzr, 'add', '.'], env=self.env, cwd=branch_dir)
         subprocess.call([self.bzr, 'commit', '--message="Initial commit"'],
-                        env=BZR_ENV, cwd=branch_dir)
+                        env=self.env, cwd=branch_dir)
 
         return self.latest_commit()
 
@@ -42,4 +45,4 @@ class Bzr(Repo):
             self.bzr, 'version-info',
             '--custom', '--template={revno}',
             os.path.join(self.repo, 'trunk')
-        ], env=BZR_ENV, universal_newlines=True).strip()
+        ], env=self.env, universal_newlines=True).strip()
