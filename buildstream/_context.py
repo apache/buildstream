@@ -181,6 +181,12 @@ class Context():
             path = os.path.normpath(path)
             setattr(self, directory, path)
 
+            # Relative paths don't make sense in user configuration. The exception is
+            # workspacedir where `.` is useful as it will be combined with the name
+            # specified on the command line.
+            if not os.path.isabs(path) and not (directory == 'workspacedir' and path == '.'):
+                raise LoadError("{} must be an absolute path".format(directory), LoadErrorReason.INVALID_DATA)
+
         # Load quota configuration
         # We need to find the first existing directory in the path of
         # our artifactdir - the artifactdir may not have been created
