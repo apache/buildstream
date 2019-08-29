@@ -823,7 +823,9 @@ class CASCache():
             # already in local repository
             return objpath
 
-        remote._fetch_blob(digest)
+        batch = _CASBatchRead(remote)
+        batch.add(digest)
+        batch.send()
 
         return objpath
 
