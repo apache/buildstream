@@ -608,19 +608,21 @@ class Job():
         #
         #      http://bugs.python.org/issue3831
         #
-        if not self._listening:
-            self._scheduler.loop.add_reader(
-                self._queue._reader.fileno(), self._parent_recv)
-            self._listening = True
+        # if not self._listening:
+        #     self._scheduler.loop.add_reader(
+        #         self._queue._reader.fileno(), self._parent_recv)
+        #     self._listening = True
+        pass
 
     # _parent_stop_listening()
     #
     # Stops listening on the message queue
     #
     def _parent_stop_listening(self):
-        if self._listening:
-            self._scheduler.loop.remove_reader(self._queue._reader.fileno())
-            self._listening = False
+        # if self._listening:
+        #     self._scheduler.loop.remove_reader(self._queue._reader.fileno())
+        #     self._listening = False
+        pass
 
 
 # ChildJob()
