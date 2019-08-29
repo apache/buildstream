@@ -1,3 +1,7 @@
+*.pyd
+*.swp
+*.orig
+
 # Compiled python modules.
 __pycache__
 
