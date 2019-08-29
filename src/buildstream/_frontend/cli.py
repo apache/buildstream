@@ -1135,10 +1135,10 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
               help='The dependency artifacts to pull')
 @click.option('--remote', '-r', default=None,
               help="The URL of the remote cache (defaults to the first configured cache)")
-@click.argument('elements', nargs=-1,
+@click.argument('artifacts', nargs=-1,
                 type=click.Path(readable=False))
 @click.pass_obj
-def artifact_pull(app, elements, deps, remote):
+def artifact_pull(app, artifacts, deps, remote):
     """Pull a built artifact from the configured remote artifact cache.
 
     Specifying no elements will result in pulling the default targets
@@ -1162,12 +1162,12 @@ def artifact_pull(app, elements, deps, remote):
     with app.initialized(session_name="Pull"):
         ignore_junction_targets = False
 
-        if not elements:
-            elements = app.project.get_default_targets()
+        if not artifacts:
+            artifacts = app.project.get_default_targets()
             # Junction elements cannot be pulled, exclude them from default targets
             ignore_junction_targets = True
 
-        app.stream.pull(elements, selection=deps, remote=remote,
+        app.stream.pull(artifacts, selection=deps, remote=remote,
                         ignore_junction_targets=ignore_junction_targets)
 
 
