@@ -457,7 +457,8 @@ class Stream():
                                  selection=selection,
                                  ignore_junction_targets=ignore_junction_targets,
                                  use_artifact_config=use_config,
-                                 artifact_remote_url=remote)
+                                 artifact_remote_url=remote,
+                                 load_refs=True)
 
         if not self._artifacts.has_push_remotes():
             raise StreamError("No artifact caches available for pushing artifacts")
