@@ -18,11 +18,14 @@ class Git(Repo):
 
         super().__init__(directory, subdir)
 
+        self.env = os.environ.copy()
+        self.env.update(GIT_ENV)
+
     def _run_git(self, *args, **kwargs):
         argv = [GIT]
         argv.extend(args)
         if 'env' not in kwargs:
-            kwargs['env'] = dict(GIT_ENV, PWD=self.repo)
+            kwargs['env'] = dict(self.env, PWD=self.repo)
         kwargs.setdefault('cwd', self.repo)
         kwargs.setdefault('check', True)
         return subprocess.run(argv, **kwargs)
