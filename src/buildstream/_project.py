@@ -482,13 +482,8 @@ class Project():
             #          2. The ArtifactCache.contains() method expects an Element
             #             and a key, not a ref.
             #
-            artifactdir = self._context.artifactdir
             artifacts = []
             for ref in targets:
-                if not os.path.exists(os.path.join(artifactdir, ref)):
-                    raise LoadError("{}\nis not present in the artifact cache ({})".format(ref, artifactdir),
-                                    LoadErrorReason.MISSING_FILE)
-
                 artifacts.append(ArtifactElement._new_from_artifact_ref(ref, self._context, task))
 
         ArtifactElement._clear_artifact_refs_cache()
