@@ -4,6 +4,7 @@ import sys
 from functools import partial
 import fcntl
 
+import shutil
 import click
 from .. import _yaml
 from .._exceptions import BstError, LoadError, AppError
@@ -1219,19 +1220,45 @@ def artifact_push(app, elements, deps, remote):
 #                     Artifact Log Command                     #
 ################################################################
 @artifact.command(name='log', short_help="Show logs of artifacts")
+@click.option('--out',
+              type=click.Path(file_okay=True, writable=True),
+              help="Output logs to individual files in the specified path. If absent, logs are written to stdout.")
 @click.argument('artifacts', type=click.Path(), nargs=-1)
 @click.pass_obj
-def artifact_log(app, artifacts):
+def artifact_log(app, artifacts, out):
     """Show build logs of artifacts"""
-
     with app.initialized():
-        log_file_paths = app.stream.artifact_log(artifacts)
+        artifact_logs = app.stream.artifact_log(artifacts)
 
-        for log in log_file_paths:
-            with open(log) as f:
-                data = f.read()
+        if not out:
+            try:
+                for log in list(artifact_logs.values()):
+                    with open(log[0], 'r') as f:
+                        data = f.read()
+                    click.echo_via_pager(data)
+            except (OSError, FileNotFoundError):
+                click.echo("Error: file cannot be opened", err=True)
+                sys.exit(1)
 
-            click.echo_via_pager(data)
+        else:
+            try:
+                os.mkdir(out)
+            except FileExistsError:
+                click.echo("Error: {} already exists".format(out), err=True)
+                sys.exit(1)
+
+            for name, log_files in artifact_logs.items():
+                if len(log_files) > 1:
+                    os.mkdir(name)
+                    for log in log_files:
+                        dest = os.path.join(out, name, log)
+                        shutil.copy(log, dest)
+                    # make a dir and write in log files
+                else:
+                    log_name = os.path.splitext(name)[0] + '.log'
+                    dest = os.path.join(out, log_name)
+                    shutil.copy(log_files[0], dest)
+                    # write a log file
 
 
 ################################################################

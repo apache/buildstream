@@ -69,8 +69,7 @@ def test_artifact_log(cli, datafiles):
     # Read the log via glob
     result = cli.run(project=project, args=['artifact', 'log', 'test/target/*'])
     assert result.exit_code == 0
-    # The artifact is cached under both a strong key and a weak key
-    assert (log + log) == result.output
+    assert log == result.output
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -138,6 +137,38 @@ def test_artifact_list_exact_contents_glob(cli, datafiles):
 
     for artifact in expected_artifacts:
         assert artifact in result.output
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_artifact_log_files(cli, datafiles):
+    project = str(datafiles)
+
+    # Ensure we have an artifact to read
+    result = cli.run(project=project, args=['build', 'target.bst'])
+    assert result.exit_code == 0
+
+    logfiles = os.path.join(project, "logfiles")
+    target = os.path.join(project, logfiles, "target.log")
+    import_bin = os.path.join(project, logfiles, "import-bin.log")
+    # Ensure the logfile doesn't exist before the command is run
+    assert not os.path.exists(logfiles)
+    assert not os.path.exists(target)
+    assert not os.path.exists(import_bin)
+
+    # Run the command and ensure the file now exists
+    result = cli.run(project=project, args=['artifact', 'log', '--out', logfiles, 'target.bst', 'import-bin.bst'])
+    assert result.exit_code == 0
+    assert os.path.exists(logfiles)
+    assert os.path.exists(target)
+    assert os.path.exists(import_bin)
+
+    # Ensure the file contains the logs by checking for the LOG line
+    with open(target, 'r') as f:
+        data = f.read()
+        assert "LOG     target.bst" in data
+    with open(import_bin, 'r') as f:
+        data = f.read()
+        assert "LOG     import-bin.bst" in data
 
 
 # Test that we can delete the artifact of the element which corresponds
