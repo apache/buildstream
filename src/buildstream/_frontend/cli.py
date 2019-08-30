@@ -347,10 +347,10 @@ def help_command(ctx, command):
 @cli.command(short_help="Initialize a new BuildStream project")
 @click.option('--project-name', type=click.STRING,
               help="The project name to use")
-@click.option('--format-version', type=click.INT, default=BST_FORMAT_VERSION,
-              help="The required format version (default: {})".format(BST_FORMAT_VERSION))
-@click.option('--element-path', type=click.Path(), default="elements",
-              help="The subdirectory to store elements in (default: elements)")
+@click.option('--format-version', type=click.INT, default=BST_FORMAT_VERSION, show_default=True,
+              help="The required format version")
+@click.option('--element-path', type=click.Path(), default="elements", show_default=True,
+              help="The subdirectory to store elements in")
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Allow overwriting an existing project.conf")
 @click.argument('target-directory', nargs=1, required=False,
@@ -372,9 +372,9 @@ def init(app, project_name, format_version, element_path, force, target_director
 #                          Build Command                         #
 ##################################################################
 @cli.command(short_help="Build elements in a pipeline")
-@click.option('--deps', '-d', default='plan',
+@click.option('--deps', '-d', default='plan', show_default=True,
               type=click.Choice(['plan', 'all']),
-              help='The dependencies to build (default: plan)')
+              help='The dependencies to build')
 @click.option('--track', 'track_', multiple=True,
               type=click.Path(readable=False),
               help="Specify elements to track during the build. Can be used "
@@ -445,10 +445,10 @@ def build(app, elements, deps, track_, track_save, track_all, track_except, trac
 @click.option('--except', 'except_', multiple=True,
               type=click.Path(readable=False),
               help="Except certain dependencies")
-@click.option('--deps', '-d', default='all',
+@click.option('--deps', '-d', default='all', show_default=True,
               type=click.Choice(['none', 'plan', 'run', 'build', 'all']),
-              help='The dependencies to show (default: all)')
-@click.option('--order', default="stage",
+              help='The dependencies to show')
+@click.option('--order', default="stage", show_default=True,
               type=click.Choice(['stage', 'alpha']),
               help='Staging or alphabetic ordering of dependencies')
 @click.option('--format', '-f', 'format_', metavar='FORMAT', default=None,
@@ -682,9 +682,9 @@ def source():
 @click.option('--except', 'except_', multiple=True,
               type=click.Path(readable=False),
               help="Except certain dependencies from fetching")
-@click.option('--deps', '-d', default='plan',
+@click.option('--deps', '-d', default='plan', show_default=True,
               type=click.Choice(['none', 'plan', 'all']),
-              help='The dependencies to fetch (default: plan)')
+              help='The dependencies to fetch')
 @click.option('--track', 'track_', default=False, is_flag=True,
               help="Track new source references before fetching")
 @click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
@@ -746,9 +746,9 @@ def source_fetch(app, elements, deps, track_, except_, track_cross_junctions, re
 @click.option('--except', 'except_', multiple=True,
               type=click.Path(readable=False),
               help="Except certain dependencies from tracking")
-@click.option('--deps', '-d', default='none',
+@click.option('--deps', '-d', default='none', show_default=True,
               type=click.Choice(['none', 'all']),
-              help='The dependencies to track (default: none)')
+              help='The dependencies to track')
 @click.option('--cross-junctions', '-J', default=False, is_flag=True,
               help="Allow crossing junction boundaries")
 @click.argument('elements', nargs=-1,
@@ -799,9 +799,9 @@ def source_track(app, elements, deps, except_, cross_junctions):
 @click.option('--except', 'except_', multiple=True,
               type=click.Path(readable=False),
               help="Except certain dependencies")
-@click.option('--deps', '-d', default='none',
+@click.option('--deps', '-d', default='none', show_default=True,
               type=click.Choice(['build', 'none', 'run', 'all']),
-              help='The dependencies whose sources to checkout (default: none)')
+              help='The dependencies whose sources to checkout')
 @click.option('--tar', 'tar', default=False, is_flag=True,
               help='Create a tarball from the element\'s sources instead of a '
                    'file tree.')
@@ -1016,9 +1016,9 @@ def artifact():
 #                    Artifact show Command                  #
 #############################################################
 @artifact.command(name='show', short_help="Show the cached state of artifacts")
-@click.option('--deps', '-d', default='none',
+@click.option('--deps', '-d', default='none', show_default=True,
               type=click.Choice(['build', 'run', 'all', 'none']),
-              help='The dependencies we also want to show (default: none)')
+              help='The dependencies we also want to show')
 @click.argument('artifacts', type=click.Path(), nargs=-1)
 @click.pass_obj
 def artifact_show(app, deps, artifacts):
@@ -1035,9 +1035,9 @@ def artifact_show(app, deps, artifacts):
 @artifact.command(name='checkout', short_help="Checkout contents of an artifact")
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Allow files to be overwritten")
-@click.option('--deps', '-d', default=None,
+@click.option('--deps', '-d', default='run', show_default=True,
               type=click.Choice(['run', 'build', 'none']),
-              help='The dependencies to checkout (default: run)')
+              help='The dependencies to checkout')
 @click.option('--integrate/--no-integrate', default=None, is_flag=True,
               help="Whether to run integration commands")
 @click.option('--hardlinks', default=False, is_flag=True,
@@ -1128,9 +1128,9 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
 #                     Artifact Pull Command                    #
 ################################################################
 @artifact.command(name="pull", short_help="Pull a built artifact")
-@click.option('--deps', '-d', default='none',
+@click.option('--deps', '-d', default='none', show_default=True,
               type=click.Choice(['none', 'all']),
-              help='The dependency artifacts to pull (default: none)')
+              help='The dependency artifacts to pull')
 @click.option('--remote', '-r', default=None,
               help="The URL of the remote cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
@@ -1173,9 +1173,9 @@ def artifact_pull(app, elements, deps, remote):
 #                     Artifact Push Command                      #
 ##################################################################
 @artifact.command(name="push", short_help="Push a built artifact")
-@click.option('--deps', '-d', default='none',
+@click.option('--deps', '-d', default='none', show_default=True,
               type=click.Choice(['none', 'all']),
-              help='The dependencies to push (default: none)')
+              help='The dependencies to push')
 @click.option('--remote', '-r', default=None,
               help="The URL of the remote cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
@@ -1290,9 +1290,9 @@ def artifact_list_contents(app, artifacts, long_):
 #                     Artifact Delete Command                     #
 ###################################################################
 @artifact.command(name='delete', short_help="Remove artifacts from the local cache")
-@click.option('--deps', '-d', default='none',
+@click.option('--deps', '-d', default='none', show_default=True,
               type=click.Choice(['none', 'run', 'build', 'all']),
-              help="The dependencies to delete (default: none)")
+              help="The dependencies to delete")
 @click.argument('artifacts', type=click.Path(), nargs=-1)
 @click.pass_obj
 def artifact_delete(app, artifacts, deps):
@@ -1317,9 +1317,9 @@ def artifact_delete(app, artifacts, deps):
 @click.option('--except', 'except_', multiple=True,
               type=click.Path(readable=False),
               help="Except certain dependencies from fetching")
-@click.option('--deps', '-d', default='plan',
+@click.option('--deps', '-d', default='plan', show_default=True,
               type=click.Choice(['none', 'plan', 'all']),
-              help='The dependencies to fetch (default: plan)')
+              help='The dependencies to fetch')
 @click.option('--track', 'track_', default=False, is_flag=True,
               help="Track new source references before fetching")
 @click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
@@ -1339,9 +1339,9 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
 @click.option('--except', 'except_', multiple=True,
               type=click.Path(readable=False),
               help="Except certain dependencies from tracking")
-@click.option('--deps', '-d', default='none',
+@click.option('--deps', '-d', default='none', show_default=True,
               type=click.Choice(['none', 'all']),
-              help='The dependencies to track (default: none)')
+              help='The dependencies to track')
 @click.option('--cross-junctions', '-J', default=False, is_flag=True,
               help="Allow crossing junction boundaries")
 @click.argument('elements', nargs=-1,
@@ -1358,9 +1358,9 @@ def track(app, elements, deps, except_, cross_junctions):
 @cli.command(short_help="COMMAND OBSOLETE - Checkout a built artifact", hidden=True)
 @click.option('--force', '-f', default=False, is_flag=True,
               help="Allow files to be overwritten")
-@click.option('--deps', '-d', default='run',
+@click.option('--deps', '-d', default='run', show_default=True,
               type=click.Choice(['run', 'build', 'none']),
-              help='The dependencies to checkout (default: run)')
+              help='The dependencies to checkout')
 @click.option('--integrate/--no-integrate', default=True, is_flag=True,
               help="Whether to run integration commands")
 @click.option('--hardlinks', default=False, is_flag=True,
@@ -1383,9 +1383,9 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
 #                          Pull Command                        #
 ################################################################
 @cli.command(short_help="COMMAND OBSOLETE - Pull a built artifact", hidden=True)
-@click.option('--deps', '-d', default='none',
+@click.option('--deps', '-d', default='none', show_default=True,
               type=click.Choice(['none', 'all']),
-              help='The dependency artifacts to pull (default: none)')
+              help='The dependency artifacts to pull')
 @click.option('--remote', '-r',
               help="The URL of the remote cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
@@ -1400,9 +1400,9 @@ def pull(app, elements, deps, remote):
 #                           Push Command                         #
 ##################################################################
 @cli.command(short_help="COMMAND OBSOLETE - Push a built artifact", hidden=True)
-@click.option('--deps', '-d', default='none',
+@click.option('--deps', '-d', default='none', show_default=True,
               type=click.Choice(['none', 'all']),
-              help='The dependencies to push (default: none)')
+              help='The dependencies to push')
 @click.option('--remote', '-r', default=None,
               help="The URL of the remote cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
