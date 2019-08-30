@@ -242,6 +242,12 @@ class Context():
             path = os.path.normpath(path)
             setattr(self, directory, path)
 
+            # Relative paths don't make sense in user configuration. The exception is
+            # workspacedir where `.` is useful as it will be combined with the name
+            # specified on the command line.
+            if not os.path.isabs(path) and not (directory == 'workspacedir' and path == '.'):
+                raise LoadError("{} must be an absolute path".format(directory), LoadErrorReason.INVALID_DATA)
+
         # add directories not set by users
         self.tmpdir = os.path.join(self.cachedir, 'tmp')
         self.casdir = os.path.join(self.cachedir, 'cas')
@@ -264,14 +270,18 @@ class Context():
 
         # Load quota configuration
         # We need to find the first existing directory in the path of our
-        # cachedir - the cachedir may not have been created yet.
+        # casdir - the casdir may not have been created yet.
         cache = defaults.get_mapping('cache')
         cache.validate_keys(['quota', 'pull-buildtrees', 'cache-buildtrees'])
+
+        cas_volume = self.casdir
+        while not os.path.exists(cas_volume):
+            cas_volume = os.path.dirname(cas_volume)
 
         self.config_cache_quota_string = cache.get_str('quota')
         try:
             self.config_cache_quota = utils._parse_size(self.config_cache_quota_string,
-                                                        self.casdir)
+                                                        cas_volume)
         except utils.UtilError as e:
             raise LoadError("{}\nPlease specify the value in bytes or as a % of full disk space.\n"
                             "\nValid values are, for example: 800M 10G 1T 50%\n"
