@@ -14,14 +14,11 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 from hashlib import sha256
-import multiprocessing
 import os
 import random
-import signal
 
 import pytest
 
-from buildstream import utils, _signals
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
 from buildstream._cas import CASCache
@@ -43,47 +40,14 @@ from buildstream.storage.directory import VirtualDirectoryError
 root_filesets = [
     [('a/b/c/textfile1', 'F', 'This is textfile 1\n')],
     [('a/b/c/textfile1', 'F', 'This is the replacement textfile 1\n')],
-    [('a/b/d', 'D', '')],
-    [('a/b/e', 'S', '/a/b/d')],
     [('a/b/f', 'S', '/a/b/c')],
-    [('a/b/d', 'D', ''), ('a/b/e', 'S', '/a/b/d')],
     [('a/b/c', 'D', ''), ('a/b/f', 'S', '/a/b/c')],
-    [('a/c', 'F', 'This is textfile 1\n')],
-    [('a/b/e', 'F', 'This is textfile 1\n')],
-    [('a/b/c', 'D', '')]
+    [('a/b/f', 'F', 'This is textfile 1\n')],
 ]
 
 empty_hash_ref = sha256().hexdigest()
 RANDOM_SEED = 69105
-NUM_RANDOM_TESTS = 10
-
-
-# Since parent processes wait for queue events, we need
-# to put something on it if the called process raises an
-# exception.
-def _queue_wrapper(target, queue, *args):
-    try:
-        target(*args)
-    except Exception as e:
-        queue.put(str(e))
-        raise
-
-    queue.put(None)
-
-
-def _run_test_in_subprocess(func, *args):
-    queue = multiprocessing.Queue()
-    process = multiprocessing.Process(target=_queue_wrapper, args=(func, queue, *args))
-    try:
-        with _signals.blocked([signal.SIGINT], ignore=False):
-            process.start()
-        error = queue.get()
-        process.join()
-    except KeyboardInterrupt:
-        utils._kill_process_tree(process.pid)
-        raise
-
-    assert not error
+NUM_RANDOM_TESTS = 4
 
 
 def generate_import_roots(rootno, directory):
@@ -213,7 +177,7 @@ def directory_not_empty(path):
     return os.listdir(path)
 
 
-def _import_test_subprocess(tmpdir, original, overlay, generator_function, verify_contents=False):
+def _import_test(tmpdir, original, overlay, generator_function, verify_contents=False):
     cas_cache = CASCache(tmpdir)
     try:
         # Create some fake content
@@ -269,26 +233,21 @@ def _import_test_subprocess(tmpdir, original, overlay, generator_function, verif
         cas_cache.release_resources()
 
 
-def _import_test(tmpdir, original, overlay, generator_function, verify_contents=False):
-    _run_test_in_subprocess(_import_test_subprocess, tmpdir, original, overlay, generator_function, verify_contents)
-
-
-# It's possible to parameterize on both original and overlay values,
-# but this leads to more tests being listed in the output than are
-# comfortable.
+@pytest.mark.in_subprocess
 @pytest.mark.parametrize("original", range(1, len(root_filesets) + 1))
-def test_fixed_cas_import(tmpdir, original):
-    for overlay in range(1, len(root_filesets) + 1):
-        _import_test(str(tmpdir), original, overlay, generate_import_roots, verify_contents=True)
+@pytest.mark.parametrize("overlay", range(1, len(root_filesets) + 1))
+def test_fixed_cas_import(tmpdir, original, overlay):
+    _import_test(str(tmpdir), original, overlay, generate_import_roots, verify_contents=True)
 
 
+@pytest.mark.in_subprocess
 @pytest.mark.parametrize("original", range(1, NUM_RANDOM_TESTS + 1))
-def test_random_cas_import(tmpdir, original):
-    for overlay in range(1, NUM_RANDOM_TESTS + 1):
-        _import_test(str(tmpdir), original, overlay, generate_random_root, verify_contents=False)
+@pytest.mark.parametrize("overlay", range(1, NUM_RANDOM_TESTS + 1))
+def test_random_cas_import(tmpdir, original, overlay):
+    _import_test(str(tmpdir), original, overlay, generate_random_root, verify_contents=False)
 
 
-def _listing_test_subprocess(tmpdir, root, generator_function):
+def _listing_test(tmpdir, root, generator_function):
     cas_cache = CASCache(tmpdir)
     try:
         # Create some fake content
@@ -305,22 +264,21 @@ def _listing_test_subprocess(tmpdir, root, generator_function):
         cas_cache.release_resources()
 
 
-def _listing_test(tmpdir, root, generator_function):
-    _run_test_in_subprocess(_listing_test_subprocess, tmpdir, root, generator_function)
-
-
-@pytest.mark.parametrize("root", range(1, 11))
+@pytest.mark.in_subprocess
+@pytest.mark.parametrize("root", range(1, NUM_RANDOM_TESTS + 1))
 def test_random_directory_listing(tmpdir, root):
     _listing_test(str(tmpdir), root, generate_random_root)
 
 
-@pytest.mark.parametrize("root", [1, 2, 3, 4, 5])
+@pytest.mark.in_subprocess
+@pytest.mark.parametrize("root", range(1, len(root_filesets) + 1))
 def test_fixed_directory_listing(tmpdir, root):
     _listing_test(str(tmpdir), root, generate_import_roots)
 
 
 # Check that the vdir is decending and readable
-def _test_descend_subprocess(tmpdir):
+@pytest.mark.in_subprocess
+def test_descend(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
     try:
@@ -343,14 +301,11 @@ def _test_descend_subprocess(tmpdir):
         cas_cache.release_resources()
 
 
-def test_descend(tmpdir):
-    _run_test_in_subprocess(_test_descend_subprocess, tmpdir)
-
-
 # Check symlink logic for edgecases
 # Make sure the correct erros are raised when trying
 # to decend in to files or links to files
-def _test_bad_symlinks_subprocess(tmpdir):
+@pytest.mark.in_subprocess
+def test_bad_symlinks(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
     try:
@@ -381,13 +336,10 @@ def _test_bad_symlinks_subprocess(tmpdir):
         cas_cache.release_resources()
 
 
-def test_bad_symlinks(tmpdir):
-    _run_test_in_subprocess(_test_bad_symlinks_subprocess, tmpdir)
-
-
 # Check symlink logic for edgecases
 # Check decend accross relitive link
-def _test_relative_symlink_subprocess(tmpdir):
+@pytest.mark.in_subprocess
+def test_relative_symlink(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
     try:
@@ -410,13 +362,10 @@ def _test_relative_symlink_subprocess(tmpdir):
         cas_cache.release_resources()
 
 
-def test_relative_symlink(tmpdir):
-    _run_test_in_subprocess(_test_relative_symlink_subprocess, tmpdir)
-
-
 # Check symlink logic for edgecases
 # Check deccend accross abs link
-def _test_abs_symlink_subprocess(tmpdir):
+@pytest.mark.in_subprocess
+def test_abs_symlink(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
     try:
@@ -440,13 +389,10 @@ def _test_abs_symlink_subprocess(tmpdir):
         cas_cache.release_resources()
 
 
-def test_abs_symlink(tmpdir):
-    _run_test_in_subprocess(_test_abs_symlink_subprocess, tmpdir)
-
-
 # Check symlink logic for edgecases
 # Check symlink can not escape root
-def _test_bad_sym_escape_subprocess(tmpdir):
+@pytest.mark.in_subprocess
+def test_bad_sym_escape(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
     try:
@@ -468,7 +414,3 @@ def _test_bad_sym_escape_subprocess(tmpdir):
             assert error.reason == "directory-not-found"
     finally:
         cas_cache.release_resources()
-
-
-def test_bad_sym_escape(tmpdir):
-    _run_test_in_subprocess(_test_bad_sym_escape_subprocess, tmpdir)
