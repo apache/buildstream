@@ -18,6 +18,11 @@ class Bzr(Repo):
         self.env.update(BZR_ENV)
 
     def create(self, directory):
+        # Work around race condition in bzr's creation of ~/.bazaar in
+        # ensure_config_dir_exists() when running tests in parallel.
+        bazaar_config_dir = os.path.expanduser('~/.bazaar')
+        os.makedirs(bazaar_config_dir, exist_ok=True)
+
         branch_dir = os.path.join(self.repo, 'trunk')
 
         subprocess.call([self.bzr, 'init-repo', self.repo], env=self.env)
