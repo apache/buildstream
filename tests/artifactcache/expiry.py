@@ -21,7 +21,6 @@
 # pylint: disable=redefined-outer-name
 
 import os
-from unittest import mock
 
 import pytest
 
@@ -304,19 +303,12 @@ def test_never_delete_required_track(cli, datafiles):
 # Ensure that only valid cache quotas make it through the loading
 # process.
 #
-# This test virtualizes the condition to assume a storage volume
-# has 10K total disk space, and 6K of it is already in use (not
-# including any space used by the artifact cache).
-#
 # Parameters:
 #    quota (str): A quota size configuration for the config file
 #    err_domain (str): An ErrorDomain, or 'success' or 'warning'
 #    err_reason (str): A reson to compare with an error domain
 #
 # If err_domain is 'success', then err_reason is unused.
-#
-# If err_domain is 'warning', then err_reason is asserted to
-# be in the stderr.
 #
 @pytest.mark.parametrize("quota,err_domain,err_reason", [
     # Valid configurations
@@ -329,16 +321,8 @@ def test_never_delete_required_track(cli, datafiles):
     ("-1", ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA),
     ("pony", ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA),
     ("200%", ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA),
-
-    # Not enough space on disk even if you cleaned up
-    ("11K", ErrorDomain.CAS, 'insufficient-storage-for-quota'),
-
-    # Not enough space for these caches
-    ("7K", 'warning', 'Your system does not have enough available'),
-    ("70%", 'warning', 'Your system does not have enough available')
 ])
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.xfail()
 def test_invalid_cache_quota(cli, datafiles, quota, err_domain, err_reason):
     project = str(datafiles)
     os.makedirs(os.path.join(project, 'elements'))
@@ -349,39 +333,10 @@ def test_invalid_cache_quota(cli, datafiles, quota, err_domain, err_reason):
         },
     })
 
-    # We patch how we get space information
-    # Ideally we would instead create a FUSE device on which we control
-    # everything.
-    # If the value is a percentage, we fix the current values to take into
-    # account the block size, since this is important in how we compute the size
-
-    if quota.endswith("%"):  # We set the used space at 60% of total space
-        stats = os.statvfs(".")
-        free_space = 0.6 * stats.f_bsize * stats.f_blocks
-        total_space = stats.f_bsize * stats.f_blocks
-    else:
-        free_space = 6000
-        total_space = 10000
-
-    volume_space_patch = mock.patch(
-        "buildstream.utils._get_volume_size",
-        autospec=True,
-        return_value=(total_space, free_space),
-    )
-
-    cache_size_patch = mock.patch(
-        "buildstream._cas.CASQuota.get_cache_size",
-        autospec=True,
-        return_value=0,
-    )
-
-    with volume_space_patch, cache_size_patch:
-        res = cli.run(project=project, args=['workspace', 'list'])
+    res = cli.run(project=project, args=['workspace', 'list'])
 
     if err_domain == 'success':
         res.assert_success()
-    elif err_domain == 'warning':
-        assert err_reason in res.stderr
     else:
         res.assert_main_error(err_domain, err_reason)
 
