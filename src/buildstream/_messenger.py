@@ -30,6 +30,13 @@ from ._message import Message, MessageType
 _RENDER_INTERVAL = datetime.timedelta(seconds=1)
 
 
+# Time in seconds for which we decide that we want to display subtask information
+_DISPLAY_LIMIT = datetime.timedelta(seconds=3)
+# If we're in the test suite, we need to ensure that we don't set a limit
+if "BST_TEST_SUITE" in os.environ:
+    _DISPLAY_LIMIT = datetime.timedelta(seconds=0)
+
+
 # TimeData class to contain times in an object that can be passed around
 # and updated from different places
 class _TimeData():
@@ -224,13 +231,13 @@ class Messenger():
                     self._next_render = None
 
             elapsed = datetime.datetime.now() - timedata.start_time
-            if task.current_progress is not None:
+            detail = None
+
+            if task.current_progress is not None and elapsed > _DISPLAY_LIMIT:
                 if task.maximum_progress is not None:
                     detail = "{} of {} subtasks processed".format(task.current_progress, task.maximum_progress)
                 else:
                     detail = "{} subtasks processed".format(task.current_progress)
-            else:
-                detail = None
             message = Message(MessageType.SUCCESS, activity_name, elapsed=elapsed, detail=detail,
                               element_name=element_name)
             self.message(message)
