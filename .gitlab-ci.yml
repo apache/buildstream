@@ -96,7 +96,6 @@ docs:
 
 .overnight-tests: &overnight-tests-template
   stage: test
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-55318540
   variables:
     bst_ext_url: git+https://gitlab.com/BuildStream/bst-external.git
     bst_ext_ref: 0.16.0-0-gbe5683970abddbc4670592f79c473f4560b7be3a
