@@ -156,7 +156,8 @@ bst_install_entry_points = {
 if not os.environ.get('BST_ARTIFACTS_ONLY', ''):
     check_for_bwrap()
     bst_install_entry_points['console_scripts'] += [
-        'bst = buildstream._frontend:cli'
+        'bst = buildstream._frontend:cli',
+        'bst-buildboxcasd-test = buildstream.buildboxcasdtest:cli',
     ]
 
 #####################################################
