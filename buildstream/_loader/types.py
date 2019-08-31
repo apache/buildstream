@@ -93,6 +93,20 @@ class Dependency():
             self.junction = _yaml.node_get(dep, str, Symbol.JUNCTION, default_value=None)
             self.strict = _yaml.node_get(dep, bool, Symbol.STRICT, default_value=False)
 
+            # Here we disallow explicitly setting 'strict' to False.
+            #
+            # This is in order to keep the door open to allowing the project.conf
+            # set the default of dependency 'strict'-ness which might be useful
+            # for projects which use mostly static linking and the like, in which
+            # case we can later interpret explicitly non-strict dependencies
+            # as an override of the project default.
+            #
+            if self.strict == False and Symbol.STRICT in dep:
+                provenance = _yaml.node_get_provenance(dep, key=Symbol.STRICT)
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Setting 'strict' to False is unsupported"
+                                .format(provenance))
+
         else:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Dependency is not specified as a string or a dictionary".format(provenance))
