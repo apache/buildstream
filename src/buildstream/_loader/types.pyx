@@ -100,6 +100,19 @@ cdef class Dependency:
             self.junction = (<MappingNode> dep).get_str(<str> Symbol.JUNCTION, None)
             self.strict = (<MappingNode> dep).get_bool(<str> Symbol.STRICT, False)
 
+            # Here we disallow explicitly setting 'strict' to False.
+            #
+            # This is in order to keep the door open to allowing the project.conf
+            # set the default of dependency 'strict'-ness which might be useful
+            # for projects which use mostly static linking and the like, in which
+            # case we can later interpret explicitly non-strict dependencies
+            # as an override of the project default.
+            #
+            if self.strict == False and Symbol.STRICT in dep:
+                provenance = dep.get_scalar(Symbol.STRICT).get_provenance()
+                raise LoadError("{}: Setting 'strict' to False is unsupported"
+                                .format(provenance), LoadErrorReason.INVALID_DATA)
+
         else:
             raise LoadError("{}: Dependency is not specified as a string or a dictionary".format(self.provenance),
                             LoadErrorReason.INVALID_DATA)
