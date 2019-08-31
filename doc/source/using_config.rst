@@ -201,6 +201,8 @@ configuration will be used as fallback.
           instance-name: main
 
 
+.. _user_config_strict_mode:
+
 Strict build plan
 ~~~~~~~~~~~~~~~~~
 The strict build plan option decides whether you want elements

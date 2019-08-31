@@ -124,7 +124,7 @@ class Loader():
         dummy_target = LoadElement(Node.from_dict({}), "", self)
         # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
         dummy_target.dependencies.extend(  # pylint: disable=no-member
-            Dependency(element, Symbol.RUNTIME)
+            Dependency(element, Symbol.RUNTIME, False)
             for element in target_elements
         )
 
@@ -344,7 +344,7 @@ class Loader():
                 # All is well, push the dependency onto the LoadElement
                 # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
                 current_element[0].dependencies.append(  # pylint: disable=no-member
-                    Dependency(dep_element, dep.dep_type))
+                    Dependency(dep_element, dep.dep_type, dep.strict))
             else:
                 # We do not have any more dependencies to load for this
                 # element on the queue, report any invalid dep names
@@ -499,6 +499,8 @@ class Loader():
                     meta_element.build_dependencies.append(meta_dep)
                 if dep.dep_type != 'build':
                     meta_element.dependencies.append(meta_dep)
+                if dep.strict:
+                    meta_element.strict_dependencies.append(meta_dep)
 
             element.meta_done = True
 
