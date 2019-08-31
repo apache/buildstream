@@ -1077,7 +1077,7 @@ class Element(Plugin):
                 ]
             else:
                 dependencies = [
-                    e.name for e in self.dependencies(Scope.BUILD, recurse=False)
+                    e.name for e in self.dependencies(Scope.BUILD)
                 ]
 
             self.__weak_cache_key = self.__calculate_cache_key(dependencies)
