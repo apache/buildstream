@@ -135,6 +135,17 @@ def test_invalid_strict_dependency(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_invalid_non_strict_dependency(cli, datafiles):
+    basedir = os.path.join(datafiles.dirname, datafiles.basename)
+    loader = make_loader(basedir)
+
+    with pytest.raises(LoadError) as exc:
+        element = loader.load(['elements/invalidnonstrict.bst'])[0]
+
+    assert (exc.value.reason == LoadErrorReason.INVALID_DATA)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_build_dependency(datafiles):
     basedir = os.path.join(datafiles.dirname, datafiles.basename)
     loader = make_loader(basedir)
