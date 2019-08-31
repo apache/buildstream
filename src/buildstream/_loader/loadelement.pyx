@@ -39,18 +39,21 @@ cdef int _next_synthetic_counter():
 # A link from a LoadElement to its dependencies.
 #
 # Keeps a link to one of the current Element's dependencies, together with
-# its dependency type.
+# its dependency attributes.
 #
 # Args:
 #    element (LoadElement): a LoadElement on which there is a dependency
 #    dep_type (str): the type of dependency this dependency link is
+#    strict (bint): whether the dependency is strict
 cdef class Dependency:
     cdef readonly LoadElement element
     cdef readonly str dep_type
+    cdef readonly bint strict
 
-    def __cinit__(self, LoadElement element, str dep_type):
+    def __cinit__(self, LoadElement element, str dep_type, bint strict):
         self.element = element
         self.dep_type = dep_type
+        self.strict = strict
 
 
 # LoadElement():

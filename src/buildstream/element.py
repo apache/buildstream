@@ -208,6 +208,7 @@ class Element(Plugin):
 
         self.__runtime_dependencies = []        # Direct runtime dependency Elements
         self.__build_dependencies = []          # Direct build dependency Elements
+        self.__strict_dependencies = []         # Direct build dependency subset which require strict rebuilds
         self.__reverse_build_deps = set()       # Direct reverse build dependency Elements
         self.__reverse_runtime_deps = set()     # Direct reverse runtime dependency Elements
         self.__build_deps_without_strict_cache_key = None    # Number of build dependencies without a strict key
@@ -989,6 +990,10 @@ class Element(Plugin):
             dependency = Element._new_from_meta(meta_dep, task)
             element.__build_dependencies.append(dependency)
             dependency.__reverse_build_deps.add(element)
+
+            if meta_dep in meta.strict_dependencies:
+                element.__strict_dependencies.append(dependency)
+
         no_of_build_deps = len(element.__build_dependencies)
         element.__build_deps_without_strict_cache_key = no_of_build_deps
         element.__build_deps_without_cache_key = no_of_build_deps
@@ -3107,17 +3112,22 @@ class Element(Plugin):
 
         if self.__weak_cache_key is None:
             # Calculate weak cache key
+            #
             # Weak cache key includes names of direct build dependencies
-            # but does not include keys of dependencies.
-            if self.BST_STRICT_REBUILD:
-                dependencies = [
-                    e._get_cache_key(strength=_KeyStrength.WEAK)
-                    for e in self.dependencies(Scope.BUILD)
-                ]
-            else:
-                dependencies = [
-                    [e.project_name, e.name] for e in self.dependencies(Scope.BUILD, recurse=False)
-                ]
+            # so as to only trigger rebuilds when the shape of the
+            # dependencies change.
+            #
+            # Some conditions cause dependencies to be strict, such
+            # that this element will be rebuilt anyway if the dependency
+            # changes even in non strict mode, for these cases we just
+            # encode the dependency's weak cache key instead of it's name.
+            #
+            dependencies = [
+                e._get_cache_key(strength=_KeyStrength.WEAK)
+                if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
+                else [e.project_name, e.name]
+                for e in self.dependencies(Scope.BUILD)
+            ]
 
             self.__weak_cache_key = self._calculate_cache_key(dependencies)
 

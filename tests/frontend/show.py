@@ -560,3 +560,57 @@ def test_max_jobs(cli, datafiles, cli_value, config_value):
     else:
         # Check that we got the explicitly set value
         assert loaded_value == int(expected_value)
+
+
+# This tests that cache keys behave as expected when
+# dependencies have been specified as `strict` and
+# when building in strict mode.
+#
+# This test will:
+#
+#  * Build the target once (and assert that it is cached)
+#  * Modify some local files which are imported
+#    by an import element which the target depends on
+#  * Assert that the cached state of the target element
+#    is as expected
+#
+# We run the test twice, once with an element which strict
+# depends on the changing import element, and one which
+# depends on it regularly.
+#
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'strict-depends'))
+@pytest.mark.parametrize("target, expected_state", [
+    ("non-strict-depends.bst", "cached"),
+    ("strict-depends.bst", "waiting"),
+])
+def test_strict_dependencies(cli, datafiles, target, expected_state):
+    project = str(datafiles)
+
+    # Configure non strict mode, this will have
+    # an effect on the build and the `bst show`
+    # commands run via cli.get_element_states()
+    cli.configure({
+        'projects': {
+            'test': {
+                'strict': False
+            }
+        }
+    })
+
+    result = cli.run(project=project, silent=True, args=['build', target])
+    result.assert_success()
+
+    states = cli.get_element_states(project, ['base.bst', target])
+    assert states['base.bst'] == 'cached'
+    assert states[target] == 'cached'
+
+    # Now modify the file, effectively causing the common base.bst
+    # dependency to change it's cache key
+    hello_path = os.path.join(project, 'files', 'hello.txt')
+    with open(hello_path, 'w') as f:
+        f.write("Goodbye")
+
+    # Now assert that we have the states we expect as a result
+    states = cli.get_element_states(project, ['base.bst', target])
+    assert states['base.bst'] == 'buildable'
+    assert states[target] == expected_state
