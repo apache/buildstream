@@ -58,6 +58,13 @@ def test_invalid_strict_dependency(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_invalid_non_strict_dependency(cli, datafiles):
+    project = os.path.join(str(datafiles), 'dependencies1')
+    result = cli.run(project=project, args=['show', 'invalidnonstrict.bst'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_circular_dependency(cli, datafiles):
     project = os.path.join(str(datafiles), 'dependencies1')
     result = cli.run(project=project, args=['show', 'circulartarget.bst'])
