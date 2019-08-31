@@ -201,6 +201,7 @@ class Element(Plugin):
 
         self.__runtime_dependencies = []        # Direct runtime dependency Elements
         self.__build_dependencies = []          # Direct build dependency Elements
+        self.__strict_dependencies = []         # Direct build dependency subset which require strict rebuilds
         self.__reverse_dependencies = set()     # Direct reverse dependency Elements
         self.__ready_for_runtime = False        # Wether the element has all its dependencies ready and has a cache key
         self.__sources = []                     # List of Sources
@@ -939,6 +940,9 @@ class Element(Plugin):
             element.__build_dependencies.append(dependency)
             dependency.__reverse_dependencies.add(element)
 
+            if meta_dep in meta.strict_dependencies:
+                element.__strict_dependencies.append(dependency)
+
         return element
 
     # _get_redundant_source_refs()
@@ -1069,16 +1073,20 @@ class Element(Plugin):
         if self.__weak_cache_key is None:
             # Calculate weak cache key
             # Weak cache key includes names of direct build dependencies
-            # but does not include keys of dependencies.
-            if self.BST_STRICT_REBUILD:
-                dependencies = [
-                    e._get_cache_key(strength=_KeyStrength.WEAK)
-                    for e in self.dependencies(Scope.BUILD)
-                ]
-            else:
-                dependencies = [
-                    e.name for e in self.dependencies(Scope.BUILD)
-                ]
+            # so as to only trigger rebuilds when the shape of the
+            # dependencies change.
+            #
+            # Some conditions cause dependencies to be strict, such
+            # that this element will be rebuilt anyway if the dependency
+            # changes even in non strict mode, for these cases we just
+            # encode the dependency's weak cache key instead of it's name.
+            #
+            dependencies = [
+                e._get_cache_key(strength=_KeyStrength.WEAK)
+                if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
+                else e.name
+                for e in self.dependencies(Scope.BUILD)
+            ]
 
             self.__weak_cache_key = self.__calculate_cache_key(dependencies)
 
