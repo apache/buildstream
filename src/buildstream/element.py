@@ -3116,7 +3116,7 @@ class Element(Plugin):
                 ]
             else:
                 dependencies = [
-                    [e.project_name, e.name] for e in self.dependencies(Scope.BUILD, recurse=False)
+                    [e.project_name, e.name] for e in self.dependencies(Scope.BUILD)
                 ]
 
             self.__weak_cache_key = self._calculate_cache_key(dependencies)
