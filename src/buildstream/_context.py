@@ -515,3 +515,20 @@ class Context():
         self.fork_allowed = False
         cascache = self.get_cascache()
         cascache.notify_fork_disabled()
+
+    # is_fork_allowed():
+    #
+    # Return whether fork without exec is allowed. This is a safeguard against
+    # fork issues with multiple threads and gRPC connections.
+    #
+    def is_fork_allowed(self):
+        # Do not allow fork if there are background threads.
+        if not utils._is_single_threaded():
+            return False
+
+        # Do not allow fork if there are open gRPC channels.
+        for cache in [self._cascache, self._artifactcache, self._sourcecache]:
+            if cache and cache.has_open_grpc_channels():
+                return False
+
+        return True
