@@ -182,6 +182,12 @@ class Context():
     # Called when exiting the with-statement context.
     #
     def __exit__(self, exc_type, exc_value, traceback):
+        if self._artifactcache:
+            self._artifactcache.release_resources()
+
+        if self._sourcecache:
+            self._sourcecache.release_resources()
+
         if self._cascache:
             self._cascache.release_resources(self.messenger)
 
