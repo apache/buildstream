@@ -86,7 +86,6 @@ class CASCache():
 
         self._casd_channel = None
         self._local_cas = None
-        self._fork_disabled = False
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -102,9 +101,6 @@ class CASCache():
         assert self._casd_process, "CASCache was instantiated without buildbox-casd"
 
         if not self._local_cas:
-            # gRPC doesn't support fork without exec, which is used in the main process.
-            assert self._fork_disabled or not utils._is_main_process()
-
             self._casd_channel = grpc.insecure_channel('unix:' + self._casd_socket_path)
             self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
 
@@ -143,14 +139,6 @@ class CASCache():
     #
     def has_open_grpc_channels(self):
         return bool(self._casd_channel)
-
-    # notify_fork_disabled():
-    #
-    # Called by Context when fork() is disabled. This will enable communication
-    # with casd via gRPC in the main process.
-    #
-    def notify_fork_disabled(self):
-        self._fork_disabled = True
 
     # release_resources():
     #
