@@ -28,6 +28,8 @@ import pytest
 # XXX Using pytest private internals here
 from _pytest import runner
 
+from buildstream import utils
+
 EXITSTATUS_TESTEXIT = 4
 
 
@@ -48,6 +50,10 @@ def serialize_report(rep):
 
 def forked_run_report(item):
     def runforked():
+        # This process is now the main BuildStream process
+        # for the duration of this test.
+        utils._MAIN_PID = os.getpid()
+
         try:
             reports = runner.runtestprotocol(item, log=False)
         except KeyboardInterrupt:
