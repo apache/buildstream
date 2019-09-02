@@ -678,11 +678,14 @@ class Stream():
 
         elements_to_files = {}
         for obj in target_objects:
+            ref = obj.get_artifact_name()
+            if not obj._cached():
+                self._message(MessageType.WARN, "{} is not cached".format(ref))
+                obj.name = {ref: "No artifact cached"}
+                continue
             if isinstance(obj, ArtifactElement):
-                obj.name = obj.get_artifact_name()
-            files = obj._get_artifact_relative_file_paths()
-            if files == []:
-                files = ["This element has no associated artifacts"]
+                obj.name = ref
+            files = [f for f in obj._walk_artifact_files()]
             elements_to_files[obj.name] = files
         return elements_to_files
 

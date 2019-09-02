@@ -574,6 +574,46 @@ class CasBasedDirectory(Directory):
             subdir = v.get_directory(self)
             yield from subdir._list_prefixed_relative_paths(prefix=os.path.join(prefix, k))
 
+    def walk(self):
+        """Provide a list of dictionaries containing information about the files.
+
+        Yields:
+          info (dict) - a dictionary containing name, type and size of the files.
+
+        """
+        yield from self._walk()
+
+    def _walk(self, prefix=""):
+        """ Walk through the files, collecting the required data
+
+        Arguments:
+          prefix (str): an optional prefix to the relative paths, this is
+                        also emitted by itself.
+
+        Yields:
+          info (dict) - a dictionary containing name, type and size of the files.
+
+          """
+        for leaf in sorted(self.index.keys()):
+            entry = self.index[leaf]
+            info = {
+                "name": os.path.join(prefix, leaf),
+                "type": entry.type
+            }
+            if entry.type == _FileType.REGULAR_FILE:
+                info["executable"] = entry.is_executable
+                info["size"] = self.get_size()
+            elif entry.type == _FileType.SYMLINK:
+                info["target"] = entry.target
+                info["size"] = len(entry.target)
+            if entry.type == _FileType.DIRECTORY:
+                directory = entry.get_directory(self)
+                info["size"] = len(directory.index)
+                yield info
+                yield from directory._walk(os.path.join(prefix, leaf))
+            else:
+                yield info
+
     def get_size(self):
         digest = self._get_digest()
         total = digest.size_bytes

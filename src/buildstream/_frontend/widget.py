@@ -31,7 +31,7 @@ from .. import Consistency, Scope
 from .. import __version__ as bst_version
 from .._exceptions import ImplError
 from .._message import MessageType
-
+from ..storage.directory import _FileType
 
 # These messages are printed a bit differently
 ERROR_MESSAGES = [MessageType.FAIL, MessageType.ERROR, MessageType.BUG]
@@ -802,14 +802,18 @@ class LogLine(Widget):
     # Args:
     #    values: A dictionary
     #    style_value: Whether to use the content profile for the values
+    #    list_long (Bool): whether to display verbose information about artifacts
     #
     # Returns:
     #    (str): The formatted values
     #
-    def _pretty_print_dictionary(self, values, style_value=True):
+    def _pretty_print_dictionary(self, values, long_=False, style_value=True):
         text = ''
         max_key_len = 0
-        max_key_len = max(len(key) for key in values.keys())
+        try:
+            max_key_len = max(len(key) for key in values.keys())
+        except ValueError:
+            text = ''
 
         for key, value in values.items():
             if isinstance(value, str) and '\n' in value:
@@ -819,8 +823,14 @@ class LogLine(Widget):
 
             text += self.format_profile.fmt("  {}:{}".format(key, ' ' * (max_key_len - len(key))))
 
-            value_list = "\n\t" + "\n\t".join(value)
-            if style_value:
+            value_list = "\n\t" + "\n\t".join((self._get_filestats(v, list_long=long_) for v in value))
+            if value == []:
+                message = "\n\tThis element has no associated artifacts"
+                if style_value:
+                    text += self.content_profile.fmt(message)
+                else:
+                    text += message
+            elif style_value:
                 text += self.content_profile.fmt(value_list)
             else:
                 text += value_list
@@ -864,3 +874,33 @@ class LogLine(Widget):
             report += line + '\n'
 
         return report
+
+    # _get_filestats()
+    #
+    # Gets the necessary information from a dictionary
+    #
+    # Args:
+    #    entry: A dictionary of info about the element
+    #    list_long (Bool): whether to display verbose information about artifacts
+    #
+    # Returns:
+    #    (str): The information about the element
+    #
+    def _get_filestats(self, entry, list_long=False):
+        if list_long:
+            size = str(entry["size"])
+            # Support files up to 99G, meaning maximum characters is 11
+            max_v_len = 11
+            if entry["type"] == _FileType.DIRECTORY:
+                return "drwxr-xr-x  dir    {}".format(entry["size"]) +\
+                       "{} ".format(' ' * (max_v_len - len(size))) + "{}".format(entry["name"])
+            elif entry["type"] == _FileType.SYMLINK:
+                return "lrwxrwxrwx  link   {}".format(entry["size"]) +\
+                       "{} ".format(' ' * (max_v_len - len(size))) + "{} -> {}".format(entry["name"], entry["target"])
+            elif entry["executable"]:
+                return "-rwxr-xr-x  exe    {}".format(entry["size"]) +\
+                       "{} ".format(' ' * (max_v_len - len(size))) + "{}".format(entry["name"])
+            else:
+                return "-rw-r--r--  reg    {}".format(entry["size"]) +\
+                       "{} ".format(' ' * (max_v_len - len(size))) + "{}".format(entry["name"])
+        return entry["name"]
