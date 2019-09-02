@@ -101,7 +101,7 @@ class Dependency():
             # case we can later interpret explicitly non-strict dependencies
             # as an override of the project default.
             #
-            if self.strict == False and Symbol.STRICT in dep:
+            if self.strict is False and Symbol.STRICT in dep:
                 provenance = _yaml.node_get_provenance(dep, key=Symbol.STRICT)
                 raise LoadError(LoadErrorReason.INVALID_DATA,
                                 "{}: Setting 'strict' to False is unsupported"
