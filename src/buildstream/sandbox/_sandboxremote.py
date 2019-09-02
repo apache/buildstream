@@ -351,19 +351,6 @@ class SandboxRemote(Sandbox):
                                              input_root_digest=input_root_digest)
         action_digest = utils._message_digest(action.SerializeToString())
 
-        # Next, try to create a communication channel to the BuildGrid server.
-        url = urlparse(self.exec_url)
-        if not url.port:
-            raise SandboxError("You must supply a protocol and port number in the execution-service url, "
-                               "for example: http://buildservice:50051.")
-        if url.scheme == 'http':
-            channel = grpc.insecure_channel('{}:{}'.format(url.hostname, url.port))
-        elif url.scheme == 'https':
-            channel = grpc.secure_channel('{}:{}'.format(url.hostname, url.port), self.exec_credentials)
-        else:
-            raise SandboxError("Remote execution currently only supports the 'http' protocol "
-                               "and '{}' was supplied.".format(url.scheme))
-
         # check action cache download and download if there
         action_result = self._check_action_cache(action_digest)
 
@@ -407,9 +394,23 @@ class SandboxRemote(Sandbox):
             except grpc.RpcError as e:
                 raise SandboxError("Failed to push action to remote: {}".format(e))
 
+            # Next, try to create a communication channel to the BuildGrid server.
+            url = urlparse(self.exec_url)
+            if not url.port:
+                raise SandboxError("You must supply a protocol and port number in the execution-service url, "
+                                   "for example: http://buildservice:50051.")
+            if url.scheme == 'http':
+                channel = grpc.insecure_channel('{}:{}'.format(url.hostname, url.port))
+            elif url.scheme == 'https':
+                channel = grpc.secure_channel('{}:{}'.format(url.hostname, url.port), self.exec_credentials)
+            else:
+                raise SandboxError("Remote execution currently only supports the 'http' protocol "
+                                   "and '{}' was supplied.".format(url.scheme))
+
             # Now request to execute the action
-            operation = self.run_remote_command(channel, action_digest)
-            action_result = self._extract_action_result(operation)
+            with channel:
+                operation = self.run_remote_command(channel, action_digest)
+                action_result = self._extract_action_result(operation)
 
         # Get output of build
         self.process_job_output(action_result.output_directories, action_result.output_files,
@@ -445,20 +446,21 @@ class SandboxRemote(Sandbox):
         elif url.scheme == 'https':
             channel = grpc.secure_channel('{}:{}'.format(url.hostname, url.port), self.action_credentials)
 
-        request = remote_execution_pb2.GetActionResultRequest(instance_name=self.action_instance,
-                                                              action_digest=action_digest)
-        stub = remote_execution_pb2_grpc.ActionCacheStub(channel)
-        try:
-            result = stub.GetActionResult(request)
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise SandboxError("Failed to query action cache: {} ({})"
-                                   .format(e.code(), e.details()))
+        with channel:
+            request = remote_execution_pb2.GetActionResultRequest(instance_name=self.action_instance,
+                                                                  action_digest=action_digest)
+            stub = remote_execution_pb2_grpc.ActionCacheStub(channel)
+            try:
+                result = stub.GetActionResult(request)
+            except grpc.RpcError as e:
+                if e.code() != grpc.StatusCode.NOT_FOUND:
+                    raise SandboxError("Failed to query action cache: {} ({})"
+                                       .format(e.code(), e.details()))
+                else:
+                    return None
             else:
-                return None
-        else:
-            self.info("Action result found in action cache")
-            return result
+                self.info("Action result found in action cache")
+                return result
 
     def _create_command(self, command, working_directory, environment):
         # Creates a command proto
