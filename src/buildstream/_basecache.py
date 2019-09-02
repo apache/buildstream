@@ -59,6 +59,18 @@ class BaseCache():
         self._has_fetch_remotes = False
         self._has_push_remotes = False
 
+    # has_open_grpc_channels():
+    #
+    # Return whether there are gRPC channel instances. This is used to safeguard
+    # against fork() with open gRPC channels.
+    #
+    def has_open_grpc_channels(self):
+        for project_remotes in self._remotes.values():
+            for remote in project_remotes:
+                if remote.channel:
+                    return True
+        return False
+
     # release_resources():
     #
     # Release resources used by BaseCache.
