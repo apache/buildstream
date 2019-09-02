@@ -59,6 +59,16 @@ class BaseCache():
         self._has_fetch_remotes = False
         self._has_push_remotes = False
 
+    # release_resources():
+    #
+    # Release resources used by BaseCache.
+    #
+    def release_resources(self):
+        # Close all remotes and their gRPC channels
+        for project_remotes in self._remotes.values():
+            for remote in project_remotes:
+                remote.close()
+
     # specs_from_config_node()
     #
     # Parses the configuration of remote artifact caches from a config block.
