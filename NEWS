@@ -1,5 +1,5 @@
 =================
-buildstream 1.3.2
+buildstream 1.4.0
 =================
 
   o Elements may now specify 'build-depends' and 'runtime-depends' fields
