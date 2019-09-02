@@ -150,6 +150,11 @@ class CASCache():
     #
     def release_resources(self, messenger=None):
         if self._casd_process:
+            if self._casd_channel:
+                self._local_cas = None
+                self._casd_channel.close()
+                self._casd_channel = None
+
             self._casd_process.terminate()
             try:
                 # Don't print anything if buildbox-casd terminates quickly
