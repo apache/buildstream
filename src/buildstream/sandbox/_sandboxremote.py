@@ -281,10 +281,11 @@ class SandboxRemote(Sandbox):
         context = self._get_context()
         cascache = context.get_cascache()
         artifactcache = context.artifactcache
-        casremote = CASRemote(self.storage_remote_spec, cascache)
 
-        # Now do a pull to ensure we have the full directory structure.
-        dir_digest = cascache.pull_tree(casremote, tree_digest)
+        with CASRemote(self.storage_remote_spec, cascache) as casremote:
+            # Now do a pull to ensure we have the full directory structure.
+            dir_digest = cascache.pull_tree(casremote, tree_digest)
+
         if dir_digest is None or not dir_digest.hash or not dir_digest.size_bytes:
             raise SandboxError("Output directory structure pulling from remote failed.")
 
@@ -300,7 +301,6 @@ class SandboxRemote(Sandbox):
         project = self._get_project()
         cascache = context.get_cascache()
         artifactcache = context.artifactcache
-        casremote = CASRemote(self.storage_remote_spec, cascache)
 
         # Fetch the file blobs if needed
         if self._output_files_required or artifactcache.has_push_remotes():
@@ -319,7 +319,9 @@ class SandboxRemote(Sandbox):
                     # artifact servers.
                     blobs_to_fetch = artifactcache.find_missing_blobs(project, local_missing_blobs)
 
-                remote_missing_blobs = cascache.fetch_blobs(casremote, blobs_to_fetch)
+                with CASRemote(self.storage_remote_spec, cascache) as casremote:
+                    remote_missing_blobs = cascache.fetch_blobs(casremote, blobs_to_fetch)
+
                 if remote_missing_blobs:
                     raise SandboxError("{} output files are missing on the CAS server"
                                        .format(len(remote_missing_blobs)))
@@ -355,44 +357,44 @@ class SandboxRemote(Sandbox):
         action_result = self._check_action_cache(action_digest)
 
         if not action_result:
-            casremote = CASRemote(self.storage_remote_spec, cascache)
-            try:
-                casremote.init()
-            except grpc.RpcError as e:
-                raise SandboxError("Failed to contact remote execution CAS endpoint at {}: {}"
-                                   .format(self.storage_url, e)) from e
+            with CASRemote(self.storage_remote_spec, cascache) as casremote:
+                try:
+                    casremote.init()
+                except grpc.RpcError as e:
+                    raise SandboxError("Failed to contact remote execution CAS endpoint at {}: {}"
+                                       .format(self.storage_url, e)) from e
 
-            # Determine blobs missing on remote
-            try:
-                missing_blobs = cascache.remote_missing_blobs_for_directory(casremote, input_root_digest)
-            except grpc.RpcError as e:
-                raise SandboxError("Failed to determine missing blobs: {}".format(e)) from e
+                # Determine blobs missing on remote
+                try:
+                    missing_blobs = cascache.remote_missing_blobs_for_directory(casremote, input_root_digest)
+                except grpc.RpcError as e:
+                    raise SandboxError("Failed to determine missing blobs: {}".format(e)) from e
 
-            # Check if any blobs are also missing locally (partial artifact)
-            # and pull them from the artifact cache.
-            try:
-                local_missing_blobs = cascache.local_missing_blobs(missing_blobs)
-                if local_missing_blobs:
-                    artifactcache.fetch_missing_blobs(project, local_missing_blobs)
-            except (grpc.RpcError, BstError) as e:
-                raise SandboxError("Failed to pull missing blobs from artifact cache: {}".format(e)) from e
+                # Check if any blobs are also missing locally (partial artifact)
+                # and pull them from the artifact cache.
+                try:
+                    local_missing_blobs = cascache.local_missing_blobs(missing_blobs)
+                    if local_missing_blobs:
+                        artifactcache.fetch_missing_blobs(project, local_missing_blobs)
+                except (grpc.RpcError, BstError) as e:
+                    raise SandboxError("Failed to pull missing blobs from artifact cache: {}".format(e)) from e
 
-            # Now, push the missing blobs to the remote.
-            try:
-                cascache.send_blobs(casremote, missing_blobs)
-            except grpc.RpcError as e:
-                raise SandboxError("Failed to push source directory to remote: {}".format(e)) from e
+                # Now, push the missing blobs to the remote.
+                try:
+                    cascache.send_blobs(casremote, missing_blobs)
+                except grpc.RpcError as e:
+                    raise SandboxError("Failed to push source directory to remote: {}".format(e)) from e
 
-            # Push command and action
-            try:
-                casremote.push_message(command_proto)
-            except grpc.RpcError as e:
-                raise SandboxError("Failed to push command to remote: {}".format(e))
+                # Push command and action
+                try:
+                    casremote.push_message(command_proto)
+                except grpc.RpcError as e:
+                    raise SandboxError("Failed to push command to remote: {}".format(e))
 
-            try:
-                casremote.push_message(action)
-            except grpc.RpcError as e:
-                raise SandboxError("Failed to push action to remote: {}".format(e))
+                try:
+                    casremote.push_message(action)
+                except grpc.RpcError as e:
+                    raise SandboxError("Failed to push action to remote: {}".format(e))
 
             # Next, try to create a communication channel to the BuildGrid server.
             url = urlparse(self.exec_url)
