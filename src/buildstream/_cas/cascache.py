@@ -136,6 +136,14 @@ class CASCache():
         if not (os.path.isdir(headdir) and os.path.isdir(objdir)):
             raise CASCacheError("CAS repository check failed for '{}'".format(self.casdir))
 
+    # has_open_grpc_channels():
+    #
+    # Return whether there are gRPC channel instances. This is used to safeguard
+    # against fork() with open gRPC channels.
+    #
+    def has_open_grpc_channels(self):
+        return bool(self._casd_channel)
+
     # notify_fork_disabled():
     #
     # Called by Context when fork() is disabled. This will enable communication
