@@ -474,6 +474,8 @@ class Loader():
                 meta_element.build_dependencies.append(meta_dep)
             if dep.dep_type != 'build':
                 meta_element.dependencies.append(meta_dep)
+            if dep.strict:
+                meta_element.strict_dependencies.append(meta_dep)
 
         return meta_element
 

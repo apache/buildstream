@@ -54,4 +54,5 @@ class MetaElement():
         self.sandbox = sandbox
         self.build_dependencies = []
         self.dependencies = []
+        self.strict_dependencies = []
         self.first_pass = first_pass

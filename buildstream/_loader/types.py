@@ -46,6 +46,7 @@ class Symbol():
     DIRECTORY = "directory"
     JUNCTION = "junction"
     SANDBOX = "sandbox"
+    STRICT = "strict"
 
 
 # Dependency()
@@ -68,13 +69,14 @@ class Dependency():
             self.name = dep
             self.dep_type = default_dep_type
             self.junction = None
+            self.strict = False
 
         elif isinstance(dep, Mapping):
             if default_dep_type:
-                _yaml.node_validate(dep, ['filename', 'junction'])
+                _yaml.node_validate(dep, ['filename', 'junction', 'strict'])
                 dep_type = default_dep_type
             else:
-                _yaml.node_validate(dep, ['filename', 'type', 'junction'])
+                _yaml.node_validate(dep, ['filename', 'type', 'junction', 'strict'])
 
                 # Make type optional, for this we set it to None
                 dep_type = _yaml.node_get(dep, str, Symbol.TYPE, default_value=None)
@@ -89,10 +91,32 @@ class Dependency():
             self.name = _yaml.node_get(dep, str, Symbol.FILENAME)
             self.dep_type = dep_type
             self.junction = _yaml.node_get(dep, str, Symbol.JUNCTION, default_value=None)
+            self.strict = _yaml.node_get(dep, bool, Symbol.STRICT, default_value=False)
+
+            # Here we disallow explicitly setting 'strict' to False.
+            #
+            # This is in order to keep the door open to allowing the project.conf
+            # set the default of dependency 'strict'-ness which might be useful
+            # for projects which use mostly static linking and the like, in which
+            # case we can later interpret explicitly non-strict dependencies
+            # as an override of the project default.
+            #
+            if self.strict is False and Symbol.STRICT in dep:
+                provenance = _yaml.node_get_provenance(dep, key=Symbol.STRICT)
+                raise LoadError(LoadErrorReason.INVALID_DATA,
+                                "{}: Setting 'strict' to False is unsupported"
+                                .format(provenance))
 
         else:
             raise LoadError(LoadErrorReason.INVALID_DATA,
                             "{}: Dependency is not specified as a string or a dictionary".format(provenance))
+
+        # Only build dependencies are allowed to be strict
+        #
+        if self.strict and self.dep_type == Symbol.RUNTIME:
+            raise LoadError(LoadErrorReason.INVALID_DATA,
+                            "{}: Runtime dependency {} specified as `strict`.".format(self.provenance, self.name),
+                            detail="Only dependencies required at build time may be declared `strict`.")
 
         # `:` characters are not allowed in filename if a junction was
         # explicitly specified
