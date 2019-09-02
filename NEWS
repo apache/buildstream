@@ -1,5 +1,5 @@
 =================
-buildstream 1.3.2
+buildstream 1.4.0
 =================
 
   o Elements may now specify 'build-depends' and 'runtime-depends' fields
@@ -36,6 +36,13 @@ buildstream 1.3.2
 
     Existing open workspaces will not be converted to relative paths,
     (they need to be closed and opened again to get the new behavior).
+
+  o Dependencies can now be specified as strict to force rebuild in
+    non-strict mode. This is useful for statically linked dependencies
+    (#254).
+
+  o Git source plugins can optionally track human readable refs using
+    the output of `git describe`.
 
 =================
 buildstream 1.3.1
