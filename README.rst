@@ -2,7 +2,7 @@ About
 -----
 
 .. image:: https://buildstream.gitlab.io/buildstream/_static/release.svg
-   :target: https://gitlab.com/BuildStream/buildstream/commits/bst-1.2
+   :target: https://gitlab.com/BuildStream/buildstream/commits/bst-1
 
 .. image:: https://buildstream.gitlab.io/buildstream/_static/snapshot.svg
    :target: https://gitlab.com/BuildStream/buildstream/commits/master
