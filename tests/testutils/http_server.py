@@ -2,7 +2,6 @@ import multiprocessing
 import os
 import posixpath
 import html
-import threading
 import base64
 from http.server import SimpleHTTPRequestHandler, HTTPServer, HTTPStatus
 
@@ -84,7 +83,6 @@ class AuthHTTPServer(HTTPServer):
 
 class SimpleHttpServer(multiprocessing.Process):
     def __init__(self):
-        self.__stop = multiprocessing.Queue()
         super().__init__()
         self.server = AuthHTTPServer(('127.0.0.1', 0), RequestHandler)
         self.started = False
@@ -94,20 +92,13 @@ class SimpleHttpServer(multiprocessing.Process):
         super().start()
 
     def run(self):
-        t = threading.Thread(target=self.server.serve_forever)
-        t.start()
-        self.__stop.get()
-        self.server.shutdown()
-        t.join()
+        self.server.serve_forever()
 
     def stop(self):
         if not self.started:
             return
-        self.__stop.put(None)
         self.terminate()
         self.join()
-        self.__stop.close()
-        self.__stop.join_thread()
 
     def allow_anonymous(self, cwd):
         self.server.anonymous_dir = cwd
