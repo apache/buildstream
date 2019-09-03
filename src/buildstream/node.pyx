@@ -125,10 +125,10 @@ cdef class Node:
         """
         if value:
             return __new_node_from_dict(value, MappingNode.__new__(
-                MappingNode, __SYNTHETIC_FILE_INDEX, 0, __next_synthetic_counter(), {}))
+                MappingNode, _SYNTHETIC_FILE_INDEX, 0, __next_synthetic_counter(), {}))
         else:
             # We got an empty dict, we can shortcut
-            return MappingNode.__new__(MappingNode, __SYNTHETIC_FILE_INDEX, 0, __next_synthetic_counter(), {})
+            return MappingNode.__new__(MappingNode, _SYNTHETIC_FILE_INDEX, 0, __next_synthetic_counter(), {})
 
     cpdef ProvenanceInformation get_provenance(self):
         """A convenience accessor to obtain the node's :class:`.ProvenanceInformation`
@@ -1109,7 +1109,7 @@ cdef class MappingNode(Node):
 
         # Clobber the provenance of the target mapping node if we're not
         # synthetic.
-        if self.file_index != __SYNTHETIC_FILE_INDEX:
+        if self.file_index != _SYNTHETIC_FILE_INDEX:
             target.file_index = self.file_index
             target.line = self.line
             target.column = self.column
@@ -1140,7 +1140,7 @@ cdef class MappingNode(Node):
                 value = None
             else:
                 value = default_constructor.__new__(
-                    default_constructor, __SYNTHETIC_FILE_INDEX, 0, __next_synthetic_counter(), default)
+                    default_constructor, _SYNTHETIC_FILE_INDEX, 0, __next_synthetic_counter(), default)
 
         return value
 
@@ -1437,7 +1437,7 @@ cdef class ProvenanceInformation:
         cdef __FileInfo fileinfo
 
         self._node = nodeish
-        if (nodeish is None) or (nodeish.file_index == __SYNTHETIC_FILE_INDEX):
+        if (nodeish is None) or (nodeish.file_index == _SYNTHETIC_FILE_INDEX):
             self._filename = ""
             self._shortname = ""
             self._displayname = ""
@@ -1468,6 +1468,13 @@ cdef class ProvenanceInformation:
 #############################################################
 #                BuildStream Private methods                #
 #############################################################
+
+# Purely synthetic nodes will have _SYNTHETIC_FILE_INDEX for the file number, have line number
+# zero, and a negative column number which comes from inverting the next value
+# out of this counter.  Synthetic nodes created with a reference node will
+# have a file number from the reference node, some unknown line number, and
+# a negative column number from this counter.
+cdef int _SYNTHETIC_FILE_INDEX = -1
 
 # _assert_symbol_name()
 #
@@ -1546,7 +1553,7 @@ cdef Py_ssize_t _create_new_file(str filename, str shortname, str displayname, o
 cdef void _set_root_node_for_file(Py_ssize_t file_index, MappingNode contents) except *:
     cdef __FileInfo f_info
 
-    if file_index != __SYNTHETIC_FILE_INDEX:
+    if file_index != _SYNTHETIC_FILE_INDEX:
         f_info = <__FileInfo> __FILE_LIST[file_index]
         f_info.toplevel = contents
 
@@ -1580,13 +1587,6 @@ def _new_synthetic_file(str filename, object project=None):
 #############################################################
 #                 Module local helper Methods               #
 #############################################################
-
-# Purely synthetic nodes will have _SYNTHETIC_FILE_INDEX for the file number, have line number
-# zero, and a negative column number which comes from inverting the next value
-# out of this counter.  Synthetic nodes created with a reference node will
-# have a file number from the reference node, some unknown line number, and
-# a negative column number from this counter.
-cdef int __SYNTHETIC_FILE_INDEX = -1
 
 # File name handling
 cdef list __FILE_LIST = []
