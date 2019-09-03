@@ -110,7 +110,7 @@ class Scheduler():
     #
     def run(self, queues):
 
-        assert self.context.fork_allowed
+        assert self.context.is_fork_allowed()
 
         # Hold on to the queues to process
         self.queues = queues

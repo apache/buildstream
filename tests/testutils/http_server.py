@@ -106,6 +106,8 @@ class SimpleHttpServer(multiprocessing.Process):
         self.__stop.put(None)
         self.terminate()
         self.join()
+        self.__stop.close()
+        self.__stop.join_thread()
 
     def allow_anonymous(self, cwd):
         self.server.anonymous_dir = cwd

@@ -150,8 +150,6 @@ class Context():
         # Whether file contents are required for all artifacts in the local cache
         self.require_artifact_files = True
 
-        self.fork_allowed = True
-
         # Whether elements must be rebuilt when their dependencies have changed
         self._strict_build_plan = None
 
@@ -182,6 +180,12 @@ class Context():
     # Called when exiting the with-statement context.
     #
     def __exit__(self, exc_type, exc_value, traceback):
+        if self._artifactcache:
+            self._artifactcache.release_resources()
+
+        if self._sourcecache:
+            self._sourcecache.release_resources()
+
         if self._cascache:
             self._cascache.release_resources(self.messenger)
 
@@ -500,12 +504,19 @@ class Context():
             self._cascache = CASCache(self.cachedir, cache_quota=self.config_cache_quota)
         return self._cascache
 
-    # disable_fork():
+    # is_fork_allowed():
     #
-    # This will prevent the scheduler from running but will allow communication
-    # with casd in the main process.
+    # Return whether fork without exec is allowed. This is a safeguard against
+    # fork issues with multiple threads and gRPC connections.
     #
-    def disable_fork(self):
-        self.fork_allowed = False
-        cascache = self.get_cascache()
-        cascache.notify_fork_disabled()
+    def is_fork_allowed(self):
+        # Do not allow fork if there are background threads.
+        if not utils._is_single_threaded():
+            return False
+
+        # Do not allow fork if there are open gRPC channels.
+        for cache in [self._cascache, self._artifactcache, self._sourcecache]:
+            if cache and cache.has_open_grpc_channels():
+                return False
+
+        return True

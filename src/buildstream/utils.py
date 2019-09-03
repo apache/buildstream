@@ -57,6 +57,10 @@ _URI_SCHEMES = ["http", "https", "ftp", "file", "git", "sftp", "ssh"]
 # Main process pid
 _MAIN_PID = os.getpid()
 
+# The number of threads in the main process at startup.
+# This is 1 except for certain test environments (xdist/execnet).
+_INITIAL_NUM_THREADS_IN_MAIN_PROCESS = 1
+
 
 class UtilError(BstError):
     """Raised by utility functions when system calls fail.
@@ -1391,3 +1395,19 @@ def _get_compression(tar):
         else:
             # Assume just an unconventional name was provided, default to uncompressed
             return ''
+
+
+# _is_single_threaded()
+#
+# Return whether the current Process is single-threaded. Don't count threads
+# in the main process that were created by a test environment (xdist/execnet)
+# before BuildStream was executed.
+#
+def _is_single_threaded():
+    # Use psutil as threading.active_count() doesn't include gRPC threads.
+    process = psutil.Process()
+    num_threads = process.num_threads()
+    if process.pid == _MAIN_PID:
+        return num_threads == _INITIAL_NUM_THREADS_IN_MAIN_PROCESS
+    else:
+        return num_threads == 1

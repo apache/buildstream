@@ -60,10 +60,6 @@ def create_server(repo, *, enable_push, quota):
     cas = CASCache(os.path.abspath(repo), cache_quota=quota, protect_session_blobs=False)
 
     try:
-        # Allow gRPC communication in main process as bst-artifact-server
-        # doesn't use forked subprocesses.
-        cas.notify_fork_disabled()
-
         artifactdir = os.path.join(os.path.abspath(repo), 'artifacts', 'refs')
         sourcedir = os.path.join(os.path.abspath(repo), 'source_protos')
 
