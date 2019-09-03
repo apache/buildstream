@@ -1,4 +1,10 @@
 =================
+buildstream 1.4.1
+=================
+
+  o Depend on a newer version of ruamel.yaml (>= 0.16).
+
+=================
 buildstream 1.4.0
 =================
 
