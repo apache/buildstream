@@ -183,6 +183,18 @@ class CASRemote():
 
             self._initialized = True
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+        return False
+
+    def close(self):
+        if self.channel:
+            self.channel.close()
+            self.channel = None
+
     # check_remote
     #
     # Used when checking whether remote_specs work in the buildstream main

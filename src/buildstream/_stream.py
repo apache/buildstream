@@ -223,8 +223,6 @@ class Stream():
             else:
                 buildtree = True
 
-        self._context.disable_fork()
-
         return element._shell(scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command,
                               usebuildtree=buildtree)
 
@@ -551,8 +549,6 @@ class Stream():
             self._enqueue_plan(uncached_elts)
             self._run()
 
-        self._context.disable_fork()
-
         # Stage deps into a temporary sandbox first
         if isinstance(target, ArtifactElement):
             try:
@@ -623,7 +619,6 @@ class Stream():
                                              load_refs=True)
 
         if self._artifacts.has_fetch_remotes():
-            self._context.disable_fork()
             self._pipeline.check_remotes(target_objects)
 
         # XXX: We need to set the name of an ArtifactElement to its ref in order

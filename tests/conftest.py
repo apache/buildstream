@@ -23,6 +23,7 @@ import os
 import pytest
 
 from buildstream.testing import register_repo_kind, sourcetests_collection_hook
+from buildstream.testing._fixtures import thread_check  # pylint: disable=unused-import
 from buildstream.testing._forked import forked_run_report
 from buildstream.testing.integration import integration_cache  # pylint: disable=unused-import
 
