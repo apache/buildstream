@@ -1265,7 +1265,7 @@ cdef class SequenceNode(Node):
 
         if type(value) is not MappingNode:
             provenance = self.get_provenance()
-            path = ["[{}]".format(p) for p in provenance.toplevel._find(self)] + ["[{}]".format(index)]
+            path = ["[{}]".format(p) for p in provenance._toplevel._find(self)] + ["[{}]".format(index)]
             raise LoadError("{}: Value of '{}' is not of the expected type '{}'"
                             .format(provenance, path, MappingNode.__name__),
                             LoadErrorReason.INVALID_DATA)
@@ -1325,7 +1325,7 @@ cdef class SequenceNode(Node):
 
         if type(value) is not ScalarNode:
             provenance = self.get_provenance()
-            path = ["[{}]".format(p) for p in provenance.toplevel._find(self)] + ["[{}]".format(index)]
+            path = ["[{}]".format(p) for p in provenance._toplevel._find(self)] + ["[{}]".format(index)]
             raise LoadError("{}: Value of '{}' is not of the expected type '{}'"
                             .format(provenance, path, ScalarNode.__name__),
                             LoadErrorReason.INVALID_DATA)
