@@ -1584,6 +1584,18 @@ def _new_synthetic_file(str filename, object project=None):
     return node
 
 
+# _reset_global_state()
+#
+# This resets the global variables __FILE_LIST and __counter to their initial
+# state. This is used by the test suite to improve isolation between tests
+# running in the same process.
+#
+def _reset_global_state():
+    global __FILE_LIST, __counter
+    __FILE_LIST = []
+    __counter = 0
+
+
 #############################################################
 #                 Module local helper Methods               #
 #############################################################
