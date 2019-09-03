@@ -5,13 +5,14 @@ import os
 import subprocess
 import sys
 import platform
+from typing import Optional   # pylint: disable=unused-import
 
 from buildstream import _site, utils, ProgramNotFoundError
 from buildstream._platform import Platform
 
 
 try:
-    GIT = utils.get_host_tool('git')
+    GIT = utils.get_host_tool('git')    # type: Optional[str]
     HAVE_GIT = True
 
     out = str(subprocess.check_output(['git', '--version']), "utf-8")
@@ -33,7 +34,7 @@ except ProgramNotFoundError:
     GIT_ENV = dict()
 
 try:
-    BZR = utils.get_host_tool('bzr')
+    BZR = utils.get_host_tool('bzr')    # type: Optional[str]
     HAVE_BZR = True
     BZR_ENV = {
         "BZR_EMAIL": "Testy McTesterson <testy.mctesterson@example.com>"

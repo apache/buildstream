@@ -23,13 +23,22 @@ import threading
 import traceback
 from contextlib import contextmanager, ExitStack
 from collections import deque
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import Callable, MutableSequence
 
 
 # Global per process state for handling of sigterm/sigtstp/sigcont,
 # note that it is expected that this only ever be used by new processes
 # the scheduler starts, not the main process.
-terminator_stack = deque()
-suspendable_stack = deque()
+#
+# FIXME: We should ideally be using typing.Deque as type hints below, not
+# typing.MutableSequence. However, that is only available in Python versions
+# 3.5.4 onward and 3.6.1 onward.
+# Debian 9 ships with 3.5.3.
+terminator_stack = deque()      # type: MutableSequence[Callable]
+suspendable_stack = deque()     # type: MutableSequence[Callable]
 
 
 # Per process SIGTERM handler

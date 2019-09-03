@@ -19,12 +19,18 @@
 import multiprocessing
 import os
 from fnmatch import fnmatch
+from typing import TYPE_CHECKING
 
 from . import utils
 from . import _yaml
 from ._cas import CASRemote
 from ._message import Message, MessageType
 from ._exceptions import LoadError
+
+if TYPE_CHECKING:
+    from typing import Optional, Type
+    from ._exceptions import BstError
+    from ._cas import CASRemoteSpec
 
 
 # Base Cache for Caches to derive from
@@ -33,11 +39,11 @@ class BaseCache():
 
     # None of these should ever be called in the base class, but this appeases
     # pylint to some degree
-    spec_class = None
-    spec_name = None
-    spec_error = None
-    config_node_name = None
-    remote_class = CASRemote
+    spec_class = None           # type: Type[CASRemoteSpec]
+    spec_name = None            # type: str
+    spec_error = None           # type: Type[BstError]
+    config_node_name = None     # type: str
+    remote_class = CASRemote    # type: Type[CASRemote]
 
     def __init__(self, context):
         self.context = context

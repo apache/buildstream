@@ -32,9 +32,11 @@ See also: :ref:`sandboxing`.
 """
 
 
+from typing import Callable, Optional, Union
+
 from .._exceptions import BstError, ErrorDomain
 from ..types import FastEnum
-from ..utils import BST_ARBITRARY_TIMESTAMP
+from ..utils import BST_ARBITRARY_TIMESTAMP, FileListResult
 
 
 class VirtualDirectoryError(BstError):
@@ -52,13 +54,13 @@ class Directory():
     def __init__(self, external_directory=None):
         raise NotImplementedError()
 
-    def descend(self, *paths, create=False, follow_symlinks=False):
+    def descend(self, *paths: str, create: bool = False, follow_symlinks: bool = False):
         """Descend one or more levels of directory hierarchy and return a new
         Directory object for that directory.
 
         Args:
-          *paths (str): A list of strings which are all directory names.
-          create (boolean): If this is true, the directories will be created if
+          *paths: A list of strings which are all directory names.
+          create: If this is true, the directories will be created if
             they don't already exist.
 
         Yields:
@@ -72,32 +74,32 @@ class Directory():
         raise NotImplementedError()
 
     # Import and export of files and links
-    def import_files(self, external_pathspec, *,
-                     filter_callback=None,
-                     report_written=True, update_mtime=False,
-                     can_link=False):
+    def import_files(self, external_pathspec: Union['Directory', str], *,
+                     filter_callback: Optional[Callable[[str], bool]] = None,
+                     report_written: bool = True, update_mtime: bool = False,
+                     can_link: bool = False) -> FileListResult:
         """Imports some or all files from external_path into this directory.
 
         Args:
           external_pathspec: Either a string containing a pathname, or a
             Directory object, to use as the source.
-          filter_callback (callable): Optional filter callback. Called with the
+          filter_callback: Optional filter callback. Called with the
             relative path as argument for every file in the source directory.
             The file is imported only if the callable returns True.
             If no filter callback is specified, all files will be imported.
-          report_written (bool): Return the full list of files
+          report_written: Return the full list of files
             written. Defaults to true. If false, only a list of
             overwritten files is returned.
-          update_mtime (bool): Update the access and modification time
+          update_mtime: Update the access and modification time
             of each file copied to the current time.
-          can_link (bool): Whether it's OK to create a hard link to the
+          can_link: Whether it's OK to create a hard link to the
             original content, meaning the stored copy will change when the
             original files change. Setting this doesn't guarantee hard
             links will be made. can_link will never be used if
             update_mtime is set.
 
         Yields:
-          (FileListResult) - A report of files imported and overwritten.
+          A report of files imported and overwritten.
 
         """
 

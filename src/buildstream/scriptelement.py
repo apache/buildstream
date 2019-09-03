@@ -34,18 +34,22 @@ implementations.
 
 import os
 from collections import OrderedDict
+from typing import List, Optional, TYPE_CHECKING
 
 from .element import Element, ElementError
 from .sandbox import SandboxFlags
 from .types import Scope
+
+if TYPE_CHECKING:
+    from typing import Dict
 
 
 class ScriptElement(Element):
     __install_root = "/"
     __cwd = "/"
     __root_read_only = False
-    __commands = None
-    __layout = []
+    __commands = None   # type: OrderedDict[str, List[str]]
+    __layout = []   # type: List[Dict[str, Optional[str]]]
 
     # The compose element's output is its dependencies, so
     # we must rebuild if the dependencies change even when
@@ -61,14 +65,18 @@ class ScriptElement(Element):
     # added, to reduce the potential for confusion
     BST_FORBID_SOURCES = True
 
-    def set_work_dir(self, work_dir=None):
+    #############################################################
+    #                       Public Methods                      #
+    #############################################################
+
+    def set_work_dir(self, work_dir: Optional[str] = None) -> None:
         """Sets the working dir
 
         The working dir (a.k.a. cwd) is the directory which commands will be
         called from.
 
         Args:
-          work_dir (str): The working directory. If called without this argument
+          work_dir: The working directory. If called without this argument
           set, it'll default to the value of the variable ``cwd``.
         """
         if work_dir is None:
@@ -76,14 +84,14 @@ class ScriptElement(Element):
         else:
             self.__cwd = work_dir
 
-    def set_install_root(self, install_root=None):
+    def set_install_root(self, install_root: Optional[str] = None) -> None:
         """Sets the install root
 
         The install root is the directory which output will be collected from
         once the commands have been run.
 
         Args:
-          install_root(str): The install root. If called without this argument
+          install_root: The install root. If called without this argument
           set, it'll default to the value of the variable ``install-root``.
         """
         if install_root is None:
@@ -91,7 +99,7 @@ class ScriptElement(Element):
         else:
             self.__install_root = install_root
 
-    def set_root_read_only(self, root_read_only):
+    def set_root_read_only(self, root_read_only: bool) -> None:
         """Sets root read-only
 
         When commands are run, if root_read_only is true, then the root of the
@@ -101,24 +109,23 @@ class ScriptElement(Element):
         If this variable is not set, the default permission is read-write.
 
         Args:
-          root_read_only (bool): Whether to mark the root filesystem as
-          read-only.
+          root_read_only: Whether to mark the root filesystem as read-only.
         """
         self.__root_read_only = root_read_only
 
-    def layout_add(self, element, destination):
+    def layout_add(self, element: Optional[str], destination: str) -> None:
         """Adds an element-destination pair to the layout.
 
         Layout is a way of defining how dependencies should be added to the
         staging area for running commands.
 
         Args:
-          element (str): The name of the element to stage, or None. This may be any
-                         element found in the dependencies, whether it is a direct
-                         or indirect dependency.
-          destination (str): The path inside the staging area for where to
-                             stage this element. If it is not "/", then integration
-                             commands will not be run.
+          element: The name of the element to stage, or None. This may be any
+                   element found in the dependencies, whether it is a direct
+                   or indirect dependency.
+          destination: The path inside the staging area for where to
+                       stage this element. If it is not "/", then integration
+                       commands will not be run.
 
         If this function is never called, then the default behavior is to just
         stage the Scope.BUILD dependencies of the element in question at the
@@ -145,7 +152,7 @@ class ScriptElement(Element):
         self.__layout.append({"element": element,
                               "destination": destination})
 
-    def add_commands(self, group_name, command_list):
+    def add_commands(self, group_name: str, command_list: List[str]) -> None:
         """Adds a list of commands under the group-name.
 
         .. note::
@@ -166,21 +173,9 @@ class ScriptElement(Element):
             self.__commands = OrderedDict()
         self.__commands[group_name] = command_list
 
-    def __validate_layout(self):
-        if self.__layout:
-            # Cannot proceeed if layout is used, but none are for "/"
-            root_defined = any([(entry['destination'] == '/') for entry in self.__layout])
-            if not root_defined:
-                raise ElementError("{}: Using layout, but none are staged as '/'"
-                                   .format(self))
-
-            # Cannot proceed if layout specifies an element that isn't part
-            # of the dependencies.
-            for item in self.__layout:
-                if item['element']:
-                    if not self.search(Scope.BUILD, item['element']):
-                        raise ElementError("{}: '{}' in layout not found in dependencies"
-                                           .format(self, item['element']))
+    #############################################################
+    #             Abstract Method Implementations               #
+    #############################################################
 
     def preflight(self):
         # The layout, if set, must make sense.
@@ -294,6 +289,26 @@ class ScriptElement(Element):
 
         # Return where the result can be collected from
         return self.__install_root
+
+    #############################################################
+    #                   Private Local Methods                   #
+    #############################################################
+
+    def __validate_layout(self):
+        if self.__layout:
+            # Cannot proceeed if layout is used, but none are for "/"
+            root_defined = any([(entry['destination'] == '/') for entry in self.__layout])
+            if not root_defined:
+                raise ElementError("{}: Using layout, but none are staged as '/'"
+                                   .format(self))
+
+            # Cannot proceed if layout specifies an element that isn't part
+            # of the dependencies.
+            for item in self.__layout:
+                if item['element']:
+                    if not self.search(Scope.BUILD, item['element']):
+                        raise ElementError("{}: '{}' in layout not found in dependencies"
+                                           .format(self, item['element']))
 
 
 def setup():

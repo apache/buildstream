@@ -114,12 +114,20 @@ import os
 import subprocess
 import sys
 from contextlib import contextmanager
+from typing import Generator, Optional, Tuple, TYPE_CHECKING
 from weakref import WeakValueDictionary
 
 from . import utils
 from ._exceptions import PluginError, ImplError
 from ._message import Message, MessageType
-from .types import CoreWarnings
+from .node import MappingNode, ProvenanceInformation
+from .types import CoreWarnings, SourceRef
+
+if TYPE_CHECKING:
+    # pylint: disable=cyclic-import
+    from ._context import Context
+    from ._project import Project
+    # pylint: enable=cyclic-import
 
 
 class Plugin():
@@ -202,9 +210,15 @@ class Plugin():
     #
     # Note that Plugins can only be instantiated in the main process before
     # scheduling tasks.
-    __TABLE = WeakValueDictionary()
+    __TABLE = WeakValueDictionary()     # type: WeakValueDictionary[int, Plugin]
 
-    def __init__(self, name, context, project, provenance, type_tag, unique_id=None):
+    def __init__(self,
+                 name: str,
+                 context: 'Context',
+                 project: 'Project',
+                 provenance: ProvenanceInformation,
+                 type_tag: str,
+                 unique_id: Optional[int] = None):
 
         self.name = name
         """The plugin name
@@ -275,11 +289,11 @@ class Plugin():
     #############################################################
     #                      Abstract Methods                     #
     #############################################################
-    def configure(self, node):
+    def configure(self, node: MappingNode) -> None:
         """Configure the Plugin from loaded configuration data
 
         Args:
-           node (:class:`MappingNode <buildstream.node.MappingNode>`): The loaded configuration dictionary
+           node: The loaded configuration dictionary
 
         Raises:
            :class:`.SourceError`: If it's a :class:`.Source` implementation
@@ -301,7 +315,7 @@ class Plugin():
         raise ImplError("{tag} plugin '{kind}' does not implement configure()".format(
             tag=self.__type_tag, kind=self.get_kind()))
 
-    def preflight(self):
+    def preflight(self) -> None:
         """Preflight Check
 
         Raises:
@@ -322,7 +336,7 @@ class Plugin():
         raise ImplError("{tag} plugin '{kind}' does not implement preflight()".format(
             tag=self.__type_tag, kind=self.get_kind()))
 
-    def get_unique_key(self):
+    def get_unique_key(self) -> SourceRef:
         """Return something which uniquely identifies the plugin input
 
         Returns:
@@ -347,11 +361,11 @@ class Plugin():
     #############################################################
     #                       Public Methods                      #
     #############################################################
-    def get_kind(self):
+    def get_kind(self) -> str:
         """Fetches the kind of this plugin
 
         Returns:
-           (str): The kind of this plugin
+           The kind of this plugin
         """
         return self.__kind
 
@@ -398,33 +412,33 @@ class Plugin():
                                                  check_is_file=check_is_file,
                                                  check_is_dir=check_is_dir)
 
-    def debug(self, brief, *, detail=None):
+    def debug(self, brief: str, *, detail: Optional[str] = None) -> None:
         """Print a debugging message
 
         Args:
-           brief (str): The brief message
-           detail (str): An optional detailed message, can be multiline output
+           brief: The brief message
+           detail: An optional detailed message, can be multiline output
         """
         if self.__context.log_debug:
             self.__message(MessageType.DEBUG, brief, detail=detail)
 
-    def status(self, brief, *, detail=None):
+    def status(self, brief: str, *, detail: Optional[str] = None) -> None:
         """Print a status message
 
         Args:
-           brief (str): The brief message
-           detail (str): An optional detailed message, can be multiline output
+           brief: The brief message
+           detail: An optional detailed message, can be multiline output
 
         Note: Status messages tell about what a plugin is currently doing
         """
         self.__message(MessageType.STATUS, brief, detail=detail)
 
-    def info(self, brief, *, detail=None):
+    def info(self, brief: str, *, detail: Optional[str] = None) -> None:
         """Print an informative message
 
         Args:
-           brief (str): The brief message
-           detail (str): An optional detailed message, can be multiline output
+           brief: The brief message
+           detail: An optional detailed message, can be multiline output
 
         Note: Informative messages tell the user something they might want
               to know, like if refreshing an element caused it to change.
@@ -434,15 +448,15 @@ class Plugin():
         """
         self.__message(MessageType.INFO, brief, detail=detail)
 
-    def warn(self, brief, *, detail=None, warning_token=None):
+    def warn(self, brief: str, *, detail: Optional[str] = None, warning_token: Optional[str] = None) -> None:
         """Print a warning message, checks warning_token against project configuration
 
         Args:
-           brief (str): The brief message
-           detail (str): An optional detailed message, can be multiline output
-           warning_token (str): An optional configurable warning assosciated with this warning,
-                                this will cause PluginError to be raised if this warning is configured as fatal.
-                                (*Since 1.4*)
+           brief: The brief message
+           detail: An optional detailed message, can be multiline output
+           warning_token: An optional configurable warning assosciated with this warning,
+                          this will cause PluginError to be raised if this warning is configured as fatal.
+                          (*Since 1.4*)
 
         Raises:
            (:class:`.PluginError`): When warning_token is considered fatal by the project configuration
@@ -458,26 +472,30 @@ class Plugin():
 
         self.__message(MessageType.WARN, brief=brief, detail=detail)
 
-    def log(self, brief, *, detail=None):
+    def log(self, brief: str, *, detail: Optional[str] = None) -> None:
         """Log a message into the plugin's log file
 
         The message will not be shown in the master log at all (so it will not
         be displayed to the user on the console).
 
         Args:
-           brief (str): The brief message
-           detail (str): An optional detailed message, can be multiline output
+           brief: The brief message
+           detail: An optional detailed message, can be multiline output
         """
         self.__message(MessageType.LOG, brief, detail=detail)
 
     @contextmanager
-    def timed_activity(self, activity_name, *, detail=None, silent_nested=False):
+    def timed_activity(self,
+                       activity_name: str,
+                       *,
+                       detail: Optional[str] = None,
+                       silent_nested: bool = False) -> Generator[None, None, None]:
         """Context manager for performing timed activities in plugins
 
         Args:
-           activity_name (str): The name of the activity
-           detail (str): An optional detailed message, can be multiline output
-           silent_nested (bool): If specified, nested messages will be silenced
+           activity_name: The name of the activity
+           detail: An optional detailed message, can be multiline output
+           silent_nested: If specified, nested messages will be silenced
 
         This function lets you perform timed tasks in your plugin,
         the core will take care of timing the duration of your
@@ -499,19 +517,19 @@ class Plugin():
                                                      silent_nested=silent_nested):
             yield
 
-    def call(self, *popenargs, fail=None, fail_temporarily=False, **kwargs):
+    def call(self, *popenargs, fail: Optional[str] = None, fail_temporarily: bool = False, **kwargs) -> int:
         """A wrapper for subprocess.call()
 
         Args:
            popenargs (list): Popen() arguments
-           fail (str): A message to display if the process returns
-                       a non zero exit code
-           fail_temporarily (bool): Whether any exceptions should
-                                    be raised as temporary. (*Since: 1.2*)
+           fail: A message to display if the process returns
+                 a non zero exit code
+           fail_temporarily: Whether any exceptions should
+                             be raised as temporary. (*Since: 1.2*)
            rest_of_args (kwargs): Remaining arguments to subprocess.call()
 
         Returns:
-           (int): The process exit code.
+           The process exit code.
 
         Raises:
            (:class:`.PluginError`): If a non-zero return code is received and *fail* is specified
@@ -533,7 +551,7 @@ class Plugin():
         exit_code, _ = self.__call(*popenargs, fail=fail, fail_temporarily=fail_temporarily, **kwargs)
         return exit_code
 
-    def check_output(self, *popenargs, fail=None, fail_temporarily=False, **kwargs):
+    def check_output(self, *popenargs, fail=None, fail_temporarily=False, **kwargs) -> Tuple[int, str]:
         """A wrapper for subprocess.check_output()
 
         Args:
@@ -545,8 +563,7 @@ class Plugin():
            rest_of_args (kwargs): Remaining arguments to subprocess.call()
 
         Returns:
-           (int): The process exit code
-           (str): The process standard output
+           A 2-tuple of form (process exit code, process standard output)
 
         Raises:
            (:class:`.PluginError`): If a non-zero return code is received and *fail* is specified

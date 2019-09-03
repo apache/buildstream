@@ -83,6 +83,7 @@ from functools import partial
 from itertools import chain
 import tempfile
 import string
+from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, List, Optional
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
@@ -91,7 +92,7 @@ from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, \
     ErrorDomain, SourceCacheError
-from .utils import UtilError
+from .utils import FileListResult, UtilError
 from . import utils
 from . import _cachekey
 from . import _signals
@@ -110,19 +111,40 @@ from .storage._filebaseddirectory import FileBasedDirectory
 from .storage._casbaseddirectory import CasBasedDirectory
 from .storage.directory import VirtualDirectoryError
 
+if TYPE_CHECKING:
+    from .node import MappingNode
+    from .types import SourceRef
+    from typing import Set, Tuple
+
+    # pylint: disable=cyclic-import
+    from .sandbox import Sandbox
+    from .source import Source
+    from ._context import Context
+    from ._loader.metaelement import MetaElement
+    from ._loader.metasource import MetaSource
+    from ._loader.metasource import MetaSource
+    from ._project import Project
+    # pylint: enable=cyclic-import
+
 
 class ElementError(BstError):
     """This exception should be raised by :class:`.Element` implementations
     to report errors to the user.
 
     Args:
-       message (str): The error message to report to the user
-       detail (str): A possibly multiline, more detailed error message
-       reason (str): An optional machine readable reason string, used for test cases
-       collect (str): An optional directory containing partial install contents
-       temporary (bool): An indicator to whether the error may occur if the operation was run again. (*Since: 1.2*)
+       message: The error message to report to the user
+       detail: A possibly multiline, more detailed error message
+       reason: An optional machine readable reason string, used for test cases
+       collect: An optional directory containing partial install contents
+       temporary: An indicator to whether the error may occur if the operation was run again. (*Since: 1.2*)
     """
-    def __init__(self, message, *, detail=None, reason=None, collect=None, temporary=False):
+    def __init__(self,
+                 message: str,
+                 *,
+                 detail: str = None,
+                 reason: str = None,
+                 collect: str = None,
+                 temporary: bool = False):
         super().__init__(message, detail=detail, domain=ErrorDomain.ELEMENT, reason=reason, temporary=temporary)
 
         self.collect = collect
@@ -136,9 +158,12 @@ class Element(Plugin):
     All elements derive from this class, this interface defines how
     the core will be interacting with Elements.
     """
-    __defaults = None             # The defaults from the yaml file and project
-    __instantiated_elements = {}  # A hash of Element by MetaElement
-    __redundant_source_refs = []  # A list of (source, ref) tuples which were redundantly specified
+    # The defaults from the yaml file and project
+    __defaults = None
+    # A hash of Element by MetaElement
+    __instantiated_elements = {}    # type: Dict[MetaElement, Element]
+    # A list of (source, ref) tuples which were redundantly specified
+    __redundant_source_refs = []    # type: List[Tuple[Source, SourceRef]]
 
     BST_ARTIFACT_VERSION = 0
     """The element plugin's artifact version
@@ -186,7 +211,7 @@ class Element(Plugin):
     *Since: 1.4*
     """
 
-    def __init__(self, context, project, meta, plugin_conf):
+    def __init__(self, context: 'Context', project: 'Project', meta: 'MetaElement', plugin_conf: Dict[str, Any]):
 
         self.__cache_key_dict = None            # Dict for cache key calculation
         self.__cache_key = None                 # Our cached cache key
@@ -206,11 +231,16 @@ class Element(Plugin):
         and creating directory names and such.
         """
 
-        self.__runtime_dependencies = []        # Direct runtime dependency Elements
-        self.__build_dependencies = []          # Direct build dependency Elements
-        self.__strict_dependencies = []         # Direct build dependency subset which require strict rebuilds
-        self.__reverse_build_deps = set()       # Direct reverse build dependency Elements
-        self.__reverse_runtime_deps = set()     # Direct reverse runtime dependency Elements
+        # Direct runtime dependency Elements
+        self.__runtime_dependencies = []        # type: List[Element]
+        # Direct build dependency Elements
+        self.__build_dependencies = []          # type: List[Element]
+        # Direct build dependency subset which require strict rebuilds
+        self.__strict_dependencies = []         # type: List[Element]
+        # Direct reverse build dependency Elements
+        self.__reverse_build_deps = set()       # type: Set[Element]
+        # Direct reverse runtime dependency Elements
+        self.__reverse_runtime_deps = set()     # type: Set[Element]
         self.__build_deps_without_strict_cache_key = None    # Number of build dependencies without a strict key
         self.__runtime_deps_without_strict_cache_key = None  # Number of runtime dependencies without a strict key
         self.__build_deps_without_cache_key = None    # Number of build dependencies without a cache key
@@ -221,7 +251,8 @@ class Element(Plugin):
         self.__ready_for_runtime = False        # Whether the element and its runtime dependencies have cache keys
         self.__ready_for_runtime_and_cached = False  # Whether all runtime deps are cached, as well as the element
         self.__cached_remotely = None           # Whether the element is cached remotely
-        self.__sources = []                     # List of Sources
+        # List of Sources
+        self.__sources = []                     # type: List[Source]
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
         self.__cache_keys_unstable = None       # Whether the current cache keys can be considered as stable
@@ -235,13 +266,15 @@ class Element(Plugin):
         self.__cached_successfully = None       # If the Element is known to be successfully cached
         self.__splits = None                    # Resolved regex objects for computing split domains
         self.__whitelist_regex = None           # Resolved regex object to check if file is allowed to overlap
-        self.__staged_sources_directory = None  # Location where Element.stage_sources() was called
+        # Location where Element.stage_sources() was called
+        self.__staged_sources_directory = None  # type: Optional[str]
         self.__tainted = None                   # Whether the artifact is tainted and should not be shared
         self.__required = False                 # Whether the artifact is required in the current session
         self.__artifact_files_required = False  # Whether artifact files are required in the local cache
         self.__build_result = None              # The result of assembling this Element (success, description, detail)
         self._build_log_path = None             # The path of the build log for this Element
-        self.__artifact = None                  # Artifact class for direct artifact composite interaction
+        # Artifact class for direct artifact composite interaction
+        self.__artifact = None                  # type: Optional[Artifact]
         self.__strict_artifact = None           # Artifact for strict cache key
         self.__meta_kind = meta.kind            # The kind of this source, required for unpickling
 
@@ -251,7 +284,8 @@ class Element(Plugin):
 
         self.__batch_prepare_assemble = False         # Whether batching across prepare()/assemble() is configured
         self.__batch_prepare_assemble_flags = 0       # Sandbox flags for batching across prepare()/assemble()
-        self.__batch_prepare_assemble_collect = None  # Collect dir for batching across prepare()/assemble()
+        # Collect dir for batching across prepare()/assemble()
+        self.__batch_prepare_assemble_collect = None  # type: Optional[str]
 
         # Callbacks
         self.__required_callback = None               # Callback to Queues
@@ -310,11 +344,11 @@ class Element(Plugin):
     #############################################################
     #                      Abstract Methods                     #
     #############################################################
-    def configure_sandbox(self, sandbox):
+    def configure_sandbox(self, sandbox: 'Sandbox') -> None:
         """Configures the the sandbox for execution
 
         Args:
-           sandbox (:class:`.Sandbox`): The build sandbox
+           sandbox: The build sandbox
 
         Raises:
            (:class:`.ElementError`): When the element raises an error
@@ -325,11 +359,11 @@ class Element(Plugin):
         raise ImplError("element plugin '{kind}' does not implement configure_sandbox()".format(
             kind=self.get_kind()))
 
-    def stage(self, sandbox):
+    def stage(self, sandbox: 'Sandbox') -> None:
         """Stage inputs into the sandbox directories
 
         Args:
-           sandbox (:class:`.Sandbox`): The build sandbox
+           sandbox: The build sandbox
 
         Raises:
            (:class:`.ElementError`): When the element raises an error
@@ -342,7 +376,7 @@ class Element(Plugin):
         raise ImplError("element plugin '{kind}' does not implement stage()".format(
             kind=self.get_kind()))
 
-    def prepare(self, sandbox):
+    def prepare(self, sandbox: 'Sandbox') -> None:
         """Run one-off preparation commands.
 
         This is run before assemble(), but is guaranteed to run only
@@ -351,7 +385,7 @@ class Element(Plugin):
         entire element to rebuild.
 
         Args:
-           sandbox (:class:`.Sandbox`): The build sandbox
+           sandbox: The build sandbox
 
         Raises:
            (:class:`.ElementError`): When the element raises an error
@@ -362,14 +396,14 @@ class Element(Plugin):
         *Since: 1.2*
         """
 
-    def assemble(self, sandbox):
+    def assemble(self, sandbox: 'Sandbox') -> str:
         """Assemble the output artifact
 
         Args:
-           sandbox (:class:`.Sandbox`): The build sandbox
+           sandbox: The build sandbox
 
         Returns:
-           (str): An absolute path within the sandbox to collect the artifact from
+           An absolute path within the sandbox to collect the artifact from
 
         Raises:
            (:class:`.ElementError`): When the element raises an error
@@ -380,11 +414,11 @@ class Element(Plugin):
         raise ImplError("element plugin '{kind}' does not implement assemble()".format(
             kind=self.get_kind()))
 
-    def generate_script(self):
+    def generate_script(self) -> str:
         """Generate a build (sh) script to build this element
 
         Returns:
-           (str): A string containing the shell commands required to build the element
+           A string containing the shell commands required to build the element
 
         BuildStream guarantees the following environment when the
         generated script is run:
@@ -405,16 +439,16 @@ class Element(Plugin):
     #############################################################
     #                       Public Methods                      #
     #############################################################
-    def sources(self):
+    def sources(self) -> Iterator['Source']:
         """A generator function to enumerate the element sources
 
         Yields:
-           (:class:`.Source`): The sources of this element
+           The sources of this element
         """
         for source in self.__sources:
             yield source
 
-    def dependencies(self, scope, *, recurse=True, visited=None):
+    def dependencies(self, scope: Scope, *, recurse: bool = True, visited=None) -> Iterator['Element']:
         """dependencies(scope, *, recurse=True)
 
         A generator function which yields the dependencies of the given element.
@@ -426,11 +460,11 @@ class Element(Plugin):
         will be omitted.
 
         Args:
-           scope (:class:`.Scope`): The scope to iterate in
-           recurse (bool): Whether to recurse
+           scope: The scope to iterate in
+           recurse: Whether to recurse
 
         Yields:
-           (:class:`.Element`): The dependencies in `scope`, in deterministic staging order
+           The dependencies in `scope`, in deterministic staging order
         """
         # The format of visited is (BitMap(), BitMap()), with the first BitMap
         # containing element that have been visited for the `Scope.BUILD` case
@@ -481,15 +515,15 @@ class Element(Plugin):
 
             yield from visit(self, scope, visited)
 
-    def search(self, scope, name):
+    def search(self, scope: Scope, name: str) -> Optional['Element']:
         """Search for a dependency by name
 
         Args:
-           scope (:class:`.Scope`): The scope to search
-           name (str): The dependency to search for
+           scope: The scope to search
+           name: The dependency to search for
 
         Returns:
-           (:class:`.Element`): The dependency element, or None if not found.
+           The dependency element, or None if not found.
         """
         for dep in self.dependencies(scope):
             if dep.name == name:
@@ -500,14 +534,14 @@ class Element(Plugin):
     def substitute_variables(self, value):
         return self.__variables.subst(value)
 
-    def node_subst_member(self, node, member_name, default=_node_sentinel):
+    def node_subst_member(self, node: 'MappingNode[str, Any]', member_name: str, default: str = _node_sentinel) -> Any:
         """Fetch the value of a string node member, substituting any variables
         in the loaded value with the element contextual variables.
 
         Args:
-           node (:class:`MappingNode <buildstream.node.MappingNode>`): A MappingNode loaded from YAML
-           member_name (str): The name of the member to fetch
-           default (str): A value to return when *member_name* is not specified in *node*
+           node: A MappingNode loaded from YAML
+           member_name: The name of the member to fetch
+           default: A value to return when *member_name* is not specified in *node*
 
         Returns:
            The value of *member_name* in *node*, otherwise *default*
@@ -530,12 +564,12 @@ class Element(Plugin):
             provenance = node.get_scalar(member_name).get_provenance()
             raise LoadError('{}: {}'.format(provenance, e), e.reason, detail=e.detail) from e
 
-    def node_subst_list(self, node, member_name):
+    def node_subst_list(self, node: 'MappingNode[str, Any]', member_name: str) -> List[Any]:
         """Fetch a list from a node member, substituting any variables in the list
 
         Args:
-          node (:class:`MappingNode <buildstream.node.MappingNode>`): A MappingNode loaded from YAML
-          member_name (str): The name of the member to fetch (a list)
+          node: A MappingNode loaded from YAML
+          member_name: The name of the member to fetch (a list)
 
         Returns:
           The list in *member_name*
@@ -553,7 +587,11 @@ class Element(Plugin):
                 raise LoadError('{}: {}'.format(provenance, e), e.reason, detail=e.detail) from e
         return ret
 
-    def compute_manifest(self, *, include=None, exclude=None, orphans=True):
+    def compute_manifest(self,
+                         *,
+                         include: Optional[List[str]] = None,
+                         exclude: Optional[List[str]] = None,
+                         orphans: bool = True) -> str:
         """Compute and return this element's selective manifest
 
         The manifest consists on the list of file paths in the
@@ -563,17 +601,17 @@ class Element(Plugin):
         included unless explicitly excluded with an `exclude` domain.
 
         Args:
-           include (list): An optional list of domains to include files from
-           exclude (list): An optional list of domains to exclude files from
-           orphans (bool): Whether to include files not spoken for by split domains
+           include: An optional list of domains to include files from
+           exclude: An optional list of domains to exclude files from
+           orphans: Whether to include files not spoken for by split domains
 
         Yields:
-           (str): The paths of the files in manifest
+           The paths of the files in manifest
         """
         self.__assert_cached()
         return self.__compute_splits(include, exclude, orphans)
 
-    def get_artifact_name(self, key=None):
+    def get_artifact_name(self, key: Optional[str] = None) -> str:
         """Compute and return this element's full artifact name
 
         Generate a full name for an artifact, including the project
@@ -584,10 +622,10 @@ class Element(Plugin):
         digits, letters and some select characters are allowed.
 
         Args:
-           key (str): The element's cache key. Defaults to None
+           key: The element's cache key. Defaults to None
 
         Returns:
-           (str): The relative path for the artifact
+           The relative path for the artifact
         """
         if key is None:
             key = self._get_cache_key()
@@ -596,7 +634,14 @@ class Element(Plugin):
 
         return _compose_artifact_name(self.project_name, self.normal_name, key)
 
-    def stage_artifact(self, sandbox, *, path=None, include=None, exclude=None, orphans=True, update_mtimes=None):
+    def stage_artifact(self,
+                       sandbox: 'Sandbox',
+                       *,
+                       path: str = None,
+                       include: Optional[List[str]] = None,
+                       exclude: Optional[List[str]] = None,
+                       orphans: bool = True,
+                       update_mtimes: Optional[List[str]] = None) -> FileListResult:
         """Stage this element's output artifact in the sandbox
 
         This will stage the files from the artifact to the sandbox at specified location.
@@ -605,18 +650,18 @@ class Element(Plugin):
         are included unless explicitly excluded with an `exclude` domain.
 
         Args:
-           sandbox (:class:`.Sandbox`): The build sandbox
-           path (str): An optional sandbox relative path
-           include (list): An optional list of domains to include files from
-           exclude (list): An optional list of domains to exclude files from
-           orphans (bool): Whether to include files not spoken for by split domains
-           update_mtimes (list): An optional list of files whose mtimes to set to the current time.
+           sandbox: The build sandbox
+           path: An optional sandbox relative path
+           include: An optional list of domains to include files from
+           exclude: An optional list of domains to exclude files from
+           orphans: Whether to include files not spoken for by split domains
+           update_mtimes: An optional list of files whose mtimes to set to the current time.
 
         Raises:
            (:class:`.ElementError`): If the element has not yet produced an artifact.
 
         Returns:
-           (:class:`~.utils.FileListResult`): The result describing what happened while staging
+           The result describing what happened while staging
 
         .. note::
 
@@ -646,7 +691,9 @@ class Element(Plugin):
         self.__assert_cached()
 
         with self.timed_activity("Staging {}/{}".format(self.name, self._get_brief_display_key())):
-            files_vdir = self.__artifact.get_files()
+            # Disable type checking since we can't easily tell mypy that
+            # `self.__artifact` can't be None at this stage.
+            files_vdir = self.__artifact.get_files()    # type: ignore
 
             # Hard link it into the staging area
             #
@@ -679,8 +726,14 @@ class Element(Plugin):
 
             return result
 
-    def stage_dependency_artifacts(self, sandbox, scope, *, path=None,
-                                   include=None, exclude=None, orphans=True):
+    def stage_dependency_artifacts(self,
+                                   sandbox: 'Sandbox',
+                                   scope: Scope,
+                                   *,
+                                   path: str = None,
+                                   include: Optional[List[str]] = None,
+                                   exclude: Optional[List[str]] = None,
+                                   orphans: bool = True) -> None:
         """Stage element dependencies in scope
 
         This is primarily a convenience wrapper around
@@ -689,12 +742,12 @@ class Element(Plugin):
         appropriate warnings.
 
         Args:
-           sandbox (:class:`.Sandbox`): The build sandbox
-           scope (:class:`.Scope`): The scope to stage dependencies in
-           path (str): An optional sandbox relative path
-           include (list): An optional list of domains to include files from
-           exclude (list): An optional list of domains to exclude files from
-           orphans (bool): Whether to include files not spoken for by split domains
+           sandbox: The build sandbox
+           scope: The scope to stage dependencies in
+           path An optional sandbox relative path
+           include: An optional list of domains to include files from
+           exclude: An optional list of domains to exclude files from
+           orphans: Whether to include files not spoken for by split domains
 
         Raises:
            (:class:`.ElementError`): If any of the dependencies in `scope` have not
@@ -702,8 +755,8 @@ class Element(Plugin):
                                      occur.
         """
         ignored = {}
-        overlaps = OrderedDict()
-        files_written = {}
+        overlaps = OrderedDict()        # type: OrderedDict[str, List[str]]
+        files_written = {}              # type: Dict[str, List[str]]
         old_dep_keys = None
         workspace = self._get_workspace()
         context = self._get_context()
@@ -784,7 +837,7 @@ class Element(Plugin):
                 # The bottom item overlaps nothing
                 overlapping_elements = elements[1:]
                 for elm in overlapping_elements:
-                    element = self.search(scope, elm)
+                    element = cast(Element, self.search(scope, elm))
                     if not element.__file_is_whitelisted(f):
                         overlap_warning_elements.append(elm)
                         overlap_warning = True
@@ -802,11 +855,11 @@ class Element(Plugin):
                 detail += "  " + "  ".join(["/" + f + "\n" for f in value])
             self.warn("Ignored files", detail=detail)
 
-    def integrate(self, sandbox):
+    def integrate(self, sandbox: 'Sandbox') -> None:
         """Integrate currently staged filesystem against this artifact.
 
         Args:
-           sandbox (:class:`.Sandbox`): The build sandbox
+           sandbox: The build sandbox
 
         This modifies the sysroot staged inside the sandbox so that
         the sysroot is *integrated*. Only an *integrated* sandbox
@@ -826,12 +879,12 @@ class Element(Plugin):
                     sandbox.run(['sh', '-e', '-c', cmd], 0, env=environment, cwd='/',
                                 label=cmd)
 
-    def stage_sources(self, sandbox, directory):
+    def stage_sources(self, sandbox: 'Sandbox', directory: str) -> None:
         """Stage this element's sources to a directory in the sandbox
 
         Args:
-           sandbox (:class:`.Sandbox`): The build sandbox
-           directory (str): An absolute path within the sandbox to stage the sources at
+           sandbox: The build sandbox
+           directory: An absolute path within the sandbox to stage the sources at
         """
 
         # Hold on to the location where a plugin decided to stage sources,
@@ -843,14 +896,13 @@ class Element(Plugin):
 
         self._stage_sources_in_sandbox(sandbox, directory)
 
-    def get_public_data(self, domain):
+    def get_public_data(self, domain: str) -> 'MappingNode[Any, Any]':
         """Fetch public data on this element
 
         Args:
-           domain (str): A public domain name to fetch data for
+           domain: A public domain name to fetch data for
 
         Returns:
-           :class:`MappingNode <buildstream.node.MappingNode>`: The public data dictionary for the given domain
 
         .. note::
 
@@ -861,18 +913,20 @@ class Element(Plugin):
         if self.__dynamic_public is None:
             self.__load_public_data()
 
-        data = self.__dynamic_public.get_mapping(domain, default=None)
+        # Disable type-checking since we can't easily tell mypy that
+        # `self.__dynamic_public` can't be None here.
+        data = self.__dynamic_public.get_mapping(domain, default=None)      # type: ignore
         if data is not None:
             data = data.clone()
 
         return data
 
-    def set_public_data(self, domain, data):
+    def set_public_data(self, domain: str, data: 'MappingNode[Any, Any]') -> None:
         """Set public data on this element
 
         Args:
-           domain (str): A public domain name to fetch data for
-           data (:class:`MappingNode <buildstream.node.MappingNode>`): The public data dictionary for the given domain
+           domain: A public domain name to fetch data for
+           data: The public data dictionary for the given domain
 
         This allows an element to dynamically mutate public data of
         elements or add new domains as the result of success completion
@@ -885,37 +939,37 @@ class Element(Plugin):
         if data is not None:
             data = data.clone()
 
-        self.__dynamic_public[domain] = data
+        self.__dynamic_public[domain] = data    # type: ignore
 
-    def get_environment(self):
+    def get_environment(self) -> Dict[str, str]:
         """Fetch the environment suitable for running in the sandbox
 
         Returns:
-           (dict): A dictionary of string key/values suitable for passing
+           A dictionary of string key/values suitable for passing
            to :func:`Sandbox.run() <buildstream.sandbox.Sandbox.run>`
         """
         return self.__environment
 
-    def get_variable(self, varname):
+    def get_variable(self, varname: str) -> Optional[str]:
         """Fetch the value of a variable resolved for this element.
 
         Args:
-           varname (str): The name of the variable to fetch
+           varname: The name of the variable to fetch
 
         Returns:
-           (str): The resolved value for *varname*, or None if no
+           The resolved value for *varname*, or None if no
            variable was declared with the given name.
         """
         # Flat is not recognized correctly by Pylint as being a dictionary
         return self.__variables.flat.get(varname)  # pylint: disable=no-member
 
-    def batch_prepare_assemble(self, flags, *, collect=None):
+    def batch_prepare_assemble(self, flags: int, *, collect: Optional[str] = None) -> None:
         """ Configure command batching across prepare() and assemble()
 
         Args:
-           flags (:class:`.SandboxFlags`): The sandbox flags for the command batch
-           collect (str): An optional directory containing partial install contents
-                          on command failure.
+           flags: The sandbox flags for the command batch
+           collect: An optional directory containing partial install contents
+                    on command failure.
 
         This may be called in :func:`Element.configure_sandbox() <buildstream.element.Element.configure_sandbox>`
         to enable batching of all sandbox commands issued in prepare() and assemble().
@@ -927,13 +981,13 @@ class Element(Plugin):
         self.__batch_prepare_assemble_flags = flags
         self.__batch_prepare_assemble_collect = collect
 
-    def get_logs(self):
+    def get_logs(self) -> List[str]:
         """Obtain a list of log file paths
 
         Returns:
-           (list): A list of log file paths
+           A list of log file paths
         """
-        return self.__artifact.get_logs()
+        return cast(Artifact, self.__artifact).get_logs()
 
     #############################################################
     #            Private Methods used in BuildStream            #

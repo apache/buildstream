@@ -17,7 +17,12 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+from typing import TYPE_CHECKING
+
 from ..node import _assert_symbol_name
+
+if TYPE_CHECKING:
+    from typing import Optional
 
 
 # Shared symbols for validation purposes
@@ -41,7 +46,7 @@ class Option():
 
     # Subclasses use this to specify the type name used
     # for the yaml format and error messages
-    OPTION_TYPE = None
+    OPTION_TYPE = None  # type: Optional[str]
 
     def __init__(self, name, definition, pool):
         self.name = name
