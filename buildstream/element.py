@@ -2362,7 +2362,7 @@ class Element(Plugin):
             if include_file and not exclude_file:
                 yield filename.lstrip(os.sep)
 
-    def __file_is_whitelisted(self, pattern):
+    def __file_is_whitelisted(self, path):
         # Considered storing the whitelist regex for re-use, but public data
         # can be altered mid-build.
         # Public data is not guaranteed to stay the same for the duration of
@@ -2374,7 +2374,8 @@ class Element(Plugin):
             whitelist_expressions = [utils._glob2re(self.__variables.subst(exp.strip())) for exp in whitelist]
             expression = ('^(?:' + '|'.join(whitelist_expressions) + ')$')
             self.__whitelist_regex = re.compile(expression)
-        return self.__whitelist_regex.match(pattern)
+        return (self.__whitelist_regex.match(os.path.join(os.sep, path)) or
+                self.__whitelist_regex.match(os.path.join(path)))
 
     # __extract():
     #
