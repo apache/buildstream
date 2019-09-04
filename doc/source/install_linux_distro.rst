@@ -3,6 +3,41 @@
 
 Installing BuildStream on a Linux distro
 ========================================
+
+
+Installing from distro packages
+-------------------------------
+
+
+Arch Linux
+~~~~~~~~~~
+Packages for Arch exist in `AUR <https://wiki.archlinux.org/index.php/Arch_User_Repository#Installing_packages>`_.
+Two different package versions are available:
+
+ - BuildStream latest release: `buildstream <https://aur.archlinux.org/packages/buildstream>`_
+ - BuildStream latest development snapshot: `buildstream-git <https://aur.archlinux.org/packages/buildstream-git>`_
+
+The external plugins are available as well:
+
+ - BuildStream-external plugins latest release: `bst-external` https://aur.archlinux.org/packages/bst-external>`_
+
+
+Fedora
+~~~~~~
+BuildStream is in the official Fedora repositories::
+
+  sudo dnf install buildstream
+
+Optionally, install the `buildstream-docs` package to have the BuildStream
+documentation in Devhelp or GNOME Builder.
+
+
+Installing from source
+----------------------
+Until BuildStream is available in your distro, you will need to install
+it yourself from the `git repository <https://gitlab.com/BuildStream/buildstream.git>`_
+using python's ``pip`` package manager.
+
 BuildStream requires the following base system requirements:
 
 * python3 >= 3.5
@@ -20,13 +55,6 @@ If you intend to push built artifacts to a remote artifact server,
 which requires special permissions, you will also need:
 
 * ssh
-
-
-Installing from source (recommended)
-------------------------------------
-Until BuildStream is available in your distro, you will need to install
-it yourself from the `git repository <https://gitlab.com/BuildStream/buildstream.git>`_
-using python's ``pip`` package manager.
 
 For the purpose of installing BuildStream while there are no distro packages,
 you will additionally need:
@@ -74,9 +102,9 @@ At this point you should be able to get the system requirements with::
       gir1.2-ostree-1.0 ostree
 
 
-Buster or Sid
-^^^^^^^^^^^^^
-For debian unstable or testing, only the following line should be enough
+Buster and newer
+^^^^^^^^^^^^^^^^
+The following line should be enough
 to get the base system requirements installed::
 
   sudo apt-get install \
@@ -163,16 +191,3 @@ need to cleanly reinstall BuildStream::
   cd /path/to/buildstream
   git pull --rebase
   pip3 install --user .
-
-
-Installing from distro packages
--------------------------------
-
-
-Arch Linux
-~~~~~~~~~~
-Install `buildstream <https://aur.archlinux.org/packages/buildstream>`_
-from `AUR <https://wiki.archlinux.org/index.php/Arch_User_Repository#Installing_packages>`_.
-Alternatively, use
-`buildstream-git <https://aur.archlinux.org/packages/buildstream-git>`_
-for the lastest version of the development branch.
