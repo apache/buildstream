@@ -108,6 +108,20 @@ Artifact subcommands
 .. click:: buildstream._frontend.cli:artifact_delete
    :prog: bst artifact delete
 
+----
+
+.. _invoking_artifact_show:
+
+.. click:: buildstream._frontend.cli:artifact_show
+   :prog: bst artifact show
+
+----
+
+.. _invoking_artifact_list_contents:
+
+.. click:: buildstream._frontend.cli:artifact_list_contents
+   :prog: bst artifact list-contents
+
 
 Source subcommands
 ------------------
