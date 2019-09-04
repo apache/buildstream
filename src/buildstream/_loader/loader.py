@@ -62,6 +62,7 @@ class Loader():
         # Public members
         #
         self.project = project   # The associated Project
+        self.loaded = None       # The number of loaded Elements
 
         #
         # Private members
@@ -145,6 +146,11 @@ class Loader():
             ret.append(loader._collect_element(element, task))
 
         self._clean_caches()
+
+        # Cache how many Elements have just been loaded
+        if task:
+            # Workaround for task potentially being None (because no State object)
+            self.loaded = task.current_progress
 
         return ret
 

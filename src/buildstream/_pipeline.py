@@ -138,7 +138,11 @@ class Pipeline():
     #    targets (list of Element): The list of toplevel element targets
     #
     def resolve_elements(self, targets):
-        with self._context.messenger.timed_activity("Resolving cached state", silent_nested=True):
+        with self._context.messenger.simple_task("Resolving cached state", silent_nested=True) as task:
+            # We need to go through the project to access the loader
+            if task:
+                task.set_maximum_progress(self._project.loader.loaded)
+
             # XXX: Now that Element._update_state() can trigger recursive update_state calls
             # it is possible that we could get a RecursionError. However, this is unlikely
             # to happen, even for large projects (tested with the Debian stack). Although,
@@ -154,6 +158,9 @@ class Pipeline():
                 # dependencies.
                 element._update_ready_for_runtime_and_cached()
 
+                if task:
+                    task.add_current_progress()
+
     # check_remotes()
     #
     # Check if the target artifact is cached in any of the available remotes
@@ -162,9 +169,13 @@ class Pipeline():
     #    targets (list [Element]): The list of element targets
     #
     def check_remotes(self, targets):
-        with self._context.messenger.timed_activity("Querying remotes for cached status", silent_nested=True):
+        with self._context.messenger.simple_task("Querying remotes for cached status", silent_nested=True) as task:
+            task.set_maximum_progress(len(targets))
+
             for element in targets:
                 element._cached_remotely()
+
+                task.add_current_progress()
 
     # dependencies()
     #
