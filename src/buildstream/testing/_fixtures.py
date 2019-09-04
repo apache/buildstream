@@ -17,7 +17,7 @@
 import psutil
 import pytest
 
-from buildstream import utils
+from buildstream import node, utils
 
 # Catch tests that don't shut down background threads, which could then lead
 # to other tests hanging when BuildStream uses fork().
@@ -29,3 +29,8 @@ def thread_check():
 
     yield
     assert utils._is_single_threaded()
+
+# Reset global state in node.pyx to improve test isolation
+@pytest.fixture(autouse=True)
+def reset_global_node_state():
+    node._reset_global_state()
