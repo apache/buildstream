@@ -32,6 +32,7 @@ import stat
 from stat import S_ISDIR
 import subprocess
 import tempfile
+import time
 import itertools
 from contextlib import contextmanager
 from pathlib import Path
@@ -60,6 +61,9 @@ _MAIN_PID = os.getpid()
 # The number of threads in the main process at startup.
 # This is 1 except for certain test environments (xdist/execnet).
 _INITIAL_NUM_THREADS_IN_MAIN_PROCESS = 1
+
+# Number of seconds to wait for background threads to exit.
+_AWAIT_THREADS_TIMEOUT_SECONDS = 5
 
 
 class UtilError(BstError):
@@ -1406,8 +1410,16 @@ def _get_compression(tar):
 def _is_single_threaded():
     # Use psutil as threading.active_count() doesn't include gRPC threads.
     process = psutil.Process()
-    num_threads = process.num_threads()
+
     if process.pid == _MAIN_PID:
-        return num_threads == _INITIAL_NUM_THREADS_IN_MAIN_PROCESS
+        expected_num_threads = _INITIAL_NUM_THREADS_IN_MAIN_PROCESS
     else:
-        return num_threads == 1
+        expected_num_threads = 1
+
+    # gRPC threads are not joined when shut down. Wait for them to exit.
+    wait = 0.1
+    for _ in range(0, int(_AWAIT_THREADS_TIMEOUT_SECONDS / wait)):
+        if process.num_threads() == expected_num_threads:
+            return True
+        time.sleep(wait)
+    return False
