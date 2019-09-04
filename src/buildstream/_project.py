@@ -434,13 +434,9 @@ class Project():
         with self._context.messenger.simple_task("Loading elements", silent_nested=True) as task:
             meta_elements = self.loader.load(targets, rewritable=rewritable, ticker=None, task=task)
 
-            # workaround for task potentially being None (because no State object)
-            if task:
-                total_elements = task.current_progress
-
         with self._context.messenger.simple_task("Resolving elements") as task:
             if task:
-                task.set_maximum_progress(total_elements)
+                task.set_maximum_progress(self.loader.loaded)
             elements = [
                 Element._new_from_meta(meta, task)
                 for meta in meta_elements
