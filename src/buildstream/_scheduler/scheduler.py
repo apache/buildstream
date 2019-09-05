@@ -61,6 +61,7 @@ class NotificationType(FastEnum):
     UNSUSPEND = "unsuspend"
     SUSPENDED = "suspended"
     RETRY = "retry"
+    MESSAGE = "message"
 
 
 # Notification()
@@ -80,13 +81,15 @@ class Notification():
                  job_action=None,
                  job_status=None,
                  time=None,
-                 element=None):
+                 element=None,
+                 message=None):
         self.notification_type = notification_type
         self.full_name = full_name
         self.job_action = job_action
         self.job_status = job_status
         self.time = time
         self.element = element
+        self.message = message
 
 
 # Scheduler()
@@ -300,6 +303,17 @@ class Scheduler():
                                     element=element_info)
         self._notify(notification)
         self._sched()
+
+    # notify_messenger()
+    #
+    # Send message over notification queue to Messenger callback
+    #
+    # Args:
+    #    message (Message): A Message() to be sent to the frontend message
+    #                       handler, as assigned by context's messenger.
+    #
+    def notify_messenger(self, message):
+        self._notify(Notification(NotificationType.MESSAGE, message=message))
 
     #######################################################
     #                  Local Private Methods              #

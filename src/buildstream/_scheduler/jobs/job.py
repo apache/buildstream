@@ -393,8 +393,8 @@ class Job():
             element_name = self._message_element_name
         if element_key is None:
             element_key = self._message_element_key
-        self._scheduler.context.messenger.message(
-            Message(message_type, message, element_name=element_name, element_key=element_key, **kwargs))
+        message = Message(message_type, message, element_name=element_name, element_key=element_key, **kwargs)
+        self._scheduler.notify_messenger(message)
 
     # get_element()
     #
@@ -536,7 +536,7 @@ class Job():
         if envelope.message_type is _MessageType.LOG_MESSAGE:
             # Propagate received messages from children
             # back through the context.
-            self._scheduler.context.messenger.message(envelope.message)
+            self._scheduler.notify_messenger(envelope.message)
         elif envelope.message_type is _MessageType.ERROR:
             # For regression tests only, save the last error domain / reason
             # reported from a child task in the main process, this global state

@@ -1653,7 +1653,9 @@ class Stream():
         assert self._notification_queue
         notification = self._notification_queue.pop()
 
-        if notification.notification_type == NotificationType.INTERRUPT:
+        if notification.notification_type == NotificationType.MESSAGE:
+            self._context.messenger.message(notification.message)
+        elif notification.notification_type == NotificationType.INTERRUPT:
             self._interrupt_callback()
         elif notification.notification_type == NotificationType.TICK:
             self._ticker_callback()
