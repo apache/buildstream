@@ -414,7 +414,8 @@ class Stream():
                                  selection=selection,
                                  ignore_junction_targets=ignore_junction_targets,
                                  use_artifact_config=use_config,
-                                 artifact_remote_url=remote)
+                                 artifact_remote_url=remote,
+                                 load_refs=True)
 
         if not self._artifacts.has_fetch_remotes():
             raise StreamError("No artifact caches available for pulling artifacts")
@@ -455,7 +456,8 @@ class Stream():
                                  selection=selection,
                                  ignore_junction_targets=ignore_junction_targets,
                                  use_artifact_config=use_config,
-                                 artifact_remote_url=remote)
+                                 artifact_remote_url=remote,
+                                 load_refs=True)
 
         if not self._artifacts.has_push_remotes():
             raise StreamError("No artifact caches available for pushing artifacts")
@@ -558,7 +560,8 @@ class Stream():
                 self._export_artifact(tar, location, compression, target, hardlinks, virdir)
             except AttributeError as e:
                 raise ArtifactError("Artifact reference '{}' seems to be invalid. "
-                                    "Note that an Element name can also be used.".format(artifact))from e
+                                    "Note that an Element name can also be used."
+                                    .format(artifact._element.get_artifact_name())) from e
         else:
             try:
                 with target._prepare_sandbox(scope=scope, directory=None,

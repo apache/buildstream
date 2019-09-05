@@ -558,3 +558,45 @@ def test_pull_access_rights(cli, tmpdir, datafiles):
         st = os.lstat(os.path.join(checkout, 'usr/share/big-file'))
         assert stat.S_ISREG(st.st_mode)
         assert stat.S_IMODE(st.st_mode) == 0o0644
+
+
+# Tests `bst artifact pull $artifact_ref`
+@pytest.mark.datafiles(DATA_DIR)
+def test_pull_artifact(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element = 'target.bst'
+
+    # Configure a local cache
+    local_cache = os.path.join(str(tmpdir), 'cache')
+    cli.configure({'cachedir': local_cache})
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
+
+        # First build the target element and push to the remote.
+        cli.configure({
+            'artifacts': {'url': share.repo, 'push': True}
+        })
+
+        result = cli.run(project=project, args=['build', element])
+        result.assert_success()
+
+        # Assert that the *artifact* is cached locally
+        cache_key = cli.get_element_key(project, element)
+        artifact_ref = os.path.join('test', os.path.splitext(element)[0], cache_key)
+        assert os.path.exists(os.path.join(local_cache, 'artifacts', 'refs', artifact_ref))
+
+        # Assert that the target is shared (note that assert shared will use the artifact name)
+        assert_shared(cli, share, project, element)
+
+        # Now we've pushed, remove the local cache
+        shutil.rmtree(os.path.join(local_cache, 'artifacts'))
+
+        # Assert that nothing is cached locally anymore
+        assert not os.path.exists(os.path.join(local_cache, 'artifacts', 'refs', artifact_ref))
+
+        # Now try bst artifact pull
+        result = cli.run(project=project, args=['artifact', 'pull', artifact_ref])
+        result.assert_success()
+
+        # And assert that it's again in the local cache, without having built
+        assert os.path.exists(os.path.join(local_cache, 'artifacts', 'refs', artifact_ref))
