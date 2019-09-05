@@ -1279,10 +1279,6 @@ class Element(Plugin):
             # Tracking may still be pending
             return
 
-        if self._get_workspace() and self.__assemble_scheduled:
-            self.__reset_cache_data()
-            return
-
         self.__update_cache_keys()
         self.__update_artifact_state()
 
@@ -2236,7 +2232,6 @@ class Element(Plugin):
             }
 
             project = self._get_project()
-            workspace = self._get_workspace()
 
             self.__cache_key_dict = {
                 'core-artifact-version': BST_CORE_ARTIFACT_VERSION,
@@ -2252,15 +2247,9 @@ class Element(Plugin):
                 return {'key': _source._get_unique_key(True),
                         'name': _source._get_source_name()}
 
-            def __get_workspace_entry(workspace):
-                return {'key': workspace.get_key()}
-
-            if workspace is None:
-                self.__cache_key_dict['sources'] = \
-                    [__get_source_entry(s) for s in self.__sources]
-            else:
-                self.__cache_key_dict['sources'] = \
-                    [__get_workspace_entry(workspace)]
+            self._source_cached()
+            self.__cache_key_dict['sources'] = \
+                [__get_source_entry(s) for s in self.__sources]
 
             self.__cache_key_dict['fatal-warnings'] = sorted(project._fatal_warnings)
 
@@ -2271,7 +2260,7 @@ class Element(Plugin):
 
     # Check if sources are cached, generating the source key if it hasn't been
     def _source_cached(self):
-        if self.__sources and not self._get_workspace():
+        if self.__sources:
             sourcecache = self._get_context().sourcecache
 
             # Go through sources we'll cache generating keys
