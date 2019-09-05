@@ -181,7 +181,7 @@ def override_completions(orig_args, cmd, cmd_param, args, incomplete):
                 cmd_param.opts == ['--track'] or
                 cmd_param.opts == ['--track-except']):
             return complete_target(args, incomplete)
-        if cmd_param.name == 'artifacts':
+        if cmd_param.name == 'artifacts' or cmd_param.name == 'target':
             return complete_artifact(orig_args, args, incomplete)
 
     raise CompleteUnhandled()
@@ -1058,10 +1058,10 @@ def artifact_show(app, deps, artifacts):
 @click.option('--directory', default=None,
               type=click.Path(file_okay=False),
               help="The directory to checkout the artifact to")
-@click.argument('element', required=False,
+@click.argument('target', required=False,
                 type=click.Path(readable=False))
 @click.pass_obj
-def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, pull_, directory, element):
+def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, pull_, directory, target):
     """Checkout contents of an artifact
 
     When this command is executed from a workspace directory, the default
@@ -1083,7 +1083,7 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
             sys.exit(-1)
         else:
             if directory is None:
-                location = os.path.abspath(os.path.join(os.getcwd(), element))
+                location = os.path.abspath(os.path.join(os.getcwd(), target))
             else:
                 location = directory
             if location[-4:] == '.bst':
@@ -1102,23 +1102,17 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
         if not compression:
             compression = inferred_compression
 
-    if deps == "build":
-        scope = Scope.BUILD
-    elif deps == "none":
-        scope = Scope.NONE
-    else:
-        scope = Scope.RUN
-
     with app.initialized():
-        if not element:
-            element = app.project.get_default_target()
-            if not element:
+        if not target:
+            target = app.project.get_default_target()
+            if not target:
                 raise AppError('Missing argument "ELEMENT".')
 
-        app.stream.checkout(element,
+        scope = {'run': Scope.RUN, 'build': Scope.BUILD, 'none': Scope.NONE}
+        app.stream.checkout(target,
                             location=location,
                             force=force,
-                            scope=scope,
+                            scope=scope[deps],
                             integrate=True if integrate is None else integrate,
                             hardlinks=hardlinks,
                             pull=pull_,

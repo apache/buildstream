@@ -42,6 +42,10 @@ class ArtifactElement(Element):
     # A hash of ArtifactElement by ref
     __instantiated_artifacts = {}   # type: Dict[str, ArtifactElement]
 
+    # ArtifactElement's require this as the sandbox will use a normal
+    # directory when we checkout
+    BST_VIRTUAL_DIRECTORY = True
+
     def __init__(self, context, ref):
         _, element, key = verify_artifact_ref(ref)
 
@@ -125,6 +129,22 @@ class ArtifactElement(Element):
     def get_dependency_refs(self, scope=Scope.BUILD):
         artifact = self._get_artifact()
         return artifact.get_dependency_refs(deps=scope)
+
+    # configure_sandbox()
+    #
+    # Configure a sandbox for installing artifacts into
+    #
+    # Args:
+    #    sandbox (Sandbox)
+    #
+    def configure_sandbox(self, sandbox):
+        install_root = self.get_variable('install-root')
+
+        # Tell the sandbox to mount the build root and install root
+        sandbox.mark_directory(install_root)
+
+        # Tell sandbox which directory is preserved in the finished artifact
+        sandbox.set_output_directory(install_root)
 
     # Override Element._calculate_cache_key
     def _calculate_cache_key(self, dependencies=None):

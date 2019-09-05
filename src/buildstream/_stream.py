@@ -29,7 +29,6 @@ import tempfile
 from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
 
-from ._artifact import Artifact
 from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
 from ._message import Message, MessageType
@@ -541,6 +540,10 @@ class Stream():
         elements, _ = self._load((target,), (), selection=selection, use_artifact_config=True, load_refs=True)
         target = elements[-1]
 
+        # Verify that --deps run has not been specified for an ArtifactElement
+        if isinstance(target, ArtifactElement) and scope == Scope.RUN:
+            raise StreamError("Unable to determine the runtime dependencies of an ArtifactElement")
+
         self._check_location_writable(location, force=force, tar=tar)
 
         uncached_elts = [elt for elt in elements if not elt._cached()]
@@ -551,27 +554,15 @@ class Stream():
             self._enqueue_plan(uncached_elts)
             self._run()
 
-        # Stage deps into a temporary sandbox first
-        if isinstance(target, ArtifactElement):
-            try:
-                key = target._get_cache_key()
-                artifact = Artifact(target, self._context, strong_key=key)
-                virdir = artifact.get_files()
+        try:
+            with target._prepare_sandbox(scope=scope, directory=None,
+                                         integrate=integrate) as sandbox:
+                # Copy or move the sandbox to the target directory
+                virdir = sandbox.get_virtual_directory()
                 self._export_artifact(tar, location, compression, target, hardlinks, virdir)
-            except AttributeError as e:
-                raise ArtifactError("Artifact reference '{}' seems to be invalid. "
-                                    "Note that an Element name can also be used."
-                                    .format(artifact._element.get_artifact_name())) from e
-        else:
-            try:
-                with target._prepare_sandbox(scope=scope, directory=None,
-                                             integrate=integrate) as sandbox:
-                    # Copy or move the sandbox to the target directory
-                    virdir = sandbox.get_virtual_directory()
-                    self._export_artifact(tar, location, compression, target, hardlinks, virdir)
-            except BstError as e:
-                raise StreamError("Error while staging dependencies into a sandbox"
-                                  ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
+        except BstError as e:
+            raise StreamError("Error while staging dependencies into a sandbox"
+                              ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
 
     def _export_artifact(self, tar, location, compression, target, hardlinks, virdir):
         if not tar:
