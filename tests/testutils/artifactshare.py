@@ -157,8 +157,8 @@ class ArtifactShare():
     #    artifact_name (str): The composed complete artifact name
     #
     # Returns:
-    #    (str): artifact digest if the artifact exists in the share, otherwise None.
-    def has_artifact(self, artifact_name):
+    #    (ArtifactProto): artifact digest if the artifact exists in the share, otherwise None.
+    def get_artifact(self, artifact_name):
         artifact_proto = self.get_artifact_proto(artifact_name)
         if not artifact_proto:
             return None
@@ -208,7 +208,7 @@ statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize f_bavail
 # Assert that a given artifact is in the share
 #
 def assert_shared(cli, share, project, element_name, *, project_name='test'):
-    if not share.has_artifact(cli.get_artifact_name(project, project_name, element_name)):
+    if not share.get_artifact(cli.get_artifact_name(project, project_name, element_name)):
         raise AssertionError("Artifact share at {} does not contain the expected element {}"
                              .format(share.repo, element_name))
 
@@ -216,6 +216,6 @@ def assert_shared(cli, share, project, element_name, *, project_name='test'):
 # Assert that a given artifact is not in the share
 #
 def assert_not_shared(cli, share, project, element_name, *, project_name='test'):
-    if share.has_artifact(cli.get_artifact_name(project, project_name, element_name)):
+    if share.get_artifact(cli.get_artifact_name(project, project_name, element_name)):
         raise AssertionError("Artifact share at {} unexpectedly contains the element {}"
                              .format(share.repo, element_name))

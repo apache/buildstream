@@ -70,12 +70,12 @@ def test_cache_buildtrees(cli, tmpdir, datafiles):
         result = cli.run(project=project, args=['build', element_name])
         assert result.exit_code == 0
         assert cli.get_element_state(project, element_name) == 'cached'
-        assert share1.has_artifact(cli.get_artifact_name(project, 'test', element_name))
+        assert share1.get_artifact(cli.get_artifact_name(project, 'test', element_name))
 
         # The buildtree dir should not exist, as we set the config to not cache buildtrees.
 
         artifact_name = cli.get_artifact_name(project, 'test', element_name)
-        assert share1.has_artifact(artifact_name)
+        assert share1.get_artifact(artifact_name)
         with cli.artifact.extract_buildtree(cwd, cwd, artifact_name) as buildtreedir:
             assert not buildtreedir
 
@@ -111,7 +111,7 @@ def test_cache_buildtrees(cli, tmpdir, datafiles):
         result = cli.run(project=project, args=['--cache-buildtrees', 'always', 'build', element_name])
         assert result.exit_code == 0
         assert cli.get_element_state(project, element_name) == 'cached'
-        assert share2.has_artifact(cli.get_artifact_name(project, 'test', element_name))
+        assert share2.get_artifact(cli.get_artifact_name(project, 'test', element_name))
 
         # Cache key will be the same however the digest hash will have changed as expected, so reconstruct paths
         with cli.artifact.extract_buildtree(cwd, cwd, artifact_name) as buildtreedir:

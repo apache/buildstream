@@ -569,7 +569,7 @@ def test_push_cross_junction(cli, tmpdir, datafiles):
         cli.run(project=project, args=['artifact', 'push', 'junction.bst:import-etc.bst'])
 
         cache_key = cli.get_element_key(project, 'junction.bst:import-etc.bst')
-        assert share.has_artifact(cli.get_artifact_name(project, 'subtest', 'import-etc.bst', cache_key=cache_key))
+        assert share.get_artifact(cli.get_artifact_name(project, 'subtest', 'import-etc.bst', cache_key=cache_key))
 
 
 @pytest.mark.datafiles(DATA_DIR)

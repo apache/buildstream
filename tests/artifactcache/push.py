@@ -84,7 +84,7 @@ def test_push(cli, tmpdir, datafiles):
         # Write down the user configuration file
         _yaml.roundtrip_dump(user_config, file=user_config_file)
         element_key = _push(cli, rootcache_dir, project_dir, user_config_file, 'target.bst')
-        assert share.has_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst', cache_key=element_key))
+        assert share.get_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst', cache_key=element_key))
 
 
 @pytest.mark.in_subprocess
