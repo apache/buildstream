@@ -798,7 +798,7 @@ def source_track(app, elements, deps, except_, cross_junctions):
 ##################################################################
 #                  Source Checkout Command                      #
 ##################################################################
-@source.command(name='checkout', short_help='Checkout sources for an element')
+@source.command(name='checkout', short_help='Checkout sources of an element')
 @click.option('--force', '-f', is_flag=True,
               help="Allow files to be overwritten")
 @click.option('--except', 'except_', multiple=True,
