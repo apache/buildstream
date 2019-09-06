@@ -341,8 +341,7 @@ class CASCache():
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.NOT_FOUND:
                 raise CASCacheError("Failed to pull ref {}: {}".format(ref, e)) from e
-            else:
-                return False
+            return False
         except BlobNotFound:
             return False
 
@@ -481,7 +480,7 @@ class CASCache():
             blob_response = response.responses[0]
             if blob_response.status.code == code_pb2.RESOURCE_EXHAUSTED:
                 raise CASCacheError("Cache too full", reason="cache-too-full")
-            elif blob_response.status.code != code_pb2.OK:
+            if blob_response.status.code != code_pb2.OK:
                 raise CASCacheError("Failed to capture blob {}: {}".format(path, blob_response.status.code))
             digest.CopyFrom(blob_response.digest)
 

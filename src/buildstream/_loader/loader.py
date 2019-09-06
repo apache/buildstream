@@ -250,7 +250,7 @@ class Loader():
 
                 raise LoadError(message, LoadErrorReason.MISSING_FILE, detail=detail) from e
 
-            elif e.reason == LoadErrorReason.LOADING_DIRECTORY:
+            if e.reason == LoadErrorReason.LOADING_DIRECTORY:
                 # If a <directory>.bst file exists in the element path,
                 # let's suggest this as a plausible alternative.
                 message = str(e)
@@ -261,8 +261,10 @@ class Loader():
                     element_name = filename + '.bst'
                     detail = "Did you mean '{}'?\n".format(element_name)
                 raise LoadError(message, LoadErrorReason.LOADING_DIRECTORY, detail=detail) from e
-            else:
-                raise
+
+            # Otherwise, we don't know the reason, so just raise
+            raise
+
         kind = node.get_str(Symbol.KIND)
         if kind == "junction":
             self._first_pass_options.process_node(node)
@@ -561,11 +563,11 @@ class Loader():
             if level == 0:
                 # junction element not found in this or ancestor projects
                 raise
-            else:
-                # mark junction as not available to allow detection of
-                # conflicting junctions in subprojects
-                self._loaders[filename] = None
-                return None
+
+            # mark junction as not available to allow detection of
+            # conflicting junctions in subprojects
+            self._loaders[filename] = None
+            return None
 
         # meta junction element
         # XXX: This is a likely point for progress reporting to end up
@@ -636,8 +638,9 @@ class Loader():
                 if element.path:
                     message += " Was expecting it at path '{}' in the junction's source.".format(element.path)
                 raise LoadError(message=message, reason=LoadErrorReason.INVALID_JUNCTION) from e
-            else:
-                raise
+
+            # Otherwise, we don't know the reason, so just raise
+            raise
 
         loader = project.loader
         self._loaders[filename] = loader

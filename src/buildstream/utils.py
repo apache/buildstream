@@ -1406,9 +1406,9 @@ def _get_compression(tar):
         if suffix == '.tar':
             raise UtilError("Expected compression with unknown file extension ('{}'), "
                             "supported extensions are ('.tar'), ('.gz'), ('.xz'), ('.bz2')".format(ext))
-        else:
-            # Assume just an unconventional name was provided, default to uncompressed
-            return ''
+
+        # Assume just an unconventional name was provided, default to uncompressed
+        return ''
 
 
 # _is_single_threaded()

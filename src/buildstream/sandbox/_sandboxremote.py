@@ -210,14 +210,14 @@ class SandboxRemote(Sandbox):
                     raise SandboxError("Failed contacting remote execution server at {}."
                                        .format(self.exec_url))
 
-                elif status_code in (grpc.StatusCode.INVALID_ARGUMENT,
-                                     grpc.StatusCode.FAILED_PRECONDITION,
-                                     grpc.StatusCode.RESOURCE_EXHAUSTED,
-                                     grpc.StatusCode.INTERNAL,
-                                     grpc.StatusCode.DEADLINE_EXCEEDED):
+                if status_code in (grpc.StatusCode.INVALID_ARGUMENT,
+                                   grpc.StatusCode.FAILED_PRECONDITION,
+                                   grpc.StatusCode.RESOURCE_EXHAUSTED,
+                                   grpc.StatusCode.INTERNAL,
+                                   grpc.StatusCode.DEADLINE_EXCEEDED):
                     raise SandboxError("{} ({}).".format(e.details(), status_code.name))
 
-                elif running_operation and status_code == grpc.StatusCode.UNIMPLEMENTED:
+                if running_operation and status_code == grpc.StatusCode.UNIMPLEMENTED:
                     raise SandboxError("Failed trying to recover from connection loss: "
                                        "server does not support operation status polling recovery.")
 
@@ -267,10 +267,10 @@ class SandboxRemote(Sandbox):
         #
         if output_files:
             raise SandboxError("Output files were returned when we didn't request any.")
-        elif not output_directories:
+        if not output_directories:
             error_text = "No output directory was returned from the build server."
             raise SandboxError(error_text)
-        elif len(output_directories) > 1:
+        if len(output_directories) > 1:
             error_text = "More than one output directory was returned from the build server: {}."
             raise SandboxError(error_text.format(output_directories))
 
@@ -458,8 +458,7 @@ class SandboxRemote(Sandbox):
                 if e.code() != grpc.StatusCode.NOT_FOUND:
                     raise SandboxError("Failed to query action cache: {} ({})"
                                        .format(e.code(), e.details()))
-                else:
-                    return None
+                return None
             else:
                 self.info("Action result found in action cache")
                 return result
@@ -499,8 +498,8 @@ class SandboxRemote(Sandbox):
             # system failed at processing the execution request.
             if execution_response.status.message:
                 raise SandboxError(execution_response.status.message)
-            else:
-                raise SandboxError("Remote server failed at executing the build request.")
+            # Otherwise, report the failure in a more general manner
+            raise SandboxError("Remote server failed at executing the build request.")
 
         return execution_response.result
 
