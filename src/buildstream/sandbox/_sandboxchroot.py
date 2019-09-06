@@ -70,7 +70,7 @@ class SandboxChroot(Sandbox):
         # Check host os and architecture match
         if config.build_os != host_os:
             raise PlatformError("Configured and host OS don't match.")
-        elif config.build_arch != host_arch:
+        if config.build_arch != host_arch:
             raise PlatformError("Configured and host architecture don't match.")
 
         return True
@@ -218,8 +218,9 @@ class SandboxChroot(Sandbox):
                 raise SandboxError('Could not chroot into {} or chdir into {}. '
                                    'Ensure you are root and that the relevant directory exists.'
                                    .format(rootfs, cwd)) from e
-            else:
-                raise SandboxError('Could not run command {}: {}'.format(command, e)) from e
+
+            # Otherwise, raise a more general error
+            raise SandboxError('Could not run command {}: {}'.format(command, e)) from e
 
         return code
 
@@ -252,8 +253,8 @@ class SandboxChroot(Sandbox):
                     if err.errno == 1:
                         raise SandboxError("Permission denied while creating device node: {}.".format(err) +
                                            "BuildStream reqiures root permissions for these setttings.")
-                    else:
-                        raise
+
+                    raise
 
         yield
 

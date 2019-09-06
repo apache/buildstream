@@ -915,7 +915,8 @@ def _prefix_choice_value_proc(choices):
 
         if not remaining_candidate:
             raise UsageError("Expected one of {}, got {}".format(choices, user_input))
-        elif len(remaining_candidate) == 1:
+
+        if len(remaining_candidate) == 1:
             return remaining_candidate[0]
         else:
             raise UsageError("Ambiguous input. '{}' can refer to one of {}".format(user_input, remaining_candidate))

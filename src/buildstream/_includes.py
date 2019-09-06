@@ -58,12 +58,13 @@ class Includes:
                         message = "{}: Include block references a file that could not be found: '{}'.".format(
                             include_provenance, include)
                         raise LoadError(message, LoadErrorReason.MISSING_FILE) from e
-                    elif e.reason == LoadErrorReason.LOADING_DIRECTORY:
+                    if e.reason == LoadErrorReason.LOADING_DIRECTORY:
                         message = "{}: Include block references a directory instead of a file: '{}'.".format(
                             include_provenance, include)
                         raise LoadError(message, LoadErrorReason.LOADING_DIRECTORY) from e
-                    else:
-                        raise
+
+                    # Otherwise, we don't know the reason, so just raise
+                    raise
 
                 if file_path in included:
                     include_provenance = includes_node.get_provenance()

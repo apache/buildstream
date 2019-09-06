@@ -291,10 +291,10 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
             except OSError as e:
                 if e.errno != errno.ENOENT:
                     raise
-                else:
-                    d = response.missing_blob_digests.add()
-                    d.hash = digest.hash
-                    d.size_bytes = digest.size_bytes
+
+                d = response.missing_blob_digests.add()
+                d.hash = digest.hash
+                d.size_bytes = digest.size_bytes
 
         return response
 

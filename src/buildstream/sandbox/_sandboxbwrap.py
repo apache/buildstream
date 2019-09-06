@@ -129,9 +129,8 @@ class SandboxBwrap(Sandbox):
         host_arch = local_platform.get_host_arch()
         if config.build_os != host_os:
             raise SandboxError("Configured and host OS don't match.")
-        elif config.build_arch != host_arch:
-            if not local_platform.can_crossbuild(config):
-                raise SandboxError("Configured architecture and host architecture don't match.")
+        if config.build_arch != host_arch and not local_platform.can_crossbuild(config):
+            raise SandboxError("Configured architecture and host architecture don't match.")
 
         return True
 

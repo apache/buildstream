@@ -581,8 +581,9 @@ class Project():
             # Raise a more specific error here
             if e.reason == LoadErrorReason.MISSING_FILE:
                 raise LoadError(str(e), LoadErrorReason.MISSING_PROJECT_CONF) from e
-            else:
-                raise
+
+            # Otherwise re-raise the original exception
+            raise
 
         pre_config_node = self._default_config_node.clone()
         self._project_conf._composite(pre_config_node)
