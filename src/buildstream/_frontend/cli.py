@@ -275,7 +275,7 @@ def print_version(ctx, param, value):
               help="Number of parallel jobs allowed for a given build task")
 @click.option('--network-retries', type=click.INT, default=None,
               help="Maximum retries for network tasks")
-@click.option('--no-interactive', is_flag=True, default=False,
+@click.option('--no-interactive', is_flag=True,
               help="Force non interactive mode, otherwise this is automatically decided")
 @click.option('--verbose/--no-verbose', default=None,
               help="Be extra verbose")
@@ -353,7 +353,7 @@ def help_command(ctx, command):
               help="The required format version")
 @click.option('--element-path', type=click.Path(), default="elements", show_default=True,
               help="The subdirectory to store elements in")
-@click.option('--force', '-f', default=False, is_flag=True,
+@click.option('--force', '-f', is_flag=True,
               help="Allow overwriting an existing project.conf")
 @click.argument('target-directory', nargs=1, required=False,
                 type=click.Path(file_okay=False, writable=True))
@@ -381,14 +381,14 @@ def init(app, project_name, format_version, element_path, force, target_director
               type=click.Path(readable=False),
               help="Specify elements to track during the build. Can be used "
                    "repeatedly to specify multiple elements")
-@click.option('--track-all', default=False, is_flag=True,
+@click.option('--track-all', is_flag=True,
               help="Track all elements in the pipeline")
 @click.option('--track-except', multiple=True,
               type=click.Path(readable=False),
               help="Except certain dependencies from tracking")
-@click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
+@click.option('--track-cross-junctions', '-J', is_flag=True,
               help="Allow tracking to cross junction boundaries")
-@click.option('--track-save', default=False, is_flag=True,
+@click.option('--track-save', is_flag=True,
               help="Deprecated: This is ignored")
 @click.option('--remote', '-r', default=None,
               help="The URL of the remote cache (defaults to the first configured cache)")
@@ -538,7 +538,7 @@ def show(app, elements, deps, except_, order, format_):
 #                          Shell Command                         #
 ##################################################################
 @cli.command(short_help="Shell into an element's sandbox environment")
-@click.option('--build', '-b', 'build_', is_flag=True, default=False,
+@click.option('--build', '-b', 'build_', is_flag=True,
               help='Stage dependencies and sources to build')
 @click.option('--sysroot', '-s', default=None,
               type=click.Path(exists=True, file_okay=False, readable=True),
@@ -546,12 +546,13 @@ def show(app, elements, deps, except_, order, format_):
 @click.option('--mount', type=click.Tuple([click.Path(exists=True), str]), multiple=True,
               metavar='HOSTPATH PATH',
               help="Mount a file or directory into the sandbox")
-@click.option('--isolate', is_flag=True, default=False,
+@click.option('--isolate', is_flag=True,
               help='Create an isolated build sandbox')
 @click.option('--use-buildtree', '-t', 'cli_buildtree', type=click.Choice(['ask', 'try', 'always', 'never']),
-              default='ask',
-              help='Defaults to ask but if set to always the function will fail if a build tree is not available')
-@click.option('--pull', 'pull_', is_flag=True, default=False,
+              default='ask', show_default=True,
+              help=('Use a buildtree. If `always` is set, will always fail to '
+                    'build if a buildtree is not available.'))
+@click.option('--pull', 'pull_', is_flag=True,
               help='Attempt to pull missing or incomplete artifacts')
 @click.argument('element', required=False,
                 type=click.Path(readable=False))
@@ -686,9 +687,9 @@ def source():
 @click.option('--deps', '-d', default='plan', show_default=True,
               type=click.Choice(['none', 'plan', 'all']),
               help='The dependencies to fetch')
-@click.option('--track', 'track_', default=False, is_flag=True,
+@click.option('--track', 'track_', is_flag=True,
               help="Track new source references before fetching")
-@click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
+@click.option('--track-cross-junctions', '-J', is_flag=True,
               help="Allow tracking to cross junction boundaries")
 @click.option('--remote', '-r', default=None,
               help="The URL of the remote source cache (defaults to the first configured cache)")
@@ -750,7 +751,7 @@ def source_fetch(app, elements, deps, track_, except_, track_cross_junctions, re
 @click.option('--deps', '-d', default='none', show_default=True,
               type=click.Choice(['none', 'all']),
               help='The dependencies to track')
-@click.option('--cross-junctions', '-J', default=False, is_flag=True,
+@click.option('--cross-junctions', '-J', is_flag=True,
               help="Allow crossing junction boundaries")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
@@ -795,7 +796,7 @@ def source_track(app, elements, deps, except_, cross_junctions):
 #                  Source Checkout Command                      #
 ##################################################################
 @source.command(name='checkout', short_help='Checkout sources for an element')
-@click.option('--force', '-f', default=False, is_flag=True,
+@click.option('--force', '-f', is_flag=True,
               help="Allow files to be overwritten")
 @click.option('--except', 'except_', multiple=True,
               type=click.Path(readable=False),
@@ -803,7 +804,7 @@ def source_track(app, elements, deps, except_, cross_junctions):
 @click.option('--deps', '-d', default='none', show_default=True,
               type=click.Choice(['build', 'none', 'run', 'all']),
               help='The dependencies whose sources to checkout')
-@click.option('--tar', 'tar', default=False, is_flag=True,
+@click.option('--tar', 'tar', is_flag=True,
               help='Create a tarball from the element\'s sources instead of a '
                    'file tree.')
 @click.option('--include-build-scripts', 'build_scripts', is_flag=True)
@@ -853,12 +854,12 @@ def workspace():
 #                     Workspace Open Command                     #
 ##################################################################
 @workspace.command(name='open', short_help="Open a new workspace")
-@click.option('--no-checkout', default=False, is_flag=True,
+@click.option('--no-checkout', is_flag=True,
               help="Do not checkout the source, only link to the given directory")
-@click.option('--force', '-f', default=False, is_flag=True,
+@click.option('--force', '-f', is_flag=True,
               help="The workspace will be created even if the directory in which it will be created is not empty " +
               "or if a workspace for that element already exists")
-@click.option('--track', 'track_', default=False, is_flag=True,
+@click.option('--track', 'track_', is_flag=True,
               help="Track and fetch new source references before checking out the workspace")
 @click.option('--directory', type=click.Path(file_okay=False), default=None,
               help="Only for use when a single Element is given: Set the directory to use to create the workspace")
@@ -879,9 +880,9 @@ def workspace_open(app, no_checkout, force, track_, directory, elements):
 #                     Workspace Close Command                    #
 ##################################################################
 @workspace.command(name='close', short_help="Close workspaces")
-@click.option('--remove-dir', default=False, is_flag=True,
+@click.option('--remove-dir', is_flag=True,
               help="Remove the path that contains the closed workspace")
-@click.option('--all', '-a', 'all_', default=False, is_flag=True,
+@click.option('--all', '-a', 'all_', is_flag=True,
               help="Close all open workspaces")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
@@ -937,11 +938,11 @@ def workspace_close(app, remove_dir, all_, elements):
 #                     Workspace Reset Command                    #
 ##################################################################
 @workspace.command(name='reset', short_help="Reset a workspace to its original state")
-@click.option('--soft', default=False, is_flag=True,
+@click.option('--soft', is_flag=True,
               help="Reset workspace state without affecting its contents")
-@click.option('--track', 'track_', default=False, is_flag=True,
+@click.option('--track', 'track_', is_flag=True,
               help="Track and fetch the latest source before resetting")
-@click.option('--all', '-a', 'all_', default=False, is_flag=True,
+@click.option('--all', '-a', 'all_', is_flag=True,
               help="Reset all open workspaces")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
@@ -1034,14 +1035,14 @@ def artifact_show(app, deps, artifacts):
 #                     Artifact Checkout Command                     #
 #####################################################################
 @artifact.command(name='checkout', short_help="Checkout contents of an artifact")
-@click.option('--force', '-f', default=False, is_flag=True,
+@click.option('--force', '-f', is_flag=True,
               help="Allow files to be overwritten")
 @click.option('--deps', '-d', default='run', show_default=True,
               type=click.Choice(['run', 'build', 'none']),
               help='The dependencies to checkout')
 @click.option('--integrate/--no-integrate', default=None, is_flag=True,
               help="Whether to run integration commands")
-@click.option('--hardlinks', default=False, is_flag=True,
+@click.option('--hardlinks', is_flag=True,
               help="Checkout hardlinks instead of copying if possible")
 @click.option('--tar', default=None, metavar='LOCATION',
               type=click.Path(),
@@ -1051,9 +1052,8 @@ def artifact_show(app, deps, artifacts):
 @click.option('--compression', default=None,
               type=click.Choice(['gz', 'xz', 'bz2']),
               help="The compression option of the tarball created.")
-@click.option('--pull', 'pull_', default=False, is_flag=True,
-              help="Whether to pull the artifact if it's missing or "
-                   "incomplete.")
+@click.option('--pull', 'pull_', is_flag=True,
+              help="Pull the artifact if it's missing or incomplete.")
 @click.option('--directory', default=None,
               type=click.Path(file_okay=False),
               help="The directory to checkout the artifact to")
@@ -1260,8 +1260,8 @@ def artifact_log(app, artifacts, out):
 #                Artifact List-Contents Command                #
 ################################################################
 @artifact.command(name='list-contents', short_help="List the contents of an artifact")
-@click.option('--long', '-l', 'long_', default=False, is_flag=True,
-              help="Provides more information about the contents of the artifact.")
+@click.option('--long', '-l', 'long_', is_flag=True,
+              help="Provide more information about the contents of the artifact.")
 @click.argument('artifacts', type=click.Path(), nargs=-1)
 @click.pass_obj
 def artifact_list_contents(app, artifacts, long_):
@@ -1315,9 +1315,9 @@ def artifact_delete(app, artifacts, deps):
 @click.option('--deps', '-d', default='plan', show_default=True,
               type=click.Choice(['none', 'plan', 'all']),
               help='The dependencies to fetch')
-@click.option('--track', 'track_', default=False, is_flag=True,
+@click.option('--track', 'track_', is_flag=True,
               help="Track new source references before fetching")
-@click.option('--track-cross-junctions', '-J', default=False, is_flag=True,
+@click.option('--track-cross-junctions', '-J', is_flag=True,
               help="Allow tracking to cross junction boundaries")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
@@ -1337,7 +1337,7 @@ def fetch(app, elements, deps, track_, except_, track_cross_junctions):
 @click.option('--deps', '-d', default='none', show_default=True,
               type=click.Choice(['none', 'all']),
               help='The dependencies to track')
-@click.option('--cross-junctions', '-J', default=False, is_flag=True,
+@click.option('--cross-junctions', '-J', is_flag=True,
               help="Allow crossing junction boundaries")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
@@ -1351,16 +1351,16 @@ def track(app, elements, deps, except_, cross_junctions):
 #                        Checkout Command                        #
 ##################################################################
 @cli.command(short_help="COMMAND OBSOLETE - Checkout a built artifact", hidden=True)
-@click.option('--force', '-f', default=False, is_flag=True,
+@click.option('--force', '-f', is_flag=True,
               help="Allow files to be overwritten")
 @click.option('--deps', '-d', default='run', show_default=True,
               type=click.Choice(['run', 'build', 'none']),
               help='The dependencies to checkout')
-@click.option('--integrate/--no-integrate', default=True, is_flag=True,
-              help="Whether to run integration commands")
-@click.option('--hardlinks', default=False, is_flag=True,
+@click.option('--integrate/--no-integrate', default=True,
+              help="Run integration commands (default is to run commands)")
+@click.option('--hardlinks', is_flag=True,
               help="Checkout hardlinks instead of copies (handle with care)")
-@click.option('--tar', default=False, is_flag=True,
+@click.option('--tar', is_flag=True,
               help="Create a tarball from the artifact contents instead "
                    "of a file tree. If LOCATION is '-', the tarball "
                    "will be dumped to the standard output.")
