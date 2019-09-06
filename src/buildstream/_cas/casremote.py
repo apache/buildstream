@@ -291,8 +291,8 @@ class _CASBatchRead():
                 if missing_blobs is None:
                     raise BlobNotFound(response.digest.hash, "Failed to download blob {}: {}".format(
                         response.digest.hash, response.status.code))
-                else:
-                    missing_blobs.append(response.digest)
+
+                missing_blobs.append(response.digest)
 
             if response.status.code != code_pb2.OK:
                 raise CASRemoteError("Failed to download blob {}: {}".format(

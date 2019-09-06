@@ -217,8 +217,8 @@ class Stream():
                     message = "Buildtree is not cached locally or in available remotes"
                     if usebuildtree == "always":
                         raise StreamError(message)
-                    else:
-                        self._message(MessageType.INFO, message + ", shell will be loaded without it")
+
+                    self._message(MessageType.INFO, message + ", shell will be loaded without it")
             else:
                 buildtree = True
 
@@ -481,9 +481,9 @@ class Stream():
                 msg = "{} is not cached".format(element.name)
                 if self._context.sched_error_action != _SchedulerErrorAction.CONTINUE:
                     raise StreamError("Push failed: " + msg)
-                else:
-                    self._message(MessageType.WARN, msg)
-                    uncached_elements.append(element)
+
+                self._message(MessageType.WARN, msg)
+                uncached_elements.append(element)
 
         if cached_elements:
             self._scheduler.clear_queues()
@@ -1356,7 +1356,7 @@ class Stream():
 
         if status == SchedStatus.ERROR:
             raise StreamError()
-        elif status == SchedStatus.TERMINATED:
+        if status == SchedStatus.TERMINATED:
             raise StreamError(terminated=True)
 
     # _fetch()

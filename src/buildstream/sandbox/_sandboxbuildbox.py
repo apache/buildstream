@@ -38,8 +38,8 @@ class SandboxBuildBox(Sandbox):
     def __init__(self, context, project, directory, **kwargs):
         if kwargs.get('allow_real_directory'):
             raise SandboxError("BuildBox does not support real directories")
-        else:
-            kwargs['allow_real_directory'] = False
+
+        kwargs['allow_real_directory'] = False
         super().__init__(context, project, directory, **kwargs)
 
     @classmethod
@@ -61,7 +61,7 @@ class SandboxBuildBox(Sandbox):
         # Check host os and architecture match
         if config.build_os != platform.get_host_os():
             raise SandboxError("Configured and host OS don't match.")
-        elif config.build_arch != platform.get_host_arch():
+        if config.build_arch != platform.get_host_arch():
             raise SandboxError("Configured and host architecture don't match.")
 
         return True
