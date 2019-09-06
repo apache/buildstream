@@ -66,8 +66,8 @@ def test_source_checkout_force(datafiles, cli, force_flag):
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'checkout-deps.bst'
 
+    # Make the checkout directory with 'some-thing' inside it
     os.makedirs(os.path.join(checkout, 'some-thing'))
-    # Path(os.path.join(checkout, 'some-file')).touch()
 
     result = cli.run(project=project, args=['source', 'checkout', force_flag, target, '--deps', 'none', checkout])
     result.assert_success()
