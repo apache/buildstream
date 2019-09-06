@@ -54,9 +54,10 @@ _MAX_PAYLOAD_BYTES = 1024 * 1024
 # Args:
 #     repo (str): Path to CAS repository
 #     enable_push (bool): Whether to allow blob uploads and artifact updates
+#     index_only (bool): Whether to store CAS blobs or only artifacts
 #
 @contextmanager
-def create_server(repo, *, enable_push, quota):
+def create_server(repo, *, enable_push, quota, index_only):
     cas = CASCache(os.path.abspath(repo), cache_quota=quota, protect_session_blobs=False)
 
     try:
@@ -67,11 +68,12 @@ def create_server(repo, *, enable_push, quota):
         max_workers = (os.cpu_count() or 1) * 5
         server = grpc.server(futures.ThreadPoolExecutor(max_workers))
 
-        bytestream_pb2_grpc.add_ByteStreamServicer_to_server(
-            _ByteStreamServicer(cas, enable_push=enable_push), server)
+        if not index_only:
+            bytestream_pb2_grpc.add_ByteStreamServicer_to_server(
+                _ByteStreamServicer(cas, enable_push=enable_push), server)
 
-        remote_execution_pb2_grpc.add_ContentAddressableStorageServicer_to_server(
-            _ContentAddressableStorageServicer(cas, enable_push=enable_push), server)
+            remote_execution_pb2_grpc.add_ContentAddressableStorageServicer_to_server(
+                _ContentAddressableStorageServicer(cas, enable_push=enable_push), server)
 
         remote_execution_pb2_grpc.add_CapabilitiesServicer_to_server(
             _CapabilitiesServicer(), server)
@@ -80,7 +82,7 @@ def create_server(repo, *, enable_push, quota):
             _ReferenceStorageServicer(cas, enable_push=enable_push), server)
 
         artifact_pb2_grpc.add_ArtifactServiceServicer_to_server(
-            _ArtifactServicer(cas, artifactdir), server)
+            _ArtifactServicer(cas, artifactdir, update_cas=not index_only), server)
 
         source_pb2_grpc.add_SourceServiceServicer_to_server(
             _SourceServicer(sourcedir), server)
@@ -110,9 +112,12 @@ def create_server(repo, *, enable_push, quota):
 @click.option('--quota', type=click.INT,
               help="Maximum disk usage in bytes",
               default=10e9)
+@click.option('--index-only', type=click.BOOL,
+              help="Only provide the BuildStream artifact and source services (\"index\"), not the CAS (\"storage\")",
+              default=False)
 @click.argument('repo')
 def server_main(repo, port, server_key, server_cert, client_certs, enable_push,
-                quota):
+                quota, index_only):
     # Handle SIGTERM by calling sys.exit(0), which will raise a SystemExit exception,
     # properly executing cleanup code in `finally` clauses and context managers.
     # This is required to terminate buildbox-casd on SIGTERM.
@@ -120,7 +125,8 @@ def server_main(repo, port, server_key, server_cert, client_certs, enable_push,
 
     with create_server(repo,
                        quota=quota,
-                       enable_push=enable_push) as server:
+                       enable_push=enable_push,
+                       index_only=index_only) as server:
 
         use_tls = bool(server_key)
 
@@ -434,10 +440,11 @@ class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
 
 class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
 
-    def __init__(self, cas, artifactdir):
+    def __init__(self, cas, artifactdir, *, update_cas=True):
         super().__init__()
         self.cas = cas
         self.artifactdir = artifactdir
+        self.update_cas = update_cas
         os.makedirs(artifactdir, exist_ok=True)
 
     def GetArtifact(self, request, context):
@@ -448,6 +455,20 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
         artifact = artifact_pb2.Artifact()
         with open(artifact_path, 'rb') as f:
             artifact.ParseFromString(f.read())
+
+        # Artifact-only servers will not have blobs on their system,
+        # so we can't reasonably update their mtimes. Instead, we exit
+        # early, and let the CAS server deal with its blobs.
+        #
+        # FIXME: We could try to run FindMissingBlobs on the other
+        #        server. This is tricky to do from here, of course,
+        #        because we don't know who the other server is, but
+        #        the client could be smart about it - but this might
+        #        make things slower.
+        #
+        #        It needs some more thought...
+        if not self.update_cas:
+            return artifact
 
         # Now update mtimes of files present.
         try:
@@ -481,16 +502,17 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
     def UpdateArtifact(self, request, context):
         artifact = request.artifact
 
-        # Check that the files specified are in the CAS
-        self._check_directory("files", artifact.files, context)
+        if self.update_cas:
+            # Check that the files specified are in the CAS
+            self._check_directory("files", artifact.files, context)
 
-        # Unset protocol buffers don't evaluated to False but do return empty
-        # strings, hence str()
-        if str(artifact.public_data):
-            self._check_file("public data", artifact.public_data, context)
+            # Unset protocol buffers don't evaluated to False but do return empty
+            # strings, hence str()
+            if str(artifact.public_data):
+                self._check_file("public data", artifact.public_data, context)
 
-        for log_file in artifact.logs:
-            self._check_file("log digest", log_file.digest, context)
+            for log_file in artifact.logs:
+                self._check_file("log digest", log_file.digest, context)
 
         # Add the artifact proto to the cas
         artifact_path = os.path.join(self.artifactdir, request.cache_key)

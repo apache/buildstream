@@ -23,7 +23,7 @@
 #           William Salmon <will.salmon@codethink.co.uk>
 #
 
-from .artifactshare import create_artifact_share, assert_shared, assert_not_shared
+from .artifactshare import create_artifact_share, create_split_share, assert_shared, assert_not_shared
 from .context import dummy_context
 from .element_generators import create_element_size, update_element_size
 from .junction import generate_junction

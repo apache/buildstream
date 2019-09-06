@@ -66,7 +66,7 @@ def test_pull(cli, tmpdir, datafiles):
         # Assert that we are now cached locally
         assert cli.get_element_state(project_dir, 'target.bst') == 'cached'
         # Assert that we shared/pushed the cached artifact
-        assert share.has_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst'))
+        assert share.get_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst'))
 
         # Delete the artifact locally
         cli.remove_artifact_from_cache(project_dir, 'target.bst')
@@ -138,7 +138,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         # Assert that we are now cached locally
         assert cli.get_element_state(project_dir, 'target.bst') == 'cached'
         # Assert that we shared/pushed the cached artifact
-        assert share.has_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst'))
+        assert share.get_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst'))
 
         with dummy_context(config=user_config_file) as context:
             # Load the project and CAS cache

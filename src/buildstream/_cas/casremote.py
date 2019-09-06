@@ -1,9 +1,3 @@
-from collections import namedtuple
-import os
-import multiprocessing
-import signal
-from urllib.parse import urlparse
-
 import grpc
 
 from .._protos.google.rpc import code_pb2
@@ -11,59 +5,12 @@ from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remo
 from .._protos.build.buildgrid import local_cas_pb2
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
 
-from .._exceptions import CASRemoteError, LoadError, LoadErrorReason
-from .. import _signals
-from .. import utils
+from .._remote import BaseRemote
+from .._exceptions import CASRemoteError
 
 # The default limit for gRPC messages is 4 MiB.
 # Limit payload to 1 MiB to leave sufficient headroom for metadata.
 _MAX_PAYLOAD_BYTES = 1024 * 1024
-
-
-class CASRemoteSpec(namedtuple('CASRemoteSpec', 'url push server_cert client_key client_cert instance_name')):
-
-    # _new_from_config_node
-    #
-    # Creates an CASRemoteSpec() from a YAML loaded node
-    #
-    @staticmethod
-    def _new_from_config_node(spec_node, basedir=None):
-        spec_node.validate_keys(['url', 'push', 'server-cert', 'client-key', 'client-cert', 'instance-name'])
-        url = spec_node.get_str('url')
-        push = spec_node.get_bool('push', default=False)
-        if not url:
-            provenance = spec_node.get_node('url').get_provenance()
-            raise LoadError("{}: empty artifact cache URL".format(provenance), LoadErrorReason.INVALID_DATA)
-
-        instance_name = spec_node.get_str('instance-name', default=None)
-
-        server_cert = spec_node.get_str('server-cert', default=None)
-        if server_cert and basedir:
-            server_cert = os.path.join(basedir, server_cert)
-
-        client_key = spec_node.get_str('client-key', default=None)
-        if client_key and basedir:
-            client_key = os.path.join(basedir, client_key)
-
-        client_cert = spec_node.get_str('client-cert', default=None)
-        if client_cert and basedir:
-            client_cert = os.path.join(basedir, client_cert)
-
-        if client_key and not client_cert:
-            provenance = spec_node.get_node('client-key').get_provenance()
-            raise LoadError("{}: 'client-key' was specified without 'client-cert'".format(provenance),
-                            LoadErrorReason.INVALID_DATA)
-
-        if client_cert and not client_key:
-            provenance = spec_node.get_node('client-cert').get_provenance()
-            raise LoadError("{}: 'client-cert' was specified without 'client-key'".format(provenance),
-                            LoadErrorReason.INVALID_DATA)
-
-        return CASRemoteSpec(url, push, server_cert, client_key, client_cert, instance_name)
-
-
-# Disable type-checking since "Callable[...] has no attributes __defaults__"
-CASRemoteSpec.__new__.__defaults__ = (None, None, None, None)   # type: ignore
 
 
 class BlobNotFound(CASRemoteError):
@@ -75,13 +22,12 @@ class BlobNotFound(CASRemoteError):
 
 # Represents a single remote CAS cache.
 #
-class CASRemote():
-    def __init__(self, spec, cascache):
-        self.spec = spec
-        self._initialized = False
+class CASRemote(BaseRemote):
+
+    def __init__(self, spec, cascache, **kwargs):
+        super().__init__(spec, **kwargs)
+
         self.cascache = cascache
-        self.channel = None
-        self.instance_name = None
         self.cas = None
         self.ref_storage = None
         self.batch_update_supported = None
@@ -90,157 +36,102 @@ class CASRemote():
         self.max_batch_total_size_bytes = None
         self.local_cas_instance_name = None
 
-    def init(self):
-        if not self._initialized:
-            server_cert_bytes = None
-            client_key_bytes = None
-            client_cert_bytes = None
-
-            url = urlparse(self.spec.url)
-            if url.scheme == 'http':
-                port = url.port or 80
-                self.channel = grpc.insecure_channel('{}:{}'.format(url.hostname, port))
-            elif url.scheme == 'https':
-                port = url.port or 443
-
-                if self.spec.server_cert:
-                    with open(self.spec.server_cert, 'rb') as f:
-                        server_cert_bytes = f.read()
-
-                if self.spec.client_key:
-                    with open(self.spec.client_key, 'rb') as f:
-                        client_key_bytes = f.read()
-
-                if self.spec.client_cert:
-                    with open(self.spec.client_cert, 'rb') as f:
-                        client_cert_bytes = f.read()
-
-                credentials = grpc.ssl_channel_credentials(root_certificates=server_cert_bytes,
-                                                           private_key=client_key_bytes,
-                                                           certificate_chain=client_cert_bytes)
-                self.channel = grpc.secure_channel('{}:{}'.format(url.hostname, port), credentials)
-            else:
-                raise CASRemoteError("Unsupported URL: {}".format(self.spec.url))
-
-            self.instance_name = self.spec.instance_name or None
-
-            self.cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self.channel)
-            self.capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self.channel)
-            self.ref_storage = buildstream_pb2_grpc.ReferenceStorageStub(self.channel)
-
-            self.max_batch_total_size_bytes = _MAX_PAYLOAD_BYTES
-            try:
-                request = remote_execution_pb2.GetCapabilitiesRequest()
-                if self.instance_name:
-                    request.instance_name = self.instance_name
-                response = self.capabilities.GetCapabilities(request)
-                server_max_batch_total_size_bytes = response.cache_capabilities.max_batch_total_size_bytes
-                if 0 < server_max_batch_total_size_bytes < self.max_batch_total_size_bytes:
-                    self.max_batch_total_size_bytes = server_max_batch_total_size_bytes
-            except grpc.RpcError as e:
-                # Simply use the defaults for servers that don't implement GetCapabilities()
-                if e.code() != grpc.StatusCode.UNIMPLEMENTED:
-                    raise
-
-            # Check whether the server supports BatchReadBlobs()
-            self.batch_read_supported = False
-            try:
-                request = remote_execution_pb2.BatchReadBlobsRequest()
-                if self.instance_name:
-                    request.instance_name = self.instance_name
-                response = self.cas.BatchReadBlobs(request)
-                self.batch_read_supported = True
-            except grpc.RpcError as e:
-                if e.code() != grpc.StatusCode.UNIMPLEMENTED:
-                    raise
-
-            # Check whether the server supports BatchUpdateBlobs()
-            self.batch_update_supported = False
-            try:
-                request = remote_execution_pb2.BatchUpdateBlobsRequest()
-                if self.instance_name:
-                    request.instance_name = self.instance_name
-                response = self.cas.BatchUpdateBlobs(request)
-                self.batch_update_supported = True
-            except grpc.RpcError as e:
-                if (e.code() != grpc.StatusCode.UNIMPLEMENTED and
-                        e.code() != grpc.StatusCode.PERMISSION_DENIED):
-                    raise
-
-            local_cas = self.cascache._get_local_cas()
-            request = local_cas_pb2.GetInstanceNameForRemoteRequest()
-            request.url = self.spec.url
-            if self.spec.instance_name:
-                request.instance_name = self.spec.instance_name
-            if server_cert_bytes:
-                request.server_cert = server_cert_bytes
-            if client_key_bytes:
-                request.client_key = client_key_bytes
-            if client_cert_bytes:
-                request.client_cert = client_cert_bytes
-            response = local_cas.GetInstanceNameForRemote(request)
-            self.local_cas_instance_name = response.instance_name
-
-            self._initialized = True
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
-        return False
-
-    def close(self):
-        if self.channel:
-            self.channel.close()
-            self.channel = None
-
     # check_remote
+    # _configure_protocols():
     #
-    # Used when checking whether remote_specs work in the buildstream main
-    # thread, runs this in a seperate process to avoid creation of gRPC threads
-    # in the main BuildStream process
-    # See https://github.com/grpc/grpc/blob/master/doc/fork_support.md for details
-    @classmethod
-    def check_remote(cls, remote_spec, cascache, q):
+    # Configure remote-specific protocols. This method should *never*
+    # be called outside of init().
+    #
+    def _configure_protocols(self):
+        self.cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self.channel)
+        self.capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self.channel)
+        self.ref_storage = buildstream_pb2_grpc.ReferenceStorageStub(self.channel)
 
-        def __check_remote():
-            try:
-                remote = cls(remote_spec, cascache)
-                remote.init()
-
-                request = buildstream_pb2.StatusRequest()
-                response = remote.ref_storage.Status(request)
-
-                if remote_spec.push and not response.allow_updates:
-                    q.put('CAS server does not allow push')
-                else:
-                    # No error
-                    q.put(None)
-
-            except grpc.RpcError as e:
-                # str(e) is too verbose for errors reported to the user
-                q.put(e.details())
-
-            except Exception as e:               # pylint: disable=broad-except
-                # Whatever happens, we need to return it to the calling process
-                #
-                q.put(str(e))
-
-        p = multiprocessing.Process(target=__check_remote)
-
+        # Figure out what batch sizes the server will accept, falling
+        # back to our _MAX_PAYLOAD_BYTES
+        self.max_batch_total_size_bytes = _MAX_PAYLOAD_BYTES
         try:
-            # Keep SIGINT blocked in the child process
-            with _signals.blocked([signal.SIGINT], ignore=False):
-                p.start()
+            request = remote_execution_pb2.GetCapabilitiesRequest()
+            if self.instance_name:
+                request.instance_name = self.instance_name
+            response = self.capabilities.GetCapabilities(request)
+            server_max_batch_total_size_bytes = response.cache_capabilities.max_batch_total_size_bytes
+            if 0 < server_max_batch_total_size_bytes < self.max_batch_total_size_bytes:
+                self.max_batch_total_size_bytes = server_max_batch_total_size_bytes
+        except grpc.RpcError as e:
+            # Simply use the defaults for servers that don't implement
+            # GetCapabilities()
+            if e.code() != grpc.StatusCode.UNIMPLEMENTED:
+                raise
 
-            error = q.get()
-            p.join()
-        except KeyboardInterrupt:
-            utils._kill_process_tree(p.pid)
-            raise
+        # Check whether the server supports BatchReadBlobs()
+        self.batch_read_supported = self._check_support(
+            remote_execution_pb2.BatchReadBlobsRequest,
+            self.cas.BatchReadBlobs
+        )
 
-        return error
+        # Check whether the server supports BatchUpdateBlobs()
+        self.batch_update_supported = self._check_support(
+            remote_execution_pb2.BatchUpdateBlobsRequest,
+            self.cas.BatchUpdateBlobs
+        )
+
+        local_cas = self.cascache._get_local_cas()
+        request = local_cas_pb2.GetInstanceNameForRemoteRequest()
+        request.url = self.spec.url
+        if self.spec.instance_name:
+            request.instance_name = self.spec.instance_name
+        if self.server_cert:
+            request.server_cert = self.server_cert
+        if self.client_key:
+            request.client_key = self.client_key
+        if self.client_cert:
+            request.client_cert = self.client_cert
+        response = local_cas.GetInstanceNameForRemote(request)
+        self.local_cas_instance_name = response.instance_name
+
+    # _check():
+    #
+    # Check if this remote provides everything required for the
+    # particular kind of remote. This is expected to be called as part
+    # of check(), and must be called in a non-main process.
+    #
+    # Returns:
+    #    (str|None): An error message, or None if no error message.
+    #
+    def _check(self):
+        request = buildstream_pb2.StatusRequest()
+        response = self.ref_storage.Status(request)
+
+        if self.spec.push and not response.allow_updates:
+            return 'CAS server does not allow push'
+
+        return None
+
+    # _check_support():
+    #
+    # Figure out if a remote server supports a given method based on
+    # grpc.StatusCode.UNIMPLEMENTED and grpc.StatusCode.PERMISSION_DENIED.
+    #
+    # Args:
+    #    request_type (callable): The type of request to check.
+    #    invoker (callable): The remote method that will be invoked.
+    #
+    # Returns:
+    #    (bool) - Whether the request is supported.
+    #
+    def _check_support(self, request_type, invoker):
+        try:
+            request = request_type()
+            if self.instance_name:
+                request.instance_name = self.instance_name
+            invoker(request)
+            return True
+        except grpc.RpcError as e:
+            if not e.code() in (grpc.StatusCode.UNIMPLEMENTED, grpc.StatusCode.PERMISSION_DENIED):
+                raise
+
+        return False
 
     # push_message():
     #

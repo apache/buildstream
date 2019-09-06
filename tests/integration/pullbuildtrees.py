@@ -56,7 +56,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         result = cli2.run(project=project, args=['build', element_name])
         assert result.exit_code == 0
         assert cli2.get_element_state(project, element_name) == 'cached'
-        assert share1.has_artifact(cli2.get_artifact_name(project, 'test', element_name))
+        assert share1.get_artifact(cli2.get_artifact_name(project, 'test', element_name))
         default_state(cli2, tmpdir, share1)
 
         # Pull artifact with default config, assert that pulling again
@@ -116,7 +116,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         cli2.configure({'artifacts': {'url': share2.repo, 'push': True}})
         result = cli2.run(project=project, args=['artifact', 'push', element_name])
         assert element_name not in result.get_pushed_elements()
-        assert not share2.has_artifact(cli2.get_artifact_name(project, 'test', element_name))
+        assert not share2.get_artifact(cli2.get_artifact_name(project, 'test', element_name))
 
         # Assert that after pulling the missing buildtree the element artifact can be
         # successfully pushed to the remote. This will attempt to pull the buildtree
@@ -127,7 +127,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         cli2.configure({'artifacts': {'url': share2.repo, 'push': True}})
         result = cli2.run(project=project, args=['artifact', 'push', element_name])
         assert element_name in result.get_pushed_elements()
-        assert share2.has_artifact(cli2.get_artifact_name(project, 'test', element_name))
+        assert share2.get_artifact(cli2.get_artifact_name(project, 'test', element_name))
         default_state(cli2, tmpdir, share1)
 
         # Assert that bst artifact push will automatically attempt to pull a missing buildtree
@@ -143,7 +143,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         with cli2.artifact.extract_buildtree(cwd, cwd, artifact_name) as buildtreedir:
             assert not buildtreedir
         assert element_name not in result.get_pushed_elements()
-        assert not share3.has_artifact(cli2.get_artifact_name(project, 'test', element_name))
+        assert not share3.get_artifact(cli2.get_artifact_name(project, 'test', element_name))
 
         # Assert that if we add an extra remote that has the buildtree artfact cached, bst artifact push will
         # automatically attempt to pull it and will be successful, leading to the full artifact being pushed
@@ -156,7 +156,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         with cli2.artifact.extract_buildtree(cwd, cwd, artifact_name) as buildtreedir:
             assert os.path.isdir(buildtreedir)
         assert element_name in result.get_pushed_elements()
-        assert share3.has_artifact(cli2.get_artifact_name(project, 'test', element_name))
+        assert share3.get_artifact(cli2.get_artifact_name(project, 'test', element_name))
 
 
 # Ensure that only valid pull-buildtrees boolean options make it through the loading

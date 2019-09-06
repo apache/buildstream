@@ -159,6 +159,22 @@ Instance with push and requiring client authentication:
 
     bst-artifact-server --port 11002 --server-key server.key --server-cert server.crt --client-certs authorized.crt --enable-push /home/artifacts/artifacts
 
+.. note::
+
+   BuildStream's artifact cache is an extension of `Google's Remote
+   Execution CAS server
+   <https://github.com/bazelbuild/remote-apis/>`_.
+
+   Sometimes, when using Remote Execution, it is useful to run
+   BuildStream with just a basic CAS server, without using the
+   artifact extensions, but BuildStream still needs to store these to
+   work correctly.
+
+   For this scenario, you can add the `--index-only` flag to the above
+   commands, and configure BuildStream to store artifact metadata and
+   files in a separate caches (e.g. bst-artifact-server and Buildbarn)
+   using :ref:`"types" <project_essentials_split_artifacts>`.
+
 Managing the cache with systemd
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

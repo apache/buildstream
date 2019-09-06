@@ -96,6 +96,7 @@ class ErrorDomain(Enum):
     VIRTUAL_FS = 13
     CAS = 14
     PROG_NOT_FOUND = 15
+    REMOTE = 16
 
 
 # BstError is an internal base exception class for BuildStream
@@ -288,6 +289,15 @@ class SourceCacheError(BstError):
 class ArtifactError(BstError):
     def __init__(self, message, *, detail=None, reason=None, temporary=False):
         super().__init__(message, detail=detail, domain=ErrorDomain.ARTIFACT, reason=reason, temporary=True)
+
+
+# RemoteError
+#
+# Raised when errors are encountered in Remotes
+#
+class RemoteError(BstError):
+    def __init__(self, message, *, detail=None, reason=None):
+        super().__init__(message, detail=detail, domain=ErrorDomain.REMOTE, reason=reason)
 
 
 # CASError

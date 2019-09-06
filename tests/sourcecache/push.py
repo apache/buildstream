@@ -21,6 +21,8 @@
 # pylint: disable=redefined-outer-name
 import os
 import shutil
+from contextlib import contextmanager, ExitStack
+
 import pytest
 
 from buildstream._exceptions import ErrorDomain
@@ -36,6 +38,82 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
 def message_handler(message, is_silenced):
     pass
+
+
+# Args:
+#    tmpdir: A temporary directory to use as root.
+#    directories: Directory names to use as cache directories.
+#
+@contextmanager
+def _configure_caches(tmpdir, *directories):
+    with ExitStack() as stack:
+        def create_share(directory):
+            return create_artifact_share(os.path.join(str(tmpdir), directory))
+
+        yield (stack.enter_context(create_share(remote)) for remote in directories)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_push_split(cli, tmpdir, datafiles):
+    cache_dir = os.path.join(str(tmpdir), 'cache')
+    project_dir = str(datafiles)
+
+    with _configure_caches(tmpdir, 'indexshare', 'storageshare') as (index, storage):
+        user_config_file = str(tmpdir.join('buildstream.conf'))
+        user_config = {
+            'scheduler': {
+                'pushers': 1
+            },
+            'source-caches': [{
+                'url': index.repo,
+                'push': True,
+                'type': 'index'
+            }, {
+                'url': storage.repo,
+                'push': True,
+                'type': 'storage'
+            }],
+            'cachedir': cache_dir
+        }
+        _yaml.roundtrip_dump(user_config, file=user_config_file)
+        cli.configure(user_config)
+
+        repo = create_repo('git', str(tmpdir))
+        ref = repo.create(os.path.join(project_dir, 'files'))
+        element_path = os.path.join(project_dir, 'elements')
+        element_name = 'push.bst'
+        element = {
+            'kind': 'import',
+            'sources': [repo.source_config(ref=ref)]
+        }
+        _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
+
+        # get the source object
+        with dummy_context(config=user_config_file) as context:
+            project = Project(project_dir, context)
+            project.ensure_fully_loaded()
+
+            element = project.load_elements(['push.bst'])[0]
+            assert not element._source_cached()
+            source = list(element.sources())[0]
+
+            # check we don't have it in the current cache
+            cas = context.get_cascache()
+            assert not cas.contains(source._get_source_name())
+
+            # build the element, this should fetch and then push the source to the
+            # remote
+            res = cli.run(project=project_dir, args=['build', 'push.bst'])
+            res.assert_success()
+            assert "Pushed source" in res.stderr
+
+            # check that we've got the remote locally now
+            sourcecache = context.sourcecache
+            assert sourcecache.contains(source)
+
+            # check that the remote CAS now has it
+            digest = sourcecache.export(source)._get_digest()
+            assert storage.has_object(digest)
 
 
 @pytest.mark.datafiles(DATA_DIR)
