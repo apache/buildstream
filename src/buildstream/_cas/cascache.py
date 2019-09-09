@@ -511,16 +511,25 @@ class CASCache():
     # Returns: List of missing Digest objects
     #
     def remote_missing_blobs(self, remote, blobs):
+        cas = self._get_cas()
+        instance_name = remote.local_cas_instance_name
+
         missing_blobs = dict()
         # Limit size of FindMissingBlobs request
         for required_blobs_group in _grouper(iter(blobs), 512):
-            request = remote_execution_pb2.FindMissingBlobsRequest(instance_name=remote.spec.instance_name)
+            request = remote_execution_pb2.FindMissingBlobsRequest(instance_name=instance_name)
 
             for required_digest in required_blobs_group:
                 d = request.blob_digests.add()
                 d.CopyFrom(required_digest)
 
-            response = remote.cas.FindMissingBlobs(request)
+            try:
+                response = cas.FindMissingBlobs(request)
+            except grpc.RpcError as e:
+                if e.code() == grpc.StatusCode.INVALID_ARGUMENT and e.details().startswith("Invalid instance name"):
+                    raise CASCacheError("Unsupported buildbox-casd version: FindMissingBlobs failed") from e
+                raise
+
             for missing_digest in response.missing_blob_digests:
                 d = remote_execution_pb2.Digest()
                 d.CopyFrom(missing_digest)
