@@ -739,8 +739,11 @@ class Stream():
     # Args:
     #    target (str): The target element whose sources to checkout
     #    location (str): Location to checkout the sources to
+    #    force (bool): Whether to overwrite existing directories/tarfiles
     #    deps (str): The dependencies to checkout
-    #    except_targets (list): List of targets to except from staging
+    #    except_targets ([str]): List of targets to except from staging
+    #    tar (bool): Whether to write a tarfile holding the checkout contents
+    #    include_build_scripts (bool): Whether to include build scripts in the checkout
     #
     def source_checkout(self, target, *,
                         location=None,
