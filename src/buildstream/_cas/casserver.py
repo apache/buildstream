@@ -107,14 +107,12 @@ def create_server(repo, *, enable_push, quota, index_only):
 @click.option('--server-key', help="Private server key for TLS (PEM-encoded)")
 @click.option('--server-cert', help="Public server certificate for TLS (PEM-encoded)")
 @click.option('--client-certs', help="Public client certificates for TLS (PEM-encoded)")
-@click.option('--enable-push', default=False, is_flag=True,
+@click.option('--enable-push', is_flag=True,
               help="Allow clients to upload blobs and update artifact cache")
-@click.option('--quota', type=click.INT,
-              help="Maximum disk usage in bytes",
-              default=10e9)
-@click.option('--index-only', type=click.BOOL,
-              help="Only provide the BuildStream artifact and source services (\"index\"), not the CAS (\"storage\")",
-              default=False)
+@click.option('--quota', type=click.INT, default=10e9, show_default=True,
+              help="Maximum disk usage in bytes")
+@click.option('--index-only', is_flag=True,
+              help="Only provide the BuildStream artifact and source services (\"index\"), not the CAS (\"storage\")")
 @click.argument('repo')
 def server_main(repo, port, server_key, server_cert, client_certs, enable_push,
                 quota, index_only):
