@@ -811,6 +811,9 @@ def source_track(app, elements, deps, except_, cross_junctions):
               type=click.Path(),
               help="Create a tarball containing the sources instead "
                    "of a file tree.")
+@click.option('--compression', default=None,
+              type=click.Choice(['gz', 'xz', 'bz2']),
+              help="The compression option of the tarball created.")
 @click.option('--include-build-scripts', 'build_scripts', is_flag=True)
 @click.option('--directory', default='source-checkout',
               type=click.Path(file_okay=False),
@@ -818,7 +821,7 @@ def source_track(app, elements, deps, except_, cross_junctions):
 @click.argument('element', required=False, type=click.Path(readable=False))
 @click.pass_obj
 def source_checkout(app, element, directory, force, deps, except_,
-                    tar, build_scripts):
+                    tar, compression, build_scripts):
     """Checkout sources of an element to the specified location
 
     When this command is executed from a workspace directory, the default
@@ -827,6 +830,10 @@ def source_checkout(app, element, directory, force, deps, except_,
 
     if tar and directory != "source-checkout":
         click.echo("ERROR: options --directory and --tar conflict", err=True)
+        sys.exit(-1)
+
+    if compression and not tar:
+        click.echo("ERROR: --compression specified without --tar", err=True)
         sys.exit(-1)
 
     # Set the location depending on whether --tar/--directory were specified
@@ -845,6 +852,7 @@ def source_checkout(app, element, directory, force, deps, except_,
                                    deps=deps,
                                    except_targets=except_,
                                    tar=bool(tar),
+                                   compression=compression,
                                    include_build_scripts=build_scripts)
 
 

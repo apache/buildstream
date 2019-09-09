@@ -741,6 +741,7 @@ class Stream():
     #    deps (str): The dependencies to checkout
     #    except_targets ([str]): List of targets to except from staging
     #    tar (bool): Whether to write a tarfile holding the checkout contents
+    #    compression (str): The type of compression for tarball
     #    include_build_scripts (bool): Whether to include build scripts in the checkout
     #
     def source_checkout(self, target, *,
@@ -749,6 +750,7 @@ class Stream():
                         deps='none',
                         except_targets=(),
                         tar=False,
+                        compression=None,
                         include_build_scripts=False):
 
         self._check_location_writable(location, force=force, tar=tar)
@@ -764,7 +766,7 @@ class Stream():
         # Stage all sources determined by scope
         try:
             self._source_checkout(elements, location, force, deps,
-                                  tar, include_build_scripts)
+                                  tar, compression, include_build_scripts)
         except BstError as e:
             raise StreamError("Error while writing sources"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
@@ -1469,6 +1471,7 @@ class Stream():
                          force=False,
                          deps='none',
                          tar=False,
+                         compression=None,
                          include_build_scripts=False):
         location = os.path.abspath(location)
 
@@ -1481,7 +1484,7 @@ class Stream():
             if include_build_scripts:
                 self._write_build_scripts(temp_source_dir.name, elements)
             if tar:
-                self._create_tarball(temp_source_dir.name, location)
+                self._create_tarball(temp_source_dir.name, location, compression)
             else:
                 self._move_directory(temp_source_dir.name, location, force)
         except OSError as e:
@@ -1526,16 +1529,17 @@ class Stream():
                 element._stage_sources_at(element_source_dir, mount_workspaces=False)
 
     # Create a tarball from the content of directory
-    def _create_tarball(self, directory, tar_name):
+    def _create_tarball(self, directory, tar_name, compression):
+        if compression is None:
+            compression = ''
+        mode = _handle_compression(compression)
         try:
             with utils.save_file_atomic(tar_name, mode='wb') as f:
-                # This TarFile does not need to be explicitly closed
-                # as the underlying file object will be closed be the
-                # save_file_atomic contect manager
-                tarball = tarfile.open(fileobj=f, mode='w')
+                tarball = tarfile.open(fileobj=f, mode=mode)
                 for item in os.listdir(str(directory)):
                     file_to_add = os.path.join(directory, item)
                     tarball.add(file_to_add, arcname=item)
+                tarball.close()
         except OSError as e:
             raise StreamError("Failed to create tar archive: {}".format(e)) from e
 
