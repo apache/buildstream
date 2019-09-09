@@ -588,6 +588,6 @@ class _StatusJob():
 
         # Add padding before terminating ']'
         terminator = (' ' * padding) + ']'
-        text += terminator
+        text += self._format_profile.fmt(terminator)
 
         return text
