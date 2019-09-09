@@ -572,6 +572,18 @@ class Stream():
             raise StreamError("Error while staging dependencies into a sandbox"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
 
+    # _export_artifact()
+    #
+    # Export the files of the artifact/a tarball to a virtual directory
+    #
+    # Args:
+    #    tar (bool): Whether we want to create a tarfile
+    #    location (str): The name of the directory/the tarfile we want to export to/create
+    #    compression (str): The type of compression for the tarball
+    #    target (Element/ArtifactElement): The Element/ArtifactElement we want to checkout
+    #    hardlinks (bool): Whether to checkout hardlinks instead of copying
+    #    virdir (Directory): The sandbox's root directory as a virtual directory
+    #
     def _export_artifact(self, tar, location, compression, target, hardlinks, virdir):
         if not tar:
             with target.timed_activity("Checking out files in '{}'"
