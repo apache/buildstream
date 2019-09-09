@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2018 Codethink Limited
+#  Copyright (C) 2018-2019 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -88,6 +89,7 @@ class CASCache():
             self._casd_process = None
 
         self._casd_channel = None
+        self._casd_cas = None
         self._local_cas = None
         self._cache_usage_monitor = None
 
@@ -101,11 +103,12 @@ class CASCache():
 
         return state
 
-    def _get_local_cas(self):
+    def _init_casd(self):
         assert self._casd_process, "CASCache was instantiated without buildbox-casd"
 
-        if not self._local_cas:
+        if not self._casd_channel:
             self._casd_channel = grpc.insecure_channel('unix:' + self._casd_socket_path)
+            self._casd_cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self._casd_channel)
             self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
 
             # Call GetCapabilities() to establish connection to casd
@@ -124,6 +127,22 @@ class CASCache():
 
                     raise
 
+    # _get_cas():
+    #
+    # Return ContentAddressableStorage stub for buildbox-casd channel.
+    #
+    def _get_cas(self):
+        if not self._casd_cas:
+            self._init_casd()
+        return self._casd_cas
+
+    # _get_local_cas():
+    #
+    # Return LocalCAS stub for buildbox-casd channel.
+    #
+    def _get_local_cas(self):
+        if not self._local_cas:
+            self._init_casd()
         return self._local_cas
 
     # preflight():
