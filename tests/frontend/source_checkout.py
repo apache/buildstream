@@ -100,6 +100,24 @@ def test_source_checkout_tar(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("compression", [("gz"), ("xz"), ("bz2")])
+def test_source_checkout_compressed_tar(datafiles, cli, compression):
+    project = str(datafiles)
+    tarfile_name = "source-checkout.tar" + compression
+    tar = os.path.join(cli.directory, tarfile_name)
+    target = 'checkout-deps.bst'
+
+    result = cli.run(project=project, args=['source', 'checkout',
+                                            '--tar', tar,
+                                            '--compression', compression,
+                                            '--deps', 'none',
+                                            target])
+    result.assert_success()
+    tar = tarfile.open(name=tar, mode='r:' + compression)
+    assert os.path.join('checkout-deps', 'etc', 'buildstream', 'config') in tar.getnames()
+
+
+@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize('deps', [('build'), ('none'), ('run'), ('all')])
 def test_source_checkout_deps(datafiles, cli, deps):
     project = str(datafiles)
@@ -229,3 +247,19 @@ def test_source_checkout_options_tar_and_dir_conflict(cli, tmpdir, datafiles):
 
     assert result.exit_code != 0
     assert "ERROR: options --directory and --tar conflict" in result.stderr
+
+
+# Test that the --compression option without --tar fails
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_checkout_compression_without_tar(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'source-checkout')
+    target = 'checkout-deps.bst'
+
+    result = cli.run(project=project, args=['source', 'checkout',
+                                            '--directory', checkout,
+                                            '--compression', 'xz',
+                                            target])
+
+    assert result.exit_code != 0
+    assert "ERROR: --compression specified without --tar" in result.stderr
