@@ -212,3 +212,20 @@ def test_source_checkout_tar_buildscripts(cli, tmpdir, datafiles):
     with tarfile.open(tar_file, 'r') as tf:
         for script in expected_scripts:
             assert script in tf.getnames()
+
+
+# Test that the --directory and --tar options conflict
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_checkout_options_tar_and_dir_conflict(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'source-checkout')
+    tar_file = os.path.join(str(tmpdir), 'source-checkout.tar')
+    target = 'checkout-deps.bst'
+
+    result = cli.run(project=project, args=['source', 'checkout',
+                                            '--directory', checkout,
+                                            '--tar', tar_file,
+                                            target])
+
+    assert result.exit_code != 0
+    assert "ERROR: options --directory and --tar conflict" in result.stderr
