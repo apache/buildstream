@@ -597,9 +597,10 @@ class Stream():
                     raise StreamError("Failed to checkout files: '{}'"
                                       .format(e)) from e
         else:
-            if location == '-':
-                mode = 'w|' + compression
-                with target.timed_activity("Creating tarball"):
+            to_stdout = location == '-'
+            mode = _handle_compression(compression, to_stream=to_stdout)
+            with target.timed_activity("Creating tarball"):
+                if to_stdout:
                     # Save the stdout FD to restore later
                     saved_fd = os.dup(sys.stdout.fileno())
                     try:
@@ -610,10 +611,7 @@ class Stream():
                         # No matter what, restore stdout for further use
                         os.dup2(saved_fd, sys.stdout.fileno())
                         os.close(saved_fd)
-            else:
-                mode = 'w:' + compression
-                with target.timed_activity("Creating tarball '{}'"
-                                           .format(location)):
+                else:
                     with tarfile.open(location, mode=mode) as tf:
                         virdir.export_to_tar(tf, '.')
 
@@ -1711,3 +1709,19 @@ class Stream():
         # a new use-case arises.
         #
         raise TypeError("Stream objects should not be pickled.")
+
+
+# _handle_compression()
+#
+# Return the tarfile mode str to be used when creating a tarball
+#
+# Args:
+#    compression (str): The type of compression (either 'gz', 'xz' or 'bz2')
+#    to_stdout (bool): Whether we want to open a stream for writing
+#
+# Returns:
+#    (str): The tarfile mode string
+#
+def _handle_compression(compression, *, to_stream=False):
+    mode_prefix = 'w|' if to_stream else 'w:'
+    return mode_prefix + compression
