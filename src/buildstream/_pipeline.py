@@ -432,7 +432,7 @@ class Pipeline():
             raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline")
 
         if inconsistent_workspaced:
-            detail = "Some workspaces do not exist but are not closed\n" + \
+            detail = "Some workspaces exist but are not closed\n" + \
                      "Try closing them with `bst workspace close`\n\n"
             for element in inconsistent_workspaced:
                 detail += "  " + element._get_full_name() + "\n"
