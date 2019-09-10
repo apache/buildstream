@@ -21,9 +21,11 @@
 # pylint: disable=redefined-outer-name
 
 import os
+import time
 
 import pytest
 
+from buildstream._cas import CASCache
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream.testing import cli  # pylint: disable=unused-import
 
@@ -34,6 +36,22 @@ DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "expiry"
 )
+
+
+def get_cache_usage(directory):
+    cas_cache = CASCache(directory)
+    try:
+        wait = 0.1
+        for _ in range(0, int(5 / wait)):
+            used_size = cas_cache.get_cache_usage().used_size
+            if used_size is not None:
+                return used_size
+            time.sleep(wait)
+
+        assert False, "Unable to retrieve cache usage"
+        return None
+    finally:
+        cas_cache.release_resources()
 
 
 # Ensure that the cache successfully removes an old artifact if we do
@@ -388,3 +406,18 @@ def test_cleanup_first(cli, datafiles):
     states = cli.get_element_states(project, ['target.bst', 'target2.bst'])
     assert states['target.bst'] != 'cached'
     assert states['target2.bst'] == 'cached'
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_cache_usage_monitor(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element_path = 'elements'
+
+    assert get_cache_usage(cli.directory) == 0
+
+    ELEMENT_SIZE = 1000000
+    create_element_size('target.bst', project, element_path, [], ELEMENT_SIZE)
+    res = cli.run(project=project, args=['build', 'target.bst'])
+    res.assert_success()
+
+    assert get_cache_usage(cli.directory) >= ELEMENT_SIZE
