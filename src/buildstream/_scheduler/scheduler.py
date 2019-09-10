@@ -62,6 +62,7 @@ class NotificationType(FastEnum):
     SUSPENDED = "suspended"
     RETRY = "retry"
     MESSAGE = "message"
+    TASK_ERROR = "task_error"
 
 
 # Notification()
@@ -82,7 +83,8 @@ class Notification():
                  job_status=None,
                  time=None,
                  element=None,
-                 message=None):
+                 message=None,
+                 task_error=None):
         self.notification_type = notification_type
         self.full_name = full_name
         self.job_action = job_action
@@ -90,6 +92,7 @@ class Notification():
         self.time = time
         self.element = element
         self.message = message
+        self.task_error = task_error  # Tuple of domain & reason
 
 
 # Scheduler()
@@ -314,6 +317,21 @@ class Scheduler():
     #
     def notify_messenger(self, message):
         self._notify(Notification(NotificationType.MESSAGE, message=message))
+
+    # set_last_task_error()
+    #
+    # Save the last error domain / reason reported from a child job or queue
+    # in the main process.
+    #
+    # Args:
+    #    domain (ErrorDomain): Enum for the domain from which the error occurred
+    #    reason (str): String identifier representing the reason for the error
+    #
+    def set_last_task_error(self, domain, reason):
+        task_error = domain, reason
+        notification = Notification(NotificationType.TASK_ERROR,
+                                    task_error=task_error)
+        self._notify(notification)
 
     #######################################################
     #                  Local Private Methods              #
