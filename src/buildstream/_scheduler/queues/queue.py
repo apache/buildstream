@@ -345,9 +345,8 @@ class Queue():
     # Convenience wrapper for Queue implementations to send
     # a message for the element they are processing
     def _message(self, element, message_type, brief, **kwargs):
-        context = element._get_context()
         message = Message(message_type, brief, element_name=element._get_full_name(), **kwargs)
-        context.messenger.message(message)
+        self._scheduler.notify_messenger(message)
 
     def _element_log_path(self, element):
         project = element._get_project()

@@ -28,12 +28,13 @@ import tarfile
 import tempfile
 from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
+from collections import deque
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, \
-    SourcePushQueue, BuildQueue, PullQueue, ArtifactPushQueue
+    SourcePushQueue, BuildQueue, PullQueue, ArtifactPushQueue, NotificationType, Notification, JobStatus
 from ._pipeline import Pipeline, PipelineSelection
 from ._profile import Topics, PROFILER
 from ._state import State
@@ -78,14 +79,21 @@ class Stream():
         self._project = None
         self._pipeline = None
         self._state = State(session_start)  # Owned by Stream, used by Core to set state
+        self._notification_queue = deque()
+        self._starttime = session_start  # Synchronised with Scheduler's relative start time
 
         context.messenger.set_state(self._state)
 
-        self._scheduler = Scheduler(context, session_start, self._state,
-                                    interrupt_callback=interrupt_callback,
-                                    ticker_callback=ticker_callback)
+        self._scheduler = Scheduler(context, session_start, self._state, self._notification_queue,
+                                    self._scheduler_notification_handler)
         self._first_non_track_queue = None
         self._session_start_callback = session_start_callback
+        self._ticker_callback = ticker_callback
+        self._interrupt_callback = interrupt_callback
+        self._notifier = self._scheduler._stream_notification_handler  # Assign the schedulers notification handler
+        self._scheduler_running = False
+        self._scheduler_terminated = False
+        self._scheduler_suspended = False
 
     # init()
     #
@@ -1072,7 +1080,7 @@ class Stream():
     #
     @property
     def running(self):
-        return self._scheduler.loop is not None
+        return self._scheduler_running
 
     # suspended
     #
@@ -1080,7 +1088,7 @@ class Stream():
     #
     @property
     def suspended(self):
-        return self._scheduler.suspended
+        return self._scheduler_suspended
 
     # terminated
     #
@@ -1088,7 +1096,7 @@ class Stream():
     #
     @property
     def terminated(self):
-        return self._scheduler.terminated
+        return self._scheduler_terminated
 
     # elapsed_time
     #
@@ -1096,14 +1104,15 @@ class Stream():
     #
     @property
     def elapsed_time(self):
-        return self._scheduler.elapsed_time()
+        return self._state.elapsed_time(start_time=self._starttime)
 
     # terminate()
     #
     # Terminate jobs
     #
     def terminate(self):
-        self._scheduler.terminate_jobs()
+        notification = Notification(NotificationType.TERMINATE)
+        self._notify(notification)
 
     # quit()
     #
@@ -1112,7 +1121,8 @@ class Stream():
     # of ongoing jobs
     #
     def quit(self):
-        self._scheduler.stop_queueing()
+        notification = Notification(NotificationType.QUIT)
+        self._notify(notification)
 
     # suspend()
     #
@@ -1120,8 +1130,13 @@ class Stream():
     #
     @contextmanager
     def suspend(self):
-        with self._scheduler.jobs_suspended():
-            yield
+        # Send the notification to suspend jobs
+        notification = Notification(NotificationType.SUSPEND)
+        self._notify(notification)
+        yield
+        # Unsuspend jobs on context exit
+        notification = Notification(NotificationType.UNSUSPEND)
+        self._notify(notification)
 
     #############################################################
     #                    Private Methods                        #
@@ -1323,20 +1338,11 @@ class Stream():
     #    action_name (str): The name of the action being performed
     #    unique_id (str): A unique_id to load an Element instance
     #
-    # Raises:
-    #    (StreamError): If the related queue cannot be found
-    #
     def _failure_retry(self, action_name, unique_id):
-        queue = None
-        # Attempt to resolve the required queue
-        for queue in self.queues:
-            if queue.action_name == action_name:
-                queue = queue
-        if not queue:
-            raise StreamError()
-        element = Plugin._lookup(unique_id)
-        queue._task_group.failed_tasks.remove(element._get_full_name())
-        queue.enqueue([element])
+        notification = Notification(NotificationType.RETRY,
+                                    job_action=action_name,
+                                    element=unique_id)
+        self._notify(notification)
 
     # _run()
     #
@@ -1641,6 +1647,40 @@ class Stream():
                 self._message(MessageType.WARN, "No artifacts found for globs: {}".format(', '.join(artifact_globs)))
 
         return element_targets, artifact_refs
+
+    def _scheduler_notification_handler(self):
+        # Check the queue is there
+        assert self._notification_queue
+        notification = self._notification_queue.pop()
+
+        if notification.notification_type == NotificationType.MESSAGE:
+            self._context.messenger.message(notification.message)
+        elif notification.notification_type == NotificationType.INTERRUPT:
+            self._interrupt_callback()
+        elif notification.notification_type == NotificationType.TICK:
+            self._ticker_callback()
+        elif notification.notification_type == NotificationType.JOB_START:
+            self._state.add_task(notification.job_action, notification.full_name, notification.time)
+        elif notification.notification_type == NotificationType.JOB_COMPLETE:
+            self._state.remove_task(notification.job_action, notification.full_name)
+            if notification.job_status == JobStatus.FAIL:
+                self._state.fail_task(notification.job_action, notification.full_name,
+                                      notification.element)
+        elif notification.notification_type == NotificationType.SCHED_START_TIME:
+            self._starttime = notification.time
+        elif notification.notification_type == NotificationType.RUNNING:
+            self._scheduler_running = not self._scheduler_running
+        elif notification.notification_type == NotificationType.TERMINATED:
+            self._scheduler_terminated = True
+        elif notification.notification_type == NotificationType.SUSPENDED:
+            self._scheduler_suspended = not self._scheduler_suspended
+        else:
+            raise StreamError("Unrecognised notification type received")
+
+    def _notify(self, notification):
+        # Stream to scheduler notifcations on left side
+        self._notification_queue.appendleft(notification)
+        self._notifier()
 
     def __getstate__(self):
         # The only use-cases for pickling in BuildStream at the time of writing

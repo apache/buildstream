@@ -272,7 +272,9 @@ class State():
     #                     it from other tasks with the same action name
     #                     e.g. an element's name.
     #    elapsed_offset (timedelta): (Optional) The time the task started, relative
-    #                                to buildstream's start time.
+    #                                to buildstream's start time. Note scheduler tasks
+    #                                use this as they don't report relative to wallclock time
+    #                                if the Scheduler has been suspended.
     #
     def add_task(self, action_name, full_name, elapsed_offset=None):
         task_key = (action_name, full_name)
@@ -280,7 +282,7 @@ class State():
             "Trying to add task '{}:{}' to '{}'".format(action_name, full_name, self.tasks)
 
         if not elapsed_offset:
-            elapsed_offset = datetime.datetime.now() - self._session_start
+            elapsed_offset = self.elapsed_time()
 
         task = _Task(self, action_name, full_name, elapsed_offset)
         self.tasks[task_key] = task
@@ -329,6 +331,24 @@ class State():
     def fail_task(self, action_name, full_name, element=None):
         for cb in self._task_failed_cbs:
             cb(action_name, full_name, element)
+
+    # elapsed_time()
+    #
+    # Fetches the current session elapsed time
+    #
+    # Args:
+    #    start_time(time): Optional explicit start time, relative to caller.
+    #
+    # Returns:
+    #    (timedelta): The amount of time since the start of the session,
+    #                 discounting any time spent while jobs were suspended if
+    #                 start_time given relative to the Scheduler
+    #
+    def elapsed_time(self, start_time=None):
+        time_now = datetime.datetime.now()
+        if start_time is None:
+            start_time = self._session_start or time_now
+        return time_now - start_time
 
 
 # _Task
