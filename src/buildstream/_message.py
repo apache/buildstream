@@ -61,7 +61,7 @@ class Message():
                  action_name=None,
                  elapsed=None,
                  logfile=None,
-                 sandbox=None,
+                 sandbox=False,
                  scheduler=False):
         self.message_type = message_type  # Message type
         self.message = message            # The message string
@@ -71,7 +71,7 @@ class Message():
         self.action_name = action_name    # Name of the task queue (fetch, refresh, build, etc)
         self.elapsed = elapsed            # The elapsed time, in timed messages
         self.logfile = logfile            # The log file path where commands took place
-        self.sandbox = sandbox            # The error that caused this message used a sandbox
+        self.sandbox = sandbox            # Whether the error that caused this message used a sandbox
         self.pid = os.getpid()            # The process pid
         self.scheduler = scheduler        # Whether this is a scheduler level message
         self.creation_time = datetime.datetime.now()
