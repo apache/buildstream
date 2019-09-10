@@ -30,7 +30,7 @@ from ..jobs import ElementJob, JobStatus
 from ..resources import ResourceType
 
 # BuildStream toplevel imports
-from ..._exceptions import BstError, ImplError, set_last_task_error
+from ..._exceptions import BstError, ImplError
 from ..._message import Message, MessageType
 from ...types import FastEnum
 
@@ -326,7 +326,7 @@ class Queue:
             #
             # This just allows us stronger testing capability
             #
-            set_last_task_error(e.domain, e.reason)
+            self._scheduler.set_last_task_error(e.domain, e.reason)
 
         except Exception:  # pylint: disable=broad-except
 
