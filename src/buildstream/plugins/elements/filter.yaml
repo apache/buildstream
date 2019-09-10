@@ -27,3 +27,8 @@ config:
   # the parent element.
   #
   include-orphans: False
+
+  # Whether to pass the 'integration-commands' of the
+  # parent element through the filter.
+  #
+  pass-integration: False

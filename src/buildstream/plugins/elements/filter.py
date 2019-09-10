@@ -168,7 +168,7 @@ class FilterElement(Element):
 
     def configure(self, node):
         node.validate_keys([
-            'include', 'exclude', 'include-orphans'
+            'include', 'exclude', 'include-orphans', 'pass-integration'
         ])
 
         self.include_node = node.get_sequence('include')
@@ -177,6 +177,7 @@ class FilterElement(Element):
         self.include = self.include_node.as_str_list()
         self.exclude = self.exclude_node.as_str_list()
         self.include_orphans = node.get_bool('include-orphans')
+        self.pass_integration = node.get_bool('pass-integration', False)
 
     def preflight(self):
         # Exactly one build-depend is permitted
@@ -251,6 +252,12 @@ class FilterElement(Element):
         assert len(build_deps) == 1
         output_elm = build_deps[0]._get_source_element()
         return output_elm
+
+    def integrate(self, sandbox):
+        if self.pass_integration:
+            for dep in self.dependencies(Scope.BUILD, recurse=False):
+                dep.integrate(sandbox)
+        super().integrate(sandbox)
 
 
 def setup():
