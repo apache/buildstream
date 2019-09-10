@@ -34,12 +34,11 @@ import grpc
 from .._protos.google.rpc import code_pb2
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.build.buildgrid import local_cas_pb2, local_cas_pb2_grpc
-from .._protos.buildstream.v2 import buildstream_pb2
 
 from .. import utils
 from .._exceptions import CASCacheError
 
-from .casremote import BlobNotFound, _CASBatchRead, _CASBatchUpdate
+from .casremote import _CASBatchRead, _CASBatchUpdate
 
 _BUFFER_SIZE = 65536
 
@@ -305,46 +304,6 @@ class CASCache():
 
         return modified, removed, added
 
-    # pull():
-    #
-    # Pull a ref from a remote repository.
-    #
-    # Args:
-    #     ref (str): The ref to pull
-    #     remote (CASRemote): The remote repository to pull from
-    #
-    # Returns:
-    #   (bool): True if pull was successful, False if ref was not available
-    #
-    def pull(self, ref, remote):
-        try:
-            remote.init()
-
-            request = buildstream_pb2.GetReferenceRequest(instance_name=remote.spec.instance_name)
-            request.key = ref
-            response = remote.ref_storage.GetReference(request)
-
-            tree = response.digest
-
-            # Fetch Directory objects
-            self._fetch_directory(remote, tree)
-
-            # Fetch files, excluded_subdirs determined in pullqueue
-            required_blobs = self.required_blobs_for_directory(tree)
-            missing_blobs = self.local_missing_blobs(required_blobs)
-            if missing_blobs:
-                self.fetch_blobs(remote, missing_blobs)
-
-            self.set_ref(ref, tree)
-
-            return True
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise CASCacheError("Failed to pull ref {}: {}".format(ref, e)) from e
-            return False
-        except BlobNotFound:
-            return False
-
     # pull_tree():
     #
     # Pull a single Tree rather than a ref.
@@ -367,56 +326,6 @@ class CASCache():
                 raise
 
         return None
-
-    # push():
-    #
-    # Push committed refs to remote repository.
-    #
-    # Args:
-    #     refs (list): The refs to push
-    #     remote (CASRemote): The remote to push to
-    #
-    # Returns:
-    #   (bool): True if any remote was updated, False if no pushes were required
-    #
-    # Raises:
-    #   (CASCacheError): if there was an error
-    #
-    def push(self, refs, remote):
-        skipped_remote = True
-        try:
-            for ref in refs:
-                tree = self.resolve_ref(ref)
-
-                # Check whether ref is already on the server in which case
-                # there is no need to push the ref
-                try:
-                    request = buildstream_pb2.GetReferenceRequest(instance_name=remote.spec.instance_name)
-                    request.key = ref
-                    response = remote.ref_storage.GetReference(request)
-
-                    if response.digest.hash == tree.hash and response.digest.size_bytes == tree.size_bytes:
-                        # ref is already on the server with the same tree
-                        continue
-
-                except grpc.RpcError as e:
-                    if e.code() != grpc.StatusCode.NOT_FOUND:
-                        # Intentionally re-raise RpcError for outer except block.
-                        raise
-
-                self._send_directory(remote, tree)
-
-                request = buildstream_pb2.UpdateReferenceRequest(instance_name=remote.spec.instance_name)
-                request.keys.append(ref)
-                request.digest.CopyFrom(tree)
-                remote.ref_storage.UpdateReference(request)
-
-                skipped_remote = False
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
-                raise CASCacheError("Failed to push ref {}: {}".format(refs, e), temporary=True) from e
-
-        return not skipped_remote
 
     # objpath():
     #
