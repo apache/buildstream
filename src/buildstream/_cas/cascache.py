@@ -22,6 +22,7 @@ import os
 import stat
 import errno
 import contextlib
+import ctypes
 import multiprocessing
 import shutil
 import signal
@@ -931,8 +932,8 @@ class _CASCacheUsageMonitor:
         self.cas = cas
 
         # Shared memory (64-bit signed integer) for current disk usage and quota
-        self._disk_usage = multiprocessing.Value('q', -1)
-        self._disk_quota = multiprocessing.Value('q', -1)
+        self._disk_usage = multiprocessing.Value(ctypes.c_longlong, -1)
+        self._disk_quota = multiprocessing.Value(ctypes.c_longlong, -1)
 
         # multiprocessing.Process will fork without exec on Unix.
         # This can't be allowed with background threads or open gRPC channels.
