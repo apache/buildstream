@@ -200,6 +200,13 @@ class FilterElement(Element):
                                .format(self, type(self).__name__),
                                detail=detail, reason="filter-bdepend-also-rdepend")
 
+        # If a stack, fail and inform user that the dependency can't be a stack
+        if build_deps[0].get_kind() == 'stack':
+            detail = "{} is a stack element, which has no artifact".format(build_deps[0].name)
+            raise ElementError("{}: {} element's build dependency must not be a stack element"
+                               .format(self, type(self).__name__),
+                               detail=detail, reason="filter-bdepend-is-stack")
+
     def get_unique_key(self):
         key = {
             'include': sorted(self.include),
