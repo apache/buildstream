@@ -32,7 +32,7 @@ from collections import deque
 from typing import List, Tuple
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
-from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
+from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError, set_last_task_error
 from ._message import Message, MessageType
 from ._scheduler import (
     Scheduler,
@@ -1649,6 +1649,8 @@ class Stream:
             self._scheduler_terminated = True
         elif notification.notification_type == NotificationType.SUSPENDED:
             self._scheduler_suspended = not self._scheduler_suspended
+        elif notification.notification_type == NotificationType.TASK_ERROR:
+            set_last_task_error(*notification.task_error)
         else:
             raise StreamError("Unrecognised notification type received")
 
