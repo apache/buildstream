@@ -558,4 +558,4 @@ def test_filter_stack_depend_failure(datafiles, cli):
     project = str(datafiles)
 
     result = cli.run(project=project, args=['build', 'forbidden-stack-dep.bst'])
-    result.assert_main_error(ErrorDomain.ELEMENT, "filter-bdepend-is-stack")
+    result.assert_main_error(ErrorDomain.ELEMENT, "filter-bdepend-no-artifact")
