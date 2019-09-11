@@ -163,6 +163,16 @@ class CASCache():
     def has_open_grpc_channels(self):
         return bool(self._casd_channel)
 
+    # close_channel():
+    #
+    # Close the casd channel if it exists
+    #
+    def close_channel(self):
+        if self._casd_channel:
+            self._local_cas = None
+            self._casd_channel.close()
+            self._casd_channel = None
+
     # release_resources():
     #
     # Release resources used by CASCache.
@@ -172,11 +182,7 @@ class CASCache():
             self._cache_usage_monitor.release_resources()
 
         if self._casd_process:
-            if self._casd_channel:
-                self._local_cas = None
-                self._casd_channel.close()
-                self._casd_channel = None
-
+            self.close_channel()
             self._casd_process.terminate()
             try:
                 # Don't print anything if buildbox-casd terminates quickly
