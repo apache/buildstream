@@ -32,7 +32,6 @@ Build elements
 
    elements/manual
    elements/autotools
-   elements/distutils
    elements/pip
 
 
