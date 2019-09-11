@@ -530,8 +530,6 @@ class Stream():
     #                will be placed at the given location. If true and
     #                location is '-', the tarball will be dumped on the
     #                standard output.
-    #    pull (bool): If true will attempt to pull any missing or incomplete
-    #                 artifacts.
     #
     def checkout(self, target, *,
                  location=None,
@@ -540,7 +538,6 @@ class Stream():
                  integrate=True,
                  hardlinks=False,
                  compression='',
-                 pull=False,
                  tar=False):
 
         elements, _ = self._load((target,), (), selection=deps, use_artifact_config=True, load_refs=True)
@@ -553,8 +550,9 @@ class Stream():
 
         self._check_location_writable(location, force=force, tar=tar)
 
+        # Only try to pull elements which we know are not cached
         uncached_elts = [elt for elt in elements if not elt._cached()]
-        if uncached_elts and pull:
+        if uncached_elts:
             self._message(MessageType.INFO, "Attempting to fetch missing or incomplete artifact")
             self._scheduler.clear_queues()
             self._add_queue(PullQueue(self._scheduler))

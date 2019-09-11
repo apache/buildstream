@@ -1052,15 +1052,13 @@ def artifact_show(app, deps, artifacts):
 @click.option('--compression', default=None,
               type=click.Choice(['gz', 'xz', 'bz2']),
               help="The compression option of the tarball created.")
-@click.option('--pull', 'pull_', is_flag=True,
-              help="Pull the artifact if it's missing or incomplete.")
 @click.option('--directory', default=None,
               type=click.Path(file_okay=False),
               help="The directory to checkout the artifact to")
 @click.argument('target', required=False,
                 type=click.Path(readable=False))
 @click.pass_obj
-def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, pull_, directory, target):
+def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, directory, target):
     """Checkout contents of an artifact
 
     When this command is executed from a workspace directory, the default
@@ -1111,7 +1109,6 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
                             deps=deps,
                             integrate=True if integrate is None else integrate,
                             hardlinks=hardlinks,
-                            pull=pull_,
                             compression=compression,
                             tar=bool(tar))
 
