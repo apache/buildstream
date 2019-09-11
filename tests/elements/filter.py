@@ -523,10 +523,7 @@ def test_filter_fails_for_nonexisting_domain(datafiles, cli):
     assert error in result.stderr
     assert '- unknown_file' in result.stderr
 
-# TODO: Figure out how to check if the passed integration commands
-#       are actually correct, this just makes sure things build and
-#       some integration commands attempt to run
-#
+
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_pass_integration(datafiles, cli):
     project = str(datafiles)
