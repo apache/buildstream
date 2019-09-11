@@ -771,6 +771,8 @@ class Stream():
             raise StreamError("Error while writing sources"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
 
+        self._message(MessageType.INFO, "Checked out sources to '{}'".format(location))
+
     # workspace_open
     #
     # Open a project workspace
