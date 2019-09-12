@@ -32,11 +32,14 @@ CLI
   o BREAKING CHANGE: `bst init` no longer uses the `--directory` or `-C`
     option. Instead, it (optionally) takes a directory as an argument.
 
-  o BREAKING CHANGE: The bst source-bundle command has been removed. The
+  o BREAKING CHANGE: The `bst source-bundle` command has been removed. The
     functionality it provided has been replaced by the `--include-build-scripts`
-    option of the `bst source-checkout` command. To produce a tarball containing
+    option of the `bst source checkout` command. To produce a tarball containing
     an element's sources and generated build scripts you can do the command
-    `bst source-checkout --include-build-scripts --tar foo.bst some-file.tar`
+    `bst source checkout --include-build-scripts --tar foo.tar foo.bst`.
+
+    A `--compression` option is also supported when using `--tar` which supports
+    xz, gz and bz2 compression.
 
   o BREAKING CHANGE: The 'auto-init' functionality has been removed. This would
     offer to create a project in the event that bst was run against a directory

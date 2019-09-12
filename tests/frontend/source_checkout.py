@@ -52,7 +52,7 @@ def test_source_checkout(datafiles, cli, tmpdir_factory, with_workspace, guess_e
     else:
         ws_cmd = []
 
-    args = ws_cmd + ['source', 'checkout', '--deps', 'none', *elm_cmd, checkout]
+    args = ws_cmd + ['source', 'checkout', '--deps', 'none', '--directory', checkout, *elm_cmd]
     result = cli.run(project=project, args=args)
     result.assert_success()
 
@@ -66,10 +66,14 @@ def test_source_checkout_force(datafiles, cli, force_flag):
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'checkout-deps.bst'
 
+    # Make the checkout directory with 'some-thing' inside it
     os.makedirs(os.path.join(checkout, 'some-thing'))
-    # Path(os.path.join(checkout, 'some-file')).touch()
 
-    result = cli.run(project=project, args=['source', 'checkout', force_flag, target, '--deps', 'none', checkout])
+    result = cli.run(project=project, args=['source', 'checkout',
+                                            force_flag,
+                                            '--deps', 'none',
+                                            '--directory', checkout,
+                                            target])
     result.assert_success()
 
     assert os.path.exists(os.path.join(checkout, 'checkout-deps', 'etc', 'buildstream', 'config'))
@@ -78,18 +82,39 @@ def test_source_checkout_force(datafiles, cli, force_flag):
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_checkout_tar(datafiles, cli):
     project = str(datafiles)
-    checkout = os.path.join(cli.directory, 'source-checkout.tar')
+    tar = os.path.join(cli.directory, 'source-checkout.tar')
     target = 'checkout-deps.bst'
 
-    result = cli.run(project=project, args=['source', 'checkout', '--tar', target, '--deps', 'none', checkout])
+    result = cli.run(project=project, args=['source', 'checkout',
+                                            '--tar', tar,
+                                            '--deps', 'none',
+                                            target])
     result.assert_success()
 
-    assert os.path.exists(checkout)
-    with tarfile.open(checkout) as tf:
-        expected_content = os.path.join(checkout, 'checkout-deps', 'etc', 'buildstream', 'config')
+    assert os.path.exists(tar)
+    with tarfile.open(tar) as tf:
+        expected_content = os.path.join(tar, 'checkout-deps', 'etc', 'buildstream', 'config')
         tar_members = [f.name for f in tf]
         for member in tar_members:
             assert member in expected_content
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("compression", [("gz"), ("xz"), ("bz2")])
+def test_source_checkout_compressed_tar(datafiles, cli, compression):
+    project = str(datafiles)
+    tarfile_name = "source-checkout.tar" + compression
+    tar = os.path.join(cli.directory, tarfile_name)
+    target = 'checkout-deps.bst'
+
+    result = cli.run(project=project, args=['source', 'checkout',
+                                            '--tar', tar,
+                                            '--compression', compression,
+                                            '--deps', 'none',
+                                            target])
+    result.assert_success()
+    tar = tarfile.open(name=tar, mode='r:' + compression)
+    assert os.path.join('checkout-deps', 'etc', 'buildstream', 'config') in tar.getnames()
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -99,7 +124,10 @@ def test_source_checkout_deps(datafiles, cli, deps):
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'checkout-deps.bst'
 
-    result = cli.run(project=project, args=['source', 'checkout', target, '--deps', deps, checkout])
+    result = cli.run(project=project, args=['source', 'checkout',
+                                            '--directory', checkout,
+                                            '--deps', deps,
+                                            target])
     result.assert_success()
 
     # Sources of the target
@@ -127,10 +155,11 @@ def test_source_checkout_except(datafiles, cli):
     checkout = os.path.join(cli.directory, 'source-checkout')
     target = 'checkout-deps.bst'
 
-    result = cli.run(project=project, args=['source', 'checkout', target,
+    result = cli.run(project=project, args=['source', 'checkout',
+                                            '--directory', checkout,
                                             '--deps', 'all',
                                             '--except', 'import-bin.bst',
-                                            checkout])
+                                            target])
     result.assert_success()
 
     # Sources for the target should be present
@@ -162,7 +191,7 @@ def test_source_checkout_fetch(datafiles, cli):
 
     args = ['source', 'checkout']
     args += [target, checkout]
-    result = cli.run(project=project, args=args)
+    result = cli.run(project=project, args=['source', 'checkout', '--directory', checkout, target])
 
     result.assert_success()
     assert os.path.exists(os.path.join(checkout, 'remote-import-dev', 'pony.h'))
@@ -175,7 +204,7 @@ def test_source_checkout_build_scripts(cli, tmpdir, datafiles):
     normal_name = 'source-bundle-source-bundle-hello'
     checkout = os.path.join(str(tmpdir), 'source-checkout')
 
-    args = ['source', 'checkout', '--include-build-scripts', element_name, checkout]
+    args = ['source', 'checkout', '--include-build-scripts', '--directory', checkout, element_name]
     result = cli.run(project=project_path, args=args)
     result.assert_success()
 
@@ -192,7 +221,7 @@ def test_source_checkout_tar_buildscripts(cli, tmpdir, datafiles):
     normal_name = 'source-bundle-source-bundle-hello'
     tar_file = os.path.join(str(tmpdir), 'source-checkout.tar')
 
-    args = ['source', 'checkout', '--include-build-scripts', '--tar', element_name, tar_file]
+    args = ['source', 'checkout', '--include-build-scripts', '--tar', tar_file, element_name]
     result = cli.run(project=project_path, args=args)
     result.assert_success()
 
@@ -201,3 +230,36 @@ def test_source_checkout_tar_buildscripts(cli, tmpdir, datafiles):
     with tarfile.open(tar_file, 'r') as tf:
         for script in expected_scripts:
             assert script in tf.getnames()
+
+
+# Test that the --directory and --tar options conflict
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_checkout_options_tar_and_dir_conflict(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'source-checkout')
+    tar_file = os.path.join(str(tmpdir), 'source-checkout.tar')
+    target = 'checkout-deps.bst'
+
+    result = cli.run(project=project, args=['source', 'checkout',
+                                            '--directory', checkout,
+                                            '--tar', tar_file,
+                                            target])
+
+    assert result.exit_code != 0
+    assert "ERROR: options --directory and --tar conflict" in result.stderr
+
+
+# Test that the --compression option without --tar fails
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_checkout_compression_without_tar(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, 'source-checkout')
+    target = 'checkout-deps.bst'
+
+    result = cli.run(project=project, args=['source', 'checkout',
+                                            '--directory', checkout,
+                                            '--compression', 'xz',
+                                            target])
+
+    assert result.exit_code != 0
+    assert "ERROR: --compression specified without --tar" in result.stderr

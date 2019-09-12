@@ -49,7 +49,7 @@ def test_source_checkout(tmpdir, datafiles, cli):
     repo = create_element_size('target.bst', project_dir, element_path, [], 100000)
 
     # check implicit fetching
-    res = cli.run(project=project_dir, args=['source', 'checkout', 'target.bst', target_dir])
+    res = cli.run(project=project_dir, args=['source', 'checkout', '--directory', target_dir, 'target.bst'])
     res.assert_success()
     assert "Fetching from" in res.stderr
 
@@ -60,7 +60,7 @@ def test_source_checkout(tmpdir, datafiles, cli):
     shutil.rmtree(source_dir)
 
     res = cli.run(project=project_dir,
-                  args=['source', 'checkout', 'target.bst', target_dir])
+                  args=['source', 'checkout', '--directory', target_dir, 'target.bst'])
     res.assert_success()
     assert "Fetching from" not in res.stderr
 
@@ -69,5 +69,5 @@ def test_source_checkout(tmpdir, datafiles, cli):
     shutil.rmtree(os.path.join(cache_dir, 'cas'))
 
     res = cli.run(project=project_dir,
-                  args=['source', 'checkout', 'target.bst', target_dir])
+                  args=['source', 'checkout', '--directory', target_dir, 'target.bst'])
     res.assert_task_error(ErrorDomain.PLUGIN, None)
