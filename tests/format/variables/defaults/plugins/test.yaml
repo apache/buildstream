@@ -1,0 +1,28 @@
+# Autotools default configurations
+
+variables:
+
+  configure: foo
+  make: bar
+  make-install: baz
+
+config:
+
+  # Commands for configuring the software
+  #
+  configure-commands:
+  - |
+    %{configure}
+
+  # Commands for building the software
+  #
+  build-commands:
+  - |
+    %{make}
+
+  # Commands for installing the software into a
+  # destination folder
+  #
+  install-commands:
+  - |
+    %{make-install}

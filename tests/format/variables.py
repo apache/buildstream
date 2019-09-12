@@ -31,6 +31,7 @@ def print_warning(msg):
 ###############################################################
 @pytest.mark.parametrize("target,varname,expected", [
     ('autotools.bst', 'make-install', "make -j1 DESTDIR=\"/buildstream-install\" install"),
+    ('test.bst', 'configure', "foo")
 ])
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'defaults'))
 def test_defaults(cli, datafiles, target, varname, expected):
@@ -48,6 +49,7 @@ def test_defaults(cli, datafiles, target, varname, expected):
 ################################################################
 @pytest.mark.parametrize("target,varname,expected", [
     ('autotools.bst', 'make-install', "make -j1 DESTDIR=\"/custom/install/root\" install"),
+    ('test.bst', 'configure', "quuz")
 ])
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'overrides'))
 def test_overrides(cli, datafiles, target, varname, expected):
