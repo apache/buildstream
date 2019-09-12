@@ -39,6 +39,7 @@ from .._protos.build.buildgrid import local_cas_pb2, local_cas_pb2_grpc
 
 from .. import utils
 from .._exceptions import CASCacheError
+from .._message import Message, MessageType
 
 from .casremote import _CASBatchRead, _CASBatchUpdate
 
@@ -937,11 +938,23 @@ class CASCache():
     #   messenger (buildstream._messenger.Messenger): Messenger to forward information to the frontend
     #
     def _terminate_casd_process(self, messenger=None):
+        return_code = self._casd_process.poll()
+
+        if return_code is not None:
+            # buildbox-casd is already dead
+            self._casd_process = None
+
+            if messenger:
+                messenger.message(
+                    Message(MessageType.BUG, "Buildbox-casd died during the run. Exit code: {}".format(return_code))
+                )
+            return
+
         self._casd_process.terminate()
 
         try:
             # Don't print anything if buildbox-casd terminates quickly
-            self._casd_process.wait(timeout=0.5)
+            return_code = self._casd_process.wait(timeout=0.5)
         except subprocess.TimeoutExpired:
             if messenger:
                 cm = messenger.timed_activity("Terminating buildbox-casd")
@@ -949,10 +962,22 @@ class CASCache():
                 cm = contextlib.suppress()
             with cm:
                 try:
-                    self._casd_process.wait(timeout=15)
+                    return_code = self._casd_process.wait(timeout=15)
                 except subprocess.TimeoutExpired:
                     self._casd_process.kill()
                     self._casd_process.wait(timeout=15)
+
+                    if messenger:
+                        messenger.message(
+                            Message(MessageType.WARN, "Buildbox-casd didn't exit in time and has been killed")
+                        )
+                    self._casd_process = None
+                    return
+
+        if return_code != 0 and messenger:
+            messenger.message(
+                Message(MessageType.BUG, "Buildbox-casd didn't exit cleanly. Exit code: {}".format(return_code))
+            )
 
         self._casd_process = None
 
