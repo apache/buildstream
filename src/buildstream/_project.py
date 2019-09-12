@@ -39,6 +39,7 @@ from ._sourcefactory import SourceFactory
 from .types import CoreWarnings
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._versions import BST_FORMAT_VERSION
+from ._versions import BST_FORMAT_VERSION_MIN
 from ._loader import Loader
 from .element import Element
 from .types import FastEnum
@@ -590,6 +591,13 @@ class Project():
 
         # Assert project's format version early, before validating toplevel keys
         format_version = pre_config_node.get_int('format-version')
+        if format_version < BST_FORMAT_VERSION_MIN:
+            major, minor = utils.get_bst_version()
+            raise LoadError(
+                "Project requested format version {}, but BuildStream {}.{} only supports format version {} or above."
+                "Use latest 1.x release"
+                .format(format_version, major, minor, BST_FORMAT_VERSION_MIN), LoadErrorReason.UNSUPPORTED_PROJECT)
+
         if BST_FORMAT_VERSION < format_version:
             major, minor = utils.get_bst_version()
             raise LoadError(
