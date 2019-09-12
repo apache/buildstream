@@ -572,6 +572,18 @@ class Stream():
             raise StreamError("Error while staging dependencies into a sandbox"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
 
+    # _export_artifact()
+    #
+    # Export the files of the artifact/a tarball to a virtual directory
+    #
+    # Args:
+    #    tar (bool): Whether we want to create a tarfile
+    #    location (str): The name of the directory/the tarfile we want to export to/create
+    #    compression (str): The type of compression for the tarball
+    #    target (Element/ArtifactElement): The Element/ArtifactElement we want to checkout
+    #    hardlinks (bool): Whether to checkout hardlinks instead of copying
+    #    virdir (Directory): The sandbox's root directory as a virtual directory
+    #
     def _export_artifact(self, tar, location, compression, target, hardlinks, virdir):
         if not tar:
             with target.timed_activity("Checking out files in '{}'"
@@ -585,9 +597,10 @@ class Stream():
                     raise StreamError("Failed to checkout files: '{}'"
                                       .format(e)) from e
         else:
-            if location == '-':
-                mode = 'w|' + compression
-                with target.timed_activity("Creating tarball"):
+            to_stdout = location == '-'
+            mode = _handle_compression(compression, to_stream=to_stdout)
+            with target.timed_activity("Creating tarball"):
+                if to_stdout:
                     # Save the stdout FD to restore later
                     saved_fd = os.dup(sys.stdout.fileno())
                     try:
@@ -598,10 +611,7 @@ class Stream():
                         # No matter what, restore stdout for further use
                         os.dup2(saved_fd, sys.stdout.fileno())
                         os.close(saved_fd)
-            else:
-                mode = 'w:' + compression
-                with target.timed_activity("Creating tarball '{}'"
-                                           .format(location)):
+                else:
                     with tarfile.open(location, mode=mode) as tf:
                         virdir.export_to_tar(tf, '.')
 
@@ -727,8 +737,12 @@ class Stream():
     # Args:
     #    target (str): The target element whose sources to checkout
     #    location (str): Location to checkout the sources to
+    #    force (bool): Whether to overwrite existing directories/tarfiles
     #    deps (str): The dependencies to checkout
-    #    except_targets (list): List of targets to except from staging
+    #    except_targets ([str]): List of targets to except from staging
+    #    tar (bool): Whether to write a tarfile holding the checkout contents
+    #    compression (str): The type of compression for tarball
+    #    include_build_scripts (bool): Whether to include build scripts in the checkout
     #
     def source_checkout(self, target, *,
                         location=None,
@@ -736,6 +750,7 @@ class Stream():
                         deps='none',
                         except_targets=(),
                         tar=False,
+                        compression=None,
                         include_build_scripts=False):
 
         self._check_location_writable(location, force=force, tar=tar)
@@ -751,10 +766,12 @@ class Stream():
         # Stage all sources determined by scope
         try:
             self._source_checkout(elements, location, force, deps,
-                                  tar, include_build_scripts)
+                                  tar, compression, include_build_scripts)
         except BstError as e:
             raise StreamError("Error while writing sources"
                               ": '{}'".format(e), detail=e.detail, reason=e.reason) from e
+
+        self._message(MessageType.INFO, "Checked out sources to '{}'".format(location))
 
     # workspace_open
     #
@@ -1456,6 +1473,7 @@ class Stream():
                          force=False,
                          deps='none',
                          tar=False,
+                         compression=None,
                          include_build_scripts=False):
         location = os.path.abspath(location)
 
@@ -1468,7 +1486,7 @@ class Stream():
             if include_build_scripts:
                 self._write_build_scripts(temp_source_dir.name, elements)
             if tar:
-                self._create_tarball(temp_source_dir.name, location)
+                self._create_tarball(temp_source_dir.name, location, compression)
             else:
                 self._move_directory(temp_source_dir.name, location, force)
         except OSError as e:
@@ -1513,16 +1531,17 @@ class Stream():
                 element._stage_sources_at(element_source_dir, mount_workspaces=False)
 
     # Create a tarball from the content of directory
-    def _create_tarball(self, directory, tar_name):
+    def _create_tarball(self, directory, tar_name, compression):
+        if compression is None:
+            compression = ''
+        mode = _handle_compression(compression)
         try:
             with utils.save_file_atomic(tar_name, mode='wb') as f:
-                # This TarFile does not need to be explicitly closed
-                # as the underlying file object will be closed be the
-                # save_file_atomic contect manager
-                tarball = tarfile.open(fileobj=f, mode='w')
+                tarball = tarfile.open(fileobj=f, mode=mode)
                 for item in os.listdir(str(directory)):
                     file_to_add = os.path.join(directory, item)
                     tarball.add(file_to_add, arcname=item)
+                tarball.close()
         except OSError as e:
             raise StreamError("Failed to create tar archive: {}".format(e)) from e
 
@@ -1696,3 +1715,19 @@ class Stream():
         # a new use-case arises.
         #
         raise TypeError("Stream objects should not be pickled.")
+
+
+# _handle_compression()
+#
+# Return the tarfile mode str to be used when creating a tarball
+#
+# Args:
+#    compression (str): The type of compression (either 'gz', 'xz' or 'bz2')
+#    to_stdout (bool): Whether we want to open a stream for writing
+#
+# Returns:
+#    (str): The tarfile mode string
+#
+def _handle_compression(compression, *, to_stream=False):
+    mode_prefix = 'w|' if to_stream else 'w:'
+    return mode_prefix + compression

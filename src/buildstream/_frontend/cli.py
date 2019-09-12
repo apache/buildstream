@@ -798,7 +798,7 @@ def source_track(app, elements, deps, except_, cross_junctions):
 ##################################################################
 #                  Source Checkout Command                      #
 ##################################################################
-@source.command(name='checkout', short_help='Checkout sources for an element')
+@source.command(name='checkout', short_help='Checkout sources of an element')
 @click.option('--force', '-f', is_flag=True,
               help="Allow files to be overwritten")
 @click.option('--except', 'except_', multiple=True,
@@ -807,28 +807,38 @@ def source_track(app, elements, deps, except_, cross_junctions):
 @click.option('--deps', '-d', default='none', show_default=True,
               type=click.Choice(['build', 'none', 'run', 'all']),
               help='The dependencies whose sources to checkout')
-@click.option('--tar', 'tar', is_flag=True,
-              help='Create a tarball from the element\'s sources instead of a '
-                   'file tree.')
+@click.option('--tar', default=None, metavar='LOCATION',
+              type=click.Path(),
+              help="Create a tarball containing the sources instead "
+                   "of a file tree.")
+@click.option('--compression', default=None,
+              type=click.Choice(['gz', 'xz', 'bz2']),
+              help="The compression option of the tarball created.")
 @click.option('--include-build-scripts', 'build_scripts', is_flag=True)
+@click.option('--directory', default='source-checkout',
+              type=click.Path(file_okay=False),
+              help="The directory to checkout the sources to")
 @click.argument('element', required=False, type=click.Path(readable=False))
-@click.argument('location', type=click.Path(), required=False)
 @click.pass_obj
-def source_checkout(app, element, location, force, deps, except_,
-                    tar, build_scripts):
+def source_checkout(app, element, directory, force, deps, except_,
+                    tar, compression, build_scripts):
     """Checkout sources of an element to the specified location
 
     When this command is executed from a workspace directory, the default
     is to checkout the sources of the workspace element.
     """
-    if not element and not location:
-        click.echo("ERROR: LOCATION is not specified", err=True)
+
+    if tar and directory != "source-checkout":
+        click.echo("ERROR: options --directory and --tar conflict", err=True)
         sys.exit(-1)
 
-    if element and not location:
-        # Nasty hack to get around click's optional args
-        location = element
-        element = None
+    if compression and not tar:
+        click.echo("ERROR: --compression specified without --tar", err=True)
+        sys.exit(-1)
+
+    # Set the location depending on whether --tar/--directory were specified
+    # Note that if unset, --directory defaults to "source-checkout"
+    location = tar if tar else directory
 
     with app.initialized():
         if not element:
@@ -841,7 +851,8 @@ def source_checkout(app, element, location, force, deps, except_,
                                    force=force,
                                    deps=deps,
                                    except_targets=except_,
-                                   tar=tar,
+                                   tar=bool(tar),
+                                   compression=compression,
                                    include_build_scripts=build_scripts)
 
 
