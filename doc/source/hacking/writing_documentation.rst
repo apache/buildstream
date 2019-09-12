@@ -2,8 +2,8 @@
 
 .. _writing_documentation:
 
-Documenting
------------
+Writing documentation
+---------------------
 BuildStream starts out as a documented project from day one and uses
 `sphinx <www.sphinx-doc.org>`_ to document itself.
 
