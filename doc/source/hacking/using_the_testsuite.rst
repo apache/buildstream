@@ -2,8 +2,8 @@
 
 .. _contributing_testing:
 
-Testing
--------
+Using the test suite
+--------------------
 BuildStream uses `tox <https://tox.readthedocs.org/>`_ as a frontend to run the
 tests which are implemented using `pytest <https://pytest.org/>`_. We use
 pytest for regression tests and testing out the behavior of newly added
