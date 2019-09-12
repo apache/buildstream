@@ -1,62 +1,15 @@
-=================
-buildstream 1.3.1
-=================
+======================
+buildstream 1.3.1.dev1
+======================
+This release is a development snapshot, without any compatibility guarantees.
+(The list of changes is non-exhaustive)
 
-  o BREAKING CHANGE: The `bst build` command no longer accepts the `--all` option. It
-    now accepts `--deps` with a choice of 'plan' (default) and 'all', for
-    equivalent behaviour.
+CLI
+---
 
-  o Added `bst artifact show` subcommand which shows the cached status
-    of an artifact. If project/user remotes are available, they are checked
-    for the target elements (and their deps, if specified). Artifacts available
-    in remotes are displayed as "available".
-
-  o BREAKING CHANGE: The project name of dependencies have been included when
-    calculating the cache key. This was required to keep inline with the
-    artifact proto. Additionally, for strict mode, the name of dependencies have
-    also been included in the calculation of the cache key. This is again to
-    keep inline with the proto, but also to maintain symmetry in the behaviour
-    between the strict and non-strict modes.
-
-  o Added `bst artifact list-contents` subcommand which can display the names
-    of files in artifacts in your artifact cache, either by element name
-    or by direct artifact reference. --long option can be used to display more
-    information; file type and size.
-
-  o BREAKING CHANGE: Reverted the default behaviour of junctions. Subproject
-    elements will no longer interact with the parent project's remote (by
-    default). To enable this behaviour, a new "cache-junction-elements" boolean
-    can be optionally declared as part of your junction element's configuration.
-    Additionally, a new "ignore-junction-remotes" option has also been
-    introduced. This allows you to completely ignore subproject remotes when
-    using the parent project.
-
-  o Added Basic support for the BuildBox sandbox. The sand box will only be used if the
-    environment variable BST_FORCE_SANDBOX is set to `buildbox`. This is the first step in
-    transitioning to only using BuildBox for local sandboxing.
-
-  o BREAKING CHANGE: The yaml API has been rewritten entirely. When accessing
-    configuration from YAML, please use the new `Node` classes exposed in the
-    `buildstream` package. See the documentation for how to use it.
-
-    This change has also removed the need of a YAML cache as it proved to no longer
-    be of benefit.
-
-  o BREAKING CHANGE: `bst init` no longer uses the `--directory` or `-C`
-    option. Instead, it (optionally) takes a directory as an argument.
-
-  o BREAKING CHANGE: Artifact as a Proto. The caching of buildstream artifacts
-    has changed from a reference based impelementation. Existing artifacts and
-    artifact servers are not compatible, as such remote artifact servers need to
-    be updated to the latest version which will then allow them to be repopulated
-    with new artifacts.
-
-  o BREAKING CHANGE: ostree plugin has been removed. It now leaves in the
-    bst-plugins-experimental repo
-
-  o Added `bst artifact delete` subcommand. This command removes artifacts from
-    the local cache. Mulitple element names and artifact refs can be specified
-    as arguments.
+  o BREAKING CHANGE: `bst track` and `bst fetch` commands are now obsolete.
+    Their functionality is provided by `bst source track` and
+    `bst source fetch` respectively.
 
   o BREAKING CHANGE: The top level commands `checkout`, `push` and `pull` have
     been moved to the `bst artifact` subcommand group and are now obsolete.
@@ -67,38 +20,23 @@ buildstream 1.3.1
     to this, `--tar` is no longer a flag, it is a mutually incompatible option
     to `--directory`. For example, `bst artifact checkout foo.bst --tar foo.tar.gz`.
 
+  o BREAKING CHANGE: `bst workspace open` now supports the creation of multiple
+    elements and allows the user to set a default location for their creation.
+    This has meant that the new CLI is no longer backwards compatible with
+    BuildStream 1.2.
 
-  o Added `bst artifact log` subcommand for viewing build logs.
+  o BREAKING CHANGE: The `bst build` command no longer accepts the `--all`
+    option. It now accepts `--deps` with a choice of 'plan' (default) and
+    'all', for equivalent behaviour.
+
+  o BREAKING CHANGE: `bst init` no longer uses the `--directory` or `-C`
+    option. Instead, it (optionally) takes a directory as an argument.
 
   o BREAKING CHANGE: The bst source-bundle command has been removed. The
     functionality it provided has been replaced by the `--include-build-scripts`
     option of the `bst source-checkout` command. To produce a tarball containing
     an element's sources and generated build scripts you can do the command
     `bst source-checkout --include-build-scripts --tar foo.bst some-file.tar`
-
-  o BREAKING CHANGE: `bst track` and `bst fetch` commands are now obsolete.
-    Their functionality is provided by `bst source track` and
-    `bst source fetch` respectively.
-
-  o Added new `bst source checkout` command to checkout sources of an element.
-
-  o BREAKING CHANGE: Default strip-commands have been removed as they are too
-    specific. Recommendation if you are building in Linux is to use the
-    ones being used in freedesktop-sdk project, for example
-
-  o Running commands without elements specified will now attempt to use
-    the default targets defined in the project configuration.
-    If no default target is defined, all elements in the project will be used.
-
-  o All elements must now be suffixed with `.bst`
-    Attempting to use an element that does not have the `.bst` extension,
-    will result in a warning.
-
-  o BREAKING CHANGE: The 'manual' element lost its default 'MAKEFLAGS' and 'V'
-    environment variables. There is already a 'make' element with the same
-    variables. Note that this is a breaking change, it will require users to
-    make changes to their .bst files if they are expecting these environment
-    variables to be set.
 
   o BREAKING CHANGE: The 'auto-init' functionality has been removed. This would
     offer to create a project in the event that bst was run against a directory
@@ -111,48 +49,146 @@ buildstream 1.3.1
     'bst workspace close --remove-dir' or 'bst workspace reset'. They got in
     the way too often.
 
-  o Failed builds are included in the cache as well.
-    `bst checkout` will provide anything in `%{install-root}`.
-    A build including cached fails will cause any dependant elements
-    to not be scheduled and fail during artifact assembly,
-    and display the retry prompt during an interactive session.
+  o Added `bst artifact show` subcommand which shows the cached status
+    of an artifact. If project/user remotes are available, they are checked
+    for the target elements (and their deps, if specified). Artifacts available
+    in remotes are displayed as "available".
 
-  o Due to enabling the use of relative workspaces, "Legacy" workspaces
-    may need to be closed and remade before the changes will affect them.
-    Downgrading after using this feature may result in workspaces
-    not functioning correctly
+  o Added `bst artifact list-contents` subcommand which can display the names
+    of files in artifacts in your artifact cache, either by element name
+    or by direct artifact reference. --long option can be used to display more
+    information; file type and size.
 
-  o Elements may now specify 'build-depends' and 'runtime-depends' fields
-    to avoid having to specify the dependency type for every entry in
-    'depends'.
+  o Added `bst artifact delete` subcommand. This command removes artifacts from
+    the local cache. Multiple element names and artifact refs can be specified
+    as arguments.
 
-  o Elements may now specify cross-junction dependencies as simple strings
-    using the format '{junction-name}:{element-name}'.
+  o Added `bst artifact log` subcommand for viewing build logs.
 
-  o Junction elements may now specify another junction as their target, using
-    the `target` configuration option.
+  o Added new `bst source checkout` command to checkout sources of an element.
 
-  o Source plugins may now request access access to previous during track and
-    fetch by setting `BST_REQUIRES_PREVIOUS_SOURCES_TRACK` and/or
-    `BST_REQUIRES_PREVIOUS_SOURCES_FETCH` attributes.
+  o Running commands without elements specified will now attempt to use
+    the default targets defined in the project configuration.
+    If no default target is defined, all elements in the project will be used.
 
-  o Add new `pip` source plugin for downloading python packages using pip,
-    based on requirements files from previous sources.
+  o bst 'build' now has '--remote, -r' option, inline with bst 'push' & 'pull'.
+    Providing a remote will limit build's pull/push remote actions to the given
+    remote specifically, ignoring those defined via user or project configuration.
 
-  o Generate Docker images from built artifacts using
-    `contrib/bst-docker-import` script.
-
-  o Added Documentation on how to create out of source builds. This includes the
-    new the `conf-root` variable to make the process easier. And there has been
-    a bug fix to workspaces so they can be build in workspaces too.
+  o `bst shell --sysroot` now takes any directory that contains a sysroot,
+    instead of just a specially-formatted build-root with a `root` and `scratch`
+    subdirectory.
 
   o Creating a build shell through the interactive mode or `bst shell --build`
     will now use the cached build tree if available locally. It is now easier to
     debug local build failures.
 
-  o `bst shell --sysroot` now takes any directory that contains a sysroot,
-    instead of just a specially-formatted build-root with a `root` and `scratch`
-    subdirectory.
+
+Plugins
+-------
+
+  o BREAKING CHANGE: cmake, make, makemaker, meson, modulebuild and qmake
+    plugins have been moved to the bst-plugins-experimental repository.
+
+  o BREAKING CHANGE: The 'manual' element lost its default 'MAKEFLAGS' and 'V'
+    environment variables. There is already a 'make' element with the same
+    variables. Note that this is a breaking change, it will require users to
+    make changes to their .bst files if they are expecting these environment
+    variables to be set.
+
+  o BREAKING CHANGE: The `git` plugin does not create a local `.git`
+    repository by default.  If `git describe` is required to work, the
+    plugin has now a tag tracking feature instead. This can be enabled
+    by setting 'track-tags'.
+
+  o Add new `pip` source plugin for downloading python packages using pip,
+    based on requirements files from previous sources.
+
+
+API
+---
+
+  o BREAKING CHANGE: The yaml API has been rewritten entirely. When accessing
+    configuration from YAML, please use the new `Node` classes exposed in the
+    `buildstream` package. See the documentation for how to use it.
+
+  o Add sandbox API for command batching and use it for build, script, and
+    compose elements.
+
+  o Source plugins may now request access access to previous during track and
+    fetch by setting `BST_REQUIRES_PREVIOUS_SOURCES_TRACK` and/or
+    `BST_REQUIRES_PREVIOUS_SOURCES_FETCH` attributes.
+
+
+Configuration Format
+--------------------
+
+  o Elements may now specify 'build-depends' and 'runtime-depends' fields
+    to avoid having to specify the dependency type for every entry in
+    'depends'.
+
+  o Junction elements may now specify another junction as their target, using
+    the `target` configuration option.
+
+  o Elements may now specify cross-junction dependencies as simple strings
+    using the format '{junction-name}:{element-name}'.
+
+
+Core
+----
+
+  o BREAKING CHANGE: Reverted the default behaviour of junctions. Subproject
+    elements will no longer interact with the parent project's remote (by
+    default). To enable this behaviour, a new "cache-junction-elements" boolean
+    can be optionally declared as part of your junction element's configuration.
+    Additionally, a new "ignore-junction-remotes" option has also been
+    introduced. This allows you to completely ignore subproject remotes when
+    using the parent project.
+
+  o BREAKING CHANGE: Symlinks are no longer resolved during staging and absolute
+    symlinks are now preserved instead of being converted to relative symlinks.
+
+  o BREAKING CHANGE: Overlap whitelists now require absolute paths. This allows
+    use of variables such as %{prefix} and matches the documentation.
+
+  o BREAKING CHANGE: Default strip-commands have been removed as they are too
+    specific. Recommendation if you are building in Linux is to use the
+    ones being used in freedesktop-sdk project, for example
+
+  o All elements should now be suffixed with `.bst`.
+    Attempting to use an element that does not have the `.bst` extension,
+    will result in a warning.
+
+  o Failed builds are included in the cache as well.
+    `bst artifact checkout` will provide anything in `%{install-root}`.
+    A build including cached fails will cause any dependant elements
+    to not be scheduled and fail during artifact assembly,
+    and display the retry prompt during an interactive session.
+
+  o Added Basic support for the BuildBox sandbox. The sand box will only be
+    used if the environment variable BST_FORCE_SANDBOX is set to `buildbox`.
+    This is the first step in transitioning to only using BuildBox for local
+    sandboxing.
+
+    This change has also removed the need of a YAML cache as it proved to no
+    longer be of benefit.
+
+
+Artifacts
+---------
+
+  o BREAKING CHANGE: Artifact as a Proto. The caching of BuildStream artifacts
+    has changed from a reference based impelementation. Existing artifacts and
+    artifact servers are not compatible, as such remote artifact servers need to
+    be updated to the latest version which will then allow them to be repopulated
+    with new artifacts.
+
+  o BREAKING CHANGE: The project name of dependencies have been included when
+    calculating the cache key. This was required to keep inline with the
+    artifact proto. Additionally, for strict mode, the name of dependencies have
+    also been included in the calculation of the cache key. This is again to
+    keep inline with the proto, but also to maintain symmetry in the behaviour
+    between the strict and non-strict modes.
 
   o Due to the element `build tree` being cached in the respective artifact their
     size in some cases has significantly increased. In *most* cases the build trees
@@ -164,30 +200,6 @@ buildstream 1.3.1
     with cached artifacts, only 'complete' elements can be pushed. If the element
     is expected to have a populated build tree then it must be cached before pushing.
 
-  o `bst workspace open` now supports the creation of multiple elements and
-    allows the user to set a default location for their creation. This has meant
-    that the new CLI is no longer backwards compatible with buildstream 1.2.
-
-  o Add sandbox API for command batching and use it for build, script, and
-    compose elements.
-
-  o BREAKING CHANGE: The `git` plugin does not create a local `.git`
-    repository by default.  If `git describe` is required to work, the
-    plugin has now a tag tracking feature instead. This can be enabled
-    by setting 'track-tags'.
-
-  o Opening a workspace now creates a .bstproject.yaml file that allows buildstream
-    commands to be run from a workspace that is not inside a project.
-
-  o Specifying an element is now optional for some commands when buildstream is run
-    from inside a workspace - the 'build', 'checkout', 'fetch', 'pull', 'push',
-    'shell', 'show', 'source-checkout', 'track', 'workspace close' and 'workspace reset'
-    commands are affected.
-
-  o bst 'build' now has '--remote, -r' option, inline with bst 'push' & 'pull'.
-    Providing a remote will limit build's pull/push remote actions to the given
-    remote specifically, ignoring those defined via user or project configuration.
-
   o Artifacts can now be cached explicitly with an empty `build tree` when built.
     Element types without a build-root were already cached with an empty build tree
     directory, this can now be extended to all or successful artifacts to save on cache
@@ -197,11 +209,31 @@ buildstream 1.3.1
     the cached build tree input it will remain unaltered, however the availbility of the
     build tree content may differ.
 
-  o BREAKING CHANGE: Symlinks are no longer resolved during staging and absolute
-    symlinks are now preserved instead of being converted to relative symlinks.
 
-  o BREAKING CHANGE: Overlap whitelists now require absolute paths. This allows
-    use of variables such as %{prefix} and matches the documentation.
+Workspaces
+----------
+
+  o Due to enabling the use of relative workspaces, "Legacy" workspaces
+    may need to be closed and remade before the changes will affect them.
+    Downgrading after using this feature may result in workspaces
+    not functioning correctly
+
+  o Opening a workspace now creates a .bstproject.yaml file that allows BuildStream
+    commands to be run from a workspace that is not inside a project.
+
+  o Specifying an element is now optional for most commands when BuildStream is run
+    from inside a workspace. See CLI reference for more details.
+
+  o Added Documentation on how to create out of source builds. This includes the
+    new the `conf-root` variable to make the process easier. And there has been
+    a bug fix to workspaces so they can be build in workspaces too.
+
+
+Miscellaneous
+-------------
+
+  o Generate Docker images from built artifacts using
+    `contrib/bst-docker-import` script.
 
 
 =================
