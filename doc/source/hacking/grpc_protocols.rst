@@ -2,8 +2,8 @@
 
 .. _protocol_buffers:
 
-Protocol buffers
-----------------
+Generating protocol buffers
+---------------------------
 BuildStream uses protobuf and gRPC for serialization and communication with
 artifact cache servers.  This requires ``.proto`` files and Python code
 generated from the ``.proto`` files using protoc.  All these files live in the
