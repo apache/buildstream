@@ -26,7 +26,6 @@ import grpc
 from . import _signals
 from . import utils
 from ._exceptions import LoadError, LoadErrorReason, ImplError, RemoteError
-from ._protos.google.bytestream import bytestream_pb2_grpc
 from .types import FastEnum
 
 
@@ -134,7 +133,6 @@ class BaseRemote():
         self.spec = spec
         self._initialized = False
 
-        self.bytestream = None
         self.channel = None
 
         self.server_cert = None
@@ -177,9 +175,6 @@ class BaseRemote():
             self.channel = grpc.secure_channel('{}:{}'.format(url.hostname, port), credentials)
         else:
             raise RemoteError("Unsupported URL: {}".format(self.spec.url))
-
-        # Set up the bytestream on our channel
-        self.bytestream = bytestream_pb2_grpc.ByteStreamStub(self.channel)
 
         self._configure_protocols()
 
