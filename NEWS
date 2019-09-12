@@ -104,7 +104,7 @@ Plugins
     plugin has now a tag tracking feature instead. This can be enabled
     by setting 'track-tags'.
 
-  o Add new `pip` source plugin for downloading python packages using pip,
+  o Added new `pip` source plugin for downloading python packages using pip,
     based on requirements files from previous sources.
 
 
@@ -118,8 +118,8 @@ API
     This change has also removed the need of a YAML cache as it proved to no
     longer be of benefit.
 
-  o Add sandbox API for command batching and use it for build, script, and
-    compose elements.
+  o There is a new sandbox API for command batching. It is used for build,
+    script, and compose elements.
 
   o Source plugins may now request access access to previous during track and
     fetch by setting `BST_REQUIRES_PREVIOUS_SOURCES_TRACK` and/or
@@ -243,7 +243,7 @@ Miscellaneous
 buildstream 1.1.5
 =================
 
-  o Add a `--tar` option to `bst checkout` which allows a tarball to be
+  o Added a `--tar` option to `bst checkout` which allows a tarball to be
     created from the artifact contents.
 
   o Fetching and tracking will consult mirrors defined in project config,
@@ -252,7 +252,7 @@ buildstream 1.1.5
 
   o Added new `remote` source plugin for downloading file blobs
 
-  o Add support for the new include '(@)' directive in project.conf and .bst files
+  o Added support for the new include '(@)' directive in project.conf and .bst files
 
 
 =================
