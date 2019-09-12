@@ -90,6 +90,14 @@ build:
   #
   max-jobs: 0
 
+  #
+  # Control which dependencies to build:
+  #
+  #  plan - Only dependencies required for the build plan
+  #  all  - All dependencies
+  #
+  dependencies: plan
+
 
 #
 #    Logging

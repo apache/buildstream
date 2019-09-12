@@ -24,7 +24,8 @@ DATA_DIR = os.path.join(
 # to the local cache.
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize('pull_artifact_files', [True, False])
-def test_build_dependency_partial_local_cas(cli, datafiles, pull_artifact_files):
+@pytest.mark.parametrize('build_all', [True, False])
+def test_build_dependency_partial_local_cas(cli, datafiles, pull_artifact_files, build_all):
     project = str(datafiles)
     element_name = 'no-runtime-deps.bst'
     builddep_element_name = 'autotools/amhello.bst'
@@ -35,6 +36,12 @@ def test_build_dependency_partial_local_cas(cli, datafiles, pull_artifact_files)
     assert set(services) == set(['action-cache', 'execution', 'storage'])
 
     # configure pull blobs
+    if build_all:
+        cli.configure({
+            'build': {
+                'dependencies': 'all'
+            }
+        })
     cli.config['remote-execution']['pull-artifact-files'] = pull_artifact_files
 
     result = cli.run(project=project, args=['build', element_name])
@@ -52,7 +59,10 @@ def test_build_dependency_partial_local_cas(cli, datafiles, pull_artifact_files)
     # Verify build dependencies is pulled for ALL and BUILD
     result = cli.run(project=project, args=['artifact', 'checkout', builddep_element_name,
                                             '--directory', builddep_checkout])
-    result.assert_main_error(ErrorDomain.STREAM, 'uncached-checkout-attempt')
+    if build_all and pull_artifact_files:
+        result.assert_success()
+    else:
+        result.assert_main_error(ErrorDomain.STREAM, 'uncached-checkout-attempt')
 
 
 @pytest.mark.datafiles(DATA_DIR)

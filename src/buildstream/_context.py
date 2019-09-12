@@ -129,6 +129,9 @@ class Context():
         # Maximum jobs per build
         self.build_max_jobs = None
 
+        # Control which dependencies to build
+        self.build_dependencies = None
+
         # Size of the artifact cache in bytes
         self.config_cache_quota = None
 
@@ -347,8 +350,14 @@ class Context():
 
         # Load build config
         build = defaults.get_mapping('build')
-        build.validate_keys(['max-jobs'])
+        build.validate_keys(['max-jobs', 'dependencies'])
         self.build_max_jobs = build.get_int('max-jobs')
+
+        self.build_dependencies = build.get_str('dependencies')
+        if self.build_dependencies not in ['plan', 'all']:
+            provenance = build.get_scalar('dependencies').get_provenance()
+            raise LoadError("{}: Invalid value for 'dependencies'. Choose 'plan' or 'all'."
+                            .format(provenance), LoadErrorReason.INVALID_DATA)
 
         # Load per-projects overrides
         self._project_overrides = defaults.get_mapping('projects', default={})
