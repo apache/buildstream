@@ -4,8 +4,8 @@
 # General configuration defaults
 #
 
-# Require format version 0
-format-version: 0
+# Require format version 18
+format-version: 18
 
 # Elements are found at the project root
 element-path: .

@@ -25,6 +25,12 @@
 #
 BST_FORMAT_VERSION = 25
 
+# The mimimum BuildStream format version supported
+#
+# This version is the minimum format version supported by the
+# current buildstream version
+#
+BST_FORMAT_VERSION_MIN = 18
 
 # The base BuildStream artifact version
 #
