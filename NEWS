@@ -115,6 +115,9 @@ API
     configuration from YAML, please use the new `Node` classes exposed in the
     `buildstream` package. See the documentation for how to use it.
 
+    This change has also removed the need of a YAML cache as it proved to no
+    longer be of benefit.
+
   o Add sandbox API for command batching and use it for build, script, and
     compose elements.
 
@@ -172,9 +175,6 @@ Core
     used if the environment variable BST_FORCE_SANDBOX is set to `buildbox`.
     This is the first step in transitioning to only using BuildBox for local
     sandboxing.
-
-    This change has also removed the need of a YAML cache as it proved to no
-    longer be of benefit.
 
 
 Artifacts
