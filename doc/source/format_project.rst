@@ -54,7 +54,7 @@ the ``format-version`` field, e.g.:
 .. code:: yaml
 
   # The minimum base BuildStream format
-  format-version: 0
+  format-version: 18
 
 BuildStream will increment its core YAML format version at least once
 in any given minor point release where the format has been extended
