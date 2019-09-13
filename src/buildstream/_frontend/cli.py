@@ -1052,7 +1052,7 @@ def artifact_show(app, deps, artifacts):
 @click.option('--force', '-f', is_flag=True,
               help="Allow files to be overwritten")
 @click.option('--deps', '-d', default='run', show_default=True,
-              type=click.Choice(['run', 'build', 'none']),
+              type=click.Choice(['run', 'build', 'none', 'all']),
               help='The dependencies to checkout')
 @click.option('--integrate/--no-integrate', default=None, is_flag=True,
               help="Whether to run integration commands")
@@ -1121,7 +1121,7 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
             if not target:
                 raise AppError('Missing argument "ELEMENT".')
 
-        scope = {'run': Scope.RUN, 'build': Scope.BUILD, 'none': Scope.NONE}
+        scope = {'run': Scope.RUN, 'build': Scope.BUILD, 'none': Scope.NONE, 'all': Scope.ALL}
         app.stream.checkout(target,
                             location=location,
                             force=force,
