@@ -158,7 +158,7 @@ def test_build_invalid_filename_chars_dep(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("deps", [("run"), ("none"), ("build")])
+@pytest.mark.parametrize("deps", [("run"), ("none"), ("build"), ("all")])
 def test_build_checkout_deps(datafiles, cli, deps):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
@@ -187,14 +187,14 @@ def test_build_checkout_deps(datafiles, cli, deps):
 
     # Verify output of this element's build dependencies
     filename = os.path.join(checkout, 'usr', 'include', 'pony.h')
-    if deps == "build":
+    if deps in ["build", "all"]:
         assert os.path.exists(filename)
     else:
         assert not os.path.exists(filename)
 
     # Verify output of this element's runtime dependencies
     filename = os.path.join(checkout, 'usr', 'bin', 'hello')
-    if deps == "run":
+    if deps in ["run", "all"]:
         assert os.path.exists(filename)
     else:
         assert not os.path.exists(filename)
