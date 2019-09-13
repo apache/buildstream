@@ -149,7 +149,8 @@ html devhelp: templates sessions badges
 	    $(wildcard source/examples/*.rst) \
 	    $(wildcard source/elements/*.rst) \
 	    $(wildcard source/sources/*.rst) \
-	    $(wildcard source/developing/*.rst)
+	    $(wildcard source/developing/*.rst) \
+	    $(wildcard source/hacking/*.rst)
 	@echo
 	@echo "Build of $@ finished, output: $(CURDIR)/$(BUILDDIR)/$@"
 # Makefile for Sphinx documentation
