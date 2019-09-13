@@ -112,7 +112,7 @@ comments and docstrings.
 
   def __init__(self, context, element):
 
-    self.name = self._compute_name(context, element) # The name of this foo
+    self.name = self._compute_name(context, element)  # The name of this foo
 
 **Internal instance variable (long)**::
 
