@@ -67,7 +67,7 @@ comments and docstrings.
       Args:
          source (Source): The Source to frobnicate with
          frobilicious (bool): Optionally specify that frobnication should be
-                              performed fribiliciously
+                              performed frobiliciously
 
       Returns:
          (Element): The frobnicated version of this Element.
@@ -85,7 +85,7 @@ comments and docstrings.
   # Args:
   #    source (Source): The Source to frobnicate with
   #    frobilicious (bool): Optionally specify that frobnication should be
-  #                         performed fribiliciously
+  #                         performed frobiliciously
   #
   # Returns:
   #    (Element): The frobnicated version of this Element.
