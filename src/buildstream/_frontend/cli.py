@@ -1080,8 +1080,6 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
     When this command is executed from a workspace directory, the default
     is to checkout the artifact of the workspace element.
     """
-    from ..element import Scope
-
     if hardlinks and tar:
         click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
         sys.exit(-1)
@@ -1121,11 +1119,10 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
             if not target:
                 raise AppError('Missing argument "ELEMENT".')
 
-        scope = {'run': Scope.RUN, 'build': Scope.BUILD, 'none': Scope.NONE, 'all': Scope.ALL}
         app.stream.checkout(target,
                             location=location,
                             force=force,
-                            scope=scope[deps],
+                            selection=deps,
                             integrate=True if integrate is None else integrate,
                             hardlinks=hardlinks,
                             pull=pull_,
