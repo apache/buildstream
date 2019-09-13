@@ -521,7 +521,7 @@ class Stream():
     #    target (str): Target to checkout
     #    location (str): Location to checkout the artifact to
     #    force (bool): Whether files can be overwritten if necessary
-    #    scope (str): The scope of dependencies to checkout
+    #    selection (PipelineSelection): The selection mode for the specified targets
     #    integrate (bool): Whether to run integration commands
     #    hardlinks (bool): Whether checking out files hardlinked to
     #                      their artifacts is acceptable
@@ -536,21 +536,20 @@ class Stream():
     def checkout(self, target, *,
                  location=None,
                  force=False,
-                 scope=Scope.RUN,
+                 selection=PipelineSelection.RUN,
                  integrate=True,
                  hardlinks=False,
                  compression='',
                  pull=False,
                  tar=False):
 
-        # if pulling we need to ensure dependency artifacts are also pulled
-        selection = PipelineSelection.RUN if pull else PipelineSelection.NONE
         elements, _ = self._load((target,), (), selection=selection, use_artifact_config=True, load_refs=True)
-        target = elements[-1]
 
-        # Verify that --deps run has not been specified for an ArtifactElement
-        if isinstance(target, ArtifactElement) and scope == Scope.RUN:
-            raise StreamError("Unable to determine the runtime dependencies of an ArtifactElement")
+        # self.targets contains a list of the loaded target objects
+        # if we specify --deps build, Stream._load() will return a list
+        # of build dependency objects, however, we need to prepare a sandbox
+        # with the target (which has had its appropriate dependencies loaded)
+        target = self.targets[0]
 
         self._check_location_writable(location, force=force, tar=tar)
 
@@ -563,7 +562,8 @@ class Stream():
             self._run()
 
         try:
-            with target._prepare_sandbox(scope=scope, directory=None,
+            scope = {'run': Scope.RUN, 'build': Scope.BUILD, 'none': Scope.NONE, 'all': Scope.ALL}
+            with target._prepare_sandbox(scope=scope[selection], directory=None,
                                          integrate=integrate) as sandbox:
                 # Copy or move the sandbox to the target directory
                 virdir = sandbox.get_virtual_directory()
