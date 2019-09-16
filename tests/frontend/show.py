@@ -40,16 +40,6 @@ def test_show(cli, datafiles, target, fmt, expected):
                              .format(expected, result.output))
 
 
-@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
-def test_show_progress_tally(cli, datafiles):
-    # Check that the progress reporting messages give correct tallies
-    project = str(datafiles)
-    result = cli.run(project=project, args=['show', 'compose-all.bst'])
-    result.assert_success()
-    assert "  3 subtasks processed" in result.stderr
-    assert "3 of 3 subtasks processed" in result.stderr
-
-
 @pytest.mark.datafiles(os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "invalid_element_path",
@@ -395,40 +385,6 @@ def test_fetched_junction(cli, tmpdir, datafiles, element_name, workspaced):
 
     results = result.output.strip().splitlines()
     assert 'junction.bst:import-etc.bst-buildable' in results
-
-
-@pytest.mark.datafiles(os.path.join(DATA_DIR, 'project'))
-def test_junction_tally(cli, tmpdir, datafiles):
-    # Check that the progress reporting messages count elements in junctions
-    project = str(datafiles)
-    subproject_path = os.path.join(project, 'files', 'sub-project')
-    junction_path = os.path.join(project, 'elements', 'junction.bst')
-    element_path = os.path.join(project, 'elements', 'junction-dep.bst')
-
-    # Create a repo to hold the subproject and generate a junction element for it
-    generate_junction(tmpdir, subproject_path, junction_path, store_ref=True)
-
-    # Create a stack element to depend on a cross junction element
-    #
-    element = {
-        'kind': 'stack',
-        'depends': [
-            {
-                'junction': 'junction.bst',
-                'filename': 'import-etc.bst'
-            }
-        ]
-    }
-    _yaml.roundtrip_dump(element, element_path)
-
-    result = cli.run(project=project, silent=True, args=[
-        'source', 'fetch', 'junction.bst'])
-    result.assert_success()
-
-    # Assert the correct progress tallies are in the logging
-    result = cli.run(project=project, args=['show', 'junction-dep.bst'])
-    assert "  2 subtasks processed" in result.stderr
-    assert "2 of 2 subtasks processed" in result.stderr
 
 
 ###############################################################
