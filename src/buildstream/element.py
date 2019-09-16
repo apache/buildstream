@@ -773,7 +773,7 @@ class Element(Plugin):
                 self.info("Resetting workspace state, last successful build is no longer in the cache")
 
                 # In case we are staging in the main process
-                if utils._is_main_process():
+                if not utils._is_job_process():
                     context.get_workspaces().save_config()
 
         for dep in self.dependencies(scope):
@@ -798,7 +798,7 @@ class Element(Plugin):
 
                     # In case we are running `bst shell`, this happens in the
                     # main process and we need to update the workspace config
-                    if utils._is_main_process():
+                    if not utils._is_job_process():
                         context.get_workspaces().save_config()
 
             result = dep.stage_artifact(
@@ -1655,7 +1655,7 @@ class Element(Plugin):
         self._update_ready_for_runtime_and_cached()
 
         if self._get_workspace() and self._cached_success():
-            assert utils._is_main_process(), "Attempted to save workspace configuration from child process"
+            assert not utils._is_job_process(), "Attempted to save workspace configuration from child process"
             #
             # Note that this block can only happen in the
             # main process, since `self._cached_success()` cannot

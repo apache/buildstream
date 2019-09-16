@@ -624,7 +624,7 @@ In these cases, do **not** raise any of the ``BstError`` class exceptions.
 
 Instead, use the ``assert`` statement, e.g.::
 
-  assert utils._is_main_process(), \
+  assert not utils._is_job_process(), \
       "Attempted to save workspace configuration from child process"
 
 This will result in a ``BUG`` message with the stack trace included being
