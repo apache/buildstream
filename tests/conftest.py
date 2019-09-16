@@ -51,6 +51,9 @@ def pytest_addoption(parser):
     parser.addoption('--remote-execution', action='store_true', default=False,
                      help='Run remote-execution tests only')
 
+    parser.addoption('--external-plugins', action='store_true', default=False,
+                     help="Run standardised tests for external plugins")
+
 
 def pytest_runtest_setup(item):
     # Without --integration: skip tests not marked with 'integration'
@@ -137,6 +140,10 @@ register_repo_kind('zip', Zip, None)
 # buildstream.testing
 def pytest_sessionstart(session):
     sourcetests_collection_hook(session)
+
+    if session.config.getvalue('external_plugins'):
+        import bst_plugins_experimental
+        bst_plugins_experimental.testutils.register_sources()
 
 
 #################################################
