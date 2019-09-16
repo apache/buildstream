@@ -89,7 +89,6 @@ class Result():
             # Check if buildstream failed to handle an
             # exception, topevel CLI exit should always
             # be a SystemExit exception.
-            #
             if not isinstance(exception, SystemExit):
                 self.unhandled_exception = True
 
@@ -182,8 +181,6 @@ class Result():
         assert self.exception is not None, fail_message
         assert isinstance(self.exception, BstError), fail_message
         assert self.unhandled_exception is False
-
-        assert self.task_error_domain == error_domain, fail_message
         assert self.task_error_reason == error_reason, fail_message
 
     # assert_shell_error()

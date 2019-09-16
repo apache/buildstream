@@ -25,6 +25,7 @@ from buildstream import node, utils
 def thread_check():
     # xdist/execnet has its own helper thread.
     # Ignore that for `utils._is_single_threaded` checks.
+    #raise ValueError("thread number given to utils{}".format(psutil.Process().num_threads()))
     utils._INITIAL_NUM_THREADS_IN_MAIN_PROCESS = psutil.Process().num_threads()
 
     yield
