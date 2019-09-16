@@ -58,6 +58,9 @@ _URI_SCHEMES = ["http", "https", "ftp", "file", "git", "sftp", "ssh"]
 # Main process pid
 _MAIN_PID = os.getpid()
 
+# This is different to _MAIN_PID if running a subprocessed stream entry point
+_STREAM_PID = _MAIN_PID
+
 # The number of threads in the main process at startup.
 # This is 1 except for certain test environments (xdist/execnet).
 _INITIAL_NUM_THREADS_IN_MAIN_PROCESS = 1
@@ -770,13 +773,18 @@ def _pretty_size(size, dec_places=0):
     return "{size:g}{unit}".format(size=round(psize, dec_places), unit=unit)
 
 
-# _is_main_process()
+# _is_job_process()
 #
-# Return whether we are in the main process or not.
+# Return whether we are in a job process.
 #
-def _is_main_process():
-    assert _MAIN_PID is not None
-    return os.getpid() == _MAIN_PID
+def _is_job_process():
+    assert _STREAM_PID is not None
+    return os.getpid() != _STREAM_PID
+
+
+def _set_stream_pid() -> None:
+    global _STREAM_PID  # pylint: disable=global-statement
+    _STREAM_PID = os.getpid()
 
 
 # Recursively remove directories, ignoring file permissions as much as
@@ -1479,10 +1487,15 @@ def _is_single_threaded():
     # Use psutil as threading.active_count() doesn't include gRPC threads.
     process = psutil.Process()
 
-    if process.pid == _MAIN_PID:
-        expected_num_threads = _INITIAL_NUM_THREADS_IN_MAIN_PROCESS
-    else:
-        expected_num_threads = 1
+    expected_num_threads = 1
+
+    if process.pid == _STREAM_PID:
+        if _STREAM_PID != _MAIN_PID:
+            # multiprocessing.Queue() has a background thread for object pickling,
+            # see https://docs.python.org/3/library/multiprocessing.html#pipes-and-queues
+            expected_num_threads += 1
+        else:
+            expected_num_threads = _INITIAL_NUM_THREADS_IN_MAIN_PROCESS
 
     # gRPC threads are not joined when shut down. Wait for them to exit.
     wait = 0.1

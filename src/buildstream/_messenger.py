@@ -270,7 +270,7 @@ class Messenger:
         # we also do not allow it in the main process.
         assert self._log_handle is None
         assert self._log_filename is None
-        assert not utils._is_main_process()
+        assert utils._is_job_process()
 
         # Create the fully qualified logfile in the log directory,
         # appending the pid and .log extension at the end.
