@@ -211,6 +211,12 @@ class Element(Plugin):
     *Since: 1.4*
     """
 
+    BST_ELEMENT_HAS_ARTIFACT = True
+    """Whether the element produces an artifact when built.
+
+    *Since: 1.90*
+    """
+
     def __init__(self, context: 'Context', project: 'Project', meta: 'MetaElement', plugin_conf: Dict[str, Any]):
 
         self.__cache_key_dict = None            # Dict for cache key calculation
