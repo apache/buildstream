@@ -739,6 +739,11 @@ def _is_main_process():
     return os.getpid() == _MAIN_PID
 
 
+def _reset_main_pid():
+    global _MAIN_PID
+    _MAIN_PID = os.getpid()
+
+
 # Recursively remove directories, ignoring file permissions as much as
 # possible.
 def _force_rmtree(rootpath, **kwargs):
@@ -1429,7 +1434,7 @@ def _is_single_threaded():
     # gRPC threads are not joined when shut down. Wait for them to exit.
     wait = 0.1
     for _ in range(0, int(_AWAIT_THREADS_TIMEOUT_SECONDS / wait)):
-        if process.num_threads() == expected_num_threads:
+        if process.num_threads() == expected_num_threads or (expected_num_threads + 1):
             return True
         time.sleep(wait)
     return False
