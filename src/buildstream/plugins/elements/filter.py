@@ -168,7 +168,7 @@ class FilterElement(Element):
 
     def configure(self, node):
         node.validate_keys([
-            'include', 'exclude', 'include-orphans'
+            'include', 'exclude', 'include-orphans', 'pass-integration'
         ])
 
         self.include_node = node.get_sequence('include')
@@ -177,6 +177,7 @@ class FilterElement(Element):
         self.include = self.include_node.as_str_list()
         self.exclude = self.exclude_node.as_str_list()
         self.include_orphans = node.get_bool('include-orphans')
+        self.pass_integration = node.get_bool('pass-integration', False)
 
     def preflight(self):
         # Exactly one build-depend is permitted
@@ -198,6 +199,14 @@ class FilterElement(Element):
             raise ElementError("{}: {} element's build dependency must not also be a runtime dependency"
                                .format(self, type(self).__name__),
                                detail=detail, reason="filter-bdepend-also-rdepend")
+
+        # If a parent does not produce an artifact, fail and inform user that the dependency
+        # must produce artifacts
+        if not build_deps[0].BST_ELEMENT_HAS_ARTIFACT:
+            detail = "{} does not produce an artifact, so there is nothing to filter".format(build_deps[0].name)
+            raise ElementError("{}: {} element's build dependency must produce an artifact"
+                               .format(self, type(self).__name__),
+                               detail=detail, reason="filter-bdepend-no-artifact")
 
     def get_unique_key(self):
         key = {
@@ -251,6 +260,12 @@ class FilterElement(Element):
         assert len(build_deps) == 1
         output_elm = build_deps[0]._get_source_element()
         return output_elm
+
+    def integrate(self, sandbox):
+        if self.pass_integration:
+            for dep in self.dependencies(Scope.BUILD, recurse=False):
+                dep.integrate(sandbox)
+        super().integrate(sandbox)
 
 
 def setup():

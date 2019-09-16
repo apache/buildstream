@@ -33,6 +33,9 @@ class StackElement(Element):
     # This plugin has been modified to avoid the use of Sandbox.get_directory
     BST_VIRTUAL_DIRECTORY = True
 
+    # This plugin does not produce any artifacts when built
+    BST_ELEMENT_HAS_ARTIFACT = False
+
     def configure(self, node):
         pass
 

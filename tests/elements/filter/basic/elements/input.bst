@@ -9,3 +9,6 @@ public:
       - /foo
       bar:
       - /bar
+    integration-commands:
+    - foo
+    - bar

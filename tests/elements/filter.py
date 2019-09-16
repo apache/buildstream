@@ -522,3 +522,37 @@ def test_filter_fails_for_nonexisting_domain(datafiles, cli):
     error = "Unknown domains were used in output-include-nonexistent-domain.bst [line 7 column 2]"
     assert error in result.stderr
     assert '- unknown_file' in result.stderr
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
+def test_filter_pass_integration(datafiles, cli):
+    project = str(datafiles)
+
+    # Explicitly not passing integration commands should be fine
+    result = cli.run(project=project, args=['build', 'no-pass-integration.bst'])
+    result.assert_success()
+
+    # Passing integration commands should build nicely
+    result = cli.run(project=project, args=['build', 'pass-integration.bst'])
+    result.assert_success()
+
+    # Checking out elements which don't pass integration commands should still work
+    checkout_dir = os.path.join(project, 'no-pass')
+    result = cli.run(project=project, args=['artifact', 'checkout', '--integrate',
+                                            '--directory', checkout_dir, 'no-pass-integration.bst'])
+    result.assert_success()
+
+    # Checking out the artifact should fail if we run integration commands, as
+    # the staged artifacts don't have a shell
+    checkout_dir = os.path.join(project, 'pass')
+    result = cli.run(project=project, args=['artifact', 'checkout', '--integrate',
+                                            '--directory', checkout_dir, 'pass-integration.bst'])
+    result.assert_main_error(ErrorDomain.STREAM, "missing-command")
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
+def test_filter_stack_depend_failure(datafiles, cli):
+    project = str(datafiles)
+
+    result = cli.run(project=project, args=['build', 'forbidden-stack-dep.bst'])
+    result.assert_main_error(ErrorDomain.ELEMENT, "filter-bdepend-no-artifact")
