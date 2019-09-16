@@ -264,3 +264,4 @@ Further information
    hacking/grpc_protocols.rst
    hacking/managing_data_files.rst
    hacking/updating_python_deps.rst
+   hacking/ui.rst

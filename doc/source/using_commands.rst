@@ -72,6 +72,8 @@ Top-level commands
    :prog: bst workspace
 
 
+.. _artifact_subcommands:
+
 Artifact subcommands
 --------------------
 
@@ -108,6 +110,22 @@ Artifact subcommands
 .. click:: buildstream._frontend.cli:artifact_delete
    :prog: bst artifact delete
 
+----
+
+.. _invoking_artifact_show:
+
+.. click:: buildstream._frontend.cli:artifact_show
+   :prog: bst artifact show
+
+----
+
+.. _invoking_artifact_list_contents:
+
+.. click:: buildstream._frontend.cli:artifact_list_contents
+   :prog: bst artifact list-contents
+
+
+.. _source_subcommands:
 
 Source subcommands
 ------------------
@@ -131,6 +149,8 @@ Source subcommands
 .. click:: buildstream._frontend.cli:source_checkout
    :prog: bst source checkout
 
+
+.. _workspace_subcommands:
 
 Workspace subcommands
 ---------------------
