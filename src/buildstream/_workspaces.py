@@ -472,7 +472,7 @@ class Workspaces:
     # create_workspace permanent
     #
     def save_config(self):
-        assert utils._is_main_process()
+        assert not utils._is_job_process()
 
         config = {
             "format-version": BST_WORKSPACE_FORMAT_VERSION,

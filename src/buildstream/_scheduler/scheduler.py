@@ -25,6 +25,7 @@ import asyncio
 from itertools import chain
 import signal
 import datetime
+import queue
 
 # Local imports
 from .resources import Resources
@@ -68,6 +69,7 @@ class NotificationType(FastEnum):
     RETRY = "retry"
     MESSAGE = "message"
     TASK_ERROR = "task_error"
+    EXCEPTION = "exception"
 
 
 # Notification()
@@ -89,7 +91,9 @@ class Notification:
         time=None,
         element=None,
         message=None,
-        task_error=None
+        task_error=None,
+        for_scheduler=None,
+        exception=None
     ):
         self.notification_type = notification_type
         self.full_name = full_name
@@ -99,6 +103,7 @@ class Notification:
         self.element = element
         self.message = message
         self.task_error = task_error  # Tuple of domain & reason
+        self.exception = exception
 
 
 # Scheduler()
@@ -122,7 +127,7 @@ class Notification:
 #    ticker_callback: A callback call once per second
 #
 class Scheduler:
-    def __init__(self, context, start_time, state, notification_queue, notifier):
+    def __init__(self, context, start_time, state, notifier):
 
         #
         # Public members
@@ -148,8 +153,11 @@ class Scheduler:
 
         self._sched_handle = None  # Whether a scheduling job is already scheduled or not
 
-        # Bidirectional queue to send notifications back to the Scheduler's owner
-        self._notification_queue = notification_queue
+        # Pair of queues to send notifications back to the Scheduler's owner
+        self._notify_front = None
+        self._notify_back = None
+
+        # Notifier callback to use if not running in a subprocess
         self._notifier = notifier
 
         self.resources = Resources(context.sched_builders, context.sched_fetchers, context.sched_pushers)
@@ -196,6 +204,10 @@ class Scheduler:
             asyncio.get_event_loop().call_soon(self._abort_on_casd_failure, pid, returncode)
 
         _watcher.add_child_handler(self._casd_process.pid, abort_casd)
+
+        # Add notification handler
+        if self._notify_back:
+            self.loop.call_later(0.01, self._loop)
 
         # Start the profiler
         with PROFILER.profile(Topics.SCHEDULER, "_".join(queue.action_name for queue in self.queues)):
@@ -586,12 +598,13 @@ class Scheduler:
         queue.enqueue([element])
 
     def _notify(self, notification):
-        # Scheduler to Stream notifcations on right side
-        self._notification_queue.append(notification)
-        self._notifier()
+        # Check if we need to call the notifier callback
+        if self._notify_front:
+            self._notify_front.put(notification)
+        else:
+            self._notifier(notification)
 
-    def _stream_notification_handler(self):
-        notification = self._notification_queue.popleft()
+    def _stream_notification_handler(self, notification):
         if notification.notification_type == NotificationType.TERMINATE:
             self.terminate_jobs()
         elif notification.notification_type == NotificationType.QUIT:
@@ -606,6 +619,18 @@ class Scheduler:
             # Do not raise exception once scheduler process is separated
             # as we don't want to pickle exceptions between processes
             raise ValueError("Unrecognised notification type received")
+
+    def _loop(self):
+        assert self._notify_back
+        # Check for and process new messages
+        while True:
+            try:
+                notification = self._notify_back.get_nowait()
+                self._stream_notification_handler(notification)
+            except queue.Empty:
+                notification = None
+                break
+        self.loop.call_later(0.01, self._loop)
 
     def __getstate__(self):
         # The only use-cases for pickling in BuildStream at the time of writing

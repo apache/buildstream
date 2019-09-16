@@ -59,7 +59,7 @@ class SandboxRemote(SandboxREAPI):
             return
 
         # gRPC doesn't support fork without exec, which is used in the main process.
-        assert not utils._is_main_process()
+        assert utils._is_job_process()
 
         self.storage_url = config.storage_service["url"]
         self.exec_url = config.exec_service["url"]

@@ -19,6 +19,9 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+import asyncio
+import functools
+import multiprocessing as mp
 import os
 import sys
 import stat
@@ -26,9 +29,9 @@ import shlex
 import shutil
 import tarfile
 import tempfile
+import queue
 from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
-from collections import deque
 from typing import List, Tuple
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
@@ -90,14 +93,13 @@ class Stream:
         self._project = None
         self._pipeline = None
         self._state = State(session_start)  # Owned by Stream, used by Core to set state
-        self._notification_queue = deque()
+        # self._notification_pipe_front, self._notification_pipe_back = mp.Pipe()
+        self._subprocess = None
         self._starttime = session_start  # Synchronised with Scheduler's relative start time
 
         context.messenger.set_state(self._state)
 
-        self._scheduler = Scheduler(
-            context, session_start, self._state, self._notification_queue, self._scheduler_notification_handler
-        )
+        self._scheduler = Scheduler(context, session_start, self._state, self._scheduler_notification_handler)
         self._session_start_callback = session_start_callback
         self._ticker_callback = ticker_callback
         self._interrupt_callback = interrupt_callback
@@ -105,6 +107,8 @@ class Stream:
         self._scheduler_running = False
         self._scheduler_terminated = False
         self._scheduler_suspended = False
+        self._notify_front = None
+        self._notify_back = None
 
     # init()
     #
@@ -115,11 +119,65 @@ class Stream:
         self._artifacts = self._context.artifactcache
         self._sourcecache = self._context.sourcecache
 
+    @staticmethod
+    def _subprocess_main(func, notify, *args, **kwargs):
+        # Set main process
+        utils._set_stream_pid()
+
+        try:
+            func(*args, **kwargs)
+        except Exception as e:
+            notify.put(Notification(NotificationType.EXCEPTION, exception=e))
+
+    def run_in_subprocess(self, func, *args, **kwargs):
+        assert not self._subprocess
+
+        mp_context = mp.get_context(method="fork")
+        process_name = "stream-{}".format(func.__name__)
+
+        self._notify_front = mp.Queue()
+        self._notify_back = mp.Queue()
+        # Tell the scheduler to not use the notifier callback
+        self._scheduler._notify_front = self._notify_front
+        self._scheduler._notify_back = self._notify_back
+
+        args = list(args)
+        args.insert(0, self._notify_front)
+        args.insert(0, func)
+
+        self._subprocess = mp_context.Process(
+            target=Stream._subprocess_main, args=args, kwargs=kwargs, name=process_name
+        )
+
+        self._subprocess.start()
+
+        # TODO connect signal handlers with asyncio
+        while self._subprocess.exitcode is None:
+            # check every given time interval on subprocess state
+            self._subprocess.join(0.01)
+            # if no exit code, go back to checking the message queue
+            self._loop()
+        print("Stopping loop...")
+
+        # Ensure no more notifcations to process
+        try:
+            while True:
+                notification = self._notify_front.get_nowait()
+                self._scheduler_notification_handler(notification)
+        except queue.Empty:
+            print("Finished processing notifications")
+            pass
+
     # cleanup()
     #
     # Cleans up application state
     #
     def cleanup(self):
+        # Close the notification queue
+        for q in [self._notify_back, self._notify_front]:
+            if q is not None:
+                q.close()
+        # self._notification_queue.cancel_join_thread()
         if self._project:
             self._project.cleanup()
 
@@ -261,6 +319,9 @@ class Stream:
             scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command, usebuildtree=buildtree
         )
 
+    def build(self, *args, **kwargs):
+        self.run_in_subprocess(self._build, *args, **kwargs)
+
     # build()
     #
     # Builds (assembles) elements in the pipeline.
@@ -274,7 +335,7 @@ class Stream:
     # If `remote` specified as None, then regular configuration will be used
     # to determine where to push artifacts to.
     #
-    def build(self, targets, *, selection=PipelineSelection.PLAN, ignore_junction_targets=False, remote=None):
+    def _build(self, targets, *, selection=PipelineSelection.PLAN, ignore_junction_targets=False, remote=None):
 
         use_config = True
         if remote:
@@ -1624,11 +1685,7 @@ class Stream:
 
         return element_targets, artifact_refs
 
-    def _scheduler_notification_handler(self):
-        # Check the queue is there
-        assert self._notification_queue
-        notification = self._notification_queue.pop()
-
+    def _scheduler_notification_handler(self, notification):
         if notification.notification_type == NotificationType.MESSAGE:
             self._context.messenger.message(notification.message)
         elif notification.notification_type == NotificationType.INTERRUPT:
@@ -1638,6 +1695,7 @@ class Stream:
         elif notification.notification_type == NotificationType.JOB_START:
             self._state.add_task(notification.job_action, notification.full_name, notification.time)
         elif notification.notification_type == NotificationType.JOB_COMPLETE:
+            # State between scheduler & stream is different if run in a subprocces
             self._state.remove_task(notification.job_action, notification.full_name)
             if notification.job_status == JobStatus.FAIL:
                 self._state.fail_task(notification.job_action, notification.full_name, notification.element)
@@ -1651,13 +1709,31 @@ class Stream:
             self._scheduler_suspended = not self._scheduler_suspended
         elif notification.notification_type == NotificationType.TASK_ERROR:
             set_last_task_error(*notification.task_error)
+        elif notification.notification_type == NotificationType.EXCEPTION:
+            raise notification.exception
         else:
             raise StreamError("Unrecognised notification type received")
 
     def _notify(self, notification):
-        # Stream to scheduler notifcations on left side
-        self._notification_queue.appendleft(notification)
-        self._notifier()
+        # Set that the notifcation is for the scheduler
+        # notification.for_scheduler = True
+        if self._notify_back:
+            self._notify_back.put(notification)
+        else:
+            self._scheduler._stream_notification_handler(notification)
+
+    # The code to be run by the Stream's event loop while delegating
+    # work to a subprocess with the @subprocessed decorator
+    def _loop(self):
+        assert self._notify_front
+        # Check for and process new messages
+        while True:
+            try:
+                notification = self._notify_front.get_nowait()
+                self._scheduler_notification_handler(notification)
+            except queue.Empty:
+                notification = None
+                break
 
     def __getstate__(self):
         # The only use-cases for pickling in BuildStream at the time of writing
