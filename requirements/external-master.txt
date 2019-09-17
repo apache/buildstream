@@ -1,0 +1,1 @@
+git+https://gitlab.com/buildstream/bst-plugins-experimental.git@master#egg=bst_plugins_experimental[ostree]

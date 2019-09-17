@@ -1,0 +1,6 @@
+- package_name: bst_plugins_experimental
+  url: https://gitlab.com/buildstream/bst-plugins-experimental.git
+  branch: master
+  tag: 0.12.0
+  extras:
+  - ostree

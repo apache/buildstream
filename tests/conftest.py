@@ -20,6 +20,7 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 #
 import os
+import pkg_resources
 import pytest
 
 from buildstream.testing import register_repo_kind, sourcetests_collection_hook
@@ -51,8 +52,16 @@ def pytest_addoption(parser):
     parser.addoption('--remote-execution', action='store_true', default=False,
                      help='Run remote-execution tests only')
 
+    # This doesn't actually do anything at the moment, as we don't have standardised
+    # element tests
+    parser.addoption('--external-elements', action='store_true', default=False,
+                     help="Run standardised tests for external elements")
+
+    parser.addoption('--external-sources', action='store_true', default=False,
+                     help="Run standardised tests for external elements")
+
     parser.addoption('--external-plugins', action='store_true', default=False,
-                     help="Run standardised tests for external plugins")
+                     help="Run standardised tests for external elements and sources")
 
 
 def pytest_runtest_setup(item):
@@ -139,11 +148,14 @@ register_repo_kind('zip', Zip, None)
 # This hook enables pytest to collect the templated source tests from
 # buildstream.testing
 def pytest_sessionstart(session):
-    sourcetests_collection_hook(session)
+    # Register sources from external plugins, if option passed
+    if session.config.getvalue('external_plugins') or session.config.getvalue('external_sources'):
+        packages = {entrypoint.module_name.split('.')[0]
+                    for entrypoint in pkg_resources.iter_entry_points('buildstream.plugins')}
+        for package in packages:
+            __import__(package).testutils.register_sources()
 
-    if session.config.getvalue('external_plugins'):
-        import bst_plugins_experimental
-        bst_plugins_experimental.testutils.register_sources()
+    sourcetests_collection_hook(session)
 
 
 #################################################
