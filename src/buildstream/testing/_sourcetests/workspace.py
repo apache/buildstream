@@ -158,3 +158,61 @@ def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir
 @pytest.mark.datafiles(DATA_DIR)
 def test_open(cli, tmpdir, datafiles, kind):
     open_workspace(cli, tmpdir, datafiles, kind, False)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("kind", repo_kinds)
+@pytest.mark.parametrize("strict", [("strict"), ("non-strict")])
+@pytest.mark.parametrize(
+    "from_workspace,guess_element",
+    [(False, False), (True, True), (True, False)],
+    ids=["project-no-guess", "workspace-guess", "workspace-no-guess"])
+def test_build(cli, tmpdir_factory, datafiles, kind, strict, from_workspace, guess_element):
+    tmpdir = tmpdir_factory.mktemp('')
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
+    checkout = os.path.join(str(tmpdir), 'checkout')
+    args_dir = ['-C', workspace] if from_workspace else []
+    args_elm = [element_name] if not guess_element else []
+
+    # Modify workspace
+    shutil.rmtree(os.path.join(workspace, 'usr', 'bin'))
+    os.makedirs(os.path.join(workspace, 'etc'))
+    with open(os.path.join(workspace, 'etc', 'pony.conf'), 'w') as f:
+        f.write("PONY='pink'")
+
+    # Configure strict mode
+    strict_mode = True
+    if strict != 'strict':
+        strict_mode = False
+    cli.configure({
+        'projects': {
+            'test': {
+                'strict': strict_mode
+            }
+        }
+    })
+
+    # Build modified workspace
+    assert cli.get_element_state(project, element_name) == 'buildable'
+    key_1 = cli.get_element_key(project, element_name)
+    assert key_1 != "{:?<64}".format('')
+    result = cli.run(project=project, args=args_dir + ['build', *args_elm])
+    result.assert_success()
+    assert cli.get_element_state(project, element_name) == 'cached'
+    key_2 = cli.get_element_key(project, element_name)
+    assert key_2 != "{:?<64}".format('')
+
+    # workspace keys are not recalculated
+    assert key_1 == key_2
+
+    # Checkout the result
+    result = cli.run(project=project,
+                     args=args_dir + ['artifact', 'checkout', '--directory', checkout, *args_elm])
+    result.assert_success()
+
+    # Check that the pony.conf from the modified workspace exists
+    filename = os.path.join(checkout, 'etc', 'pony.conf')
+    assert os.path.exists(filename)
+
+    # Check that the original /usr/bin/hello is not in the checkout
+    assert not os.path.exists(os.path.join(checkout, 'usr', 'bin', 'hello'))
