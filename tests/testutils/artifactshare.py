@@ -1,6 +1,7 @@
 import os
 import shutil
 import signal
+import sys
 from collections import namedtuple
 
 from contextlib import contextmanager
@@ -62,6 +63,11 @@ class ArtifactShare():
     # Run the artifact server.
     #
     def run(self, q):
+
+        # Handle SIGTERM by calling sys.exit(0), which will raise a SystemExit exception,
+        # properly executing cleanup code in `finally` clauses and context managers.
+        # This is required to terminate buildbox-casd on SIGTERM.
+        signal.signal(signal.SIGTERM, lambda signalnum, frame: sys.exit(0))
 
         try:
             import pytest_cov
