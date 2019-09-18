@@ -433,7 +433,7 @@ class Project():
     #
     def load_elements(self, targets, *, rewritable=False):
         with self._context.messenger.simple_task("Loading elements", silent_nested=True) as task:
-            meta_elements = self.loader.load(targets, rewritable=rewritable, ticker=None, task=task)
+            meta_elements = self.loader.load(targets, task, rewritable=rewritable, ticker=None)
 
         with self._context.messenger.simple_task("Resolving elements") as task:
             if task:
