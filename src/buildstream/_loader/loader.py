@@ -593,11 +593,29 @@ class Loader():
         # meta junction element
         # XXX: This is a likely point for progress reporting to end up
         # missing some elements, but it currently doesn't appear to be the case.
-        meta_element = self._collect_element(self._elements[filename], None)
+        meta_element = self._collect_element_no_deps(self._elements[filename], None)
         if meta_element.kind != 'junction':
             raise LoadError("{}{}: Expected junction but element kind is {}"
                             .format(provenance_str, filename, meta_element.kind),
                             LoadErrorReason.INVALID_DATA)
+
+        # We check that junctions have no dependencies a little
+        # early. This is cheating, since we don't technically know
+        # that junctions aren't allowed to have dependencies.
+        #
+        # However, this makes progress reporting more intuitive
+        # because we don't need to load dependencies of an element
+        # that shouldn't have any, and therefore don't need to
+        # duplicate the load count for elements that shouldn't be.
+        #
+        # We also fail slightly earlier (since we don't need to go
+        # through the entire loading process), which is nice UX. It
+        # would be nice if this could be done for *all* element types,
+        # but since we haven't loaded those yet that's impossible.
+        if self._elements[filename].dependencies:
+            raise LoadError(
+                "Dependencies are forbidden for 'junction' elements",
+                LoadErrorReason.INVALID_JUNCTION)
 
         element = Element._new_from_meta(meta_element)
         element._update_state()

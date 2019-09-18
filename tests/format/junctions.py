@@ -238,7 +238,7 @@ def test_invalid_with_deps(cli, datafiles):
     copy_subprojects(project, datafiles, ['base'])
 
     result = cli.run(project=project, args=['build', 'junction-with-deps.bst'])
-    result.assert_main_error(ErrorDomain.ELEMENT, 'element-forbidden-depends')
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_JUNCTION)
 
 
 # Test that we error correctly when a junction is directly depended on
