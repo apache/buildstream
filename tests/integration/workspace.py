@@ -21,7 +21,6 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
 def test_workspace_mount(cli, datafiles):
     project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')
@@ -71,7 +70,6 @@ def test_workspace_commanddir(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
 def test_workspace_updated_dependency(cli, datafiles):
     project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')
@@ -126,7 +124,6 @@ def test_workspace_updated_dependency(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
 def test_workspace_update_dependency_failed(cli, datafiles):
     project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')
@@ -202,7 +199,6 @@ def test_workspace_update_dependency_failed(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
 def test_updated_dependency_nested(cli, datafiles):
     project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')
@@ -336,7 +332,6 @@ def test_workspace_missing_last_successful(cli, datafiles):
 # Check that we can still read failed workspace logs
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
 def test_workspace_failed_logs(cli, datafiles):
     project = str(datafiles)
     workspace = os.path.join(cli.directory, 'failing_amhello')
