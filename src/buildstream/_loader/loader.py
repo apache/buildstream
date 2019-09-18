@@ -596,8 +596,15 @@ class Loader():
             return None
 
         # meta junction element
-        # XXX: This is a likely point for progress reporting to end up
-        # missing some elements, but it currently doesn't appear to be the case.
+        #
+        # Note that junction elements are not allowed to have
+        # dependencies, so disabling progress reporting here should
+        # have no adverse effects - the junction element itself cannot
+        # be depended on, so it would be confusing for its load to
+        # show up in logs.
+        #
+        # Any task counting *inside* the junction will be handled by
+        # its loader.
         meta_element = self._collect_element_no_deps(self._elements[filename], _NO_PROGRESS)
         if meta_element.kind != 'junction':
             raise LoadError("{}{}: Expected junction but element kind is {}"
