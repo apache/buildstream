@@ -36,30 +36,42 @@ class SourceRemote(BaseRemote):
         self.source_service = None
 
     def _configure_protocols(self):
+        # set up source service
+        self.source_service = source_pb2_grpc.SourceServiceStub(self.channel)
+
+    # _check():
+    #
+    # Check if this remote provides everything required for the
+    # particular kind of remote. This is expected to be called as part
+    # of check(), and must be called in a non-main process.
+    #
+    # Returns:
+    #    (str|None): An error message, or None if no error message.
+    #
+    def _check(self):
         capabilities_service = buildstream_pb2_grpc.CapabilitiesStub(self.channel)
+
         # check that the service supports sources
         try:
             request = buildstream_pb2.GetCapabilitiesRequest()
             if self.instance_name:
                 request.instance_name = self.instance_name
-
             response = capabilities_service.GetCapabilities(request)
         except grpc.RpcError as e:
             # Check if this remote has the artifact service
             if e.code() == grpc.StatusCode.UNIMPLEMENTED:
-                raise SourceCacheError(
-                    "Configured remote does not have the BuildStream "
-                    "capabilities service. Please check remote configuration.")
+                return ("Configured remote does not have the BuildStream "
+                        "capabilities service. Please check remote configuration.")
             # Else raise exception with details
-            raise SourceCacheError(
-                "Remote initialisation failed: {}".format(e.details()))
+            return "Remote initialisation failed: {}".format(e.details())
 
         if not response.source_capabilities:
-            raise SourceCacheError(
-                "Configured remote does not support source service")
+            return "Configured remote does not support source service"
 
-        # set up source service
-        self.source_service = source_pb2_grpc.SourceServiceStub(self.channel)
+        if self.spec.push and not response.source_capabilities.allow_updates:
+            return 'Source server does not allow push'
+
+        return None
 
     # get_source():
     #

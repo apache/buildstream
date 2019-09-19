@@ -1,9 +1,22 @@
-import grpc
+#
+#  Copyright (C) 2018-2019 Bloomberg Finance LP
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library. If not, see <http://www.gnu.org/licenses/>.
+#
 
 from .._protos.google.rpc import code_pb2
-from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.build.buildgrid import local_cas_pb2
-from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
 
 from .._remote import BaseRemote
 from .._exceptions import CASRemoteError
@@ -33,12 +46,6 @@ class CASRemote(BaseRemote):
         super().__init__(spec, **kwargs)
 
         self.cascache = cascache
-        self.cas = None
-        self.ref_storage = None
-        self.batch_update_supported = None
-        self.batch_read_supported = None
-        self.capabilities = None
-        self.max_batch_total_size_bytes = None
         self.local_cas_instance_name = None
 
     # check_remote
@@ -48,39 +55,6 @@ class CASRemote(BaseRemote):
     # be called outside of init().
     #
     def _configure_protocols(self):
-        self.cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self.channel)
-        self.capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self.channel)
-        self.ref_storage = buildstream_pb2_grpc.ReferenceStorageStub(self.channel)
-
-        # Figure out what batch sizes the server will accept, falling
-        # back to our _MAX_PAYLOAD_BYTES
-        self.max_batch_total_size_bytes = _MAX_PAYLOAD_BYTES
-        try:
-            request = remote_execution_pb2.GetCapabilitiesRequest()
-            if self.instance_name:
-                request.instance_name = self.instance_name
-            response = self.capabilities.GetCapabilities(request)
-            server_max_batch_total_size_bytes = response.cache_capabilities.max_batch_total_size_bytes
-            if 0 < server_max_batch_total_size_bytes < self.max_batch_total_size_bytes:
-                self.max_batch_total_size_bytes = server_max_batch_total_size_bytes
-        except grpc.RpcError as e:
-            # Simply use the defaults for servers that don't implement
-            # GetCapabilities()
-            if e.code() != grpc.StatusCode.UNIMPLEMENTED:
-                raise
-
-        # Check whether the server supports BatchReadBlobs()
-        self.batch_read_supported = self._check_support(
-            remote_execution_pb2.BatchReadBlobsRequest,
-            self.cas.BatchReadBlobs
-        )
-
-        # Check whether the server supports BatchUpdateBlobs()
-        self.batch_update_supported = self._check_support(
-            remote_execution_pb2.BatchUpdateBlobsRequest,
-            self.cas.BatchUpdateBlobs
-        )
-
         local_cas = self.cascache._get_local_cas()
         request = local_cas_pb2.GetInstanceNameForRemoteRequest()
         request.url = self.spec.url
@@ -94,49 +68,6 @@ class CASRemote(BaseRemote):
             request.client_cert = self.client_cert
         response = local_cas.GetInstanceNameForRemote(request)
         self.local_cas_instance_name = response.instance_name
-
-    # _check():
-    #
-    # Check if this remote provides everything required for the
-    # particular kind of remote. This is expected to be called as part
-    # of check(), and must be called in a non-main process.
-    #
-    # Returns:
-    #    (str|None): An error message, or None if no error message.
-    #
-    def _check(self):
-        request = buildstream_pb2.StatusRequest()
-        response = self.ref_storage.Status(request)
-
-        if self.spec.push and not response.allow_updates:
-            return 'CAS server does not allow push'
-
-        return None
-
-    # _check_support():
-    #
-    # Figure out if a remote server supports a given method based on
-    # grpc.StatusCode.UNIMPLEMENTED and grpc.StatusCode.PERMISSION_DENIED.
-    #
-    # Args:
-    #    request_type (callable): The type of request to check.
-    #    invoker (callable): The remote method that will be invoked.
-    #
-    # Returns:
-    #    (bool) - Whether the request is supported.
-    #
-    def _check_support(self, request_type, invoker):
-        try:
-            request = request_type()
-            if self.instance_name:
-                request.instance_name = self.instance_name
-            invoker(request)
-            return True
-        except grpc.RpcError as e:
-            if not e.code() in (grpc.StatusCode.UNIMPLEMENTED, grpc.StatusCode.PERMISSION_DENIED):
-                raise
-
-        return False
 
     # push_message():
     #
