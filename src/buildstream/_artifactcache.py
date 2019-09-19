@@ -49,6 +49,19 @@ class ArtifactRemote(BaseRemote):
     # Remote.init(), and is expected to fail when called by itself.
     #
     def _configure_protocols(self):
+        # Set up artifact stub
+        self.artifact_service = artifact_pb2_grpc.ArtifactServiceStub(self.channel)
+
+    # _check():
+    #
+    # Check if this remote provides everything required for the
+    # particular kind of remote. This is expected to be called as part
+    # of check(), and must be called in a non-main process.
+    #
+    # Returns:
+    #    (str|None): An error message, or None if no error message.
+    #
+    def _check(self):
         capabilities_service = buildstream_pb2_grpc.CapabilitiesStub(self.channel)
 
         # Check whether the server supports newer proto based artifact.
@@ -60,19 +73,18 @@ class ArtifactRemote(BaseRemote):
         except grpc.RpcError as e:
             # Check if this remote has the artifact service
             if e.code() == grpc.StatusCode.UNIMPLEMENTED:
-                raise ArtifactError(
-                    "Configured remote does not have the BuildStream "
-                    "capabilities service. Please check remote configuration.")
+                return ("Configured remote does not have the BuildStream "
+                        "capabilities service. Please check remote configuration.")
             # Else raise exception with details
-            raise ArtifactError(
-                "Remote initialisation failed: {}".format(e.details()))
+            return "Remote initialisation failed: {}".format(e.details())
 
         if not response.artifact_capabilities:
-            raise ArtifactError(
-                "Configured remote does not support artifact service")
+            return "Configured remote does not support artifact service"
 
-        # Set up artifact stub
-        self.artifact_service = artifact_pb2_grpc.ArtifactServiceStub(self.channel)
+        if self.spec.push and not response.artifact_capabilities.allow_updates:
+            return 'Artifact server does not allow push'
+
+        return None
 
     # get_artifact():
     #
