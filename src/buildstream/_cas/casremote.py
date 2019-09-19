@@ -95,24 +95,6 @@ class CASRemote(BaseRemote):
         response = local_cas.GetInstanceNameForRemote(request)
         self.local_cas_instance_name = response.instance_name
 
-    # _check():
-    #
-    # Check if this remote provides everything required for the
-    # particular kind of remote. This is expected to be called as part
-    # of check(), and must be called in a non-main process.
-    #
-    # Returns:
-    #    (str|None): An error message, or None if no error message.
-    #
-    def _check(self):
-        request = buildstream_pb2.StatusRequest()
-        response = self.ref_storage.Status(request)
-
-        if self.spec.push and not response.allow_updates:
-            return 'CAS server does not allow push'
-
-        return None
-
     # _check_support():
     #
     # Figure out if a remote server supports a given method based on
