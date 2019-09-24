@@ -253,52 +253,6 @@ class CasBasedDirectory(Directory):
             fileListResult.overwritten.append(relative_pathname)
             return True
 
-    def _import_files_from_directory(self, source_directory, filter_callback,
-                                     *, path_prefix="", result,
-                                     can_link=False):
-        """ Import files from a traditional directory. """
-
-        for direntry in os.scandir(source_directory):
-            # The destination filename, relative to the root where the import started
-            relative_pathname = os.path.join(path_prefix, direntry.name)
-
-            is_dir = direntry.is_dir(follow_symlinks=False)
-
-            if is_dir:
-                src_subdir = os.path.join(source_directory, direntry.name)
-
-                try:
-                    create_subdir = direntry.name not in self.index
-                    dest_subdir = self.descend(direntry.name, create=create_subdir)
-                except VirtualDirectoryError:
-                    filetype = self.index[direntry.name].type
-                    raise VirtualDirectoryError('Destination is a {}, not a directory: /{}'
-                                                .format(filetype, relative_pathname))
-
-                dest_subdir._import_files_from_directory(
-                    src_subdir, filter_callback,
-                    path_prefix=relative_pathname, result=result,
-                    can_link=can_link)
-
-            if filter_callback and not filter_callback(relative_pathname):
-                if is_dir and create_subdir and dest_subdir.is_empty():
-                    # Complete subdirectory has been filtered out, remove it
-                    self.delete_entry(direntry.name)
-
-                # Entry filtered out, move to next
-                continue
-
-            if direntry.is_file(follow_symlinks=False):
-                if self._check_replacement(direntry.name, relative_pathname, result):
-                    self._add_file(source_directory, direntry.name,
-                                   modified=relative_pathname in result.overwritten,
-                                   can_link=can_link)
-                    result.files_written.append(relative_pathname)
-            elif direntry.is_symlink():
-                if self._check_replacement(direntry.name, relative_pathname, result):
-                    self._copy_link_from_filesystem(source_directory, direntry.name)
-                    result.files_written.append(relative_pathname)
-
     def _partial_import_cas_into_cas(self, source_directory, filter_callback, *, path_prefix="", origin=None, result):
         """ Import files from a CAS-based directory. """
         if origin is None:
@@ -382,16 +336,19 @@ class CasBasedDirectory(Directory):
         result = FileListResult()
 
         if isinstance(external_pathspec, FileBasedDirectory):
-            source_directory = external_pathspec._get_underlying_directory()
-            self._import_files_from_directory(source_directory, filter_callback,
-                                              result=result, can_link=can_link)
-        elif isinstance(external_pathspec, str):
-            source_directory = external_pathspec
-            self._import_files_from_directory(source_directory, filter_callback,
-                                              result=result, can_link=can_link)
-        else:
-            assert isinstance(external_pathspec, CasBasedDirectory)
-            self._partial_import_cas_into_cas(external_pathspec, filter_callback, result=result)
+            external_pathspec = external_pathspec._get_underlying_directory()
+
+        if isinstance(external_pathspec, str):
+            # Import files from local filesystem by first importing complete
+            # directory into CAS (using buildbox-casd) and then importing its
+            # content into this CasBasedDirectory using CAS-to-CAS import
+            # to write the report, handle possible conflicts (if the target
+            # directory is not empty) and apply the optional filter.
+            digest = self.cas_cache.import_directory(external_pathspec)
+            external_pathspec = CasBasedDirectory(self.cas_cache, digest=digest)
+
+        assert isinstance(external_pathspec, CasBasedDirectory)
+        self._partial_import_cas_into_cas(external_pathspec, filter_callback, result=result)
 
         # TODO: No notice is taken of report_written or update_mtime.
         # Current behaviour is to fully populate the report, which is inefficient,
