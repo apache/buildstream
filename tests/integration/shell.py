@@ -295,7 +295,6 @@ def test_cli_mount(cli, datafiles, path):
 # Test that we can see the workspace files in a shell
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
 def test_workspace_visible(cli, datafiles):
     project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')
@@ -374,7 +373,6 @@ def test_integration_devices(cli, datafiles):
 @pytest.mark.parametrize("build_shell", [("build"), ("nobuild")])
 @pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
 def test_integration_external_workspace(cli, tmpdir_factory, datafiles, build_shell, guess_element):
     tmpdir = tmpdir_factory.mktemp("")
     project = str(datafiles)

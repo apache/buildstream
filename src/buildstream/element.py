@@ -92,7 +92,7 @@ from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, \
     ErrorDomain, SourceCacheError
-from .utils import FileListResult, UtilError
+from .utils import FileListResult
 from . import utils
 from . import _cachekey
 from . import _signals
@@ -1023,6 +1023,9 @@ class Element(Plugin):
         element = meta.project.create_element(meta, first_pass=meta.first_pass)
         cls.__instantiated_elements[meta] = element
 
+        # do the metasources include a workspace source?
+        _workspace_source = None
+
         # Instantiate sources and generate their keys
         for meta_source in meta.sources:
             meta_source.first_pass = meta.is_junction
@@ -1030,11 +1033,23 @@ class Element(Plugin):
                                                 first_pass=meta.first_pass)
 
             redundant_ref = source._load_ref()
+
+            if meta_source.kind == 'workspace':
+                _workspace_source = source
+                continue
+
             element.__sources.append(source)
 
             # Collect redundant refs which occurred at load time
             if redundant_ref is not None:
                 cls.__redundant_source_refs.append((source, redundant_ref))
+
+        # workspace handling: if the metasources included a workspace source, then
+        # this should replace the element.__sources and should in turn own those sources
+        # directly
+        if _workspace_source is not None:
+            _workspace_source.set_element_sources(element.__sources)
+            element.__sources = [_workspace_source]
 
         # Instantiate dependencies
         for meta_dep in meta.dependencies:
@@ -1264,10 +1279,6 @@ class Element(Plugin):
             # Tracking may still be pending
             return
 
-        if self._get_workspace() and self.__assemble_scheduled:
-            self.__reset_cache_data()
-            return
-
         self.__update_cache_keys()
         self.__update_artifact_state()
 
@@ -1438,21 +1449,18 @@ class Element(Plugin):
     # Args:
     #     sandbox (:class:`.Sandbox`): The build sandbox
     #     directory (str): An absolute path to stage the sources at
-    #     mount_workspaces (bool): mount workspaces if True, copy otherwise
     #
-    def _stage_sources_in_sandbox(self, sandbox, directory, mount_workspaces=True):
+    def _stage_sources_in_sandbox(self, sandbox, directory):
 
         # Only artifact caches that implement diff() are allowed to
         # perform incremental builds.
-        if mount_workspaces and self.__can_build_incrementally():
-            workspace = self._get_workspace()
+        if self.__can_build_incrementally():
             sandbox.mark_directory(directory)
-            sandbox._set_mount_source(directory, workspace.get_absolute_path())
 
         # Stage all sources that need to be copied
         sandbox_vroot = sandbox.get_virtual_directory()
         host_vdirectory = sandbox_vroot.descend(*directory.lstrip(os.sep).split(os.sep), create=True)
-        self._stage_sources_at(host_vdirectory, mount_workspaces=mount_workspaces, usebuildtree=sandbox._usebuildtree)
+        self._stage_sources_at(host_vdirectory, usebuildtree=sandbox._usebuildtree)
 
     # _stage_sources_at():
     #
@@ -1460,10 +1468,9 @@ class Element(Plugin):
     #
     # Args:
     #     vdirectory (:class:`.storage.Directory`): A virtual directory object to stage sources into.
-    #     mount_workspaces (bool): mount workspaces if True, copy otherwise
     #     usebuildtree (bool): use a the elements build tree as its source.
     #
-    def _stage_sources_at(self, vdirectory, mount_workspaces=True, usebuildtree=False):
+    def _stage_sources_at(self, vdirectory, usebuildtree=False):
 
         context = self._get_context()
 
@@ -1479,24 +1486,16 @@ class Element(Plugin):
             if not vdirectory.is_empty():
                 raise ElementError("Staging directory '{}' is not empty".format(vdirectory))
 
-            workspace = self._get_workspace()
-            if workspace:
-                # If mount_workspaces is set and we're doing incremental builds,
-                # the workspace is already mounted into the sandbox.
-                if not (mount_workspaces and self.__can_build_incrementally()):
-                    with self.timed_activity("Staging local files at {}"
-                                             .format(workspace.get_absolute_path())):
-                        workspace.stage(import_dir)
-
             # Check if we have a cached buildtree to use
-            elif usebuildtree:
+            if usebuildtree:
                 import_dir = self.__artifact.get_buildtree()
                 if import_dir.is_empty():
                     detail = "Element type either does not expect a buildtree or it was explictily cached without one."
                     self.warn("WARNING: {} Artifact contains an empty buildtree".format(self.name), detail=detail)
 
-            # No workspace or cached buildtree, stage source from source cache
+            # No cached buildtree, stage source from source cache
             else:
+
                 # Assert sources are cached
                 assert self._source_cached()
 
@@ -1511,6 +1510,7 @@ class Element(Plugin):
                         for source in self.__sources[last_required_previous_ix:]:
                             source_dir = sourcecache.export(source)
                             import_dir.import_files(source_dir)
+
                     except SourceCacheError as e:
                         raise ElementError("Error trying to export source for {}: {}"
                                            .format(self.name, e))
@@ -1721,24 +1721,6 @@ class Element(Plugin):
                 except (ElementError, SandboxCommandError) as e:
                     # Shelling into a sandbox is useful to debug this error
                     e.sandbox = True
-
-                    # If there is a workspace open on this element, it will have
-                    # been mounted for sandbox invocations instead of being staged.
-                    #
-                    # In order to preserve the correct failure state, we need to
-                    # copy over the workspace files into the appropriate directory
-                    # in the sandbox.
-                    #
-                    workspace = self._get_workspace()
-                    if workspace and self.__staged_sources_directory:
-                        sandbox_vroot = sandbox.get_virtual_directory()
-                        path_components = self.__staged_sources_directory.lstrip(os.sep).split(os.sep)
-                        sandbox_vpath = sandbox_vroot.descend(*path_components)
-                        try:
-                            sandbox_vpath.import_files(workspace.get_absolute_path())
-                        except UtilError as e2:
-                            self.warn("Failed to preserve workspace state for failed build sysroot: {}"
-                                      .format(e2))
 
                     self.__set_build_result(success=False, description=str(e), detail=e.detail)
                     self._cache_artifact(rootdir, sandbox, e.collect)
@@ -2221,7 +2203,6 @@ class Element(Plugin):
             }
 
             project = self._get_project()
-            workspace = self._get_workspace()
 
             self.__cache_key_dict = {
                 'core-artifact-version': BST_CORE_ARTIFACT_VERSION,
@@ -2237,15 +2218,9 @@ class Element(Plugin):
                 return {'key': _source._get_unique_key(True),
                         'name': _source._get_source_name()}
 
-            def __get_workspace_entry(workspace):
-                return {'key': workspace.get_key()}
-
-            if workspace is None:
-                self.__cache_key_dict['sources'] = \
-                    [__get_source_entry(s) for s in self.__sources]
-            else:
-                self.__cache_key_dict['sources'] = \
-                    [__get_workspace_entry(workspace)]
+            self._source_cached()
+            self.__cache_key_dict['sources'] = \
+                [__get_source_entry(s) for s in self.__sources]
 
             self.__cache_key_dict['fatal-warnings'] = sorted(project._fatal_warnings)
 
@@ -2256,7 +2231,7 @@ class Element(Plugin):
 
     # Check if sources are cached, generating the source key if it hasn't been
     def _source_cached(self):
-        if self.__sources and not self._get_workspace():
+        if self.__sources:
             sourcecache = self._get_context().sourcecache
 
             # Go through sources we'll cache generating keys

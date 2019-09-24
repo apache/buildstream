@@ -1142,6 +1142,9 @@ def test_external_push_pull(cli, datafiles, tmpdir_factory, guess_element):
         result.assert_success()
 
 
+# Attempting to track in an open workspace is not a sensible thing and it's not compatible with workspaces as plugin
+# sources: The new ref (if it differed from the old) would have been ignored regardless.
+# The user should be expected to simply close the workspace before tracking.
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
 def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
@@ -1151,17 +1154,31 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
     arg_elm = [element_name] if not guess_element else []
 
     # Delete the ref from the source so that we can detect if the
-    # element has been tracked
+    # element has been tracked after closing the workspace
     element_contents = _yaml.load(element_file)
+    ref1 = element_contents.get_sequence('sources').mapping_at(0).get_str('ref')
     del element_contents.get_sequence('sources').mapping_at(0)['ref']
     _yaml.roundtrip_dump(element_contents, element_file)
 
     result = cli.run(project=project, args=['-C', workspace, 'source', 'track', *arg_elm])
     result.assert_success()
 
-    # Element is tracked now
+    # Element is not tracked now
     element_contents = _yaml.load(element_file)
-    assert 'ref' in element_contents.get_sequence('sources').mapping_at(0)
+    assert 'ref' not in element_contents.get_sequence('sources').mapping_at(0)
+
+    # close the workspace
+    result = cli.run(project=project, args=['-C', workspace, 'workspace', 'close', *arg_elm])
+    result.assert_success()
+
+    # and retrack the element
+    result = cli.run(project=project, args=['source', 'track', element_name])
+    result.assert_success()
+
+    element_contents = _yaml.load(element_file)
+    ref2 = element_contents.get_sequence('sources').mapping_at(0).get_str('ref')
+    # these values should be equivalent
+    assert ref1 == ref2
 
 
 @pytest.mark.datafiles(DATA_DIR)
