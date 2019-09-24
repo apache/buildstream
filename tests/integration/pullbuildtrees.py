@@ -13,6 +13,9 @@ from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from tests.testutils import create_artifact_share
 
 
+pytestmark = pytest.mark.integration
+
+
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "project"

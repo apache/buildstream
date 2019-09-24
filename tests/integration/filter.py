@@ -10,6 +10,9 @@ from buildstream.testing.integration import assert_contains
 from buildstream.testing._utils.site import HAVE_SANDBOX
 
 
+pytestmark = pytest.mark.integration
+
+
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     'project'
