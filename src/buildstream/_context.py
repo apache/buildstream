@@ -332,7 +332,6 @@ class Context():
         self.log_verbose = logging.get_bool('verbose')
         self.log_error_lines = logging.get_int('error-lines')
         self.log_message_lines = logging.get_int('message-lines')
-        self.log_message_lines = logging.get_int('message-lines')
         self.log_element_format = logging.get_str('element-format')
         self.log_message_format = logging.get_str('message-format')
 
