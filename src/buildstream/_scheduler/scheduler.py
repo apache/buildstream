@@ -609,8 +609,6 @@ class Scheduler():
         elif notification.notification_type == NotificationType.RETRY:
             self._failure_retry(notification.job_action, notification.element)
         else:
-            # Do not raise exception once scheduler process is separated
-            # as we don't want to pickle exceptions between processes
             raise ValueError("Unrecognised notification type received")
 
     def _loop(self):

@@ -34,7 +34,7 @@ from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
-from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError, set_last_task_error
+from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError, set_last_task_error, SubprocessException
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, \
     SourcePushQueue, BuildQueue, PullQueue, ArtifactPushQueue, NotificationType, Notification, JobStatus
@@ -117,12 +117,12 @@ class Stream():
         utils._reset_main_pid()
         try:
             func(*args, **kwargs)
-        except Exception as e:
-            notify.put(Notification(NotificationType.EXCEPTION, exception=e))
+        except BstError as e:
+            # Send the exceptions members dict to be reraised in main process
+            exception_attrs = vars(e)
+            notify.put(Notification(NotificationType.EXCEPTION, exception=exception_attrs))
 
     def run_in_subprocess(self, func, *args, **kwargs):
-        print("Args: {}".format([*args]))
-        print("Kwargs: {}".format(list(kwargs.items())))
         assert not self._subprocess
 
         mp_context = mp.get_context(method='fork')
@@ -137,7 +137,6 @@ class Stream():
         args = list(args)
         args.insert(0, self._notify_front)
         args.insert(0, func)
-        print("launching subprocess:", process_name)
 
         self._subprocess = mp_context.Process(target=Stream._subprocess_main, args=args,
                                               kwargs=kwargs, name=process_name)
@@ -150,7 +149,6 @@ class Stream():
             self._subprocess.join(0.01)
             # if no exit code, go back to checking the message queue
             self._loop()
-        print("Stopping loop...")
 
         # Set main process back
         utils._reset_main_pid()
@@ -161,8 +159,8 @@ class Stream():
                 notification = self._notify_front.get_nowait()
                 self._scheduler_notification_handler(notification)
         except queue.Empty:
-            print("Finished processing notifications")
             pass
+
 
     # cleanup()
     #
@@ -1751,13 +1749,12 @@ class Stream():
         elif notification.notification_type == NotificationType.TASK_ERROR:
             set_last_task_error(*notification.task_error)
         elif notification.notification_type == NotificationType.EXCEPTION:
-            raise notification.exception
+            # Regenerate the exception here, so we don't have to pickle it
+            raise SubprocessException(**notification.exception)
         else:
             raise StreamError("Unrecognised notification type received")
 
     def _notify(self, notification):
-        # Set that the notifcation is for the scheduler
-        #notification.for_scheduler = True
         if self._notify_back:
             self._notify_back.put(notification)
         else:

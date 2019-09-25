@@ -113,6 +113,8 @@ class BstError(Exception):
 
         super().__init__(message)
 
+        self.message = message
+
         # Additional error detail, these are used to construct detail
         # portions of the logging messages when encountered.
         #
@@ -378,3 +380,13 @@ class SkipJob(Exception):
 class ArtifactElementError(BstError):
     def __init__(self, message, *, detail=None, reason=None):
         super().__init__(message, detail=detail, domain=ErrorDomain.ELEMENT, reason=reason)
+
+class SubprocessException(BstError):
+    def __init__(self, **kwargs):
+        super().__init__(kwargs['message'], detail=kwargs['detail'],
+                         domain=kwargs['domain'], reason=kwargs['reason'], temporary=kwargs['temporary'])
+        self.sandbox = kwargs['sandbox']
+        try:
+            self.terminated = kwargs['terminated']
+        except KeyError:
+            pass
