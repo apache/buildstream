@@ -2200,7 +2200,6 @@ class Element(Plugin):
                 return {'key': _source._get_unique_key(True),
                         'name': _source._get_source_name()}
 
-            self._source_cached()
             self.__cache_key_dict['sources'] = \
                 [__get_source_entry(s) for s in self.__sources]
 
