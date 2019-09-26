@@ -66,6 +66,8 @@ class NotificationType(FastEnum):
     MESSAGE = "message"
     TASK_ERROR = "task_error"
     EXCEPTION = "exception"
+    START = "start"
+    TASK_GROUPS = "task_groups"
 
 
 # Notification()
@@ -88,8 +90,8 @@ class Notification():
                  element=None,
                  message=None,
                  task_error=None,
-                 for_scheduler=False,
-                 exception=None):
+                 exception=None,
+                 task_groups=None):
         self.notification_type = notification_type
         self.full_name = full_name
         self.job_action = job_action
@@ -99,6 +101,7 @@ class Notification():
         self.message = message
         self.task_error = task_error  # Tuple of domain & reason
         self.exception = exception
+        self.task_groups = task_groups
 
 
 # Scheduler()
@@ -227,6 +230,14 @@ class Scheduler():
             status = SchedStatus.TERMINATED
         else:
             status = SchedStatus.SUCCESS
+
+        # Send the state taskgroups if we're running under the subprocess
+        if self._notify_front:
+            # Don't pickle state
+            for group in self._state.task_groups.values():
+                group._state = None
+            notification = Notification(NotificationType.TASK_GROUPS, task_groups=self._state.task_groups)
+            self._notify_front.put(notification)
 
         return status
 
