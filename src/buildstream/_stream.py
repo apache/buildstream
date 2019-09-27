@@ -90,18 +90,17 @@ class Stream():
         context.messenger.set_state(self._state)
 
         # Scheduler may use callback for notification depending on whether it's subprocessed
-        self._scheduler = Scheduler(context, session_start, self._state, self._scheduler_notification_handler)
+        self._scheduler = Scheduler(context, session_start, self._state, self._notification_handler)
 
         self._first_non_track_queue = None
         self._session_start_callback = session_start_callback
         self._ticker_callback = ticker_callback
         self._interrupt_callback = interrupt_callback
-        self._notifier = self._scheduler._stream_notification_handler  # Assign the schedulers notification handler
         self._scheduler_running = False
         self._scheduler_terminated = False
         self._scheduler_suspended = False
-        self._notify_front = None
-        self._notify_back = None
+        self._notify_front_queue = None
+        self._notify_back_queue = None
 
     # init()
     #
@@ -129,14 +128,14 @@ class Stream():
         mp_context = mp.get_context(method='fork')
         process_name = "stream-{}".format(func.__name__)
 
-        self._notify_front = mp.Queue()
-        self._notify_back = mp.Queue()
+        self._notify_front_queue = mp.Queue()
+        self._notify_back_queue = mp.Queue()
         # Tell the scheduler to not use the notifier callback
-        self._scheduler._notify_front = self._notify_front
-        self._scheduler._notify_back = self._notify_back
+        self._scheduler._notify_front_queue = self._notify_front_queue
+        self._scheduler._notify_back_queue = self._notify_back_queue
 
         args = list(args)
-        args.insert(0, self._notify_front)
+        args.insert(0, self._notify_front_queue)
         args.insert(0, func)
 
         self._subprocess = mp_context.Process(target=Stream._subprocess_main, args=args,
@@ -157,8 +156,8 @@ class Stream():
         # Ensure no more notifcations to process
         try:
             while True:
-                notification = self._notify_front.get_nowait()
-                self._scheduler_notification_handler(notification)
+                notification = self._notify_front_queue.get_nowait()
+                self._notification_handler(notification)
         except queue.Empty:
             pass
 
@@ -169,7 +168,7 @@ class Stream():
     #
     def cleanup(self):
         # Close the notification queue
-        for q in [self._notify_back, self._notify_front]:
+        for q in [self._notify_back_queue, self._notify_front_queue]:
             if q is not None:
                 q.close()
         #self._notification_queue.cancel_join_thread()
@@ -1184,7 +1183,7 @@ class Stream():
     #
     def terminate(self):
         notification = Notification(NotificationType.TERMINATE)
-        self._notify(notification)
+        self._notify_back(notification)
 
     # quit()
     #
@@ -1194,7 +1193,7 @@ class Stream():
     #
     def quit(self):
         notification = Notification(NotificationType.QUIT)
-        self._notify(notification)
+        self._notify_back(notification)
 
     # suspend()
     #
@@ -1204,11 +1203,11 @@ class Stream():
     def suspend(self):
         # Send the notification to suspend jobs
         notification = Notification(NotificationType.SUSPEND)
-        self._notify(notification)
+        self._notify_back(notification)
         yield
         # Unsuspend jobs on context exit
         notification = Notification(NotificationType.UNSUSPEND)
-        self._notify(notification)
+        self._notify_back(notification)
 
     #############################################################
     #                    Private Methods                        #
@@ -1416,7 +1415,7 @@ class Stream():
         notification = Notification(NotificationType.RETRY,
                                     job_action=action_name,
                                     element=unique_id)
-        self._notify(notification)
+        self._notify_back(notification)
 
     # _run()
     #
@@ -1430,18 +1429,13 @@ class Stream():
         self.total_elements = list(self._pipeline.dependencies(self.targets, Scope.ALL))
 
         if self._session_start_callback is not None:
-            if self._notify_front:
-                self._notify_front.put(Notification(NotificationType.START))
-            else:
-                self._session_start_callback()
+            self._notify_front(Notification(NotificationType.START))
 
         # Also send through the session & total elements list lengths for status rendering
         element_totals = str(len(self.session_elements)), str(len(self.total_elements))
-        if self._notify_front:
-            self._notify_front.put(Notification(NotificationType.ELEMENT_TOTALS,
-                                                element_totals=element_totals))
-        else:
-            self.len_session_elements, self.len_total_elements = element_totals
+        self._notify_front(Notification(NotificationType.ELEMENT_TOTALS,
+                                        element_totals=element_totals))
+
 
         status = self._scheduler.run(self.queues, self._context.get_cascache().get_casd_process())
 
@@ -1735,7 +1729,7 @@ class Stream():
 
         return element_targets, artifact_refs
 
-    def _scheduler_notification_handler(self, notification):
+    def _notification_handler(self, notification):
         if notification.notification_type == NotificationType.TASK_GROUPS:
             self._state.task_groups = notification.task_groups
         elif notification.notification_type == NotificationType.MESSAGE:
@@ -1772,21 +1766,27 @@ class Stream():
         else:
             raise StreamError("Unrecognised notification type received")
 
-    def _notify(self, notification):
-        if self._notify_back:
-            self._notify_back.put(notification)
+    def _notify_back(self, notification):
+        if self._notify_back_queue:
+            self._notify_back_queue.put(notification)
         else:
-            self._scheduler._stream_notification_handler(notification)
+            self._scheduler._notification_handler(notification)
+
+    def _notify_front(self, notification):
+        if self._notify_front_queue:
+            self._notify_front_queue.put(notification)
+        else:
+            self._notification_handler(notification)
 
     # The code to be run by the Stream's event loop while delegating
     # work to a subprocess with the @subprocessed decorator
     def _loop(self):
-        assert self._notify_front
+        assert self._notify_front_queue
         # Check for and process new messages
         while True:
             try:
-                notification = self._notify_front.get_nowait()
-                self._scheduler_notification_handler(notification)
+                notification = self._notify_front_queue.get_nowait()
+                self._notification_handler(notification)
             except queue.Empty:
                 notification = None
                 break
