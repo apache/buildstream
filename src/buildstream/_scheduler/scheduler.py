@@ -72,6 +72,7 @@ class NotificationType(FastEnum):
     EXCEPTION = "exception"
     START = "start"
     TASK_GROUPS = "task_groups"
+    ELEMENT_TOTALS = "element_totals"
 
 
 # Notification()
@@ -95,7 +96,8 @@ class Notification:
         message=None,
         task_error=None,
         exception=None,
-        task_groups=None
+        task_groups=None,
+        element_totals=None
     ):
         self.notification_type = notification_type
         self.full_name = full_name
@@ -107,6 +109,7 @@ class Notification:
         self.task_error = task_error  # Tuple of domain & reason
         self.exception = exception
         self.task_groups = task_groups
+        self.element_totals = element_totals
 
 
 # Scheduler()
