@@ -261,7 +261,6 @@ class Element(Plugin):
         self.__sources = []                     # type: List[Source]
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
-        self.__cache_keys_unstable = None       # Whether the current cache keys can be considered as stable
         self.__artifacts = context.artifactcache  # Artifact cache
         self.__sourcecache = context.sourcecache  # Source cache
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
@@ -1282,23 +1281,9 @@ class Element(Plugin):
         self.__update_cache_keys()
         self.__update_artifact_state()
 
-        # Workspaces are initially marked with unstable cache keys. Keys will be
-        # marked stable either when we verify that the workspace is already
-        # cached, or when we build/pull the workspaced element.
-        if self.__cache_keys_unstable:
-            if not self._cached():
-                self.__reset_cache_data()
-                if not self.__assemble_scheduled:
-                    self._schedule_assemble()
-
-        self.__update_cache_keys_stability()
-
-        # Workspaced sources are considered unstable if a build is pending
-        # as the build will modify the contents of the workspace.
-        # Determine as early as possible if a build is pending to discard
-        # unstable cache keys.
-        # Also, uncached workspaced elements must be assembled so we can know
-        # the cache key.
+        # If the element wasn't assembled and isn't scheduled to be assemble,
+        # or cached, or waiting to be pulled but has an artifact then schedule
+        # the assembly.
         if (not self.__assemble_scheduled and not self.__assemble_done and
                 self.__artifact and
                 self._is_required() and
@@ -1614,7 +1599,6 @@ class Element(Plugin):
 
         self.__assemble_scheduled = False
         self.__assemble_done = True
-        self.__update_cache_keys_stability()
 
         # Artifact may have a cached success now.
         if self.__strict_artifact:
@@ -1848,8 +1832,6 @@ class Element(Plugin):
         # filesystem again to check
         self.__strict_artifact.reset_cached()
         self.__artifact.reset_cached()
-
-        self.__update_cache_keys_stability()
 
         self._update_state()
         self._update_ready_for_runtime_and_cached()
@@ -2326,9 +2308,8 @@ class Element(Plugin):
     # An Element becomes ready for runtime and cached once the following criteria
     # are met:
     #  1. The Element has a strong cache key
-    #  2. The Element's keys are considered stable
-    #  3. The Element is cached (locally)
-    #  4. The runtime dependencies of the Element are ready for runtime and cached.
+    #  2. The Element is cached (locally)
+    #  3. The runtime dependencies of the Element are ready for runtime and cached.
     #
     # These criteria serve as potential trigger points as to when an Element may have
     # become ready for runtime and cached.
@@ -2340,7 +2321,7 @@ class Element(Plugin):
     def _update_ready_for_runtime_and_cached(self):
         if not self.__ready_for_runtime_and_cached:
             if self.__runtime_deps_uncached == 0 and self._cached_success() and \
-               self.__cache_key and not self.__cache_keys_unstable:
+               self.__cache_key:
                 self.__ready_for_runtime_and_cached = True
 
                 # Notify reverse dependencies
@@ -3130,14 +3111,6 @@ class Element(Plugin):
     def __update_cache_keys(self):
         context = self._get_context()
 
-        # If the Element is workspaced, we should *initially*
-        # consider its keys unstable
-        if self.__cache_keys_unstable is None:
-            if self._get_workspace():
-                self.__cache_keys_unstable = True
-            else:
-                self.__cache_keys_unstable = False
-
         if self.__weak_cache_key is None:
             # Calculate weak cache key
             #
@@ -3191,9 +3164,6 @@ class Element(Plugin):
     # Updates the data involved in knowing about the artifact corresponding
     # to this element.
     #
-    # This involves erasing all data pertaining to artifacts if the cache
-    # key is unstable.
-    #
     # Element.__update_cache_keys() must be called before this to have
     # meaningful results, because the element must know its cache key before
     # it can check whether an artifact exists for that cache key.
@@ -3217,22 +3187,6 @@ class Element(Plugin):
 
             if context.get_strict():
                 self.__artifact = self.__strict_artifact
-
-    # __update_cache_keys_stability()
-    #
-    # Update the __cache_keys_unstable attribute.
-    #
-    # Workspaces are considered to be unstable on a new element instance.
-    # Otherwise if the element is cached or the build is done, then keys
-    # are considered to be stable. In other cases there is no change to
-    # the attribute.
-    #
-    def __update_cache_keys_stability(self):
-        if self.__cache_keys_unstable:
-            if self._cached():
-                self.__cache_keys_unstable = False
-            elif not self.__assemble_scheduled and self.__assemble_done:
-                self.__cache_keys_unstable = False
 
     # __update_cache_key_non_strict()
     #
@@ -3286,7 +3240,7 @@ class Element(Plugin):
     def __update_strict_cache_key_of_rdeps(self):
         if not self.__updated_strict_cache_keys_of_rdeps:
             if self.__runtime_deps_without_strict_cache_key == 0 and \
-               self.__strict_cache_key is not None and not self.__cache_keys_unstable:
+               self.__strict_cache_key is not None:
                 self.__updated_strict_cache_keys_of_rdeps = True
 
                 # Notify reverse dependencies
@@ -3309,8 +3263,7 @@ class Element(Plugin):
     # An Element becomes ready for runtime when:
     #
     #  1. The Element has a strong cache key
-    #  2. The Element's keys are considered stable
-    #  3. The runtime dependencies of the Element are ready for runtime
+    #  2. The runtime dependencies of the Element are ready for runtime
     #
     # These criteria serve as potential trigger points as to when an Element may have
     # become ready for runtime.
@@ -3322,7 +3275,7 @@ class Element(Plugin):
     def __update_ready_for_runtime(self):
         if not self.__ready_for_runtime:
             if self.__runtime_deps_without_cache_key == 0 and \
-               self.__cache_key is not None and not self.__cache_keys_unstable:
+               self.__cache_key is not None:
                 self.__ready_for_runtime = True
 
                 # Notify reverse dependencies

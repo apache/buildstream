@@ -674,11 +674,16 @@ def test_build(cli, tmpdir_factory, datafiles, kind, strict, from_workspace, gue
 
     # Build modified workspace
     assert cli.get_element_state(project, element_name) == 'buildable'
-    assert cli.get_element_key(project, element_name) == "{:?<64}".format('')
+    key_1 = cli.get_element_key(project, element_name)
+    assert key_1 != "{:?<64}".format('')
     result = cli.run(project=project, args=args_dir + ['build', *args_elm])
     result.assert_success()
     assert cli.get_element_state(project, element_name) == 'cached'
-    assert cli.get_element_key(project, element_name) != "{:?<64}".format('')
+    key_2 = cli.get_element_key(project, element_name)
+    assert key_2 != "{:?<64}".format('')
+
+    # workspace keys are not recalculated
+    assert key_1 == key_2
 
     # Checkout the result
     result = cli.run(project=project,
@@ -745,11 +750,16 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
 
     # Build clean workspace
     assert cli.get_element_state(project, element_name) == 'buildable'
-    assert cli.get_element_key(project, element_name) == "{:?<64}".format('')
+    key_1 = cli.get_element_key(project, element_name)
+    assert key_1 != "{:?<64}".format('')
     result = cli.run(project=project, args=['build', element_name])
     result.assert_success()
     assert cli.get_element_state(project, element_name) == 'cached'
-    assert cli.get_element_key(project, element_name) != "{:?<64}".format('')
+    key_2 = cli.get_element_key(project, element_name)
+    assert key_2 != "{:?<64}".format('')
+
+    # workspace keys are not recalculated
+    assert key_1 == key_2
 
     wait_for_cache_granularity()
 
@@ -771,7 +781,8 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
 
     # First assert that the state is properly detected
     assert cli.get_element_state(project, element_name) == 'buildable'
-    assert cli.get_element_key(project, element_name) == "{:?<64}".format('')
+    key_3 = cli.get_element_key(project, element_name)
+    assert key_3 != "{:?<64}".format('')
 
     # Since there are different things going on at `bst build` time
     # than `bst show` time, we also want to build / checkout again,
@@ -779,7 +790,13 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
     result = cli.run(project=project, args=['build', element_name])
     result.assert_success()
     assert cli.get_element_state(project, element_name) == 'cached'
-    assert cli.get_element_key(project, element_name) != "{:?<64}".format('')
+    key_4 = cli.get_element_key(project, element_name)
+    assert key_4 != "{:?<64}".format('')
+
+    # workspace keys are not recalculated
+    assert key_3 == key_4
+    # workspace keys are determined by the files
+    assert key_1 != key_3
 
     # Checkout the result
     result = cli.run(project=project, args=[
@@ -1039,17 +1056,25 @@ def test_cache_key_workspace_in_dependencies(cli, tmpdir, datafiles, strict):
 
     # Build artifact with dependency's modified workspace
     assert cli.get_element_state(project, element_name) == 'buildable'
-    assert cli.get_element_key(project, element_name) == "{:?<64}".format('')
+    key_a1 = cli.get_element_key(project, element_name)
+    assert key_a1 != "{:?<64}".format('')
     assert cli.get_element_state(project, back_dep_element_name) == 'waiting'
-    assert cli.get_element_key(project, back_dep_element_name) == "{:?<64}".format('')
+    key_b1 = cli.get_element_key(project, back_dep_element_name)
+    assert key_b1 != "{:?<64}".format('')
     result = cli.run(project=project, args=['build', back_dep_element_name])
     result.assert_success()
     assert cli.get_element_state(project, element_name) == 'cached'
-    assert cli.get_element_key(project, element_name) != "{:?<64}".format('')
+    key_a2 = cli.get_element_key(project, element_name)
+    assert key_a2 != "{:?<64}".format('')
     assert cli.get_element_state(project, back_dep_element_name) == 'cached'
-    assert cli.get_element_key(project, back_dep_element_name) != "{:?<64}".format('')
+    key_b2 = cli.get_element_key(project, back_dep_element_name)
+    assert key_b2 != "{:?<64}".format('')
     result = cli.run(project=project, args=['build', back_dep_element_name])
     result.assert_success()
+
+    # workspace keys are not recalculated
+    assert key_a1 == key_a2
+    assert key_b1 == key_b2
 
     # Checkout the result
     result = cli.run(project=project, args=[
