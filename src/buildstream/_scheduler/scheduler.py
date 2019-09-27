@@ -157,8 +157,8 @@ class Scheduler:
         self._casd_process = None  # handle to the casd process for monitoring purpose
 
         # Bidirectional pipe to send notifications back to the Scheduler's owner
-        self._notify_front = None
-        self._notify_back = None
+        self._notify_front_queue = None
+        self._notify_back_queue = None
         # Notifier callback to use if not running in a subprocess
         self._notifier = notifier
 
@@ -190,7 +190,7 @@ class Scheduler:
         asyncio.set_event_loop(self.loop)
 
         # Notify that the loop has been created
-        self._notify(Notification(NotificationType.RUNNING))
+        self._notify_front(Notification(NotificationType.RUNNING))
 
         # Add timeouts
         self.loop.call_later(1, self._tick)
@@ -204,7 +204,7 @@ class Scheduler:
         _watcher.add_child_handler(self._casd_process.pid, self._abort_on_casd_failure)
 
         # Add notification handler
-        if self._notify_back:
+        if self._notify_back_queue:
             self.loop.call_later(0.01, self._loop)
 
         # Start the profiler
@@ -225,7 +225,7 @@ class Scheduler:
         self.loop = None
 
         # Notify that the loop has been reset
-        self._notify(Notification(NotificationType.RUNNING))
+        self._notify_front(Notification(NotificationType.RUNNING))
 
         if failed:
             status = SchedStatus.ERROR
@@ -235,12 +235,12 @@ class Scheduler:
             status = SchedStatus.SUCCESS
 
         # Send the state taskgroups if we're running under the subprocess
-        if self._notify_front:
+        if self._notify_front_queue:
             # Don't pickle state
             for group in self._state.task_groups.values():
                 group._state = None
             notification = Notification(NotificationType.TASK_GROUPS, task_groups=self._state.task_groups)
-            self._notify_front.put(notification)
+            self._notify_front_queue.put(notification)
 
         return status
 
@@ -279,7 +279,7 @@ class Scheduler:
 
         # Notify the frontend that we're terminated as it might be
         # from an interactive prompt callback or SIGTERM
-        self._notify(Notification(NotificationType.TERMINATED))
+        self._notify_front(Notification(NotificationType.TERMINATED))
         self.loop.call_soon(self._terminate_jobs_real)
 
         # Block this until we're finished terminating jobs,
@@ -342,7 +342,7 @@ class Scheduler:
             job_status=status,
             element=element_info,
         )
-        self._notify(notification)
+        self._notify_front(notification)
         self._sched()
 
     # notify_messenger()
@@ -354,7 +354,7 @@ class Scheduler:
     #                       handler, as assigned by context's messenger.
     #
     def notify_messenger(self, message):
-        self._notify(Notification(NotificationType.MESSAGE, message=message))
+        self._notify_front(Notification(NotificationType.MESSAGE, message=message))
 
     # set_last_task_error()
     #
@@ -368,7 +368,7 @@ class Scheduler:
     def set_last_task_error(self, domain, reason):
         task_error = domain, reason
         notification = Notification(NotificationType.TASK_ERROR, task_error=task_error)
-        self._notify(notification)
+        self._notify_front(notification)
 
     #######################################################
     #                  Local Private Methods              #
@@ -407,7 +407,7 @@ class Scheduler:
             job_action=job.action_name,
             time=self._state.elapsed_time(start_time=self._starttime),
         )
-        self._notify(notification)
+        self._notify_front(notification)
         job.start()
 
     # _sched_queue_jobs()
@@ -497,7 +497,7 @@ class Scheduler:
             self._suspendtime = datetime.datetime.now()
             self.suspended = True
             # Notify that we're suspended
-            self._notify(Notification(NotificationType.SUSPENDED))
+            self._notify_front(Notification(NotificationType.SUSPENDED))
             for job in self._active_jobs:
                 job.suspend()
 
@@ -511,9 +511,9 @@ class Scheduler:
                 job.resume()
             self.suspended = False
             # Notify that we're unsuspended
-            self._notify(Notification(NotificationType.SUSPENDED))
+            self._notify_front(Notification(NotificationType.SUSPENDED))
             self._starttime += datetime.datetime.now() - self._suspendtime
-            self._notify(Notification(NotificationType.SCHED_START_TIME, time=self._starttime))
+            self._notify_front(Notification(NotificationType.SCHED_START_TIME, time=self._starttime))
             self._suspendtime = None
 
     # _interrupt_event():
@@ -529,7 +529,7 @@ class Scheduler:
             return
 
         notification = Notification(NotificationType.INTERRUPT)
-        self._notify(notification)
+        self._notify_front(notification)
 
     # _terminate_event():
     #
@@ -582,7 +582,7 @@ class Scheduler:
 
     # Regular timeout for driving status in the UI
     def _tick(self):
-        self._notify(Notification(NotificationType.TICK))
+        self._notify_front(Notification(NotificationType.TICK))
         self.loop.call_later(1, self._tick)
 
     def _failure_retry(self, action_name, unique_id):
@@ -597,14 +597,14 @@ class Scheduler:
         queue._task_group.failed_tasks.remove(element._get_full_name())
         queue.enqueue([element])
 
-    def _notify(self, notification):
+    def _notify_front(self, notification):
         # Check if we need to call the notifier callback
-        if self._notify_front:
-            self._notify_front.put(notification)
+        if self._notify_front_queue:
+            self._notify_front_queue.put(notification)
         else:
             self._notifier(notification)
 
-    def _stream_notification_handler(self, notification):
+    def _notification_handler(self, notification):
         if notification.notification_type == NotificationType.TERMINATE:
             self.terminate_jobs()
         elif notification.notification_type == NotificationType.QUIT:
@@ -621,12 +621,12 @@ class Scheduler:
             raise ValueError("Unrecognised notification type received")
 
     def _loop(self):
-        assert self._notify_back
+        assert self._notify_back_queue
         # Check for and process new messages
         while True:
             try:
-                notification = self._notify_back.get_nowait()
-                self._stream_notification_handler(notification)
+                notification = self._notify_back_queue.get_nowait()
+                self._notification_handler(notification)
             except queue.Empty:
                 notification = None
                 break
