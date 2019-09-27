@@ -565,8 +565,8 @@ class LogLine(Widget):
         text += self.content_profile.fmt("Pipeline Summary\n", bold=True)
         values = OrderedDict()
 
-        values['Total'] = self.content_profile.fmt(str(len(stream.total_elements)))
-        values['Session'] = self.content_profile.fmt(str(len(stream.session_elements)))
+        values['Total'] = self.content_profile.fmt(stream.len_total_elements)
+        values['Session'] = self.content_profile.fmt(stream.len_session_elements)
 
         processed_maxlen = 1
         skipped_maxlen = 1
