@@ -72,6 +72,8 @@ class Stream():
         self.session_elements = []   # List of elements being processed this session
         self.total_elements = []     # Total list of elements based on targets
         self.queues = []             # Queue objects
+        self.len_session_elements = None
+        self.len_total_elements = None
 
         #
         # Private members
@@ -82,7 +84,6 @@ class Stream():
         self._project = None
         self._pipeline = None
         self._state = State(session_start)  # Owned by Stream, used by Core to set state
-        #self._notification_pipe_front, self._notification_pipe_back = mp.Pipe()
         self._subprocess = None
         self._starttime = session_start  # Synchronised with Scheduler's relative start time
 
@@ -127,13 +128,13 @@ class Stream():
 
         mp_context = mp.get_context(method='fork')
         process_name = "stream-{}".format(func.__name__)
-        
+
         self._notify_front = mp.Queue()
         self._notify_back = mp.Queue()
         # Tell the scheduler to not use the notifier callback
         self._scheduler._notify_front = self._notify_front
         self._scheduler._notify_back = self._notify_back
-        
+
         args = list(args)
         args.insert(0, self._notify_front)
         args.insert(0, func)
@@ -1444,6 +1445,14 @@ class Stream():
             else:
                 self._session_start_callback()
 
+        # Also send through the session & total elements list lengths for status rendering
+        element_totals = str(len(self.session_elements)), str(len(self.total_elements))
+        if self._notify_front:
+            self._notify_front.put(Notification(NotificationType.ELEMENT_TOTALS,
+                                                element_totals=element_totals))
+        else:
+            self.len_session_elements, self.len_total_elements = element_totals
+
         status = self._scheduler.run(self.queues)
 
         if status == SchedStatus.ERROR:
@@ -1768,6 +1777,8 @@ class Stream():
             raise SubprocessException(**notification.exception)
         elif notification.notification_type == NotificationType.START:
             self._session_start_callback()
+        elif notification.notification_type == NotificationType.ELEMENT_TOTALS:
+            self.len_session_elements, self.len_total_elements = notification.element_totals
         else:
             raise StreamError("Unrecognised notification type received")
 
@@ -1789,7 +1800,7 @@ class Stream():
             except queue.Empty:
                 notification = None
                 break
-    
+
     def __getstate__(self):
         # The only use-cases for pickling in BuildStream at the time of writing
         # are enabling the 'spawn' method of starting child processes, and
