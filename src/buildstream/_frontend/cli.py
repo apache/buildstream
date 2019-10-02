@@ -133,7 +133,7 @@ def complete_target(args, incomplete):
 
 def complete_artifact(orig_args, args, incomplete):
     from .._context import Context
-    with Context() as ctx:
+    with Context(use_casd=False) as ctx:
 
         config = None
         if orig_args:

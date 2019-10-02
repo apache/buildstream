@@ -48,7 +48,7 @@ from .sandbox import SandboxRemote
 #
 class Context():
 
-    def __init__(self):
+    def __init__(self, *, use_casd=True):
 
         # Whether we are running as part of a test suite. This is only relevant
         # for developing BuildStream itself.
@@ -71,6 +71,10 @@ class Context():
 
         # The directory for CAS
         self.casdir = None
+
+        # Whether to use casd - meant for interfaces such as
+        # completion where casd is not required
+        self.use_casd = use_casd
 
         # The directory for artifact protos
         self.artifactdir = None
@@ -509,7 +513,9 @@ class Context():
 
     def get_cascache(self):
         if self._cascache is None:
-            self._cascache = CASCache(self.cachedir, cache_quota=self.config_cache_quota)
+            self._cascache = CASCache(self.cachedir,
+                                      casd=self.use_casd,
+                                      cache_quota=self.config_cache_quota)
         return self._cascache
 
     # is_fork_allowed():
