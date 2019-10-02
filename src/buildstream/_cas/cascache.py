@@ -421,6 +421,41 @@ class CASCache():
 
         return digest
 
+    # import_directory():
+    #
+    # Import directory tree into CAS.
+    #
+    # Args:
+    #     path (str): Path to directory to import
+    #
+    # Returns:
+    #     (Digest): The digest of the imported directory
+    #
+    def import_directory(self, path):
+        local_cas = self._get_local_cas()
+
+        request = local_cas_pb2.CaptureTreeRequest()
+        request.path.append(path)
+        response = local_cas.CaptureTree(request)
+
+        if len(response.responses) != 1:
+            raise CASCacheError("Expected 1 response from CaptureTree, got {}".format(len(response.responses)))
+
+        tree_response = response.responses[0]
+        if tree_response.status.code == code_pb2.RESOURCE_EXHAUSTED:
+            raise CASCacheError("Cache too full", reason="cache-too-full")
+        if tree_response.status.code != code_pb2.OK:
+            raise CASCacheError("Failed to capture tree {}: {}".format(path, tree_response.status.code))
+
+        treepath = self.objpath(tree_response.tree_digest)
+        tree = remote_execution_pb2.Tree()
+        with open(treepath, 'rb') as f:
+            tree.ParseFromString(f.read())
+
+        root_directory = tree.root.SerializeToString()
+
+        return utils._message_digest(root_directory)
+
     # set_ref():
     #
     # Create or replace a ref.

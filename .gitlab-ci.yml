@@ -1,7 +1,7 @@
 include:
   - template: Code-Quality.gitlab-ci.yml
 
-image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-83237142
+image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-85428307
 
 cache:
   key: "$CI_JOB_NAME-"
@@ -54,24 +54,24 @@ variables:
     - .coverage-reports
 
 tests-debian-9:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-83237142
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-85428307
   <<: *tests
 
 tests-fedora-29:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-83237142
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-85428307
   <<: *tests
 
 tests-fedora-30:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-83237142
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-85428307
   <<: *tests
 
 tests-ubuntu-18.04:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-master-83237142
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-master-85428307
   <<: *tests
 
 tests-centos-7.6:
   <<: *tests
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.6.1810-master-83237142
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.6.1810-master-85428307
 
 overnight-fedora-30-aarch64:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:aarch64-30-master-59168197
@@ -87,7 +87,7 @@ overnight-fedora-30-aarch64:
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-83237142
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-85428307
   <<: *tests
   variables:
     BST_FORCE_SANDBOX: "chroot"
@@ -104,7 +104,7 @@ tests-unix:
     - ${TEST_COMMAND}
 
 tests-buildbox:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-83237142
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-85428307
   <<: *tests
   variables:
     BST_FORCE_SANDBOX: "buildbox"
@@ -134,7 +134,7 @@ tests-buildbox:
 
 tests-fedora-missing-deps:
   # Ensure that tests behave nicely while missing bwrap and ostree
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-83237142
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-85428307
   <<: *tests
 
   script:
@@ -153,7 +153,7 @@ tests-fedora-update-deps:
   # Check if the tests pass after updating requirements to their latest
   # allowed version.
   allow_failure: true
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-83237142
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-85428307
   <<: *tests
 
   script:
@@ -167,7 +167,7 @@ tests-fedora-update-deps:
 
 tests-remote-execution:
   allow_failure: true
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-83237142
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-85428307
   <<: *tests
   before_script:
     - dnf install -y docker docker-compose
@@ -190,7 +190,7 @@ tests-remote-execution:
     PYTEST_ARGS: "--color=yes --remote-execution"
 
 tests-spawn-multiprocessing-start-method:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-83237142
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-85428307
   <<: *tests
   variables:
     BST_FORCE_START_METHOD: "spawn"
@@ -230,8 +230,8 @@ tests-wsl-master:
   - PATH=/root/.local/bin:$PATH tox --version
   script:
   # Install static buildbox-casd binary
-  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20190919-bc3eeb4b.tar.xz
-  - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20190919-bc3eeb4b.tar.xz
+  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20190930-f9862db1.tar.xz
+  - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20190930-f9862db1.tar.xz
 
   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
   only:
@@ -250,8 +250,8 @@ tests-wsl-non-master:
   - PATH=/root/.local/bin:$PATH tox --version
   script:
   # Install static buildbox-casd binary
-  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20190919-bc3eeb4b.tar.xz
-  - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20190919-bc3eeb4b.tar.xz
+  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20190930-f9862db1.tar.xz
+  - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20190930-f9862db1.tar.xz
 
   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
   when: manual
@@ -275,7 +275,7 @@ docs:
 
 .overnight-tests: &overnight-tests-template
   stage: test
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-83237142
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-85428307
   variables:
     BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
     BST_EXT_REF: 0.12.0-40-g7aa1423377629281decc455d1090964417c38f2e
