@@ -230,6 +230,7 @@ class Stream():
     #    usebuildtree (str): Whether to use a buildtree as the source, given cli option
     #    pull_dependencies ([Element]|None): Elements to attempt to pull
     #    unique_id: (str): Whether to use a unique_id to load an Element instance
+    #    full_name: (str): The elements full name, used if unique_id lookup fails
     #
     # Returns:
     #    (int): The exit code of the launched shell
@@ -241,11 +242,17 @@ class Stream():
               command=None,
               usebuildtree=None,
               pull_dependencies=None,
-              unique_id=None):
+              unique_id=None,
+              full_name=None):
 
         # Load the Element via the unique_id if given
         if unique_id and element is None:
-            element = Plugin._lookup(unique_id)
+            try:
+                element = Plugin._lookup(unique_id)
+            except AssertionError:
+                # Could not be loaded from plugintable, load forcefully
+                element_list = self.load_selection([full_name], selection=PipelineSelection.NONE)
+                element = element_list[0]
 
         # Assert we have everything we need built, unless the directory is specified
         # in which case we just blindly trust the directory, using the element

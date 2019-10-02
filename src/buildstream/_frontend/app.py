@@ -643,7 +643,7 @@ class App():
                         unique_id, element_key = element
                         prompt = self.shell_prompt(full_name, element_key)
                         self.stream.shell(None, Scope.BUILD, prompt, isolate=True,
-                                          usebuildtree='always', unique_id=unique_id)
+                                          usebuildtree='always', unique_id=unique_id, full_name=full_name)
                     except BstError as e:
                         click.echo("Error while attempting to create interactive shell: {}".format(e), err=True)
                 elif choice == 'log':
