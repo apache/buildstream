@@ -39,6 +39,7 @@ from .._protos.build.buildgrid import local_cas_pb2, local_cas_pb2_grpc
 
 from .. import utils
 from .._exceptions import CASCacheError
+from .._message import Message, MessageType
 
 from .casremote import _CASBatchRead, _CASBatchUpdate
 
@@ -183,23 +184,7 @@ class CASCache():
 
         if self._casd_process:
             self.close_channel()
-            self._casd_process.terminate()
-            try:
-                # Don't print anything if buildbox-casd terminates quickly
-                self._casd_process.wait(timeout=0.5)
-            except subprocess.TimeoutExpired:
-                if messenger:
-                    cm = messenger.timed_activity("Terminating buildbox-casd")
-                else:
-                    cm = contextlib.suppress()
-                with cm:
-                    try:
-                        self._casd_process.wait(timeout=15)
-                    except subprocess.TimeoutExpired:
-                        self._casd_process.kill()
-                        self._casd_process.wait(timeout=15)
-            self._casd_process = None
-
+            self._terminate_casd_process(messenger)
             shutil.rmtree(self._casd_socket_tempdir)
 
     # contains():
@@ -944,6 +929,57 @@ class CASCache():
 
         # Upload any blobs missing on the server
         self.send_blobs(remote, missing_blobs)
+
+    # _terminate_casd_process()
+    #
+    # Terminate the buildbox casd process
+    #
+    # Args:
+    #   messenger (buildstream._messenger.Messenger): Messenger to forward information to the frontend
+    #
+    def _terminate_casd_process(self, messenger=None):
+        return_code = self._casd_process.poll()
+
+        if return_code is not None:
+            # buildbox-casd is already dead
+            self._casd_process = None
+
+            if messenger:
+                messenger.message(
+                    Message(MessageType.BUG, "Buildbox-casd died during the run. Exit code: {}".format(return_code))
+                )
+            return
+
+        self._casd_process.terminate()
+
+        try:
+            # Don't print anything if buildbox-casd terminates quickly
+            return_code = self._casd_process.wait(timeout=0.5)
+        except subprocess.TimeoutExpired:
+            if messenger:
+                cm = messenger.timed_activity("Terminating buildbox-casd")
+            else:
+                cm = contextlib.suppress()
+            with cm:
+                try:
+                    return_code = self._casd_process.wait(timeout=15)
+                except subprocess.TimeoutExpired:
+                    self._casd_process.kill()
+                    self._casd_process.wait(timeout=15)
+
+                    if messenger:
+                        messenger.message(
+                            Message(MessageType.WARN, "Buildbox-casd didn't exit in time and has been killed")
+                        )
+                    self._casd_process = None
+                    return
+
+        if return_code != 0 and messenger:
+            messenger.message(
+                Message(MessageType.BUG, "Buildbox-casd didn't exit cleanly. Exit code: {}".format(return_code))
+            )
+
+        self._casd_process = None
 
     # get_cache_usage():
     #
