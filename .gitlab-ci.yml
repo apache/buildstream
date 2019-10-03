@@ -278,8 +278,8 @@ docs:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-85428307
   variables:
     BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
-    BST_EXT_REF: 0.12.0-40-g7aa1423377629281decc455d1090964417c38f2e
-    FD_SDK_REF: freedesktop-sdk-18.08.34-0-g9282304d0d932032b8297fb049f44d6a079dc2ea
+    BST_EXT_REF: 0.12.0-161-g624c8da7c4f8660b7f9e9c6f85399a00f3d3c1e6
+    FD_SDK_REF: freedesktop-sdk-19.08.2-4-g9d11a8ba10b1e20869338a675891ada9995b6fda
   before_script:
   - |
     mkdir -p "${HOME}/.config"
