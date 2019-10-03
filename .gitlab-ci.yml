@@ -288,6 +288,9 @@ docs:
       fetchers: 2
     EOF
   - dnf install -y ostree python3-gobject-base
+  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20190930-f9862db1.tar.xz
+  - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20190930-f9862db1.tar.xz
+  - export PATH=/root/.local/bin:$PATH
   - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
   - pip3 wheel --wheel-dir wheels/ --no-deps .
   - pip3 install --no-index wheels/*
