@@ -977,7 +977,12 @@ class CASCache():
 
             if messenger:
                 messenger.message(
-                    Message(MessageType.BUG, "Buildbox-casd died during the run. Exit code: {}".format(return_code))
+                    Message(
+                        MessageType.BUG,
+                        "Buildbox-casd died during the run. Exit code: {}, Logs: {}".format(
+                            return_code, self.casd_logfile
+                        ),
+                    )
                 )
             return
 
@@ -1007,7 +1012,12 @@ class CASCache():
 
         if return_code != 0 and messenger:
             messenger.message(
-                Message(MessageType.BUG, "Buildbox-casd didn't exit cleanly. Exit code: {}".format(return_code))
+                Message(
+                    MessageType.BUG,
+                    "Buildbox-casd didn't exit cleanly. Exit code: {}, Logs: {}".format(
+                        return_code, self.casd_logfile
+                    ),
+                )
             )
 
         self._casd_process = None
