@@ -49,6 +49,8 @@ _BUFFER_SIZE = 65536
 # Refresh interval for disk usage of local cache in seconds
 _CACHE_USAGE_REFRESH = 5
 
+_CASD_MAX_LOGFILES = 10
+
 
 # A CASCache manages a CAS repository as specified in the Remote Execution API.
 #
@@ -84,8 +86,13 @@ class CASCache():
                     casd_args.append('--protect-session-blobs')
 
             casd_args.append(path)
-            self._casd_process = subprocess.Popen(casd_args, cwd=path)
+
             self._casd_start_time = time.time()
+            self.casd_logfile = self._rotate_and_get_next_logfile()
+
+            with open(self.casd_logfile, "w") as logfile_fp:
+                self._casd_process = subprocess.Popen(
+                    casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT)
         else:
             self._casd_process = None
 
@@ -661,6 +668,30 @@ class CASCache():
     ################################################
     #             Local Private Methods            #
     ################################################
+
+    # _rotate_and_get_next_logfile()
+    #
+    # Get the logfile to use for casd
+    #
+    # This will ensure that we don't create too many casd log files by
+    # rotating the logs and only keeping _CASD_MAX_LOGFILES logs around.
+    #
+    # Returns:
+    #   (str): the path to the log file to use
+    #
+    def _rotate_and_get_next_logfile(self):
+        log_dir = os.path.join(self.casdir, "logs")
+
+        try:
+            existing_logs = sorted(os.listdir(log_dir))
+        except FileNotFoundError:
+            os.makedirs(log_dir)
+        else:
+            while len(existing_logs) >= _CASD_MAX_LOGFILES:
+                logfile_to_delete = existing_logs.pop(0)
+                os.remove(os.path.join(log_dir, logfile_to_delete))
+
+        return os.path.join(log_dir, str(self._casd_start_time) + ".log")
 
     def _refpath(self, ref):
         return os.path.join(self.casdir, 'refs', 'heads', ref)
