@@ -278,7 +278,7 @@ regenerate them locally in order to build the docs.
 
    # Make it fetch first
    - directory: ../examples/foo
-     command: fetch hello.bst
+     command: source fetch hello.bst
 
    # Capture a build output
    - directory: ../examples/foo
