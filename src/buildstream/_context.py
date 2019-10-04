@@ -255,6 +255,9 @@ class Context():
             if not os.path.isabs(path) and not (directory == 'workspacedir' and path == '.'):
                 raise LoadError("{} must be an absolute path".format(directory), LoadErrorReason.INVALID_DATA)
 
+        # Note that cachedir needs to be an absolute path, otherwise we'll crash later in atomic_write
+        # self.cachedir = os.path.abspath(self.cachedir)
+
         # add directories not set by users
         self.tmpdir = os.path.join(self.cachedir, 'tmp')
         self.casdir = os.path.join(self.cachedir, 'cas')
