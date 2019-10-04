@@ -57,3 +57,31 @@ class Win32(Platform):
         self.check_sandbox_config = Win32._check_dummy_sandbox_config
         self.create_sandbox = Win32._create_dummy_sandbox
         return True
+
+    def does_support_signals(self):
+        # Windows does not have good support for signals, and we shouldn't
+        # handle them in the same way we do on UNIX.
+        #
+        # From the MSDN docs:
+        #
+        # > SIGINT is not supported for any Win32 application. When a CTRL+C
+        # > interrupt occurs, Win32 operating systems generate a new thread to
+        # > specifically handle that interrupt. This can cause a single-thread
+        # > application, such as one in UNIX, to become multithreaded and cause
+        # > unexpected behavior.
+        #
+        # > The SIGILL and SIGTERM signals are not generated under Windows.
+        # > They are included for ANSI compatibility. Therefore, you can set
+        # > signal handlers for these signals by using signal, and you can also
+        # > explicitly generate these signals by calling raise.
+        #
+        # The only other signals that are defined in signal.h on Windows are
+        # not relevant to us:
+        #
+        # - SIGABRT
+        # - SIGFPE
+        # - SIGSEGV
+        #
+        # https://docs.microsoft.com/en-gb/cpp/c-runtime-library/reference/signal
+        #
+        return False
