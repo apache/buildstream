@@ -61,3 +61,42 @@ def test_report_when_cascache_is_forcefully_killed(tmp_path, monkeypatch):
     message = messenger.message.call_args[0][0]
     assert message.message_type == MessageType.WARN
     assert "killed" in message.message
+
+
+def test_casd_redirects_stderr_to_file_and_rotate(tmp_path, monkeypatch):
+    n_max_log_files = 10
+
+    dummy_buildbox_casd = tmp_path.joinpath("buildbox-casd")
+    dummy_buildbox_casd.write_text("#!/bin/bash\necho -e hello")
+    dummy_buildbox_casd.chmod(0o777)
+    monkeypatch.setenv("PATH", str(tmp_path), prepend=os.pathsep)
+
+    casd_files_path = tmp_path.joinpath("casd")
+    casd_logs_path = casd_files_path.joinpath("cas", "logs")
+
+    # Ensure we don't have any files in the log directory
+    assert not casd_logs_path.exists()
+    existing_log_files = []
+
+    # Let's create the first `n_max_log_files` log files
+    for i in range(1, n_max_log_files + 1):
+        cache = CASCache(str(casd_files_path), casd=True)
+        time.sleep(0.05)
+        cache.release_resources()
+
+        existing_log_files = sorted(casd_logs_path.iterdir())
+        assert len(existing_log_files) == i
+        assert existing_log_files[-1].read_text() == "hello\n"
+
+    # Ensure the oldest log files get removed first
+    for _ in range(3):
+        evicted_file = existing_log_files.pop(0)
+
+        cache = CASCache(str(casd_files_path), casd=True)
+        time.sleep(0.05)
+        cache.release_resources()
+
+        existing_log_files = sorted(casd_logs_path.iterdir())
+        assert len(existing_log_files) == n_max_log_files
+        assert evicted_file not in existing_log_files
+        assert existing_log_files[-1].read_text() == "hello\n"
