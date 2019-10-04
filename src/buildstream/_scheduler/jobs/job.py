@@ -200,6 +200,7 @@ class Job():
         self._tries += 1
         self._parent_start_listening()
 
+        does_platform_support_signals = self._scheduler.context.platform.does_support_signals()
         child_job = self.create_child_job(  # pylint: disable=assignment-from-no-return
             action_name=self.action_name,
             messenger=self._scheduler.context.messenger,
@@ -209,6 +210,7 @@ class Job():
             tries=self._tries,
             message_element_name=self._message_element_name,
             message_element_key=self._message_element_key,
+            does_platform_support_signals=does_platform_support_signals,
         )
 
         if self._scheduler.context.platform.does_multiprocessing_start_require_pickling():
@@ -228,7 +230,10 @@ class Job():
         # the child process does not inherit the parent's state, but the main
         # process will be notified of any signal after we launch the child.
         #
-        with _signals.blocked([signal.SIGINT, signal.SIGTSTP, signal.SIGTERM], ignore=False):
+        if does_platform_support_signals:
+            with _signals.blocked([signal.SIGINT, signal.SIGTSTP, signal.SIGTERM], ignore=False):
+                self._process.start()
+        else:
             self._process.start()
 
         # Wait for the child task to complete.
@@ -631,7 +636,8 @@ class ChildJob():
 
     def __init__(
             self, action_name, messenger, logdir, logfile, max_retries, tries,
-            message_element_name, message_element_key):
+            message_element_name, message_element_key,
+            does_platform_support_signals):
 
         self.action_name = action_name
 
@@ -642,6 +648,8 @@ class ChildJob():
         self._tries = tries
         self._message_element_name = message_element_name
         self._message_element_key = message_element_key
+
+        self._does_platform_support_signals = does_platform_support_signals
 
         self._queue = None
 
@@ -732,17 +740,18 @@ class ChildJob():
     #
     def child_action(self, queue):
 
-        # This avoids some SIGTSTP signals from grandchildren
-        # getting propagated up to the master process
-        os.setsid()
+        if self._does_platform_support_signals:
+            # This avoids some SIGTSTP signals from grandchildren
+            # getting propagated up to the master process
+            os.setsid()
 
-        # First set back to the default signal handlers for the signals
-        # we handle, and then clear their blocked state.
-        #
-        signal_list = [signal.SIGTSTP, signal.SIGTERM]
-        for sig in signal_list:
-            signal.signal(sig, signal.SIG_DFL)
-        signal.pthread_sigmask(signal.SIG_UNBLOCK, signal_list)
+            # First set back to the default signal handlers for the signals
+            # we handle, and then clear their blocked state.
+            #
+            signal_list = [signal.SIGTSTP, signal.SIGTERM]
+            for sig in signal_list:
+                signal.signal(sig, signal.SIG_DFL)
+            signal.pthread_sigmask(signal.SIG_UNBLOCK, signal_list)
 
         # Assign the queue we passed across the process boundaries
         #
