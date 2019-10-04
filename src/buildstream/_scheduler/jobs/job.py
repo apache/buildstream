@@ -850,6 +850,8 @@ class ChildJob():
                 elapsed = datetime.datetime.now() - starttime
                 detail = "An unhandled exception occured:\n\n{}".format(traceback.format_exc())
 
+                print(detail)
+
                 self.message(MessageType.BUG, self.action_name,
                              elapsed=elapsed, detail=detail,
                              logfile=filename)
