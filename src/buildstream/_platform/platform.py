@@ -190,6 +190,18 @@ class Platform():
         # set to the platform default by `get_start_method`.
         return multiprocessing.get_start_method() != 'fork'
 
+    # does_support_signals():
+    #
+    # Returns True if the platform has good support for signals, this will not
+    # be true for Windows.
+    #
+    # Returns:
+    #    (bool): Whether signals are supported or not
+    #
+    def does_support_signals(self):
+        # Most platforms support signals, so the default is True.
+        return True
+
     ##################################################################
     #                        Sandbox functions                       #
     ##################################################################
