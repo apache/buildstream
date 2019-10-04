@@ -37,7 +37,7 @@ from .._protos.google.rpc import code_pb2
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.build.buildgrid import local_cas_pb2, local_cas_pb2_grpc
 
-from .. import utils
+from .. import _signals, utils
 from .._exceptions import CASCacheError
 from .._message import Message, MessageType
 
@@ -91,8 +91,11 @@ class CASCache():
             self.casd_logfile = self._rotate_and_get_next_logfile()
 
             with open(self.casd_logfile, "w") as logfile_fp:
-                self._casd_process = subprocess.Popen(
-                    casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT)
+                # Block SIGINT on buildbox-casd, we don't need to stop it
+                # The frontend will take care of it if needed
+                with _signals.blocked([signal.SIGINT], ignore=False):
+                    self._casd_process = subprocess.Popen(
+                        casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT)
         else:
             self._casd_process = None
 
