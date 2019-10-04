@@ -1088,8 +1088,11 @@ class _CASCacheUsageMonitor:
         # This can't be allowed with background threads or open gRPC channels.
         assert utils._is_single_threaded() and not cas.has_open_grpc_channels()
 
-        self._subprocess = multiprocessing.Process(target=self._subprocess_run)
-        self._subprocess.start()
+        # Block SIGINT, we don't want to kill the process when we interrupt the frontend
+        # and this process if very lightweight.
+        with _signals.blocked([signal.SIGINT], ignore=False):
+            self._subprocess = multiprocessing.Process(target=self._subprocess_run)
+            self._subprocess.start()
 
     def get_cache_usage(self):
         disk_usage = self._disk_usage.value
