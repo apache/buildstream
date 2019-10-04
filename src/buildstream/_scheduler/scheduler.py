@@ -256,7 +256,8 @@ class Scheduler():
 
         # Block this until we're finished terminating jobs,
         # this will remain blocked forever.
-        signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
+        if self.context.platform.does_support_signals():
+            signal.pthread_sigmask(signal.SIG_BLOCK, [signal.SIGINT])
 
     # jobs_suspended()
     #
@@ -518,14 +519,16 @@ class Scheduler():
     # Connects our signal handler event callbacks to the mainloop
     #
     def _connect_signals(self):
-        self.loop.add_signal_handler(signal.SIGINT, self._interrupt_event)
-        self.loop.add_signal_handler(signal.SIGTERM, self._terminate_event)
-        self.loop.add_signal_handler(signal.SIGTSTP, self._suspend_event)
+        if self.context.platform.does_support_signals():
+            self.loop.add_signal_handler(signal.SIGINT, self._interrupt_event)
+            self.loop.add_signal_handler(signal.SIGTERM, self._terminate_event)
+            self.loop.add_signal_handler(signal.SIGTSTP, self._suspend_event)
 
     def _disconnect_signals(self):
-        self.loop.remove_signal_handler(signal.SIGINT)
-        self.loop.remove_signal_handler(signal.SIGTSTP)
-        self.loop.remove_signal_handler(signal.SIGTERM)
+        if self.context.platform.does_support_signals():
+            self.loop.remove_signal_handler(signal.SIGINT)
+            self.loop.remove_signal_handler(signal.SIGTSTP)
+            self.loop.remove_signal_handler(signal.SIGTERM)
 
     def _terminate_jobs_real(self):
         # 20 seconds is a long time, it can take a while and sometimes
