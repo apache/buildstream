@@ -105,14 +105,11 @@ class WorkspaceSource(Source):
                 self.__digest = self.__cas_dir._get_digest().hash
         return (self.path, self.__digest)
 
+    # init_workspace()
+    #
+    # Raises AssertionError: existing workspaces should not be reinitialized
     def init_workspace(self, directory: Directory) -> None:
-        # for each source held by the workspace we must call init_workspace
-        # those sources may override `init_workspace` expecting str or Directory
-        # and this will need to be extracted from the directory passed to this method
-        assert isinstance(directory, Directory)
-        directory = directory.external_directory
-        for source in self.get_element_sources():
-            source._init_workspace(directory)
+        raise AssertionError('Attempting to re-open an existing workspace')
 
     def get_consistency(self):
         # always return cached state
