@@ -112,9 +112,7 @@ sessions-prep:
 # Specify BST_FORCE_SESSION_REBUILD=1 to force rebuild all session html files.
 #
 sessions: sessions-prep
-	for file in $(wildcard sessions/*.run); do		\
-	    PYTHONPATH=$(PYTHONPATH) $(BST2HTML) $(BST2HTMLOPTS) $$file;	\
-	done
+	$(foreach file,$(wildcard sessions/*.run),PYTHONPATH=$(PYTHONPATH) $(BST2HTML) $(BST2HTMLOPTS) $(file) ; )
 
 sessions-clean:
 	rm -rf source/sessions
