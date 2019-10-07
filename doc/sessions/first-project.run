@@ -28,7 +28,7 @@ commands:
 # Checkout the output
 - directory: ../examples/first-project
   output: ../source/sessions/first-project-checkout.html
-  command: checkout hello.bst here
+  command: artifact checkout --directory here hello.bst
 
 # Checkout the output
 - directory: ../examples/first-project

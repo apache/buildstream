@@ -2,7 +2,7 @@
 commands:
 # Make it fetch first
 - directory: ../examples/autotools
-  command: fetch hello.bst
+  command: source fetch hello.bst
 
 # Capture a `bst show` of the variables
 - directory: ../examples/autotools

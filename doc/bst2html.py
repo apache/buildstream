@@ -218,8 +218,11 @@ def run_bst_command(config_file, directory, command):
     click.echo("Running bst command in directory '{}': bst {}".format(directory, command), err=True)
 
     argv = ['python3', '-m', 'buildstream', '--colors', '--config', config_file] + shlex.split(command)
-    p = subprocess.Popen(argv, cwd=directory, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    out, _ = p.communicate()
+    try:
+        out = subprocess.check_output(argv, cwd=directory, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        click.echo("Command failed:\n{}".format(e.output.decode('utf-8').strip()))
+        sys.exit(1)
     return out.decode('utf-8').strip()
 
 

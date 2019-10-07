@@ -8,7 +8,7 @@ workaround-symlinks:
 commands:
 # Make it fetch first
 - directory: ../examples/flatpak-autotools
-  command: fetch hello.bst
+  command: source fetch hello.bst
 
 # Capture a build output
 - directory: ../examples/flatpak-autotools

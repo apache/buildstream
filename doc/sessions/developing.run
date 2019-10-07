@@ -2,7 +2,7 @@
 commands:
 # Make it fetch first
 - directory: ../examples/developing/
-  command: fetch hello.bst
+  command: source fetch hello.bst
 
 # Capture workspace open output 
 - directory: ../examples/developing/
