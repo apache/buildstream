@@ -295,7 +295,6 @@ def test_cli_mount(cli, datafiles, path):
 # Test that we can see the workspace files in a shell
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(strict=True)
 def test_workspace_visible(cli, datafiles):
     project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')
