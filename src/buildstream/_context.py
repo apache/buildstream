@@ -28,7 +28,7 @@ from ._profile import Topics, PROFILER
 from ._platform import Platform
 from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
-from ._cas import CASCache
+from ._cas import CASCache, CASLogLevel
 from .types import _CacheBuildTrees, _SchedulerErrorAction
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .node import Node
@@ -513,9 +513,17 @@ class Context():
 
     def get_cascache(self):
         if self._cascache is None:
+            if self.log_debug:
+                log_level = CASLogLevel.TRACE
+            elif self.log_verbose:
+                log_level = CASLogLevel.INFO
+            else:
+                log_level = CASLogLevel.WARNING
+
             self._cascache = CASCache(self.cachedir,
                                       casd=self.use_casd,
-                                      cache_quota=self.config_cache_quota)
+                                      cache_quota=self.config_cache_quota,
+                                      log_level=log_level)
         return self._cascache
 
     # is_fork_allowed():
