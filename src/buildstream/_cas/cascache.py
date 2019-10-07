@@ -38,6 +38,7 @@ from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remo
 from .._protos.build.buildgrid import local_cas_pb2, local_cas_pb2_grpc
 
 from .. import _signals, utils
+from ..types import FastEnum
 from .._exceptions import CASCacheError
 from .._message import Message, MessageType
 
@@ -52,6 +53,12 @@ _CACHE_USAGE_REFRESH = 5
 _CASD_MAX_LOGFILES = 10
 
 
+class CASLogLevel(FastEnum):
+    WARNING = "warning"
+    INFO = "info"
+    TRACE = "trace"
+
+
 # A CASCache manages a CAS repository as specified in the Remote Execution API.
 #
 # Args:
@@ -59,10 +66,13 @@ _CASD_MAX_LOGFILES = 10
 #     casd (bool): True to spawn buildbox-casd (default) or False (testing only)
 #     cache_quota (int): User configured cache quota
 #     protect_session_blobs (bool): Disable expiry for blobs used in the current session
+#     log_level (LogLevel): Log level to give to buildbox-casd for logging
 #
 class CASCache():
 
-    def __init__(self, path, *, casd=True, cache_quota=None, protect_session_blobs=True):
+    def __init__(
+            self, path, *, casd=True, cache_quota=None, protect_session_blobs=True, log_level=CASLogLevel.WARNING
+    ):
         self.casdir = os.path.join(path, 'cas')
         self.tmpdir = os.path.join(path, 'tmp')
         os.makedirs(os.path.join(self.casdir, 'refs', 'heads'), exist_ok=True)
@@ -77,6 +87,7 @@ class CASCache():
 
             casd_args = [utils.get_host_tool('buildbox-casd')]
             casd_args.append('--bind=unix:' + self._casd_socket_path)
+            casd_args.append('--log-level=' + log_level.value)
 
             if cache_quota is not None:
                 casd_args.append('--quota-high={}'.format(int(cache_quota)))
