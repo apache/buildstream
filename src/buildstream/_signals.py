@@ -144,6 +144,12 @@ def suspend_handler(sig, frame):
 #
 @contextmanager
 def suspendable(suspend_callback, resume_callback):
+    if sys.platform == 'win32':
+        # Win32 does not support SIGTSTP, at least up to Windows 10, so we
+        # won't be able to handle it here.
+        yield
+        return
+
     global suspendable_stack                  # pylint: disable=global-statement
 
     is_outermost = bool(not suspendable_stack)
