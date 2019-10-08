@@ -146,17 +146,17 @@ def suspend_handler(sig, frame):
 def suspendable(suspend_callback, resume_callback):
     global suspendable_stack                  # pylint: disable=global-statement
 
-    outermost = bool(not suspendable_stack)
+    is_outermost = bool(not suspendable_stack)
     suspender = Suspender(suspend_callback, resume_callback)
     suspendable_stack.append(suspender)
 
-    if outermost:
+    if is_outermost:
         original_stop = signal.signal(signal.SIGTSTP, suspend_handler)
 
     try:
         yield
     finally:
-        if outermost:
+        if is_outermost:
             signal.signal(signal.SIGTSTP, original_stop)
 
         suspendable_stack.pop()
