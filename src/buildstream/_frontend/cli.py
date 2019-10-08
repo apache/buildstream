@@ -2,7 +2,6 @@ import multiprocessing
 import os
 import sys
 from functools import partial
-import fcntl
 
 import shutil
 import click
@@ -187,6 +186,22 @@ def override_completions(orig_args, cmd, cmd_param, args, incomplete):
     raise CompleteUnhandled()
 
 
+def validate_output_streams():
+    if sys.platform == 'win32':
+        # Windows does not support 'fcntl', the module is unavailable there as
+        # of Python 3.7, therefore early-out here.
+        return
+
+    import fcntl
+    for stream in (sys.stdout, sys.stderr):
+        fileno = stream.fileno()
+        flags = fcntl.fcntl(fileno, fcntl.F_GETFL)
+        if flags & os.O_NONBLOCK:
+            click.echo("{} is currently set to O_NONBLOCK, try opening a new shell"
+                       .format(stream.name), err=True)
+            sys.exit(-1)
+
+
 def override_main(self, args=None, prog_name=None, complete_var=None,
                   standalone_mode=True, **extra):
 
@@ -210,14 +225,8 @@ def override_main(self, args=None, prog_name=None, complete_var=None,
 
     # Check output file descriptor at earliest opportunity, to
     # provide a reasonable error message instead of a stack trace
-    # in the case that it is blocking
-    for stream in (sys.stdout, sys.stderr):
-        fileno = stream.fileno()
-        flags = fcntl.fcntl(fileno, fcntl.F_GETFL)
-        if flags & os.O_NONBLOCK:
-            click.echo("{} is currently set to O_NONBLOCK, try opening a new shell"
-                       .format(stream.name), err=True)
-            sys.exit(-1)
+    # in the case that it is non-blocking.
+    validate_output_streams()
 
     # We can only set the global multiprocessing start method once; for that
     # reason we're advised to do it inside the entrypoint, where it is easy to
