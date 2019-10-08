@@ -86,16 +86,16 @@ def terminator(terminate_func):
         yield
         return
 
-    outermost = bool(not terminator_stack)
+    is_outermost = bool(not terminator_stack)
 
     terminator_stack.append(terminate_func)
-    if outermost:
+    if is_outermost:
         original_handler = signal.signal(signal.SIGTERM, terminator_handler)
 
     try:
         yield
     finally:
-        if outermost:
+        if is_outermost:
             signal.signal(signal.SIGTERM, original_handler)
         terminator_stack.pop()
 
