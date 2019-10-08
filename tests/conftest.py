@@ -137,3 +137,21 @@ register_repo_kind('zip', Zip, None)
 # buildstream.testing
 def pytest_sessionstart(session):
     sourcetests_collection_hook(session)
+
+
+#################################################
+#             Isolated environment              #
+#################################################
+@pytest.fixture(scope="session", autouse=True)
+def set_xdg_paths(pytestconfig):
+    for env_var, default in [
+            ("HOME", "tmp"),
+            ("XDG_CACHE_HOME", "tmp/cache"),
+            ("XDG_CONFIG_HOME", "tmp/config"),
+            ("XDG_DATA_HOME", "tmp/share"),
+    ]:
+        value = os.environ.get("BST_TEST_{}".format(env_var))
+        if value is None:
+            value = os.path.join(pytestconfig.getoption("basetemp"), default)
+
+        os.environ[env_var] = value
