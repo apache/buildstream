@@ -152,8 +152,8 @@ class Scheduler:
     #
     # Args:
     #    queues (list): A list of Queue objects
-    #    casd_processes (subprocess.Process): The subprocess which runs casd in order to be notified
-    #                                         of failures.
+    #    casd_process_manager (cascache.CASDProcessManager): The subprocess which runs casd, in order to be notified
+    #                                                        of failures.
     #
     # Returns:
     #    (SchedStatus): How the scheduling terminated
@@ -163,7 +163,7 @@ class Scheduler:
     # elements have been processed by each queue or when
     # an error arises
     #
-    def run(self, queues, casd_process):
+    def run(self, queues, casd_process_manager):
 
         # Hold on to the queues to process
         self.queues = queues
@@ -183,9 +183,9 @@ class Scheduler:
         self._connect_signals()
 
         # Watch casd while running to ensure it doesn't die
-        self._casd_process = casd_process
+        self._casd_process = casd_process_manager.process
         _watcher = asyncio.get_child_watcher()
-        _watcher.add_child_handler(casd_process.pid, self._abort_on_casd_failure)
+        _watcher.add_child_handler(self._casd_process.pid, self._abort_on_casd_failure)
 
         # Start the profiler
         with PROFILER.profile(Topics.SCHEDULER, "_".join(queue.action_name for queue in self.queues)):
@@ -195,7 +195,7 @@ class Scheduler:
             self.loop.close()
 
         # Stop watching casd
-        _watcher.remove_child_handler(casd_process.pid)
+        _watcher.remove_child_handler(self._casd_process.pid)
         self._casd_process = None
 
         # Stop handling unix signals
