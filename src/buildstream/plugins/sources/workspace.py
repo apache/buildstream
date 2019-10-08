@@ -89,10 +89,10 @@ class WorkspaceSource(Source):
         pass  # pragma: nocover
 
     def get_unique_key(self) -> (str, SourceRef):
-        sourcecache = self._get_context().sourcecache
+        cas = self._get_context().get_cascache()
 
         if self.__cas_dir is None:
-            self.__cas_dir = CasBasedDirectory(sourcecache.cas)
+            self.__cas_dir = CasBasedDirectory(cas)
 
         if self.__digest is None:
 
@@ -103,14 +103,9 @@ class WorkspaceSource(Source):
                         "Failed to stage source: files clash with existing directory",
                         reason='ensure-stage-dir-fail')
                 self.__digest = self.__cas_dir._get_digest().hash
-
-        # commit to cache if not cached
-        if not sourcecache.contains(self):
-            sourcecache.commit(self, [])
-
         #  now close down grpc channels
-        sourcecache.cas.close_channel()
-        assert not sourcecache.cas.has_open_grpc_channels()
+        cas.close_channel()
+        assert not cas.has_open_grpc_channels()
         return (self.path, self.__digest)
 
     def init_workspace(self, directory: Directory) -> None:
