@@ -179,6 +179,11 @@ def suspendable(suspend_callback, resume_callback):
 #
 @contextmanager
 def blocked(signal_list, ignore=True):
+    if sys.platform == 'win32':
+        # Win32 does not support any signals that we are interested in, and we
+        # also can't use `signal.phtread_sigmask`, so early out here.
+        yield
+        return
 
     with ExitStack() as stack:
 
