@@ -183,6 +183,49 @@ def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
         assert share.get_artifact(cli.get_artifact_name(project, 'test', 'element.bst'))
 
 
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("on_error", ("continue", "quit"))
+def test_push_failed_missing_shell(cli, tmpdir, datafiles, on_error):
+    """Test that we can upload a built artifact that didn't have a valid shell inside.
+
+    When we don't have a valid shell, the artifact will be empty, not even the root directory.
+    This ensures we handle the case of an entirely empty artifact correctly.
+    """
+    if on_error == 'quit':
+        pytest.xfail('https://gitlab.com/BuildStream/buildstream/issues/534')
+
+    project = str(datafiles)
+    element_path = os.path.join(project, 'elements', 'element.bst')
+
+    # Write out our test target
+    element = {
+        'kind': 'script',
+        'config': {
+            'commands': [
+                'false',
+                # Ensure unique cache key for different test variants
+                'TEST="{}"'.format(os.environ.get('PYTEST_CURRENT_TEST')),
+            ],
+        },
+    }
+    _yaml.roundtrip_dump(element, element_path)
+
+    with create_artifact_share(os.path.join(str(tmpdir), 'remote')) as share:
+        cli.configure({
+            'artifacts': {'url': share.repo, 'push': True},
+        })
+
+        # Build the element, continuing to finish active jobs on error.
+        result = cli.run(project=project, args=['--on-error={}'.format(on_error), 'build', 'element.bst'])
+        result.assert_main_error(ErrorDomain.STREAM, None)
+
+        # This element should have failed
+        assert cli.get_element_state(project, 'element.bst') == 'failed'
+        # This element should have been pushed to the remote
+        assert share.get_artifact(cli.get_artifact_name(project, 'test', 'element.bst'))
+
+
 @pytest.mark.skipif(HAVE_SANDBOX != 'bwrap', reason='Only available with bubblewrap on Linux')
 @pytest.mark.datafiles(DATA_DIR)
 def test_host_tools_errors_are_not_cached(cli, datafiles, tmp_path):

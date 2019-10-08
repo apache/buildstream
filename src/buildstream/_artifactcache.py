@@ -560,7 +560,8 @@ class ArtifactCache(BaseCache):
         artifact_proto = artifact._get_proto()
 
         try:
-            self.cas._send_directory(remote, artifact_proto.files)
+            if str(artifact_proto.files):
+                self.cas._send_directory(remote, artifact_proto.files)
 
             if str(artifact_proto.buildtree):
                 try:
