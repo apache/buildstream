@@ -1375,7 +1375,7 @@ class Stream():
         if self._session_start_callback is not None:
             self._session_start_callback()
 
-        status = self._scheduler.run(self.queues)
+        status = self._scheduler.run(self.queues, self._context.get_cascache().get_casd_process())
 
         if status == SchedStatus.ERROR:
             raise StreamError()

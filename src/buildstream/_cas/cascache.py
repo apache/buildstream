@@ -1049,6 +1049,17 @@ class CASCache():
 
         return self._cache_usage_monitor.get_cache_usage()
 
+    # get_casd_process()
+    #
+    # Get the underlying buildbox-casd process
+    #
+    # Returns:
+    #   (subprocess.Process): The casd process that is used for the current cascache
+    #
+    def get_casd_process(self):
+        assert self._casd_process is not None, "This should only be called with a running buildbox-casd process"
+        return self._casd_process
+
 
 # _CASCacheUsage
 #
