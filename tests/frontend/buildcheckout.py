@@ -526,6 +526,14 @@ def test_build_checkout_tarball_links(datafiles, cli):
     checkout = os.path.join(cli.directory, 'checkout.tar')
     extract = os.path.join(cli.directory, 'extract')
 
+    # Create the link before running the tests.
+    # This is needed for users working on Windows, git checks out symlinks as files which content is the name
+    # of the symlink and the test therefore doesn't have the correct content
+    os.symlink(
+        os.path.join("..", "basicfile"),
+        os.path.join(project, "files", "files-and-links", "basicfolder", "basicsymlink")
+    )
+
     result = cli.run(project=project, args=['build', 'import-links.bst'])
     result.assert_success()
 
@@ -547,6 +555,14 @@ def test_build_checkout_tarball_links(datafiles, cli):
 def test_build_checkout_links(datafiles, cli):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'checkout')
+
+    # Create the link before running the tests.
+    # This is needed for users working on Windows, git checks out symlinks as files which content is the name
+    # of the symlink and the test therefore doesn't have the correct content
+    os.symlink(
+        os.path.join("..", "basicfile"),
+        os.path.join(project, "files", "files-and-links", "basicfolder", "basicsymlink")
+    )
 
     result = cli.run(project=project, args=['build', 'import-links.bst'])
     result.assert_success()
