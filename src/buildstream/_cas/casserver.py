@@ -502,7 +502,8 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
 
         if self.update_cas:
             # Check that the files specified are in the CAS
-            self._check_directory("files", artifact.files, context)
+            if str(artifact.files):
+                self._check_directory("files", artifact.files, context)
 
             # Unset protocol buffers don't evaluated to False but do return empty
             # strings, hence str()
