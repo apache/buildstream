@@ -813,6 +813,7 @@ class Stream():
 
         expanded_directories = []
         #  To try to be more atomic, loop through the elements and raise any errors we can early
+        reload_targets = False
         for target in elements:
 
             if not list(target.sources()):
@@ -825,9 +826,15 @@ class Stream():
 
             # Check for workspace config
             workspace = workspaces.get_workspace(target._get_full_name())
-            if workspace and not force:
-                raise StreamError("Element '{}' already has workspace defined at: {}"
-                                  .format(target.name, workspace.get_absolute_path()))
+            if workspace:
+                if not force:
+                    raise StreamError("Element '{}' already has workspace defined at: {}"
+                                      .format(target.name, workspace.get_absolute_path()))
+                if not no_checkout:
+                    target.warn("Replacing existing workspace for element '{}' defined at: {}"
+                                .format(target.name, workspace.get_absolute_path()))
+                self.workspace_close(target._get_full_name(), remove_dir=not no_checkout)
+                reload_targets = True
 
             target_consistency = target._get_consistency()
             if not no_checkout and target_consistency < Consistency.CACHED and \
@@ -842,6 +849,22 @@ class Stream():
                 if directory[-4:] == '.bst':
                     directory = directory[:-4]
                 expanded_directories.append(directory)
+
+        if reload_targets:
+            elements, track_elements = self._load(targets, track_targets,
+                                                  selection=PipelineSelection.REDIRECT,
+                                                  track_selection=PipelineSelection.REDIRECT)
+
+            workspaces = self._context.get_workspaces()
+
+            # If we're going to checkout, we need at least a fetch,
+            # if we were asked to track first, we're going to fetch anyway.
+            #
+            if not no_checkout or track_first:
+                track_elements = []
+                if track_first:
+                    track_elements = elements
+                self._fetch(elements, track_elements=track_elements, fetch_original=True)
 
         if custom_dir:
             if len(elements) != 1:
@@ -863,6 +886,9 @@ class Stream():
                 if not (no_checkout or force) and os.listdir(directory):
                     raise StreamError("For element '{}', Directory path is not empty: {}"
                                       .format(target.name, directory), reason='bad-directory')
+                if os.listdir(directory):
+                    if force and not no_checkout:
+                        shutil.rmtree(directory)
 
         # So far this function has tried to catch as many issues as possible with out making any changes
         # Now it does the bits that can not be made atomic.
@@ -928,14 +954,9 @@ class Stream():
     #
     def workspace_reset(self, targets, *, soft, track_first):
 
-        if track_first:
-            track_targets = targets
-        else:
-            track_targets = ()
-
-        elements, track_elements = self._load(targets, track_targets,
-                                              selection=PipelineSelection.REDIRECT,
-                                              track_selection=PipelineSelection.REDIRECT)
+        elements, _ = self._load(targets, [],
+                                 selection=PipelineSelection.REDIRECT,
+                                 track_selection=PipelineSelection.REDIRECT)
 
         nonexisting = []
         for element in elements:
@@ -944,37 +965,14 @@ class Stream():
         if nonexisting:
             raise StreamError("Workspace does not exist", detail="\n".join(nonexisting))
 
-        # Do the tracking first
-        if track_first:
-            self._fetch(elements, track_elements=track_elements, fetch_original=True)
-
         workspaces = self._context.get_workspaces()
-
         for element in elements:
             workspace = workspaces.get_workspace(element._get_full_name())
             workspace_path = workspace.get_absolute_path()
-            if soft:
-                workspace.prepared = False
-                self._message(MessageType.INFO, "Reset workspace state for {} at: {}"
-                              .format(element.name, workspace_path))
-                continue
-
-            with element.timed_activity("Removing workspace directory {}"
-                                        .format(workspace_path)):
-                try:
-                    shutil.rmtree(workspace_path)
-                except OSError as e:
-                    raise StreamError("Could not remove  '{}': {}"
-                                      .format(workspace_path, e)) from e
-
-            workspaces.delete_workspace(element._get_full_name())
-            workspaces.create_workspace(element, workspace_path, checkout=True)
-
-            self._message(MessageType.INFO,
-                          "Reset workspace for {} at: {}".format(element.name,
-                                                                 workspace_path))
-
-        workspaces.save_config()
+            self.workspace_close(element._get_full_name(), remove_dir=True)
+            workspaces.save_config()
+            self.workspace_open([element._get_full_name()],
+                                no_checkout=False, track_first=track_first, force=True, custom_dir=workspace_path)
 
     # workspace_exists
     #
