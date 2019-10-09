@@ -19,6 +19,7 @@
 #
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
+from contextlib import contextmanager
 import os
 import shutil
 import pytest
@@ -56,29 +57,34 @@ def create_test_element(tmpdir, project_dir):
     return element_name, repo, ref
 
 
+@contextmanager
+def context_with_source_cache(cli, cache, share, tmpdir):
+    user_config_file = str(tmpdir.join('buildstream.conf'))
+    user_config = {
+        'scheduler': {
+            'pushers': 1
+        },
+        'source-caches': {
+            'url': share.repo,
+        },
+        'cachedir': cache,
+    }
+    _yaml.roundtrip_dump(user_config, file=user_config_file)
+    cli.configure(user_config)
+
+    with dummy_context(config=user_config_file) as context:
+        yield context
+
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_fetch(cli, tmpdir, datafiles):
     project_dir = str(datafiles)
     element_name, _repo, _ref = create_test_element(tmpdir, project_dir)
+    cache_dir = os.path.join(str(tmpdir), 'cache')
 
     # use artifact cache for sources for now, they should work the same
     with create_artifact_share(os.path.join(str(tmpdir), 'sourceshare')) as share:
-        # configure using this share
-        cache_dir = os.path.join(str(tmpdir), 'cache')
-        user_config_file = str(tmpdir.join('buildstream.conf'))
-        user_config = {
-            'scheduler': {
-                'pushers': 1
-            },
-            'source-caches': {
-                'url': share.repo,
-            },
-            'cachedir': cache_dir,
-        }
-        _yaml.roundtrip_dump(user_config, file=user_config_file)
-        cli.configure(user_config)
-
-        with dummy_context(config=user_config_file) as context:
+        with context_with_source_cache(cli, cache_dir, share, tmpdir) as context:
             project = Project(project_dir, context)
             project.ensure_fully_loaded()
 
@@ -121,25 +127,11 @@ def test_source_fetch(cli, tmpdir, datafiles):
 def test_fetch_fallback(cli, tmpdir, datafiles):
     project_dir = str(datafiles)
     element_name, repo, ref = create_test_element(tmpdir, project_dir)
+    cache_dir = os.path.join(str(tmpdir), 'cache')
 
     # use artifact cache for sources for now, they should work the same
     with create_artifact_share(os.path.join(str(tmpdir), 'sourceshare')) as share:
-        # configure using this share
-        cache_dir = os.path.join(str(tmpdir), 'cache')
-        user_config_file = str(tmpdir.join('buildstream.conf'))
-        user_config = {
-            'scheduler': {
-                'pushers': 1
-            },
-            'source-caches': {
-                'url': share.repo,
-            },
-            'cachedir': cache_dir,
-        }
-        _yaml.roundtrip_dump(user_config, file=user_config_file)
-        cli.configure(user_config)
-
-        with dummy_context(config=user_config_file) as context:
+        with context_with_source_cache(cli, cache_dir, share, tmpdir) as context:
             project = Project(project_dir, context)
             project.ensure_fully_loaded()
 
@@ -171,21 +163,7 @@ def test_pull_fail(cli, tmpdir, datafiles):
     cache_dir = os.path.join(str(tmpdir), 'cache')
 
     with create_artifact_share(os.path.join(str(tmpdir), 'sourceshare')) as share:
-        user_config_file = str(tmpdir.join('buildstream.conf'))
-        user_config = {
-            'scheduler': {
-                'pushers': 1
-            },
-            'source-caches': {
-                'url': share.repo,
-            },
-            'cachedir': cache_dir,
-        }
-        _yaml.roundtrip_dump(user_config, file=user_config_file)
-        cli.configure(user_config)
-
-        # get the source object
-        with dummy_context(config=user_config_file) as context:
+        with context_with_source_cache(cli, cache_dir, share, tmpdir) as context:
             project = Project(project_dir, context)
             project.ensure_fully_loaded()
 
@@ -197,7 +175,7 @@ def test_pull_fail(cli, tmpdir, datafiles):
             shutil.rmtree(repo.repo)
 
             # Should fail in stream, with a plugin task causing the error
-            res = cli.run(project=project_dir, args=['build', 'push.bst'])
+            res = cli.run(project=project_dir, args=['build', element_name])
             res.assert_main_error(ErrorDomain.STREAM, None)
             res.assert_task_error(ErrorDomain.PLUGIN, None)
             assert "Remote source service ({}) does not have source {} cached".format(
