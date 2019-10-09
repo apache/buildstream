@@ -27,7 +27,7 @@ from multiprocessing import Process
 from .fuse import FUSE
 
 from .._exceptions import ImplError
-from .. import _signals
+from .. import _signals, utils
 
 
 # Just a custom exception to raise here, for identifying possible
@@ -82,6 +82,7 @@ class Mount():
     __mountpoint = None
     __operations = None
     __process = None
+    __logfile = None
 
     ################################################
     #               User Facing API                #
@@ -102,7 +103,7 @@ class Mount():
         assert self.__process is None
 
         self.__mountpoint = mountpoint
-        self.__process = Process(target=self.__run_fuse)
+        self.__process = Process(target=self.__run_fuse, args=(self.__logfile.name,))
 
         # Ensure the child process does not inherit our signal handlers, if the
         # child wants to handle a signal then it will first set its own
@@ -110,8 +111,12 @@ class Mount():
         with _signals.blocked([signal.SIGTERM, signal.SIGTSTP, signal.SIGINT], ignore=False):
             self.__process.start()
 
-        # This is horrible, we're going to wait until mountpoint is mounted and that's it.
         while not os.path.ismount(mountpoint):
+            if not self.__process.is_alive():
+                self.__logfile.seek(0)
+                stderr = self.__logfile.read()
+                raise FuseMountError("Unable to mount {}: {}".format(mountpoint, stderr.decode().strip()))
+
             time.sleep(1 / 100)
 
     # unmount():
@@ -127,8 +132,11 @@ class Mount():
 
             # Report an error if ever the underlying operations crashed for some reason.
             if self.__process.exitcode != 0:
-                raise FuseMountError("{} reported exit code {} when unmounting"
-                                     .format(type(self).__name__, self.__process.exitcode))
+                self.__logfile.seek(0)
+                stderr = self.__logfile.read()
+
+                raise FuseMountError("{} reported exit code {} when unmounting: {}"
+                                     .format(type(self).__name__, self.__process.exitcode, stderr))
 
         self.__mountpoint = None
         self.__process = None
@@ -145,12 +153,17 @@ class Mount():
     @contextmanager
     def mounted(self, mountpoint):
 
-        self.mount(mountpoint)
-        try:
-            with _signals.terminator(self.unmount):
-                yield
-        finally:
-            self.unmount()
+        with utils._tempnamedfile() as logfile:
+            self.__logfile = logfile
+
+            self.mount(mountpoint)
+            try:
+                with _signals.terminator(self.unmount):
+                    yield
+            finally:
+                self.unmount()
+
+        self.__logfile = None
 
     ################################################
     #               Abstract Methods               #
@@ -169,7 +182,11 @@ class Mount():
     ################################################
     #                Child Process                 #
     ################################################
-    def __run_fuse(self):
+    def __run_fuse(self, filename):
+        # Override stdout/stderr to the file given as a pointer, that way our parent process can get our output
+        out = open(filename, "w")
+        os.dup2(out.fileno(), sys.stdout.fileno())
+        os.dup2(out.fileno(), sys.stderr.fileno())
 
         # First become session leader while signals are still blocked
         #
@@ -187,8 +204,12 @@ class Mount():
         # Run fuse in foreground in this child process, internally libfuse
         # will handle SIGTERM and gracefully exit its own little main loop.
         #
-        FUSE(self.__operations, self.__mountpoint, nothreads=True, foreground=True, nonempty=True,
-             **self._fuse_mount_options)
+        try:
+            FUSE(self.__operations, self.__mountpoint, nothreads=True, foreground=True, nonempty=True,
+                 **self._fuse_mount_options)
+        except RuntimeError as exc:
+            # FUSE will throw a RuntimeError with the exit code of libfuse as args[0]
+            sys.exit(exc.args[0])
 
         # Explicit 0 exit code, if the operations crashed for some reason, the exit
         # code will not be 0, and we want to know about it.
