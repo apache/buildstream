@@ -21,6 +21,7 @@ import os
 import grpc
 
 from ._remote import BaseRemote
+from ._cas.casremote import BlobNotFound
 from .storage._casbaseddirectory import CasBasedDirectory
 from ._basecache import BaseCache
 from ._exceptions import CASError, CASRemoteError, SourceCacheError
@@ -259,6 +260,10 @@ class SourceCache(BaseCache):
 
                 source.info("Pulled source {} <- {}".format(display_key, remote))
                 return True
+            except BlobNotFound as e:
+                # Not all blobs are available on this remote
+                source.info("Remote cas ({}) does not have blob {} cached".format(remote, e.blob))
+                continue
             except CASError as e:
                 raise SourceCacheError("Failed to pull source {}: {}".format(
                     display_key, e)) from e

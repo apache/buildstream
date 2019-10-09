@@ -180,3 +180,50 @@ def test_pull_fail(cli, tmpdir, datafiles):
             res.assert_task_error(ErrorDomain.PLUGIN, None)
             assert "Remote source service ({}) does not have source {} cached".format(
                 share.repo, source._get_brief_display_key()) in res.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_pull_partial_fallback_fetch(cli, tmpdir, datafiles):
+    project_dir = str(datafiles)
+    element_name, repo, ref = create_test_element(tmpdir, project_dir)
+    cache_dir = os.path.join(str(tmpdir), 'cache')
+
+    # use artifact cache for sources for now, they should work the same
+    with create_artifact_share(os.path.join(str(tmpdir), 'sourceshare')) as share:
+        with context_with_source_cache(cli, cache_dir, share, tmpdir) as context:
+            project = Project(project_dir, context)
+            project.ensure_fully_loaded()
+
+            element = project.load_elements([element_name])[0]
+            assert not element._source_cached()
+            source = list(element.sources())[0]
+
+            cas = context.get_cascache()
+            assert not cas.contains(source._get_source_name())
+
+            # Just check that we sensibly fetch and build the element
+            res = cli.run(project=project_dir, args=['build', element_name])
+            res.assert_success()
+
+            assert os.listdir(os.path.join(str(tmpdir), 'cache', 'sources', 'git')) != []
+
+            # get root digest of source
+            sourcecache = context.sourcecache
+            digest = sourcecache.export(source)._get_digest()
+
+            move_local_cas_to_remote_source_share(str(cache_dir), share.directory)
+
+            # Remove the cas content, only keep the proto and such around
+            shutil.rmtree(os.path.join(str(tmpdir), "sourceshare", "repo", "cas", "objects"))
+            # check the share doesn't have the object
+            assert not share.has_object(digest)
+
+            state = cli.get_element_state(project_dir, element_name)
+            assert state == 'fetch needed'
+
+            # Now fetch the source and check
+            res = cli.run(project=project_dir, args=['source', 'fetch', element_name])
+            res.assert_success()
+
+            assert ("SUCCESS Fetching from {}"
+                    .format(repo.source_config(ref=ref)['url'])) in res.stderr
