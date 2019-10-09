@@ -260,7 +260,7 @@ def test_push_fail(cli, tmpdir, datafiles):
     assert "Pushed" not in res.stderr
 
 
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_push_build_fail(cli, tmpdir, datafiles):
     project_dir = str(datafiles)

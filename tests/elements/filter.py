@@ -31,7 +31,7 @@ def test_filter_include(datafiles, cli, tmpdir):
     assert not os.path.exists(os.path.join(checkout, "bar"))
 
 
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'basic'))
 def test_filter_include_dynamic(datafiles, cli, tmpdir):
     project = str(datafiles)

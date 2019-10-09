@@ -43,7 +43,7 @@ def test_autotools_build(cli, datafiles):
 @pytest.mark.skipif(MACHINE_ARCH != 'x86-64',
                     reason='Examples are written for x86-64')
 @pytest.mark.skipif(not IS_LINUX or not HAVE_SANDBOX, reason='Only available on linux with sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 @pytest.mark.skipif(HAVE_SANDBOX == 'chroot', reason='This test is not meant to work with chroot sandbox')
 @pytest.mark.datafiles(DATA_DIR)
 def test_autotools_run(cli, datafiles):

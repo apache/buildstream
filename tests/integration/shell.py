@@ -177,7 +177,7 @@ def test_no_shell(cli, datafiles):
 @pytest.mark.parametrize("path", [("/etc/pony.conf"), ("/usr/share/pony/pony.txt")])
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 def test_host_files(cli, datafiles, path):
     project = str(datafiles)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
@@ -199,7 +199,7 @@ def test_host_files(cli, datafiles, path):
 @pytest.mark.parametrize("path", [("/etc"), ("/usr/share/pony")])
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 def test_host_files_expand_environ(cli, datafiles, path):
     project = str(datafiles)
     hostpath = os.path.join(project, 'files', 'shell-mount')
@@ -282,7 +282,7 @@ def test_host_files_missing(cli, datafiles, optional):
 @pytest.mark.parametrize("path", [("/etc/pony.conf"), ("/usr/share/pony/pony.txt")])
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 def test_cli_mount(cli, datafiles, path):
     project = str(datafiles)
     ponyfile = os.path.join(project, 'files', 'shell-mount', 'pony.txt')
@@ -329,7 +329,7 @@ def test_workspace_visible(cli, datafiles):
 # Test that '--sysroot' works
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox', strict=True)
+@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 def test_sysroot(cli, tmpdir, datafiles):
     project = str(datafiles)
     base_element = "base/base-alpine.bst"
