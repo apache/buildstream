@@ -427,13 +427,15 @@ class Project():
     #    targets (list): Target names
     #    rewritable (bool): Whether the loaded files should be rewritable
     #                       this is a bit more expensive due to deep copies
+    #    ignore_workspaces (bool): Whether to load workspace sources
     #
     # Returns:
     #    (list): A list of loaded Element
     #
-    def load_elements(self, targets, *, rewritable=False):
+    def load_elements(self, targets, *, rewritable=False, ignore_workspaces=False):
         with self._context.messenger.simple_task("Loading elements", silent_nested=True) as task:
-            meta_elements = self.loader.load(targets, task, rewritable=rewritable, ticker=None)
+            meta_elements = self.loader.load(targets, task, rewritable=rewritable, ticker=None,
+                                             ignore_workspaces=ignore_workspaces)
 
         with self._context.messenger.simple_task("Resolving elements") as task:
             if task:
