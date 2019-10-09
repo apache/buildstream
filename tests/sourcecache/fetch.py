@@ -77,7 +77,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             project = Project(project_dir, context)
             project.ensure_fully_loaded()
 
-            element = project.load_elements(['fetch.bst'])[0]
+            element = project.load_elements([element_name])[0]
             assert not element._source_cached()
             source = list(element.sources())[0]
 
@@ -85,7 +85,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             assert not cas.contains(source._get_source_name())
 
             # Just check that we sensibly fetch and build the element
-            res = cli.run(project=project_dir, args=['build', 'fetch.bst'])
+            res = cli.run(project=project_dir, args=['build', element_name])
             res.assert_success()
 
             assert os.listdir(os.path.join(str(tmpdir), 'cache', 'sources', 'git')) != []
@@ -99,11 +99,11 @@ def test_source_fetch(cli, tmpdir, datafiles):
             # check the share has the object
             assert share.has_object(digest)
 
-            state = cli.get_element_state(project_dir, 'fetch.bst')
+            state = cli.get_element_state(project_dir, element_name)
             assert state == 'fetch needed'
 
             # Now fetch the source and check
-            res = cli.run(project=project_dir, args=['source', 'fetch', 'fetch.bst'])
+            res = cli.run(project=project_dir, args=['source', 'fetch', element_name])
             res.assert_success()
             assert "Pulled source" in res.stderr
 
@@ -147,7 +147,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
             project = Project(project_dir, context)
             project.ensure_fully_loaded()
 
-            element = project.load_elements(['fetch.bst'])[0]
+            element = project.load_elements([element_name])[0]
             assert not element._source_cached()
             source = list(element.sources())[0]
 
@@ -156,7 +156,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
             assert not os.path.exists(os.path.join(cache_dir, 'sources'))
 
             # Now check if it falls back to the source fetch method.
-            res = cli.run(project=project_dir, args=['source', 'fetch', 'fetch.bst'])
+            res = cli.run(project=project_dir, args=['source', 'fetch', element_name])
             res.assert_success()
             brief_key = source._get_brief_display_key()
             assert ("Remote source service ({}) does not have source {} cached"
@@ -202,7 +202,7 @@ def test_pull_fail(cli, tmpdir, datafiles):
             project = Project(project_dir, context)
             project.ensure_fully_loaded()
 
-            element = project.load_elements(['push.bst'])[0]
+            element = project.load_elements([element_name])[0]
             assert not element._source_cached()
             source = list(element.sources())[0]
 
