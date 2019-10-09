@@ -278,8 +278,8 @@ docs:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-85428307
   variables:
     BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
-    BST_EXT_REF: 0.12.0-161-g624c8da7c4f8660b7f9e9c6f85399a00f3d3c1e6
-    FD_SDK_REF: freedesktop-sdk-19.08.2-4-g9d11a8ba10b1e20869338a675891ada9995b6fda
+    BST_EXT_REF: 0.12.0-171-g6cd4066#egg=bst_plugins_experimental[ostree,cargo]
+    FD_SDK_REF: freedesktop-sdk-19.08.3-7-g4529b070
   before_script:
   - |
     mkdir -p "${HOME}/.config"
@@ -291,7 +291,7 @@ docs:
   - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
   - pip3 wheel --wheel-dir wheels/ --no-deps .
   - pip3 install --no-index wheels/*
-  - pip3 install --user -e ${BST_EXT_URL}@${BST_EXT_REF}#egg=bst_ext
+  - pip3 install --user -e ${BST_EXT_URL}@${BST_EXT_REF}
   - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
   - git -C freedesktop-sdk checkout ${FD_SDK_REF}
   artifacts:
