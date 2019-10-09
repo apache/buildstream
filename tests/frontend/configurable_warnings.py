@@ -46,7 +46,6 @@ def build_project(datafiles, fatal_warnings):
     return project_path
 
 
-@pytest.mark.xfail(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox')
 @pytest.mark.datafiles(TOP_DIR)
 @pytest.mark.parametrize("element_name, fatal_warnings, expect_fatal, error_domain", [
     ("corewarn.bst", [CoreWarnings.OVERLAPS], True, ErrorDomain.STREAM),
@@ -60,6 +59,8 @@ def build_project(datafiles, fatal_warnings):
 ])
 def test_fatal_warnings(cli, datafiles, element_name,
                         fatal_warnings, expect_fatal, error_domain):
+    if HAVE_SANDBOX == 'buildbox' and error_domain != ErrorDomain.STREAM:
+        pytest.xfail()
     project_path = build_project(datafiles, fatal_warnings)
 
     result = cli.run(project=project_path, args=["build", element_name])
