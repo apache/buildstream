@@ -42,9 +42,24 @@ def move_local_cas_to_remote_source_share(local, remote):
     shutil.rmtree(os.path.join(local, 'artifacts'))
 
 
+def create_test_element(tmpdir, project_dir):
+    repo = create_repo('git', str(tmpdir))
+    ref = repo.create(os.path.join(project_dir, 'files'))
+    element_path = os.path.join(project_dir, 'elements')
+    element_name = 'fetch.bst'
+    element = {
+        'kind': 'import',
+        'sources': [repo.source_config(ref=ref)]
+    }
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
+
+    return element_name, repo, ref
+
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_fetch(cli, tmpdir, datafiles):
     project_dir = str(datafiles)
+    element_name, _repo, _ref = create_test_element(tmpdir, project_dir)
 
     # use artifact cache for sources for now, they should work the same
     with create_artifact_share(os.path.join(str(tmpdir), 'sourceshare')) as share:
@@ -62,16 +77,6 @@ def test_source_fetch(cli, tmpdir, datafiles):
         }
         _yaml.roundtrip_dump(user_config, file=user_config_file)
         cli.configure(user_config)
-
-        repo = create_repo('git', str(tmpdir))
-        ref = repo.create(os.path.join(project_dir, 'files'))
-        element_path = os.path.join(project_dir, 'elements')
-        element_name = 'fetch.bst'
-        element = {
-            'kind': 'import',
-            'sources': [repo.source_config(ref=ref)]
-        }
-        _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
         with dummy_context(config=user_config_file) as context:
             project = Project(project_dir, context)
@@ -115,6 +120,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_fetch_fallback(cli, tmpdir, datafiles):
     project_dir = str(datafiles)
+    element_name, repo, ref = create_test_element(tmpdir, project_dir)
 
     # use artifact cache for sources for now, they should work the same
     with create_artifact_share(os.path.join(str(tmpdir), 'sourceshare')) as share:
@@ -132,16 +138,6 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
         }
         _yaml.roundtrip_dump(user_config, file=user_config_file)
         cli.configure(user_config)
-
-        repo = create_repo('git', str(tmpdir))
-        ref = repo.create(os.path.join(project_dir, 'files'))
-        element_path = os.path.join(project_dir, 'elements')
-        element_name = 'fetch.bst'
-        element = {
-            'kind': 'import',
-            'sources': [repo.source_config(ref=ref)]
-        }
-        _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
         with dummy_context(config=user_config_file) as context:
             project = Project(project_dir, context)
@@ -171,6 +167,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull_fail(cli, tmpdir, datafiles):
     project_dir = str(datafiles)
+    element_name, repo, _ref = create_test_element(tmpdir, project_dir)
     cache_dir = os.path.join(str(tmpdir), 'cache')
 
     with create_artifact_share(os.path.join(str(tmpdir), 'sourceshare')) as share:
@@ -186,16 +183,6 @@ def test_pull_fail(cli, tmpdir, datafiles):
         }
         _yaml.roundtrip_dump(user_config, file=user_config_file)
         cli.configure(user_config)
-
-        repo = create_repo('git', str(tmpdir))
-        ref = repo.create(os.path.join(project_dir, 'files'))
-        element_path = os.path.join(project_dir, 'elements')
-        element_name = 'push.bst'
-        element = {
-            'kind': 'import',
-            'sources': [repo.source_config(ref=ref)]
-        }
-        _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
         # get the source object
         with dummy_context(config=user_config_file) as context:
