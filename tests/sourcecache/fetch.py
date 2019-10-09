@@ -34,6 +34,14 @@ from tests.testutils import create_artifact_share, dummy_context
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
 
+def move_local_cas_to_remote_source_share(local, remote):
+    shutil.rmtree(os.path.join(remote, 'repo', 'cas'))
+    shutil.move(os.path.join(local, 'source_protos'), os.path.join(remote, 'repo'))
+    shutil.move(os.path.join(local, 'cas'), os.path.join(remote, 'repo'))
+    shutil.rmtree(os.path.join(local, 'sources'))
+    shutil.rmtree(os.path.join(local, 'artifacts'))
+
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_fetch(cli, tmpdir, datafiles):
     project_dir = str(datafiles)
@@ -86,16 +94,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             sourcecache = context.sourcecache
             digest = sourcecache.export(source)._get_digest()
 
-            # Move source in local cas to repo
-            shutil.rmtree(os.path.join(str(tmpdir), 'sourceshare', 'repo', 'cas'))
-            shutil.move(
-                os.path.join(str(tmpdir), 'cache', 'source_protos'),
-                os.path.join(str(tmpdir), 'sourceshare', 'repo'))
-            shutil.move(
-                os.path.join(str(tmpdir), 'cache', 'cas'),
-                os.path.join(str(tmpdir), 'sourceshare', 'repo'))
-            shutil.rmtree(os.path.join(str(tmpdir), 'cache', 'sources'))
-            shutil.rmtree(os.path.join(str(tmpdir), 'cache', 'artifacts'))
+            move_local_cas_to_remote_source_share(str(cache_dir), share.directory)
 
             # check the share has the object
             assert share.has_object(digest)
