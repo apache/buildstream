@@ -65,10 +65,6 @@ PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
 #
 cdef class Variables:
 
-    cdef MappingNode original
-    cdef dict _expstr_map
-    cdef public dict flat
-
     def __init__(self, MappingNode node):
         self.original = node
         self._expstr_map = self._resolve(node)
@@ -87,7 +83,7 @@ cdef class Variables:
     # Raises:
     #    LoadError, if the string contains unresolved variable references.
     #
-    def subst(self, str string):
+    cpdef subst(self, str string):
         expstr = _parse_expstr(string)
 
         try:
