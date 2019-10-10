@@ -165,8 +165,6 @@ class Scheduler():
     #
     def run(self, queues, casd_process):
 
-        assert self.context.is_fork_allowed()
-
         # Hold on to the queues to process
         self.queues = queues
 
@@ -407,6 +405,13 @@ class Scheduler():
             #
             # If that happens, do another round.
             process_queues = any(q.dequeue_ready() for q in self.queues)
+
+        # Check whether fork is allowed before starting jobs
+        if not self.context.is_fork_allowed():
+            message = Message(MessageType.BUG, "Fork is not allowed", detail="Background threads are active")
+            self._notify(Notification(NotificationType.MESSAGE, message=message))
+            self.terminate_jobs()
+            return
 
         # Start the jobs
         #
