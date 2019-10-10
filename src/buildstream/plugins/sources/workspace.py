@@ -104,7 +104,7 @@ class WorkspaceSource(Source):
                         reason='ensure-stage-dir-fail')
                 self.__digest = self.__cas_dir._get_digest().hash
         #  now close down grpc channels
-        cas.close_channel()
+        cas.close_grpc_channels()
         assert not cas.has_open_grpc_channels()
         return (self.path, self.__digest)
 

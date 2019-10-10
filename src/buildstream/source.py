@@ -1085,7 +1085,7 @@ class Source(Plugin):
         sourcecache = self._get_context().sourcecache
         if self.get_kind() == 'workspace' and not sourcecache.contains(self):
             sourcecache.commit(self, [])
-        sourcecache.cas.close_channel()
+        sourcecache.cas.close_grpc_channels()
         assert not sourcecache.cas.has_open_grpc_channels()
 
     @property
