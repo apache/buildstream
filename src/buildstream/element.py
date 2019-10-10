@@ -2079,21 +2079,6 @@ class Element(Plugin):
 
             os.chmod(script_path, stat.S_IEXEC | stat.S_IREAD)
 
-    # _subst_string()
-    #
-    # Substitue a string, this is an internal function related
-    # to how junctions are loaded and needs to be more generic
-    # than the public node_subst_member()
-    #
-    # Args:
-    #    value (str): A string value
-    #
-    # Returns:
-    #    (str): The string after substitutions have occurred
-    #
-    def _subst_string(self, value):
-        return self.__variables.subst(value)
-
     # Returns the element whose sources this element is ultimately derived from.
     #
     # This is intended for being used to redirect commands that operate on an
