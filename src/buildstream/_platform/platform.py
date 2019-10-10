@@ -32,6 +32,7 @@ from .. import utils
 class Platform():
 
     _host_arch = None  # cache to not recompute the host arch every time
+    _host_os = None  # cache not to recompute the host os every time
 
     # Platform()
     #
@@ -122,9 +123,11 @@ class Platform():
         else:
             return min(cpu_count, cap)
 
-    @staticmethod
-    def get_host_os():
-        return platform.uname().system
+    @classmethod
+    def get_host_os(cls):
+        if cls._host_os is None:
+            cls._host_os = platform.uname().system
+        return cls._host_os
 
     # canonicalize_arch():
     #
