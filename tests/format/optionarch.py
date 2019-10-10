@@ -7,6 +7,7 @@ import pytest
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
+from buildstream._platform import Platform
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 
 from tests.testutils import override_platform_uname
@@ -14,6 +15,13 @@ from tests.testutils import override_platform_uname
 # Project directory
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 
+
+@pytest.fixture(autouse=True)
+def reset_arch():
+    # The platform currently caches the host arch. We need to clean that up here.
+    Platform._host_arch = None
+    yield
+    Platform._host_arch = None
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("machine,value,expected", [

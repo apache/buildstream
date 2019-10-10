@@ -30,6 +30,9 @@ from .. import utils
 
 
 class Platform():
+
+    _host_arch = None  # cache to not recompute the host arch every time
+
     # Platform()
     #
     # A class to manage platform-specific details. Currently holds the
@@ -167,11 +170,14 @@ class Platform():
     #
     # Returns:
     #    (string): String representing the architecture
-    @staticmethod
-    def get_host_arch():
-        # get the hardware identifier from uname
-        uname_machine = platform.uname().machine
-        return Platform.canonicalize_arch(uname_machine)
+    @classmethod
+    def get_host_arch(cls):
+        if cls._host_arch is None:
+            # get the hardware identifier from uname
+            uname_machine = platform.uname().machine
+            cls._host_arch = Platform.canonicalize_arch(uname_machine)
+
+        return cls._host_arch
 
     # does_multiprocessing_start_require_pickling():
     #
