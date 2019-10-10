@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
-from .node cimport MappingNode, SequenceNode
+from .node cimport MappingNode, ScalarNode, SequenceNode
 from ._variables cimport Variables
 
 
@@ -22,16 +22,18 @@ from ._variables cimport Variables
 def expand_splits(MappingNode element_public not None, Variables variables not None):
     cdef MappingNode element_bst = element_public.get_mapping('bst', default={})
     cdef MappingNode element_splits = element_bst.get_mapping('split-rules', default={})
+
     cdef str domain
     cdef list new_splits
     cdef SequenceNode splits
+    cdef ScalarNode split
 
-    # Resolve any variables in the public split rules directly
-    for domain, splits in element_splits.items():
-        new_splits = [
-            variables.subst(split.strip())
-            for split in splits.as_str_list()
-        ]
-        element_splits[domain] = new_splits
+    if element_splits:
+        # Resolve any variables in the public split rules directly
+        for domain, splits in element_splits.items():
+            for split in splits:
+                split.value = variables.subst(split.as_str())
+    else:
+        element_public['split-rules'] = {}
 
     return element_public
