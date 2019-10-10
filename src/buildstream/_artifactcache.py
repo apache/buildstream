@@ -42,6 +42,10 @@ class ArtifactRemote(BaseRemote):
         super().__init__(*args, **kwargs)
         self.artifact_service = None
 
+    def close(self):
+        self.artifact_service = None
+        super().close()
+
     # _configure_protocols():
     #
     # Configure the protocols used by this remote as part of the
