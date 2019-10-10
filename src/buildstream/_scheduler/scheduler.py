@@ -406,8 +406,8 @@ class Scheduler():
             # If that happens, do another round.
             process_queues = any(q.dequeue_ready() for q in self.queues)
 
-        # Check whether fork is allowed before starting jobs
-        if not self.context.is_fork_allowed():
+        # Make sure fork is allowed before starting jobs
+        if not self.context.prepare_fork():
             message = Message(MessageType.BUG, "Fork is not allowed", detail="Background threads are active")
             self._notify(Notification(NotificationType.MESSAGE, message=message))
             self.terminate_jobs()
