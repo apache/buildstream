@@ -15,15 +15,23 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from unittest.mock import MagicMock
 
+from types import MethodType
 from contextlib import contextmanager
 
 from buildstream._context import Context
+from buildstream._state import _Task
 
 
 # Handle messages from the pipeline
 def _dummy_message_handler(message, is_silenced):
     pass
+
+
+@contextmanager
+def _get_dummy_task(self, activity_name, *, element_name=None, full_name=None, silent_nested=False):
+    yield MagicMock(spec=_Task("state", activity_name, full_name, 0))
 
 
 # dummy_context()
@@ -42,5 +50,6 @@ def dummy_context(*, config=None):
         context.load(config=config)
 
         context.messenger.set_message_handler(_dummy_message_handler)
+        context.messenger.simple_task = MethodType(_get_dummy_task, context.messenger)
 
         yield context

@@ -37,6 +37,11 @@ from ..types import CoreWarnings
 from .._message import Message, MessageType
 
 
+# This should be used to deliberately disable progress reporting when
+# collecting an element
+_NO_PROGRESS = object()
+
+
 # Loader():
 #
 # The Loader class does the heavy lifting of parsing target
@@ -94,7 +99,7 @@ class Loader():
     # Raises: LoadError
     #
     # Returns: The toplevel LoadElement
-    def load(self, targets, rewritable=False, ticker=None, task=None):
+    def load(self, targets, task, rewritable=False, ticker=None):
 
         for filename in targets:
             if os.path.isabs(filename):
@@ -148,7 +153,7 @@ class Loader():
         self._clean_caches()
 
         # Cache how many Elements have just been loaded
-        if task:
+        if task is not _NO_PROGRESS:
             # Workaround for task potentially being None (because no State object)
             self.loaded = task.current_progress
 
@@ -483,7 +488,7 @@ class Loader():
 
         # Cache it now, make sure it's already there before recursing
         self._meta_elements[element.name] = meta_element
-        if task:
+        if task is not _NO_PROGRESS:
             task.add_current_progress()
 
         return meta_element
@@ -591,13 +596,38 @@ class Loader():
             return None
 
         # meta junction element
-        # XXX: This is a likely point for progress reporting to end up
-        # missing some elements, but it currently doesn't appear to be the case.
-        meta_element = self._collect_element(self._elements[filename], None)
+        #
+        # Note that junction elements are not allowed to have
+        # dependencies, so disabling progress reporting here should
+        # have no adverse effects - the junction element itself cannot
+        # be depended on, so it would be confusing for its load to
+        # show up in logs.
+        #
+        # Any task counting *inside* the junction will be handled by
+        # its loader.
+        meta_element = self._collect_element_no_deps(self._elements[filename], _NO_PROGRESS)
         if meta_element.kind != 'junction':
             raise LoadError("{}{}: Expected junction but element kind is {}"
                             .format(provenance_str, filename, meta_element.kind),
                             LoadErrorReason.INVALID_DATA)
+
+        # We check that junctions have no dependencies a little
+        # early. This is cheating, since we don't technically know
+        # that junctions aren't allowed to have dependencies.
+        #
+        # However, this makes progress reporting more intuitive
+        # because we don't need to load dependencies of an element
+        # that shouldn't have any, and therefore don't need to
+        # duplicate the load count for elements that shouldn't be.
+        #
+        # We also fail slightly earlier (since we don't need to go
+        # through the entire loading process), which is nice UX. It
+        # would be nice if this could be done for *all* element types,
+        # but since we haven't loaded those yet that's impossible.
+        if self._elements[filename].dependencies:
+            raise LoadError(
+                "Dependencies are forbidden for 'junction' elements",
+                LoadErrorReason.INVALID_JUNCTION)
 
         element = Element._new_from_meta(meta_element)
         element._update_state()
