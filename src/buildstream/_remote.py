@@ -15,16 +15,12 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import multiprocessing
 import os
-import signal
 from collections import namedtuple
 from urllib.parse import urlparse
 
 import grpc
 
-from . import _signals
-from . import utils
 from ._exceptions import LoadError, LoadErrorReason, ImplError, RemoteError
 from .types import FastEnum
 
@@ -219,41 +215,14 @@ class BaseRemote():
     #     RemoteError: If the grpc call fails.
     #
     def check(self):
-        queue = multiprocessing.Queue()
-
-        def __check_remote():
-            try:
-                self.init()
-                queue.put(self._check())
-
-            except grpc.RpcError as e:
-                # str(e) is too verbose for errors reported to the user
-                queue.put(e.details())
-
-            except Exception as e:               # pylint: disable=broad-except
-                # Whatever happens, we need to return it to the calling process
-                #
-                queue.put(str(e))
-
-        process = multiprocessing.Process(target=__check_remote)
-
         try:
-            # Keep SIGINT blocked in the child process
-            with _signals.blocked([signal.SIGINT], ignore=False):
-                process.start()
-
-            error = queue.get()
-            process.join()
-        except KeyboardInterrupt:
-            utils._kill_process_tree(process.pid)
-            raise
+            self.init()
+            self._check()
+        except grpc.RpcError as e:
+            # str(e) is too verbose for errors reported to the user
+            raise RemoteError(e.details())
         finally:
-            # Should not be necessary, but let's avoid keeping them
-            # alive too long
-            queue.close()
-
-        if error:
-            raise RemoteError(error)
+            self.close()
 
     # _check():
     #
