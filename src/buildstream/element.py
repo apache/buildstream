@@ -112,7 +112,7 @@ from .storage._casbaseddirectory import CasBasedDirectory
 from .storage.directory import VirtualDirectoryError
 
 if TYPE_CHECKING:
-    from .node import MappingNode
+    from .node import MappingNode, ScalarNode
     from .types import SourceRef
     from typing import Set, Tuple
 
@@ -536,8 +536,24 @@ class Element(Plugin):
 
         return None
 
-    def substitute_variables(self, value):
-        return self.__variables.subst(value)
+    def node_substitute_variables(self, node: 'ScalarNode'):
+        """Replace any variables in the string contained in the node and returns it.
+
+        Args:
+           node: A ScalarNode loaded from YAML
+
+        Returns:
+           The value with all variables replaced
+
+        **Example:**
+
+        .. code:: python
+
+          # Expect a string 'name' in 'node', substituting any
+          # variables in the returned string
+          name = self.node_substitute_variables(node.get_str('name'))
+        """
+        return self.__variables.subst(node.as_str())
 
     def node_subst_member(self, node: 'MappingNode[str, Any]', member_name: str, default: str = _node_sentinel) -> Any:
         """Fetch the value of a string node member, substituting any variables
@@ -877,9 +893,9 @@ class Element(Plugin):
 
         if bstdata is not None:
             with sandbox.batch(SandboxFlags.NONE):
-                commands = bstdata.get_str_list('integration-commands', [])
+                commands = bstdata.get_sequence('integration-commands', [])
                 for command in commands:
-                    cmd = self.substitute_variables(command)
+                    cmd = self.node_substitute_variables(command)
 
                     sandbox.run(['sh', '-e', '-c', cmd], 0, env=environment, cwd='/',
                                 label=cmd)
