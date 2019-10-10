@@ -545,6 +545,9 @@ class Element(Plugin):
         Returns:
            The value with all variables replaced
 
+        Raises:
+           :class:`.LoadError`: When the node doesn't contain a string or a variable was not found.
+
         **Example:**
 
         .. code:: python
@@ -553,7 +556,11 @@ class Element(Plugin):
           # variables in the returned string
           name = self.node_substitute_variables(node.get_str('name'))
         """
-        return self.__variables.subst(node.as_str())
+        try:
+            return self.__variables.subst(node.as_str())
+        except LoadError as e:
+            provenance = node.get_provenance()
+            raise LoadError('{}: {}'.format(provenance, e), e.reason, detail=e.detail) from e
 
     def node_subst_member(self, node: 'MappingNode[str, Any]', member_name: str, default: str = _node_sentinel) -> Any:
         """Fetch the value of a string node member, substituting any variables
