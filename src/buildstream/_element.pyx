@@ -14,7 +14,9 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
-from .node cimport MappingNode, ScalarNode, SequenceNode
+from .node cimport MappingNode, Node, ScalarNode, SequenceNode
+from .sandbox._config import SandboxConfig
+from ._platform import Platform
 from ._variables cimport Variables
 
 
@@ -37,3 +39,47 @@ def expand_splits(MappingNode element_public not None, Variables variables not N
         element_public['split-rules'] = {}
 
     return element_public
+
+
+# Sandbox-specific configuration data, to be passed to the sandbox's constructor.
+#
+def extract_sandbox_config(object context, object project, object meta, MappingNode defaults):
+    cdef MappingNode sandbox_config
+
+    if meta.is_junction:
+        sandbox_config = Node.from_dict(
+            Node,
+            {
+                'build-uid': 0,
+                'build-gid': 0
+            },
+        )
+    else:
+        sandbox_config = (<MappingNode> project._sandbox).clone()
+
+    # The default config is already composited with the project overrides
+    cdef MappingNode sandbox_defaults = defaults.get_mapping('sandbox', default={})
+    sandbox_defaults = sandbox_defaults.clone()
+
+    sandbox_defaults._composite(sandbox_config)
+    (<MappingNode> meta.sandbox)._composite(sandbox_config)
+    sandbox_config._assert_fully_composited()
+
+    # Sandbox config, unlike others, has fixed members so we should validate them
+    sandbox_config.validate_keys(['build-uid', 'build-gid', 'build-os', 'build-arch'])
+
+    cdef str build_arch = sandbox_config.get_str('build-arch', default=None)
+    if build_arch:
+        build_arch = Platform.canonicalize_arch(build_arch)
+    else:
+        build_arch = context.platform.get_host_arch()
+
+    build_os = sandbox_config.get_str('build-arch', default=None)
+    if not build_os:
+        build_os = context.platform.get_host_os()
+
+    return SandboxConfig(
+        sandbox_config.get_int('build-uid'),
+        sandbox_config.get_int('build-gid'),
+        sandbox_config.get_str('build-os', default=build_os),
+        build_arch)

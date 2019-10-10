@@ -98,11 +98,9 @@ from . import _cachekey
 from . import _element  # type: any
 from . import _signals
 from . import _site
-from ._platform import Platform
 from .node import Node, _sentinel as _node_sentinel
 from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
-from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
 from .types import Consistency, CoreWarnings, Scope, _CacheBuildTrees, _KeyStrength
 from ._artifact import Artifact
@@ -334,7 +332,7 @@ class Element(Plugin):
             self.__remote_execution_specs = project.remote_execution_specs
 
         # Extract Sandbox config
-        self.__sandbox_config = self.__extract_sandbox_config(context, project, meta)
+        self.__sandbox_config = _element.extract_sandbox_config(context, project, meta, self.__defaults)
 
         self.__sandbox_config_supported = True
         if not self.__use_remote_execution():
@@ -2780,46 +2778,6 @@ class Element(Plugin):
         config._assert_fully_composited()
 
         return config
-
-    # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
-    #
-    @classmethod
-    def __extract_sandbox_config(cls, context, project, meta):
-        if meta.is_junction:
-            sandbox_config = Node.from_dict({
-                'build-uid': 0,
-                'build-gid': 0
-            })
-        else:
-            sandbox_config = project._sandbox.clone()
-
-        # Get the platform to ask for host architecture
-        platform = context.platform
-        host_arch = platform.get_host_arch()
-        host_os = platform.get_host_os()
-
-        # The default config is already composited with the project overrides
-        sandbox_defaults = cls.__defaults.get_mapping('sandbox', default={})
-        sandbox_defaults = sandbox_defaults.clone()
-
-        sandbox_defaults._composite(sandbox_config)
-        meta.sandbox._composite(sandbox_config)
-        sandbox_config._assert_fully_composited()
-
-        # Sandbox config, unlike others, has fixed members so we should validate them
-        sandbox_config.validate_keys(['build-uid', 'build-gid', 'build-os', 'build-arch'])
-
-        build_arch = sandbox_config.get_str('build-arch', default=None)
-        if build_arch:
-            build_arch = Platform.canonicalize_arch(build_arch)
-        else:
-            build_arch = host_arch
-
-        return SandboxConfig(
-            sandbox_config.get_int('build-uid'),
-            sandbox_config.get_int('build-gid'),
-            sandbox_config.get_str('build-os', default=host_os),
-            build_arch)
 
     # This makes a special exception for the split rules, which
     # elements may extend but whos defaults are defined in the project.
