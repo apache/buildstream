@@ -192,6 +192,8 @@ class BaseRemote():
             self.channel.close()
             self.channel = None
 
+        self._initialized = False
+
     # _configure_protocols():
     #
     # An abstract method to configure remote-specific protocols. This
