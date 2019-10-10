@@ -192,6 +192,7 @@ class CASCache():
     def close_channel(self):
         if self._casd_channel:
             self._local_cas = None
+            self._casd_cas = None
             self._casd_channel.close()
             self._casd_channel = None
 
