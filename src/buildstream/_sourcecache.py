@@ -36,6 +36,10 @@ class SourceRemote(BaseRemote):
         super().__init__(*args, **kwargs)
         self.source_service = None
 
+    def close(self):
+        self.source_service = None
+        super().close()
+
     def _configure_protocols(self):
         # set up source service
         self.source_service = source_pb2_grpc.SourceServiceStub(self.channel)
