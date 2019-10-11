@@ -94,19 +94,24 @@ class CASDProcessManager:
 
         return os.path.join(self._log_dir, str(self.start_time) + ".log")
 
-    # terminate()
+    # release_resources()
     #
-    # Terminate the buildbox casd process
+    # Terminate the process and release related resources.
     #
-    # Args:
-    #   messenger (buildstream._messenger.Messenger): Messenger to forward information to the frontend
+    def release_resources(self, messenger=None):
+        self._terminate(messenger)
+        self.process = None
+        shutil.rmtree(self._socket_tempdir)
+
+    # _terminate()
     #
-    def terminate(self, messenger=None):
+    # Terminate the buildbox casd process.
+    #
+    def _terminate(self, messenger=None):
         return_code = self.process.poll()
 
         if return_code is not None:
             # buildbox-casd is already dead
-            self.process = None
 
             if messenger:
                 messenger.message(
@@ -140,7 +145,6 @@ class CASDProcessManager:
                         messenger.message(
                             Message(MessageType.WARN, "Buildbox-casd didn't exit in time and has been killed")
                         )
-                    self.process = None
                     return
 
         if return_code != 0 and messenger:
@@ -150,10 +154,3 @@ class CASDProcessManager:
                     "Buildbox-casd didn't exit cleanly. Exit code: {}, Logs: {}".format(return_code, self._logfile),
                 )
             )
-
-    # clean_up()
-    #
-    # After termination, clean up any additional resources
-    #
-    def clean_up(self):
-        shutil.rmtree(self._socket_tempdir)
