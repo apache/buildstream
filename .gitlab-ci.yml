@@ -84,6 +84,16 @@ overnight-fedora-30-aarch64:
   only:
   - schedules
 
+tests-isolated:
+  # Ensure that our tests also function without usedevelop, although
+  # this forces us to disable coverage reports
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-85428307
+  variables:
+    TEST_COMMAND: "tox -e py{35,36,37}-nocover -- ${PYTEST_ARGS}"
+    EXTERNAL_TESTS_COMMAND: "tox -e py{35,36,37}-external-nocover -- ${PYTEST_ARGS}"
+  <<: *tests
+
+
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
