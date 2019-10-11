@@ -27,8 +27,13 @@ import time
 
 from .. import _signals, utils
 from .._message import Message, MessageType
+from ..types import FastEnum
 
 _CASD_MAX_LOGFILES = 10
+
+
+class ConnectionType(FastEnum):
+    UNIX_SOCKET = 0
 
 
 # CASDProcessManager
@@ -41,17 +46,23 @@ _CASD_MAX_LOGFILES = 10
 #     log_level (LogLevel): Log level to give to buildbox-casd for logging
 #     cache_quota (int): User configured cache quota
 #     protect_session_blobs (bool): Disable expiry for blobs used in the current session
+#     connection_type (ConnectionType): How to connect to the cas daemon
 #
 class CASDProcessManager:
 
-    def __init__(self, path, log_dir, log_level, cache_quota, protect_session_blobs):
+    def __init__(
+            self,
+            path,
+            log_dir,
+            log_level,
+            cache_quota,
+            protect_session_blobs,
+            connection_type=ConnectionType.UNIX_SOCKET,
+    ):
         self._log_dir = log_dir
 
-        # Place socket in global/user temporary directory to avoid hitting
-        # the socket path length limit.
-        self._socket_tempdir = tempfile.mkdtemp(prefix='buildstream')
-        socket_path = os.path.join(self._socket_tempdir, 'casd.sock')
-        self.connection_string = "unix:" + socket_path
+        assert connection_type == ConnectionType.UNIX_SOCKET
+        self._connection = _UnixSocketConnection()
 
         casd_args = [utils.get_host_tool('buildbox-casd')]
         casd_args.append('--bind=' + self.connection_string)
@@ -78,6 +89,10 @@ class CASDProcessManager:
 
         self._failure_callback = None
         self._watcher = None
+
+    @property
+    def connection_string(self):
+        return self._connection.connection_string
 
     # _rotate_and_get_next_logfile()
     #
@@ -108,7 +123,7 @@ class CASDProcessManager:
     def release_resources(self, messenger=None):
         self._terminate(messenger)
         self._process = None
-        shutil.rmtree(self._socket_tempdir)
+        self._connection.release_resouces()
 
     # _terminate()
     #
@@ -216,3 +231,15 @@ class CASDProcessManager:
         assert self._failure_callback is not None
         self._process.returncode = returncode
         self._failure_callback()
+
+
+class _UnixSocketConnection:
+    def __init__(self):
+        # Place socket in global/user temporary directory to avoid hitting
+        # the socket path length limit.
+        self._socket_tempdir = tempfile.mkdtemp(prefix='buildstream')
+        socket_path = os.path.join(self._socket_tempdir, 'casd.sock')
+        self.connection_string = "unix:" + socket_path
+
+    def release_resouces(self):
+        shutil.rmtree(self._socket_tempdir)
