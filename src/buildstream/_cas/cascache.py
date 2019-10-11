@@ -184,8 +184,7 @@ class CASCache():
 
         if self._casd_process_manager:
             self.close_grpc_channels()
-            self._casd_process_manager.terminate(messenger)
-            self._casd_process_manager.clean_up()
+            self._casd_process_manager.release_resources(messenger)
             self._casd_process_manager = None
 
     # contains():
