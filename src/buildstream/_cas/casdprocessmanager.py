@@ -21,6 +21,7 @@ import contextlib
 import os
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -32,9 +33,31 @@ from ..types import FastEnum
 
 _CASD_MAX_LOGFILES = 10
 
+# Note that we want to make sure that BuildStream and buildbox-casd are on the
+# same page about what the hostname is, for that reason we may want to avoid
+# e.g. empty string as the hostname. We also don't want buildbox-casd to accept
+# connections from other machines in this use-case.
+#
+# Note that buildbox-casd will stop with an error if it fails to listen on all
+# addresses, but if it sucessfully listens on any then it will continue. For
+# this reason we don't want to choose `localhost` as the hostname, otherwise it
+# will also bind to the ipv6 address `::1`.
+#
+_HOSTNAME = "127.0.0.1"
+
 
 class ConnectionType(FastEnum):
     UNIX_SOCKET = 0
+    LOCALHOST_PORT = 1
+
+
+# Note that it's necessary to use the LOCALHOST_PORT option on Windows, because
+# grpc doesn't support AF_UNIX on win32 yet. You can verify this in the grpc
+# source by searching for 'GRPC_HAVE_UNIX_SOCKET'.
+#
+# There also isn't support in grpc for receiving a WSADuplicateSocket, so we
+# can't pass one over. You can verify this in the grpc source by searching for
+# 'WSASocket' and noting that the lpProtocolInfo parameter is always null.
 
 
 # CASDProcessManager
@@ -62,8 +85,11 @@ class CASDProcessManager:
     ):
         self._log_dir = log_dir
 
-        assert connection_type == ConnectionType.UNIX_SOCKET
-        self._connection = _UnixSocketConnection()
+        if connection_type == ConnectionType.UNIX_SOCKET:
+            self._connection = _UnixSocketConnection()
+        else:
+            assert connection_type == ConnectionType.LOCALHOST_PORT
+            self._connection = _LocalhostPortConnection()
 
         casd_args = [utils.get_host_tool('buildbox-casd')]
         casd_args.append('--bind=' + self.connection_string)
@@ -240,6 +266,21 @@ class CASDProcessManager:
         assert self._failure_callback is not None
         self._process.returncode = returncode
         self._failure_callback()
+
+
+class _LocalhostPortConnection:
+    def __init__(self):
+        # Note that there is a race-condition between us finding an available
+        # port and buildbox-casd taking ownership of it. If another process
+        # takes the port in the mean time, we will later fail with an error.
+        with socket.socket() as s:
+            s.bind((_HOSTNAME, 0))
+            hostname, port = s.getsockname()
+        assert hostname == _HOSTNAME
+        self.connection_string = "{}:{}".format(hostname, port)
+
+    def release_resouces(self):
+        pass
 
 
 class _UnixSocketConnection:

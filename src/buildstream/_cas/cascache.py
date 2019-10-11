@@ -26,6 +26,7 @@ import contextlib
 import ctypes
 import multiprocessing
 import signal
+import sys
 import time
 
 import grpc
@@ -38,7 +39,7 @@ from .. import _signals, utils
 from ..types import FastEnum
 from .._exceptions import CASCacheError
 
-from .casdprocessmanager import CASDProcessManager
+from .casdprocessmanager import CASDProcessManager, ConnectionType
 from .casremote import _CASBatchRead, _CASBatchUpdate
 
 _BUFFER_SIZE = 65536
@@ -76,8 +77,14 @@ class CASCache():
 
         if casd:
             log_dir = os.path.join(self.casdir, "logs")
+
+            if sys.platform == 'win32':
+                connection_type = ConnectionType.LOCALHOST_PORT
+            else:
+                connection_type = ConnectionType.UNIX_SOCKET
+
             self._casd_process_manager = CASDProcessManager(
-                path, log_dir, log_level, cache_quota, protect_session_blobs)
+                path, log_dir, log_level, cache_quota, protect_session_blobs, connection_type)
         else:
             self._casd_process_manager = None
 
