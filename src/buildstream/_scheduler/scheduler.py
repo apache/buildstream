@@ -69,6 +69,7 @@ class NotificationType(FastEnum):
     START = "start"
     TASK_GROUPS = "task_groups"
     ELEMENT_TOTALS = "element_totals"
+    FINISH = "finish"
 
 
 # Notification()
@@ -184,6 +185,9 @@ class Scheduler():
         # Hold on to the queues to process
         self.queues = queues
 
+        # Check if we're subprocessed
+        subprocessed = bool(self._notify_front_queue)
+
         # Ensure that we have a fresh new event loop, in case we want
         # to run another test in this thread.
         self.loop = asyncio.new_event_loop()
@@ -198,10 +202,11 @@ class Scheduler():
         # Handle unix signals while running
         self._connect_signals()
 
-        # Watch casd while running to ensure it doesn't die
-        self._casd_process = casd_process
-        _watcher = asyncio.get_child_watcher()
-        _watcher.add_child_handler(casd_process.pid, self._abort_on_casd_failure)
+        # If we're not in a subprocess, watch casd while running to ensure it doesn't die
+        if not subprocessed:
+            self._casd_process = casd_process
+            _watcher = asyncio.get_child_watcher()
+            _watcher.add_child_handler(casd_process.pid, self._abort_on_casd_failure)
 
         # Add notification listener if in subprocess
         self._start_listening()
@@ -215,9 +220,10 @@ class Scheduler():
             self._stop_listening()
             self.loop.close()
 
-        # Stop watching casd
-        _watcher.remove_child_handler(casd_process.pid)
-        self._casd_process = None
+        # Stop watching casd if not subprocessed
+        if self._casd_process:
+            _watcher.remove_child_handler(casd_process.pid)
+            self._casd_process = None
 
         # Stop handling unix signals
         self._disconnect_signals()
@@ -236,7 +242,7 @@ class Scheduler():
             status = SchedStatus.SUCCESS
 
         # Send the state taskgroups if we're running under the subprocess
-        if self._notify_front_queue:
+        if subprocessed:
             # Don't pickle state
             for group in self._state.task_groups.values():
                 group._state = None

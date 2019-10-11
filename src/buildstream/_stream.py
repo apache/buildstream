@@ -34,7 +34,7 @@ from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
-from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError, set_last_task_error, SubprocessException
+from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError, set_last_task_error, SubprocessException, set_last_exception
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, \
     SourcePushQueue, BuildQueue, PullQueue, ArtifactPushQueue, NotificationType, Notification, JobStatus
@@ -72,8 +72,9 @@ class Stream():
         self.session_elements = []   # List of elements being processed this session
         self.total_elements = []     # Total list of elements based on targets
         self.queues = []             # Queue objects
-        self.len_session_elements = None
-        self.len_total_elements = None
+        self.len_session_elements = ''
+        self.len_total_elements = ''
+        self.loop = None
 
         #
         # Private members
@@ -101,6 +102,8 @@ class Stream():
         self._scheduler_suspended = False
         self._notify_front_queue = None
         self._notify_back_queue = None
+        self._casd_process = None
+        self._watcher = None
 
     # init()
     #
@@ -121,6 +124,7 @@ class Stream():
             # Send the exceptions members dict to be reraised in main process
             exception_attrs = vars(e)
             notify.put(Notification(NotificationType.EXCEPTION, exception=exception_attrs))
+        notify.put(Notification(NotificationType.FINISH))
 
     def run_in_subprocess(self, func, *args, **kwargs):
         assert not self._subprocess
@@ -143,24 +147,30 @@ class Stream():
 
         self._subprocess.start()
 
-        # TODO connect signal handlers with asyncio
-        while self._subprocess.exitcode is None:
-            # check every given time interval on subprocess state
-            self._subprocess.join(0.01)
-            # if no exit code, go back to checking the message queue
-            self._loop()
+        # We can now launch another async
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        self._start_listening()
+        self.loop.set_exception_handler(self._handle_exception)
+        self._watch_casd()
+        self.loop.run_forever()
 
+        # TODO connect signal handlers with asyncio
+
+        # Scheduler has stopped running, so safe to still have async here
+        self._stop_listening()
+        self._stop_watching_casd()
+        self.loop.close()
+        self.loop = None
+        self._subprocess.join()
+        self._subprocess = None
         # Set main process back
         utils._reset_main_pid()
 
         # Ensure no more notifcations to process
-        try:
-            while True:
-                notification = self._notify_front_queue.get_nowait()
-                self._notification_handler(notification)
-        except queue.Empty:
-            pass
-
+        while not self._notify_front_queue.empty():
+            notification = self._notify_front_queue.get_nowait()
+            self._notification_handler(notification)
 
     # cleanup()
     #
@@ -171,7 +181,6 @@ class Stream():
         for q in [self._notify_back_queue, self._notify_front_queue]:
             if q is not None:
                 q.close()
-        #self._notification_queue.cancel_join_thread()
         if self._project:
             self._project.cleanup()
 
@@ -334,16 +343,17 @@ class Stream():
         if remote:
             use_config = False
 
+
         elements, track_elements = \
             self._load(targets, track_targets,
-                       selection=selection, track_selection=PipelineSelection.ALL,
-                       track_except_targets=track_except,
-                       track_cross_junctions=track_cross_junctions,
-                       ignore_junction_targets=ignore_junction_targets,
-                       use_artifact_config=use_config,
-                       artifact_remote_url=remote,
-                       use_source_config=True,
-                       dynamic_plan=True)
+                selection=selection, track_selection=PipelineSelection.ALL,
+                track_except_targets=track_except,
+                track_cross_junctions=track_cross_junctions,
+                ignore_junction_targets=ignore_junction_targets,
+                use_artifact_config=use_config,
+                artifact_remote_url=remote,
+                use_source_config=True,
+                dynamic_plan=True)
 
         # Remove the tracking elements from the main targets
         elements = self._pipeline.subtract_elements(elements, track_elements)
@@ -1435,14 +1445,14 @@ class Stream():
         #
         self.total_elements = list(self._pipeline.dependencies(self.targets, Scope.ALL))
 
-        if self._session_start_callback is not None:
-            self._notify_front(Notification(NotificationType.START))
-
         # Also send through the session & total elements list lengths for status rendering
         element_totals = str(len(self.session_elements)), str(len(self.total_elements))
         self._notify_front(Notification(NotificationType.ELEMENT_TOTALS,
                                         element_totals=element_totals))
 
+
+        if self._session_start_callback is not None:
+            self._notify_front(Notification(NotificationType.START))
 
         status = self._scheduler.run(self.queues, self._context.get_cascache().get_casd_process())
 
@@ -1764,12 +1774,14 @@ class Stream():
         elif notification.notification_type == NotificationType.TASK_ERROR:
             set_last_task_error(*notification.task_error)
         elif notification.notification_type == NotificationType.EXCEPTION:
-            # Regenerate the exception here, so we don't have to pickle it
             raise SubprocessException(**notification.exception)
         elif notification.notification_type == NotificationType.START:
             self._session_start_callback()
         elif notification.notification_type == NotificationType.ELEMENT_TOTALS:
             self.len_session_elements, self.len_total_elements = notification.element_totals
+        elif notification.notification_type == NotificationType.FINISH:
+            if self.loop:
+                self.loop.stop()
         else:
             raise StreamError("Unrecognised notification type received")
 
@@ -1785,18 +1797,43 @@ class Stream():
         else:
             self._notification_handler(notification)
 
-    # The code to be run by the Stream's event loop while delegating
-    # work to a subprocess with the @subprocessed decorator
     def _loop(self):
-        assert self._notify_front_queue
-        # Check for and process new messages
-        while True:
-            try:
-                notification = self._notify_front_queue.get_nowait()
-                self._notification_handler(notification)
-            except queue.Empty:
-                notification = None
-                break
+        while not self._notify_front_queue.empty():
+            notification = self._notify_front_queue.get_nowait()
+            self._notification_handler(notification)
+
+    def _start_listening(self):
+        if self._notify_front_queue:
+            self.loop.add_reader(self._notify_front_queue._reader.fileno(), self._loop)
+
+    def _stop_listening(self):
+        if self._notify_front_queue:
+            self.loop.remove_reader(self._notify_front_queue._reader.fileno())
+
+    def _watch_casd(self):
+        if self._context.get_cascache()._casd_process:
+            self._casd_process = self._context.get_cascache().get_casd_process()
+            self._watcher = asyncio.get_child_watcher()
+            self._watcher.add_child_handler(self._casd_process.pid, self._abort_on_casd_failure)
+
+    def _abort_on_casd_failure(self, pid, returncode):
+        message = Message(MessageType.BUG, "buildbox-casd died while the pipeline was active.")
+        self._notify_front(Notification(NotificationType.MESSAGE, message=message))
+        self._casd_process.returncode = returncode
+        notification = Notification(NotificationType.TERMINATE)
+        self._notify_back(notification)
+
+    def _stop_watching_casd(self):
+        self._watcher.remove_child_handler(self._casd_process.pid)
+        self._casd_process = None
+
+    def _handle_exception(self, loop, context):
+        exception = context.get('exception')
+        # Set the last exception for the test suite if needed
+        set_last_exception(exception)
+        # Add it to context
+        self._context._subprocess_exception = exception
+        self.loop.stop()
 
     def __getstate__(self):
         # The only use-cases for pickling in BuildStream at the time of writing

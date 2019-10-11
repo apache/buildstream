@@ -373,6 +373,7 @@ class _StatusHeader():
         #
         #  ========= 00:00:00 project-name (143/387) =========
         #
+
         session = self._stream.len_session_elements
         total = self._stream.len_total_elements
 
