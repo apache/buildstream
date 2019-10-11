@@ -68,6 +68,7 @@ class NotificationType(FastEnum):
     START = "start"
     TASK_GROUPS = "task_groups"
     ELEMENT_TOTALS = "element_totals"
+    FINISH = "finish"
 
 
 # Notification()
