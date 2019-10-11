@@ -961,8 +961,6 @@ def workspace_close(app, remove_dir, all_, elements):
 #                     Workspace Reset Command                    #
 ##################################################################
 @workspace.command(name='reset', short_help="Reset a workspace to its original state")
-@click.option('--soft', is_flag=True,
-              help="Reset workspace state without affecting its contents")
 @click.option('--track', 'track_', is_flag=True,
               help="Track and fetch the latest source before resetting")
 @click.option('--all', '-a', 'all_', is_flag=True,
@@ -970,7 +968,7 @@ def workspace_close(app, remove_dir, all_, elements):
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
 @click.pass_obj
-def workspace_reset(app, soft, track_, all_, elements):
+def workspace_reset(app, track_, all_, elements):
     """Reset a workspace to its original state"""
 
     # Check that the workspaces in question exist
@@ -989,7 +987,7 @@ def workspace_reset(app, soft, track_, all_, elements):
         if all_:
             elements = tuple(element_name for element_name, _ in app.context.get_workspaces().list())
 
-        app.stream.workspace_reset(elements, soft=soft, track_first=track_)
+        app.stream.workspace_reset(elements, track_first=track_)
 
 
 ##################################################################
