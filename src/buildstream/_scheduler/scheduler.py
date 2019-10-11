@@ -73,6 +73,8 @@ class NotificationType(FastEnum):
     START = "start"
     TASK_GROUPS = "task_groups"
     ELEMENT_TOTALS = "element_totals"
+    FINISH = "finish"
+    SIGTSTP = "sigstp"
 
 
 # Notification()
@@ -188,6 +190,9 @@ class Scheduler:
         # Hold on to the queues to process
         self.queues = queues
 
+        # Check if we're subprocessed
+        subprocessed = bool(self._notify_front_queue)
+
         # Ensure that we have a fresh new event loop, in case we want
         # to run another test in this thread.
         self.loop = asyncio.new_event_loop()
@@ -202,14 +207,14 @@ class Scheduler:
         # Handle unix signals while running
         self._connect_signals()
 
-        # Watch casd while running to ensure it doesn't die
-        self._casd_process = casd_process_manager.process
-        _watcher = asyncio.get_child_watcher()
+        # If we're not in a subprocess, watch casd while running to ensure it doesn't die
+        if not subprocessed:
+            self._casd_process = casd_process_manager.process
+            _watcher = asyncio.get_child_watcher()
+            def abort_casd(pid, returncode):
+                self.loop.call_soon(self._abort_on_casd_failure, pid, returncode)
 
-        def abort_casd(pid, returncode):
-            asyncio.get_event_loop().call_soon(self._abort_on_casd_failure, pid, returncode)
-
-        _watcher.add_child_handler(self._casd_process.pid, abort_casd)
+            _watcher.add_child_handler(self._casd_process.pid, abort_casd)
 
         # Add notification listener if in subprocess
         self._start_listening()
@@ -223,9 +228,11 @@ class Scheduler:
             self._stop_listening()
             self.loop.close()
 
-        # Stop watching casd
-        _watcher.remove_child_handler(self._casd_process.pid)
-        self._casd_process = None
+        # Stop watching casd if not subprocessed
+        if self._casd_process:
+            _watcher.remove_child_handler(self._casd_process.pid)
+            _watcher.close()
+            self._casd_process = None
 
         # Stop handling unix signals
         self._disconnect_signals()
@@ -244,7 +251,7 @@ class Scheduler:
             status = SchedStatus.SUCCESS
 
         # Send the state taskgroups if we're running under the subprocess
-        if self._notify_front_queue:
+        if subprocessed:
             # Don't pickle state
             for group in self._state.task_groups.values():
                 group._state = None
@@ -543,6 +550,8 @@ class Scheduler:
         if self.terminated:
             return
 
+        # This event handler is only set when not running in a subprocess, scheduler
+        # to handle keyboard interrupt
         notification = Notification(NotificationType.INTERRUPT)
         self._notify_front(notification)
 
@@ -572,17 +581,29 @@ class Scheduler:
 
     # _connect_signals():
     #
-    # Connects our signal handler event callbacks to the mainloop
+    # Connects our signal handler event callbacks to the mainloop. Signals
+    # only need to be connected if scheduler running in the 'main' process
     #
     def _connect_signals(self):
-        self.loop.add_signal_handler(signal.SIGINT, self._interrupt_event)
-        self.loop.add_signal_handler(signal.SIGTERM, self._terminate_event)
-        self.loop.add_signal_handler(signal.SIGTSTP, self._suspend_event)
+        if not self._notify_front_queue:
+            self.loop.add_signal_handler(signal.SIGINT, self._interrupt_event)
+            self.loop.add_signal_handler(signal.SIGTERM, self._terminate_event)
+            self.loop.add_signal_handler(signal.SIGTSTP, self._suspend_event)
 
+    # _disconnect_signals():
+    #
+    # Disconnects our signal handler event callbacks from the mainloop. Signals
+    # only need to be disconnected if scheduler running in the 'main' process
+    #
     def _disconnect_signals(self):
-        self.loop.remove_signal_handler(signal.SIGINT)
-        self.loop.remove_signal_handler(signal.SIGTSTP)
-        self.loop.remove_signal_handler(signal.SIGTERM)
+        if not self._notify_front_queue:
+            self.loop.remove_signal_handler(signal.SIGINT)
+            self.loop.remove_signal_handler(signal.SIGTSTP)
+            self.loop.remove_signal_handler(signal.SIGTERM)
+        else:
+            # If running in a subprocess, ignore SIGINT when disconnected
+            # under the interrupted click.prompt()
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     def _terminate_jobs_real(self):
         def kill_jobs():
@@ -630,6 +651,8 @@ class Scheduler:
             self.jobs_unsuspended()
         elif notification.notification_type == NotificationType.RETRY:
             self._failure_retry(notification.job_action, notification.element)
+        elif notification.notification_type == NotificationType.SIGTSTP:
+            self._suspend_event()
         else:
             # Do not raise exception once scheduler process is separated
             # as we don't want to pickle exceptions between processes

@@ -174,6 +174,9 @@ class Context:
         self._workspace_project_cache = WorkspaceProjectCache()
         self._cascache = None
 
+        # An exception caught from subprocessing, used to handle run exceptions in App
+        self._subprocess_exception = None
+
     # __enter__()
     #
     # Called when entering the with-statement context.
