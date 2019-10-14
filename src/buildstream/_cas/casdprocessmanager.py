@@ -50,10 +50,11 @@ class CASDProcessManager:
         # Place socket in global/user temporary directory to avoid hitting
         # the socket path length limit.
         self._socket_tempdir = tempfile.mkdtemp(prefix='buildstream')
-        self.socket_path = os.path.join(self._socket_tempdir, 'casd.sock')
+        socket_path = os.path.join(self._socket_tempdir, 'casd.sock')
+        self.connection_string = "unix:" + socket_path
 
         casd_args = [utils.get_host_tool('buildbox-casd')]
-        casd_args.append('--bind=unix:' + self.socket_path)
+        casd_args.append('--bind=' + self.connection_string)
         casd_args.append('--log-level=' + log_level.value)
 
         if cache_quota is not None:

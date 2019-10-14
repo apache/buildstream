@@ -100,7 +100,7 @@ class CASCache():
         assert self._casd_process_manager, "CASCache was instantiated without buildbox-casd"
 
         if not self._casd_channel:
-            self._casd_channel = grpc.insecure_channel('unix:' + self._casd_process_manager.socket_path)
+            self._casd_channel = grpc.insecure_channel(self._casd_process_manager.connection_string)
             self._casd_cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self._casd_channel)
             self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
 
