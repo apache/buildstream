@@ -31,8 +31,8 @@ import time
 import grpc
 
 from .._protos.google.rpc import code_pb2
-from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
-from .._protos.build.buildgrid import local_cas_pb2, local_cas_pb2_grpc
+from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+from .._protos.build.buildgrid import local_cas_pb2
 
 from .. import _signals, utils
 from ..types import FastEnum
@@ -73,29 +73,30 @@ class CASCache:
         os.makedirs(os.path.join(self.casdir, "objects"), exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
 
-        self._casd_channel = None
-        self._casd_cas = None
-        self._local_cas = None
         self._cache_usage_monitor = None
         self._cache_usage_monitor_forbidden = False
 
+        self._casd_process_manager = None
+        self._casd_channel = None
         if casd:
             log_dir = os.path.join(self.casdir, "logs")
             self._casd_process_manager = CASDProcessManager(
                 path, log_dir, log_level, cache_quota, protect_session_blobs
             )
 
+            self._casd_channel = self._casd_process_manager.create_channel()
             self._cache_usage_monitor = _CASCacheUsageMonitor(self)
-        else:
-            self._casd_process_manager = None
 
     def __getstate__(self):
         state = self.__dict__.copy()
 
-        # Popen objects are not pickle-able, however, child processes only
-        # need some information from the manager, so we can use a proxy.
+        # Child jobs do not need to manage the CASD process, they only need a
+        # connection to CASD.
         if state["_casd_process_manager"] is not None:
-            state["_casd_process_manager"] = _LimitedCASDProcessManagerProxy(self._casd_process_manager)
+            state["_casd_process_manager"] = None
+            # In order to be pickle-able, the connection must be in the initial
+            # 'closed' state.
+            state["_casd_channel"] = self._casd_process_manager.create_channel()
 
         # The usage monitor is not pickle-able, but we also don't need it in
         # child processes currently. Make sure that if this changes, we get a
@@ -107,43 +108,21 @@ class CASCache:
 
         return state
 
-    def _init_casd(self):
-        assert self._casd_process_manager, "CASCache was instantiated without buildbox-casd"
-
-        if not self._casd_channel:
-            while not os.path.exists(self._casd_process_manager.socket_path):
-                # casd is not ready yet, try again after a 10ms delay,
-                # but don't wait for more than 15s
-                if time.time() > self._casd_process_manager.start_time + 15:
-                    raise CASCacheError("Timed out waiting for buildbox-casd to become ready")
-
-                time.sleep(0.01)
-
-            self._casd_channel = grpc.insecure_channel("unix:" + self._casd_process_manager.socket_path)
-            self._casd_cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self._casd_channel)
-            self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
-
-            # Call GetCapabilities() to establish connection to casd
-            capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self._casd_channel)
-            capabilities.GetCapabilities(remote_execution_pb2.GetCapabilitiesRequest())
-
-    # _get_cas():
+    # get_cas():
     #
     # Return ContentAddressableStorage stub for buildbox-casd channel.
     #
-    def _get_cas(self):
-        if not self._casd_cas:
-            self._init_casd()
-        return self._casd_cas
+    def get_cas(self):
+        assert self._casd_channel, "CASCache was created without a channel"
+        return self._casd_channel.get_cas()
 
-    # _get_local_cas():
+    # get_local_cas():
     #
     # Return LocalCAS stub for buildbox-casd channel.
     #
-    def _get_local_cas(self):
-        if not self._local_cas:
-            self._init_casd()
-        return self._local_cas
+    def get_local_cas(self):
+        assert self._casd_channel, "CASCache was created without a channel"
+        return self._casd_channel.get_local_cas()
 
     # preflight():
     #
@@ -161,7 +140,7 @@ class CASCache:
     # against fork() with open gRPC channels.
     #
     def has_open_grpc_channels(self):
-        return bool(self._casd_channel)
+        return self._casd_lazy_connection and not self._casd_lazy_connection.is_closed()
 
     # close_grpc_channels():
     #
@@ -169,10 +148,7 @@ class CASCache:
     #
     def close_grpc_channels(self):
         if self._casd_channel:
-            self._local_cas = None
-            self._casd_cas = None
             self._casd_channel.close()
-            self._casd_channel = None
 
     # release_resources():
     #
@@ -226,7 +202,7 @@ class CASCache:
     # Returns: True if the directory is available in the local cache
     #
     def contains_directory(self, digest, *, with_files):
-        local_cas = self._get_local_cas()
+        local_cas = self.get_local_cas()
 
         request = local_cas_pb2.FetchTreeRequest()
         request.root_digest.CopyFrom(digest)
@@ -385,7 +361,7 @@ class CASCache:
 
             request.path.append(path)
 
-            local_cas = self._get_local_cas()
+            local_cas = self.get_local_cas()
 
             response = local_cas.CaptureFiles(request)
 
@@ -412,7 +388,7 @@ class CASCache:
     #     (Digest): The digest of the imported directory
     #
     def import_directory(self, path):
-        local_cas = self._get_local_cas()
+        local_cas = self.get_local_cas()
 
         request = local_cas_pb2.CaptureTreeRequest()
         request.path.append(path)
@@ -532,7 +508,7 @@ class CASCache:
     # Returns: List of missing Digest objects
     #
     def remote_missing_blobs(self, remote, blobs):
-        cas = self._get_cas()
+        cas = self.get_cas()
         instance_name = remote.local_cas_instance_name
 
         missing_blobs = dict()
@@ -1042,7 +1018,7 @@ class _CASCacheUsageMonitor:
 
         disk_usage = self._disk_usage
         disk_quota = self._disk_quota
-        local_cas = self.cas._get_local_cas()
+        local_cas = self.cas.get_local_cas()
 
         while True:
             try:
@@ -1068,18 +1044,3 @@ def _grouper(iterable, n):
         except StopIteration:
             return
         yield itertools.chain([current], itertools.islice(iterable, n - 1))
-
-
-# _LimitedCASDProcessManagerProxy
-#
-# This can stand-in for an owning CASDProcessManager, for some functions. This
-# is useful when pickling objects that contain a CASDProcessManager - as long
-# as the lifetime of the original exceeds this proxy.
-#
-# Args:
-#     casd_process_manager (CASDProcessManager): The manager to proxy
-#
-class _LimitedCASDProcessManagerProxy:
-    def __init__(self, casd_process_manager):
-        self.socket_path = casd_process_manager.socket_path
-        self.start_time = casd_process_manager.start_time

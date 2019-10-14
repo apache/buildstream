@@ -24,7 +24,13 @@ import subprocess
 import tempfile
 import time
 
+import grpc
+
+from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
+from .._protos.build.buildgrid import local_cas_pb2_grpc
+
 from .. import _signals, utils
+from .._exceptions import CASCacheError
 from .._message import Message, MessageType
 
 _CASD_MAX_LOGFILES = 10
@@ -48,10 +54,11 @@ class CASDProcessManager:
         # Place socket in global/user temporary directory to avoid hitting
         # the socket path length limit.
         self._socket_tempdir = tempfile.mkdtemp(prefix="buildstream")
-        self.socket_path = os.path.join(self._socket_tempdir, "casd.sock")
+        self._socket_path = os.path.join(self._socket_tempdir, "casd.sock")
+        self._connection_string = "unix:" + self._socket_path
 
         casd_args = [utils.get_host_tool("buildbox-casd")]
-        casd_args.append("--bind=unix:" + self.socket_path)
+        casd_args.append("--bind=" + self._connection_string)
         casd_args.append("--log-level=" + log_level.value)
 
         if cache_quota is not None:
@@ -63,7 +70,7 @@ class CASDProcessManager:
 
         casd_args.append(path)
 
-        self.start_time = time.time()
+        self._start_time = time.time()
         self._logfile = self._rotate_and_get_next_logfile()
 
         with open(self._logfile, "w") as logfile_fp:
@@ -92,7 +99,7 @@ class CASDProcessManager:
                 logfile_to_delete = existing_logs.pop(0)
                 os.remove(os.path.join(self._log_dir, logfile_to_delete))
 
-        return os.path.join(self._log_dir, str(self.start_time) + ".log")
+        return os.path.join(self._log_dir, str(self._start_time) + ".log")
 
     # release_resources()
     #
@@ -154,3 +161,77 @@ class CASDProcessManager:
                     "Buildbox-casd didn't exit cleanly. Exit code: {}, Logs: {}".format(return_code, self._logfile),
                 )
             )
+
+    # create_channel():
+    #
+    # Return a CASDChannel, note that the actual connection is not necessarily
+    # established until it is needed.
+    #
+    def create_channel(self):
+        return CASDChannel(self._socket_path, self._connection_string, self._start_time)
+
+
+class CASDChannel:
+    def __init__(self, socket_path, connection_string, start_time):
+        self._socket_path = socket_path
+        self._connection_string = connection_string
+        self._start_time = start_time
+        self._casd_channel = None
+        self._casd_cas = None
+        self._local_cas = None
+
+    def _establish_connection(self):
+        assert self._casd_channel is None
+
+        while not os.path.exists(self._socket_path):
+            # casd is not ready yet, try again after a 10ms delay,
+            # but don't wait for more than 15s
+            if time.time() > self._start_time + 15:
+                raise CASCacheError("Timed out waiting for buildbox-casd to become ready")
+
+            time.sleep(0.01)
+
+        self._casd_channel = grpc.insecure_channel(self._connection_string)
+        self._casd_cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self._casd_channel)
+        self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
+
+        # Call GetCapabilities() to establish connection to casd
+        capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self._casd_channel)
+        capabilities.GetCapabilities(remote_execution_pb2.GetCapabilitiesRequest())
+
+    # get_cas():
+    #
+    # Return ContentAddressableStorage stub for buildbox-casd channel.
+    #
+    def get_cas(self):
+        if self._casd_channel is None:
+            self._establish_connection()
+        return self._casd_cas
+
+    # get_local_cas():
+    #
+    # Return LocalCAS stub for buildbox-casd channel.
+    #
+    def get_local_cas(self):
+        if self._casd_channel is None:
+            self._establish_connection()
+        return self._local_cas
+
+    # is_closed():
+    #
+    # Return whether the channel is closed or not.
+    #
+    def is_closed(self):
+        return self._casd_channel is None
+
+    # close():
+    #
+    # Close the casd channel.
+    #
+    def close(self):
+        if self.is_closed():
+            return
+        self._local_cas = None
+        self._casd_cas = None
+        self._casd_channel.close()
+        self._casd_channel = None
