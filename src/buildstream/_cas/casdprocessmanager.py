@@ -25,7 +25,13 @@ import subprocess
 import tempfile
 import time
 
+import grpc
+
+from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
+from .._protos.build.buildgrid import local_cas_pb2_grpc
+
 from .. import _signals, utils
+from .._exceptions import CASCacheError
 from .._message import Message, MessageType
 
 _CASD_MAX_LOGFILES = 10
@@ -47,13 +53,16 @@ class CASDProcessManager:
     def __init__(self, path, log_dir, log_level, cache_quota, protect_session_blobs):
         self._log_dir = log_dir
 
+        self._casd_connection = None
+
         # Place socket in global/user temporary directory to avoid hitting
         # the socket path length limit.
         self._socket_tempdir = tempfile.mkdtemp(prefix='buildstream')
         self.socket_path = os.path.join(self._socket_tempdir, 'casd.sock')
+        self.connection_string = "unix:" + self.socket_path
 
         casd_args = [utils.get_host_tool('buildbox-casd')]
-        casd_args.append('--bind=unix:' + self.socket_path)
+        casd_args.append('--bind=' + self.connection_string)
         casd_args.append('--log-level=' + log_level.value)
 
         if cache_quota is not None:
@@ -215,3 +224,75 @@ class CASDProcessManager:
         assert self._failure_callback is not None
         self._process.returncode = returncode
         self._failure_callback()
+
+    # get_connection():
+    #
+    # Return ContentAddressableStorage stub for buildbox-casd channel.
+    #
+    def get_connection(self):
+        if not self._casd_connection:
+            self._casd_connection = CASDConnection(
+                self.socket_path, self.connection_string, self.start_time)
+        return self._casd_connection
+
+    # has_open_grpc_channels():
+    #
+    # Return whether there are gRPC channel instances. This is used to safeguard
+    # against fork() with open gRPC channels.
+    #
+    def has_open_grpc_channels(self):
+        return bool(self._casd_connection)
+
+    # close_grpc_channels():
+    #
+    # Close the casd channel if it exists
+    #
+    def close_grpc_channels(self):
+        if self._casd_connection:
+            self._casd_connection.close()
+
+
+class CASDConnection:
+    def __init__(self, socket_path, connection_string, start_time):
+        while not os.path.exists(socket_path):
+            # casd is not ready yet, try again after a 10ms delay,
+            # but don't wait for more than 15s
+            if time.time() > start_time + 15:
+                raise CASCacheError("Timed out waiting for buildbox-casd to become ready")
+
+            time.sleep(0.01)
+
+        self._casd_channel = grpc.insecure_channel(connection_string)
+        self._casd_cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self._casd_channel)
+        self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
+
+        # Call GetCapabilities() to establish connection to casd
+        capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self._casd_channel)
+        capabilities.GetCapabilities(remote_execution_pb2.GetCapabilitiesRequest())
+
+    # get_cas():
+    #
+    # Return ContentAddressableStorage stub for buildbox-casd channel.
+    #
+    def get_cas(self):
+        assert self._casd_channel is not None
+        return self._casd_cas
+
+    # get_local_cas():
+    #
+    # Return LocalCAS stub for buildbox-casd channel.
+    #
+    def get_local_cas(self):
+        assert self._casd_channel is not None
+        return self._local_cas
+
+    # close():
+    #
+    # Close the casd channel.
+    #
+    def close(self):
+        assert self._casd_channel is not None
+        self._local_cas = None
+        self._casd_cas = None
+        self._casd_channel.close()
+        self._casd_channel = None
