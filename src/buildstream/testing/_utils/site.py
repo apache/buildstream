@@ -16,7 +16,9 @@ try:
     HAVE_GIT = True
 
     out = str(subprocess.check_output(['git', '--version']), "utf-8")
-    version = tuple(int(x) for x in out.split(' ')[2].split('.'))
+    # e.g. on Git for Windows we get "git version 2.21.0.windows.1".
+    # e.g. on Mac via Homebrew we get "git version 2.19.0".
+    version = tuple(int(x) for x in out.split(' ')[2].split('.')[:3])
     HAVE_OLD_GIT = version < (1, 8, 5)
 
     GIT_ENV = {
