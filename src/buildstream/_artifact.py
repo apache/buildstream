@@ -424,7 +424,7 @@ class Artifact():
 
         # Check whether 'files' subdirectory is available, with or without file contents
         if (require_directories and str(artifact.files) and
-                not self._cas.contains_directory(artifact.files, with_files=require_files, update_mtime=True)):
+                not self._cas.contains_directory(artifact.files, with_files=require_files)):
             self._cached = False
             return False
 
