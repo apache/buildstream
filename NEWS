@@ -2,6 +2,17 @@
 (unreleased)
 ============
 
+API
+---
+
+  o BREAKING CHANGE: 'Element.node_subst_member' has been removed. Please use
+    'Element.node_subst_vars' instead.
+
+  o BREAKING CHANGE: 'Element.node_subst_list' has been removed. Please use
+    'Element.node_subst_sequence_vars' instead.
+
+  o A new 'Node.strip_node_info()' is available and allows getting the
+    underlying data structure for the given node.
 
 ==================
 buildstream 1.91.0
