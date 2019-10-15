@@ -47,8 +47,8 @@ class ScriptElement(buildstream.ScriptElement):
 
     def configure(self, node):
         for n in node.get_sequence('layout', []):
-            dst = self.node_subst_member(n, 'destination')
-            elm = self.node_subst_member(n, 'element', None)
+            dst = self.node_substitute_variables(n.get_scalar('destination'))
+            elm = self.node_substitute_variables(n.get_scalar('element', None))
             self.layout_add(elm, dst)
 
         node.validate_keys([
