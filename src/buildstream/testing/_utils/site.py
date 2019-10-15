@@ -20,6 +20,7 @@ try:
     # e.g. on Mac via Homebrew we get "git version 2.19.0".
     version = tuple(int(x) for x in out.split(' ')[2].split('.')[:3])
     HAVE_OLD_GIT = version < (1, 8, 5)
+    del version
 
     GIT_ENV = {
         'GIT_AUTHOR_DATE': '1320966000 +0200',
