@@ -98,7 +98,7 @@ from . import _cachekey
 from . import _signals
 from . import _site
 from ._platform import Platform
-from .node import Node, _sentinel as _node_sentinel
+from .node import Node
 from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
@@ -560,36 +560,6 @@ class Element(Plugin):
             return self.__variables.subst(node.as_str())
         except LoadError as e:
             provenance = node.get_provenance()
-            raise LoadError('{}: {}'.format(provenance, e), e.reason, detail=e.detail) from e
-
-    def node_subst_member(self, node: 'MappingNode[str, Any]', member_name: str, default: str = _node_sentinel) -> Any:
-        """Fetch the value of a string node member, substituting any variables
-        in the loaded value with the element contextual variables.
-
-        Args:
-           node: A MappingNode loaded from YAML
-           member_name: The name of the member to fetch
-           default: A value to return when *member_name* is not specified in *node*
-
-        Returns:
-           The value of *member_name* in *node*, otherwise *default*
-
-        Raises:
-           :class:`.LoadError`: When *member_name* is not found and no *default* was provided
-
-        **Example:**
-
-        .. code:: python
-
-          # Expect a string 'name' in 'node', substituting any
-          # variables in the returned string
-          name = self.node_subst_member(node, 'name')
-        """
-        value = node.get_str(member_name, default)
-        try:
-            return self.__variables.subst(value)
-        except LoadError as e:
-            provenance = node.get_scalar(member_name).get_provenance()
             raise LoadError('{}: {}'.format(provenance, e), e.reason, detail=e.detail) from e
 
     def node_subst_list(self, node: 'MappingNode[str, Any]', member_name: str) -> List[Any]:
@@ -2722,8 +2692,8 @@ class Element(Plugin):
     def __expand_environment(self, environment):
         # Resolve variables in environment value strings
         final_env = {}
-        for key in environment.keys():
-            final_env[key] = self.node_subst_member(environment, key)
+        for key, value in environment.items():
+            final_env[key] = self.node_subst_vars(value)
 
         return final_env
 
