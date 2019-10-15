@@ -789,7 +789,7 @@ class Project():
         output.options.load(options_node)
         if self.junction:
             # load before user configuration
-            output.options.load_yaml_values(self.junction.options, transform=self.junction._subst_string)
+            output.options.load_yaml_values(self.junction.options, transform=self.junction.node_substitute_variables)
 
         # Collect option values specified in the user configuration
         overrides = self._context.get_overrides(self.name)

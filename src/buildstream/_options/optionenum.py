@@ -56,9 +56,11 @@ class OptionEnum(Option):
 
     def load_value(self, node, *, transform=None):
         value_node = node.get_scalar(self.name)
-        self.value = value_node.as_str()
         if transform:
-            self.value = transform(self.value)
+            self.value = transform(value_node)
+        else:
+            self.value = value_node.as_str()
+
         self.validate(self.value, value_node)
 
     def set_value(self, value):

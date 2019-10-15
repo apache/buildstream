@@ -37,7 +37,7 @@ class OptionBool(Option):
 
     def load_value(self, node, *, transform=None):
         if transform:
-            self.set_value(transform(node.get_str(self.name)))
+            self.set_value(transform(node.get_scalar(self.name)))
         else:
             self.value = node.get_bool(self.name)
 
