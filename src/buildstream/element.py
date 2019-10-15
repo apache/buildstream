@@ -2170,7 +2170,7 @@ class Element(Plugin):
                 'element-plugin-version': self.BST_ARTIFACT_VERSION,
                 'sandbox': self.__sandbox_config.get_unique_key(),
                 'environment': cache_env,
-                'public': self.__public._strip_node_info()
+                'public': self.__public.strip_node_info()
             }
 
             def __get_source_entry(_source):
