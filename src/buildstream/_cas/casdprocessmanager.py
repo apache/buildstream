@@ -22,6 +22,7 @@ import os
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -172,7 +173,15 @@ class CASDProcessManager:
                         )
                     return
 
-        if return_code != 0 and messenger:
+        expected_return_code = 0
+        if sys.platform == "win32":
+            # Note that the return code is "1" on Windows by definition -
+            # `POpen.terminate()` calls `TerminateProcess()`, which specifies
+            # the return code for the process. Python specifies "1" as the
+            # return code.
+            expected_return_code = 1
+
+        if return_code != expected_return_code and messenger:
             messenger.message(
                 Message(
                     MessageType.BUG,
