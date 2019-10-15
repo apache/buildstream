@@ -55,7 +55,7 @@ class ScriptElement(buildstream.ScriptElement):
             'commands', 'root-read-only', 'layout'
         ])
 
-        cmds = self.node_subst_list(node, "commands")
+        cmds = self.node_subst_sequence_vars(node.get_sequence("commands"))
         self.add_commands("commands", cmds)
 
         self.set_work_dir()

@@ -112,7 +112,7 @@ from .storage._casbaseddirectory import CasBasedDirectory
 from .storage.directory import VirtualDirectoryError
 
 if TYPE_CHECKING:
-    from .node import MappingNode, ScalarNode
+    from .node import MappingNode, ScalarNode, SequenceNode
     from .types import SourceRef
     from typing import Set, Tuple
 
@@ -562,22 +562,21 @@ class Element(Plugin):
             provenance = node.get_provenance()
             raise LoadError('{}: {}'.format(provenance, e), e.reason, detail=e.detail) from e
 
-    def node_subst_list(self, node: 'MappingNode[str, Any]', member_name: str) -> List[Any]:
-        """Fetch a list from a node member, substituting any variables in the list
+    def node_subst_sequence_vars(self, node: 'SequenceNode[ScalarNode]') -> List[str]:
+        """Substitute any variables in the given sequence
 
         Args:
-          node: A MappingNode loaded from YAML
-          member_name: The name of the member to fetch (a list)
+          node: A SequenceNode loaded from YAML
 
         Returns:
-          The list in *member_name*
+          The list with every variable replaced
 
         Raises:
           :class:`.LoadError`
 
         """
         ret = []
-        for value in node.get_sequence(member_name):
+        for value in node:
             try:
                 ret.append(self.__variables.subst(value.as_str()))
             except LoadError as e:
