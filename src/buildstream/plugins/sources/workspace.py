@@ -103,9 +103,6 @@ class WorkspaceSource(Source):
                         "Failed to stage source: files clash with existing directory",
                         reason='ensure-stage-dir-fail')
                 self.__digest = self.__cas_dir._get_digest().hash
-        #  now close down grpc channels
-        cas.close_channel()
-        assert not cas.has_open_grpc_channels()
         return (self.path, self.__digest)
 
     def init_workspace(self, directory: Directory) -> None:

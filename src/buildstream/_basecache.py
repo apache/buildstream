@@ -74,15 +74,22 @@ class BaseCache():
                     return True
         return False
 
+    # close_grpc_channels():
+    #
+    # Close open gRPC channels.
+    #
+    def close_grpc_channels(self):
+        # Close all remotes and their gRPC channels
+        for project_remotes in chain(self._index_remotes.values(), self._storage_remotes.values()):
+            for remote in project_remotes:
+                remote.close()
+
     # release_resources():
     #
     # Release resources used by BaseCache.
     #
     def release_resources(self):
-        # Close all remotes and their gRPC channels
-        for project_remotes in chain(self._index_remotes.values(), self._storage_remotes.values()):
-            for remote in project_remotes:
-                remote.close()
+        self.close_grpc_channels()
 
     # specs_from_config_node()
     #

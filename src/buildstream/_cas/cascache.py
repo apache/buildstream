@@ -185,13 +185,14 @@ class CASCache():
     def has_open_grpc_channels(self):
         return bool(self._casd_channel)
 
-    # close_channel():
+    # close_grpc_channels():
     #
     # Close the casd channel if it exists
     #
-    def close_channel(self):
+    def close_grpc_channels(self):
         if self._casd_channel:
             self._local_cas = None
+            self._casd_cas = None
             self._casd_channel.close()
             self._casd_channel = None
 
@@ -204,7 +205,7 @@ class CASCache():
             self._cache_usage_monitor.release_resources()
 
         if self._casd_process:
-            self.close_channel()
+            self.close_grpc_channels()
             self._terminate_casd_process(messenger)
             shutil.rmtree(self._casd_socket_tempdir)
 
