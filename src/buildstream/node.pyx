@@ -97,6 +97,14 @@ cdef class Node:
         """
         raise NotImplementedError()
 
+    cpdef object strip_node_info(self):
+        """ Remove all the node information (provenance) and return the underlying data as plain python objects 
+
+        Returns:
+            (list, dict, str): the underlying data that was held in the node structure.
+        """
+        raise NotImplementedError()
+
     #############################################################
     #                       Public Methods                      #
     #############################################################
@@ -174,14 +182,6 @@ cdef class Node:
     #    (LoadError): If any assertions fail
     #
     cpdef void _assert_fully_composited(self) except *:
-        raise NotImplementedError()
-
-    # _strip_node_info()
-    #
-    # Remove all the node information (provenance) and return
-    # the underlying data as plain python objects (list, dict, str, None)
-    #
-    cpdef object _strip_node_info(self):
         raise NotImplementedError()
 
     #############################################################
@@ -421,7 +421,7 @@ cdef class ScalarNode(Node):
     cpdef void _assert_fully_composited(self) except *:
         pass
 
-    cpdef object _strip_node_info(self):
+    cpdef object strip_node_info(self):
         return self.value
 
     #############################################################
@@ -949,11 +949,11 @@ cdef class MappingNode(Node):
 
             value._assert_fully_composited()
 
-    cpdef object _strip_node_info(self):
+    cpdef object strip_node_info(self):
         cdef str key
         cdef Node value
 
-        return {key: value._strip_node_info() for key, value in self.value.items()}
+        return {key: value.strip_node_info() for key, value in self.value.items()}
 
     #############################################################
     #                     Protected Methods                     #
@@ -1380,9 +1380,9 @@ cdef class SequenceNode(Node):
         for value in self.value:
             value._assert_fully_composited()
 
-    cpdef object _strip_node_info(self):
+    cpdef object strip_node_info(self):
         cdef Node value
-        return [value._strip_node_info() for value in self.value]
+        return [value.strip_node_info() for value in self.value]
 
     #############################################################
     #                     Protected Methods                     #
