@@ -526,19 +526,16 @@ class Context():
                                       log_level=log_level)
         return self._cascache
 
-    # is_fork_allowed():
+    # prepare_fork():
     #
-    # Return whether fork without exec is allowed. This is a safeguard against
+    # Prepare this process for fork without exec. This is a safeguard against
     # fork issues with multiple threads and gRPC connections.
     #
-    def is_fork_allowed(self):
-        # Do not allow fork if there are background threads.
-        if not utils._is_single_threaded():
-            return False
-
-        # Do not allow fork if there are open gRPC channels.
+    def prepare_fork(self):
+        # gRPC channels must be closed before fork.
         for cache in [self._cascache, self._artifactcache, self._sourcecache]:
-            if cache and cache.has_open_grpc_channels():
-                return False
+            if cache:
+                cache.close_grpc_channels()
 
-        return True
+        # Do not allow fork if there are background threads.
+        return utils._is_single_threaded()
