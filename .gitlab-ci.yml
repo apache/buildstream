@@ -201,7 +201,7 @@ tests-spawn-multiprocessing-start-method:
     - echo 'start method'
     - echo 'start method'
     - echo 'start method'
-    - su buildstream -c "python -c 'import multiprocessing; print(multiprocessing.get_start_method(allow_none=True))'"
+    - su buildstream -c "python3 -c 'import multiprocessing; print(multiprocessing.get_start_method(allow_none=True))'"
     - echo '/start method'
     - echo '/start method'
     - echo '/start method'
