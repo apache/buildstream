@@ -198,7 +198,13 @@ tests-spawn-multiprocessing-start-method:
     - mkdir -p "${INTEGRATION_CACHE}"
     - useradd -Um buildstream
     - chown -R buildstream:buildstream .
-    - su buildstream -c "tox -- --color=yes --integration"
+    - echo 'start method'
+    - echo 'start method'
+    - echo 'start method'
+    - su buildstream -c "python -c 'import multiprocessing; print(multiprocessing.get_start_method(allow_none=True))'"
+    - echo '/start method'
+    - echo '/start method'
+    - echo '/start method'
 
 # Run type checkers
 mypy:
