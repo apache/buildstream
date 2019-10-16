@@ -194,6 +194,11 @@ tests-spawn-multiprocessing-start-method:
   <<: *tests
   variables:
     BST_FORCE_START_METHOD: "spawn"
+  script:
+    - mkdir -p "${INTEGRATION_CACHE}"
+    - useradd -Um buildstream
+    - chown -R buildstream:buildstream .
+    - su buildstream -c "tox -- --color=yes --integration"
 
 # Run type checkers
 mypy:
