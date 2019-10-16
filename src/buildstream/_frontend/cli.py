@@ -233,17 +233,8 @@ def override_main(self, args=None, prog_name=None, complete_var=None,
     # ensure the code path is only followed once.
     if 'BST_FORCE_START_METHOD' in os.environ:
         start_method = os.environ['BST_FORCE_START_METHOD']
-        if multiprocessing.get_start_method(allow_none=True) == start_method:
-            # Note that when testing, we run the buildstream entrypoint
-            # multiple times in the same executable, so guard against that
-            # here.
-            print(
-                "BST_FORCE_START_METHOD: multiprocessing start method already set to:",
-                start_method,
-                file=sys.stderr,
-                flush=True,
-            )
-        else:
+        existing_start_method = multiprocessing.get_start_method(allow_none=True)
+        if existing_start_method == None:
             multiprocessing.set_start_method(start_method)
             print(
                 "BST_FORCE_START_METHOD: multiprocessing start method forced to:",
@@ -251,6 +242,24 @@ def override_main(self, args=None, prog_name=None, complete_var=None,
                 file=sys.stderr,
                 flush=True,
             )
+        elif existing_start_method == start_method:
+            # Note that when testing, we run the buildstream entrypoint
+            # multiple times in the same executable, so guard against that
+            # here.
+            print(
+                "BST_FORCE_START_METHOD: multiprocessing start method already set to:",
+                existing_start_method,
+                file=sys.stderr,
+                flush=True,
+            )
+        else:
+            print(
+                "BST_FORCE_START_METHOD: cannot set multiprocessing start method, already set to:",
+                existing_start_method,
+                file=sys.stderr,
+                flush=True,
+            )
+            sys.exit(-1)
 
     original_main(self, args=args, prog_name=prog_name, complete_var=None,
                   standalone_mode=standalone_mode, **extra)
