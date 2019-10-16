@@ -40,7 +40,7 @@ from .._protos.google.bytestream import bytestream_pb2_grpc
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, \
     artifact_pb2, artifact_pb2_grpc, source_pb2, source_pb2_grpc
 
-from .. import utils
+from ..utils import save_file_atomic, get_host_tool
 
 
 # The default limit for gRPC messages is 4 MiB.
@@ -200,7 +200,7 @@ class CASCache:
         ref_path = self.ref_path(ref)
 
         os.makedirs(os.path.dirname(ref_path), exist_ok=True)
-        with utils.save_file_atomic(ref_path, 'wb', tempdir=self.tmpdir) as f:
+        with save_file_atomic(ref_path, 'wb', tempdir=self.tmpdir) as f:
             f.write(tree.SerializeToString())
 
     # resolve_ref():
@@ -337,7 +337,7 @@ class CASdRunner:
         self._casd_socket_tempdir = tempfile.mkdtemp(prefix="buildstream")
         self._casd_socket_path = os.path.join(self._casd_socket_tempdir, "casd.sock")
 
-        casd_args = [utils.get_host_tool("buildbox-casd")]
+        casd_args = [get_host_tool("buildbox-casd")]
         casd_args.append("--bind=unix:" + self._casd_socket_path)
         casd_args.append("--log-level=" + self._log_level.value)
 
@@ -741,7 +741,7 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
         # Add the artifact proto to the cas
         artifact_path = os.path.join(self.artifactdir, request.cache_key)
         os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
-        with utils.save_file_atomic(artifact_path, mode='wb') as f:
+        with save_file_atomic(artifact_path, mode='wb') as f:
             f.write(artifact.SerializeToString())
 
         return artifact
@@ -818,7 +818,7 @@ class _SourceServicer(source_pb2_grpc.SourceServiceServicer):
     def _set_source(self, cache_key, source_proto):
         path = os.path.join(self.sourcedir, cache_key)
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with utils.save_file_atomic(path, 'w+b') as f:
+        with save_file_atomic(path, 'w+b') as f:
             f.write(source_proto.SerializeToString())
 
 
