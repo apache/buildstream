@@ -950,7 +950,7 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
     def parse_dict_as_yaml(node):
         tempfile = os.path.join(str(tmpdir), 'yaml_dump')
         _yaml.roundtrip_dump(node, tempfile)
-        return _yaml.load(tempfile)._strip_node_info()
+        return _yaml.load(tempfile).strip_node_info()
 
     project = str(datafiles)
     os.makedirs(os.path.join(project, '.bst'))
@@ -962,7 +962,7 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
     result = cli.run(project=project, args=['workspace', 'list'])
     result.assert_success()
 
-    loaded_config = _yaml.load(workspace_config_path)._strip_node_info()
+    loaded_config = _yaml.load(workspace_config_path).strip_node_info()
 
     # Check that workspace config remains the same if no modifications
     # to workspaces were made
@@ -997,7 +997,7 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
     result.assert_success()
 
     # Check that workspace config is converted correctly if necessary
-    loaded_config = _yaml.load(workspace_config_path)._strip_node_info()
+    loaded_config = _yaml.load(workspace_config_path).strip_node_info()
     assert loaded_config == parse_dict_as_yaml(expected)
 
 

@@ -98,7 +98,7 @@ from . import _cachekey
 from . import _signals
 from . import _site
 from ._platform import Platform
-from .node import Node, _sentinel as _node_sentinel
+from .node import Node
 from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
@@ -112,7 +112,7 @@ from .storage._casbaseddirectory import CasBasedDirectory
 from .storage.directory import VirtualDirectoryError
 
 if TYPE_CHECKING:
-    from .node import MappingNode
+    from .node import MappingNode, ScalarNode, SequenceNode
     from .types import SourceRef
     from typing import Set, Tuple
 
@@ -536,23 +536,17 @@ class Element(Plugin):
 
         return None
 
-    def substitute_variables(self, value):
-        return self.__variables.subst(value)
-
-    def node_subst_member(self, node: 'MappingNode[str, Any]', member_name: str, default: str = _node_sentinel) -> Any:
-        """Fetch the value of a string node member, substituting any variables
-        in the loaded value with the element contextual variables.
+    def node_subst_vars(self, node: 'ScalarNode') -> str:
+        """Replace any variables in the string contained in the node and returns it.
 
         Args:
-           node: A MappingNode loaded from YAML
-           member_name: The name of the member to fetch
-           default: A value to return when *member_name* is not specified in *node*
+           node: A ScalarNode loaded from YAML
 
         Returns:
-           The value of *member_name* in *node*, otherwise *default*
+           The value with all variables replaced
 
         Raises:
-           :class:`.LoadError`: When *member_name* is not found and no *default* was provided
+           :class:`.LoadError`: When the node doesn't contain a string or a variable was not found.
 
         **Example:**
 
@@ -560,31 +554,29 @@ class Element(Plugin):
 
           # Expect a string 'name' in 'node', substituting any
           # variables in the returned string
-          name = self.node_subst_member(node, 'name')
+          name = self.node_subst_vars(node.get_str('name'))
         """
-        value = node.get_str(member_name, default)
         try:
-            return self.__variables.subst(value)
+            return self.__variables.subst(node.as_str())
         except LoadError as e:
-            provenance = node.get_scalar(member_name).get_provenance()
+            provenance = node.get_provenance()
             raise LoadError('{}: {}'.format(provenance, e), e.reason, detail=e.detail) from e
 
-    def node_subst_list(self, node: 'MappingNode[str, Any]', member_name: str) -> List[Any]:
-        """Fetch a list from a node member, substituting any variables in the list
+    def node_subst_sequence_vars(self, node: 'SequenceNode[ScalarNode]') -> List[str]:
+        """Substitute any variables in the given sequence
 
         Args:
-          node: A MappingNode loaded from YAML
-          member_name: The name of the member to fetch (a list)
+          node: A SequenceNode loaded from YAML
 
         Returns:
-          The list in *member_name*
+          The list with every variable replaced
 
         Raises:
           :class:`.LoadError`
 
         """
         ret = []
-        for value in node.get_sequence(member_name):
+        for value in node:
             try:
                 ret.append(self.__variables.subst(value.as_str()))
             except LoadError as e:
@@ -877,9 +869,9 @@ class Element(Plugin):
 
         if bstdata is not None:
             with sandbox.batch(SandboxFlags.NONE):
-                commands = bstdata.get_str_list('integration-commands', [])
+                commands = bstdata.get_sequence('integration-commands', [])
                 for command in commands:
-                    cmd = self.substitute_variables(command)
+                    cmd = self.node_subst_vars(command)
 
                     sandbox.run(['sh', '-e', '-c', cmd], 0, env=environment, cwd='/',
                                 label=cmd)
@@ -2056,21 +2048,6 @@ class Element(Plugin):
 
             os.chmod(script_path, stat.S_IEXEC | stat.S_IREAD)
 
-    # _subst_string()
-    #
-    # Substitue a string, this is an internal function related
-    # to how junctions are loaded and needs to be more generic
-    # than the public node_subst_member()
-    #
-    # Args:
-    #    value (str): A string value
-    #
-    # Returns:
-    #    (str): The string after substitutions have occurred
-    #
-    def _subst_string(self, value):
-        return self.__variables.subst(value)
-
     # Returns the element whose sources this element is ultimately derived from.
     #
     # This is intended for being used to redirect commands that operate on an
@@ -2193,7 +2170,7 @@ class Element(Plugin):
                 'element-plugin-version': self.BST_ARTIFACT_VERSION,
                 'sandbox': self.__sandbox_config.get_unique_key(),
                 'environment': cache_env,
-                'public': self.__public._strip_node_info()
+                'public': self.__public.strip_node_info()
             }
 
             def __get_source_entry(_source):
@@ -2714,8 +2691,8 @@ class Element(Plugin):
     def __expand_environment(self, environment):
         # Resolve variables in environment value strings
         final_env = {}
-        for key in environment.keys():
-            final_env[key] = self.node_subst_member(environment, key)
+        for key, value in environment.items():
+            final_env[key] = self.node_subst_vars(value)
 
         return final_env
 
