@@ -2,6 +2,10 @@
 (unreleased)
 ============
 
+==================
+buildstream 1.91.1
+==================
+
 API
 ---
 
@@ -11,8 +15,12 @@ API
   o BREAKING CHANGE: 'Element.node_subst_list' has been removed. Please use
     'Element.node_subst_sequence_vars' instead.
 
+  o BREAKING CHANGE: Workspace incremental builds have been temporarily disabled
+
   o A new 'Node.strip_node_info()' is available and allows getting the
     underlying data structure for the given node.
+
+  o BuildStream now requires Buildbox-casd 0.0.3 at minimum
 
 ==================
 buildstream 1.91.0
