@@ -570,6 +570,58 @@ def test_reset(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_reset_soft(cli, tmpdir, datafiles):
+    # Open the workspace
+    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git', False)
+
+    assert cli.get_element_state(project, element_name) == 'buildable'
+
+    hello_path = os.path.join(workspace, 'usr', 'bin', 'hello')
+    pony_path = os.path.join(workspace, 'etc', 'pony.conf')
+
+    assert os.path.exists(os.path.join(workspace, 'usr', 'bin'))
+    assert os.path.exists(hello_path)
+    assert not os.path.exists(pony_path)
+
+    key_1 = cli.get_element_key(project, element_name)
+    assert key_1 != "{:?<64}".format('')
+    result = cli.run(project=project, args=['build', element_name])
+    result.assert_success()
+    assert cli.get_element_state(project, element_name) == 'cached'
+    key_2 = cli.get_element_key(project, element_name)
+    assert key_2 != "{:?<64}".format('')
+
+    # workspace keys are not recalculated
+    assert key_1 == key_2
+
+    wait_for_cache_granularity()
+
+    # Modify workspace
+    shutil.rmtree(os.path.join(workspace, 'usr', 'bin'))
+    os.makedirs(os.path.join(workspace, 'etc'))
+    with open(os.path.join(workspace, 'etc', 'pony.conf'), 'w') as f:
+        f.write("PONY='pink'")
+
+    assert not os.path.exists(os.path.join(workspace, 'usr', 'bin'))
+    assert os.path.exists(pony_path)
+
+    # Now soft-reset the open workspace, this should not revert the changes
+    result = cli.run(project=project, args=[
+        'workspace', 'reset', '--soft', element_name
+    ])
+    result.assert_success()
+    # we removed this dir
+    assert not os.path.exists(os.path.join(workspace, 'usr', 'bin'))
+    # and added this one
+    assert os.path.exists(os.path.join(workspace, 'etc', 'pony.conf'))
+
+    assert cli.get_element_state(project, element_name) == 'buildable'
+    key_3 = cli.get_element_key(project, element_name)
+    assert key_3 != "{:?<64}".format('')
+    assert key_1 != key_3
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_reset_multiple(cli, tmpdir, datafiles):
     # Open the workspaces
     tmpdir_alpha = os.path.join(str(tmpdir), 'alpha')

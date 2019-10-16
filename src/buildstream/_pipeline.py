@@ -94,17 +94,18 @@ class Pipeline():
     #    target_groups (list of lists): Groups of toplevel targets to load
     #    rewritable (bool): Whether the loaded files should be rewritable
     #                       this is a bit more expensive due to deep copies
+    #    ignore_workspaces (bool): Whether to load workspace sources for open workspaces
     #
     # Returns:
     #    (tuple of lists): A tuple of grouped Element objects corresponding to target_groups
     #
-    def load(self, target_groups, *, rewritable=False):
+    def load(self, target_groups, *, rewritable=False, ignore_workspaces=False):
 
         # First concatenate all the lists for the loader's sake
         targets = list(itertools.chain(*target_groups))
 
         with PROFILER.profile(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, "-") for t in targets)):
-            elements = self._project.load_elements(targets, rewritable=rewritable)
+            elements = self._project.load_elements(targets, rewritable=rewritable, ignore_workspaces=ignore_workspaces)
 
             # Now create element groups to match the input target groups
             elt_iter = iter(elements)

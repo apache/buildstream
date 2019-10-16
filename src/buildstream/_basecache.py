@@ -161,7 +161,9 @@ class BaseCache():
     def setup_remotes(self, *, use_config=False, remote_url=None):
 
         # Ensure we do not double-initialise since this can be expensive
-        assert not self._remotes_setup
+        if self._remotes_setup:
+            return
+
         self._remotes_setup = True
 
         # Initialize remote caches. We allow the commandline to override
