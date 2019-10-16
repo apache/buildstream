@@ -24,12 +24,12 @@ variables:
   # Our own variables
   # Version of the docker images we should use for all the images.
   # This is taken from buildstream/buildstream-docker-images
-  DOCKER_IMAGE_VERSION: master-103717922
+  DOCKER_IMAGE_VERSION: master-105004115
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   PYTEST_ARGS: "--color=yes --integration -n 2"
   TEST_COMMAND: "tox -- ${PYTEST_ARGS}"
-  EXTERNAL_TESTS_COMMAND: "tox -e py35-external,py36-external,py37-external -- ${PYTEST_ARGS}"
+  EXTERNAL_TESTS_COMMAND: "tox -e py35-external,py36-external,py37-external,py38-external -- ${PYTEST_ARGS}"
   COVERAGE_PREFIX: "${CI_JOB_NAME}."
 
 
@@ -87,6 +87,21 @@ tests-ubuntu-18.04:
 tests-centos-7.6:
   <<: *tests
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.6.1810-${DOCKER_IMAGE_VERSION}
+
+tests-python-3.8-buster:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-python:3.8-buster-${DOCKER_IMAGE_VERSION}
+  <<: *tests
+  variables:
+    # Our testsuite has issues with coverage on Python 3.8 so disable coverage
+    # in the meantime. For more details, see
+    # https://gitlab.com/BuildStream/buildstream/issues/1173.
+    TEST_COMMAND: "tox -e py38-nocover -- ${PYTEST_ARGS}"
+
+    # This particular testsuite image has both Python 3.7 and Python 3.8 so we
+    # need to explicitly force the 3.8 environment.
+    # Once Python 3.8 is available in distros, we should switch to such an
+    # image, and remove the following override.
+    EXTERNAL_TESTS_COMMAND: "tox -e py38-external -- ${PYTEST_ARGS}"
 
 overnight-fedora-30-aarch64:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:aarch64-30-${DOCKER_IMAGE_VERSION}
@@ -397,8 +412,8 @@ overnight-randomized:
   - chown -R buildstream:buildstream .
 
   # Don't run tests multiprocessed here, the randomized order doesn't like that
-  - su buildstream -c "tox -e py35-randomized,py36-randomized,py37-randomized -- --color=yes --integration"
-  - su buildstream -c "tox -e py35-randomized-external,py36-randomized-external,py37-randomized-external -- --color=yes --integration"
+  - su buildstream -c "tox -e py35-randomized,py36-randomized,py37-randomized,py38-randomized -- --color=yes --integration"
+  - su buildstream -c "tox -e py35-randomized-external,py36-randomized-external,py37-randomized-external,py38-randomized-external -- --color=yes --integration"
 
   # We need to override the exclusion from the template in order to run on schedules
   except: []
