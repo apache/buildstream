@@ -212,6 +212,7 @@ class Job():
         )
 
         if self._scheduler.context.platform.does_multiprocessing_start_require_pickling():
+            raise Exception("Doing pickling")
             pickled = pickle_child_job(
                 child_job, self._scheduler.context.get_projects())
             self._process = Process(
