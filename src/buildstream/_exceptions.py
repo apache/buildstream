@@ -275,6 +275,15 @@ class SandboxError(BstError):
 
 # SourceCacheError
 #
+# Raised when errors are encountered in either type of cache
+#
+class CacheError(BstError):
+    def __init__(self, message, detail=None, reason=None):
+        super().__init__(message, detail=detail, domain=ErrorDomain.SANDBOX, reason=reason)
+
+
+# SourceCacheError
+#
 # Raised when errors are encountered in the source caches
 #
 class SourceCacheError(BstError):

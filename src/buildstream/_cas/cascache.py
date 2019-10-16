@@ -21,7 +21,6 @@
 import itertools
 import os
 import stat
-import errno
 import contextlib
 import ctypes
 import multiprocessing
@@ -75,7 +74,6 @@ class CASCache():
     ):
         self.casdir = os.path.join(path, 'cas')
         self.tmpdir = os.path.join(path, 'tmp')
-        os.makedirs(os.path.join(self.casdir, 'refs', 'heads'), exist_ok=True)
         os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
 
@@ -179,9 +177,7 @@ class CASCache():
     # Preflight check.
     #
     def preflight(self):
-        headdir = os.path.join(self.casdir, 'refs', 'heads')
-        objdir = os.path.join(self.casdir, 'objects')
-        if not (os.path.isdir(headdir) and os.path.isdir(objdir)):
+        if not os.path.join(self.casdir, 'objects'):
             raise CASCacheError("CAS repository check failed for '{}'".format(self.casdir))
 
     # has_open_grpc_channels():
@@ -215,21 +211,6 @@ class CASCache():
             self.close_grpc_channels()
             self._terminate_casd_process(messenger)
             shutil.rmtree(self._casd_socket_tempdir)
-
-    # contains():
-    #
-    # Check whether the specified ref is already available in the local CAS cache.
-    #
-    # Args:
-    #     ref (str): The ref to check
-    #
-    # Returns: True if the ref is in the cache, False otherwise
-    #
-    def contains(self, ref):
-        refpath = self._refpath(ref)
-
-        # This assumes that the repository doesn't have any dangling pointers
-        return os.path.exists(refpath)
 
     # contains_file():
     #
@@ -308,28 +289,6 @@ class CASCache():
             # symlink
             fullpath = os.path.join(dest, symlinknode.name)
             os.symlink(symlinknode.target, fullpath)
-
-    # diff():
-    #
-    # Return a list of files that have been added or modified between
-    # the refs described by ref_a and ref_b.
-    #
-    # Args:
-    #     ref_a (str): The first ref
-    #     ref_b (str): The second ref
-    #     subdir (str): A subdirectory to limit the comparison to
-    #
-    def diff(self, ref_a, ref_b):
-        tree_a = self.resolve_ref(ref_a)
-        tree_b = self.resolve_ref(ref_b)
-
-        added = []
-        removed = []
-        modified = []
-
-        self.diff_trees(tree_a, tree_b, added=added, removed=removed, modified=modified)
-
-        return modified, removed, added
 
     # pull_tree():
     #
@@ -456,74 +415,6 @@ class CASCache():
         root_directory = tree.root.SerializeToString()
 
         return utils._message_digest(root_directory)
-
-    # set_ref():
-    #
-    # Create or replace a ref.
-    #
-    # Args:
-    #     ref (str): The name of the ref
-    #
-    def set_ref(self, ref, tree):
-        refpath = self._refpath(ref)
-        os.makedirs(os.path.dirname(refpath), exist_ok=True)
-        with utils.save_file_atomic(refpath, 'wb', tempdir=self.tmpdir) as f:
-            f.write(tree.SerializeToString())
-
-    # resolve_ref():
-    #
-    # Resolve a ref to a digest.
-    #
-    # Args:
-    #     ref (str): The name of the ref
-    #     update_mtime (bool): Whether to update the mtime of the ref
-    #
-    # Returns:
-    #     (Digest): The digest stored in the ref
-    #
-    def resolve_ref(self, ref, *, update_mtime=False):
-        refpath = self._refpath(ref)
-
-        try:
-            with open(refpath, 'rb') as f:
-                if update_mtime:
-                    os.utime(refpath)
-
-                digest = remote_execution_pb2.Digest()
-                digest.ParseFromString(f.read())
-                return digest
-
-        except FileNotFoundError as e:
-            raise CASCacheError("Attempt to access unavailable ref: {}".format(e)) from e
-
-    # update_mtime()
-    #
-    # Update the mtime of a ref.
-    #
-    # Args:
-    #     ref (str): The ref to update
-    #
-    def update_mtime(self, ref):
-        try:
-            os.utime(self._refpath(ref))
-        except FileNotFoundError as e:
-            raise CASCacheError("Attempt to access unavailable ref: {}".format(e)) from e
-
-    # remove():
-    #
-    # Removes the given symbolic ref from the repo.
-    #
-    # Args:
-    #    ref (str): A symbolic ref
-    #    basedir (str): Path of base directory the ref is in, defaults to
-    #                   CAS refs heads
-    #
-    def remove(self, ref, *, basedir=None):
-
-        if basedir is None:
-            basedir = os.path.join(self.casdir, 'refs', 'heads')
-        # Remove cache ref
-        self._remove_ref(ref, basedir)
 
     def update_tree_mtime(self, tree):
         reachable = set()
@@ -701,60 +592,6 @@ class CASCache():
                 os.remove(os.path.join(log_dir, logfile_to_delete))
 
         return os.path.join(log_dir, str(self._casd_start_time) + ".log")
-
-    def _refpath(self, ref):
-        return os.path.join(self.casdir, 'refs', 'heads', ref)
-
-    # _remove_ref()
-    #
-    # Removes a ref.
-    #
-    # This also takes care of pruning away directories which can
-    # be removed after having removed the given ref.
-    #
-    # Args:
-    #    ref (str): The ref to remove
-    #    basedir (str): Path of base directory the ref is in
-    #
-    # Raises:
-    #    (CASCacheError): If the ref didnt exist, or a system error
-    #                     occurred while removing it
-    #
-    def _remove_ref(self, ref, basedir):
-
-        # Remove the ref itself
-        refpath = os.path.join(basedir, ref)
-
-        try:
-            os.unlink(refpath)
-        except FileNotFoundError as e:
-            raise CASCacheError("Could not find ref '{}'".format(ref)) from e
-
-        # Now remove any leading directories
-
-        components = list(os.path.split(ref))
-        while components:
-            components.pop()
-            refdir = os.path.join(basedir, *components)
-
-            # Break out once we reach the base
-            if refdir == basedir:
-                break
-
-            try:
-                os.rmdir(refdir)
-            except FileNotFoundError:
-                # The parent directory did not exist, but it's
-                # parent directory might still be ready to prune
-                pass
-            except OSError as e:
-                if e.errno == errno.ENOTEMPTY:
-                    # The parent directory was not empty, so we
-                    # cannot prune directories beyond this point
-                    break
-
-                # Something went wrong here
-                raise CASCacheError("System error while removing ref '{}': {}".format(ref, e)) from e
 
     def _get_subdir(self, tree, subdir):
         head, name = os.path.split(subdir)
