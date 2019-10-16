@@ -205,6 +205,7 @@ tests-spawn-multiprocessing-start-method:
     - echo '/start method'
     - echo '/start method'
     - echo '/start method'
+    - su buildstream -c "tox -- tests/artifactcache/expiry.py"
 
 # Run type checkers
 mypy:
