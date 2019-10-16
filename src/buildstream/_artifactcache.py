@@ -22,7 +22,7 @@ import os
 import grpc
 
 from ._basecache import BaseCache
-from ._exceptions import ArtifactError, CASError, CASCacheError, CASRemoteError, RemoteError
+from ._exceptions import ArtifactError, CASError, CacheError, CASRemoteError, RemoteError
 from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, artifact_pb2, artifact_pb2_grpc
 
 from ._remote import BaseRemote
@@ -202,8 +202,8 @@ class ArtifactCache(BaseCache):
     #
     def remove(self, ref):
         try:
-            self.cas.remove(ref, basedir=self.artifactdir)
-        except CASCacheError as e:
+            self._remove_ref(ref, self.artifactdir)
+        except CacheError as e:
             raise ArtifactError("{}".format(e)) from e
 
     # diff():

@@ -89,8 +89,7 @@ def test_source_push_split(cli, tmpdir, datafiles):
             source = list(element.sources())[0]
 
             # check we don't have it in the current cache
-            cas = context.get_cascache()
-            assert not cas.contains(source._get_source_name())
+            assert not index.get_source_proto(source._get_source_name())
 
             # build the element, this should fetch and then push the source to the
             # remote
@@ -139,8 +138,7 @@ def test_source_push(cli, tmpdir, datafiles):
             source = list(element.sources())[0]
 
             # check we don't have it in the current cache
-            cas = context.get_cascache()
-            assert not cas.contains(source._get_source_name())
+            assert not share.get_source_proto(source._get_source_name())
 
             # build the element, this should fetch and then push the source to the
             # remote

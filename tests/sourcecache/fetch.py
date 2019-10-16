@@ -37,6 +37,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
 def move_local_cas_to_remote_source_share(local, remote):
     shutil.rmtree(os.path.join(remote, "repo", "cas"))
+    shutil.rmtree(os.path.join(remote, "repo", "source_protos"))
     shutil.move(os.path.join(local, "source_protos"), os.path.join(remote, "repo"))
     shutil.move(os.path.join(local, "cas"), os.path.join(remote, "repo"))
     shutil.rmtree(os.path.join(local, "sources"))
@@ -85,8 +86,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             assert not element._source_cached()
             source = list(element.sources())[0]
 
-            cas = context.get_cascache()
-            assert not cas.contains(source._get_source_name())
+            assert not share.get_source_proto(source._get_source_name())
 
             # Just check that we sensibly fetch and build the element
             res = cli.run(project=project_dir, args=["build", element_name])
@@ -132,8 +132,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
             assert not element._source_cached()
             source = list(element.sources())[0]
 
-            cas = context.get_cascache()
-            assert not cas.contains(source._get_source_name())
+            assert not share.get_source_proto(source._get_source_name())
             assert not os.path.exists(os.path.join(cache_dir, "sources"))
 
             # Now check if it falls back to the source fetch method.
@@ -195,8 +194,7 @@ def test_source_pull_partial_fallback_fetch(cli, tmpdir, datafiles):
             assert not element._source_cached()
             source = list(element.sources())[0]
 
-            cas = context.get_cascache()
-            assert not cas.contains(source._get_source_name())
+            assert not share.get_artifact_proto(source._get_source_name())
 
             # Just check that we sensibly fetch and build the element
             res = cli.run(project=project_dir, args=["build", element_name])
