@@ -232,13 +232,25 @@ def override_main(self, args=None, prog_name=None, complete_var=None,
     # reason we're advised to do it inside the entrypoint, where it is easy to
     # ensure the code path is only followed once.
     if 'BST_FORCE_START_METHOD' in os.environ:
-        multiprocessing.set_start_method(os.environ['BST_FORCE_START_METHOD'])
-        print(
-            "BST_FORCE_START_METHOD: multiprocessing start method forced to:",
-            os.environ['BST_FORCE_START_METHOD'],
-            file=sys.stderr,
-            flush=True,
-        )
+        start_method = os.environ['BST_FORCE_START_METHOD']
+        if multiprocessing.get_start_method(allow_none=True) == start_method:
+            # Note that when testing, we run the buildstream entrypoint
+            # multiple times in the same executable, so guard against that
+            # here.
+            print(
+                "BST_FORCE_START_METHOD: multiprocessing start method already set to:",
+                start_method,
+                file=sys.stderr,
+                flush=True,
+            )
+        else:
+            multiprocessing.set_start_method(start_method)
+            print(
+                "BST_FORCE_START_METHOD: multiprocessing start method forced to:",
+                start_method,
+                file=sys.stderr,
+                flush=True,
+            )
 
     original_main(self, args=args, prog_name=prog_name, complete_var=None,
                   standalone_mode=standalone_mode, **extra)
