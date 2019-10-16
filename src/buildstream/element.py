@@ -893,7 +893,7 @@ class Element(Plugin):
 
         self._stage_sources_in_sandbox(sandbox, directory)
 
-    def get_public_data(self, domain: str) -> 'MappingNode[Any, Any]':
+    def get_public_data(self, domain: str) -> 'MappingNode[Node]':
         """Fetch public data on this element
 
         Args:
@@ -918,7 +918,7 @@ class Element(Plugin):
 
         return data
 
-    def set_public_data(self, domain: str, data: 'MappingNode[Any, Any]') -> None:
+    def set_public_data(self, domain: str, data: 'MappingNode[Node]') -> None:
         """Set public data on this element
 
         Args:
