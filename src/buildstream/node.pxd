@@ -29,10 +29,10 @@ cdef class Node:
     # Public Methods
     cpdef Node clone(self)
     cpdef ProvenanceInformation get_provenance(self)
+    cpdef object strip_node_info(self)
 
     # Private Methods used in BuildStream
     cpdef void _assert_fully_composited(self) except *
-    cpdef object _strip_node_info(self)
 
     # Protected Methods
     cdef void _compose_on(self, str key, MappingNode target, list path) except *

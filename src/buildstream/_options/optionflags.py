@@ -58,9 +58,10 @@ class OptionFlags(Option):
 
     def load_value(self, node, *, transform=None):
         value_node = node.get_sequence(self.name)
-        self.value = value_node.as_str_list()
         if transform:
-            self.value = [transform(x) for x in self.value]
+            self.value = [transform(x) for x in value_node]
+        else:
+            self.value = value_node.as_str_list()
         self.value = sorted(self.value)
         self.validate(self.value, value_node)
 

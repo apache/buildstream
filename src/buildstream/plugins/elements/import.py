@@ -49,8 +49,8 @@ class ImportElement(Element):
             'source', 'target'
         ])
 
-        self.source = self.node_subst_member(node, 'source')
-        self.target = self.node_subst_member(node, 'target')
+        self.source = self.node_subst_vars(node.get_scalar('source'))
+        self.target = self.node_subst_vars(node.get_scalar('target'))
 
     def preflight(self):
         # Assert that we have at least one source to fetch.

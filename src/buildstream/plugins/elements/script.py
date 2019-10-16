@@ -47,15 +47,15 @@ class ScriptElement(buildstream.ScriptElement):
 
     def configure(self, node):
         for n in node.get_sequence('layout', []):
-            dst = self.node_subst_member(n, 'destination')
-            elm = self.node_subst_member(n, 'element', None)
+            dst = self.node_subst_vars(n.get_scalar('destination'))
+            elm = self.node_subst_vars(n.get_scalar('element', None))
             self.layout_add(elm, dst)
 
         node.validate_keys([
             'commands', 'root-read-only', 'layout'
         ])
 
-        cmds = self.node_subst_list(node, "commands")
+        cmds = self.node_subst_sequence_vars(node.get_sequence("commands"))
         self.add_commands("commands", cmds)
 
         self.set_work_dir()
