@@ -350,7 +350,7 @@ class _StatusHeader():
         #
         # Public members
         #
-        self.lines = 3
+        self.lines = 2
 
         #
         # Private members
@@ -413,38 +413,7 @@ class _StatusHeader():
 
         line2 = self._centered(text, size, line_length, ' ')
 
-        #
-        # Line 3: Cache usage percentage report
-        #
-        #  ~~~~~~ cache: 44.2G / 64G (69%) ~~~~~~
-        #
-        cas = self._context.get_cascache()
-        usage = cas.get_cache_usage()
-        usage_string = str(usage)
-
-        if usage.used_size is None:
-            # Cache usage is unknown
-            size = 0
-            text = ''
-        else:
-            size = 21
-            size += len(usage_string)
-            if usage.used_percent >= 95:
-                formatted_usage = self._error_profile.fmt(usage_string)
-            elif usage.used_percent >= 80:
-                formatted_usage = self._content_profile.fmt(usage_string)
-            else:
-                formatted_usage = self._success_profile.fmt(usage_string)
-
-            text = self._format_profile.fmt("~~~~~~ ") + \
-                self._content_profile.fmt('cache') + \
-                self._format_profile.fmt(': ') + \
-                formatted_usage + \
-                self._format_profile.fmt(' ~~~~~~')
-
-        line3 = self._centered(text, size, line_length, ' ')
-
-        return line1 + '\n' + line2 + '\n' + line3
+        return line1 + '\n' + line2
 
     ###################################################
     #                 Private Methods                 #
