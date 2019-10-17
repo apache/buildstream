@@ -20,6 +20,7 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 #
 import os
+import multiprocessing
 import pytest
 
 from buildstream.testing import register_repo_kind, sourcetests_collection_hook
@@ -155,3 +156,17 @@ def set_xdg_paths(pytestconfig):
             value = os.path.join(pytestconfig.getoption("basetemp"), default)
 
         os.environ[env_var] = value
+
+
+def pytest_configure(config):
+    # If we need to set_start_method() then we need to do it as early as
+    # possible. Note that some tests implicitly set the start method by using
+    # multiprocessing. If we wait for bst to do it, it will already be too
+    # late.
+    print(
+        "Multiprocessing method:",
+        multiprocessing.get_start_method(allow_none=True),
+    )
+    if 'BST_FORCE_START_METHOD' in os.environ:
+        start_method = os.environ['BST_FORCE_START_METHOD']
+        multiprocessing.set_start_method(start_method)
