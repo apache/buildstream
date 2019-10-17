@@ -1581,8 +1581,6 @@ class Element(Plugin):
         for dep in self.dependencies(Scope.BUILD, recurse=False):
             dep._set_required()
 
-        self._set_required()
-
         # Invalidate workspace key as the build modifies the workspace directory
         workspace = self._get_workspace()
         if workspace:
