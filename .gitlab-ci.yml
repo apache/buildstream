@@ -278,7 +278,7 @@ docs:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-85428307
   variables:
     BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
-    BST_EXT_REF: 0.12.0-171-g6cd4066#egg=bst_plugins_experimental[ostree,cargo]
+    BST_EXT_REF: 0.12.0-173-gbe5ac19#egg=bst_plugins_experimental[ostree,cargo]
     FD_SDK_REF: freedesktop-sdk-19.08.3-7-g4529b070
   before_script:
   - |
