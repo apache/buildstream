@@ -48,3 +48,7 @@ versioneer.pyc
 
 # mypy
 .mypy_cache
+
+# vim undo files
+*.un~
+*.*~
