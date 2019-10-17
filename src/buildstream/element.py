@@ -1276,13 +1276,9 @@ class Element(Plugin):
         # If the element wasn't assembled and isn't scheduled to be assemble,
         # or cached, or waiting to be pulled but has an artifact then schedule
         # the assembly.
-        if (not self.__assemble_scheduled and not self.__assemble_done and
-                self.__artifact and
-                self._is_required() and
-                not self._cached() and
-                not self._pull_pending()):
-            self._schedule_assemble()
+        scheduled = self._schedule_assemble()
 
+        if scheduled:
             # If a build has been scheduled, we know that the element
             # is not cached and can allow cache query even if the strict cache
             # key is not available yet.
@@ -1563,7 +1559,22 @@ class Element(Plugin):
     # in a subprocess.
     #
     def _schedule_assemble(self):
-        assert not self.__assemble_scheduled
+        # If we're already processing, we shouldn't re-schedule
+        if self.__assemble_scheduled or self.__assemble_done or self._pull_pending():
+            return False
+
+        # If we're not part of the build pipeline, we don't need to be scheduled
+        if not self._is_required():
+            return False
+
+        # If we're already cached, we don't need to be scheduled
+        if self._cached():
+            return False
+
+        # FIXME: Why do we do this?
+        if not self.__artifact:
+            return False
+
         self.__assemble_scheduled = True
 
         # Requests artifacts of build dependencies
@@ -1578,6 +1589,8 @@ class Element(Plugin):
             workspace.invalidate_key()
 
         self._update_state()
+
+        return True
 
     # _assemble_done():
     #
