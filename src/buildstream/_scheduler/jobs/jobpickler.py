@@ -84,7 +84,9 @@ def pickle_child_job(child_job, projects):
         for p in projects
         for factory in [
             p.config.element_factory,
+            p.first_pass_config.element_factory,
             p.config.source_factory,
+            p.first_pass_config.source_factory,
         ]
     ]
 
@@ -99,11 +101,11 @@ def pickle_child_job(child_job, projects):
     pickler = pickle.Pickler(data)
     pickler.dispatch_table = copyreg.dispatch_table.copy()
 
-    def _reduce_plugin(plugin):
+    def reduce_plugin(plugin):
         return _reduce_plugin_with_factory_dict(plugin, plugin_class_to_factory)
 
     for cls in plugin_class_to_factory:
-        pickler.dispatch_table[cls] = _reduce_plugin
+        pickler.dispatch_table[cls] = reduce_plugin
     pickler.dispatch_table[ArtifactProto] = _reduce_proto
     pickler.dispatch_table[DigestProto] = _reduce_proto
     pickler.dispatch_table[Loader] = _reduce_object
