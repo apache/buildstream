@@ -79,26 +79,30 @@ _PROTO_CLASS_TO_NAME = {
 #
 def pickle_child_job(child_job, projects):
 
-    element_classes = [
-        cls
+    factory_list = [
+        factory
         for p in projects
-        if p.config.element_factory is not None
-        for cls, _ in p.config.element_factory.all_loaded_plugins()
+        for factory in [
+            p.config.element_factory,
+            p.config.source_factory,
+        ]
     ]
-    source_classes = [
-        cls
-        for p in projects
-        if p.config.source_factory is not None
-        for cls, _ in p.config.source_factory.all_loaded_plugins()
-    ]
+
+    plugin_class_to_factory = {
+        cls: factory
+        for factory in factory_list
+        if factory is not None
+        for cls, _ in factory.all_loaded_plugins()
+    }
 
     data = io.BytesIO()
     pickler = pickle.Pickler(data)
     pickler.dispatch_table = copyreg.dispatch_table.copy()
 
-    for cls in element_classes:
-        pickler.dispatch_table[cls] = _reduce_plugin
-    for cls in source_classes:
+    def _reduce_plugin(plugin):
+        return _reduce_plugin_with_factory_dict(plugin, plugin_class_to_factory)
+
+    for cls in plugin_class_to_factory:
         pickler.dispatch_table[cls] = _reduce_plugin
     pickler.dispatch_table[ArtifactProto] = _reduce_proto
     pickler.dispatch_table[DigestProto] = _reduce_proto
@@ -130,8 +134,10 @@ def _new_proto_from_reduction_args(name, data):
     return instance
 
 
-def _reduce_plugin(plugin):
-    factory, meta_kind, state = plugin._get_args_for_child_job_pickling()
+def _reduce_plugin_with_factory_dict(plugin, plugin_class_to_factory):
+    meta_kind, state = plugin._get_args_for_child_job_pickling()
+    assert meta_kind
+    factory = plugin_class_to_factory[type(plugin)]
     args = (factory, meta_kind)
     return (_new_plugin_from_reduction_args, args, state)
 
