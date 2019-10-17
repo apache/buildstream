@@ -1254,16 +1254,9 @@ class Element(Plugin):
         # If the element wasn't assembled and isn't scheduled to be assemble,
         # or cached, or waiting to be pulled but has an artifact then schedule
         # the assembly.
-        if (
-            not self.__assemble_scheduled
-            and not self.__assemble_done
-            and self.__artifact
-            and self._is_required()
-            and not self._cached()
-            and not self._pull_pending()
-        ):
-            self._schedule_assemble()
+        scheduled = self._schedule_assemble()
 
+        if scheduled:
             # If a build has been scheduled, we know that the element
             # is not cached and can allow cache query even if the strict cache
             # key is not available yet.
@@ -1556,13 +1549,40 @@ class Element(Plugin):
     def _artifact_files_required(self):
         return self.__artifact_files_required
 
+    # __can_schedule()
+    #
+    # Returns:
+    #     bool - Whether the element can be scheduled for a build.
+    #
+    def __can_schedule(self):
+        # We're processing if we're already scheduled, we've
+        # finished assembling or if we're waiting to pull.
+        processing = self.__assemble_scheduled or self.__assemble_done or self._pull_pending()
+
+        # We can schedule when
+        return (
+            # We're not processing
+            not processing
+            and
+            # We're required for the current build
+            self._is_required()
+            and
+            # We have figured out the state of our artifact
+            self.__artifact
+            and
+            # And we're not cached yet
+            not self._cached()
+        )
+
     # _schedule_assemble():
     #
     # This is called in the main process before the element is assembled
     # in a subprocess.
     #
     def _schedule_assemble(self):
-        assert not self.__assemble_scheduled
+        if not self.__can_schedule():
+            return False
+
         self.__assemble_scheduled = True
 
         # Requests artifacts of build dependencies
@@ -1577,6 +1597,8 @@ class Element(Plugin):
             workspace.invalidate_key()
 
         self._update_state()
+
+        return True
 
     # _assemble_done():
     #
