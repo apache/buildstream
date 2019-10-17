@@ -79,11 +79,6 @@ MACHINE_ARCH = Platform.get_host_arch()
 
 HAVE_SANDBOX = os.getenv('BST_FORCE_SANDBOX')
 
-# TODO: document
-if 'BST_FORCE_START_METHOD' in os.environ:
-    start_method = os.environ['BST_FORCE_START_METHOD']
-    multiprocessing.set_start_method(start_method)
-
 if HAVE_SANDBOX is not None:
     pass
 elif IS_LINUX and HAVE_BWRAP and (not IS_WSL):
