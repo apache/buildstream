@@ -103,11 +103,6 @@ def pickle_child_job(child_job, projects):
     pickler.dispatch_table[Loader] = _reduce_object
     pickler.dispatch_table[Messenger] = _reduce_object
 
-    import buildstream.testpickle
-    test_pickler = buildstream.testpickle.TestPickler()
-    test_pickler.dispatch_table = pickler.dispatch_table.copy()
-    test_pickler.test_dump(child_job)
-
     pickler.dump(child_job)
     data.seek(0)
 
