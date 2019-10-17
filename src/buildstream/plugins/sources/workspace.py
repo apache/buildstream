@@ -35,6 +35,8 @@ workspace. The node constructed would be specified as follows:
    path: /path/to/workspace
 """
 
+import os
+
 from buildstream.storage.directory import Directory
 from buildstream import Source, SourceError, Consistency
 from buildstream.types import SourceRef
@@ -43,7 +45,6 @@ from buildstream.node import MappingNode
 
 class WorkspaceSource(Source):
     # pylint: disable=attribute-defined-outside-init
-
     BST_STAGE_VIRTUAL_DIRECTORY = True
     BST_KEY_REQUIRES_STAGE = True
 
@@ -81,9 +82,13 @@ class WorkspaceSource(Source):
     def init_workspace(self, directory: Directory) -> None:
         raise AssertionError("Attempting to re-open an existing workspace")
 
-    def get_consistency(self):
-        # always return cached state
-        return Consistency.CACHED
+    def get_consistency(self) -> Consistency:
+        if not os.path.exists(self._get_local_path()):
+            # A workspace is considered inconsistent in the case that
+            # its directory went missing
+            return Consistency.INCONSISTENT
+        else:
+            return Consistency.CACHED
 
     def fetch(self) -> None:  # pylint: disable=arguments-differ
         pass  # pragma: nocover

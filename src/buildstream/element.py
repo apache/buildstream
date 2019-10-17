@@ -1218,14 +1218,6 @@ class Element(Plugin):
     #    (bool): True if cache can be queried
     #
     def _can_query_cache(self):
-        # If build has already been scheduled, we know that the element is
-        # not cached and thus can allow cache query even if the strict cache key
-        # is not available yet.
-        # This special case is required for workspaced elements to prevent
-        # them from getting blocked in the pull queue.
-        if self.__assemble_scheduled:
-            return True
-
         # cache cannot be queried until strict cache key is available
         return self.__strict_cache_key is not None
 
@@ -1589,15 +1581,7 @@ class Element(Plugin):
         for dep in self.dependencies(Scope.BUILD, recurse=False):
             dep._set_required()
 
-        self._set_required()
-
-        # Invalidate workspace key as the build modifies the workspace directory
-        workspace = self._get_workspace()
-        if workspace:
-            workspace.invalidate_key()
-
         self._update_state()
-
         return True
 
     # _assemble_done():
@@ -2418,23 +2402,11 @@ class Element(Plugin):
             return
 
         self.__consistency = Consistency.CACHED
-        workspace = self._get_workspace()
 
-        # Special case for workspaces
-        if workspace:
-
-            # A workspace is considered inconsistent in the case
-            # that its directory went missing
-            #
-            fullpath = workspace.get_absolute_path()
-            if not os.path.exists(fullpath):
-                self.__consistency = Consistency.INCONSISTENT
-        else:
-
-            # Determine overall consistency of the element
-            for source in self.__sources:
-                source._update_state()
-                self.__consistency = min(self.__consistency, source._get_consistency())
+        # Determine overall consistency of the element
+        for source in self.__sources:
+            source._update_state()
+            self.__consistency = min(self.__consistency, source._get_consistency())
 
     # __can_build_incrementally()
     #
