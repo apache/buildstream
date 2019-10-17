@@ -83,6 +83,7 @@ class CASCache():
         self._casd_cas = None
         self._local_cas = None
         self._cache_usage_monitor = None
+        self._cache_usage_monitor_forbidden = False
 
         if casd:
             # Place socket in global/user temporary directory to avoid hitting
@@ -124,6 +125,14 @@ class CASCache():
         # need the information whether a casd subprocess was started or not.
         assert '_casd_process' in state
         state['_casd_process'] = bool(self._casd_process)
+
+        # The usage monitor is not pickle-able, but we also don't need it in
+        # child processes currently. Make sure that if this changes, we get a
+        # bug report, by setting _cache_usage_monitor_forbidden.
+        assert '_cache_usage_monitor' in state
+        assert '_cache_usage_monitor_forbidden' in state
+        state['_cache_usage_monitor'] = None
+        state['_cache_usage_monitor_forbidden'] = True
 
         return state
 
@@ -1047,6 +1056,7 @@ class CASCache():
     #     (CASCacheUsage): The current status
     #
     def get_cache_usage(self):
+        assert not self._cache_usage_monitor_forbidden
         return self._cache_usage_monitor.get_cache_usage()
 
     # get_casd_process()
