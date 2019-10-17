@@ -121,8 +121,6 @@ if TYPE_CHECKING:
     from .source import Source
     from ._context import Context
     from ._loader.metaelement import MetaElement
-    from ._loader.metasource import MetaSource
-    from ._loader.metasource import MetaSource
     from ._project import Project
     # pylint: enable=cyclic-import
 
