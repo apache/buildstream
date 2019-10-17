@@ -144,15 +144,11 @@ def _reduce_plugin(plugin):
         project.first_pass_config.source_factory,
     ]
 
-    print("plugin:", plugin)
-    print("factories:", factories)
-
     factory = None
     for f in factories:
         if f is None:
             continue
         for cls, _ in f.all_loaded_plugins():
-            print(f, "comparing", type(plugin), cls)
             if type(plugin) == cls:
                 factory = f
 
