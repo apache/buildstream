@@ -33,9 +33,9 @@ import traceback
 from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
 from ...types import FastEnum
-from ... import _signals, utils
+from ... import _signals, utils, node
 
-from .jobpickler import pickle_child_job
+from .jobpickler import pickle_child_job_data
 
 
 # Return code values shutdown of job handling child processes
@@ -87,6 +87,27 @@ class _MessageType(FastEnum):
     SUBCLASS_CUSTOM_MESSAGE = 5
 
 
+# _pickle_child_job()
+#
+# Perform the special case pickling required to pickle a child job for
+# unpickling in a child process.
+#
+# Args:
+#    child_job     (ChildJob): The job to pickle.
+#    projects (List[Project]): The list of loaded projects, so we can get the
+#                              relevant factories.
+#
+def _pickle_child_job(child_job, projects):
+    # Note that we need to consider all the state of the program that's
+    # necessary for the job, this includes e.g. the global state of the node
+    # module.
+    node_module_state = node._get_state_for_pickling()
+    return pickle_child_job_data(
+        (child_job, node_module_state),
+        projects,
+    )
+
+
 # _do_pickled_child_job()
 #
 # Unpickle the supplied 'pickled' job and call 'child_action' on it.
@@ -95,14 +116,14 @@ class _MessageType(FastEnum):
 # such it will fixup any globals to be in the expected state.
 #
 # Args:
-#    pickled     (BytesIO): The pickled job to execute.
+#    pickled     (BytesIO): The pickled data, and job to execute.
 #    *child_args (any)    : Any parameters to be passed to `child_action`.
 #
 def _do_pickled_child_job(pickled, *child_args):
-
     utils._is_main_process = _not_main_process
 
-    child_job = pickle.load(pickled)
+    child_job, node_module_state = pickle.load(pickled)
+    node._set_state_from_pickling(node_module_state)
     return child_job.child_action(*child_args)
 
 
@@ -212,8 +233,10 @@ class Job():
         )
 
         if self._scheduler.context.platform.does_multiprocessing_start_require_pickling():
-            pickled = pickle_child_job(
-                child_job, self._scheduler.context.get_projects())
+            pickled = _pickle_child_job(
+                child_job,
+                self._scheduler.context.get_projects(),
+            )
             self._process = Process(
                 target=_do_pickled_child_job,
                 args=[pickled, self._queue],

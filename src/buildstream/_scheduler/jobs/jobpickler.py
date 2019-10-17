@@ -42,18 +42,21 @@ _PROTO_CLASS_TO_NAME = {
 }
 
 
-# pickle_child_job()
+# pickle_child_job_data()
 #
 # Perform the special case pickling required to pickle a child job for
 # unpickling in a child process.
 #
-# Note that we don't need an `unpickle_child_job`, as regular `pickle.load()`
-# will do everything required.
+# Note that this just enables the pickling of things that contain ChildJob-s,
+# the thing to be pickled doesn't have to be a ChildJob.
+#
+# Note that we don't need an `unpickle_child_job_data`, as regular
+# `pickle.load()` will do everything required.
 #
 # Args:
-#    child_job     (ChildJob): The job to be pickled.
-#    projects (List[Project]): The list of loaded projects, so we can get the
-#                              relevant factories.
+#    child_job_data (ChildJob): The job to be pickled.
+#    projects  (List[Project]): The list of loaded projects, so we can get the
+#                               relevant factories.
 #
 # Returns:
 #    An `io.BytesIO`, with the pickled contents of the ChildJob and everything it
@@ -77,7 +80,7 @@ _PROTO_CLASS_TO_NAME = {
 #   below. Some state in plugins is not necessary for child jobs, and comes
 #   with a heavy cost; we also need to remove this before pickling.
 #
-def pickle_child_job(child_job, projects):
+def pickle_child_job_data(child_job_data, projects):
 
     factory_list = [
         factory
@@ -97,8 +100,8 @@ def pickle_child_job(child_job, projects):
         for cls, _ in factory.all_loaded_plugins()
     }
 
-    data = io.BytesIO()
-    pickler = pickle.Pickler(data)
+    pickled_data = io.BytesIO()
+    pickler = pickle.Pickler(pickled_data)
     pickler.dispatch_table = copyreg.dispatch_table.copy()
 
     def reduce_plugin(plugin):
@@ -111,10 +114,10 @@ def pickle_child_job(child_job, projects):
     pickler.dispatch_table[Loader] = _reduce_object
     pickler.dispatch_table[Messenger] = _reduce_object
 
-    pickler.dump(child_job)
-    data.seek(0)
+    pickler.dump(child_job_data)
+    pickled_data.seek(0)
 
-    return data
+    return pickled_data
 
 
 def _reduce_object(instance):
