@@ -2373,8 +2373,8 @@ class Element(Plugin):
         # let us know, and we will need to update accordingly.
         del state["_Element__required_callback"]
 
-        factory = self._get_project().config.element_factory
-        return factory, self.__meta_kind, state
+        # factory = self._get_project().config.element_factory
+        return self._get_project(), self.__meta_kind, state
 
     def _walk_artifact_files(self):
         yield from self.__artifact.get_files().walk()

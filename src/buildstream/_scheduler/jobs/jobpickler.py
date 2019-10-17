@@ -66,17 +66,29 @@ from ..._messenger import Messenger
 #
 def pickle_child_job(child_job, projects):
 
+    p = child_job._element._Plugin__project
+
     element_classes = [
         cls
         for p in projects
         if p.config.element_factory is not None
         for cls, _ in p.config.element_factory.all_loaded_plugins()
+    ] + [
+        cls
+        for p in projects
+        if p.first_pass_config.element_factory is not None
+        for cls, _ in p.first_pass_config.element_factory.all_loaded_plugins()
     ]
     source_classes = [
         cls
         for p in projects
         if p.config.source_factory is not None
         for cls, _ in p.config.source_factory.all_loaded_plugins()
+    ] + [
+        cls
+        for p in projects
+        if p.first_pass_config.source_factory is not None
+        for cls, _ in p.first_pass_config.source_factory.all_loaded_plugins()
     ]
 
     data = io.BytesIO()
@@ -121,7 +133,32 @@ def _new_artifact_proto_from_reduction_args(data):
 
 
 def _reduce_plugin(plugin):
-    factory, meta_kind, state = plugin._get_args_for_child_job_pickling()
+    project, meta_kind, state = plugin._get_args_for_child_job_pickling()
+    assert project
+    assert meta_kind
+
+    factories = [
+        project.config.element_factory,
+        project.first_pass_config.element_factory,
+        project.config.source_factory,
+        project.first_pass_config.source_factory,
+    ]
+
+    print("plugin:", plugin)
+    print("factories:", factories)
+
+    factory = None
+    for f in factories:
+        if f is None:
+            continue
+        for cls, _ in f.all_loaded_plugins():
+            print(f, "comparing", type(plugin), cls)
+            if type(plugin) == cls:
+                factory = f
+
+    if factory is None:
+        raise Exception("Couldn't find plugin in factories")
+
     args = (factory, meta_kind)
     return (_new_plugin_from_reduction_args, args, state)
 

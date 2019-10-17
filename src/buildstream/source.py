@@ -1131,7 +1131,8 @@ class Source(Plugin):
         #   o The code sketch of how pickling works also returns `self.__dict__`:
         #     https://docs.python.org/3/library/pickle.html#pickling-class-instances
         #
-        return factory, self.__meta_kind, self.__dict__
+        # return factory, self.__meta_kind, self.__dict__
+        return self._get_project(), self.__meta_kind, self.__dict__
 
     #############################################################
     #                   Local Private Methods                   #
