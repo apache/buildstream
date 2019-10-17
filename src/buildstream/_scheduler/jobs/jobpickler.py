@@ -23,6 +23,7 @@ import io
 import pickle
 
 from ..._protos.buildstream.v2.artifact_pb2 import Artifact as ArtifactProto
+from ..._protos.build.bazel.remote.execution.v2.remote_execution_pb2 import Digest as DigestProto
 
 # BuildStream toplevel imports
 from ..._loader import Loader
@@ -100,6 +101,7 @@ def pickle_child_job(child_job, projects):
     for cls in source_classes:
         pickler.dispatch_table[cls] = _reduce_plugin
     pickler.dispatch_table[ArtifactProto] = _reduce_artifact_proto
+    pickler.dispatch_table[DigestProto] = _reduce_digest_proto
     pickler.dispatch_table[Loader] = _reduce_object
     pickler.dispatch_table[Messenger] = _reduce_object
 
@@ -123,6 +125,18 @@ def _reduce_artifact_proto(instance):
 
 def _new_artifact_proto_from_reduction_args(data):
     instance = ArtifactProto()
+    instance.ParseFromString(data)
+    return instance
+
+
+def _reduce_digest_proto(instance):
+    assert isinstance(instance, DigestProto)
+    data = instance.SerializeToString()
+    return (_new_digest_proto_from_reduction_args, (data,))
+
+
+def _new_digest_proto_from_reduction_args(data):
+    instance = DigestProto()
     instance.ParseFromString(data)
     return instance
 
