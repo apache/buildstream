@@ -54,18 +54,10 @@ class WorkspaceSource(Source):
 
         # Cached unique key
         self.__unique_key = None
-        # the element source objects from the specified metasources
-        self.__element_sources = []
         # the digest of the Directory following the import of the workspace
         self.__digest = None
         # the CasBasedDirectory which the path is imported into
         self.__cas_dir = None
-
-    def set_element_sources(self, _element_sources: [Source]) -> None:
-        self.__element_sources = _element_sources
-
-    def get_element_sources(self) -> [Source]:
-        return self.__element_sources
 
     def track(self) -> SourceRef:
         return None
@@ -76,8 +68,7 @@ class WorkspaceSource(Source):
         self.__digest = node.get_str('ref')
 
     def preflight(self) -> None:
-        for source in self.get_element_sources():
-            source.preflight()
+        pass  # pragma: nocover
 
     def get_ref(self) -> None:
         return None

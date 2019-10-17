@@ -442,41 +442,34 @@ class Loader():
         elt_provenance = node.get_provenance()
         meta_sources = []
 
-        sources = node.get_sequence(Symbol.SOURCES, default=[])
         element_kind = node.get_str(Symbol.KIND)
 
-        def make_metasource(_index, _source, skip_workspace=True):
-            kind = _source.get_str(Symbol.KIND)
-            # the workspace source plugin cannot be used unless the element is workspaced
-            if kind == 'workspace' and skip_workspace:
-                return None
-
-            del _source[Symbol.KIND]
-
-            # Directory is optional
-            directory = _source.get_str(Symbol.DIRECTORY, default=None)
-            if directory:
-                del _source[Symbol.DIRECTORY]
-
-            return MetaSource(element.name, _index, element_kind, kind, _source, directory)
-
-        for index, source in enumerate(sources):
-            meta_source = make_metasource(index, source)
-            if meta_source:
-                meta_sources.append(meta_source)
-
         # if there's a workspace for this element then just append a dummy workspace
-        # metasources. When sources are instantiated, the workspace will own the
-        # element sources. These can then be referred to when resetting or similar operations.
+        # metasource.
         workspace = self._context.get_workspaces().get_workspace(element.name)
+        skip_workspace = True
         if workspace and not ignore_workspaces:
             workspace_node = {'kind': 'workspace'}
             workspace_node['path'] = workspace.get_absolute_path()
             workspace_node['ref'] = str(workspace.to_dict().get('last_successful', 'ignored'))
-            sources.append(workspace_node)
-            meta_source = make_metasource(len(sources), sources.mapping_at(-1), False)
-            if meta_source:
-                meta_sources.append(meta_source)
+            node[Symbol.SOURCES] = [workspace_node]
+            skip_workspace = False
+
+        sources = node.get_sequence(Symbol.SOURCES, default=[])
+        for index, source in enumerate(sources):
+            kind = source.get_str(Symbol.KIND)
+            # the workspace source plugin cannot be used unless the element is workspaced
+            if kind == 'workspace' and skip_workspace:
+                continue
+
+            del source[Symbol.KIND]
+
+            # Directory is optional
+            directory = source.get_str(Symbol.DIRECTORY, default=None)
+            if directory:
+                del source[Symbol.DIRECTORY]
+            meta_source = MetaSource(element.name, index, element_kind, kind, source, directory)
+            meta_sources.append(meta_source)
 
         meta_element = MetaElement(self.project, element.name, element_kind,
                                    elt_provenance, meta_sources,

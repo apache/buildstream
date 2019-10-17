@@ -1025,22 +1025,11 @@ class Element(Plugin):
 
             redundant_ref = source._load_ref()
 
-            if meta_source.kind == 'workspace':
-                _workspace_source = source
-                continue
-
             element.__sources.append(source)
 
             # Collect redundant refs which occurred at load time
             if redundant_ref is not None:
                 cls.__redundant_source_refs.append((source, redundant_ref))
-
-        # workspace handling: if the metasources included a workspace source, then
-        # this should replace the element.__sources and should in turn own those sources
-        # directly
-        if _workspace_source is not None:
-            _workspace_source.set_element_sources(element.__sources)
-            element.__sources = [_workspace_source]
 
         # Instantiate dependencies
         for meta_dep in meta.dependencies:
