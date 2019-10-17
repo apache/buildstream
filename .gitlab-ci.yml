@@ -198,7 +198,8 @@ tests-spawn-multiprocessing-start-method:
     - mkdir -p "${INTEGRATION_CACHE}"
     - useradd -Um buildstream
     - chown -R buildstream:buildstream .
-    - su buildstream -c "tox -- -n 2 tests/{cachekey,internals,plugins}"
+    # - su buildstream -c "tox -- -n 2 tests/{cachekey,internals,plugins}"
+    - su buildstream -c "tox -- -n 2 tests/"
 
 # Run type checkers
 mypy:
