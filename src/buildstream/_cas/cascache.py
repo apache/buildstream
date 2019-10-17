@@ -140,25 +140,21 @@ class CASCache():
         assert self._casd_process, "CASCache was instantiated without buildbox-casd"
 
         if not self._casd_channel:
+            while not os.path.exists(self._casd_socket_path):
+                # casd is not ready yet, try again after a 10ms delay,
+                # but don't wait for more than 15s
+                if time.time() > self._casd_start_time + 15:
+                    raise CASCacheError("Timed out waiting for buildbox-casd to become ready")
+
+                time.sleep(0.01)
+
             self._casd_channel = grpc.insecure_channel('unix:' + self._casd_socket_path)
             self._casd_cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self._casd_channel)
             self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
 
             # Call GetCapabilities() to establish connection to casd
             capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self._casd_channel)
-            while True:
-                try:
-                    capabilities.GetCapabilities(remote_execution_pb2.GetCapabilitiesRequest())
-                    break
-                except grpc.RpcError as e:
-                    if e.code() == grpc.StatusCode.UNAVAILABLE:
-                        # casd is not ready yet, try again after a 10ms delay,
-                        # but don't wait for more than 15s
-                        if time.time() < self._casd_start_time + 15:
-                            time.sleep(1 / 100)
-                            continue
-
-                    raise
+            capabilities.GetCapabilities(remote_execution_pb2.GetCapabilitiesRequest())
 
     # _get_cas():
     #
