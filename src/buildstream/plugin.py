@@ -726,6 +726,9 @@ class Plugin():
         raise NotImplementedError("{tag} plugin '{kind}' does not implement _get_args_for_child_job_pickling()".format(
             tag=self.__type_tag, kind=self.get_kind()))
 
+    def __getstate__(self):
+        raise Exception("Do not pickle plugins")
+
     #############################################################
     #                     Local Private Methods                 #
     #############################################################
