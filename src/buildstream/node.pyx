@@ -1437,7 +1437,7 @@ cdef class ProvenanceInformation:
         cdef __FileInfo fileinfo
 
         self._node = nodeish
-        if (nodeish is None) or (nodeish.file_index == _SYNTHETIC_FILE_INDEX):
+        if (nodeish is None) or (nodeish.file_index == _SYNTHETIC_FILE_INDEX) or not __FILE_LIST:
             self._filename = ""
             self._shortname = ""
             self._displayname = ""
