@@ -198,16 +198,7 @@ tests-spawn-multiprocessing-start-method:
     - mkdir -p "${INTEGRATION_CACHE}"
     - useradd -Um buildstream
     - chown -R buildstream:buildstream .
-    - echo 'start method'
-    - echo 'start method'
-    - echo 'start method'
-    - su buildstream -c "python3 -c 'import multiprocessing; print(multiprocessing.get_start_method(allow_none=True))'"
-    - echo '/start method'
-    - echo '/start method'
-    - echo '/start method'
-    # - su buildstream -c "tox -- tests/artifactcache/expiry.py"
-    # - su buildstream -c "tox -- tests/artifactcache"
-    - su buildstream -c "tox -- --integration tests/"
+    - su buildstream -c "tox -- tests/{cachekey,internals,plugins}"
 
 # Run type checkers
 mypy:
