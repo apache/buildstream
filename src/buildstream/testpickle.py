@@ -20,7 +20,7 @@ class TestPickler:
         except bdb.BdbQuit:
             raise
         except Exception:
-            # breakpoint()
+            breakpoint()
             raise
 
     def _pickle(self, obj):
