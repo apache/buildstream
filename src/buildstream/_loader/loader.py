@@ -633,11 +633,7 @@ class Loader():
                 LoadErrorReason.INVALID_JUNCTION)
 
         element = Element._new_from_meta(meta_element)
-        element._update_source_state()
-        # FIXME: We're doubly updating here for the moment; this
-        # should be removed once we don't need the entirety of
-        # _update_state() anymore
-        element._update_state()
+        element._initialize_state()
 
         # If this junction element points to a sub-sub-project, we need to
         # find loader for that project.

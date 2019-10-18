@@ -1251,6 +1251,16 @@ class Element(Plugin):
         # cache cannot be queried until strict cache key is available
         return self.__strict_cache_key is not None
 
+    def _initialize_state(self):
+        # assert not self._resolved_initial_state, "_initialize_state() should only be called once"
+        self._resolved_initial_state = True
+
+        self._update_source_state()
+        # FIXME: This should be unrolled; currently we're doing the
+        # work twice because _update_source_state() *probably* calls
+        # it, but might not.
+        self._update_state()
+
     # _update_state()
     #
     # Keep track of element state. Calculate cache keys if possible and
@@ -1259,8 +1269,9 @@ class Element(Plugin):
     # This must be called whenever the state of an element may have changed.
     #
     def _update_state(self):
-        if not self._resolved_initial_state:
-            self._resolved_initial_state = True
+        # assert self._resolved_initial_state, "_initialize_state() should be called first"
+        self._resolved_initial_state = True
+
         context = self._get_context()
 
         if self._get_consistency() == Consistency.INCONSISTENT:
