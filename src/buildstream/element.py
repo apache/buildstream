@@ -1221,6 +1221,73 @@ class Element(Plugin):
         # cache cannot be queried until strict cache key is available
         return self.__strict_cache_key is not None
 
+    # _initialize_state()
+    #
+    # Compute up the elment's initial state. Element state contains
+    # the following mutable sub-states:
+    #
+    # - Source state
+    # - Artifact cache key
+    #   - Source key
+    #     - Integral component of the cache key
+    #     - Computed as part of the source state
+    # - Artifact state
+    #   - Cache key
+    #     - Must be known to compute this state
+    # - Build status
+    #   - Artifact state
+    #     - Must be known before we can decide whether to build
+    #
+    # Note that sub-states are dependent on each other, and changes to
+    # one state will effect changes in the next.
+    #
+    # Changes to these states can be caused by numerous things,
+    # notably jobs executed in sub-processes. Changes are performed by
+    # invocations of the following methods:
+    #
+    # - __update_source_state()
+    #   - Computes the state of all sources of the element.
+    # - __update_cache_keys()
+    #   - Computes the strong and weak cache keys.
+    # - _update_artifact_state()
+    #   - Computes the state of the element's artifact using the
+    #     cache key.
+    # - __schedule_assemble()
+    #   - Schedules assembly of an element, iff its current state
+    #     allows/necessitates it
+    # - __update_cache_key_non_strict()
+    #   - Sets strict cache keys in non-strict builds
+    #     - Some non-strict build actions can create artifacts
+    #       compatible with strict mode (such as pulling), so
+    #       this needs to be done
+    #
+    # When any one of these methods are called and cause a change,
+    # they will invoke methods that have a potential dependency on
+    # them, causing the state change to bubble through all potential
+    # side effects.
+    #
+    # *This* method starts the process by invoking
+    # `__update_source_state()`, which will cause all necessary state
+    # changes. Other functions should use the appropriate methods and
+    # only update what they expect to change - this will ensure that
+    # the minimum amount of work is done.
+    #
+    def _initialize_state(self):
+        assert not self._resolved_initial_state, "_initialize_state() should only be called once"
+        self._resolved_initial_state = True
+
+        # FIXME: It's possible that we could call a less broad method
+        # here if we could get the source cache key without updating
+        # the full source state.
+        # FIXME: Currently this method may cause recursion through
+        # `self.__update_strict_cache_key_of_rdeps()`, since this may
+        # invoke reverse dependencies' cache key updates
+        # recursively. This is necessary when we update keys after a
+        # pull/build, however should not occur during initialization
+        # (since we will eventualyl visit reverse dependencies during
+        # our initialization anyway).
+        self._update_source_state()
+
     # _update_state()
     #
     # Keep track of element state. Calculate cache keys if possible and
@@ -1229,8 +1296,6 @@ class Element(Plugin):
     # This must be called whenever the state of an element may have changed.
     #
     def _update_state(self):
-        if not self._resolved_initial_state:
-            self._resolved_initial_state = True
         context = self._get_context()
 
         if self._get_consistency() == Consistency.INCONSISTENT:
@@ -3242,9 +3307,6 @@ class Element(Plugin):
                     assert not rdep.__build_deps_without_strict_cache_key < 0
 
                     if rdep.__build_deps_without_strict_cache_key == 0:
-                        # FIXME: Get to the bottom of why we need
-                        # source cache keys to be updated here
-                        rdep._update_source_state()
                         rdep._update_state()
 
     # __update_ready_for_runtime()
@@ -3280,9 +3342,6 @@ class Element(Plugin):
                     assert not rdep.__build_deps_without_cache_key < 0
 
                     if rdep.__build_deps_without_cache_key == 0:
-                        # FIXME: Get to the bottom of why we need
-                        # source cache keys to be updated here
-                        rdep._update_source_state()
                         rdep._update_state()
 
                 # If the element is cached, and has all of its runtime dependencies cached,

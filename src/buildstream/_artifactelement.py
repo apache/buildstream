@@ -78,10 +78,9 @@ class ArtifactElement(Element):
             return cls.__instantiated_artifacts[ref]
 
         artifact_element = ArtifactElement(context, ref)
-        # XXX: We need to call update state as it is responsible for
+        # XXX: We need to call initialize_state as it is responsible for
         # initialising an Element/ArtifactElement's Artifact (__artifact)
-        artifact_element._update_source_state()
-        artifact_element._update_state()
+        artifact_element._initialize_state()
         cls.__instantiated_artifacts[ref] = artifact_element
 
         for dep_ref in artifact_element.get_dependency_refs(Scope.BUILD):
