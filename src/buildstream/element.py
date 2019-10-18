@@ -1014,9 +1014,6 @@ class Element(Plugin):
         element = meta.project.create_element(meta, first_pass=meta.first_pass)
         cls.__instantiated_elements[meta] = element
 
-        # do the metasources include a workspace source?
-        _workspace_source = None
-
         # Instantiate sources and generate their keys
         for meta_source in meta.sources:
             meta_source.first_pass = meta.is_junction
