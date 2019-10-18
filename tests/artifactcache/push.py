@@ -37,6 +37,7 @@ def _push(cli, cache_dir, project_dir, config_file, target):
         # as this test does not use the cli frontend.
         for e in element.dependencies(Scope.ALL):
             # Determine initial element state.
+            e._update_source_state()
             e._update_state()
 
         # Manually setup the CAS remotes

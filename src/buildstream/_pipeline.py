@@ -147,6 +147,7 @@ class Pipeline:
             for element in self.dependencies(targets, Scope.ALL):
                 # Determine initial element state.
                 if not element._resolved_initial_state:
+                    element._update_source_state()
                     element._update_state()
 
                 # We may already have Elements which are cached and have their runtimes

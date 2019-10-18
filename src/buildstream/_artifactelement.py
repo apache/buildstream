@@ -80,6 +80,7 @@ class ArtifactElement(Element):
         artifact_element = ArtifactElement(context, ref)
         # XXX: We need to call update state as it is responsible for
         # initialising an Element/ArtifactElement's Artifact (__artifact)
+        artifact_element._update_source_state()
         artifact_element._update_state()
         cls.__instantiated_artifacts[ref] = artifact_element
 
