@@ -1263,9 +1263,6 @@ class Element(Plugin):
             self._resolved_initial_state = True
         context = self._get_context()
 
-        # Compute and determine consistency of sources
-        self.__update_source_state()
-
         if self._get_consistency() == Consistency.INCONSISTENT:
             # Tracking may still be pending
             return
@@ -1354,7 +1351,7 @@ class Element(Plugin):
 
         self.__tracking_scheduled = False
 
-        self._update_state()
+        self._update_source_state()
 
     # _track():
     #
@@ -1785,7 +1782,7 @@ class Element(Plugin):
         # Fetching cannot change the source state from INCONSISTENT to CACHED because
         # we prevent fetching when it's INCONSISTENT.
         # Therefore, only the source state will change.
-        self.__update_source_state()
+        self._update_source_state()
 
     # _pull_pending()
     #
@@ -2392,7 +2389,7 @@ class Element(Plugin):
     #                   Private Local Methods                   #
     #############################################################
 
-    # __update_source_state()
+    # _update_source_state()
     #
     # Updates source consistency state
     #
@@ -2400,12 +2397,13 @@ class Element(Plugin):
     # cache keys, because the source's ref, whether defined in yaml or
     # from the workspace, is a component of the element's cache keys.
     #
-    def __update_source_state(self):
+    def _update_source_state(self):
 
         # Cannot resolve source state until tracked
         if self.__tracking_scheduled:
             return
 
+        old_consistency = self.__consistency
         self.__consistency = Consistency.CACHED
         workspace = self._get_workspace()
 
@@ -2424,6 +2422,9 @@ class Element(Plugin):
             for source in self.__sources:
                 source._update_state()
                 self.__consistency = min(self.__consistency, source._get_consistency())
+
+        if old_consistency != self.__consistency:
+            self._update_state()
 
     # __can_build_incrementally()
     #
@@ -3243,6 +3244,9 @@ class Element(Plugin):
                     assert not rdep.__build_deps_without_strict_cache_key < 0
 
                     if rdep.__build_deps_without_strict_cache_key == 0:
+                        # FIXME: Get to the bottom of why we need
+                        # source cache keys to be updated here
+                        rdep._update_source_state()
                         rdep._update_state()
 
     # __update_ready_for_runtime()
@@ -3279,6 +3283,9 @@ class Element(Plugin):
                     assert not rdep.__build_deps_without_cache_key < 0
 
                     if rdep.__build_deps_without_cache_key == 0:
+                        # FIXME: Get to the bottom of why we need
+                        # source cache keys to be updated here
+                        rdep._update_source_state()
                         rdep._update_state()
 
                 # If the element is cached, and has all of its runtime dependencies cached,
