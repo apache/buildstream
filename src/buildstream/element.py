@@ -1302,7 +1302,6 @@ class Element(Plugin):
             # Tracking may still be pending
             return
 
-        self.__update_cache_keys()
         self.__update_artifact_state()
 
         # If the element wasn't assembled and isn't scheduled to be assemble,
@@ -2474,8 +2473,10 @@ class Element(Plugin):
             source._update_state()
             self.__consistency = min(self.__consistency, source._get_consistency())
 
+        # If the source state changes, our cache key must also change,
+        # since it contains the source's key.
         if old_consistency != self.__consistency:
-            self._update_state()
+            self.__update_cache_keys()
 
     # __can_build_incrementally()
     #
@@ -3151,17 +3152,26 @@ class Element(Plugin):
     # Note that it does not update *all* cache keys - In non-strict mode, the
     # strong cache key is updated in __update_cache_key_non_strict()
     #
-    # If the cache keys are not stable (i.e. workspace that isn't cached),
-    # then cache keys are erased.
-    # Otherwise, the weak and strict cache keys will be calculated if not
-    # already set.
-    # The weak cache key is a cache key that doesn't necessarily change when
-    # its dependencies change, useful for avoiding full rebuilds when one's
-    # dependencies guarantee stability across versions.
-    # The strict cache key is a cache key that changes if any build-dependency
-    # has changed.
+    # If the element's consistency is Consistency.INCONSISTENT this is
+    # a no-op (since inconsistent elements cannot have cache keys).
+    #
+    # The weak and strict cache keys will be calculated if not already
+    # set.
+    #
+    # The weak cache key is a cache key that doesn't change when its
+    # runtime dependencies change, useful for avoiding full rebuilds
+    # when one's dependencies guarantee stability across
+    # versions. Changes in build dependencies still force a rebuild,
+    # since those will change the built artifact directly.
+    #
+    # The strict cache key is a cache key that changes if any
+    # dependency has changed.
     #
     def __update_cache_keys(self):
+        if self._get_consistency() == Consistency.INCONSISTENT:
+            # Tracking may still be pending
+            return
+
         context = self._get_context()
 
         if self.__weak_cache_key is None:
@@ -3211,6 +3221,12 @@ class Element(Plugin):
         if self.__strict_cache_key is not None and self.__can_query_cache_callback is not None:
             self.__can_query_cache_callback(self)
             self.__can_query_cache_callback = None
+
+        # If we've newly calculated a cache key, our artifact's
+        # current state will also change - after all, we can now find
+        # a potential existing artifact.
+        if self.__weak_cache_key is not None or self.__strict_cache_key is not None:
+            self._update_state()
 
     # __update_artifact_state()
     #
@@ -3307,7 +3323,7 @@ class Element(Plugin):
                     assert not rdep.__build_deps_without_strict_cache_key < 0
 
                     if rdep.__build_deps_without_strict_cache_key == 0:
-                        rdep._update_state()
+                        rdep.__update_cache_keys()
 
     # __update_ready_for_runtime()
     #
@@ -3342,7 +3358,7 @@ class Element(Plugin):
                     assert not rdep.__build_deps_without_cache_key < 0
 
                     if rdep.__build_deps_without_cache_key == 0:
-                        rdep._update_state()
+                        rdep.__update_cache_keys()
 
                 # If the element is cached, and has all of its runtime dependencies cached,
                 # now that we have the cache key, we are able to notify reverse dependencies
