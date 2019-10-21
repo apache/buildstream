@@ -70,6 +70,7 @@ class NotificationType(FastEnum):
     TASK_GROUPS = "task_groups"
     ELEMENT_TOTALS = "element_totals"
     FINISH = "finish"
+    SIGTSTP = "sigstp"
 
 
 # Notification()
@@ -536,8 +537,10 @@ class Scheduler():
         if self.terminated:
             return
 
-        notification = Notification(NotificationType.INTERRUPT)
-        self._notify_front(notification)
+        if not self._notify_front_queue:
+            # Not running in a subprocess, scheduler process to handle keyboard interrupt
+            notification = Notification(NotificationType.INTERRUPT)
+            self._notify_front(notification)
 
     # _terminate_event():
     #
@@ -629,6 +632,8 @@ class Scheduler():
             self.jobs_unsuspended()
         elif notification.notification_type == NotificationType.RETRY:
             self._failure_retry(notification.job_action, notification.element)
+        elif notification.notification_type == NotificationType.SIGTSTP:
+            self._suspend_event()
         else:
             raise ValueError("Unrecognised notification type received")
 

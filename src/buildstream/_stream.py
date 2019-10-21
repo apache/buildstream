@@ -30,6 +30,7 @@ import shutil
 import tarfile
 import tempfile
 import queue
+import signal
 from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
 
@@ -150,17 +151,17 @@ class Stream():
         # We can now launch another async
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
+        self._connect_signals()
         self._start_listening()
         self.loop.set_exception_handler(self._handle_exception)
         self._watch_casd()
         self.loop.run_forever()
 
-        # TODO connect signal handlers with asyncio
-
         # Scheduler has stopped running, so safe to still have async here
         self._stop_listening()
         self._stop_watching_casd()
         self.loop.close()
+        self._disconnect_signals()
         self.loop = None
         self._subprocess.join()
         self._subprocess = None
@@ -1221,10 +1222,14 @@ class Stream():
         # Send the notification to suspend jobs
         notification = Notification(NotificationType.SUSPEND)
         self._notify_back(notification)
+        # Disconnect signals if stream is handling them
+        self._disconnect_signals()
         yield
         # Unsuspend jobs on context exit
         notification = Notification(NotificationType.UNSUSPEND)
         self._notify_back(notification)
+        # Connect signals if stream is handling them
+        self._connect_signals()
 
     #############################################################
     #                    Private Methods                        #
@@ -1834,6 +1839,18 @@ class Stream():
         # Add it to context
         self._context._subprocess_exception = exception
         self.loop.stop()
+
+    def _connect_signals(self):
+        if self.loop:
+            self.loop.add_signal_handler(signal.SIGINT, self._interrupt_callback)
+            self.loop.add_signal_handler(signal.SIGTERM, lambda: self._notify_back(Notification(NotificationType.TERMINATE)))
+            self.loop.add_signal_handler(signal.SIGTSTP, lambda: self._notify_back(Notification(NotificationType.SIGTSTP)))
+
+    def _disconnect_signals(self):
+        if self.loop:
+            self.loop.remove_signal_handler(signal.SIGINT)
+            self.loop.remove_signal_handler(signal.SIGTSTP)
+            self.loop.remove_signal_handler(signal.SIGTERM)
 
     def __getstate__(self):
         # The only use-cases for pickling in BuildStream at the time of writing
