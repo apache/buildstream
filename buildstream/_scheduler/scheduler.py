@@ -143,6 +143,12 @@ class Scheduler():
         # not `SafeChildWatcher`.
         asyncio.set_child_watcher(asyncio.SafeChildWatcher())
 
+        # NOTE: Enforce use of `SafeChildWatcher` as we generally don't want
+        # background threads.
+        # In Python 3.8+, `ThreadedChildWatcher` is the default watcher, and
+        # not `SafeChildWatcher`.
+        asyncio.set_child_watcher(asyncio.SafeChildWatcher())
+
         # Ensure that we have a fresh new event loop, in case we want
         # to run another test in this thread.
         self.loop = asyncio.new_event_loop()
