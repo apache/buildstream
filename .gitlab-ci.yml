@@ -223,6 +223,33 @@ lint:
   except:
   - schedules
 
+# Catch regressions in native windows support
+tests-win32-master:
+  stage: test
+  variables:
+    LC_ALL: C.UTF-8
+    LANG: C.UTF-8
+  tags:
+  - win32
+  script:
+  - tox -e win32
+  only:
+  - master
+
+# Optional test to catch regressions in native windows support on non-master branches
+tests-win32-non-master:
+  stage: test
+  variables:
+    LC_ALL: C.UTF-8
+    LANG: C.UTF-8
+  tags:
+  - win32
+  script:
+  - tox -e win32
+  except:
+  - master
+  when: manual
+
 tests-wsl-master:
   stage: test
   variables:
