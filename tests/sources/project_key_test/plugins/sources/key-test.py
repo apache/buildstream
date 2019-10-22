@@ -1,3 +1,5 @@
+import os
+
 from buildstream import Source, Consistency
 
 
@@ -5,15 +7,11 @@ class KeyTest(Source):
     """ This plugin should fail if get_unique_key is called before track
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.ref = False
-
     def preflight(self):
         pass
 
     def configure(self, node):
-        pass
+        self.ref = node.get_bool("ref", False)
 
     def get_unique_key(self):
         assert self.ref
@@ -29,19 +27,21 @@ class KeyTest(Source):
         pass
 
     def get_ref(self):
-        pass
+        return self.ref
 
     def set_ref(self, ref, node):
-        pass
+        node["ref"] = self.ref = ref
 
     def track(self, **kwargs):
-        self.ref = True
+        return True
 
     def fetch(self, **kwargs):
         pass
 
     def stage(self, directory):
-        pass
+        # Create a dummy file as output, as import elements do not allow empty
+        # output. Its existence is a statement that we have staged ourselves.
+        open(os.path.join(directory, "output"), "w").close()
 
 
 def setup():
