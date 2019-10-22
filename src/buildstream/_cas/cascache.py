@@ -113,6 +113,7 @@ class CASCache():
         self._casd_channel = None
         self._casd_cas = None
         self._local_cas = None
+        self._cache_usage_monitor_forbidden = False
         self._cache_usage_monitor = None
 
     def __getstate__(self):
@@ -122,6 +123,14 @@ class CASCache():
         # need the information whether a casd subprocess was started or not.
         assert '_casd_process' in state
         state['_casd_process'] = bool(self._casd_process)
+
+        # The usage monitor is not pickle-able, but we also don't need it in
+        # child processes currently. Make sure that if this changes, we get a
+        # bug report, by setting _cache_usage_monitor_forbidden.
+        assert '_cache_usage_monitor' in state
+        assert '_cache_usage_monitor_forbidden' in state
+        state['_cache_usage_monitor'] = None
+        state['_cache_usage_monitor_forbidden'] = True
 
         return state
 
@@ -1046,6 +1055,7 @@ class CASCache():
     #
     def get_cache_usage(self):
         if not self._cache_usage_monitor:
+            assert not self._cache_usage_monitor_forbidden
             self._cache_usage_monitor = _CASCacheUsageMonitor(self)
 
         return self._cache_usage_monitor.get_cache_usage()
