@@ -79,6 +79,11 @@ class CASCache():
         os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
 
+        self._casd_channel = None
+        self._casd_cas = None
+        self._local_cas = None
+        self._cache_usage_monitor = None
+
         if casd:
             # Place socket in global/user temporary directory to avoid hitting
             # the socket path length limit.
@@ -107,13 +112,10 @@ class CASCache():
                 with _signals.blocked([signal.SIGINT], ignore=False):
                     self._casd_process = subprocess.Popen(
                         casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT)
+
+            self._cache_usage_monitor = _CASCacheUsageMonitor.create_cas_usage_monitor(self)
         else:
             self._casd_process = None
-
-        self._casd_channel = None
-        self._casd_cas = None
-        self._local_cas = None
-        self._cache_usage_monitor = None
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -1045,9 +1047,6 @@ class CASCache():
     #     (CASCacheUsage): The current status
     #
     def get_cache_usage(self):
-        if not self._cache_usage_monitor:
-            self._cache_usage_monitor = _CASCacheUsageMonitor(self)
-
         return self._cache_usage_monitor.get_cache_usage()
 
     # get_casd_process()
@@ -1100,6 +1099,15 @@ class _CASCacheUsage():
 # buildbox-casd.
 #
 class _CASCacheUsageMonitor:
+
+    #  FIXME: SemaphoreTracker crashes when triggered via spawn and used in
+    #  tests using fork.
+    @classmethod
+    def create_cas_usage_monitor(cls, cas):
+        if multiprocessing.get_start_method() == 'spawn':
+            return None
+        return cls(cas)
+
     def __init__(self, cas):
         self.cas = cas
 
