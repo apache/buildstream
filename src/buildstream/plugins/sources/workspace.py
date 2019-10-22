@@ -48,6 +48,7 @@ class WorkspaceSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
     BST_STAGE_VIRTUAL_DIRECTORY = True
+    BST_NO_PRESTAGE_KEY = True
 
     def __init__(self, context, project, meta) -> None:
         super().__init__(context, project, meta)
@@ -56,8 +57,6 @@ class WorkspaceSource(Source):
         self.__unique_key = None
         # the digest of the Directory following the import of the workspace
         self.__digest = None
-        # the CasBasedDirectory which the path is imported into
-        self.__cas_dir = None
 
     def track(self) -> SourceRef:
         return None
@@ -79,23 +78,6 @@ class WorkspaceSource(Source):
     def set_ref(self, ref: SourceRef, node: MappingNode) -> None:
         pass  # pragma: nocover
 
-    def get_unique_key(self) -> (str, SourceRef):
-        cas = self._get_context().get_cascache()
-
-        if self.__cas_dir is None:
-            self.__cas_dir = CasBasedDirectory(cas)
-
-        if self.__digest is None:
-
-            with self.timed_activity("Staging local files into CAS"):
-                result = self.__cas_dir.import_files(self.path)
-                if result.overwritten or result.ignored:
-                    raise SourceError(
-                        "Failed to stage source: files clash with existing directory",
-                        reason='ensure-stage-dir-fail')
-                self.__digest = self.__cas_dir._get_digest().hash
-        return (self.path, self.__digest)
-
     # init_workspace()
     #
     # Raises AssertionError: existing workspaces should not be reinitialized
@@ -110,11 +92,9 @@ class WorkspaceSource(Source):
         pass  # pragma: nocover
 
     def stage(self, directory: Directory) -> None:
-        # directory should always be a Directory object
         assert isinstance(directory, Directory)
-        assert isinstance(self.__cas_dir, CasBasedDirectory)
-        with self.timed_activity("Staging Workspace files"):
-            result = directory.import_files(self.__cas_dir)
+        with self.timed_activity("Staging local files"):
+            result = directory.import_files(self.path)
 
             if result.overwritten or result.ignored:
                 raise SourceError(
