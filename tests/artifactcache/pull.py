@@ -33,7 +33,6 @@ def tree_maker(cas, tree, directory):
         tree_maker(cas, tree, child_directory)
 
 
-@pytest.mark.in_subprocess
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull(cli, tmpdir, datafiles):
     project_dir = str(datafiles)
@@ -105,7 +104,6 @@ def test_pull(cli, tmpdir, datafiles):
             assert cli.artifact.is_cached(cache_dir, element, element_key)
 
 
-@pytest.mark.in_subprocess
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull_tree(cli, tmpdir, datafiles):
     project_dir = str(datafiles)

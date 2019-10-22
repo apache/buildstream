@@ -25,7 +25,6 @@ def setup_backend(backend_class, tmpdir):
             cas_cache.release_resources()
 
 
-@pytest.mark.in_subprocess
 @pytest.mark.parametrize("backend", [
     FileBasedDirectory, CasBasedDirectory])
 @pytest.mark.datafiles(DATA_DIR)
@@ -39,7 +38,6 @@ def test_import(tmpdir, datafiles, backend):
         assert "bin/hello" in c.list_relative_paths()
 
 
-@pytest.mark.in_subprocess
 @pytest.mark.parametrize("backend", [
     FileBasedDirectory, CasBasedDirectory])
 @pytest.mark.datafiles(DATA_DIR)

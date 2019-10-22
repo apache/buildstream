@@ -233,14 +233,12 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
         cas_cache.release_resources()
 
 
-@pytest.mark.in_subprocess
 @pytest.mark.parametrize("original", range(1, len(root_filesets) + 1))
 @pytest.mark.parametrize("overlay", range(1, len(root_filesets) + 1))
 def test_fixed_cas_import(tmpdir, original, overlay):
     _import_test(str(tmpdir), original, overlay, generate_import_roots, verify_contents=True)
 
 
-@pytest.mark.in_subprocess
 @pytest.mark.parametrize("original", range(1, NUM_RANDOM_TESTS + 1))
 @pytest.mark.parametrize("overlay", range(1, NUM_RANDOM_TESTS + 1))
 def test_random_cas_import(tmpdir, original, overlay):
@@ -264,20 +262,17 @@ def _listing_test(tmpdir, root, generator_function):
         cas_cache.release_resources()
 
 
-@pytest.mark.in_subprocess
 @pytest.mark.parametrize("root", range(1, NUM_RANDOM_TESTS + 1))
 def test_random_directory_listing(tmpdir, root):
     _listing_test(str(tmpdir), root, generate_random_root)
 
 
-@pytest.mark.in_subprocess
 @pytest.mark.parametrize("root", range(1, len(root_filesets) + 1))
 def test_fixed_directory_listing(tmpdir, root):
     _listing_test(str(tmpdir), root, generate_import_roots)
 
 
 # Check that the vdir is decending and readable
-@pytest.mark.in_subprocess
 def test_descend(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
@@ -304,7 +299,6 @@ def test_descend(tmpdir):
 # Check symlink logic for edgecases
 # Make sure the correct erros are raised when trying
 # to decend in to files or links to files
-@pytest.mark.in_subprocess
 def test_bad_symlinks(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
@@ -338,7 +332,6 @@ def test_bad_symlinks(tmpdir):
 
 # Check symlink logic for edgecases
 # Check decend accross relitive link
-@pytest.mark.in_subprocess
 def test_relative_symlink(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
@@ -364,7 +357,6 @@ def test_relative_symlink(tmpdir):
 
 # Check symlink logic for edgecases
 # Check deccend accross abs link
-@pytest.mark.in_subprocess
 def test_abs_symlink(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
@@ -391,7 +383,6 @@ def test_abs_symlink(tmpdir):
 
 # Check symlink logic for edgecases
 # Check symlink can not escape root
-@pytest.mark.in_subprocess
 def test_bad_sym_escape(tmpdir):
     cas_dir = os.path.join(str(tmpdir), 'cas')
     cas_cache = CASCache(cas_dir)
