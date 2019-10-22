@@ -2158,7 +2158,7 @@ class Element(Plugin):
             }
 
             def __get_source_entry(_source):
-                return {'key': _source._get_unique_key(True),
+                return {'key': _source._get_unique_key(),
                         'name': _source._get_source_name()}
 
             self.__cache_key_dict['sources'] = \

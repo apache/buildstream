@@ -775,16 +775,10 @@ class Source(Plugin):
     #
     # Wrapper for get_unique_key() api
     #
-    # Args:
-    #    include_source (bool): Whether to include the delegated source key
-    #
-    def _get_unique_key(self, include_source):
+    def _get_unique_key(self):
         key = {}
-
         key['directory'] = self.__directory
-        if include_source:
-            key['unique'] = self.get_unique_key()  # pylint: disable=assignment-from-no-return
-
+        key['unique'] = self.get_unique_key()  # pylint: disable=assignment-from-no-return
         return key
 
     # _project_refs():
@@ -1074,11 +1068,11 @@ class Source(Plugin):
             return None
 
     def _generate_key(self, previous_sources):
-        keys = [self._get_unique_key(True)]
+        keys = [self._get_unique_key()]
 
         if self.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
             for previous_source in previous_sources:
-                keys.append(previous_source._get_unique_key(True))
+                keys.append(previous_source._get_unique_key())
 
         self.__key = generate_key(keys)
 
