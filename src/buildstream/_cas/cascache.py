@@ -113,7 +113,7 @@ class CASCache():
                     self._casd_process = subprocess.Popen(
                         casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT)
 
-            self._cache_usage_monitor = _CASCacheUsageMonitor.create_cas_usage_monitor(self)
+            self._cache_usage_monitor = _CASCacheUsageMonitor(self)
         else:
             self._casd_process = None
 
@@ -1099,15 +1099,6 @@ class _CASCacheUsage():
 # buildbox-casd.
 #
 class _CASCacheUsageMonitor:
-
-    #  FIXME: SemaphoreTracker crashes when triggered via spawn and used in
-    #  tests using fork.
-    @classmethod
-    def create_cas_usage_monitor(cls, cas):
-        if multiprocessing.get_start_method() == 'spawn':
-            return None
-        return cls(cas)
-
     def __init__(self, cas):
         self.cas = cas
 
