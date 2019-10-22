@@ -41,8 +41,11 @@ def test_generate_key(cli, datafiles):
     res = cli.run(project=project_dir, args=["build", "key-test.bst"])
     res.assert_main_error(ErrorDomain.PIPELINE, "inconsistent-pipeline")
 
+    assert cli.get_element_state(project_dir, "key-test.bst") == "no reference"
     res = cli.run(project=project_dir, args=["source", "track", "key-test.bst"])
     res.assert_success()
+    assert cli.get_element_state(project_dir, "key-test.bst") == "fetch needed"
 
     res = cli.run(project=project_dir, args=["build", "--track", "key-test.bst"])
     res.assert_success()
+    assert cli.get_element_state(project_dir, "key-test.bst") == "cached"
