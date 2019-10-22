@@ -53,7 +53,6 @@ def _push(cli, cache_dir, project_dir, config_file, target):
     return element_key
 
 
-@pytest.mark.in_subprocess
 @pytest.mark.datafiles(DATA_DIR)
 def test_push(cli, tmpdir, datafiles):
     project_dir = str(datafiles)
@@ -87,7 +86,6 @@ def test_push(cli, tmpdir, datafiles):
         assert share.get_artifact(cli.get_artifact_name(project_dir, 'test', 'target.bst', cache_key=element_key))
 
 
-@pytest.mark.in_subprocess
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_split(cli, tmpdir, datafiles):
     project_dir = str(datafiles)
@@ -131,7 +129,6 @@ def test_push_split(cli, tmpdir, datafiles):
         assert storage.get_cas_files(proto) is not None
 
 
-@pytest.mark.in_subprocess
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_message(tmpdir, datafiles):
     project_dir = str(datafiles)

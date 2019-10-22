@@ -32,7 +32,6 @@ from buildstream import utils
 from tests.testutils.artifactshare import create_artifact_share
 
 
-@pytest.mark.in_subprocess
 def test_artifact_get_not_found(tmpdir):
     sharedir = os.path.join(str(tmpdir), "share")
     with create_artifact_share(sharedir) as share:
@@ -54,7 +53,6 @@ def test_artifact_get_not_found(tmpdir):
 
 
 # Successfully getting the artifact
-@pytest.mark.in_subprocess
 @pytest.mark.parametrize("files", ["present", "absent", "invalid"])
 def test_update_artifact(tmpdir, files):
     sharedir = os.path.join(str(tmpdir), "share")
