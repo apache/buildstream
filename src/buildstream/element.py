@@ -3351,30 +3351,41 @@ class Element(Plugin):
     # decrementing the appropriate counters.
     #
     def __update_ready_for_runtime(self):
-        if not self.__ready_for_runtime:
-            if self.__runtime_deps_without_cache_key == 0 and self.__cache_key is not None:
-                self.__ready_for_runtime = True
+        if any(
+            (
+                # We're already ready for runtime; no update required
+                self.__ready_for_runtime,
+                # If not all our dependencies are ready yet, we can't be ready
+                # either.
+                not self.__runtime_deps_without_cache_key == 0,
+                # If our cache state has not been resolved, we can't be ready.
+                self.__cache_key is None,
+            )
+        ):
+            return
 
-                # Notify reverse dependencies
-                for rdep in self.__reverse_runtime_deps:
-                    rdep.__runtime_deps_without_cache_key -= 1
-                    assert not rdep.__runtime_deps_without_cache_key < 0
+        self.__ready_for_runtime = True
 
-                    # If all of our runtimes have cache keys, we can calculate ours
-                    if rdep.__runtime_deps_without_cache_key == 0:
-                        rdep.__update_ready_for_runtime()
+        # Notify reverse dependencies
+        for rdep in self.__reverse_runtime_deps:
+            rdep.__runtime_deps_without_cache_key -= 1
+            assert not rdep.__runtime_deps_without_cache_key < 0
 
-                for rdep in self.__reverse_build_deps:
-                    rdep.__build_deps_without_cache_key -= 1
-                    assert not rdep.__build_deps_without_cache_key < 0
+            # If all of our runtimes have cache keys, we can calculate ours
+            if rdep.__runtime_deps_without_cache_key == 0:
+                rdep.__update_ready_for_runtime()
 
-                    if rdep.__build_deps_without_cache_key == 0:
-                        rdep.__update_cache_keys()
+        for rdep in self.__reverse_build_deps:
+            rdep.__build_deps_without_cache_key -= 1
+            assert not rdep.__build_deps_without_cache_key < 0
 
-                # If the element is cached, and has all of its runtime dependencies cached,
-                # now that we have the cache key, we are able to notify reverse dependencies
-                # that the element it ready. This is a likely trigger for workspaced elements.
-                self._update_ready_for_runtime_and_cached()
+            if rdep.__build_deps_without_cache_key == 0:
+                rdep.__update_cache_keys()
+
+        # If the element is cached, and has all of its runtime dependencies cached,
+        # now that we have the cache key, we are able to notify reverse dependencies
+        # that the element it ready. This is a likely trigger for workspaced elements.
+        self._update_ready_for_runtime_and_cached()
 
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):
