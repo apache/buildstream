@@ -1252,7 +1252,7 @@ class Element(Plugin):
     # - _update_artifact_state()
     #   - Computes the state of the element's artifact using the
     #     cache key.
-    # - __schedule_assemble()
+    # - _schedule_assembly_when_necessary()
     #   - Schedules assembly of an element, iff its current state
     #     allows/necessitates it
     # - __update_cache_key_non_strict()
@@ -1297,21 +1297,6 @@ class Element(Plugin):
     #
     def _update_state(self):
         context = self._get_context()
-
-        # If the element wasn't assembled and isn't scheduled to be assemble,
-        # or cached, or waiting to be pulled but has an artifact then schedule
-        # the assembly.
-        scheduled = self._schedule_assemble()
-
-        if scheduled:
-            # If a build has been scheduled, we know that the element
-            # is not cached and can allow cache query even if the strict cache
-            # key is not available yet.
-            if self.__can_query_cache_callback is not None:
-                self.__can_query_cache_callback(self)
-                self.__can_query_cache_callback = None
-
-            return
 
         if not context.get_strict():
             self.__update_cache_key_non_strict()
@@ -1561,7 +1546,12 @@ class Element(Plugin):
         for dep in self.dependencies(Scope.RUN, recurse=False):
             dep._set_required()
 
-        self._update_state()
+        # When an element becomes required, it must be assembled for
+        # the current pipeline. `_schedule_assembly_when_necessary()`
+        # will abort if some other state prevents it from being built,
+        # and changes to such states will cause re-scheduling, so this
+        # is safe.
+        self._schedule_assembly_when_necessary()
 
         # Callback to the Queue
         if self.__required_callback is not None:
@@ -1598,17 +1588,17 @@ class Element(Plugin):
     def _artifact_files_required(self):
         return self.__artifact_files_required
 
-    # __can_schedule()
+    # __should_schedule()
     #
     # Returns:
     #     bool - Whether the element can be scheduled for a build.
     #
-    def __can_schedule(self):
+    def __should_schedule(self):
         # We're processing if we're already scheduled, we've
         # finished assembling or if we're waiting to pull.
         processing = self.__assemble_scheduled or self.__assemble_done or self._pull_pending()
 
-        # We can schedule when
+        # We should schedule a build when
         return (
             # We're not processing
             not processing
@@ -1623,14 +1613,21 @@ class Element(Plugin):
             not self._cached()
         )
 
-    # _schedule_assemble():
+    # _schedule_assembly_when_necessary():
     #
     # This is called in the main process before the element is assembled
     # in a subprocess.
     #
-    def _schedule_assemble(self):
-        if not self.__can_schedule():
-            return False
+    def _schedule_assembly_when_necessary(self):
+        # FIXME: We could reduce the number of function calls a bit by
+        # factoring this out of this method (and checking whether we
+        # should schedule at the calling end).
+        #
+        # This would make the code less pretty, but it's a possible
+        # optimization if we get desperate enough (and we will ;)).
+        if not self.__should_schedule():
+            self._update_state()
+            return
 
         self.__assemble_scheduled = True
 
@@ -1639,7 +1636,6 @@ class Element(Plugin):
             dep._set_required()
 
         self._update_state()
-        return True
 
     # _assemble_done():
     #
@@ -1892,7 +1888,9 @@ class Element(Plugin):
         self.__strict_artifact.reset_cached()
         self.__artifact.reset_cached()
 
-        self._update_state()
+        # We may not have actually pulled an artifact - the pull may
+        # have failed. We might therefore need to schedule assembly.
+        self._schedule_assembly_when_necessary()
         self._update_ready_for_runtime_and_cached()
 
     # _pull():
@@ -3228,7 +3226,7 @@ class Element(Plugin):
     # to this element.
     #
     # If the state changes, this will subsequently call
-    # `self.__schedule_assemble()` to schedule assembly if it becomes
+    # `self._schedule_assembly_when_necessary()` to schedule assembly if it becomes
     # possible.
     #
     # Element.__update_cache_keys() must be called before this to have
@@ -3244,7 +3242,7 @@ class Element(Plugin):
         if not context.get_strict() and not self.__artifact:
             # We've calculated the weak_key, so instantiate artifact instance member
             self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
-            self._update_state()
+            self._schedule_assembly_when_necessary()
 
         if not self.__strict_cache_key:
             return
@@ -3256,7 +3254,7 @@ class Element(Plugin):
 
             if context.get_strict():
                 self.__artifact = self.__strict_artifact
-                self._update_state()
+                self._schedule_assembly_when_necessary()
             else:
                 self.__update_cache_key_non_strict()
 
