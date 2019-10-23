@@ -26,10 +26,12 @@ from collections import OrderedDict
 # Args:
 #    name (str): The name of the Task Group, e.g. 'build'
 #    state (State): The state object
+#    complete_name (str): Optional name for frontend status rendering, e.g. 'built'
 #
 class TaskGroup():
-    def __init__(self, name, state):
+    def __init__(self, name, state, complete_name=None):
         self.name = name
+        self.complete_name = complete_name
         self.processed_tasks = 0
         self.skipped_tasks = 0
         # NOTE: failed_tasks is a list of strings instead of an integer count
@@ -236,13 +238,14 @@ class State():
     #
     # Args:
     #    name (str): The name of the task group, e.g. 'build'
+    #    complete_name (str): Optional name to be used for frontend status rendering, e.g. 'built'
     #
     # Returns:
     #    TaskGroup: The task group created
     #
-    def add_task_group(self, name):
+    def add_task_group(self, name, complete_name=None):
         assert name not in self.task_groups, "Trying to add task group '{}' to '{}'".format(name, self.task_groups)
-        group = TaskGroup(name, self)
+        group = TaskGroup(name, self, complete_name)
         self.task_groups[name] = group
 
         return group

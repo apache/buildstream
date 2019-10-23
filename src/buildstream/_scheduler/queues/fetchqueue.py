@@ -32,7 +32,7 @@ from ..jobs import JobStatus
 class FetchQueue(Queue):
 
     action_name = "Fetch"
-    complete_name = "Fetched"
+    complete_name = "Sources Fetched"
     resources = [ResourceType.DOWNLOAD]
 
     def __init__(self, scheduler, skip_cached=False, fetch_original=False):

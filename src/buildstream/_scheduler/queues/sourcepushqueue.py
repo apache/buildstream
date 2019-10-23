@@ -27,7 +27,7 @@ from ..._exceptions import SkipJob
 class SourcePushQueue(Queue):
 
     action_name = "Src-push"
-    complete_name = "Sources pushed"
+    complete_name = "Sources Pushed"
     resources = [ResourceType.UPLOAD]
 
     def get_process_func(self):
