@@ -1298,12 +1298,6 @@ class Element(Plugin):
     def _update_state(self):
         context = self._get_context()
 
-        if self._get_consistency() == Consistency.INCONSISTENT:
-            # Tracking may still be pending
-            return
-
-        self.__update_artifact_state()
-
         # If the element wasn't assembled and isn't scheduled to be assemble,
         # or cached, or waiting to be pulled but has an artifact then schedule
         # the assembly.
@@ -3226,12 +3220,16 @@ class Element(Plugin):
         # current state will also change - after all, we can now find
         # a potential existing artifact.
         if self.__weak_cache_key is not None or self.__strict_cache_key is not None:
-            self._update_state()
+            self.__update_artifact_state()
 
     # __update_artifact_state()
     #
     # Updates the data involved in knowing about the artifact corresponding
     # to this element.
+    #
+    # If the state changes, this will subsequently call
+    # `self.__schedule_assemble()` to schedule assembly if it becomes
+    # possible.
     #
     # Element.__update_cache_keys() must be called before this to have
     # meaningful results, because the element must know its cache key before
@@ -3246,6 +3244,7 @@ class Element(Plugin):
         if not context.get_strict() and not self.__artifact:
             # We've calculated the weak_key, so instantiate artifact instance member
             self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
+            self._update_state()
 
         if not self.__strict_cache_key:
             return
@@ -3257,6 +3256,9 @@ class Element(Plugin):
 
             if context.get_strict():
                 self.__artifact = self.__strict_artifact
+                self._update_state()
+            else:
+                self.__update_cache_key_non_strict()
 
     # __update_cache_key_non_strict()
     #
