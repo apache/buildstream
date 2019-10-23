@@ -1252,7 +1252,7 @@ class Element(Plugin):
     # - _update_artifact_state()
     #   - Computes the state of the element's artifact using the
     #     cache key.
-    # - _schedule_assembly_when_necessary()
+    # - __schedule_assembly_when_necessary()
     #   - Schedules assembly of an element, iff its current state
     #     allows/necessitates it
     # - __update_cache_key_non_strict()
@@ -1276,9 +1276,11 @@ class Element(Plugin):
         assert not self._resolved_initial_state, "_initialize_state() should only be called once"
         self._resolved_initial_state = True
 
-        # FIXME: It's possible that we could call a less broad method
-        # here if we could get the source cache key without updating
-        # the full source state.
+        # This will update source state, and for un-initialized
+        # elements recursively initialize anything else (because it
+        # will become considered outdated after source state is
+        # updated).
+        #
         # FIXME: Currently this method may cause recursion through
         # `self.__update_strict_cache_key_of_rdeps()`, since this may
         # invoke reverse dependencies' cache key updates
@@ -1286,7 +1288,7 @@ class Element(Plugin):
         # pull/build, however should not occur during initialization
         # (since we will eventualyl visit reverse dependencies during
         # our initialization anyway).
-        self._update_source_state()
+        self.__update_source_state()
 
     # _get_display_key():
     #
@@ -1367,7 +1369,7 @@ class Element(Plugin):
 
         # Tracking may change the sources' refs, and therefore the
         # source state. We need to update source state.
-        self._update_source_state()
+        self.__update_source_state()
 
     # _track():
     #
@@ -1534,11 +1536,11 @@ class Element(Plugin):
             dep._set_required()
 
         # When an element becomes required, it must be assembled for
-        # the current pipeline. `_schedule_assembly_when_necessary()`
+        # the current pipeline. `__schedule_assembly_when_necessary()`
         # will abort if some other state prevents it from being built,
         # and changes to such states will cause re-scheduling, so this
         # is safe.
-        self._schedule_assembly_when_necessary()
+        self.__schedule_assembly_when_necessary()
 
         # Callback to the Queue
         if self.__required_callback is not None:
@@ -1600,12 +1602,12 @@ class Element(Plugin):
             not self._cached()
         )
 
-    # _schedule_assembly_when_necessary():
+    # __schedule_assembly_when_necessary():
     #
     # This is called in the main process before the element is assembled
     # in a subprocess.
     #
-    def _schedule_assembly_when_necessary(self):
+    def __schedule_assembly_when_necessary(self):
         # FIXME: We could reduce the number of function calls a bit by
         # factoring this out of this method (and checking whether we
         # should schedule at the calling end).
@@ -1824,7 +1826,7 @@ class Element(Plugin):
         # Fetching cannot change the source state from INCONSISTENT to CACHED because
         # we prevent fetching when it's INCONSISTENT.
         # Therefore, only the source state will change.
-        self._update_source_state()
+        self.__update_source_state()
 
     # _pull_pending()
     #
@@ -1877,7 +1879,7 @@ class Element(Plugin):
 
         # We may not have actually pulled an artifact - the pull may
         # have failed. We might therefore need to schedule assembly.
-        self._schedule_assembly_when_necessary()
+        self.__schedule_assembly_when_necessary()
         self._update_ready_for_runtime_and_cached()
 
     # _pull():
@@ -2429,7 +2431,7 @@ class Element(Plugin):
     #                   Private Local Methods                   #
     #############################################################
 
-    # _update_source_state()
+    # __update_source_state()
     #
     # Updates source consistency state
     #
@@ -2437,7 +2439,7 @@ class Element(Plugin):
     # cache keys, because the source's ref, whether defined in yaml or
     # from the workspace, is a component of the element's cache keys.
     #
-    def _update_source_state(self):
+    def __update_source_state(self):
 
         # Cannot resolve source state until tracked
         if self.__tracking_scheduled:
@@ -3213,7 +3215,7 @@ class Element(Plugin):
     # to this element.
     #
     # If the state changes, this will subsequently call
-    # `self._schedule_assembly_when_necessary()` to schedule assembly if it becomes
+    # `self.__schedule_assembly_when_necessary()` to schedule assembly if it becomes
     # possible.
     #
     # Element.__update_cache_keys() must be called before this to have
@@ -3229,7 +3231,7 @@ class Element(Plugin):
         if not context.get_strict() and not self.__artifact:
             # We've calculated the weak_key, so instantiate artifact instance member
             self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
-            self._schedule_assembly_when_necessary()
+            self.__schedule_assembly_when_necessary()
 
         if not self.__strict_cache_key:
             return
@@ -3241,7 +3243,7 @@ class Element(Plugin):
 
             if context.get_strict():
                 self.__artifact = self.__strict_artifact
-                self._schedule_assembly_when_necessary()
+                self.__schedule_assembly_when_necessary()
             else:
                 self.__update_cache_key_non_strict()
 
