@@ -167,6 +167,9 @@ def test_cache_key(datafiles, cli):
                                 'usr', 'bin', 'goodbye')
     os.unlink(goodbye_link)
     os.symlink('hello', goodbye_link)
+    # pytest-datafiles does not copy mode bits
+    # https://github.com/omarkohl/pytest-datafiles/issues/11
+    os.chmod(goodbye_link, 0o755)
 
     result = cli.run(project=project, silent=True, args=[
         'show',

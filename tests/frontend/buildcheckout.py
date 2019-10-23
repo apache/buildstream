@@ -10,6 +10,7 @@ import re
 import pytest
 
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing import create_repo
 from buildstream.testing._utils.site import IS_WINDOWS
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
@@ -1101,8 +1102,25 @@ def test_build_junction_transitive_short_notation_with_junction(cli, tmpdir, dat
 @pytest.mark.datafiles(DATA_DIR)
 def test_partial_artifact_checkout_fetch(cli, datafiles, tmpdir):
     project = str(datafiles)
-    build_elt = 'import-bin.bst'
     checkout_dir = os.path.join(str(tmpdir), 'checkout')
+
+    repo = create_repo('git', str(tmpdir))
+    repo.create(os.path.join(str(datafiles), "files"))
+    element_dir = os.path.join(str(tmpdir), 'elements')
+    project = str(tmpdir)
+    project_config = {
+        "name": "partial-artifact-checkout-fetch",
+        "element-path": "elements",
+    }
+    project_file = os.path.join(str(tmpdir), "project.conf")
+    _yaml.roundtrip_dump(project_config, project_file)
+    input_config = {
+        "kind": "import",
+        "sources": [repo.source_config()],
+    }
+    input_name = 'input.bst'
+    input_file = os.path.join(element_dir, input_name)
+    _yaml.roundtrip_dump(input_config, input_file)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
 
@@ -1111,7 +1129,9 @@ def test_partial_artifact_checkout_fetch(cli, datafiles, tmpdir):
             'push': True
         }})
 
-        result = cli.run(project=project, args=['build', build_elt])
+        result = cli.run(project=project, args=['source', 'track', input_name])
+        result.assert_success()
+        result = cli.run(project=project, args=['build', input_name])
         result.assert_success()
 
         # A push artifact cache means we have to pull to push to them, so
@@ -1122,18 +1142,18 @@ def test_partial_artifact_checkout_fetch(cli, datafiles, tmpdir):
 
         # Verify that the build-only dependency is not (complete) in the local cache
         result = cli.run(project=project, args=[
-            'artifact', 'checkout', build_elt,
+            'artifact', 'checkout', input_name,
             '--directory', checkout_dir])
         result.assert_main_error(ErrorDomain.STREAM, 'uncached-checkout-attempt')
 
         # Verify that the pull method fetches relevant artifacts in order to stage
         result = cli.run(project=project, args=[
-            'artifact', 'checkout', '--pull', build_elt,
+            'artifact', 'checkout', '--pull', input_name,
             '--directory', checkout_dir])
         result.assert_success()
 
         # should have pulled whatever was deleted previous
-        assert 'import-bin.bst' in result.get_pulled_elements()
+        assert input_name in result.get_pulled_elements()
 
 
 @pytest.mark.datafiles(DATA_DIR)
