@@ -1288,19 +1288,6 @@ class Element(Plugin):
         # our initialization anyway).
         self._update_source_state()
 
-    # _update_state()
-    #
-    # Keep track of element state. Calculate cache keys if possible and
-    # check whether artifacts are cached.
-    #
-    # This must be called whenever the state of an element may have changed.
-    #
-    def _update_state(self):
-        context = self._get_context()
-
-        if not context.get_strict():
-            self.__update_cache_key_non_strict()
-
     # _get_display_key():
     #
     # Returns cache keys for display purposes
@@ -1626,7 +1613,7 @@ class Element(Plugin):
         # This would make the code less pretty, but it's a possible
         # optimization if we get desperate enough (and we will ;)).
         if not self.__should_schedule():
-            self._update_state()
+            self.__update_cache_key_non_strict()
             return
 
         self.__assemble_scheduled = True
@@ -1635,7 +1622,7 @@ class Element(Plugin):
         for dep in self.dependencies(Scope.BUILD, recurse=False):
             dep._set_required()
 
-        self._update_state()
+        self.__update_cache_key_non_strict()
 
     # _assemble_done():
     #
@@ -1656,7 +1643,7 @@ class Element(Plugin):
         if self.__artifact:
             self.__artifact.reset_cached()
 
-        self._update_state()
+        self.__update_cache_key_non_strict()
         self._update_ready_for_runtime_and_cached()
 
         if self._get_workspace() and self._cached_success():
