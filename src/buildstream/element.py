@@ -3305,24 +3305,36 @@ class Element(Plugin):
     # obtained
     #
     def __update_strict_cache_key_of_rdeps(self):
-        if not self.__updated_strict_cache_keys_of_rdeps:
-            if self.__runtime_deps_without_strict_cache_key == 0 and self.__strict_cache_key is not None:
-                self.__updated_strict_cache_keys_of_rdeps = True
+        if any(
+            (
+                # If we've previously updated these we don't need to do so
+                # again.
+                self.__updated_strict_cache_keys_of_rdeps,
+                # We can't do this until none of *our* rdeps are lacking a
+                # strict cache key.
+                not self.__runtime_deps_without_strict_cache_key == 0,
+                # If we don't have a strict cache key we can't do this either.
+                self.__strict_cache_key is None,
+            )
+        ):
+            return
 
-                # Notify reverse dependencies
-                for rdep in self.__reverse_runtime_deps:
-                    rdep.__runtime_deps_without_strict_cache_key -= 1
-                    assert not rdep.__runtime_deps_without_strict_cache_key < 0
+        self.__updated_strict_cache_keys_of_rdeps = True
 
-                    if rdep.__runtime_deps_without_strict_cache_key == 0:
-                        rdep.__update_strict_cache_key_of_rdeps()
+        # Notify reverse dependencies
+        for rdep in self.__reverse_runtime_deps:
+            rdep.__runtime_deps_without_strict_cache_key -= 1
+            assert not rdep.__runtime_deps_without_strict_cache_key < 0
 
-                for rdep in self.__reverse_build_deps:
-                    rdep.__build_deps_without_strict_cache_key -= 1
-                    assert not rdep.__build_deps_without_strict_cache_key < 0
+            if rdep.__runtime_deps_without_strict_cache_key == 0:
+                rdep.__update_strict_cache_key_of_rdeps()
 
-                    if rdep.__build_deps_without_strict_cache_key == 0:
-                        rdep.__update_cache_keys()
+        for rdep in self.__reverse_build_deps:
+            rdep.__build_deps_without_strict_cache_key -= 1
+            assert not rdep.__build_deps_without_strict_cache_key < 0
+
+            if rdep.__build_deps_without_strict_cache_key == 0:
+                rdep.__update_cache_keys()
 
     # __update_ready_for_runtime()
     #
