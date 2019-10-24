@@ -86,6 +86,8 @@ class Queue():
             self._max_retries = scheduler.context.sched_network_retries
 
         self._task_group = self._scheduler._state.add_task_group(self.action_name, self.complete_name)
+        self._scheduler._state.register_task_groups_changed_callback(self._scheduler._update_task_groups,
+                                                                     name=self.action_name)
 
     # destroy()
     #

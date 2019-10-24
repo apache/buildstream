@@ -54,8 +54,10 @@ class TaskGroup():
     #
     def add_processed_task(self):
         self.processed_tasks += 1
-        for cb in self._state._task_groups_changed_cbs:
-            cb()
+        for cb, name in self._state._task_groups_changed_cbs:
+            # If name matches group, or if name not given call the cb
+            if name == self.name or name is None:
+                cb(name, self.complete_name, 'processed_tasks')
 
     # add_skipped_task()
     #
@@ -65,9 +67,10 @@ class TaskGroup():
     #
     def add_skipped_task(self):
         self.skipped_tasks += 1
-
-        for cb in self._state._task_groups_changed_cbs:
-            cb()
+        for cb, name in self._state._task_groups_changed_cbs:
+            # If name matches group, or if name not given call the cb
+            if name == self.name or name is None:
+                cb(name, self.complete_name, 'skipped_tasks')
 
     # add_failed_task()
     #
@@ -82,11 +85,10 @@ class TaskGroup():
     #
     def add_failed_task(self, full_name):
         self.failed_tasks.append(full_name)
-
-        for cb in self._state._task_groups_changed_cbs:
-            cb()
-
-
+        for cb, name in self._state._task_groups_changed_cbs:
+            # If name matches group, or if name not given call the cb
+            if name == self.name or name is None:
+                cb(name, self.complete_name, 'failed_tasks', full_name)
 # State
 #
 # The state data that is stored for the purpose of sharing with the frontend.
@@ -225,6 +227,37 @@ class State():
     #
     def unregister_task_failed_callback(self, callback):
         self._task_failed_cbs.remove(callback)
+
+    # register_task_groups_changed_callback()
+    #
+    # Registers a callback to be notified when a task group has changed
+    #
+    # Args:
+    #    callback (function): The callback to be notified
+    #    name (str): Optional taskgroup related name, e.g. the action_name of a Queue. If None
+    #                given then the callback will be triggered for any task group changing.
+    #
+    # Callback Args:
+    #    name (str): The name of the task group, e.g. 'build'
+    #    complete_name (str): The complete name of the task group, e.g. 'built'
+    #    task(str): The full name of the task outcome, processed, skipped or failed.
+    #    element_name (str): Optional if an element task failed, the element name
+    #
+    def register_task_groups_changed_callback(self, callback, name=None):
+        self._task_groups_changed_cbs.append((callback, name))
+
+    # unregister_task_groups_changed_callback()
+    #
+    # Unregisters a callback previously registered by
+    # register_task_groups_changed_callback()
+    #
+    # Args:
+    #    callback (function): The callback to be removed
+    #    name (str): Optional taskgroup related name, e.g. the action_name of a Queue
+    #
+    def unregister_task_groups_changed_callback(self, callback, name=None):
+        self._task_groups_changed_cbs.remove((callback, name))
+
 
     ##############################################
     # Core-facing APIs for driving notifications #
