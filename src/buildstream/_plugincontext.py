@@ -46,6 +46,12 @@ class PluginContext():
     def __init__(self, plugin_base, base_type, site_plugin_path, *,
                  plugin_origins=None, format_versions={}):
 
+        # For pickling across processes, make sure this context has a unique
+        # identifier, which we prepend to the identifier of each PluginSource.
+        # This keeps plugins loaded during the first and second pass distinct
+        # from eachother.
+        self._identifier = str(id(self))
+
         # The plugin kinds which were loaded
         self.loaded_dependencies = []
 
@@ -59,11 +65,16 @@ class PluginContext():
         # The PluginSource object
         self._plugin_base = plugin_base
         self._site_plugin_path = site_plugin_path
-        self._site_source = plugin_base.make_plugin_source(
-            searchpath=self._site_plugin_path,
-        )
         self._alternate_sources = {}
         self._format_versions = format_versions
+
+        self._init_site_source()
+
+    def _init_site_source(self):
+        self._site_source = self._plugin_base.make_plugin_source(
+            searchpath=self._site_plugin_path,
+            identifier=self._identifier + 'site',
+        )
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -98,9 +109,7 @@ class PluginContext():
         # of the PluginSource. We would also have to recreate `_types` as it
         # was before unpickling them. We are not using this method in
         # BuildStream, so the identifier is not restored here.
-        self._site_source = self._plugin_base.make_plugin_source(
-            searchpath=self._site_plugin_path,
-        )
+        self._init_site_source()
 
     # lookup():
     #
@@ -126,7 +135,10 @@ class PluginContext():
     def _get_local_plugin_source(self, path):
         if ('local', path) not in self._alternate_sources:
             # key by a tuple to avoid collision
-            source = self._plugin_base.make_plugin_source(searchpath=[path])
+            source = self._plugin_base.make_plugin_source(
+                searchpath=[path],
+                identifier=self._identifier + path,
+            )
             # Ensure that sources never get garbage collected,
             # as they'll take the plugins with them.
             self._alternate_sources[('local', path)] = source
@@ -167,7 +179,10 @@ class PluginContext():
                 # The plugin didn't have an accompanying YAML file
                 defaults = None
 
-            source = self._plugin_base.make_plugin_source(searchpath=[os.path.dirname(location)])
+            source = self._plugin_base.make_plugin_source(
+                searchpath=[os.path.dirname(location)],
+                identifier=self._identifier + os.path.dirname(location),
+            )
             self._alternate_sources[('pip', package_name)] = source
 
         else:
