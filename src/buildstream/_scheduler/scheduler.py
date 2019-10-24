@@ -109,7 +109,7 @@ class Notification:
         self.message = message
         self.task_error = task_error  # Tuple of domain & reason
         self.exception = exception
-        self.task_groups = task_groups
+        self.task_groups = task_groups  # Tuple of queue name, complete name, task change, & optional element name
         self.element_totals = element_totals
 
 
@@ -242,14 +242,6 @@ class Scheduler:
             status = SchedStatus.TERMINATED
         else:
             status = SchedStatus.SUCCESS
-
-        # Send the state taskgroups if we're running under the subprocess
-        if subprocessed:
-            # Don't pickle state
-            for group in self._state.task_groups.values():
-                group._state = None
-            notification = Notification(NotificationType.TASK_GROUPS, task_groups=self._state.task_groups)
-            self._notify_front_queue.put(notification)
 
         return status
 
@@ -657,6 +649,11 @@ class Scheduler:
     def _stop_listening(self):
         if self._notify_back_queue:
             self.loop.remove_reader(self._notify_back_queue._reader.fileno())
+
+    def _update_task_groups(self, name, complete_name, task, full_name=None):
+        if self._notify_front_queue:
+            changes = (name, complete_name, task, full_name)
+            self._notify_front(Notification(NotificationType.TASK_GROUPS, task_groups=changes))
 
     def __getstate__(self):
         # The only use-cases for pickling in BuildStream at the time of writing
