@@ -338,6 +338,11 @@ class SandboxRemote(Sandbox):
         # set up virtual dircetory
         upload_vdir = self.get_virtual_directory()
 
+        # Ensure working directory exists
+        if len(cwd) > 1:
+            assert cwd.startswith('/')
+            upload_vdir.descend(*cwd[1:].split(os.path.sep), create=True)
+
         # Create directories for all marked directories. This emulates
         # some of the behaviour of other sandboxes, which create these
         # to use as mount points.
