@@ -227,6 +227,9 @@ class App():
                                   self._detail_profile,
                                   indent=INDENT)
 
+            # Register the Logline pipeline renderer callback in Stream
+            self.stream._pipeline_render_callback = self.logger.show_pipeline
+
             # Propagate pipeline feedback to the user
             self.context.messenger.set_message_handler(self._message_handler)
 

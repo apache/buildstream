@@ -76,6 +76,7 @@ class Stream():
         self.len_session_elements = ''
         self.len_total_elements = ''
         self.loop = None
+        self.total_pipeline_render = None
 
         #
         # Private members
@@ -105,6 +106,7 @@ class Stream():
         self._notify_back_queue = None
         self._casd_process = None
         self._watcher = None
+        self._pipeline_render_callback = None
 
     # init()
     #
@@ -1456,6 +1458,10 @@ class Stream():
                                         element_totals=element_totals))
 
 
+        # Also send through the pipeline renderer output for heading & summary rendering
+        total_pipeline_render = self._pipeline_render_callback(self.total_elements, self._context.log_element_format) # pylint: disable=not-callable
+        self._notify_front(Notification(NotificationType.SHOW_PIPELINE, show_pipeline=total_pipeline_render))
+
         if self._session_start_callback is not None:
             self._notify_front(Notification(NotificationType.START))
 
@@ -1794,6 +1800,8 @@ class Stream():
             self._session_start_callback()
         elif notification.notification_type == NotificationType.ELEMENT_TOTALS:
             self.len_session_elements, self.len_total_elements = notification.element_totals
+        elif notification.notification_type == NotificationType.SHOW_PIPELINE:
+            self.total_pipeline_render = notification.show_pipeline
         elif notification.notification_type == NotificationType.FINISH:
             if self.loop:
                 self.loop.stop()
