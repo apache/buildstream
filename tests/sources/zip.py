@@ -212,12 +212,12 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
 
     with create_file_server(server_type) as server:
         server.add_user('testuser', '12345', file_server_files)
+        server.start()
+
         generate_project_file_server(server, project)
 
         src_zip = os.path.join(file_server_files, 'a.zip')
         _assemble_zip(os.path.join(str(datafiles), 'content'), src_zip)
-
-        server.start()
 
         result = cli.run(project=project, args=['source', 'track', 'target.bst'])
         result.assert_success()

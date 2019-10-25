@@ -56,6 +56,7 @@ def generate_project(project_dir, tmpdir):
 
 
 def generate_project_file_server(base_url, project_dir):
+
     project_file = os.path.join(project_dir, "project.conf")
     _yaml.roundtrip_dump({
         'name': 'foo',
@@ -358,12 +359,12 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
 
     with create_file_server(server_type) as server:
         server.add_user('testuser', '12345', file_server_files)
+        server.start()
+
         generate_project_file_server(server.base_url(), project)
 
         src_tar = os.path.join(file_server_files, 'a.tar.gz')
         _assemble_tar(os.path.join(str(datafiles), 'content'), 'a', src_tar)
-
-        server.start()
 
         result = cli.run(project=project, args=['source', 'track', 'target.bst'])
         result.assert_success()
@@ -398,14 +399,14 @@ def test_netrc_already_specified_user(cli, datafiles, server_type, tmpdir):
 
     with create_file_server(server_type) as server:
         server.add_user('otheruser', '12345', file_server_files)
+        server.start()
+
         parts = urllib.parse.urlsplit(server.base_url())
         base_url = urllib.parse.urlunsplit([parts[0], 'otheruser@{}'.format(parts[1]), *parts[2:]])
         generate_project_file_server(base_url, project)
 
         src_tar = os.path.join(file_server_files, 'a.tar.gz')
         _assemble_tar(os.path.join(str(datafiles), 'content'), 'a', src_tar)
-
-        server.start()
 
         result = cli.run(project=project, args=['source', 'track', 'target.bst'])
         result.assert_main_error(ErrorDomain.STREAM, None)
