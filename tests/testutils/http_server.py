@@ -81,30 +81,59 @@ class AuthHTTPServer(HTTPServer):
         super().__init__(*args, **kwargs)
 
 
-class SimpleHttpServer(multiprocessing.Process):
+class SimpleHttpServer():
+    # pylint: disable=attribute-defined-outside-init
+
     def __init__(self):
-        super().__init__()
-        self.server = AuthHTTPServer(('127.0.0.1', 0), RequestHandler)
-        self.started = False
+        self._reset()
+
+    def _reset(self):
+        self._process = None
+        self._port = None
+        self._anonymous_dir = None
+        self._user_list = []
 
     def start(self):
-        self.started = True
-        super().start()
+        assert self._process is None, "Server already running."
+        queue = multiprocessing.SimpleQueue()
 
-    def run(self):
-        self.server.serve_forever()
+        self._process = multiprocessing.Process(
+            target=_run_server,
+            args=(queue, self._anonymous_dir, self._user_list),
+        )
+
+        self._process.start()
+        self._port = queue.get()
 
     def stop(self):
-        if not self.started:
-            return
-        self.terminate()
-        self.join()
+        assert self._process is not None, "Server not running."
+        self._process.terminate()
+        self._process.join()
+        self._reset()
 
     def allow_anonymous(self, cwd):
-        self.server.anonymous_dir = cwd
+        assert self._process is None, "Can't modify server after start()."
+        assert self._anonymous_dir is None, "Only one anonymous_dir is supported."
+        self._anonymous_dir = cwd
 
     def add_user(self, user, password, cwd):
-        self.server.users[user] = (password, cwd)
+        assert self._process is None, "Can't modify server after start()."
+        self._user_list.append((user, password, cwd))
 
     def base_url(self):
-        return 'http://127.0.0.1:{}'.format(self.server.server_port)
+        assert self._port is not None
+        return 'http://127.0.0.1:{}'.format(self._port)
+
+
+def _run_server(queue, anonymous_dir, user_list):
+    server = AuthHTTPServer(('127.0.0.1', 0), RequestHandler)
+
+    if anonymous_dir is not None:
+        server.anonymous_dir = anonymous_dir
+
+    for user, password, cwd in user_list:
+        server.users[user] = (password, cwd)
+
+    queue.put(server.server_port)
+
+    server.serve_forever()
