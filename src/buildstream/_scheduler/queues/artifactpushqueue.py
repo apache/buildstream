@@ -29,7 +29,7 @@ from ..._exceptions import SkipJob
 class ArtifactPushQueue(Queue):
 
     action_name = "Push"
-    complete_name = "Pushed"
+    complete_name = "Artifacts Pushed"
     resources = [ResourceType.UPLOAD]
 
     def get_process_func(self):

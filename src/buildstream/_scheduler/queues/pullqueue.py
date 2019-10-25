@@ -30,7 +30,7 @@ from ..._exceptions import SkipJob
 class PullQueue(Queue):
 
     action_name = "Pull"
-    complete_name = "Pulled"
+    complete_name = "Artifacts Pulled"
     resources = [ResourceType.DOWNLOAD, ResourceType.CACHE]
 
     def get_process_func(self):

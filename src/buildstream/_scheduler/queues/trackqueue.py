@@ -32,7 +32,7 @@ from ..jobs import JobStatus
 class TrackQueue(Queue):
 
     action_name = "Track"
-    complete_name = "Tracked"
+    complete_name = "Sources Tracked"
     resources = [ResourceType.DOWNLOAD]
 
     def get_process_func(self):
