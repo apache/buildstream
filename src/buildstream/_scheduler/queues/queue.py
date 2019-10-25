@@ -85,7 +85,7 @@ class Queue():
         if ResourceType.UPLOAD in self.resources or ResourceType.DOWNLOAD in self.resources:
             self._max_retries = scheduler.context.sched_network_retries
 
-        self._task_group = self._scheduler._state.add_task_group(self.action_name)
+        self._task_group = self._scheduler._state.add_task_group(self.action_name, self.complete_name)
 
     # destroy()
     #

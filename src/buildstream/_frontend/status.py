@@ -394,7 +394,7 @@ class _StatusHeader():
         #
         # Line 2: Dynamic list of queue status reports
         #
-        #  (Fetched:0 117 0)→ (Built:4 0 0)
+        #  (Sources Fetched:0 117 0)→ (Built:4 0 0)
         #
         size = 0
         text = ''
@@ -455,10 +455,10 @@ class _StatusHeader():
         failed = str(len(group.failed_tasks))
 
         size = 5  # Space for the formatting '[', ':', ' ', ' ' and ']'
-        size += len(group.name)
+        size += len(group.complete_name)
         size += len(processed) + len(skipped) + len(failed)
         text = self._format_profile.fmt("(") + \
-            self._content_profile.fmt(group.name) + \
+            self._content_profile.fmt(group.complete_name) + \
             self._format_profile.fmt(":") + \
             self._success_profile.fmt(processed) + ' ' + \
             self._content_profile.fmt(skipped) + ' ' + \
