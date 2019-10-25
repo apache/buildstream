@@ -121,8 +121,6 @@ if TYPE_CHECKING:
     from .source import Source
     from ._context import Context
     from ._loader.metaelement import MetaElement
-    from ._loader.metasource import MetaSource
-    from ._loader.metasource import MetaSource
     from ._project import Project
     # pylint: enable=cyclic-import
 
@@ -2308,11 +2306,10 @@ class Element(Plugin):
     # Return data necessary to reconstruct this object in a child job process.
     #
     # Returns:
-    #    (PluginContext, str, dict): A tuple of (factory, meta_kind, state),
-    #    where `factory` is an object that can use `meta_kind` to create an
-    #    instance of the same type as `self`. `state` is what we want
-    #    `self.__dict__` to be restored to after instantiation in the child
-    #    process.
+    #    (str, dict): A tuple of (meta_kind, state), where a factory can use
+    #    `meta_kind` to create an instance of the same type as `self`. `state`
+    #    is what we want `self.__dict__` to be restored to after instantiation
+    #    in the child process.
     #
     def _get_args_for_child_job_pickling(self):
         state = self.__dict__.copy()
@@ -2336,8 +2333,7 @@ class Element(Plugin):
         # let us know, and we will need to update accordingly.
         del state["_Element__required_callback"]
 
-        factory = self._get_project().config.element_factory
-        return factory, self.__meta_kind, state
+        return self.__meta_kind, state
 
     def _walk_artifact_files(self):
         yield from self.__artifact.get_files().walk()
