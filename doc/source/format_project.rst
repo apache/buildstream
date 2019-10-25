@@ -438,7 +438,7 @@ system.
      # external plugin, it is allowed to be `0`.
      #
      elements:
-       potato: 0
+       starch: 0
 
 
 .. _project_options:
