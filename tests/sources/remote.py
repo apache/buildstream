@@ -204,10 +204,10 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
 
     with create_file_server(server_type) as server:
         server.add_user('testuser', '12345', project)
-        generate_project_file_server(server, project)
 
         server.start()
 
+        generate_project_file_server(server, project)
         result = cli.run(project=project, args=['source', 'fetch', 'target.bst'])
         result.assert_success()
         result = cli.run(project=project, args=['build', 'target.bst'])
