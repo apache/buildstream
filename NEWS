@@ -3,6 +3,13 @@
 ============
 
 ==================
+buildstream 1.91.2
+==================
+
+  o Various bug fixes.
+
+
+==================
 buildstream 1.91.1
 ==================
 
@@ -21,6 +28,7 @@ API
     underlying data structure for the given node.
 
   o BuildStream now requires Buildbox-casd 0.0.3 at minimum
+
 
 ==================
 buildstream 1.91.0
