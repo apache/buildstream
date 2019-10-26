@@ -415,25 +415,12 @@ def init(app, project_name, format_version, element_path, force, target_director
 @click.option('--deps', '-d', default=None,
               type=click.Choice(['plan', 'all']),
               help='The dependencies to build')
-@click.option('--track', 'track_', multiple=True,
-              type=click.Path(readable=False),
-              help="Specify elements to track during the build. Can be used "
-                   "repeatedly to specify multiple elements")
-@click.option('--track-all', is_flag=True,
-              help="Track all elements in the pipeline")
-@click.option('--track-except', multiple=True,
-              type=click.Path(readable=False),
-              help="Except certain dependencies from tracking")
-@click.option('--track-cross-junctions', '-J', is_flag=True,
-              help="Allow tracking to cross junction boundaries")
-@click.option('--track-save', is_flag=True,
-              help="Deprecated: This is ignored")
 @click.option('--remote', '-r', default=None,
               help="The URL of the remote cache (defaults to the first configured cache)")
 @click.argument('elements', nargs=-1,
                 type=click.Path(readable=False))
 @click.pass_obj
-def build(app, elements, deps, track_, track_save, track_all, track_except, track_cross_junctions, remote):
+def build(app, elements, deps, remote):
     """Build elements in a pipeline
 
     Specifying no elements will result in building the default targets
@@ -449,15 +436,6 @@ def build(app, elements, deps, track_, track_save, track_all, track_except, trac
         plan:  Only dependencies required for the build plan
         all:   All dependencies
     """
-
-    if (track_except or track_cross_junctions) and not (track_ or track_all):
-        click.echo("ERROR: The --track-except and --track-cross-junctions options "
-                   "can only be used with --track or --track-all", err=True)
-        sys.exit(-1)
-
-    if track_save:
-        click.echo("WARNING: --track-save is deprecated, saving is now unconditional", err=True)
-
     with app.initialized(session_name="Build"):
         ignore_junction_targets = False
 
@@ -469,14 +447,8 @@ def build(app, elements, deps, track_, track_save, track_all, track_except, trac
             # Junction elements cannot be built, exclude them from default targets
             ignore_junction_targets = True
 
-        if track_all:
-            track_ = elements
-
         app.stream.build(elements,
                          selection=deps,
-                         track_targets=track_,
-                         track_except=track_except,
-                         track_cross_junctions=track_cross_junctions,
                          ignore_junction_targets=ignore_junction_targets,
                          remote=remote)
 
