@@ -173,6 +173,7 @@ from ._exceptions import BstError, ImplError, ErrorDomain
 from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage
 from ._cachekey import generate_key
+from .storage import CasBasedDirectory
 from .storage import FileBasedDirectory
 from .storage.directory import Directory, VirtualDirectoryError
 
@@ -322,6 +323,14 @@ class Source(Plugin):
     *Since: 1.4*
     """
 
+    BST_NO_PRESTAGE_KEY = False
+    """Whether the source will never have a key prior to staging (a pre-stage
+    key). This is true in the case that the source requires staging in order to
+    efficiently generate a unique key.
+
+    *Since: 1.91.1*
+    """
+
     def __init__(self,
                  context: 'Context',
                  project: 'Project',
@@ -359,6 +368,7 @@ class Source(Plugin):
         self.__mirror_directory = None                  # type: Optional[str]
 
         self._configure(self.__config)
+        self.__digest = None
 
     COMMON_CONFIG_KEYS = ['kind', 'directory']
     """Common source config keys
@@ -705,6 +715,17 @@ class Source(Plugin):
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
+    # Stage files at the localpath into the cascache
+    #
+    # Returns:
+    #   the hash of the cas directory
+    def _stage_into_cas(self) -> str:
+        cas_dir = CasBasedDirectory(self._get_context().get_cascache())
+        path = self.__ensure_directory(cas_dir)
+        self.stage(path)
+        digest = cas_dir._get_digest()
+        self.__digest = digest
+        return digest.hash
 
     # Wrapper around preflight() method
     #
@@ -760,7 +781,12 @@ class Source(Plugin):
     def _stage(self, directory):
         directory = self.__ensure_directory(directory)
 
-        self.stage(directory)
+        if self.BST_NO_PRESTAGE_KEY:
+            cas_dir = CasBasedDirectory(self._get_context().get_cascache(),
+                                        digest=self.__digest)
+            directory.import_files(cas_dir)
+        else:
+            self.stage(directory)
 
     # Wrapper for init_workspace()
     def _init_workspace(self, directory):
@@ -778,7 +804,10 @@ class Source(Plugin):
     def _get_unique_key(self):
         key = {}
         key['directory'] = self.__directory
-        key['unique'] = self.get_unique_key()  # pylint: disable=assignment-from-no-return
+        if self.BST_NO_PRESTAGE_KEY:
+            key['unique'] = self._stage_into_cas()
+        else:
+            key['unique'] = self.get_unique_key()  # pylint: disable=assignment-from-no-return
         return key
 
     # _project_refs():
@@ -1077,7 +1106,7 @@ class Source(Plugin):
         self.__key = generate_key(keys)
 
         sourcecache = self._get_context().sourcecache
-        if self.get_kind() == 'workspace' and not sourcecache.contains(self):
+        if self.BST_NO_PRESTAGE_KEY and not sourcecache.contains(self):
             sourcecache.commit(self, [])
 
     @property

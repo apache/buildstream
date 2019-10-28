@@ -19,4 +19,5 @@
 #        Jim MacArthur <jim.macarthur@codethink.co.uk>
 
 from ._filebaseddirectory import FileBasedDirectory
+from ._casbaseddirectory import CasBasedDirectory
 from .directory import Directory
