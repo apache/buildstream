@@ -163,7 +163,7 @@ Class Reference
 
 import os
 from contextlib import contextmanager
-from typing import Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
+from typing import Iterable, Iterator, Optional, Tuple, TYPE_CHECKING, Union
 
 from . import _yaml, utils
 from .node import MappingNode
@@ -488,7 +488,7 @@ class Source(Plugin):
         """
         raise ImplError("Source plugin '{}' does not implement fetch()".format(self.get_kind()))
 
-    def stage(self, directory: str) -> None:
+    def stage(self, directory: Union[str, Directory]) -> None:
         """Stage the sources to a directory
 
         Args:
@@ -721,8 +721,7 @@ class Source(Plugin):
     #   the hash of the cas directory
     def _stage_into_cas(self) -> str:
         cas_dir = CasBasedDirectory(self._get_context().get_cascache())
-        path = self.__ensure_directory(cas_dir)
-        self.stage(path)
+        self.stage(cas_dir)
         digest = cas_dir._get_digest()
         self.__digest = digest
         return digest.hash
