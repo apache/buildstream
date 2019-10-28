@@ -28,7 +28,7 @@ from ..._protos.build.bazel.remote.execution.v2.remote_execution_pb2 import Dige
 # BuildStream toplevel imports
 from ..._loader import Loader
 from ..._messenger import Messenger
-
+from ... import utils, node
 
 # Note that `str(type(proto_class))` results in `GeneratedProtocolMessageType`
 # instead of the concrete type, so we come up with our own names here.
@@ -42,7 +42,59 @@ _PROTO_CLASS_TO_NAME = {
 }
 
 
-# pickle_child_job_data()
+# pickle_child_job()
+#
+# Perform the special case pickling required to pickle a child job for
+# unpickling in a child process.
+#
+# Args:
+#    child_job     (ChildJob): The job to pickle.
+#    projects (List[Project]): The list of loaded projects, so we can get the
+#                              relevant factories.
+#
+def pickle_child_job(child_job, projects):
+    # Note that we need to consider all the state of the program that's
+    # necessary for the job, this includes e.g. the global state of the node
+    # module.
+    node_module_state = node._get_state_for_pickling()
+    return _pickle_child_job_data(
+        (child_job, node_module_state),
+        projects,
+    )
+
+
+# do_pickled_child_job()
+#
+# Unpickle the supplied 'pickled' job and call 'child_action' on it.
+#
+# This is expected to be run in a subprocess started from the main process, as
+# such it will fixup any globals to be in the expected state.
+#
+# Args:
+#    pickled     (BytesIO): The pickled data, and job to execute.
+#    *child_args (any)    : Any parameters to be passed to `child_action`.
+#
+def do_pickled_child_job(pickled, *child_args):
+    utils._is_main_process = _not_main_process
+
+    child_job, node_module_state = pickle.load(pickled)
+    node._set_state_from_pickling(node_module_state)
+    return child_job.child_action(*child_args)
+
+
+# _not_main_process()
+#
+# A function to replace `utils._is_main_process` when we're running in a
+# subprocess that was not forked - the inheritance of the main process id will
+# not work in this case.
+#
+# Note that we'll always not be the main process by definition.
+#
+def _not_main_process():
+    return False
+
+
+# _pickle_child_job_data()
 #
 # Perform the special case pickling required to pickle a child job for
 # unpickling in a child process.
@@ -80,7 +132,7 @@ _PROTO_CLASS_TO_NAME = {
 #   below. Some state in plugins is not necessary for child jobs, and comes
 #   with a heavy cost; we also need to remove this before pickling.
 #
-def pickle_child_job_data(child_job_data, projects):
+def _pickle_child_job_data(child_job_data, projects):
 
     factory_list = [
         factory
