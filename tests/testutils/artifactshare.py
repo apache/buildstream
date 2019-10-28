@@ -4,7 +4,7 @@ import signal
 import sys
 from collections import namedtuple
 
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from multiprocessing import Process, Queue
 
 from buildstream._cas import CASCache
@@ -56,6 +56,9 @@ class ArtifactShare():
         # Retrieve port from server subprocess
         port = q.get()
 
+        if port is None:
+            raise Exception("Error occurred when starting artifact server.")
+
         self.repo = 'http://localhost:{}'.format(port)
 
     # run():
@@ -63,37 +66,39 @@ class ArtifactShare():
     # Run the artifact server.
     #
     def run(self, q):
+        with ExitStack() as stack:
+            try:
+                # Handle SIGTERM by calling sys.exit(0), which will raise a SystemExit exception,
+                # properly executing cleanup code in `finally` clauses and context managers.
+                # This is required to terminate buildbox-casd on SIGTERM.
+                signal.signal(signal.SIGTERM, lambda signalnum, frame: sys.exit(0))
 
-        # Handle SIGTERM by calling sys.exit(0), which will raise a SystemExit exception,
-        # properly executing cleanup code in `finally` clauses and context managers.
-        # This is required to terminate buildbox-casd on SIGTERM.
-        signal.signal(signal.SIGTERM, lambda signalnum, frame: sys.exit(0))
+                try:
+                    import pytest_cov
+                except ImportError:
+                    pass
+                else:
+                    pytest_cov.embed.cleanup_on_sigterm()
 
-        try:
-            import pytest_cov
-        except ImportError:
-            pass
-        else:
-            pytest_cov.embed.cleanup_on_sigterm()
-
-        try:
-            with create_server(self.repodir,
-                               quota=self.quota,
-                               enable_push=True,
-                               index_only=self.index_only) as server:
+                server = stack.enter_context(
+                    create_server(
+                        self.repodir,
+                        quota=self.quota,
+                        enable_push=True,
+                        index_only=self.index_only,
+                    )
+                )
                 port = server.add_insecure_port('localhost:0')
-
                 server.start()
+            except Exception:
+                q.put(None)
+                raise
 
-                # Send port to parent
-                q.put(port)
+            # Send port to parent
+            q.put(port)
 
-                # Sleep until termination by signal
-                signal.pause()
-
-        except Exception:
-            q.put(None)
-            raise
+            # Sleep until termination by signal
+            signal.pause()
 
     # has_object():
     #
