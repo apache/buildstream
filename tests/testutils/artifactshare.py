@@ -162,11 +162,11 @@ def _start_artifact_server(queue, repodir, quota, index_only):
             signal.signal(signal.SIGTERM, lambda signalnum, frame: sys.exit(0))
 
             try:
-                import pytest_cov
+                from pytest_cov.embed import cleanup_on_sigterm
             except ImportError:
                 pass
             else:
-                pytest_cov.embed.cleanup_on_sigterm()
+                cleanup_on_sigterm()
 
             server = stack.enter_context(
                 create_server(
