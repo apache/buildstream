@@ -169,7 +169,7 @@ from typing import Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
 from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
-from .types import Consistency, SourceRef, Union
+from .types import Consistency, SourceRef, Union, List
 from ._exceptions import BstError, ImplError, ErrorDomain
 from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage
@@ -1060,7 +1060,12 @@ class Source(Plugin):
     # Args:
     #   previous_sources (list): List of Sources listed prior to this source
     #
-    def _track(self, previous_sources):
+    def _track(self, previous_sources: List['Source']) -> SourceRef:
+        if self.BST_NO_PRESTAGE_KEY:
+            # ensure that these sources have a key after tracking
+            self._get_unique_key()
+            return None
+
         if self.BST_REQUIRES_PREVIOUS_SOURCES_TRACK:
             self.__ensure_previous_sources(previous_sources)
             with self.__stage_previous_sources(previous_sources) \
