@@ -2,6 +2,21 @@
 (unreleased)
 ============
 
+CLI
+---
+
+  o BREAKING CHANGE: `bst build` no longer accepts any options related to
+    tracking. Please use `bst source track` separately prior to running
+    `bst build`, if you need similar functionality. The full list of removed
+    options is as follows:
+
+      * `--track`
+      * `--track-all`
+      * `--track-except`
+      * `--track-cross-junctions` / `-J`
+      * `--track-save`
+
+
 ==================
 buildstream 1.91.2
 ==================
