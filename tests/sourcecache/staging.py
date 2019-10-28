@@ -138,7 +138,8 @@ def test_staged_source_build(tmpdir, datafiles, cli):
         element = project.load_elements(["import-dev.bst"])[0]
 
         # check consistency of the source
-        assert not element._source_cached()
+        # local sources set BST_NO_PRESTAGE_KEY so this is cached
+        assert element._source_cached()
 
     res = cli.run(project=project_dir, args=['build', 'target.bst'])
     res.assert_success()

@@ -19,6 +19,42 @@ DATA_DIR = os.path.join(
 )
 
 
+def get_start():
+    import multiprocessing
+    return multiprocessing.get_start_method()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+@pytest.mark.xfail(get_start() == 'spawn', reason='Not compatible with spawning')
+def test_workspace_stages_once(cli, datafiles):
+    import unittest.mock
+    from buildstream.source import Source
+
+    def method_wrapper(method):
+        mock = unittest.mock.MagicMock()
+
+        def wrapper(self, *args, **kwargs):
+            mock(*args, **kwargs)
+            return method(self, *args, **kwargs)
+
+        wrapper.mock = mock
+        return wrapper
+
+    wrapped = method_wrapper(Source._stage)
+    with unittest.mock.patch.object(Source, '_stage', wrapped):
+        project = str(datafiles)
+        workspace = os.path.join(cli.directory, 'workspace')
+        element_name = 'workspace/workspace-mount.bst'
+
+        res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
+        assert res.exit_code == 0
+        assert cli.get_element_key(project, element_name) != "{:?<64}".format('')
+        res = cli.run(project=project, args=['build', element_name])
+        assert res.exit_code == 0
+    assert wrapped.mock.call_count == 1
+
+
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_workspace_mount(cli, datafiles):
