@@ -194,13 +194,6 @@ tests-spawn-multiprocessing-start-method:
   <<: *tests
   variables:
     BST_FORCE_START_METHOD: "spawn"
-  script:
-    # FIXME: Until all the tests pass as normal, override which tests will run here.
-    - mkdir -p "${INTEGRATION_CACHE}"
-    - useradd -Um buildstream
-    - chown -R buildstream:buildstream .
-    # Note that we're not specifying '--integration' here yet.
-    - su buildstream -c "tox -- --color=yes -n 2 tests/"
 
 # Run type checkers
 mypy:
