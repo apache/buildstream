@@ -1,9 +1,9 @@
-.TH "BST ARTIFACT CHECKOUT" "1" "14-Jul-2019" "" "bst artifact checkout Manual"
+.TH "BST ARTIFACT CHECKOUT" "1" "31-Oct-2019" "" "bst artifact checkout Manual"
 .SH NAME
 bst\-artifact\-checkout \- Checkout contents of an artifact
 .SH SYNOPSIS
 .B bst artifact checkout
-[OPTIONS] [ELEMENT]
+[OPTIONS] [TARGET]
 .SH DESCRIPTION
 Checkout contents of an artifact
 .PP
@@ -14,8 +14,8 @@ is to checkout the artifact of the workspace element.
 \fB\-f,\fP \-\-force
 Allow files to be overwritten
 .TP
-\fB\-d,\fP \-\-deps [run|build|none]
-The dependencies to checkout (default: run)
+\fB\-d,\fP \-\-deps [run|build|none|all]
+The dependencies to checkout  [default: run]
 .TP
 \fB\-\-integrate\fP / \-\-no\-integrate
 Whether to run integration commands
@@ -26,8 +26,11 @@ Checkout hardlinks instead of copying if possible
 \fB\-\-tar\fP LOCATION
 Create a tarball from the artifact contents instead of a file tree. If LOCATION is '-', the tarball will be dumped to the standard output.
 .TP
+\fB\-\-compression\fP [gz|xz|bz2]
+The compression option of the tarball created.
+.TP
 \fB\-\-pull\fP
-Whether to pull the artifact if it's missing or incomplete.
+Pull the artifact if it's missing or incomplete.
 .TP
 \fB\-\-directory\fP DIRECTORY
 The directory to checkout the artifact to

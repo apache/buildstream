@@ -1,4 +1,4 @@
-.TH "BST BUILD" "1" "14-Jul-2019" "" "bst build Manual"
+.TH "BST BUILD" "1" "31-Oct-2019" "" "bst build Manual"
 .SH NAME
 bst\-build \- Build elements in a pipeline
 .SH SYNOPSIS
@@ -13,25 +13,16 @@ elements will be built.
 .PP
 When this command is executed from a workspace directory, the default
 is to build the workspace element.
+.PP
+Specify `--deps` to control which dependencies to build:
+.PP
+
+    plan:  Only dependencies required for the build plan
+    all:   All dependencies
 .SH OPTIONS
 .TP
-\fB\-\-all\fP
-Build elements that would not be needed for the current build plan
-.TP
-\fB\-\-track\fP PATH
-Specify elements to track during the build. Can be used repeatedly to specify multiple elements
-.TP
-\fB\-\-track\-all\fP
-Track all elements in the pipeline
-.TP
-\fB\-\-track\-except\fP PATH
-Except certain dependencies from tracking
-.TP
-\fB\-J,\fP \-\-track\-cross\-junctions
-Allow tracking to cross junction boundaries
-.TP
-\fB\-\-track\-save\fP
-Deprecated: This is ignored
+\fB\-d,\fP \-\-deps [plan|all]
+The dependencies to build
 .TP
 \fB\-r,\fP \-\-remote TEXT
 The URL of the remote cache (defaults to the first configured cache)

@@ -1,12 +1,36 @@
-.TH "BST ARTIFACT" "1" "14-Jul-2019" "" "bst artifact Manual"
+.TH "BST ARTIFACT" "1" "31-Oct-2019" "" "bst artifact Manual"
 .SH NAME
-bst\-artifact \- Manipulate cached artifacts
+bst\-artifact \- Manipulate cached artifacts.
 .SH SYNOPSIS
 .B bst artifact
 [OPTIONS] COMMAND [ARGS]...
 .SH DESCRIPTION
 Manipulate cached artifacts
+.PP
+Some subcommands take artifact references as arguments. Artifacts
+can be specified in two ways:
+.PP
+
+- artifact refs: triples of the form <project name>/<element name>/<cache key>
+- element paths
+.PP
+When elements are given, the artifact corresponding to the element is used.
+.PP
+The commands also support shell-style wildcard expansion: `?` matches a
+single character, and `*` matches zero or more. The patterns are matched
+against artifact refs by default. If the pattern ends with `.bst` then
+it matches element paths instead. Some example arguments are:
+.PP
+
+- `myproject/hello/8276376b077eda104c812e6ec2f488c7c9eea211ce572c83d734c10bf241209f`
+- `myproject/he*/827637*`
+- `*.bst` (all elements)
+- `myproject/*` (all artifacts from myproject)
 .SH COMMANDS
+.PP
+\fBshow\fP
+  Show the cached state of artifacts
+  See \fBbst artifact-show(1)\fP for full documentation on the \fBshow\fP command.
 .PP
 \fBcheckout\fP
   Checkout contents of an artifact
@@ -23,6 +47,10 @@ Manipulate cached artifacts
 \fBlog\fP
   Show logs of artifacts
   See \fBbst artifact-log(1)\fP for full documentation on the \fBlog\fP command.
+.PP
+\fBlist-contents\fP
+  List the contents of an artifact
+  See \fBbst artifact-list-contents(1)\fP for full documentation on the \fBlist-contents\fP command.
 .PP
 \fBdelete\fP
   Remove artifacts from the local cache
