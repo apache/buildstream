@@ -103,13 +103,19 @@ class Mount():
         assert self.__process is None
 
         self.__mountpoint = mountpoint
+
         self.__process = Process(target=self.__run_fuse, args=(self.__logfile.name,))
 
         # Ensure the child process does not inherit our signal handlers, if the
         # child wants to handle a signal then it will first set its own
         # handler, and then unblock it.
         with _signals.blocked([signal.SIGTERM, signal.SIGTSTP, signal.SIGINT], ignore=False):
+            # Note that the temporary __logfile isn't picklable, so we must make
+            # sure it is not part of `self` when spawning a process.
+            logfile = self.__logfile
+            self.__logfile = None
             self.__process.start()
+            self.__logfile = logfile
 
         while not os.path.ismount(mountpoint):
             if not self.__process.is_alive():
