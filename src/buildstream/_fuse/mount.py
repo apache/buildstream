@@ -104,7 +104,7 @@ class Mount():
 
         self.__mountpoint = mountpoint
 
-        self.__process = Process(target=self.__run_fuse, args=(self.__logfile.name,))
+        self.__process = Process(target=self._run_fuse, args=(self.__logfile.name,))
 
         # Ensure the child process does not inherit our signal handlers, if the
         # child wants to handle a signal then it will first set its own
@@ -188,7 +188,7 @@ class Mount():
     ################################################
     #                Child Process                 #
     ################################################
-    def __run_fuse(self, filename):
+    def _run_fuse(self, filename):
         # Override stdout/stderr to the file given as a pointer, that way our parent process can get our output
         out = open(filename, "w")
         os.dup2(out.fileno(), sys.stdout.fileno())
