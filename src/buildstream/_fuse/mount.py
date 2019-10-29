@@ -91,14 +91,14 @@ class Mount():
     def __init__(self, fuse_mount_options=None):
         self._fuse_mount_options = {} if fuse_mount_options is None else fuse_mount_options
 
-    # mount():
+    # _mount():
     #
-    # User facing API for mounting a fuse subclass implementation
+    # Mount a fuse subclass implementation.
     #
     # Args:
     #    (str): Location to mount this fuse fs
     #
-    def mount(self, mountpoint):
+    def _mount(self, mountpoint):
 
         assert self.__process is None
 
@@ -119,11 +119,11 @@ class Mount():
 
             time.sleep(1 / 100)
 
-    # unmount():
+    # _unmount():
     #
-    # User facing API for unmounting a fuse subclass implementation
+    # Unmount a fuse subclass implementation.
     #
-    def unmount(self):
+    def _unmount(self):
 
         # Terminate child process and join
         if self.__process is not None:
@@ -156,12 +156,12 @@ class Mount():
         with utils._tempnamedfile() as logfile:
             self.__logfile = logfile
 
-            self.mount(mountpoint)
+            self._mount(mountpoint)
             try:
-                with _signals.terminator(self.unmount):
+                with _signals.terminator(self._unmount):
                     yield
             finally:
-                self.unmount()
+                self._unmount()
 
         self.__logfile = None
 
