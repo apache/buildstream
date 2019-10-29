@@ -56,9 +56,11 @@ def pickle_child_job(child_job, projects):
     # Note that we need to consider all the state of the program that's
     # necessary for the job, this includes e.g. the global state of the node
     # module.
+    from ...sandbox._sandboxbwrap import SandboxBwrap
+    sandbox_bwrap_state = SandboxBwrap.save_check_available_status()
     node_module_state = node._get_state_for_pickling()
     return _pickle_child_job_data(
-        (child_job, node_module_state),
+        (child_job, node_module_state, sandbox_bwrap_state),
         projects,
     )
 
@@ -77,8 +79,12 @@ def pickle_child_job(child_job, projects):
 def do_pickled_child_job(pickled, *child_args):
     utils._is_main_process = _not_main_process
 
-    child_job, node_module_state = pickle.load(pickled)
+    child_job, node_module_state, sandbox_bwrap_state = pickle.load(pickled)
     node._set_state_from_pickling(node_module_state)
+
+    from ...sandbox._sandboxbwrap import SandboxBwrap
+    SandboxBwrap.load_check_available_status(sandbox_bwrap_state)
+
     return child_job.child_action(*child_args)
 
 

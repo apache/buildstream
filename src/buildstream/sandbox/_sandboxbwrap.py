@@ -92,6 +92,40 @@ class SandboxBwrap(Sandbox):
 
         cls.user_ns_available = cls._check_user_ns_available()
 
+    @classmethod
+    def save_check_available_status(cls):
+        # Note, these ones only get set if bwrap is available:
+        #
+        #     cls._uid = os.geteuid()
+        #     cls._gid = os.getegid()
+        #     cls.user_ns_available = cls._check_user_ns_available()
+        #
+        return (
+            cls._bwrap_exists,
+            cls._die_with_parent_available,
+            cls._dummy_reasons,
+            cls._gid,
+            cls._have_fuse,
+            cls._have_good_bwrap,
+            cls._json_status_available,
+            cls._uid,
+            cls.user_ns_available,
+        )
+
+    @classmethod
+    def load_check_available_status(cls, state):
+        (
+            cls._bwrap_exists,
+            cls._die_with_parent_available,
+            cls._dummy_reasons,
+            cls._gid,
+            cls._have_fuse,
+            cls._have_good_bwrap,
+            cls._json_status_available,
+            cls._uid,
+            cls.user_ns_available,
+        ) = state
+
     @staticmethod
     def _check_user_ns_available():
         # Here, lets check if bwrap is able to create user namespaces,
