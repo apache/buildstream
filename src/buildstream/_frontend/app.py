@@ -518,14 +518,16 @@ class App():
 
             try:
                 choice = click.prompt("Choice:",
-                                      value_proc=_prefix_choice_value_proc(['continue', 'quit', 'terminate']),
+                                      value_proc=_prefix_choice_value_proc(['continue', 'quit', 'terminate', 'e']),
                                       default='continue', err=True)
             except click.Abort:
                 # Ensure a newline after automatically printed '^C'
                 click.echo("", err=True)
                 choice = 'terminate'
-
-            if choice == 'terminate':
+            if choice == 'e':
+                from traceback import print_stack
+                print_stack(file=sys.stderr)
+            elif choice == 'terminate':
                 click.echo("\nTerminating all jobs at user request\n", err=True)
                 self.stream.terminate()
             else:

@@ -534,6 +534,7 @@ class Scheduler():
 
         if not self._notify_front_queue:
             # Not running in a subprocess, scheduler process to handle keyboard interrupt
+            print("Scheduler called an interrupt")
             notification = Notification(NotificationType.INTERRUPT)
             self._notify_front(notification)
 
@@ -566,14 +567,18 @@ class Scheduler():
     # Connects our signal handler event callbacks to the mainloop
     #
     def _connect_signals(self):
+        print("sched is connecting {}".format(os.getpid()))
         self.loop.add_signal_handler(signal.SIGINT, self._interrupt_event)
         self.loop.add_signal_handler(signal.SIGTERM, self._terminate_event)
         self.loop.add_signal_handler(signal.SIGTSTP, self._suspend_event)
 
     def _disconnect_signals(self):
+        print("sched is disconnecting {}".format(os.getpid()))
         self.loop.remove_signal_handler(signal.SIGINT)
         self.loop.remove_signal_handler(signal.SIGTSTP)
         self.loop.remove_signal_handler(signal.SIGTERM)
+
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     def _terminate_jobs_real(self):
         # 20 seconds is a long time, it can take a while and sometimes

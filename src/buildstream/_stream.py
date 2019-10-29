@@ -1860,6 +1860,7 @@ class Stream():
 
     def _connect_signals(self):
         if self.loop:
+            print("stream is connecting {}".format(os.getpid()))
             self.loop.add_signal_handler(signal.SIGINT, self._interrupt_callback)
             self.loop.add_signal_handler(signal.SIGTERM,
                                          lambda: self._notify_back(Notification(NotificationType.TERMINATE)))
@@ -1868,9 +1869,11 @@ class Stream():
 
     def _disconnect_signals(self):
         if self.loop:
+            print("stream is disconnecting {}".format(os.getpid()))
             self.loop.remove_signal_handler(signal.SIGINT)
             self.loop.remove_signal_handler(signal.SIGTSTP)
             self.loop.remove_signal_handler(signal.SIGTERM)
+            #signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     def __getstate__(self):
         # The only use-cases for pickling in BuildStream at the time of writing
