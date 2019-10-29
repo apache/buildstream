@@ -20,7 +20,6 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import asyncio
-import functools
 import multiprocessing as mp
 import os
 import sys
@@ -29,7 +28,6 @@ import shlex
 import shutil
 import tarfile
 import tempfile
-import queue
 import signal
 from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
@@ -69,6 +67,7 @@ from .types import _KeyStrength, _SchedulerErrorAction
 from .plugin import Plugin
 from . import utils, _yaml, _site, _signals
 from . import Scope
+
 
 # Stream()
 #
@@ -1821,8 +1820,10 @@ class Stream:
             self._casd_process = self._context.get_cascache().get_casd_process_manager().process
             self._watcher = asyncio.get_child_watcher()
             self._watcher.attach_loop(self.loop)
+
             def abort_casd(pid, returncode):
                 self.loop.call_soon(self._abort_on_casd_failure, pid, returncode)
+
             self._watcher.add_child_handler(self._casd_process.pid, abort_casd)
 
     def _abort_on_casd_failure(self, pid, returncode):

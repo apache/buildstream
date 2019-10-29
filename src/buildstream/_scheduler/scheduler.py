@@ -25,7 +25,6 @@ import asyncio
 from itertools import chain
 import signal
 import datetime
-import queue
 
 # Local imports
 from .resources import Resources
@@ -214,6 +213,7 @@ class Scheduler:
         if not subprocessed:
             self._casd_process = casd_process_manager.process
             _watcher = asyncio.get_child_watcher()
+
             def abort_casd(pid, returncode):
                 self.loop.call_soon(self._abort_on_casd_failure, pid, returncode)
 
