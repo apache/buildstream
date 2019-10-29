@@ -464,7 +464,7 @@ class Scheduler:
         # Make sure fork is allowed before starting jobs
         if not self.context.prepare_fork():
             message = Message(MessageType.BUG, "Fork is not allowed", detail="Background threads are active")
-            self._notify(Notification(NotificationType.MESSAGE, message=message))
+            self._notify_front(Notification(NotificationType.MESSAGE, message=message))
             self.terminate_jobs()
             return
 
