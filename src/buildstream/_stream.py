@@ -20,7 +20,6 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import asyncio
-import functools
 import multiprocessing as mp
 import os
 import sys
@@ -29,7 +28,6 @@ import shlex
 import shutil
 import tarfile
 import tempfile
-import queue
 import signal
 from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
@@ -69,6 +67,7 @@ from .types import _KeyStrength, _SchedulerErrorAction
 from .plugin import Plugin
 from . import utils, _yaml, _site, _signals
 from . import Scope
+
 
 # Stream()
 #

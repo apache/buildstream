@@ -24,7 +24,6 @@ import asyncio
 from itertools import chain
 import signal
 import datetime
-import queue
 
 # Local imports
 from .resources import Resources
