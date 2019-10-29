@@ -24,7 +24,6 @@ import asyncio
 import datetime
 import multiprocessing
 import os
-import pickle
 import signal
 import sys
 import traceback
@@ -35,7 +34,7 @@ from ..._message import Message, MessageType, unconditional_messages
 from ...types import FastEnum
 from ... import _signals, utils
 
-from .jobpickler import pickle_child_job
+from .jobpickler import pickle_child_job, do_pickled_child_job
 
 
 # Return code values shutdown of job handling child processes
@@ -85,37 +84,6 @@ class _MessageType(FastEnum):
     RESULT = 3
     CHILD_DATA = 4
     SUBCLASS_CUSTOM_MESSAGE = 5
-
-
-# _do_pickled_child_job()
-#
-# Unpickle the supplied 'pickled' job and call 'child_action' on it.
-#
-# This is expected to be run in a subprocess started from the main process, as
-# such it will fixup any globals to be in the expected state.
-#
-# Args:
-#    pickled     (BytesIO): The pickled job to execute.
-#    *child_args (any)    : Any parameters to be passed to `child_action`.
-#
-def _do_pickled_child_job(pickled, *child_args):
-
-    utils._is_main_process = _not_main_process
-
-    child_job = pickle.load(pickled)
-    return child_job.child_action(*child_args)
-
-
-# _not_main_process()
-#
-# A function to replace `utils._is_main_process` when we're running in a
-# subprocess that was not forked - the inheritance of the main process id will
-# not work in this case.
-#
-# Note that we'll always not be the main process by definition.
-#
-def _not_main_process():
-    return False
 
 
 # Job()
@@ -213,9 +181,11 @@ class Job():
 
         if self._scheduler.context.platform.does_multiprocessing_start_require_pickling():
             pickled = pickle_child_job(
-                child_job, self._scheduler.context.get_projects())
+                child_job,
+                self._scheduler.context.get_projects(),
+            )
             self._process = Process(
-                target=_do_pickled_child_job,
+                target=do_pickled_child_job,
                 args=[pickled, self._queue],
             )
         else:

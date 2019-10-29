@@ -1596,6 +1596,33 @@ def _reset_global_state():
     __counter = 0
 
 
+# _get_state_for_pickling()
+#
+# This gets the global variables necessary to preserve in a child process when
+# e.g. running a ChildJob. Things that are pickled from the parent process to
+# the child process will expect this module to be in the same state as in the
+# parent.
+#
+# Returns:
+#    (object): The state to supply to a call of _get_state_for_pickling().
+#
+def _get_state_for_pickling():
+    return __FILE_LIST, __counter
+
+
+# _set_state_from_pickling()
+#
+# This restores the global variables saved from _get_state_for_pickling(). See
+# that function for more details.
+#
+# Args:
+#    state (object): The result of calling _get_state_for_pickling().
+#
+def _set_state_from_pickling(state):
+    global __FILE_LIST, __counter
+    __FILE_LIST, __counter = state
+
+
 #############################################################
 #                 Module local helper Methods               #
 #############################################################

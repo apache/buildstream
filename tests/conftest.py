@@ -141,10 +141,10 @@ def pytest_configure(config):
     # possible. Note that some tests implicitly set the start method by using
     # multiprocessing. If we wait for bst to do it, it will already be too
     # late.
-    print(
-        "Multiprocessing method:",
-        multiprocessing.get_start_method(allow_none=True),
-    )
     if 'BST_FORCE_START_METHOD' in os.environ:
         start_method = os.environ['BST_FORCE_START_METHOD']
         multiprocessing.set_start_method(start_method)
+        print(
+            "Multiprocessing method set to:",
+            start_method,
+        )

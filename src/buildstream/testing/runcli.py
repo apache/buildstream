@@ -51,7 +51,7 @@ from _pytest.capture import MultiCapture, FDCapture, FDCaptureBinary
 
 # Import the main cli entrypoint
 from buildstream._frontend import cli as bst_cli
-from buildstream import _yaml
+from buildstream import _yaml, node
 from buildstream._cas import CASCache
 from buildstream.element import _get_normal_name, _compose_artifact_name
 
@@ -315,6 +315,15 @@ class Cli():
     #
     def run(self, configure=True, project=None, silent=False, env=None,
             cwd=None, options=None, args=None, binary_capture=False):
+
+        # We don't want to carry the state of one bst invocation into another
+        # bst invocation. Since node _FileInfo objects hold onto BuildStream
+        # projects, this means that they would be also carried forward. This
+        # becomes a problem when spawning new processes - when pickling the
+        # state of the node module we will also be pickling elements from
+        # previous bst invocations.
+        node._reset_global_state()
+
         if args is None:
             args = []
         if options is None:

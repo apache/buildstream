@@ -405,6 +405,13 @@ class Messenger():
         #
         del state['_render_status_cb']
 
+        # The "simple_task" context manager is not needed outside the main
+        # process. During testing we override it to something that cannot
+        # pickle, so just drop it when pickling to a child job. Note that it
+        # will only appear in 'state' if it has been overridden.
+        #
+        state.pop('simple_task', None)
+
         # The State object is not needed outside the main process
         del state['_state']
 
