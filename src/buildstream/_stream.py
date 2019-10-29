@@ -35,7 +35,8 @@ from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
-from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError, set_last_task_error, SubprocessException, set_last_exception
+from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError, set_last_task_error, \
+    SubprocessException, set_last_exception
 from ._message import Message, MessageType
 from ._scheduler import Scheduler, SchedStatus, TrackQueue, FetchQueue, \
     SourcePushQueue, BuildQueue, PullQueue, ArtifactPushQueue, NotificationType, Notification, JobStatus
@@ -346,17 +347,16 @@ class Stream():
         if remote:
             use_config = False
 
-
         elements, track_elements = \
             self._load(targets, track_targets,
-                selection=selection, track_selection=PipelineSelection.ALL,
-                track_except_targets=track_except,
-                track_cross_junctions=track_cross_junctions,
-                ignore_junction_targets=ignore_junction_targets,
-                use_artifact_config=use_config,
-                artifact_remote_url=remote,
-                use_source_config=True,
-                dynamic_plan=True)
+                       selection=selection, track_selection=PipelineSelection.ALL,
+                       track_except_targets=track_except,
+                       track_cross_junctions=track_cross_junctions,
+                       ignore_junction_targets=ignore_junction_targets,
+                       use_artifact_config=use_config,
+                       artifact_remote_url=remote,
+                       use_source_config=True,
+                       dynamic_plan=True)
 
         # Remove the tracking elements from the main targets
         elements = self._pipeline.subtract_elements(elements, track_elements)
@@ -1457,9 +1457,9 @@ class Stream():
         self._notify_front(Notification(NotificationType.ELEMENT_TOTALS,
                                         element_totals=element_totals))
 
-
         # Also send through the pipeline renderer output for heading & summary rendering
-        total_pipeline_render = self._pipeline_render_callback(self.total_elements, self._context.log_element_format) # pylint: disable=not-callable
+        total_pipeline_render = self._pipeline_render_callback(self.total_elements,  # pylint: disable=not-callable
+                                                               self._context.log_element_format)
         self._notify_front(Notification(NotificationType.SHOW_PIPELINE, show_pipeline=total_pipeline_render))
 
         if self._session_start_callback is not None:
@@ -1861,8 +1861,10 @@ class Stream():
     def _connect_signals(self):
         if self.loop:
             self.loop.add_signal_handler(signal.SIGINT, self._interrupt_callback)
-            self.loop.add_signal_handler(signal.SIGTERM, lambda: self._notify_back(Notification(NotificationType.TERMINATE)))
-            self.loop.add_signal_handler(signal.SIGTSTP, lambda: self._notify_back(Notification(NotificationType.SIGTSTP)))
+            self.loop.add_signal_handler(signal.SIGTERM,
+                                         lambda: self._notify_back(Notification(NotificationType.TERMINATE)))
+            self.loop.add_signal_handler(signal.SIGTSTP,
+                                         lambda: self._notify_back(Notification(NotificationType.SIGTSTP)))
 
     def _disconnect_signals(self):
         if self.loop:

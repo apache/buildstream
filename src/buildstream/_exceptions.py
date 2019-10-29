@@ -43,6 +43,7 @@ def get_last_exception():
     _last_exception = None
     return le
 
+
 # set_last_exception()
 #
 # Sets the last exception from the main process, used if Stream is running a subprocess
@@ -51,6 +52,7 @@ def set_last_exception(exception):
     if 'BST_TEST_SUITE' in os.environ:
         global _last_exception
         _last_exception = exception
+
 
 # get_last_task_error()
 #
@@ -388,6 +390,7 @@ class SkipJob(Exception):
 class ArtifactElementError(BstError):
     def __init__(self, message, *, detail=None, reason=None):
         super().__init__(message, detail=detail, domain=ErrorDomain.ELEMENT, reason=reason)
+
 
 class SubprocessException(BstError):
     def __init__(self, **kwargs):

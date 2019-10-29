@@ -97,7 +97,7 @@ class Notification():
                  exception=None,
                  task_groups=None,
                  element_totals=None,
-                 show_pipeline = None):
+                 show_pipeline=None):
         self.notification_type = notification_type
         self.full_name = full_name
         self.job_action = job_action
@@ -107,9 +107,9 @@ class Notification():
         self.message = message
         self.task_error = task_error  # Tuple of domain & reason
         self.exception = exception
-        self.task_groups = task_groups # Tuple of queue name, complete name, task change, & optional element name
+        self.task_groups = task_groups  # Tuple of queue name, complete name, task change, & optional element name
         self.element_totals = element_totals
-        self.show_pipeline = show_pipeline # Output of LogLine.show_pipeline() cb, to represent pipeline state
+        self.show_pipeline = show_pipeline  # Output of LogLine.show_pipeline() cb, to represent pipeline state
 
 
 # Scheduler()

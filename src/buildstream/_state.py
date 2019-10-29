@@ -89,6 +89,8 @@ class TaskGroup():
             # If name matches group, or if name not given call the cb
             if name == self.name or name is None:
                 cb(name, self.complete_name, 'failed_tasks', full_name)
+
+
 # State
 #
 # The state data that is stored for the purpose of sharing with the frontend.
@@ -257,7 +259,6 @@ class State():
     #
     def unregister_task_groups_changed_callback(self, callback, name=None):
         self._task_groups_changed_cbs.remove((callback, name))
-
 
     ##############################################
     # Core-facing APIs for driving notifications #
