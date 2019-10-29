@@ -69,7 +69,7 @@ def test_force_sandbox(cli, datafiles):
 def test_dummy_sandbox_fallback(cli, datafiles, tmp_path):
     # Create symlink to buildbox-casd to work with custom PATH
     bin_dir = str(tmp_path / 'bin')
-    symlink_host_tools_to_dir(['buildbox-casd'], bin_dir)
+    symlink_host_tools_to_dir(['buildbox-casd', 'git'], bin_dir)
 
     project = str(datafiles)
     element_path = os.path.join(project, 'elements', 'element.bst')

@@ -230,7 +230,7 @@ def test_push_failed_missing_shell(cli, tmpdir, datafiles, on_error):
 def test_host_tools_errors_are_not_cached(cli, datafiles, tmp_path):
     # Create symlink to buildbox-casd to work with custom PATH
     bin_dir = str(tmp_path / 'bin')
-    symlink_host_tools_to_dir(['buildbox-casd'], bin_dir)
+    symlink_host_tools_to_dir(['buildbox-casd', 'git'], bin_dir)
 
     project = str(datafiles)
     element_path = os.path.join(project, 'elements', 'element.bst')
