@@ -27,6 +27,7 @@ from .artifactshare import create_artifact_share, create_split_share, assert_sha
 from .context import dummy_context
 from .element_generators import create_element_size, update_element_size
 from .junction import generate_junction
+from .host_tools import symlink_host_tools_to_dir
 from .runner_integration import wait_for_cache_granularity
 from .python_repo import setup_pypi_repo
 from .platform import override_platform_uname

@@ -19,9 +19,11 @@
 import os
 import pytest
 
-from buildstream import utils, _yaml
+from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain
 from buildstream.testing import cli  # pylint: disable=unused-import
+
+from tests.testutils import symlink_host_tools_to_dir
 
 pytestmark = pytest.mark.integration
 
@@ -66,9 +68,8 @@ def test_force_sandbox(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_dummy_sandbox_fallback(cli, datafiles, tmp_path):
     # Create symlink to buildbox-casd to work with custom PATH
-    buildbox_casd = tmp_path.joinpath('bin/buildbox-casd')
-    buildbox_casd.parent.mkdir()
-    os.symlink(utils.get_host_tool('buildbox-casd'), str(buildbox_casd))
+    bin_dir = str(tmp_path / 'bin')
+    symlink_host_tools_to_dir(['buildbox-casd'], bin_dir)
 
     project = str(datafiles)
     element_path = os.path.join(project, 'elements', 'element.bst')
@@ -94,7 +95,7 @@ def test_dummy_sandbox_fallback(cli, datafiles, tmp_path):
     result = cli.run(
         project=project,
         args=['build', 'element.bst'],
-        env={'PATH': str(tmp_path.joinpath('bin')),
+        env={'PATH': bin_dir,
              'BST_FORCE_SANDBOX': None})
     # But if we dont spesify a sandbox then we fall back to dummy, we still
     # fail early but only once we know we need a facny sandbox and that
