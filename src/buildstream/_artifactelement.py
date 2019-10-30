@@ -17,13 +17,13 @@
 #  Authors:
 #        James Ennis <james.ennis@codethink.co.uk>
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from . import Element
 from . import _cachekey
 from ._exceptions import ArtifactElementError
 from ._loader.metaelement import MetaElement
-from .types import Scope
+from .types import Scope, _KeyStrength, List, Union
 
 if TYPE_CHECKING:
     from typing import Dict
@@ -147,7 +147,9 @@ class ArtifactElement(Element):
         sandbox.set_output_directory(install_root)
 
     # Override Element._calculate_cache_key
-    def _calculate_cache_key(self, dependencies=None):
+    def _calculate_cache_key(self,
+                             dependencies: List[Union[str, None]],
+                             dep_strength: int = _KeyStrength.STRONG) -> Optional[str]:
         return self._key
 
     # Override Element._get_cache_key()

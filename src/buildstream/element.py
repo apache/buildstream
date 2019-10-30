@@ -83,7 +83,7 @@ from functools import partial
 from itertools import chain
 import tempfile
 import string
-from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, List, Optional
+from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Union
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
@@ -217,7 +217,8 @@ class Element(Plugin):
 
     def __init__(self, context: 'Context', project: 'Project', meta: 'MetaElement', plugin_conf: Dict[str, Any]):
 
-        self.__cache_key_dict = None            # Dict for cache key calculation
+        # Dict for cache key calculation
+        self.__cache_key_dict = None            # type: Any
         self.__cache_key = None                 # Our cached cache key
 
         super().__init__(meta.name, context, project, meta.provenance, "element")
@@ -2126,12 +2127,18 @@ class Element(Plugin):
     #
     # Calculates the cache key
     #
+    # Args:
+    #    dependencies (list): dependency keys
+    #    strength (int): strength of dependency keys
+    #
     # Returns:
     #    (str): A hex digest cache key for this Element, or None
     #
     # None is returned if information for the cache key is missing.
     #
-    def _calculate_cache_key(self, dependencies):
+    def _calculate_cache_key(self,
+                             dependencies: List[Union[str, None]],
+                             dep_strength: int = _KeyStrength.STRONG) -> Optional[str]:
         # No cache keys for dependencies which have no cache keys
         if None in dependencies:
             return None
@@ -2167,7 +2174,13 @@ class Element(Plugin):
             self.__cache_key_dict['fatal-warnings'] = sorted(project._fatal_warnings)
 
         cache_key_dict = self.__cache_key_dict.copy()
-        cache_key_dict['dependencies'] = dependencies
+        cache_key_dict['dependency-keys-strong'] = []
+        cache_key_dict['dependency-keys-weak'] = []
+
+        if dep_strength == _KeyStrength.WEAK:
+            cache_key_dict['dependency-keys-weak'] = dependencies
+        else:
+            cache_key_dict['dependency-keys-strong'] = dependencies
 
         return _cachekey.generate_key(cache_key_dict)
 
@@ -3088,7 +3101,7 @@ class Element(Plugin):
                 for e in self.dependencies(Scope.BUILD)
             ]
 
-            self.__weak_cache_key = self._calculate_cache_key(dependencies)
+            self.__weak_cache_key = self._calculate_cache_key(dependencies, dep_strength=_KeyStrength.WEAK)
 
             if self.__weak_cache_key is None:
                 # Weak cache key could not be calculated yet, therefore
