@@ -106,7 +106,6 @@ def ansi2html(text, palette='solarized'):
     def _ansi2html(m):
         if m.group(2) != 'm':
             return ''
-        import sys
         state = None
         sub = ''
         cs = m.group(1)
