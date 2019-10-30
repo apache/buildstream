@@ -2157,12 +2157,12 @@ class Element(Plugin):
                 'public': self.__public.strip_node_info()
             }
 
-            def __get_source_entry(_source):
-                return {'key': _source._get_unique_key(True),
-                        'name': _source._get_source_name()}
+            self.__cache_key_dict['sources'] = []
 
-            self.__cache_key_dict['sources'] = \
-                [__get_source_entry(s) for s in self.__sources]
+            for source in self.__sources:
+                self.__cache_key_dict['sources'].append(
+                    {'key': source._get_unique_key(),
+                     'name': source._get_source_name()})
 
             self.__cache_key_dict['fatal-warnings'] = sorted(project._fatal_warnings)
 

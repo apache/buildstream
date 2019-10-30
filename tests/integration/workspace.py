@@ -21,6 +21,20 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
+def test_workspace_stages_once(cli, datafiles):
+    project = str(datafiles)
+    workspace = os.path.join(cli.directory, 'workspace')
+    element_name = 'workspace/workspace-mount.bst'
+
+    res = cli.run(project=project, args=['workspace', 'open', '--directory', workspace, element_name])
+    assert res.exit_code == 0
+    assert cli.get_element_key(project, element_name) != "{:?<64}".format('')
+    res = cli.run(project=project, args=['build', element_name])
+    assert res.exit_code == 0
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 def test_workspace_mount(cli, datafiles):
     project = str(datafiles)
     workspace = os.path.join(cli.directory, 'workspace')

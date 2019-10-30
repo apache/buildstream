@@ -5,8 +5,9 @@ import os
 import shutil
 import stat
 import pytest
-from buildstream import utils
+from buildstream import utils, _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing import create_repo
 from tests.testutils import create_artifact_share, generate_junction, assert_shared, assert_not_shared
 
 
@@ -389,6 +390,33 @@ def test_pull_missing_blob(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull_missing_local_blob(cli, tmpdir, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
+    repo = create_repo('git', str(tmpdir))
+    repo.create(os.path.join(str(datafiles), "files"))
+    element_dir = os.path.join(str(tmpdir), 'elements')
+    project = str(tmpdir)
+    project_config = {
+        "name": "pull-missing-local-blob",
+        "element-path": "elements",
+    }
+    project_file = os.path.join(str(tmpdir), "project.conf")
+    _yaml.roundtrip_dump(project_config, project_file)
+    input_config = {
+        "kind": "import",
+        "sources": [repo.source_config()],
+    }
+    input_name = 'input.bst'
+    input_file = os.path.join(element_dir, input_name)
+    _yaml.roundtrip_dump(input_config, input_file)
+
+    depends_name = 'depends.bst'
+    depends_config = {
+        "kind": "stack",
+        "depends": [
+            {"filename": input_name, "type": "build"}
+        ]
+    }
+    depends_file = os.path.join(element_dir, depends_name)
+    _yaml.roundtrip_dump(depends_config, depends_file)
 
     with create_artifact_share(os.path.join(str(tmpdir), 'artifactshare')) as share:
 
@@ -396,9 +424,12 @@ def test_pull_missing_local_blob(cli, tmpdir, datafiles):
         cli.configure({
             'artifacts': {'url': share.repo, 'push': True}
         })
-        result = cli.run(project=project, args=['build', 'import-bin.bst'])
+
+        result = cli.run(project=project, args=['source', 'track', input_name])
         result.assert_success()
-        assert cli.get_element_state(project, 'import-bin.bst') == 'cached'
+        result = cli.run(project=project, args=['build', input_name])
+        result.assert_success()
+        assert cli.get_element_state(project, input_name) == 'cached'
 
         # Delete a file blob from the local cache.
         # This is a placeholder to test partial CAS handling until we support
@@ -409,11 +440,11 @@ def test_pull_missing_local_blob(cli, tmpdir, datafiles):
         os.unlink(objpath)
 
         # Now try bst build
-        result = cli.run(project=project, args=['build', 'target.bst'])
+        result = cli.run(project=project, args=['build', depends_name])
         result.assert_success()
 
         # Assert that the import-bin artifact was pulled (completing the partial artifact)
-        assert result.get_pulled_elements() == ['import-bin.bst']
+        assert result.get_pulled_elements() == [input_name]
 
 
 @pytest.mark.datafiles(DATA_DIR)

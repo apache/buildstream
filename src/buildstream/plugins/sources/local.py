@@ -46,6 +46,7 @@ class LocalSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
     BST_STAGE_VIRTUAL_DIRECTORY = True
+    BST_NO_PRESTAGE_KEY = True
 
     def __init__(self, context, project, meta):
         super().__init__(context, project, meta)
@@ -60,20 +61,6 @@ class LocalSource(Source):
 
     def preflight(self):
         pass
-
-    def get_unique_key(self):
-        if self.__unique_key is None:
-            # Get a list of tuples of the the project relative paths and fullpaths
-            if os.path.isdir(self.fullpath):
-                filelist = utils.list_relative_paths(self.fullpath)
-                filelist = [(relpath, os.path.join(self.fullpath, relpath)) for relpath in filelist]
-            else:
-                filelist = [(self.path, self.fullpath)]
-
-            # Return a list of (relative filename, sha256 digest) tuples, a sorted list
-            # has already been returned by list_relative_paths()
-            self.__unique_key = [(relpath, unique_key(fullpath)) for relpath, fullpath in filelist]
-        return self.__unique_key
 
     def get_consistency(self):
         return Consistency.CACHED
@@ -108,20 +95,6 @@ class LocalSource(Source):
 
     def _get_local_path(self):
         return self.fullpath
-
-
-# Create a unique key for a file
-def unique_key(filename):
-
-    # Return some hard coded things for files which
-    # have no content to calculate a key for
-    if os.path.islink(filename):
-        # For a symbolic link, use the link target as its unique identifier
-        return os.readlink(filename)
-    elif os.path.isdir(filename):
-        return "0"
-
-    return utils.sha256sum(filename)
 
 
 # Plugin entry point
