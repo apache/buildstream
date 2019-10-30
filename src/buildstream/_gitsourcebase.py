@@ -53,14 +53,17 @@ class _RefFormat(FastEnum):
 # might have at a given time
 #
 class _GitMirror(SourceFetcher):
-    def __init__(self, source, path, url, ref, *, primary=False, tags=[]):
+    def __init__(self, source, path, url, ref, *, primary=False, tags=None):
 
         super().__init__()
         self.source = source
         self.path = path
         self.url = url
         self.ref = ref
-        self.tags = tags
+        if tags is None:
+            self.tags = []
+        else:
+            self.tags = tags
         self.primary = primary
         self.mirror = os.path.join(source.get_mirror_directory(), utils.url_directory_name(url))
         self.mark_download_url(url)

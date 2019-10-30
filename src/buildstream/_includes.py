@@ -28,7 +28,9 @@ class Includes:
     #    included (set): Fail for recursion if trying to load any files in this set
     #    current_loader (Loader): Use alternative loader (for junction files)
     #    only_local (bool): Whether to ignore junction files
-    def process(self, node, *, included=set(), current_loader=None, only_local=False):
+    def process(self, node, *, included=None, current_loader=None, only_local=False):
+        if included is None:
+            included = set()
         if current_loader is None:
             current_loader = self._loader
 
@@ -118,8 +120,11 @@ class Includes:
     #    included (set): Fail for recursion if trying to load any files in this set
     #    current_loader (Loader): Use alternative loader (for junction files)
     #    only_local (bool): Whether to ignore junction files
-    def _process_value(self, value, *, included=set(), current_loader=None, only_local=False):
+    def _process_value(self, value, *, included=None, current_loader=None, only_local=False):
         value_type = type(value)
+
+        if included is None:
+            included = set()
 
         if value_type is MappingNode:
             self.process(value, included=included, current_loader=current_loader, only_local=only_local)

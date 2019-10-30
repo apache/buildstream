@@ -761,7 +761,7 @@ class LogLine(Widget):
     def _format_values(self, values, style_value=True):
         text = ""
         max_key_len = 0
-        for key, value in values.items():
+        for key, _ in values.items():
             max_key_len = max(len(key), max_key_len)
 
         for key, value in values.items():

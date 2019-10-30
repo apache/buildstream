@@ -531,10 +531,10 @@ class CasBasedDirectory(Directory):
         if prefix != "":
             yield prefix
 
-        for (k, v) in sorted(file_list):
+        for k, _ in sorted(file_list):
             yield os.path.join(prefix, k)
 
-        for (k, v) in sorted(directory_list):
+        for k, v in sorted(directory_list):
             subdir = v.get_directory(self)
             yield from subdir._list_prefixed_relative_paths(prefix=os.path.join(prefix, k))
 

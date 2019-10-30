@@ -42,7 +42,7 @@ from . import utils
 # Pipelines.
 #
 class PluginContext:
-    def __init__(self, plugin_base, base_type, site_plugin_path, *, plugin_origins=None, format_versions={}):
+    def __init__(self, plugin_base, base_type, site_plugin_path, *, plugin_origins=None, format_versions=None):
 
         # For pickling across processes, make sure this context has a unique
         # identifier, which we prepend to the identifier of each PluginSource.
@@ -64,7 +64,10 @@ class PluginContext:
         self._plugin_base = plugin_base
         self._site_plugin_path = site_plugin_path
         self._alternate_sources = {}
-        self._format_versions = format_versions
+        if format_versions is None:
+            self._format_versions = {}
+        else:
+            self._format_versions = format_versions
 
         self._init_site_source()
 

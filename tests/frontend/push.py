@@ -261,6 +261,7 @@ def test_push_all(cli, tmpdir, datafiles):
         assert_shared(cli, share, project, "compose-all.bst")
 
 
+
 # Tests that `bst artifact push --deps run $artifact_ref` fails
 @pytest.mark.datafiles(DATA_DIR)
 def test_push_artifacts_all_deps_fails(cli, tmpdir, datafiles):

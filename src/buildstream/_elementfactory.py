@@ -30,7 +30,9 @@ from .element import Element
 #     plugin_origins (list):    Data used to search for external Element plugins
 #
 class ElementFactory(PluginContext):
-    def __init__(self, plugin_base, *, format_versions={}, plugin_origins=None):
+    def __init__(self, plugin_base, *, format_versions=None, plugin_origins=None):
+        if format_versions is None:
+            format_versions = {}
 
         super().__init__(
             plugin_base,
