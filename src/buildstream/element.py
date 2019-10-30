@@ -1615,7 +1615,6 @@ class Element(Plugin):
         # This would make the code less pretty, but it's a possible
         # optimization if we get desperate enough (and we will ;)).
         if not self.__should_schedule():
-            self.__update_cache_key_non_strict()
             return
 
         self.__assemble_scheduled = True
@@ -1624,6 +1623,9 @@ class Element(Plugin):
         for dep in self.dependencies(Scope.BUILD, recurse=False):
             dep._set_required()
 
+        # Once we schedule an element for assembly, we know that our
+        # build dependencies have strong cache keys, so we can update
+        # our own strong cache key.
         self.__update_cache_key_non_strict()
 
     # _assemble_done():
@@ -1645,6 +1647,10 @@ class Element(Plugin):
         if self.__artifact:
             self.__artifact.reset_cached()
 
+        # When we're building in non-strict mode, we may have
+        # assembled everything to this point without a strong cache
+        # key. Once the element has been assembled, a strong cache key
+        # can be set, so we do so.
         self.__update_cache_key_non_strict()
         self._update_ready_for_runtime_and_cached()
 
@@ -1880,6 +1886,10 @@ class Element(Plugin):
         # We may not have actually pulled an artifact - the pull may
         # have failed. We might therefore need to schedule assembly.
         self.__schedule_assembly_when_necessary()
+        # If we've finished pulling, an artifact might now exist
+        # locally, so we might need to update a non-strict strong
+        # cache key.
+        self.__update_cache_key_non_strict()
         self._update_ready_for_runtime_and_cached()
 
     # _pull():
