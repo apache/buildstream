@@ -28,7 +28,7 @@ services:
   controller:
     image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid:nightly
     command: [
-      "bgd", "server", "start", "-vvv",
+      "bgd", "server", "start", "-v",
       "/etc/buildgrid/default.conf"]
     ports:
       - 50051:50051
@@ -38,7 +38,7 @@ services:
   bot:
     image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid:nightly
     command: [
-      "bgd", "bot", "--parent=", "-vvv",
+      "bgd", "bot", "--parent=", "-v",
       "--remote=http://controller:50051",
       "--remote-cas=http://controller:50051",
       "buildbox",
@@ -57,7 +57,7 @@ services:
   storage:
     image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid:nightly
     command: [
-      "bgd", "server", "start", "-vvv",
+      "bgd", "server", "start", "-v",
       "/etc/buildgrid/artifacts.conf"]
     ports:
       - 50052:50052
