@@ -31,7 +31,6 @@ from ..node import Node
 from .._message import Message, MessageType
 from .sandbox import SandboxCommandError, _SandboxBatch
 from ._sandboxreapi import SandboxREAPI
-from ..storage._casbaseddirectory import CasBasedDirectory
 from .. import _signals
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.google.rpc import code_pb2
@@ -258,45 +257,6 @@ class SandboxRemote(SandboxREAPI):
                 raise SandboxError("Failed trying to send CancelOperation request: "
                                    "{} ({})".format(e.details(), e.code().name))
 
-    def process_job_output(self, output_directories, output_files, *, failure):
-        # Reads the remote execution server response to an execution request.
-        #
-        # output_directories is an array of OutputDirectory objects.
-        # output_files is an array of OutputFile objects.
-        #
-        # We only specify one output_directory, so it's an error
-        # for there to be any output files or more than one directory at the moment.
-        #
-        if output_files:
-            raise SandboxError("Output files were returned when we didn't request any.")
-        if not output_directories:
-            error_text = "No output directory was returned from the build server."
-            raise SandboxError(error_text)
-        if len(output_directories) > 1:
-            error_text = "More than one output directory was returned from the build server: {}."
-            raise SandboxError(error_text.format(output_directories))
-
-        tree_digest = output_directories[0].tree_digest
-        if tree_digest is None or not tree_digest.hash:
-            raise SandboxError("Output directory structure had no digest attached.")
-
-        context = self._get_context()
-        cascache = context.get_cascache()
-
-        # Get digest of root directory from tree digest
-        tree = remote_execution_pb2.Tree()
-        with open(cascache.objpath(tree_digest), 'rb') as f:
-            tree.ParseFromString(f.read())
-        root_directory = tree.root.SerializeToString()
-        dir_digest = utils._message_digest(root_directory)
-
-        # At the moment, we will get the whole directory back in the first directory argument and we need
-        # to replace the sandbox's virtual directory with that. Creating a new virtual directory object
-        # from another hash will be interesting, though...
-
-        new_dir = CasBasedDirectory(cascache, digest=dir_digest)
-        self._set_virtual_directory(new_dir)
-
     def _fetch_missing_blobs(self, vdir):
         context = self._get_context()
         project = self._get_project()
@@ -326,52 +286,6 @@ class SandboxRemote(SandboxREAPI):
                 if remote_missing_blobs:
                     raise SandboxError("{} output files are missing on the CAS server"
                                        .format(len(remote_missing_blobs)))
-
-    def _run(self, command, flags, *, cwd, env):
-        stdout, stderr = self._get_output()
-
-        context = self._get_context()
-        cascache = context.get_cascache()
-
-        # set up virtual dircetory
-        vdir = self.get_virtual_directory()
-
-        # Ensure working directory exists
-        if len(cwd) > 1:
-            assert cwd.startswith('/')
-            vdir.descend(*cwd[1:].split(os.path.sep), create=True)
-
-        # Create directories for all marked directories. This emulates
-        # some of the behaviour of other sandboxes, which create these
-        # to use as mount points.
-        for mark in self._get_marked_directories():
-            directory = mark['directory']
-            # Create each marked directory
-            vdir.descend(*directory.split(os.path.sep), create=True)
-
-        # Generate Action proto
-        input_root_digest = vdir._get_digest()
-        command_proto = self._create_command(command, cwd, env)
-        command_digest = cascache.add_object(buffer=command_proto.SerializeToString())
-        action = remote_execution_pb2.Action(command_digest=command_digest,
-                                             input_root_digest=input_root_digest)
-
-        action_result = self._execute_action(action)
-
-        # Get output of build
-        self.process_job_output(action_result.output_directories, action_result.output_files,
-                                failure=action_result.exit_code != 0)
-
-        if stdout:
-            if action_result.stdout_raw:
-                stdout.write(str(action_result.stdout_raw, 'utf-8', errors='ignore'))
-        if stderr:
-            if action_result.stderr_raw:
-                stderr.write(str(action_result.stderr_raw, 'utf-8', errors='ignore'))
-
-        # Non-zero exit code means a normal error during the build:
-        # the remote execution system has worked correctly but the command failed.
-        return action_result.exit_code
 
     def _execute_action(self, action):
         context = self._get_context()
@@ -478,22 +392,6 @@ class SandboxRemote(SandboxREAPI):
             else:
                 self.info("Action result found in action cache")
                 return result
-
-    def _create_command(self, command, working_directory, environment):
-        # Creates a command proto
-        environment_variables = [remote_execution_pb2.Command.
-                                 EnvironmentVariable(name=k, value=v)
-                                 for (k, v) in environment.items()]
-
-        # Request the whole directory tree as output
-        output_directory = os.path.relpath(os.path.sep, start=working_directory)
-
-        return remote_execution_pb2.Command(arguments=command,
-                                            working_directory=working_directory,
-                                            environment_variables=environment_variables,
-                                            output_files=[],
-                                            output_directories=[output_directory],
-                                            platform=None)
 
     @staticmethod
     def _extract_action_result(operation):
