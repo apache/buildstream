@@ -354,10 +354,10 @@ class SandboxRemote(Sandbox):
         # Generate action_digest first
         input_root_digest = upload_vdir._get_digest()
         command_proto = self._create_command(command, cwd, env)
-        command_digest = utils._message_digest(command_proto.SerializeToString())
+        command_digest = cascache.add_object(buffer=command_proto.SerializeToString())
         action = remote_execution_pb2.Action(command_digest=command_digest,
                                              input_root_digest=input_root_digest)
-        action_digest = utils._message_digest(action.SerializeToString())
+        action_digest = cascache.add_object(buffer=action.SerializeToString())
 
         # check action cache download and download if there
         action_result = self._check_action_cache(action_digest)
@@ -372,7 +372,7 @@ class SandboxRemote(Sandbox):
 
                 # Determine blobs missing on remote
                 try:
-                    missing_blobs = cascache.remote_missing_blobs_for_directory(casremote, input_root_digest)
+                    missing_blobs = list(cascache.remote_missing_blobs_for_directory(casremote, input_root_digest))
                 except grpc.RpcError as e:
                     raise SandboxError("Failed to determine missing blobs: {}".format(e)) from e
 
@@ -385,22 +385,15 @@ class SandboxRemote(Sandbox):
                 except (grpc.RpcError, BstError) as e:
                     raise SandboxError("Failed to pull missing blobs from artifact cache: {}".format(e)) from e
 
+                # Add command and action messages to blob list to push
+                missing_blobs.append(command_digest)
+                missing_blobs.append(action_digest)
+
                 # Now, push the missing blobs to the remote.
                 try:
                     cascache.send_blobs(casremote, missing_blobs)
                 except grpc.RpcError as e:
                     raise SandboxError("Failed to push source directory to remote: {}".format(e)) from e
-
-                # Push command and action
-                try:
-                    casremote.push_message(command_proto)
-                except grpc.RpcError as e:
-                    raise SandboxError("Failed to push command to remote: {}".format(e))
-
-                try:
-                    casremote.push_message(action)
-                except grpc.RpcError as e:
-                    raise SandboxError("Failed to push action to remote: {}".format(e))
 
             # Next, try to create a communication channel to the BuildGrid server.
             url = urlparse(self.exec_url)
