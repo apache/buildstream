@@ -248,6 +248,17 @@ project needs a bunch of very trivial patches whose only purpose is to gain comm
 access; knowing what's worth a patch post and what's not is part of showing good
 judgement.)
 
+Windows CI
+----------
+
+The infrastructure for running the CI against Windows is different from the usual
+runners, due to a combination of licensing technicalities and differing
+containerisation support.
+
+The scripts used to generate a CI runner can be found at
+`https://gitlab.com/BuildStream/windows-startup-script`.
+The `wsl` branch can be used to generate a runner for WSL, and the `win32` branch
+can be used to generate a native-windows runner.
 
 Further information
 -------------------
