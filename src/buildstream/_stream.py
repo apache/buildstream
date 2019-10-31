@@ -32,9 +32,18 @@ import tempfile
 import queue
 from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
+from tblib import pickling_support
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
-from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError, set_last_task_error
+from ._exceptions import (
+    StreamError,
+    ImplError,
+    BstError,
+    ArtifactElementError,
+    ArtifactError,
+    set_last_task_error,
+    SubprocessException,
+)
 from ._message import Message, MessageType
 from ._scheduler import (
     Scheduler,
@@ -56,7 +65,6 @@ from .types import _KeyStrength, _SchedulerErrorAction
 from .plugin import Plugin
 from . import utils, _yaml, _site
 from . import Scope, Consistency
-
 
 # Stream()
 #
@@ -123,10 +131,12 @@ class Stream:
         # Set main process
         utils._set_stream_pid()
 
+        # Add traceback pickling support
+        pickling_support.install()
         try:
             func(*args, **kwargs)
-        except Exception as e:
-            notify.put(Notification(NotificationType.EXCEPTION, exception=e))
+        except Exception as e:  # pylint: disable=broad-except
+            notify.put(Notification(NotificationType.EXCEPTION, exception=SubprocessException(e)))
 
     def run_in_subprocess(self, func, *args, **kwargs):
         assert not self._subprocess
@@ -1753,7 +1763,7 @@ class Stream:
         elif notification.notification_type == NotificationType.TASK_ERROR:
             set_last_task_error(*notification.task_error)
         elif notification.notification_type == NotificationType.EXCEPTION:
-            raise notification.exception
+            raise notification.exception.re_raise()
         else:
             raise StreamError("Unrecognised notification type received")
 
