@@ -331,17 +331,15 @@ class SandboxRemote(Sandbox):
         stdout, stderr = self._get_output()
 
         context = self._get_context()
-        project = self._get_project()
         cascache = context.get_cascache()
-        artifactcache = context.artifactcache
 
         # set up virtual dircetory
-        upload_vdir = self.get_virtual_directory()
+        vdir = self.get_virtual_directory()
 
         # Ensure working directory exists
         if len(cwd) > 1:
             assert cwd.startswith('/')
-            upload_vdir.descend(*cwd[1:].split(os.path.sep), create=True)
+            vdir.descend(*cwd[1:].split(os.path.sep), create=True)
 
         # Create directories for all marked directories. This emulates
         # some of the behaviour of other sandboxes, which create these
@@ -349,14 +347,38 @@ class SandboxRemote(Sandbox):
         for mark in self._get_marked_directories():
             directory = mark['directory']
             # Create each marked directory
-            upload_vdir.descend(*directory.split(os.path.sep), create=True)
+            vdir.descend(*directory.split(os.path.sep), create=True)
 
-        # Generate action_digest first
-        input_root_digest = upload_vdir._get_digest()
+        # Generate Action proto
+        input_root_digest = vdir._get_digest()
         command_proto = self._create_command(command, cwd, env)
         command_digest = cascache.add_object(buffer=command_proto.SerializeToString())
         action = remote_execution_pb2.Action(command_digest=command_digest,
                                              input_root_digest=input_root_digest)
+
+        action_result = self._execute_action(action)
+
+        # Get output of build
+        self.process_job_output(action_result.output_directories, action_result.output_files,
+                                failure=action_result.exit_code != 0)
+
+        if stdout:
+            if action_result.stdout_raw:
+                stdout.write(str(action_result.stdout_raw, 'utf-8', errors='ignore'))
+        if stderr:
+            if action_result.stderr_raw:
+                stderr.write(str(action_result.stderr_raw, 'utf-8', errors='ignore'))
+
+        # Non-zero exit code means a normal error during the build:
+        # the remote execution system has worked correctly but the command failed.
+        return action_result.exit_code
+
+    def _execute_action(self, action):
+        context = self._get_context()
+        project = self._get_project()
+        cascache = context.get_cascache()
+        artifactcache = context.artifactcache
+
         action_digest = cascache.add_object(buffer=action.SerializeToString())
 
         # check action cache download and download if there
@@ -372,6 +394,7 @@ class SandboxRemote(Sandbox):
 
                 # Determine blobs missing on remote
                 try:
+                    input_root_digest = action.input_root_digest
                     missing_blobs = list(cascache.remote_missing_blobs_for_directory(casremote, input_root_digest))
                 except grpc.RpcError as e:
                     raise SandboxError("Failed to determine missing blobs: {}".format(e)) from e
@@ -386,7 +409,7 @@ class SandboxRemote(Sandbox):
                     raise SandboxError("Failed to pull missing blobs from artifact cache: {}".format(e)) from e
 
                 # Add command and action messages to blob list to push
-                missing_blobs.append(command_digest)
+                missing_blobs.append(action.command_digest)
                 missing_blobs.append(action_digest)
 
                 # Now, push the missing blobs to the remote.
@@ -413,20 +436,7 @@ class SandboxRemote(Sandbox):
                 operation = self.run_remote_command(channel, action_digest)
                 action_result = self._extract_action_result(operation)
 
-        # Get output of build
-        self.process_job_output(action_result.output_directories, action_result.output_files,
-                                failure=action_result.exit_code != 0)
-
-        if stdout:
-            if action_result.stdout_raw:
-                stdout.write(str(action_result.stdout_raw, 'utf-8', errors='ignore'))
-        if stderr:
-            if action_result.stderr_raw:
-                stderr.write(str(action_result.stderr_raw, 'utf-8', errors='ignore'))
-
-        # Non-zero exit code means a normal error during the build:
-        # the remote execution system has worked correctly but the command failed.
-        return action_result.exit_code
+        return action_result
 
     def _check_action_cache(self, action_digest):
         # Checks the action cache to see if this artifact has already been built
