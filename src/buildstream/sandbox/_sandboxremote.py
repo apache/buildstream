@@ -281,20 +281,19 @@ class SandboxRemote(Sandbox):
 
         context = self._get_context()
         cascache = context.get_cascache()
-        artifactcache = context.artifactcache
 
-        with CASRemote(self.storage_remote_spec, cascache) as casremote:
-            # Now do a pull to ensure we have the full directory structure.
-            dir_digest = cascache.pull_tree(casremote, tree_digest)
-
-        if dir_digest is None or not dir_digest.hash or not dir_digest.size_bytes:
-            raise SandboxError("Output directory structure pulling from remote failed.")
+        # Get digest of root directory from tree digest
+        tree = remote_execution_pb2.Tree()
+        with open(cascache.objpath(tree_digest), 'rb') as f:
+            tree.ParseFromString(f.read())
+        root_directory = tree.root.SerializeToString()
+        dir_digest = utils._message_digest(root_directory)
 
         # At the moment, we will get the whole directory back in the first directory argument and we need
         # to replace the sandbox's virtual directory with that. Creating a new virtual directory object
         # from another hash will be interesting, though...
 
-        new_dir = CasBasedDirectory(artifactcache.cas, digest=dir_digest)
+        new_dir = CasBasedDirectory(cascache, digest=dir_digest)
         self._set_virtual_directory(new_dir)
 
     def _fetch_missing_blobs(self, vdir):
@@ -435,6 +434,16 @@ class SandboxRemote(Sandbox):
             with channel:
                 operation = self.run_remote_command(channel, action_digest)
                 action_result = self._extract_action_result(operation)
+
+        # Fetch outputs
+        with CASRemote(self.storage_remote_spec, cascache) as casremote:
+            for output_directory in action_result.output_directories:
+                tree_digest = output_directory.tree_digest
+                if tree_digest is None or not tree_digest.hash:
+                    raise SandboxError("Output directory structure had no digest attached.")
+
+                # Now do a pull to ensure we have the full directory structure.
+                cascache.pull_tree(casremote, tree_digest)
 
         return action_result
 
