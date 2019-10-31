@@ -29,7 +29,8 @@ import grpc
 from .. import utils
 from ..node import Node
 from .._message import Message, MessageType
-from .sandbox import Sandbox, SandboxCommandError, _SandboxBatch
+from .sandbox import SandboxCommandError, _SandboxBatch
+from ._sandboxreapi import SandboxREAPI
 from ..storage._casbaseddirectory import CasBasedDirectory
 from .. import _signals
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
@@ -50,7 +51,7 @@ class RemoteExecutionSpec(namedtuple('RemoteExecutionSpec', 'exec_service storag
 # This isn't really a sandbox, it's a stub which sends all the sources and build
 # commands to a remote server and retrieves the results from it.
 #
-class SandboxRemote(Sandbox):
+class SandboxRemote(SandboxREAPI):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -520,10 +521,6 @@ class SandboxRemote(Sandbox):
 
     def _create_batch(self, main_group, flags, *, collect=None):
         return _SandboxRemoteBatch(self, main_group, flags, collect=collect)
-
-    def _use_cas_based_directory(self):
-        # Always use CasBasedDirectory for remote execution
-        return True
 
 
 # _SandboxRemoteBatch()
