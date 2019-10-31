@@ -15,8 +15,9 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import shlex
 
-from .sandbox import Sandbox
+from .sandbox import Sandbox, SandboxCommandError, _SandboxBatch
 from .. import utils
 from .._exceptions import ImplError, SandboxError
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
@@ -135,6 +136,72 @@ class SandboxREAPI(Sandbox):
         new_dir = CasBasedDirectory(cascache, digest=dir_digest)
         self._set_virtual_directory(new_dir)
 
+    def _create_batch(self, main_group, flags, *, collect=None):
+        return _SandboxREAPIBatch(self, main_group, flags, collect=collect)
+
     def _execute_action(self, action):
         raise ImplError("Sandbox of type '{}' does not implement _execute_action()"
                         .format(type(self).__name__))
+
+
+# _SandboxREAPIBatch()
+#
+# Command batching by shell script generation.
+#
+class _SandboxREAPIBatch(_SandboxBatch):
+
+    def __init__(self, sandbox, main_group, flags, *, collect=None):
+        super().__init__(sandbox, main_group, flags, collect=collect)
+
+        self.script = None
+        self.first_command = None
+        self.cwd = None
+        self.env = None
+
+    def execute(self):
+        self.script = ""
+
+        self.main_group.execute(self)
+
+        first = self.first_command
+        if first and self.sandbox.run(['sh', '-c', '-e', self.script], self.flags, cwd=first.cwd, env=first.env) != 0:
+            raise SandboxCommandError("Command execution failed", collect=self.collect)
+
+    def execute_group(self, group):
+        group.execute_children(self)
+
+    def execute_command(self, command):
+        if self.first_command is None:
+            # First command in batch
+            # Initial working directory and environment of script already matches
+            # the command configuration.
+            self.first_command = command
+        else:
+            # Change working directory for this command
+            if command.cwd != self.cwd:
+                self.script += "mkdir -p {}\n".format(command.cwd)
+                self.script += "cd {}\n".format(command.cwd)
+
+            # Update environment for this command
+            for key in self.env.keys():
+                if key not in command.env:
+                    self.script += "unset {}\n".format(key)
+            for key, value in command.env.items():
+                if key not in self.env or self.env[key] != value:
+                    self.script += "export {}={}\n".format(key, shlex.quote(value))
+
+        # Keep track of current working directory and environment
+        self.cwd = command.cwd
+        self.env = command.env
+
+        # Actual command execution
+        cmdline = ' '.join(shlex.quote(cmd) for cmd in command.command)
+        self.script += "(set -ex; {})".format(cmdline)
+
+        # Error handling
+        label = command.label or cmdline
+        quoted_label = shlex.quote("'{}'".format(label))
+        self.script += " || (echo Command {} failed with exitcode $? >&2 ; exit 1)\n".format(quoted_label)
+
+    def execute_call(self, call):
+        raise SandboxError("SandboxRemote does not support callbacks in command batches")
