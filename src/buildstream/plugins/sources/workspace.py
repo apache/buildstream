@@ -48,7 +48,7 @@ class WorkspaceSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
     BST_STAGE_VIRTUAL_DIRECTORY = True
-    BST_NO_PRESTAGE_KEY = True
+    BST_KEY_REQUIRES_STAGE = True
 
     def __init__(self, context, project, meta) -> None:
         super().__init__(context, project, meta)

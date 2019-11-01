@@ -324,12 +324,11 @@ class Source(Plugin):
     *Since: 1.4*
     """
 
-    BST_NO_PRESTAGE_KEY = False
-    """Whether the source will never have a key prior to staging (a pre-stage
-    key). This is true in the case that the source requires staging in order to
-    efficiently generate a unique key.
+    BST_KEY_REQUIRES_STAGE = False
+    """Whether the source will require staging in order to efficiently generate
+    a unique key.
 
-    *Since: 1.91.1*
+    *Since: 1.91.2*
     """
 
     def __init__(self,
@@ -788,7 +787,7 @@ class Source(Plugin):
     def _stage(self, directory):
         directory = self.__ensure_directory(directory)
 
-        if self.BST_NO_PRESTAGE_KEY:
+        if self.BST_KEY_REQUIRES_STAGE:
             # _get_unique_key should be called before _stage
             assert self.__digest is not None
             cas_dir = CasBasedDirectory(self._get_context().get_cascache(),
@@ -813,7 +812,7 @@ class Source(Plugin):
     def _get_unique_key(self):
         key = {}
         key['directory'] = self.__directory
-        if self.BST_NO_PRESTAGE_KEY:
+        if self.BST_KEY_REQUIRES_STAGE:
             key['unique'] = self._stage_into_cas()
         else:
             key['unique'] = self.get_unique_key()  # pylint: disable=assignment-from-no-return
@@ -1061,7 +1060,7 @@ class Source(Plugin):
     #   previous_sources (list): List of Sources listed prior to this source
     #
     def _track(self, previous_sources: List['Source']) -> SourceRef:
-        if self.BST_NO_PRESTAGE_KEY:
+        if self.BST_KEY_REQUIRES_STAGE:
             # ensure that these sources have a key after tracking
             self._get_unique_key()
             return None
@@ -1120,7 +1119,7 @@ class Source(Plugin):
         self.__key = generate_key(keys)
 
         sourcecache = self._get_context().sourcecache
-        if self.BST_NO_PRESTAGE_KEY and not sourcecache.contains(self):
+        if self.BST_KEY_REQUIRES_STAGE and not sourcecache.contains(self):
             sourcecache.commit(self, [])
 
     @property
