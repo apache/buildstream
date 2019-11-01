@@ -16,6 +16,13 @@ CLI
       * `--track-cross-junctions` / `-J`
       * `--track-save`
 
+API
+---
+
+  o Sources may force early staging to cache by advertising
+    `BST_KEY_REQUIRES_STAGE`. Sources setting this are staged to the cache to
+    generate unique keys. `WorkspaceSource` and `LocalSource` set this.
+
 
 ==================
 buildstream 1.91.2
