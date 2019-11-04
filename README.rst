@@ -91,7 +91,7 @@ How can I get started?
 To get started, first `install BuildStream by following the installation guide
 <https://buildstream.build/install.html>`_
 and then follow our tutorial in the
-`user guide <https://docs.buildstream.build/main_using.html>`_.
+`user guide <https://docs.buildstream.build/1.4.1/main_using.html>`_.
 
 We also recommend exploring some existing BuildStream projects:
 
