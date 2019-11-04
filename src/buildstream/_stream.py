@@ -240,9 +240,6 @@ class Stream():
     # Args:
     #    targets (list of str): Targets to build
     #    selection (PipelineSelection): The selection mode for the specified targets
-    #    track_targets (list of str): Specified targets for tracking
-    #    track_except (list of str): Specified targets to except from tracking
-    #    track_cross_junctions (bool): Whether tracking should cross junction boundaries
     #    ignore_junction_targets (bool): Whether junction targets should be filtered out
     #    remote (str): The URL of a specific remote server to push to, or None
     #
@@ -251,9 +248,6 @@ class Stream():
     #
     def build(self, targets, *,
               selection=PipelineSelection.PLAN,
-              track_targets=None,
-              track_except=None,
-              track_cross_junctions=False,
               ignore_junction_targets=False,
               remote=None):
 
@@ -261,21 +255,16 @@ class Stream():
         if remote:
             use_config = False
 
-        elements, track_elements = \
-            self._load(targets, track_targets,
-                       selection=selection, track_selection=PipelineSelection.ALL,
-                       track_except_targets=track_except,
-                       track_cross_junctions=track_cross_junctions,
+        elements, _ = \
+            self._load(targets, [],
+                       selection=selection,
                        ignore_junction_targets=ignore_junction_targets,
                        use_artifact_config=use_config,
                        artifact_remote_url=remote,
                        use_source_config=True,
                        dynamic_plan=True)
 
-        # Remove the tracking elements from the main targets
-        elements = self._pipeline.subtract_elements(elements, track_elements)
-
-        # Assert that the elements we're not going to track are consistent
+        # Assert that the elements are consistent
         self._pipeline.assert_consistent(elements)
 
         if all(project.remote_execution_specs for project in self._context.get_projects()):
@@ -292,10 +281,6 @@ class Stream():
         # Now construct the queues
         #
         self._scheduler.clear_queues()
-        track_queue = None
-        if track_elements:
-            track_queue = TrackQueue(self._scheduler)
-            self._add_queue(track_queue, track=True)
 
         if self._artifacts.has_fetch_remotes():
             self._add_queue(PullQueue(self._scheduler))
@@ -311,9 +296,6 @@ class Stream():
             self._add_queue(SourcePushQueue(self._scheduler))
 
         # Enqueue elements
-        #
-        if track_elements:
-            self._enqueue_plan(track_elements, queue=track_queue)
         self._enqueue_plan(elements)
         self._run()
 

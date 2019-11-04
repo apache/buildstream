@@ -107,9 +107,12 @@ def test_junction_build_remote(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['source', 'track', 'junction.bst'])
     result.assert_success()
 
-    # Build it with --track-all
-    result = cli.run(project=project, silent=True, args=[
-        'build', '--track-all', 'composed.bst'])
+    # track target to ensure we have refs
+    result = cli.run(project=project, args=['source', 'track', '--deps', 'all', 'composed.bst'])
+    result.assert_success()
+
+    # build
+    result = cli.run(project=project, silent=True, args=['build', 'composed.bst'])
     result.assert_success()
 
     # Assert that the main target is cached as a result

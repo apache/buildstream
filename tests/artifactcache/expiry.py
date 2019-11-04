@@ -29,7 +29,7 @@ from buildstream._cas import CASCache
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream.testing import cli  # pylint: disable=unused-import
 
-from tests.testutils import create_element_size, update_element_size, wait_for_cache_granularity
+from tests.testutils import create_element_size, wait_for_cache_granularity
 
 
 DATA_DIR = os.path.join(
@@ -253,67 +253,6 @@ def test_never_delete_required(cli, datafiles):
     states = cli.get_element_states(project, ['target.bst'])
     assert states['dep1.bst'] == 'cached'
     assert states['dep2.bst'] != 'cached'
-    assert states['dep3.bst'] != 'cached'
-    assert states['target.bst'] != 'cached'
-
-
-# Assert that we never delete a dependency required for a build tree,
-# even when the artifact cache was previously populated with
-# artifacts we do not require, and the new build is run with dynamic tracking.
-#
-@pytest.mark.datafiles(DATA_DIR)
-def test_never_delete_required_track(cli, datafiles):
-    project = str(datafiles)
-    element_path = 'elements'
-
-    cli.configure({
-        'cache': {
-            'quota': 10000000
-        },
-        'scheduler': {
-            'fetchers': 1,
-            'builders': 1
-        }
-    })
-
-    # Create a linear build tree
-    repo_dep1 = create_element_size('dep1.bst', project, element_path, [], 2000000)
-    repo_dep2 = create_element_size('dep2.bst', project, element_path, ['dep1.bst'], 2000000)
-    repo_dep3 = create_element_size('dep3.bst', project, element_path, ['dep2.bst'], 2000000)
-    repo_target = create_element_size('target.bst', project, element_path, ['dep3.bst'], 2000000)
-
-    # This should all fit into the artifact cache
-    res = cli.run(project=project, args=['build', 'target.bst'])
-    res.assert_success()
-
-    # They should all be cached
-    states = cli.get_element_states(project, ['target.bst'])
-    assert states['dep1.bst'] == 'cached'
-    assert states['dep2.bst'] == 'cached'
-    assert states['dep3.bst'] == 'cached'
-    assert states['target.bst'] == 'cached'
-
-    # Now increase the size of all the elements
-    #
-    update_element_size('dep1.bst', project, repo_dep1, 8000000)
-    update_element_size('dep2.bst', project, repo_dep2, 8000000)
-    update_element_size('dep3.bst', project, repo_dep3, 8000000)
-    update_element_size('target.bst', project, repo_target, 8000000)
-
-    # Now repeat the same test we did in test_never_delete_required(),
-    # except this time let's add dynamic tracking
-    #
-    res = cli.run(project=project, args=['build', '--track-all', 'target.bst'])
-    res.assert_main_error(ErrorDomain.STREAM, None)
-    res.assert_task_error(ErrorDomain.CAS, 'cache-too-full')
-
-    # Expect the almost the same result that we did in test_never_delete_required()
-    # As the source will be downloaded first, we will be over the limit once
-    # the source for dep2.bst is downloaded
-    #
-    states = cli.get_element_states(project, ['target.bst'])
-    assert states['dep1.bst'] == 'cached'
-    assert states['dep2.bst'] == 'buildable'
     assert states['dep3.bst'] != 'cached'
     assert states['target.bst'] != 'cached'
 
