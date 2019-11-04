@@ -1,9 +1,9 @@
-.TH "BST SOURCE CHECKOUT" "1" "14-Jul-2019" "" "bst source checkout Manual"
+.TH "BST SOURCE CHECKOUT" "1" "31-Oct-2019" "" "bst source checkout Manual"
 .SH NAME
-bst\-source\-checkout \- Checkout sources for an element
+bst\-source\-checkout \- Checkout sources of an element
 .SH SYNOPSIS
 .B bst source checkout
-[OPTIONS] [ELEMENT] [LOCATION]
+[OPTIONS] [ELEMENT]
 .SH DESCRIPTION
 Checkout sources of an element to the specified location
 .PP
@@ -18,10 +18,16 @@ Allow files to be overwritten
 Except certain dependencies
 .TP
 \fB\-d,\fP \-\-deps [build|none|run|all]
-The dependencies whose sources to checkout (default: none)
+The dependencies whose sources to checkout  [default: none]
 .TP
-\fB\-\-tar\fP
-Create a tarball from the element's sources instead of a file tree.
+\fB\-\-tar\fP LOCATION
+Create a tarball containing the sources instead of a file tree.
+.TP
+\fB\-\-compression\fP [gz|xz|bz2]
+The compression option of the tarball created.
 .TP
 \fB\-\-include\-build\-scripts\fP
 .PP
+.TP
+\fB\-\-directory\fP DIRECTORY
+The directory to checkout the sources to

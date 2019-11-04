@@ -1,4 +1,4 @@
-.TH "BST SHELL" "1" "14-Jul-2019" "" "bst shell Manual"
+.TH "BST SHELL" "1" "31-Oct-2019" "" "bst shell Manual"
 .SH NAME
 bst\-shell \- Shell into an element's sandbox environment
 .SH SYNOPSIS
@@ -44,7 +44,7 @@ Mount a file or directory into the sandbox
 Create an isolated build sandbox
 .TP
 \fB\-t,\fP \-\-use\-buildtree [ask|try|always|never]
-Defaults to ask but if set to always the function will fail if a build tree is not available
+Use a buildtree. If `always` is set, will always fail to build if a buildtree is not available.  [default: ask]
 .TP
 \fB\-\-pull\fP
 Attempt to pull missing or incomplete artifacts

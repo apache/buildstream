@@ -1,36 +1,12 @@
-.TH "BST ARTIFACT LOG" "1" "14-Jul-2019" "" "bst artifact log Manual"
+.TH "BST ARTIFACT LOG" "1" "31-Oct-2019" "" "bst artifact log Manual"
 .SH NAME
 bst\-artifact\-log \- Show logs of artifacts
 .SH SYNOPSIS
 .B bst artifact log
 [OPTIONS] [ARTIFACTS]...
 .SH DESCRIPTION
-Show logs of artifacts.
-.PP
-Note that 'artifacts' can be element references like "hello.bst", and they
-can also be artifact references. You may use shell-style wildcards for
-either.
-.PP
-Here are some examples of element references:
-.PP
-
-- `hello.bst`
-- `*.bst`
-.PP
-Note that element references must end with '.bst' to distinguish them from
-artifact references. Anything that does not end in '.bst' is an artifact
-ref.
-.PP
-Artifact references follow the format `<project_name>/<element>/<key>`.
-Note that 'element' is without the `.bst` extension.
-.PP
-Here are some examples of artifact references:
-.PP
-
-- `myproject/hello/*`
-- `myproject/*`
-- `*`
-- `myproject/hello/827637*`
-- `myproject/he*/827637*`
-- `myproject/he??o/827637*`
-- `m*/h*/8276376b077eda104c812e6ec2f488c7c9eea211ce572c83d734c10bf241209f`
+Show build logs of artifacts
+.SH OPTIONS
+.TP
+\fB\-\-out\fP PATH
+Output logs to individual files in the specified path. If absent, logs are written to stdout.

@@ -1,4 +1,4 @@
-.TH "BST-ARTIFACT-SERVER" "1" "14-Jul-2019" "" "bst-artifact-server Manual"
+.TH "BST-ARTIFACT-SERVER" "1" "31-Oct-2019" "" "bst-artifact-server Manual"
 .SH NAME
 bst-artifact-server \- CAS Artifact Server
 .SH SYNOPSIS
@@ -21,8 +21,8 @@ Public client certificates for TLS (PEM-encoded)
 \fB\-\-enable\-push\fP
 Allow clients to upload blobs and update artifact cache
 .TP
-\fB\-\-head\-room\-min\fP INTEGER
-Disk head room minimum in bytes
+\fB\-\-quota\fP INTEGER
+Maximum disk usage in bytes  [default: 10000000000.0]
 .TP
-\fB\-\-head\-room\-max\fP INTEGER
-Disk head room maximum in bytes
+\fB\-\-index\-only\fP
+Only provide the BuildStream artifact and source services ("index"), not the CAS ("storage")
