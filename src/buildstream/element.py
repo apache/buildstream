@@ -258,6 +258,7 @@ class Element(Plugin):
         self.__cached_remotely = None           # Whether the element is cached remotely
         # List of Sources
         self.__sources = []                     # type: List[Source]
+        self.__has_no_ref_source = False  # at least one of the sources advertises BST_NO_REF = True
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
         self.__artifacts = context.artifactcache  # Artifact cache
@@ -2167,6 +2168,8 @@ class Element(Plugin):
             self.__cache_key_dict['sources'] = []
 
             for source in self.__sources:
+                if source.BST_NO_REF:
+                    self.__has_no_ref_source = True
                 self.__cache_key_dict['sources'].append(
                     {'key': source._get_unique_key(),
                      'name': source._get_source_name()})
@@ -2174,13 +2177,15 @@ class Element(Plugin):
             self.__cache_key_dict['fatal-warnings'] = sorted(project._fatal_warnings)
 
         cache_key_dict = self.__cache_key_dict.copy()
-        cache_key_dict['dependency-keys-strong'] = []
-        cache_key_dict['dependency-keys-weak'] = []
 
-        if dep_strength == _KeyStrength.WEAK:
-            cache_key_dict['dependency-keys-weak'] = dependencies
+        if self.__has_no_ref_source:
+            cache_key_dict['dependency-names'] = []
+            cache_key_dict['dependency-keys'] = []
+
+        if dep_strength == _KeyStrength.WEAK and not self.BST_STRICT_REBUILD:
+            cache_key_dict['dependency-names'] = dependencies
         else:
-            cache_key_dict['dependency-keys-strong'] = dependencies
+            cache_key_dict['dependency-keys'] = dependencies
 
         return _cachekey.generate_key(cache_key_dict)
 
