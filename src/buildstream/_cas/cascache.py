@@ -24,6 +24,7 @@ import stat
 import contextlib
 import ctypes
 import multiprocessing
+import random
 import shutil
 import signal
 import subprocess
@@ -84,10 +85,7 @@ class CASCache():
         self._cache_usage_monitor_forbidden = False
 
         if casd:
-            # Place socket in global/user temporary directory to avoid hitting
-            # the socket path length limit.
-            self._casd_socket_tempdir = tempfile.mkdtemp(prefix='buildstream')
-            self._casd_socket_path = os.path.join(self._casd_socket_tempdir, 'casd.sock')
+            self._casd_socket_path = self._make_socket_path(path)
 
             casd_args = [utils.get_host_tool('buildbox-casd')]
             casd_args.append('--bind=unix:' + self._casd_socket_path)
@@ -115,6 +113,64 @@ class CASCache():
             self._cache_usage_monitor = _CASCacheUsageMonitor(self)
         else:
             self._casd_process = None
+
+    # _make_socket_path()
+    #
+    # Create a path to the CASD socket, ensuring that we don't exceed
+    # the socket path limit.
+    #
+    # Note that we *may* exceed the path limit if the python-chosen
+    # tmpdir path is very long, though this should be /tmp.
+    #
+    # Args:
+    #     path (str): The root directory for the CAS repository.
+    #
+    # Returns:
+    #     (str) - The path to the CASD socket.
+    #
+    def _make_socket_path(self, path):
+        self._casd_socket_tempdir = tempfile.mkdtemp(prefix='buildstream')
+        # mkdtemp will create this directory in the "most secure"
+        # way. This translates to "u+rwx,go-rwx".
+        #
+        # This is a good thing, generally, since it prevents us
+        # from leaking sensitive information to other users, but
+        # it's a problem for the workflow for userchroot, since
+        # the setuid casd binary will not share a uid with the
+        # user creating the tempdir.
+        #
+        # Instead, we chmod the directory 750, and only place a
+        # symlink to the CAS directory in here, which will allow the
+        # CASD process RWX access to a directory without leaking build
+        # information.
+        os.chmod(
+            self._casd_socket_tempdir,
+            stat.S_IRUSR |
+            stat.S_IWUSR |
+            stat.S_IXUSR |
+            stat.S_IRGRP |
+            stat.S_IXGRP,
+        )
+
+        os.symlink(path, os.path.join(self._casd_socket_tempdir, "cas"))
+        # FIXME: There is a potential race condition here; if multiple
+        # instances happen to create the same socket path, at least
+        # one will try to talk to the same server as us.
+        #
+        # There's no real way to avoid this from our side; we'd need
+        # buildbox-casd to tell us that it could not create a fresh
+        # socket.
+        #
+        # We could probably make this even safer by including some
+        # thread/process-specific information, but we're not really
+        # supporting this use case anyway; it's mostly here fore
+        # testing, and to help more gracefully handle the situation.
+        #
+        # Note: this uses the same random string generation principle
+        # as cpython, so this is probably a safe file name.
+        socket_name = "casserver-{}.sock".format(
+            "".join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789_", k=8)))
+        return os.path.join(self._casd_socket_tempdir, "cas", socket_name)
 
     def __getstate__(self):
         state = self.__dict__.copy()
