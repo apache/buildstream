@@ -18,6 +18,7 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
+import stat
 from . import utils
 from . import _yaml
 
@@ -128,6 +129,17 @@ class WorkspaceProject():
     def write(self):
         os.makedirs(self._directory, exist_ok=True)
         _yaml.roundtrip_dump(self.to_dict(), self.get_filename())
+        # _yaml.roundtrip_dump() will create a file with very tight
+        # permissions (600). This isn't necessary here, and actively
+        # problematic when we're staging workspaces in a userchroot
+        # environment, since we won't be able to to read the file as a
+        # different user.
+        os.chmod(
+            self.get_filename(),
+            stat.S_IRUSR |
+            stat.S_IWUSR |
+            stat.S_IRGRP,
+        )
 
     # get_filename()
     #
