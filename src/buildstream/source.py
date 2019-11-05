@@ -1118,10 +1118,6 @@ class Source(Plugin):
 
         self.__key = generate_key(keys)
 
-        sourcecache = self._get_context().sourcecache
-        if self.BST_KEY_REQUIRES_STAGE and not sourcecache.contains(self):
-            sourcecache.commit(self, [])
-
     @property
     def _key(self):
         return self.__key

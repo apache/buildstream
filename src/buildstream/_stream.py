@@ -188,6 +188,12 @@ class Stream():
         # in which case we just blindly trust the directory, using the element
         # definitions to control the execution environment only.
         if directory is None:
+
+            if not element._source_cached():
+                raise StreamError(
+                    "Sources for element {} are not cached."
+                    "Element must be fetched.".format(element._get_full_name()))
+
             missing_deps = [
                 dep for dep in self._pipeline.dependencies([element], scope)
                 if not dep._cached()
