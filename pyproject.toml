@@ -7,3 +7,21 @@ requires = [
     "Cython"
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 119
+exclude = '''
+(
+  /(
+      \.eggs
+    | \.git
+    | \.mypy_cache
+    | \.tox
+    | _build
+    | build
+    | dist
+  )/
+  | src/buildstream/_fuse
+  | src/buildstream/_protos
+)
+'''
