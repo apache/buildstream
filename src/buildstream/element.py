@@ -1453,7 +1453,7 @@ class Element(Plugin):
         # It's advantageous to have this temporary directory on
         # the same file system as the rest of our cache.
         with self.timed_activity("Staging sources", silent_nested=True), \
-            utils._tempdir(dir=context.tmpdir, prefix='staging-temp') as temp_staging_directory:
+            utils._group_tempdir(dir=context.tmpdir, prefix='staging-temp') as temp_staging_directory:
 
             import_dir = temp_staging_directory
 

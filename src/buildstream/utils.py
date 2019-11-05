@@ -65,6 +65,16 @@ _INITIAL_NUM_THREADS_IN_MAIN_PROCESS = 1
 # Number of seconds to wait for background threads to exit.
 _AWAIT_THREADS_TIMEOUT_SECONDS = 5
 
+# Bit flags for ug+rwx,o-rwx permissions
+URWX_GRWX = (
+    stat.S_IRUSR |
+    stat.S_IWUSR |
+    stat.S_IXUSR |
+    stat.S_IRGRP |
+    stat.S_IWGRP |
+    stat.S_IXGRP
+)
+
 
 class UtilError(BstError):
     """Raised by utility functions when system calls fail.
@@ -1010,6 +1020,32 @@ def _tempdir(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefined-bu
         cleanup_tempdir()
 
 
+# _group_tempdir()
+#
+# Same as _tempdir(), but it allows RWX access to the entire user
+# *group*, instead of just the user.
+#
+# NOTE: This is potentially insecure. If created in a directory with
+#       too open permissions, this will allow all users of the same
+#       group to read files in here, which may leak
+#       information. *Only* use this in directories whose parents are
+#       more tightly controlled (i.e., non-public directories).
+#
+# Args:
+#    dir (str): A path to a parent directory for the temporary directory
+#    suffix (str): A suffix for the temproary directory name
+#    prefix (str): A prefix for the temporary directory name
+#
+# Yields:
+#    (str): The temporary directory
+#
+@contextmanager
+def _group_tempdir(**kwargs):
+    with _tempdir() as tempdir:
+        os.chmod(tempdir, URWX_GRWX)
+        yield tempdir
+
+
 # _tempnamedfile()
 #
 # A context manager for doing work on an open temporary file
@@ -1098,6 +1134,13 @@ def _tempnamedfile_name(dir):  # pylint: disable=redefined-builtin
             yield filename
         finally:
             rm_tempfile()
+
+
+@contextmanager
+def _group_tempnamedfile_name(dir):
+    with _tempnamedfile_name(dir) as temp:
+        os.chmod(temp, URWX_GRWX)
+        yield temp
 
 
 # _kill_process_tree()

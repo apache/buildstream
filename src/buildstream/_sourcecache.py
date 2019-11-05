@@ -185,7 +185,7 @@ class SourceCache(BaseCache):
             vdir.import_files(self.export(previous_source))
 
         if not source.BST_STAGE_VIRTUAL_DIRECTORY:
-            with utils._tempdir(dir=self.context.tmpdir, prefix='staging-temp') as tmpdir:
+            with utils._group_tempdir(dir=self.context.tmpdir, prefix='staging-temp') as tmpdir:
                 if not vdir.is_empty():
                     vdir.export_files(tmpdir)
                 source._stage(tmpdir)

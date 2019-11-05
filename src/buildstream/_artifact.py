@@ -163,7 +163,11 @@ class Artifact():
 
         # Store public data
         with utils._tempnamedfile_name(dir=self._tmpdir) as tmpname:
+            # FIXME: This overrides the original file. Should check if
+            # that has side-effects besides re-setting the permissions
+            # (hence _group_tempnamedfile_name is useless here).
             _yaml.roundtrip_dump(publicdata, tmpname)
+            os.chmod(tmpname, utils.URWX_GRWX)
             public_data_digest = self._cas.add_object(path=tmpname, link_directly=True)
             artifact.public_data.CopyFrom(public_data_digest)
             size += public_data_digest.size_bytes
