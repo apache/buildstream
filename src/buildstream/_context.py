@@ -367,7 +367,8 @@ class Context():
 
         # Shallow validation of overrides, parts of buildstream which rely
         # on the overrides are expected to validate elsewhere.
-        for overrides in self._project_overrides.values():
+        for overrides_project in self._project_overrides.keys():
+            overrides = self._project_overrides.get_mapping(overrides_project)
             overrides.validate_keys(['artifacts', 'source-caches', 'options',
                                      'strict', 'default-mirror',
                                      'remote-execution'])
