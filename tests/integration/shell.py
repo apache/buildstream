@@ -320,6 +320,10 @@ def test_workspace_visible(cli, datafiles):
     # that we got the same content here
     #
     result = cli.run(project=project, args=[
+        'source', 'fetch', element_name])
+    assert result.exit_code == 0
+
+    result = cli.run(project=project, args=[
         'shell', '--build', element_name, '--', 'cat', 'hello.c'
     ])
     assert result.exit_code == 0
