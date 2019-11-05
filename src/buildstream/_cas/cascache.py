@@ -251,38 +251,25 @@ class CASCache():
     # Args:
     #     digest (Digest): The directory digest to check
     #     with_files (bool): Whether to check files as well
-    #     update_mtime (bool): Whether to update the timestamp
     #
     # Returns: True if the directory is available in the local cache
     #
-    def contains_directory(self, digest, *, with_files, update_mtime=False):
+    def contains_directory(self, digest, *, with_files):
+        local_cas = self._get_local_cas()
+
+        request = local_cas_pb2.FetchTreeRequest()
+        request.root_digest.CopyFrom(digest)
+        request.fetch_file_blobs = with_files
+
         try:
-            directory = remote_execution_pb2.Directory()
-            path = self.objpath(digest)
-            with open(path, 'rb') as f:
-                directory.ParseFromString(f.read())
-                if update_mtime:
-                    os.utime(f.fileno())
-
-            # Optionally check presence of files
-            if with_files:
-                for filenode in directory.files:
-                    path = self.objpath(filenode.digest)
-                    if update_mtime:
-                        # No need for separate `exists()` call as this will raise
-                        # FileNotFoundError if the file does not exist.
-                        os.utime(path)
-                    elif not os.path.exists(path):
-                        return False
-
-            # Check subdirectories
-            for dirnode in directory.directories:
-                if not self.contains_directory(dirnode.digest, with_files=with_files, update_mtime=update_mtime):
-                    return False
-
+            local_cas.FetchTree(request)
             return True
-        except FileNotFoundError:
-            return False
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                return False
+            if e.code() == grpc.StatusCode.UNIMPLEMENTED:
+                raise CASCacheError("Unsupported buildbox-casd version: FetchTree unimplemented") from e
+            raise
 
     # checkout():
     #

@@ -267,6 +267,7 @@ class Element(Plugin):
         self.__tracking_scheduled = False       # Sources are scheduled to be tracked
         self.__pull_done = False                # Whether pull was attempted
         self.__cached_successfully = None       # If the Element is known to be successfully cached
+        self.__source_cached = None             # If the sources are known to be successfully cached
         self.__splits = None                    # Resolved regex objects for computing split domains
         self.__whitelist_regex = None           # Resolved regex object to check if file is allowed to overlap
         # Location where Element.stage_sources() was called
@@ -2173,6 +2174,9 @@ class Element(Plugin):
 
     # Check if sources are cached, generating the source key if it hasn't been
     def _source_cached(self):
+        if self.__source_cached is not None:
+            return self.__source_cached
+
         if self.__sources:
             sourcecache = self._get_context().sourcecache
 
@@ -2189,6 +2193,7 @@ class Element(Plugin):
                 if not sourcecache.contains(source):
                     return False
 
+        self.__source_cached = True
         return True
 
     def _should_fetch(self, fetch_original=False):
