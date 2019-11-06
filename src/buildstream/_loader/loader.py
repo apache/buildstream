@@ -95,12 +95,11 @@ class Loader():
     #    ticker (callable): An optional function for tracking load progress
     #    targets (list of str): Target, element-path relative bst filenames in the project
     #    task (Task): A task object to report progress to
-    #    ignore_workspaces (bool): Whether to load workspace sources for open workspaces
     #
     # Raises: LoadError
     #
     # Returns: The toplevel LoadElement
-    def load(self, targets, task, rewritable=False, ticker=None, ignore_workspaces=False):
+    def load(self, targets, task, rewritable=False, ticker=None):
 
         for filename in targets:
             if os.path.isabs(filename):
@@ -149,7 +148,7 @@ class Loader():
 
             # Finally, wrap what we have into LoadElements and return the target
             #
-            ret.append(loader._collect_element(element, task, ignore_workspaces=ignore_workspaces))
+            ret.append(loader._collect_element(element, task))
 
         self._clean_caches()
 
@@ -427,12 +426,11 @@ class Loader():
     # Args:
     #    element (LoadElement): The element for which to load a MetaElement
     #    task (Task): A task to write progress information to
-    #    ignore_workspaces (bool): Whether to load workspace sources for open workspaces
     #
     # Returns:
     #    (MetaElement): A partially loaded MetaElement
     #
-    def _collect_element_no_deps(self, element, task, ignore_workspaces=False):
+    def _collect_element_no_deps(self, element, task):
         # Return the already built one, if we already built it
         meta_element = self._meta_elements.get(element.name)
         if meta_element:
@@ -448,7 +446,7 @@ class Loader():
         # metasource.
         workspace = self._context.get_workspaces().get_workspace(element.name)
         skip_workspace = True
-        if workspace and not ignore_workspaces:
+        if workspace:
             workspace_node = {'kind': 'workspace'}
             workspace_node['path'] = workspace.get_absolute_path()
             workspace_node['ref'] = str(workspace.to_dict().get('last_successful', 'ignored'))
@@ -495,14 +493,13 @@ class Loader():
     # Args:
     #    top_element (LoadElement): The element for which to load a MetaElement
     #    task (Task): The task to update with progress changes
-    #    ignore_workspaces (bool): Whether to load workspace sources for open workspaces
     #
     # Returns:
     #    (MetaElement): A fully loaded MetaElement
     #
-    def _collect_element(self, top_element, task, ignore_workspaces=False):
+    def _collect_element(self, top_element, task):
         element_queue = [top_element]
-        meta_element_queue = [self._collect_element_no_deps(top_element, task, ignore_workspaces=ignore_workspaces)]
+        meta_element_queue = [self._collect_element_no_deps(top_element, task)]
 
         while element_queue:
             element = element_queue.pop()
@@ -519,7 +516,7 @@ class Loader():
                 name = dep.element.name
 
                 if name not in loader._meta_elements:
-                    meta_dep = loader._collect_element_no_deps(dep.element, task, ignore_workspaces=ignore_workspaces)
+                    meta_dep = loader._collect_element_no_deps(dep.element, task)
                     element_queue.append(dep.element)
                     meta_element_queue.append(meta_dep)
                 else:

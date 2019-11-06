@@ -786,8 +786,7 @@ class Stream():
 
         elements, track_elements = self._load(targets, track_targets,
                                               selection=PipelineSelection.REDIRECT,
-                                              track_selection=PipelineSelection.REDIRECT,
-                                              ignore_workspaces=True)
+                                              track_selection=PipelineSelection.REDIRECT)
 
         workspaces = self._context.get_workspaces()
 
@@ -816,7 +815,7 @@ class Stream():
             workspace = workspaces.get_workspace(target._get_full_name())
             if workspace:
                 if not force:
-                    raise StreamError("Element '{}' already has workspace defined at: {}"
+                    raise StreamError("Element '{}' already has an open workspace defined at: {}"
                                       .format(target.name, workspace.get_absolute_path()))
                 if not no_checkout:
                     target.warn("Replacing existing workspace for element '{}' defined at: {}"
@@ -1158,7 +1157,6 @@ class Stream():
     #    use_source_config (bool): Whether to initialize remote source caches with the config
     #    artifact_remote_url (str): A remote url for initializing the artifacts
     #    source_remote_url (str): A remote url for initializing source caches
-    #    ignore_workspaces (bool): Whether to load workspace sources for open workspaces
     #
     # Returns:
     #    (list of Element): The primary element selection
@@ -1176,8 +1174,7 @@ class Stream():
               artifact_remote_url=None,
               source_remote_url=None,
               dynamic_plan=False,
-              load_refs=False,
-              ignore_workspaces=False):
+              load_refs=False):
 
         # Classify element and artifact strings
         target_elements, target_artifacts = self._classify_artifacts(targets)
@@ -1198,7 +1195,7 @@ class Stream():
         loadable = [target_elements, except_targets, track_targets, track_except_targets]
         if any(loadable):
             elements, except_elements, track_elements, track_except_elements = \
-                self._pipeline.load(loadable, rewritable=rewritable, ignore_workspaces=ignore_workspaces)
+                self._pipeline.load(loadable, rewritable=rewritable)
         else:
             elements, except_elements, track_elements, track_except_elements = [], [], [], []
 
