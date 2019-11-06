@@ -315,6 +315,15 @@ def test_open_track(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_open_noclose_open(cli, tmpdir, datafiles):
+    # opening the same workspace twice without closing it should fail
+    element_name, project, _ = open_workspace(cli, tmpdir, datafiles, 'git')
+
+    result = cli.run(project=project, args=['workspace', 'open', element_name])
+    result.assert_main_error(ErrorDomain.STREAM, None)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_open_force(cli, tmpdir, datafiles):
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git')
 
@@ -337,6 +346,9 @@ def test_open_force(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_open_force_open(cli, tmpdir, datafiles):
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, 'git')
+
+    result = cli.run(project=project, args=['workspace', 'close', element_name])
+    result.assert_success()
 
     # Assert the workspace dir exists
     assert os.path.exists(workspace)
@@ -396,17 +408,19 @@ def test_open_force_different_workspace(cli, tmpdir, datafiles):
     # Assert that workspace 2 contains the unmodified file
     assert os.path.exists(os.path.join(workspace2, 'usr', 'bin', 'hello'))
 
+    result = cli.run(project=project, args=['workspace', 'close', element_name2])
+    result.assert_success()
+
     # Now open the workspace again with --force, this should happily succeed
     result = cli.run(project=project, args=[
         'workspace', 'open', '--force', '--directory', workspace, element_name2
     ])
+    result.assert_success()
 
     # Assert that the file in workspace 1 has been replaced
     # With the file from workspace 2
     assert os.path.exists(hello_path)
     assert not os.path.exists(hello1_path)
-
-    result.assert_success()
 
 
 @pytest.mark.datafiles(DATA_DIR)
