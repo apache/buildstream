@@ -377,6 +377,10 @@ class Stream():
                        track_except_targets=except_targets,
                        track_cross_junctions=cross_junctions)
 
+        # FIXME: this can be refactored after element._update_state is simplified/removed
+        elements = [element for element in elements if element._schedule_tracking()]
+        self._pipeline.resolve_elements(elements)
+
         self._scheduler.clear_queues()
         track_queue = TrackQueue(self._scheduler)
         self._add_queue(track_queue, track=True)
@@ -1248,11 +1252,7 @@ class Stream():
                                                         track_selected,
                                                         track_except_elements)
 
-        for element in track_selected:
-            element._schedule_tracking()
-
         if not targets:
-            self._pipeline.resolve_elements(track_selected)
             return [], track_selected
 
         # ArtifactCache.setup_remotes expects all projects to be fully loaded
