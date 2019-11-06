@@ -815,7 +815,7 @@ class Stream():
             workspace = workspaces.get_workspace(target._get_full_name())
             if workspace:
                 if not force:
-                    raise StreamError("Element '{}' already has workspace defined at: {}"
+                    raise StreamError("Element '{}' already has an open workspace defined at: {}"
                                       .format(target.name, workspace.get_absolute_path()))
                 if not no_checkout:
                     target.warn("Replacing existing workspace for element '{}' defined at: {}"
