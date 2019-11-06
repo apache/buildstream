@@ -51,6 +51,7 @@ def create_test_directory(*path, mode=0o644):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason='Only available with a functioning sandbox')
 @pytest.mark.skipif(HAVE_SANDBOX == 'buildbox', reason='Not working with BuildBox, Must Fix')
+@pytest.mark.xfail
 def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
     project = str(datafiles)
     element_name = 'list.bst'
