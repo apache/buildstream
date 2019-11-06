@@ -86,6 +86,8 @@ class FileBasedDirectory(Directory):
 
         from ._casbaseddirectory import CasBasedDirectory  # pylint: disable=cyclic-import
 
+        can_link = False
+
         if isinstance(external_pathspec, CasBasedDirectory):
             if can_link and not update_mtime:
                 actionfunc = utils.safe_link
