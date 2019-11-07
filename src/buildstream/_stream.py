@@ -134,7 +134,7 @@ class Stream:
         self._sourcecache = self._context.sourcecache
 
     @staticmethod
-    def _subprocess_main(func, notify, *args, **kwargs):
+    def _subprocess_main(func, notify, *args, **kwargs) -> None:
         # Set main process
         utils._set_stream_pid()
 
@@ -1740,7 +1740,7 @@ class Stream:
 
         return element_targets, artifact_refs
 
-    def _notification_handler(self, notification):
+    def _notification_handler(self, notification: Notification) -> None:
         if notification.notification_type == NotificationType.TASK_GROUPS:
             queue_name, complete_name, task_event, element_name = notification.task_groups
             try:
@@ -1790,32 +1790,32 @@ class Stream:
         else:
             raise StreamError("Unrecognised notification type received")
 
-    def _notify_back(self, notification):
+    def _notify_back(self, notification: Notification) -> None:
         if self._notify_back_queue:
             self._notify_back_queue.put(notification)
         else:
             self._scheduler._notification_handler(notification)
 
-    def _notify_front(self, notification):
+    def _notify_front(self, notification: Notification) -> None:
         if self._notify_front_queue:
             self._notify_front_queue.put(notification)
         else:
             self._notification_handler(notification)
 
-    def _loop(self):
+    def _loop(self) -> None:
         while not self._notify_front_queue.empty():
             notification = self._notify_front_queue.get_nowait()
             self._notification_handler(notification)
 
-    def _start_listening(self):
+    def _start_listening(self) -> None:
         if self._notify_front_queue:
             self.loop.add_reader(self._notify_front_queue._reader.fileno(), self._loop)
 
-    def _stop_listening(self):
+    def _stop_listening(self) -> None:
         if self._notify_front_queue:
             self.loop.remove_reader(self._notify_front_queue._reader.fileno())
 
-    def _watch_casd(self):
+    def _watch_casd(self) -> None:
         if self._context.get_cascache().get_casd_process_manager().process:
             self._casd_process = self._context.get_cascache().get_casd_process_manager().process
             self._watcher = asyncio.get_child_watcher()
@@ -1826,27 +1826,28 @@ class Stream:
 
             self._watcher.add_child_handler(self._casd_process.pid, abort_casd)
 
-    def _abort_on_casd_failure(self, pid, returncode):
+    def _abort_on_casd_failure(self, pid: int, returncode: int) -> None:
         message = Message(MessageType.BUG, "buildbox-casd died while the pipeline was active.")
         self._notify_front(Notification(NotificationType.MESSAGE, message=message))
         self._casd_process.returncode = returncode
         notification = Notification(NotificationType.TERMINATE)
         self._notify_back(notification)
 
-    def _stop_watching_casd(self):
+    def _stop_watching_casd(self) -> None:
         self._watcher.remove_child_handler(self._casd_process.pid)
         self._watcher.close()
         self._casd_process = None
 
-    def _handle_exception(self, loop, context):
+    def _handle_exception(self, loop, context: dict) -> None:
         exception = context.get("exception")
         # Set the last exception for the test suite if needed
-        set_last_exception(exception)
+        if exception:
+            set_last_exception(exception)
         # Add it to context
         self._context._subprocess_exception = exception
         self.loop.stop()
 
-    def _connect_signals(self):
+    def _connect_signals(self) -> None:
         if self.loop:
             self.loop.add_signal_handler(signal.SIGINT, self._interrupt_callback)
             self.loop.add_signal_handler(
@@ -1856,7 +1857,7 @@ class Stream:
                 signal.SIGTSTP, lambda: self._notify_back(Notification(NotificationType.SIGTSTP))
             )
 
-    def _disconnect_signals(self):
+    def _disconnect_signals(self) -> None:
         if self.loop:
             self.loop.remove_signal_handler(signal.SIGINT)
             self.loop.remove_signal_handler(signal.SIGTSTP)

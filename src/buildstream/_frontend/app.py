@@ -964,7 +964,7 @@ class App:
 
         return (project_name, format_version, element_path)
 
-    def _handle_run_exception(self, exception, session_name):
+    def _handle_run_exception(self, exception: BstError, session_name: str) -> None:
         # Print a nice summary if this is a session
         if session_name:
             elapsed = self.stream.elapsed_time

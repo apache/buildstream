@@ -376,7 +376,7 @@ class Scheduler:
     #    domain (ErrorDomain): Enum for the domain from which the error occurred
     #    reason (str): String identifier representing the reason for the error
     #
-    def set_last_task_error(self, domain, reason):
+    def set_last_task_error(self, domain, reason: str) -> None:
         task_error = domain, reason
         notification = Notification(NotificationType.TASK_ERROR, task_error=task_error)
         self._notify_front(notification)
@@ -628,14 +628,14 @@ class Scheduler:
         queue._task_group.failed_tasks.remove(element._get_full_name())
         queue.enqueue([element])
 
-    def _notify_front(self, notification):
+    def _notify_front(self, notification: Notification) -> None:
         # Check if we need to call the notifier callback
         if self._notify_front_queue:
             self._notify_front_queue.put(notification)
         else:
             self._notifier(notification)
 
-    def _notification_handler(self, notification):
+    def _notification_handler(self, notification: Notification) -> None:
         if notification.notification_type == NotificationType.TERMINATE:
             self.terminate_jobs()
         elif notification.notification_type == NotificationType.QUIT:
@@ -653,20 +653,20 @@ class Scheduler:
             # as we don't want to pickle exceptions between processes
             raise ValueError("Unrecognised notification type received")
 
-    def _loop(self):
+    def _loop(self) -> None:
         while not self._notify_back_queue.empty():
             notification = self._notify_back_queue.get_nowait()
             self._notification_handler(notification)
 
-    def _start_listening(self):
+    def _start_listening(self) -> None:
         if self._notify_back_queue:
             self.loop.add_reader(self._notify_back_queue._reader.fileno(), self._loop)
 
-    def _stop_listening(self):
+    def _stop_listening(self) -> None:
         if self._notify_back_queue:
             self.loop.remove_reader(self._notify_back_queue._reader.fileno())
 
-    def _update_task_groups(self, name, complete_name, task, full_name=None):
+    def _update_task_groups(self, name: str, complete_name: str, task: str, full_name: str = None) -> None:
         if self._notify_front_queue:
             changes = (name, complete_name, task, full_name)
             self._notify_front(Notification(NotificationType.TASK_GROUPS, task_groups=changes))
