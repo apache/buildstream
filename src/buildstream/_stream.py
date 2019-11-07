@@ -1213,16 +1213,6 @@ class Stream():
         # Hold on to the targets
         self.targets = elements + artifacts
 
-        # Here we should raise an error if the track_elements targets
-        # are not dependencies of the primary targets, this is not
-        # supported.
-        #
-        # This can happen with `bst build --track`
-        #
-        if targets and not self._pipeline.targets_include(elements, track_elements):
-            raise StreamError("Specified tracking targets that are not "
-                              "within the scope of primary targets")
-
         # First take care of marking tracking elements, this must be
         # done before resolving element states.
         #
