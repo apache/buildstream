@@ -195,8 +195,6 @@ class ArtifactShare():
 
         self.cas.release_resources()
 
-        shutil.rmtree(self.directory)
-
 
 # create_artifact_share()
 #
