@@ -124,6 +124,40 @@ tests-buildbox-run:
   variables:
     BST_FORCE_SANDBOX: "buildbox-run"
 
+tests-userchroot:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
+  <<: *tests
+  variables:
+    BST_FORCE_SANDBOX: "buildbox-run"
+    BST_CAS_STAGING_ROOT: "/builds/userchroot"
+
+  script:
+    - mkdir -p "${INTEGRATION_CACHE}"
+    - useradd -Um buildstream
+
+    # Use buildbox-run-userchroot and hardlinking
+    - ln -svf buildbox-run-userchroot /usr/local/bin/buildbox-run
+    - rm -vf /usr/local/bin/buildbox-fuse
+
+    # When using userchroot, buildbox-casd must run as a separate user
+    - useradd -g buildstream buildbox-casd
+    - chown buildbox-casd:buildstream /usr/local/bin/buildbox-casd
+    - chmod u+s /usr/local/bin/buildbox-casd
+
+    # Set up staging root with permissions required by userchroot,
+    # must be on same filesystem as current directory to support hardlinks
+    - mkdir -p "${BST_CAS_STAGING_ROOT}"
+    - chown -R buildbox-casd:buildstream "${BST_CAS_STAGING_ROOT}"
+    # userchroot doesn't allow group/world-writable base directory
+    - chmod go-w /builds
+    - echo buildbox-casd:${BST_CAS_STAGING_ROOT} > /etc/userchroot.conf
+
+    - chown -R buildstream:buildstream .
+
+    # Run the tests as a simple user to test for permission issues
+    - su buildstream -c "umask 002 && ${TEST_COMMAND}"
+    - su buildstream -c "umask 002 && ${EXTERNAL_TESTS_COMMAND}"
+
 tests-fedora-missing-deps:
   # Ensure that tests behave nicely while missing bwrap and ostree
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
@@ -416,6 +450,7 @@ coverage:
   - tests-remote-execution
   - tests-ubuntu-18.04
   - tests-unix
+  - tests-userchroot
   except:
   - schedules
   artifacts:
