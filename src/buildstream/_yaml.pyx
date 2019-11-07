@@ -486,14 +486,16 @@ def roundtrip_load_data(contents, *, filename=None):
 # Args:
 #    contents (Mapping or list): The content to write out as YAML.
 #    file (any): The file to write to
+#    group_accessible (bool): Whether the resulting file should be group accessible.
 #
-def roundtrip_dump(contents, file=None):
+def roundtrip_dump(contents, file=None, group_accessible=False):
     with ExitStack() as stack:
         if type(file) is str:
             from . import utils
-            f = stack.enter_context(utils.save_file_atomic(file, 'w'))
+            f = stack.enter_context(utils.save_file_atomic(file, 'w', group_accessible=group_accessible))
         elif hasattr(file, 'write'):
             f = file
         else:
             f = sys.stdout
         yaml.round_trip_dump(contents, f, Dumper=HardlineDumper)
+

@@ -567,7 +567,8 @@ def save_file_atomic(filename: str,
                      newline: Optional[str] = None,
                      closefd: bool = True,
                      opener: Optional[Callable[[str, int], int]] = None,
-                     tempdir: Optional[str] = None) -> Iterator[IO]:
+                     tempdir: Optional[str] = None,
+                     group_accessible: bool = False) -> Iterator[IO]:
     """Save a file with a temporary name and rename it into place when ready.
 
     This is a context manager which is meant for saving data to files.
@@ -620,6 +621,16 @@ def save_file_atomic(filename: str,
             # This operation is atomic, at least on platforms we care about:
             # https://bugs.python.org/issue8828
             os.replace(tempname, filename)
+            if group_accessible:
+                os.chmod(
+                    filename,
+                    stat.S_IWUSR |
+                    stat.S_IRUSR |
+                    stat.S_IXUSR |
+                    stat.S_IWGRP |
+                    stat.S_IRGRP |
+                    stat.S_IXGRP,
+                )
     except Exception:
         cleanup_tempfile()
         raise
