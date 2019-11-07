@@ -48,6 +48,7 @@ class Topics:
     LOAD_PIPELINE = "load-pipeline"
     LOAD_SELECTION = "load-selection"
     SCHEDULER = "scheduler"
+    SUBPROCESS = "subprocess"
     ALL = "all"
 
 
