@@ -81,7 +81,6 @@ import contextlib
 from contextlib import contextmanager
 from functools import partial
 from itertools import chain
-import tempfile
 import string
 from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, List, Optional
 
@@ -94,7 +93,6 @@ from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, ErrorD
 from .utils import FileListResult
 from . import utils
 from . import _cachekey
-from . import _signals
 from . import _site
 from ._platform import Platform
 from .node import Node
@@ -1635,13 +1633,10 @@ class Element(Plugin):
 
             # Explicitly clean it up, keep the build dir around if exceptions are raised
             os.makedirs(context.builddir, exist_ok=True)
-            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.normal_name), dir=context.builddir)
 
-            # Cleanup the build directory on explicit SIGTERM
-            def cleanup_rootdir():
-                utils._force_rmtree(rootdir)
-
-            with _signals.terminator(cleanup_rootdir), self.__sandbox(
+            with utils._tempdir(
+                prefix="{}-".format(self.normal_name), dir=context.builddir
+            ) as rootdir, self.__sandbox(
                 rootdir, output_file, output_file, self.__sandbox_config
             ) as sandbox:  # noqa
 
@@ -1696,8 +1691,6 @@ class Element(Plugin):
                     raise
                 else:
                     return self._cache_artifact(rootdir, sandbox, collect)
-                finally:
-                    cleanup_rootdir()
 
     def _cache_artifact(self, rootdir, sandbox, collect):
 
@@ -2587,16 +2580,14 @@ class Element(Plugin):
 
         else:
             os.makedirs(context.builddir, exist_ok=True)
-            rootdir = tempfile.mkdtemp(prefix="{}-".format(self.normal_name), dir=context.builddir)
 
             # Recursive contextmanager...
-            with self.__sandbox(
+            with utils._tempdir(
+                prefix="{}-".format(self.normal_name), dir=context.builddir
+            ) as rootdir, self.__sandbox(
                 rootdir, stdout=stdout, stderr=stderr, config=config, allow_remote=allow_remote, bare_directory=False
             ) as sandbox:
                 yield sandbox
-
-            # Cleanup the build dir
-            utils._force_rmtree(rootdir)
 
     @classmethod
     def __compose_default_splits(cls, project, defaults, is_junction):
