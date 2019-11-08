@@ -45,6 +45,7 @@ class _ReturnCode(FastEnum):
     FAIL = 1
     PERM_FAIL = 2
     SKIPPED = 3
+    TERMINATED = 4
 
 
 # JobStatus:
@@ -455,6 +456,13 @@ class Job():
             status = JobStatus.SKIPPED
         elif returncode in (_ReturnCode.FAIL, _ReturnCode.PERM_FAIL):
             status = JobStatus.FAIL
+        elif returncode == _ReturnCode.TERMINATED:
+            if self._terminated:
+                self.message(MessageType.INFO, "Process was terminated")
+            else:
+                self.message(MessageType.ERROR, "Process was terminated unexpectedly")
+
+            status = JobStatus.FAIL
         else:
             status = JobStatus.FAIL
 
@@ -713,6 +721,12 @@ class ChildJob():
         #
         with _signals.suspendable(stop_time, resume_time), \
                 self._messenger.recorded_messages(self._logfile, self._logdir) as filename:
+
+            # Graciously handle sigterms.
+            def handle_sigterm(_signum, _sigframe):
+                self._child_shutdown(_ReturnCode.TERMINATED)
+
+            signal.signal(signal.SIGTERM, handle_sigterm)
 
             self.message(MessageType.START, self.action_name, logfile=filename)
 
