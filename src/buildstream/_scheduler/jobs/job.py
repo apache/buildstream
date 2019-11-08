@@ -249,22 +249,6 @@ class Job():
     def get_terminated(self):
         return self._terminated
 
-    # terminate_wait()
-    #
-    # Wait for terminated jobs to complete
-    #
-    # Args:
-    #    timeout (float): Seconds to wait
-    #
-    # Returns:
-    #    (bool): True if the process terminated cleanly, otherwise False
-    #
-    def terminate_wait(self, timeout):
-
-        # Join the child process after sending SIGTERM
-        self._process.join(timeout)
-        return self._process.exitcode is not None
-
     # kill()
     #
     # Forcefully kill the process, and any children it might have.
