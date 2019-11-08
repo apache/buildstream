@@ -46,6 +46,7 @@ class _ReturnCode(FastEnum):
     PERM_FAIL = 2
     SKIPPED = 3
     TERMINATED = 4
+    KILLED = -9
 
 
 # JobStatus:
@@ -461,6 +462,13 @@ class Job():
                 self.message(MessageType.INFO, "Process was terminated")
             else:
                 self.message(MessageType.ERROR, "Process was terminated unexpectedly")
+
+            status = JobStatus.FAIL
+        elif returncode == _ReturnCode.KILLED:
+            if self._terminated:
+                self.message(MessageType.INFO, "Process was killed")
+            else:
+                self.message(MessageType.ERROR, "Process was killed unexpectedly")
 
             status = JobStatus.FAIL
         else:
