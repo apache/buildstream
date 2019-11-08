@@ -69,14 +69,14 @@ from ._downloadablefilesource import DownloadableFileSource
 class ReadableTarInfo(tarfile.TarInfo):
     """
            The goal is to override `TarFile`'s `extractall` semantics by ensuring that on extraction, the
-           files are readable by the owner of the file. This is done by overriding the accessor for the
+           files are readable by the owners of the file. This is done by overriding the accessor for the
            `mode` attribute in `TarInfo`, the class that encapsulates the internal meta-data of the tarball,
            so that the owner-read bit is always set.
     """
     @property
     def mode(self):
-        # ensure file is readable by owner
-        return self.__permission | 0o400
+        # ensure file is readable by owner and group
+        return self.__permission | 0o440
 
     @mode.setter
     def mode(self, permission):
