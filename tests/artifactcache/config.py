@@ -214,3 +214,79 @@ def test_only_one(cli, datafiles, override_caches, project_caches, user_caches):
     # This does not happen for a simple `bst show`.
     result = cli.run(project=project, args=['artifact', 'pull', 'element.bst'])
     result.assert_main_error(ErrorDomain.STREAM, None)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "artifacts_config",
+    (
+        {
+            "url": "http://localhost.test",
+            "server-cert": "~/server.crt",
+            "client-cert": "~/client.crt",
+            "client-key": "~/client.key",
+        },
+        [
+            {
+                "url": "http://localhost.test",
+                "server-cert": "~/server.crt",
+                "client-cert": "~/client.crt",
+                "client-key": "~/client.key",
+            },
+            {
+                "url": "http://localhost2.test",
+                "server-cert": "~/server2.crt",
+                "client-cert": "~/client2.crt",
+                "client-key": "~/client2.key",
+            },
+        ]
+    )
+)
+@pytest.mark.parametrize("in_user_config", [True, False])
+def test_paths_for_artifact_config_are_expanded(tmpdir, monkeypatch, artifacts_config, in_user_config):
+    # Produce a fake user and project config with the cache configuration.
+    # user_config, project_config = configure_remote_caches(override_caches, project_caches, user_caches)
+    # project_config['name'] = 'test'
+
+    monkeypatch.setenv("HOME", tmpdir.join("homedir"))
+
+    if in_user_config:
+        user_config = {"artifacts": artifacts_config}
+        project_config = {"name": "test"}
+    else:
+        user_config = {}
+        project_config = {
+            "name": "test",
+            "artifacts": artifacts_config,
+        }
+
+    user_config_file = str(tmpdir.join('buildstream.conf'))
+    _yaml.roundtrip_dump(user_config, file=user_config_file)
+
+    project_dir = tmpdir.mkdir('project')
+    project_config_file = str(project_dir.join('project.conf'))
+    _yaml.roundtrip_dump(project_config, file=project_config_file)
+
+    with dummy_context(config=user_config_file) as context:
+        project = Project(str(project_dir), context)
+        project.ensure_fully_loaded()
+
+        # Use the helper from the artifactcache module to parse our configuration.
+        parsed_cache_specs = ArtifactCache._configured_remote_cache_specs(context, project)
+
+    if isinstance(artifacts_config, dict):
+        artifacts_config = [artifacts_config]
+
+    # Build expected artifact config
+    artifacts_config = [
+        RemoteSpec(
+            url=config["url"],
+            push=False,
+            server_cert=os.path.expanduser(config["server-cert"]),
+            client_cert=os.path.expanduser(config["client-cert"]),
+            client_key=os.path.expanduser(config["client-key"]),
+        )
+        for config in artifacts_config
+    ]
+
+    assert parsed_cache_specs == artifacts_config
