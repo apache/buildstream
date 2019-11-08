@@ -36,6 +36,9 @@ class StackElement(Element):
     # This plugin does not produce any artifacts when built
     BST_ELEMENT_HAS_ARTIFACT = False
 
+    # This element does not allow sources
+    BST_FORBID_SOURCES = True
+
     def configure(self, node):
         pass
 
