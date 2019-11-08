@@ -33,6 +33,7 @@ import multiprocessing
 from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
 from ... import _signals, utils
+from .. import _multiprocessing
 
 # Return code values shutdown of job handling child processes
 #
@@ -63,15 +64,6 @@ class _Envelope():
     def __init__(self, message_type, message):
         self.message_type = message_type
         self.message = message
-
-
-# Process class that doesn't call waitpid on its own.
-# This prevents conflicts with the asyncio child watcher.
-class Process(multiprocessing.Process):
-    # pylint: disable=attribute-defined-outside-init
-    def start(self):
-        self._popen = self._Popen(self)
-        self._sentinel = self._popen.sentinel
 
 
 # Job()
@@ -128,7 +120,7 @@ class Job():
         self._parent_start_listening()
 
         # Spawn the process
-        self._process = Process(target=self._child_action, args=[self._queue])
+        self._process = _multiprocessing.AsyncioSafeProcess(target=self._child_action, args=[self._queue])
 
         # Block signals which are handled in the main process such that
         # the child process does not inherit the parent's state, but the main
