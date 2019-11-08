@@ -28,6 +28,8 @@ import tempfile
 
 import pytest
 
+from buildstream import utils
+
 
 # Return a list of files relative to the given directory
 def walk_dir(root):
@@ -66,6 +68,8 @@ class IntegrationCache:
         # the artifacts directory
         try:
             self.cachedir = tempfile.mkdtemp(dir=self.root, prefix="cache-")
+            # Apply mode allowed by umask
+            os.chmod(self.cachedir, 0o777 & ~utils.get_umask())
         except OSError as e:
             raise AssertionError("Unable to create test directory !") from e
 
