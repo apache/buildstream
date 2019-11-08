@@ -24,6 +24,7 @@ integration tests.
 
 import os
 import shutil
+import stat
 import tempfile
 
 import pytest
@@ -68,6 +69,15 @@ class IntegrationCache:
         # the artifacts directory
         try:
             self.cachedir = tempfile.mkdtemp(dir=self.root, prefix='cache-')
+            os.chmod(
+                self.cachedir,
+                stat.S_IRUSR |
+                stat.S_IWUSR |
+                stat.S_IXUSR |
+                stat.S_IRGRP |
+                stat.S_IWGRP |
+                stat.S_IXGRP
+            )
         except OSError as e:
             raise AssertionError("Unable to create test directory !") from e
 
