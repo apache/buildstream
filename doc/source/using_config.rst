@@ -248,6 +248,8 @@ The default mirror is defined by its name, e.g.
    ``--default-mirror`` command-line option.
 
 
+.. _config_local_cache:
+
 Local cache expiry
 ~~~~~~~~~~~~~~~~~~
 BuildStream locally caches artifacts, build trees, log files and sources within a
