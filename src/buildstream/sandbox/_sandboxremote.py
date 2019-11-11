@@ -424,12 +424,9 @@ class SandboxRemote(Sandbox):
             if action_result.stderr_raw:
                 stderr.write(str(action_result.stderr_raw, 'utf-8', errors='ignore'))
 
-        if action_result.exit_code != 0:
-            # A normal error during the build: the remote execution system
-            # has worked correctly but the command failed.
-            return action_result.exit_code
-
-        return 0
+        # Non-zero exit code means a normal error during the build:
+        # the remote execution system has worked correctly but the command failed.
+        return action_result.exit_code
 
     def _check_action_cache(self, action_digest):
         # Checks the action cache to see if this artifact has already been built
