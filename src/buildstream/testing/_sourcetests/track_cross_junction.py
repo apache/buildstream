@@ -22,6 +22,7 @@
 import os
 
 import pytest
+import stat
 
 from buildstream import _yaml
 from .._utils import generate_junction
@@ -79,6 +80,8 @@ def generate_project(tmpdir, name, kind, config=None):
     }
     project_conf.update(config)
     _yaml.roundtrip_dump(project_conf, os.path.join(subproject_path, 'project.conf'))
+    os.chmod(os.path.join(subproject_path, 'project.conf'),
+             stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP)
     add_plugins_conf(subproject_path, kind)
 
     return project_name, subproject_path

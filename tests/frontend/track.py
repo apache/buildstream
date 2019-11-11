@@ -28,6 +28,7 @@ def generate_element(repo, element_path, dep_name=None):
         element['depends'] = [dep_name]
 
     _yaml.roundtrip_dump(element, element_path)
+    os.chmod(element_path, stat.S_IRUSR | stat.S_IRGRP)
 
 
 @pytest.mark.datafiles(DATA_DIR)
