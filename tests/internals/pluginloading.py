@@ -8,55 +8,52 @@ from buildstream._pipeline import Pipeline
 
 from tests.testutils import dummy_context
 
-DATA_DIR = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    'pluginloading',
-)
+DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginloading",)
 
 
 @contextmanager
 def create_pipeline(tmpdir, basedir, target):
     with dummy_context() as context:
-        context.deploydir = os.path.join(str(tmpdir), 'deploy')
-        context.casdir = os.path.join(str(tmpdir), 'cas')
+        context.deploydir = os.path.join(str(tmpdir), "deploy")
+        context.casdir = os.path.join(str(tmpdir), "cas")
         project = Project(basedir, context)
 
         pipeline = Pipeline(context, project, None)
-        targets, = pipeline.load([(target,)])
+        (targets,) = pipeline.load([(target,)])
         yield targets
 
 
-@pytest.mark.datafiles(os.path.join(DATA_DIR, 'customsource'))
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "customsource"))
 def test_customsource(datafiles, tmpdir):
 
     basedir = str(datafiles)
-    with create_pipeline(tmpdir, basedir, 'simple.bst') as targets:
+    with create_pipeline(tmpdir, basedir, "simple.bst") as targets:
         assert targets[0].get_kind() == "autotools"
 
 
-@pytest.mark.datafiles(os.path.join(DATA_DIR, 'customelement'))
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "customelement"))
 def test_customelement(datafiles, tmpdir):
 
     basedir = str(datafiles)
-    with create_pipeline(tmpdir, basedir, 'simple.bst') as targets:
+    with create_pipeline(tmpdir, basedir, "simple.bst") as targets:
         assert targets[0].get_kind() == "foo"
 
 
-@pytest.mark.datafiles(os.path.join(DATA_DIR, 'badversionsource'))
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "badversionsource"))
 def test_badversionsource(datafiles, tmpdir):
     basedir = str(datafiles)
 
-    with pytest.raises(LoadError) as exc, create_pipeline(tmpdir, basedir, 'simple.bst'):
+    with pytest.raises(LoadError) as exc, create_pipeline(tmpdir, basedir, "simple.bst"):
         pass
 
     assert exc.value.reason == LoadErrorReason.UNSUPPORTED_PLUGIN
 
 
-@pytest.mark.datafiles(os.path.join(DATA_DIR, 'badversionelement'))
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "badversionelement"))
 def test_badversionelement(datafiles, tmpdir):
     basedir = str(datafiles)
 
-    with pytest.raises(LoadError) as exc, create_pipeline(tmpdir, basedir, 'simple.bst'):
+    with pytest.raises(LoadError) as exc, create_pipeline(tmpdir, basedir, "simple.bst"):
         pass
 
     assert exc.value.reason == LoadErrorReason.UNSUPPORTED_PLUGIN

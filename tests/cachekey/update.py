@@ -25,31 +25,28 @@ except ImportError:
     from .cachekey import element_filename, parse_output_keys, load_expected_keys
 
 # Project directory
-PROJECT_DIR = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    "project",
-)
+PROJECT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
 
 
 def write_expected_key(element_name, actual_key):
-    expected_file = element_filename(PROJECT_DIR, element_name, 'expected')
-    with open(expected_file, 'w') as f:
+    expected_file = element_filename(PROJECT_DIR, element_name, "expected")
+    with open(expected_file, "w") as f:
         f.write(actual_key)
 
 
 def update_keys():
 
     with tempfile.TemporaryDirectory(dir=PROJECT_DIR) as tmpdir:
-        directory = os.path.join(tmpdir, 'cache')
+        directory = os.path.join(tmpdir, "cache")
         os.makedirs(directory)
         cli = Cli(directory, verbose=True)
 
         # Run bst show
-        result = cli.run(project=PROJECT_DIR, silent=True, args=[
-            '--no-colors',
-            'show', '--format', '%{name}::%{full-key}',
-            'target.bst'
-        ])
+        result = cli.run(
+            project=PROJECT_DIR,
+            silent=True,
+            args=["--no-colors", "show", "--format", "%{name}::%{full-key}", "target.bst"],
+        )
 
         # Load the actual keys, and the expected ones if they exist
         if not result.output:
@@ -59,7 +56,7 @@ def update_keys():
         expected_keys = load_expected_keys(PROJECT_DIR, actual_keys, raise_error=False)
 
         for element_name in actual_keys:
-            expected = element_filename(PROJECT_DIR, element_name, 'expected')
+            expected = element_filename(PROJECT_DIR, element_name, "expected")
 
             if actual_keys[element_name] != expected_keys[element_name]:
                 if not expected_keys[element_name]:
@@ -70,10 +67,10 @@ def update_keys():
                 write_expected_key(element_name, actual_keys[element_name])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     #  patch the environment BST_TEST_SUITE value to something if it's not
     #  present. This avoids an exception thrown at the cli level
-    bst = 'BST_TEST_SUITE'
-    mock_bst = os.environ.get(bst, 'True')
+    bst = "BST_TEST_SUITE"
+    mock_bst = os.environ.get(bst, "True")
     with mock.patch.dict(os.environ, {**os.environ, bst: mock_bst}):
         update_keys()

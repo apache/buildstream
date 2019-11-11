@@ -7,9 +7,8 @@ from buildstream.testing import Repo
 
 
 class Tar(Repo):
-
     def create(self, directory):
-        tarball = os.path.join(self.repo, 'file.tar.gz')
+        tarball = os.path.join(self.repo, "file.tar.gz")
 
         old_dir = os.getcwd()
         os.chdir(directory)
@@ -20,14 +19,9 @@ class Tar(Repo):
         return sha256sum(tarball)
 
     def source_config(self, ref=None):
-        tarball = os.path.join(self.repo, 'file.tar.gz')
-        config = {
-            'kind': 'tar',
-            'url': 'file://' + tarball,
-            'directory': '',
-            'base-dir': ''
-        }
+        tarball = os.path.join(self.repo, "file.tar.gz")
+        config = {"kind": "tar", "url": "file://" + tarball, "directory": "", "base-dir": ""}
         if ref is not None:
-            config['ref'] = ref
+            config["ref"] = ref
 
         return config

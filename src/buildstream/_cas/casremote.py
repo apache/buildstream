@@ -32,7 +32,6 @@ _MAX_DIGESTS = _MAX_PAYLOAD_BYTES / 80
 
 
 class BlobNotFound(CASRemoteError):
-
     def __init__(self, blob, msg):
         self.blob = blob
         super().__init__(msg)
@@ -41,7 +40,6 @@ class BlobNotFound(CASRemoteError):
 # Represents a single remote CAS cache.
 #
 class CASRemote(BaseRemote):
-
     def __init__(self, spec, cascache, **kwargs):
         super().__init__(spec, **kwargs)
 
@@ -90,7 +88,7 @@ class CASRemote(BaseRemote):
 
 # Represents a batch of blobs queued for fetching.
 #
-class _CASBatchRead():
+class _CASBatchRead:
     def __init__(self, remote):
         self._remote = remote
         self._requests = []
@@ -123,22 +121,28 @@ class _CASBatchRead():
             for response in batch_response.responses:
                 if response.status.code == code_pb2.NOT_FOUND:
                     if missing_blobs is None:
-                        raise BlobNotFound(response.digest.hash, "Failed to download blob {}: {}".format(
-                            response.digest.hash, response.status.code))
+                        raise BlobNotFound(
+                            response.digest.hash,
+                            "Failed to download blob {}: {}".format(response.digest.hash, response.status.code),
+                        )
 
                     missing_blobs.append(response.digest)
 
                 if response.status.code != code_pb2.OK:
-                    raise CASRemoteError("Failed to download blob {}: {}".format(
-                        response.digest.hash, response.status.code))
+                    raise CASRemoteError(
+                        "Failed to download blob {}: {}".format(response.digest.hash, response.status.code)
+                    )
                 if response.digest.size_bytes != len(response.data):
-                    raise CASRemoteError("Failed to download blob {}: expected {} bytes, received {} bytes".format(
-                        response.digest.hash, response.digest.size_bytes, len(response.data)))
+                    raise CASRemoteError(
+                        "Failed to download blob {}: expected {} bytes, received {} bytes".format(
+                            response.digest.hash, response.digest.size_bytes, len(response.data)
+                        )
+                    )
 
 
 # Represents a batch of blobs queued for upload.
 #
-class _CASBatchUpdate():
+class _CASBatchUpdate:
     def __init__(self, remote):
         self._remote = remote
         self._requests = []
@@ -175,5 +179,7 @@ class _CASBatchUpdate():
                     else:
                         reason = None
 
-                    raise CASRemoteError("Failed to upload blob {}: {}".format(
-                        response.digest.hash, response.status.code), reason=reason)
+                    raise CASRemoteError(
+                        "Failed to upload blob {}: {}".format(response.digest.hash, response.status.code),
+                        reason=reason,
+                    )

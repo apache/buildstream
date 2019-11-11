@@ -37,9 +37,7 @@ _NAME_TO_PROTO_CLASS = {
     "digest": DigestProto,
 }
 
-_PROTO_CLASS_TO_NAME = {
-    cls: name for name, cls in _NAME_TO_PROTO_CLASS.items()
-}
+_PROTO_CLASS_TO_NAME = {cls: name for name, cls in _NAME_TO_PROTO_CLASS.items()}
 
 
 # pickle_child_job()
@@ -57,10 +55,7 @@ def pickle_child_job(child_job, projects):
     # necessary for the job, this includes e.g. the global state of the node
     # module.
     node_module_state = node._get_state_for_pickling()
-    return _pickle_child_job_data(
-        (child_job, node_module_state),
-        projects,
-    )
+    return _pickle_child_job_data((child_job, node_module_state), projects,)
 
 
 # do_pickled_child_job()
@@ -146,10 +141,7 @@ def _pickle_child_job_data(child_job_data, projects):
     ]
 
     plugin_class_to_factory = {
-        cls: factory
-        for factory in factory_list
-        if factory is not None
-        for cls, _ in factory.all_loaded_plugins()
+        cls: factory for factory in factory_list if factory is not None for cls, _ in factory.all_loaded_plugins()
     }
 
     pickled_data = io.BytesIO()

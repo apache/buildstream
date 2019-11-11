@@ -11,7 +11,6 @@ from buildstream import Consistency, Source
 
 
 class AlwaysCachedSource(Source):
-
     def configure(self, node):
         pass
 

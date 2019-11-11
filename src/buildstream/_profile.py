@@ -40,15 +40,15 @@ from ._exceptions import ProfileError
 #   BST_PROFILE=circ-dep-check:sort-deps bst <command> <args>
 #
 # The special 'all' value will enable all profiles.
-class Topics():
-    CIRCULAR_CHECK = 'circ-dep-check'
-    SORT_DEPENDENCIES = 'sort-deps'
-    LOAD_CONTEXT = 'load-context'
-    LOAD_PROJECT = 'load-project'
-    LOAD_PIPELINE = 'load-pipeline'
-    LOAD_SELECTION = 'load-selection'
-    SCHEDULER = 'scheduler'
-    ALL = 'all'
+class Topics:
+    CIRCULAR_CHECK = "circ-dep-check"
+    SORT_DEPENDENCIES = "sort-deps"
+    LOAD_CONTEXT = "load-context"
+    LOAD_PROJECT = "load-project"
+    LOAD_PIPELINE = "load-pipeline"
+    LOAD_SELECTION = "load-selection"
+    SCHEDULER = "scheduler"
+    ALL = "all"
 
 
 class _Profile:
@@ -64,8 +64,8 @@ class _Profile:
             os.getcwd(),
             "profile-{}-{}".format(
                 datetime.datetime.fromtimestamp(self.start_time).strftime("%Y%m%dT%H%M%S"),
-                self.key.replace("/", "-").replace(".", "-")
-            )
+                self.key.replace("/", "-").replace(".", "-"),
+            ),
         )
         self.log_filename = "{}.log".format(filename_template)
         self.cprofile_filename = "{}.cprofile".format(filename_template)
@@ -87,14 +87,16 @@ class _Profile:
         self.profiler.disable()
 
     def save(self):
-        heading = "\n".join([
-            "-" * 64,
-            "Profile for key: {}".format(self.key),
-            "Started at: {}".format(self.start_time),
-            "\n\t{}".format(self.message) if self.message else "",
-            "-" * 64,
-            ""  # for a final new line
-        ])
+        heading = "\n".join(
+            [
+                "-" * 64,
+                "Profile for key: {}".format(self.key),
+                "Started at: {}".format(self.start_time),
+                "\n\t{}".format(self.message) if self.message else "",
+                "-" * 64,
+                "",  # for a final new line
+            ]
+        )
 
         with open(self.log_filename, "a") as fp:
             stats = pstats.Stats(self.profiler, *self._additional_pstats_files, stream=fp)
@@ -116,10 +118,7 @@ class _Profiler:
         self._valid_topics = False
 
         if settings:
-            self.enabled_topics = {
-                topic
-                for topic in settings.split(":")
-            }
+            self.enabled_topics = {topic for topic in settings.split(":")}
 
     @contextlib.contextmanager
     def profile(self, topic, key, message=None):
@@ -170,8 +169,7 @@ class _Profiler:
         non_valid_topics = [topic for topic in self.enabled_topics if topic not in vars(Topics).values()]
 
         if non_valid_topics:
-            raise ProfileError("Provided BST_PROFILE topics do not exist: {}"
-                               .format(", ".join(non_valid_topics)))
+            raise ProfileError("Provided BST_PROFILE topics do not exist: {}".format(", ".join(non_valid_topics)))
 
         self._valid_topics = True
 

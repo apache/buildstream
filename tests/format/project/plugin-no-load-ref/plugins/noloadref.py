@@ -6,7 +6,6 @@ from buildstream import Source, Consistency
 # Use this to test that the core behaves as expected with such plugins.
 #
 class NoLoadRefSource(Source):
-
     def configure(self, node):
         pass
 

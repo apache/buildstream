@@ -19,17 +19,12 @@ def generate_junction(tmpdir, subproject_path, junction_path, *, store_ref=True)
     # Create a repo to hold the subproject and generate
     # a junction element for it
     #
-    repo = create_repo('git', str(tmpdir))
+    repo = create_repo("git", str(tmpdir))
     source_ref = ref = repo.create(subproject_path)
     if not store_ref:
         source_ref = None
 
-    element = {
-        'kind': 'junction',
-        'sources': [
-            repo.source_config(ref=source_ref)
-        ]
-    }
+    element = {"kind": "junction", "sources": [repo.source_config(ref=source_ref)]}
     _yaml.roundtrip_dump(element, junction_path)
 
     return ref

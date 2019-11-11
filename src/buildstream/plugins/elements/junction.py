@@ -187,13 +187,13 @@ class JunctionElement(Element):
     BST_FORBID_RDEPENDS = True
 
     def configure(self, node):
-        self.path = node.get_str('path', default='')
-        self.options = node.get_mapping('options', default={})
-        self.target = node.get_str('target', default=None)
+        self.path = node.get_str("path", default="")
+        self.options = node.get_mapping("options", default={})
+        self.target = node.get_str("target", default=None)
         self.target_element = None
         self.target_junction = None
-        self.cache_junction_elements = node.get_bool('cache-junction-elements', default=False)
-        self.ignore_junction_remotes = node.get_bool('ignore-junction-remotes', default=False)
+        self.cache_junction_elements = node.get_bool("cache-junction-elements", default=False)
+        self.ignore_junction_remotes = node.get_bool("ignore-junction-remotes", default=False)
 
     def preflight(self):
         # "target" cannot be used in conjunction with:

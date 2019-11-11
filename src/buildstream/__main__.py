@@ -11,7 +11,8 @@
 # This is used when we need to run BuildStream before installing,
 # like when we build documentation.
 #
-if __name__ == '__main__':
+if __name__ == "__main__":
     # pylint: disable=no-value-for-parameter
     from ._frontend.cli import cli
+
     cli()

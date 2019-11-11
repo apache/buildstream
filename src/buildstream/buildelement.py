@@ -144,17 +144,16 @@ from .types import Scope
 # This list is preserved because of an unfortunate situation, we
 # need to remove these older commands which were secret and never
 # documented, but without breaking the cache keys.
-_legacy_command_steps = ['bootstrap-commands',
-                         'configure-commands',
-                         'build-commands',
-                         'test-commands',
-                         'install-commands',
-                         'strip-commands']
+_legacy_command_steps = [
+    "bootstrap-commands",
+    "configure-commands",
+    "build-commands",
+    "test-commands",
+    "install-commands",
+    "strip-commands",
+]
 
-_command_steps = ['configure-commands',
-                  'build-commands',
-                  'install-commands',
-                  'strip-commands']
+_command_steps = ["configure-commands", "build-commands", "install-commands", "strip-commands"]
 
 
 class BuildElement(Element):
@@ -190,21 +189,21 @@ class BuildElement(Element):
         # cache key, while having the side effect of setting max-jobs to 1,
         # which is normally automatically resolved and does not affect
         # the cache key.
-        if self.get_variable('notparallel'):
-            dictionary['notparallel'] = True
+        if self.get_variable("notparallel"):
+            dictionary["notparallel"] = True
 
         return dictionary
 
     def configure_sandbox(self, sandbox):
-        build_root = self.get_variable('build-root')
-        install_root = self.get_variable('install-root')
+        build_root = self.get_variable("build-root")
+        install_root = self.get_variable("install-root")
 
         # Tell the sandbox to mount the build root and install root
         sandbox.mark_directory(build_root)
         sandbox.mark_directory(install_root)
 
         # Allow running all commands in a specified subdirectory
-        command_subdir = self.get_variable('command-subdir')
+        command_subdir = self.get_variable("command-subdir")
         if command_subdir:
             command_dir = os.path.join(build_root, command_subdir)
         else:
@@ -230,13 +229,13 @@ class BuildElement(Element):
                 dep.integrate(sandbox)
 
         # Stage sources in the build root
-        self.stage_sources(sandbox, self.get_variable('build-root'))
+        self.stage_sources(sandbox, self.get_variable("build-root"))
 
     def assemble(self, sandbox):
         # Run commands
         for command_name in _command_steps:
             commands = self.__commands[command_name]
-            if not commands or command_name == 'configure-commands':
+            if not commands or command_name == "configure-commands":
                 continue
 
             with sandbox.batch(SandboxFlags.ROOT_READ_ONLY, label="Running {}".format(command_name)):
@@ -247,21 +246,22 @@ class BuildElement(Element):
         # to - if an element later attempts to stage to a location
         # that is not empty, we abort the build - in this case this
         # will almost certainly happen.
-        staged_build = os.path.join(self.get_variable('install-root'),
-                                    self.get_variable('build-root'))
+        staged_build = os.path.join(self.get_variable("install-root"), self.get_variable("build-root"))
 
         if os.path.isdir(staged_build) and os.listdir(staged_build):
-            self.warn("Writing to %{install-root}/%{build-root}.",
-                      detail="Writing to this directory will almost " +
-                      "certainly cause an error, since later elements " +
-                      "will not be allowed to stage to %{build-root}.")
+            self.warn(
+                "Writing to %{install-root}/%{build-root}.",
+                detail="Writing to this directory will almost "
+                + "certainly cause an error, since later elements "
+                + "will not be allowed to stage to %{build-root}.",
+            )
 
         # Return the payload, this is configurable but is generally
         # always the /buildstream-install directory
-        return self.get_variable('install-root')
+        return self.get_variable("install-root")
 
     def prepare(self, sandbox):
-        commands = self.__commands['configure-commands']
+        commands = self.__commands["configure-commands"]
         if commands:
             with sandbox.batch(SandboxFlags.ROOT_READ_ONLY, label="Running configure-commands"):
                 for cmd in commands:
@@ -282,15 +282,10 @@ class BuildElement(Element):
     #############################################################
     def __get_commands(self, node, name):
         raw_commands = node.get_sequence(name, [])
-        return [
-            self.node_subst_vars(command)
-            for command in raw_commands
-        ]
+        return [self.node_subst_vars(command) for command in raw_commands]
 
     def __run_command(self, sandbox, cmd):
         # Note the -e switch to 'sh' means to exit with an error
         # if any untested command fails.
         #
-        sandbox.run(['sh', '-c', '-e', cmd + '\n'],
-                    SandboxFlags.ROOT_READ_ONLY,
-                    label=cmd)
+        sandbox.run(["sh", "-c", "-e", cmd + "\n"], SandboxFlags.ROOT_READ_ONLY, label=cmd)

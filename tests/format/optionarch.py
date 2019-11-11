@@ -16,52 +16,45 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("machine,value,expected", [
-    # Test explicitly provided arches
-    ('arm', 'aarch32', 'Army'),
-    ('arm', 'aarch64', 'Aarchy'),
-
-    # Test automatically derived arches
-    ('arm', None, 'Army'),
-    ('aarch64', None, 'Aarchy'),
-
-    # Test that explicitly provided arches dont error out
-    # when the `uname` reported arch is not supported
-    ('i386', 'aarch32', 'Army'),
-    ('x86_64', 'aarch64', 'Aarchy'),
-])
+@pytest.mark.parametrize(
+    "machine,value,expected",
+    [
+        # Test explicitly provided arches
+        ("arm", "aarch32", "Army"),
+        ("arm", "aarch64", "Aarchy"),
+        # Test automatically derived arches
+        ("arm", None, "Army"),
+        ("aarch64", None, "Aarchy"),
+        # Test that explicitly provided arches dont error out
+        # when the `uname` reported arch is not supported
+        ("i386", "aarch32", "Army"),
+        ("x86_64", "aarch64", "Aarchy"),
+    ],
+)
 def test_conditional(cli, datafiles, machine, value, expected):
     with override_platform_uname(machine=machine):
-        project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch')
+        project = os.path.join(datafiles.dirname, datafiles.basename, "option-arch")
 
         bst_args = []
         if value is not None:
-            bst_args += ['--option', 'machine_arch', value]
+            bst_args += ["--option", "machine_arch", value]
 
-        bst_args += [
-            'show',
-            '--deps', 'none',
-            '--format', '%{vars}',
-            'element.bst'
-        ]
+        bst_args += ["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
         result = cli.run(project=project, silent=True, args=bst_args)
         result.assert_success()
 
         loaded = _yaml.load_data(result.output)
-        assert loaded.get_str('result') == expected
+        assert loaded.get_str("result") == expected
 
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_unsupported_arch(cli, datafiles):
 
     with override_platform_uname(machine="x86_64"):
-        project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch')
-        result = cli.run(project=project, silent=True, args=[
-            'show',
-            '--deps', 'none',
-            '--format', '%{vars}',
-            'element.bst'
-        ])
+        project = os.path.join(datafiles.dirname, datafiles.basename, "option-arch")
+        result = cli.run(
+            project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
+        )
 
         result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
@@ -70,13 +63,10 @@ def test_unsupported_arch(cli, datafiles):
 def test_alias(cli, datafiles):
 
     with override_platform_uname(machine="arm"):
-        project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch-alias')
-        result = cli.run(project=project, silent=True, args=[
-            'show',
-            '--deps', 'none',
-            '--format', '%{vars}',
-            'element.bst'
-        ])
+        project = os.path.join(datafiles.dirname, datafiles.basename, "option-arch-alias")
+        result = cli.run(
+            project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
+        )
 
         result.assert_success()
 
@@ -85,13 +75,10 @@ def test_alias(cli, datafiles):
 def test_unknown_host_arch(cli, datafiles):
 
     with override_platform_uname(machine="x86_128"):
-        project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch')
-        result = cli.run(project=project, silent=True, args=[
-            'show',
-            '--deps', 'none',
-            '--format', '%{vars}',
-            'element.bst'
-        ])
+        project = os.path.join(datafiles.dirname, datafiles.basename, "option-arch")
+        result = cli.run(
+            project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
+        )
 
         result.assert_main_error(ErrorDomain.PLATFORM, None)
 
@@ -99,12 +86,9 @@ def test_unknown_host_arch(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 def test_unknown_project_arch(cli, datafiles):
 
-    project = os.path.join(datafiles.dirname, datafiles.basename, 'option-arch-unknown')
-    result = cli.run(project=project, silent=True, args=[
-        'show',
-        '--deps', 'none',
-        '--format', '%{vars}',
-        'element.bst'
-    ])
+    project = os.path.join(datafiles.dirname, datafiles.basename, "option-arch-unknown")
+    result = cli.run(
+        project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]
+    )
 
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)

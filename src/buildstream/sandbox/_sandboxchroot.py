@@ -35,7 +35,7 @@ from . import Sandbox, SandboxFlags, SandboxCommandError
 
 
 class SandboxChroot(Sandbox):
-    _FUSE_MOUNT_OPTIONS = {'dev': True}
+    _FUSE_MOUNT_OPTIONS = {"dev": True}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -43,8 +43,10 @@ class SandboxChroot(Sandbox):
         uid = self._get_config().build_uid
         gid = self._get_config().build_gid
         if uid != 0 or gid != 0:
-            raise SandboxError("Chroot sandboxes cannot specify a non-root uid/gid "
-                               "({},{} were supplied via config)".format(uid, gid))
+            raise SandboxError(
+                "Chroot sandboxes cannot specify a non-root uid/gid "
+                "({},{} were supplied via config)".format(uid, gid)
+            )
 
         self.mount_map = None
 
@@ -78,20 +80,19 @@ class SandboxChroot(Sandbox):
     def _run(self, command, flags, *, cwd, env):
 
         if not self._has_command(command[0], env):
-            raise SandboxCommandError("Staged artifacts do not provide command "
-                                      "'{}'".format(command[0]),
-                                      reason='missing-command')
+            raise SandboxCommandError(
+                "Staged artifacts do not provide command " "'{}'".format(command[0]), reason="missing-command"
+            )
 
         stdout, stderr = self._get_output()
 
         # Create the mount map, this will tell us where
         # each mount point needs to be mounted from and to
-        self.mount_map = MountMap(self, flags & SandboxFlags.ROOT_READ_ONLY,
-                                  self._FUSE_MOUNT_OPTIONS)
+        self.mount_map = MountMap(self, flags & SandboxFlags.ROOT_READ_ONLY, self._FUSE_MOUNT_OPTIONS)
 
         # Create a sysroot and run the command inside it
         with ExitStack() as stack:
-            os.makedirs('/var/run/buildstream', exist_ok=True)
+            os.makedirs("/var/run/buildstream", exist_ok=True)
 
             # FIXME: While we do not currently do anything to prevent
             # network access, we also don't copy /etc/resolv.conf to
@@ -104,21 +105,20 @@ class SandboxChroot(Sandbox):
             #
             # Nonetheless a better solution could perhaps be found.
 
-            rootfs = stack.enter_context(utils._tempdir(dir='/var/run/buildstream'))
+            rootfs = stack.enter_context(utils._tempdir(dir="/var/run/buildstream"))
             stack.enter_context(self.create_devices(self._root, flags))
             stack.enter_context(self.mount_dirs(rootfs, flags, stdout, stderr))
 
             if flags & SandboxFlags.INTERACTIVE:
                 stdin = sys.stdin
             else:
-                stdin = stack.enter_context(open(os.devnull, 'r'))
+                stdin = stack.enter_context(open(os.devnull, "r"))
 
             # Ensure the cwd exists
             if cwd is not None:
                 workdir = os.path.join(rootfs, cwd.lstrip(os.sep))
                 os.makedirs(workdir, exist_ok=True)
-            status = self.chroot(rootfs, command, stdin, stdout,
-                                 stderr, cwd, env, flags)
+            status = self.chroot(rootfs, command, stdin, stdout, stderr, cwd, env, flags)
 
         self._vdir._mark_changed()
         return status
@@ -173,7 +173,7 @@ class SandboxChroot(Sandbox):
                     # If you try to put gtk dialogs here Tristan (either)
                     # will personally scald you
                     preexec_fn=lambda: (os.chroot(rootfs), os.chdir(cwd)),
-                    start_new_session=flags & SandboxFlags.INTERACTIVE
+                    start_new_session=flags & SandboxFlags.INTERACTIVE,
                 )
 
                 # Wait for the child process to finish, ensuring that
@@ -214,13 +214,14 @@ class SandboxChroot(Sandbox):
             # Exceptions in preexec_fn are simply reported as
             # 'Exception occurred in preexec_fn', turn these into
             # a more readable message.
-            if str(e) == 'Exception occurred in preexec_fn.':
-                raise SandboxError('Could not chroot into {} or chdir into {}. '
-                                   'Ensure you are root and that the relevant directory exists.'
-                                   .format(rootfs, cwd)) from e
+            if str(e) == "Exception occurred in preexec_fn.":
+                raise SandboxError(
+                    "Could not chroot into {} or chdir into {}. "
+                    "Ensure you are root and that the relevant directory exists.".format(rootfs, cwd)
+                ) from e
 
             # Otherwise, raise a more general error
-            raise SandboxError('Could not run command {}: {}'.format(command, e)) from e
+            raise SandboxError("Could not run command {}: {}".format(command, e)) from e
 
         return code
 
@@ -251,8 +252,10 @@ class SandboxChroot(Sandbox):
                     devices.append(self.mknod(device, location))
                 except OSError as err:
                     if err.errno == 1:
-                        raise SandboxError("Permission denied while creating device node: {}.".format(err) +
-                                           "BuildStream reqiures root permissions for these setttings.")
+                        raise SandboxError(
+                            "Permission denied while creating device node: {}.".format(err)
+                            + "BuildStream reqiures root permissions for these setttings."
+                        )
 
                     raise
 
@@ -300,16 +303,16 @@ class SandboxChroot(Sandbox):
         with ExitStack() as stack:
             stack.enter_context(self.mount_map.mounted(self))
 
-            stack.enter_context(mount_point('/'))
+            stack.enter_context(mount_point("/"))
 
             if flags & SandboxFlags.INTERACTIVE:
-                stack.enter_context(mount_src('/dev'))
+                stack.enter_context(mount_src("/dev"))
 
-            stack.enter_context(mount_src('/tmp'))
-            stack.enter_context(mount_src('/proc'))
+            stack.enter_context(mount_src("/tmp"))
+            stack.enter_context(mount_src("/proc"))
 
             for mark in self._get_marked_directories():
-                stack.enter_context(mount_point(mark['directory']))
+                stack.enter_context(mount_point(mark["directory"]))
 
             # Remount root RO if necessary
             if flags & flags & SandboxFlags.ROOT_READ_ONLY:
@@ -343,10 +346,9 @@ class SandboxChroot(Sandbox):
             os.mknod(target, mode=stat.S_IFCHR | dev.st_mode, device=target_dev)
 
         except PermissionError as e:
-            raise SandboxError('Could not create device {}, ensure that you have root permissions: {}')
+            raise SandboxError("Could not create device {}, ensure that you have root permissions: {}")
 
         except OSError as e:
-            raise SandboxError('Could not create device {}: {}'
-                               .format(target, e)) from e
+            raise SandboxError("Could not create device {}: {}".format(target, e)) from e
 
         return target

@@ -62,5 +62,5 @@ def is_key(key):
 #    (str): An sha256 hex digest of the given value
 #
 def generate_key(value):
-    ustring = ujson.dumps(value, sort_keys=True, escape_forward_slashes=False).encode('utf-8')
+    ustring = ujson.dumps(value, sort_keys=True, escape_forward_slashes=False).encode("utf-8")
     return hashlib.sha256(ustring).hexdigest()

@@ -72,8 +72,8 @@ class ZipSource(DownloadableFileSource):
     def configure(self, node):
         super().configure(node)
 
-        self.base_dir = node.get_str('base-dir', '*')
-        node.validate_keys(DownloadableFileSource.COMMON_CONFIG_KEYS + ['base-dir'])
+        self.base_dir = node.get_str("base-dir", "*")
+        node.validate_keys(DownloadableFileSource.COMMON_CONFIG_KEYS + ["base-dir"])
 
     def get_unique_key(self):
         return super().get_unique_key() + [self.base_dir]
@@ -139,14 +139,14 @@ class ZipSource(DownloadableFileSource):
             # ZipInfo.is_dir() is only available in python >= 3.6, but all
             # it does is check for a trailing '/' in the name
             #
-            if not member.filename.endswith('/'):
+            if not member.filename.endswith("/"):
 
                 # Loop over the components of a path, for a path of a/b/c/d
                 # we will first visit 'a', then 'a/b' and then 'a/b/c', excluding
                 # the final component
-                components = member.filename.split('/')
+                components = member.filename.split("/")
                 for i in range(len(components) - 1):
-                    dir_component = '/'.join([components[j] for j in range(i + 1)])
+                    dir_component = "/".join([components[j] for j in range(i + 1)])
                     if dir_component not in visited:
                         visited[dir_component] = True
                         try:
@@ -154,7 +154,7 @@ class ZipSource(DownloadableFileSource):
                             # exist in the archive
                             _ = archive.getinfo(dir_component)
                         except KeyError:
-                            if dir_component != '.':
+                            if dir_component != ".":
                                 yield dir_component
 
                 continue
@@ -162,7 +162,7 @@ class ZipSource(DownloadableFileSource):
             # Avoid considering the '.' directory, if any is included in the archive
             # this is to avoid the default 'base-dir: *' value behaving differently
             # depending on whether the archive was encoded with a leading '.' or not
-            elif member.filename == '.' or member.filename == './':
+            elif member.filename == "." or member.filename == "./":
                 continue
 
             yield member.filename

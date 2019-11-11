@@ -2,7 +2,6 @@ from buildstream import Source
 
 
 class ConsistencyBugSource(Source):
-
     def configure(self, node):
         pass
 

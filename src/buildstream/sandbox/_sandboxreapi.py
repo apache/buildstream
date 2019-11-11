@@ -30,7 +30,6 @@ from ..storage._casbaseddirectory import CasBasedDirectory
 # the Remote Execution API.
 #
 class SandboxREAPI(Sandbox):
-
     def _use_cas_based_directory(self):
         # Always use CasBasedDirectory for REAPI
         return True
@@ -46,14 +45,14 @@ class SandboxREAPI(Sandbox):
 
         # Ensure working directory exists
         if len(cwd) > 1:
-            assert cwd.startswith('/')
+            assert cwd.startswith("/")
             vdir.descend(*cwd[1:].split(os.path.sep), create=True)
 
         # Create directories for all marked directories. This emulates
         # some of the behaviour of other sandboxes, which create these
         # to use as mount points.
         for mark in self._get_marked_directories():
-            directory = mark['directory']
+            directory = mark["directory"]
             # Create each marked directory
             vdir.descend(*directory.split(os.path.sep), create=True)
 
@@ -61,21 +60,21 @@ class SandboxREAPI(Sandbox):
         input_root_digest = vdir._get_digest()
         command_proto = self._create_command(command, cwd, env)
         command_digest = cascache.add_object(buffer=command_proto.SerializeToString())
-        action = remote_execution_pb2.Action(command_digest=command_digest,
-                                             input_root_digest=input_root_digest)
+        action = remote_execution_pb2.Action(command_digest=command_digest, input_root_digest=input_root_digest)
 
         action_result = self._execute_action(action)  # pylint: disable=assignment-from-no-return
 
         # Get output of build
-        self._process_job_output(action_result.output_directories, action_result.output_files,
-                                 failure=action_result.exit_code != 0)
+        self._process_job_output(
+            action_result.output_directories, action_result.output_files, failure=action_result.exit_code != 0
+        )
 
         if stdout:
             if action_result.stdout_raw:
-                stdout.write(str(action_result.stdout_raw, 'utf-8', errors='ignore'))
+                stdout.write(str(action_result.stdout_raw, "utf-8", errors="ignore"))
         if stderr:
             if action_result.stderr_raw:
-                stderr.write(str(action_result.stderr_raw, 'utf-8', errors='ignore'))
+                stderr.write(str(action_result.stderr_raw, "utf-8", errors="ignore"))
 
         # Non-zero exit code means a normal error during the build:
         # the remote execution system has worked correctly but the command failed.
@@ -83,19 +82,21 @@ class SandboxREAPI(Sandbox):
 
     def _create_command(self, command, working_directory, environment):
         # Creates a command proto
-        environment_variables = [remote_execution_pb2.Command.
-                                 EnvironmentVariable(name=k, value=v)
-                                 for (k, v) in environment.items()]
+        environment_variables = [
+            remote_execution_pb2.Command.EnvironmentVariable(name=k, value=v) for (k, v) in environment.items()
+        ]
 
         # Request the whole directory tree as output
         output_directory = os.path.relpath(os.path.sep, start=working_directory)
 
-        return remote_execution_pb2.Command(arguments=command,
-                                            working_directory=working_directory,
-                                            environment_variables=environment_variables,
-                                            output_files=[],
-                                            output_directories=[output_directory],
-                                            platform=None)
+        return remote_execution_pb2.Command(
+            arguments=command,
+            working_directory=working_directory,
+            environment_variables=environment_variables,
+            output_files=[],
+            output_directories=[output_directory],
+            platform=None,
+        )
 
     def _process_job_output(self, output_directories, output_files, *, failure):
         # Reads the remote execution server response to an execution request.
@@ -124,7 +125,7 @@ class SandboxREAPI(Sandbox):
 
         # Get digest of root directory from tree digest
         tree = remote_execution_pb2.Tree()
-        with open(cascache.objpath(tree_digest), 'rb') as f:
+        with open(cascache.objpath(tree_digest), "rb") as f:
             tree.ParseFromString(f.read())
         root_directory = tree.root.SerializeToString()
         dir_digest = utils._message_digest(root_directory)
@@ -140,8 +141,7 @@ class SandboxREAPI(Sandbox):
         return _SandboxREAPIBatch(self, main_group, flags, collect=collect)
 
     def _execute_action(self, action):
-        raise ImplError("Sandbox of type '{}' does not implement _execute_action()"
-                        .format(type(self).__name__))
+        raise ImplError("Sandbox of type '{}' does not implement _execute_action()".format(type(self).__name__))
 
 
 # _SandboxREAPIBatch()
@@ -149,7 +149,6 @@ class SandboxREAPI(Sandbox):
 # Command batching by shell script generation.
 #
 class _SandboxREAPIBatch(_SandboxBatch):
-
     def __init__(self, sandbox, main_group, flags, *, collect=None):
         super().__init__(sandbox, main_group, flags, collect=collect)
 
@@ -164,7 +163,7 @@ class _SandboxREAPIBatch(_SandboxBatch):
         self.main_group.execute(self)
 
         first = self.first_command
-        if first and self.sandbox.run(['sh', '-c', '-e', self.script], self.flags, cwd=first.cwd, env=first.env) != 0:
+        if first and self.sandbox.run(["sh", "-c", "-e", self.script], self.flags, cwd=first.cwd, env=first.env) != 0:
             raise SandboxCommandError("Command execution failed", collect=self.collect)
 
     def execute_group(self, group):
@@ -195,7 +194,7 @@ class _SandboxREAPIBatch(_SandboxBatch):
         self.env = command.env
 
         # Actual command execution
-        cmdline = ' '.join(shlex.quote(cmd) for cmd in command.command)
+        cmdline = " ".join(shlex.quote(cmd) for cmd in command.command)
         self.script += "(set -ex; {})".format(cmdline)
 
         # Error handling

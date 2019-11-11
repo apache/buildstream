@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 
-class MetaSource():
+class MetaSource:
 
     # MetaSource()
     #

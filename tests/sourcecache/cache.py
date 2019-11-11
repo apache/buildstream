@@ -39,10 +39,10 @@ def test_patch_sources_cached_1(cli, datafiles):
 
     # as we have a local, patch, local config, the first local and patch should
     # be cached together, and the last local on it's own
-    source_protos = os.path.join(project_dir, 'cache', 'source_protos')
+    source_protos = os.path.join(project_dir, "cache", "source_protos")
 
-    assert len(os.listdir(os.path.join(source_protos, 'patch'))) == 1
-    assert len(os.listdir(os.path.join(source_protos, 'local'))) == 2
+    assert len(os.listdir(os.path.join(source_protos, "patch"))) == 1
+    assert len(os.listdir(os.path.join(source_protos, "local"))) == 2
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -53,9 +53,9 @@ def test_patch_sources_cached_2(cli, datafiles):
     res.assert_success()
 
     # As everything is before the patch it should all be cached together
-    source_protos = os.path.join(project_dir, 'cache', 'source_protos')
+    source_protos = os.path.join(project_dir, "cache", "source_protos")
 
-    assert len(os.listdir(os.path.join(source_protos, 'patch'))) == 1
+    assert len(os.listdir(os.path.join(source_protos, "patch"))) == 1
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -66,35 +66,34 @@ def test_sources_without_patch(cli, datafiles):
     res.assert_success()
 
     # No patches so everything should be cached seperately
-    source_protos = os.path.join(project_dir, 'cache', 'source_protos')
+    source_protos = os.path.join(project_dir, "cache", "source_protos")
 
-    assert len(os.listdir(os.path.join(source_protos, 'local'))) == 3
+    assert len(os.listdir(os.path.join(source_protos, "local"))) == 3
 
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_cache_key(cli, datafiles):
     project_dir = str(datafiles)
 
-    file_path = os.path.join(project_dir, 'files')
-    file_url = 'file://' + file_path
-    element_path = os.path.join(project_dir, 'elements')
-    element_name = 'key_check.bst'
+    file_path = os.path.join(project_dir, "files")
+    file_url = "file://" + file_path
+    element_path = os.path.join(project_dir, "elements")
+    element_name = "key_check.bst"
     element = {
-        'kind': 'import',
-        'sources': [
+        "kind": "import",
+        "sources": [
             {
-                'kind': 'remote',
-                'url': os.path.join(file_url, 'bin-files', 'usr', 'bin', 'hello'),
-                'directory': 'usr/bin'
-            }, {
-                'kind': 'remote',
-                'url': os.path.join(file_url, 'dev-files', 'usr', 'include', 'pony.h'),
-                'directory': 'usr/include'
-            }, {
-                'kind': 'patch',
-                'path': 'files/hello-patch.diff'
-            }
-        ]
+                "kind": "remote",
+                "url": os.path.join(file_url, "bin-files", "usr", "bin", "hello"),
+                "directory": "usr/bin",
+            },
+            {
+                "kind": "remote",
+                "url": os.path.join(file_url, "dev-files", "usr", "include", "pony.h"),
+                "directory": "usr/include",
+            },
+            {"kind": "patch", "path": "files/hello-patch.diff"},
+        ],
     }
     _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
@@ -105,11 +104,11 @@ def test_source_cache_key(cli, datafiles):
     res.assert_success()
 
     # Should have one source ref
-    patch_protos = os.path.join(project_dir, 'cache', 'source_protos', 'patch')
+    patch_protos = os.path.join(project_dir, "cache", "source_protos", "patch")
     assert len(os.listdir(patch_protos)) == 1
 
     # modify hello-patch file and check tracking updates refs
-    with open(os.path.join(file_path, 'dev-files', 'usr', 'include', 'pony.h'), 'a') as f:
+    with open(os.path.join(file_path, "dev-files", "usr", "include", "pony.h"), "a") as f:
         f.write("\nappending nonsense")
 
     res = cli.run(project=project_dir, args=["source", "track", element_name])

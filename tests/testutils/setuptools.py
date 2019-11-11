@@ -4,19 +4,17 @@ import pkg_resources
 
 
 # A mock setuptools dist object.
-class MockDist():
+class MockDist:
     def __init__(self, datafiles, module_name):
         self.datafiles = datafiles
         self.module_name = module_name
 
     def get_resource_filename(self, *_args, **_kwargs):
-        return os.path.join(self.datafiles.dirname,
-                            self.datafiles.basename,
-                            self.module_name)
+        return os.path.join(self.datafiles.dirname, self.datafiles.basename, self.module_name)
 
 
 # A mock setuptools entry object.
-class MockEntry():
+class MockEntry:
     def __init__(self, datafiles, module_name):
         self.dist = MockDist(datafiles, module_name)
         self.module_name = module_name
@@ -30,7 +28,7 @@ class MockEntry():
 @pytest.fixture()
 def entry_fixture(monkeypatch):
     def patch(datafiles, entry_point, lookup_string):
-        dist, package = lookup_string.split(':')
+        dist, package = lookup_string.split(":")
 
         def mock_entry(pdist, pentry_point, ppackage):
             assert pdist == dist
@@ -38,6 +36,7 @@ def entry_fixture(monkeypatch):
             assert ppackage == package
 
             return MockEntry(datafiles, package)
-        monkeypatch.setattr(pkg_resources, 'get_entry_info', mock_entry)
+
+        monkeypatch.setattr(pkg_resources, "get_entry_info", mock_entry)
 
     return patch

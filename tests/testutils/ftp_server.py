@@ -11,7 +11,7 @@ class SimpleFtpServer(multiprocessing.Process):
         self.authorizer = DummyAuthorizer()
         handler = FTPHandler
         handler.authorizer = self.authorizer
-        self.server = FTPServer(('127.0.0.1', 0), handler)
+        self.server = FTPServer(("127.0.0.1", 0), handler)
 
     def run(self):
         self.server.serve_forever()
@@ -26,7 +26,7 @@ class SimpleFtpServer(multiprocessing.Process):
         self.authorizer.add_anonymous(cwd)
 
     def add_user(self, user, password, cwd):
-        self.authorizer.add_user(user, password, cwd, perm='elradfmwMT')
+        self.authorizer.add_user(user, password, cwd, perm="elradfmwMT")
 
     def base_url(self):
-        return 'ftp://127.0.0.1:{}'.format(self.server.address[1])
+        return "ftp://127.0.0.1:{}".format(self.server.address[1])

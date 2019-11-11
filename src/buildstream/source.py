@@ -184,6 +184,7 @@ if TYPE_CHECKING:
     # pylint: disable=cyclic-import
     from ._context import Context
     from ._project import Project
+
     # pylint: enable=cyclic-import
 
 
@@ -197,16 +198,14 @@ class SourceError(BstError):
        reason: An optional machine readable reason string, used for test cases
        temporary: An indicator to whether the error may occur if the operation was run again. (*Since: 1.2*)
     """
-    def __init__(self,
-                 message: str,
-                 *,
-                 detail: Optional[str] = None,
-                 reason: Optional[str] = None,
-                 temporary: bool = False):
+
+    def __init__(
+        self, message: str, *, detail: Optional[str] = None, reason: Optional[str] = None, temporary: bool = False
+    ):
         super().__init__(message, detail=detail, domain=ErrorDomain.SOURCE, reason=reason, temporary=temporary)
 
 
-class SourceFetcher():
+class SourceFetcher:
     """SourceFetcher()
 
     This interface exists so that a source that downloads from multiple
@@ -222,6 +221,7 @@ class SourceFetcher():
        for every URL found in the configuration data at
        :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` time.
     """
+
     def __init__(self):
         self.__alias = None
 
@@ -275,8 +275,9 @@ class Source(Plugin):
     All Sources derive from this class, this interface defines how
     the core will be interacting with Sources.
     """
+
     # The defaults from the project
-    __defaults = None     # type: Optional[Dict[str, Any]]
+    __defaults = None  # type: Optional[Dict[str, Any]]
 
     BST_REQUIRES_PREVIOUS_SOURCES_TRACK = False
     """Whether access to previous sources is required during track
@@ -331,32 +332,40 @@ class Source(Plugin):
     *Since: 1.91.2*
     """
 
-    def __init__(self,
-                 context: 'Context',
-                 project: 'Project',
-                 meta: MetaSource,
-                 *,
-                 alias_override: Optional[Tuple[str, str]] = None,
-                 unique_id: Optional[int] = None):
+    def __init__(
+        self,
+        context: "Context",
+        project: "Project",
+        meta: MetaSource,
+        *,
+        alias_override: Optional[Tuple[str, str]] = None,
+        unique_id: Optional[int] = None
+    ):
         provenance = meta.config.get_provenance()
         # Set element_name member before parent init, as needed for debug messaging
-        self.__element_name = meta.element_name         # The name of the element owning this source
-        super().__init__("{}-{}".format(meta.element_name, meta.element_index),
-                         context, project, provenance, "source", unique_id=unique_id)
+        self.__element_name = meta.element_name  # The name of the element owning this source
+        super().__init__(
+            "{}-{}".format(meta.element_name, meta.element_index),
+            context,
+            project,
+            provenance,
+            "source",
+            unique_id=unique_id,
+        )
 
-        self.__element_index = meta.element_index       # The index of the source in the owning element's source list
-        self.__element_kind = meta.element_kind         # The kind of the element owning this source
-        self.__directory = meta.directory               # Staging relative directory
-        self.__consistency = Consistency.INCONSISTENT   # Cached consistency state
-        self.__meta_kind = meta.kind                    # The kind of this source, required for unpickling
+        self.__element_index = meta.element_index  # The index of the source in the owning element's source list
+        self.__element_kind = meta.element_kind  # The kind of the element owning this source
+        self.__directory = meta.directory  # Staging relative directory
+        self.__consistency = Consistency.INCONSISTENT  # Cached consistency state
+        self.__meta_kind = meta.kind  # The kind of this source, required for unpickling
 
-        self.__key = None                               # Cache key for source
+        self.__key = None  # Cache key for source
 
         # The alias_override is only set on a re-instantiated Source
-        self.__alias_override = alias_override          # Tuple of alias and its override to use instead
-        self.__expected_alias = None                    # The primary alias
+        self.__alias_override = alias_override  # Tuple of alias and its override to use instead
+        self.__expected_alias = None  # The primary alias
         # Set of marked download URLs
-        self.__marked_urls = set()                      # type: Set[str]
+        self.__marked_urls = set()  # type: Set[str]
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
@@ -365,12 +374,12 @@ class Source(Plugin):
         self.__first_pass = meta.first_pass
 
         # cached values for commonly access values on the source
-        self.__mirror_directory = None                  # type: Optional[str]
+        self.__mirror_directory = None  # type: Optional[str]
 
         self._configure(self.__config)
         self.__digest = None
 
-    COMMON_CONFIG_KEYS = ['kind', 'directory']
+    COMMON_CONFIG_KEYS = ["kind", "directory"]
     """Common source config keys
 
     Source config keys that must not be accessed in configure(), and
@@ -611,8 +620,8 @@ class Source(Plugin):
                     # specific alias, so that sources that fetch from multiple
                     # URLs and use different aliases default to only overriding
                     # one alias, rather than getting confused.
-                    override_alias = self.__alias_override[0]       # type: ignore
-                    override_url = self.__alias_override[1]         # type: ignore
+                    override_alias = self.__alias_override[0]  # type: ignore
+                    override_url = self.__alias_override[1]  # type: ignore
                     if url_alias == override_alias:
                         url = override_url + url_body
             return url
@@ -642,9 +651,9 @@ class Source(Plugin):
             if primary:
                 expected_alias = _extract_alias(url)
 
-                assert (self.__expected_alias is None or
-                        self.__expected_alias == expected_alias), \
-                    "Primary URL marked twice with different URLs"
+                assert (
+                    self.__expected_alias is None or self.__expected_alias == expected_alias
+                ), "Primary URL marked twice with different URLs"
 
                 self.__expected_alias = expected_alias
 
@@ -664,8 +673,9 @@ class Source(Plugin):
             # the case for git submodules which might be automatically
             # discovered.
             #
-            assert (url in self.__marked_urls or not _extract_alias(url)), \
-                "URL was not seen at configure time: {}".format(url)
+            assert url in self.__marked_urls or not _extract_alias(
+                url
+            ), "URL was not seen at configure time: {}".format(url)
 
     def get_project_directory(self) -> str:
         """Fetch the project base directory
@@ -790,8 +800,7 @@ class Source(Plugin):
         if self.BST_KEY_REQUIRES_STAGE:
             # _get_unique_key should be called before _stage
             assert self.__digest is not None
-            cas_dir = CasBasedDirectory(self._get_context().get_cascache(),
-                                        digest=self.__digest)
+            cas_dir = CasBasedDirectory(self._get_context().get_cascache(), digest=self.__digest)
             directory.import_files(cas_dir)
         else:
             self.stage(directory)
@@ -811,11 +820,11 @@ class Source(Plugin):
     #
     def _get_unique_key(self):
         key = {}
-        key['directory'] = self.__directory
+        key["directory"] = self.__directory
         if self.BST_KEY_REQUIRES_STAGE:
-            key['unique'] = self._stage_into_cas()
+            key["unique"] = self._stage_into_cas()
         else:
-            key['unique'] = self.get_unique_key()  # pylint: disable=assignment-from-no-return
+            key["unique"] = self.get_unique_key()  # pylint: disable=assignment-from-no-return
         return key
 
     # _project_refs():
@@ -828,7 +837,7 @@ class Source(Plugin):
     #
     def _project_refs(self, project):
         element_kind = self.__element_kind
-        if element_kind == 'junction':
+        if element_kind == "junction":
             return project.junction_refs
         return project.refs
 
@@ -863,9 +872,10 @@ class Source(Plugin):
             try:
                 self.load_ref(ref_node)
             except ImplError as e:
-                raise SourceError("{}: Storing refs in project.refs is not supported by '{}' sources"
-                                  .format(self, self.get_kind()),
-                                  reason="unsupported-load-ref") from e
+                raise SourceError(
+                    "{}: Storing refs in project.refs is not supported by '{}' sources".format(self, self.get_kind()),
+                    reason="unsupported-load-ref",
+                ) from e
 
         # If the main project overrides the ref, use the override
         if project is not toplevel and toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS:
@@ -938,12 +948,12 @@ class Source(Plugin):
             elif provenance._project is None:
                 assert provenance._filename == ""
                 assert provenance._shortname == ""
-                raise SourceError("{}: Error saving source reference to synthetic node."
-                                  .format(self))
+                raise SourceError("{}: Error saving source reference to synthetic node.".format(self))
             else:
-                raise SourceError("{}: Cannot track source in a fragment from a junction"
-                                  .format(provenance._shortname),
-                                  reason="tracking-junction-fragment")
+                raise SourceError(
+                    "{}: Cannot track source in a fragment from a junction".format(provenance._shortname),
+                    reason="tracking-junction-fragment",
+                )
 
         #
         # Step 2 - Set the ref in memory, and determine changed state
@@ -968,13 +978,13 @@ class Source(Plugin):
         actions = {}
         for k, v in clean.items():
             if k not in to_modify:
-                actions[k] = 'del'
+                actions[k] = "del"
             else:
                 if v != to_modify[k]:
-                    actions[k] = 'mod'
+                    actions[k] = "mod"
         for k in to_modify.keys():
             if k not in clean:
-                actions[k] = 'add'
+                actions[k] = "add"
 
         def walk_container(container, path):
             # For each step along path, synthesise if we need to.
@@ -1002,20 +1012,19 @@ class Source(Plugin):
 
         def process_value(action, container, path, key, new_value):
             container = walk_container(container, path)
-            if action == 'del':
+            if action == "del":
                 del container[key]
-            elif action == 'mod':
+            elif action == "mod":
                 container[key] = new_value
-            elif action == 'add':
+            elif action == "add":
                 container[key] = new_value
             else:
-                assert False, \
-                    "BUG: Unknown action: {}".format(action)
+                assert False, "BUG: Unknown action: {}".format(action)
 
         roundtrip_cache = {}
         for key, action in actions.items():
             # Obtain the top level node and its file
-            if action == 'add':
+            if action == "add":
                 provenance = node.get_provenance()
             else:
                 provenance = node.get_node(key).get_provenance()
@@ -1023,7 +1032,7 @@ class Source(Plugin):
             toplevel_node = provenance._toplevel
 
             # Get the path to whatever changed
-            if action == 'add':
+            if action == "add":
                 path = toplevel_node._find(node)
             else:
                 full_path = toplevel_node._find(node.get_node(key))
@@ -1033,8 +1042,7 @@ class Source(Plugin):
             roundtrip_file = roundtrip_cache.get(provenance._filename)
             if not roundtrip_file:
                 roundtrip_file = roundtrip_cache[provenance._filename] = _yaml.roundtrip_load(
-                    provenance._filename,
-                    allow_missing=True
+                    provenance._filename, allow_missing=True
                 )
 
             # Get the value of the round trip file that we need to change
@@ -1048,9 +1056,9 @@ class Source(Plugin):
             try:
                 _yaml.roundtrip_dump(data, filename)
             except OSError as e:
-                raise SourceError("{}: Error saving source reference to '{}': {}"
-                                  .format(self, filename, e),
-                                  reason="save-ref-error") from e
+                raise SourceError(
+                    "{}: Error saving source reference to '{}': {}".format(self, filename, e), reason="save-ref-error"
+                ) from e
 
         return True
 
@@ -1059,7 +1067,7 @@ class Source(Plugin):
     # Args:
     #   previous_sources (list): List of Sources listed prior to this source
     #
-    def _track(self, previous_sources: List['Source']) -> SourceRef:
+    def _track(self, previous_sources: List["Source"]) -> SourceRef:
         if self.BST_KEY_REQUIRES_STAGE:
             # ensure that these sources have a key after tracking
             self._get_unique_key()
@@ -1067,8 +1075,7 @@ class Source(Plugin):
 
         if self.BST_REQUIRES_PREVIOUS_SOURCES_TRACK:
             self.__ensure_previous_sources(previous_sources)
-            with self.__stage_previous_sources(previous_sources) \
-                    as staging_directory:
+            with self.__stage_previous_sources(previous_sources) as staging_directory:
                 new_ref = self.__do_track(previous_sources_dir=self.__ensure_directory(staging_directory))
         else:
             new_ref = self.__do_track()
@@ -1135,9 +1142,7 @@ class Source(Plugin):
     # Gives a ref path that points to where sources are kept in the CAS
     def _get_source_name(self):
         # @ is used to prevent conflicts with project names
-        return "{}/{}".format(
-            self.get_kind(),
-            self._key)
+        return "{}/{}".format(self.get_kind(), self._key)
 
     def _get_brief_display_key(self):
         context = self._get_context()
@@ -1210,9 +1215,7 @@ class Source(Plugin):
 
         meta.first_pass = self.__first_pass
 
-        clone = source_kind(context, project, meta,
-                            alias_override=(alias, uri),
-                            unique_id=self._unique_id)
+        clone = source_kind(context, project, meta, alias_override=(alias, uri), unique_id=self._unique_id)
 
         # Do the necessary post instantiation routines here
         #
@@ -1352,20 +1355,18 @@ class Source(Plugin):
             try:
                 os.makedirs(directory, exist_ok=True)
             except OSError as e:
-                raise SourceError("Failed to create staging directory: {}"
-                                  .format(e),
-                                  reason="ensure-stage-dir-fail") from e
+                raise SourceError(
+                    "Failed to create staging directory: {}".format(e), reason="ensure-stage-dir-fail"
+                ) from e
 
         else:
             if self.__directory is not None:
                 try:
-                    directory = directory.descend(
-                        *self.__directory.lstrip(os.sep).split(os.sep),
-                        create=True)
+                    directory = directory.descend(*self.__directory.lstrip(os.sep).split(os.sep), create=True)
                 except VirtualDirectoryError as e:
-                    raise SourceError("Failed to descend into staging directory: {}"
-                                      .format(e),
-                                      reason="ensure-stage-dir-fail") from e
+                    raise SourceError(
+                        "Failed to descend into staging directory: {}".format(e), reason="ensure-stage-dir-fail"
+                    ) from e
 
         return directory
 
@@ -1383,7 +1384,7 @@ class Source(Plugin):
     #
     @classmethod
     def __extract_config(cls, meta):
-        config = cls.__defaults.get_mapping('config', default={})
+        config = cls.__defaults.get_mapping("config", default={})
         config = config.clone()
 
         meta.config._composite(config)

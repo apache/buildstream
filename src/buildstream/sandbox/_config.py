@@ -22,7 +22,7 @@
 #
 # A container for sandbox configuration data. We want the internals
 # of this to be opaque, hence putting it in its own private file.
-class SandboxConfig():
+class SandboxConfig:
     def __init__(self, build_uid, build_gid, build_os=None, build_arch=None):
         self.build_uid = build_uid
         self.build_gid = build_gid
@@ -46,17 +46,14 @@ class SandboxConfig():
         # However this should be the right place to support
         # such configurations in the future.
         #
-        unique_key = {
-            'os': self.build_os,
-            'arch': self.build_arch
-        }
+        unique_key = {"os": self.build_os, "arch": self.build_arch}
 
         # Avoid breaking cache key calculation with
         # the addition of configurabuild build uid/gid
         if self.build_uid != 0:
-            unique_key['build-uid'] = self.build_uid
+            unique_key["build-uid"] = self.build_uid
 
         if self.build_gid != 0:
-            unique_key['build-gid'] = self.build_gid
+            unique_key["build-gid"] = self.build_gid
 
         return unique_key

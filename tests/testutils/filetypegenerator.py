@@ -39,7 +39,7 @@ def generate_file_types(path):
 
     clean()
 
-    with open(path, 'w'):
+    with open(path, "w"):
         pass
     yield
     clean()

@@ -49,7 +49,7 @@ from ._workspaces import WORKSPACE_PROJECT_FILE
 
 
 # Project Configuration file
-_PROJECT_CONF_FILE = 'project.conf'
+_PROJECT_CONF_FILE = "project.conf"
 
 
 # List of all places plugins can come from
@@ -64,8 +64,7 @@ class PluginOrigins(FastEnum):
 # A simple object describing the behavior of
 # a host mount.
 #
-class HostMount():
-
+class HostMount:
     def __init__(self, path, host_path=None, optional=False):
 
         # Support environment variable expansion in host mounts
@@ -73,9 +72,9 @@ class HostMount():
         if host_path is not None:
             host_path = os.path.expandvars(host_path)
 
-        self.path = path              # Path inside the sandbox
-        self.host_path = host_path    # Path on the host
-        self.optional = optional      # Optional mounts do not incur warnings or errors
+        self.path = path  # Path inside the sandbox
+        self.host_path = host_path  # Path on the host
+        self.optional = optional  # Optional mounts do not incur warnings or errors
 
         if self.host_path is None:
             self.host_path = self.path
@@ -86,24 +85,32 @@ class ProjectConfig:
     def __init__(self):
         self.element_factory = None
         self.source_factory = None
-        self.options = None                      # OptionPool
-        self.base_variables = {}                 # The base set of variables
-        self.element_overrides = {}              # Element specific configurations
-        self.source_overrides = {}               # Source specific configurations
-        self.mirrors = OrderedDict()             # contains dicts of alias-mappings to URIs.
-        self.default_mirror = None               # The name of the preferred mirror.
-        self._aliases = None                     # Aliases dictionary
+        self.options = None  # OptionPool
+        self.base_variables = {}  # The base set of variables
+        self.element_overrides = {}  # Element specific configurations
+        self.source_overrides = {}  # Source specific configurations
+        self.mirrors = OrderedDict()  # contains dicts of alias-mappings to URIs.
+        self.default_mirror = None  # The name of the preferred mirror.
+        self._aliases = None  # Aliases dictionary
 
 
 # Project()
 #
 # The Project Configuration
 #
-class Project():
-
-    def __init__(self, directory, context, *, junction=None, cli_options=None,
-                 default_mirror=None, parent_loader=None,
-                 search_for_project=True, fetch_subprojects=None):
+class Project:
+    def __init__(
+        self,
+        directory,
+        context,
+        *,
+        junction=None,
+        cli_options=None,
+        default_mirror=None,
+        parent_loader=None,
+        search_for_project=True,
+        fetch_subprojects=None
+    ):
 
         # The project name
         self.name = None
@@ -125,31 +132,31 @@ class Project():
         self._default_targets = None
 
         # ProjectRefs for the main refs and also for junctions
-        self.refs = ProjectRefs(self.directory, 'project.refs')
-        self.junction_refs = ProjectRefs(self.directory, 'junction.refs')
+        self.refs = ProjectRefs(self.directory, "project.refs")
+        self.junction_refs = ProjectRefs(self.directory, "junction.refs")
 
         self.config = ProjectConfig()
         self.first_pass_config = ProjectConfig()
 
-        self.junction = junction                 # The junction Element object, if this is a subproject
+        self.junction = junction  # The junction Element object, if this is a subproject
 
-        self.ref_storage = None                  # ProjectRefStorage setting
-        self.base_environment = {}               # The base set of environment variables
-        self.base_env_nocache = None             # The base nocache mask (list) for the environment
+        self.ref_storage = None  # ProjectRefStorage setting
+        self.base_environment = {}  # The base set of environment variables
+        self.base_env_nocache = None  # The base nocache mask (list) for the environment
 
         #
         # Private Members
         #
 
-        self._default_mirror = default_mirror    # The name of the preferred mirror.
+        self._default_mirror = default_mirror  # The name of the preferred mirror.
 
         self._cli_options = cli_options
 
-        self._fatal_warnings = []             # A list of warnings which should trigger an error
+        self._fatal_warnings = []  # A list of warnings which should trigger an error
 
-        self._shell_command = []      # The default interactive shell command
+        self._shell_command = []  # The default interactive shell command
         self._shell_environment = {}  # Statically set environment vars
-        self._shell_host_files = []   # A list of HostMount objects
+        self._shell_host_files = []  # A list of HostMount objects
 
         self.artifact_cache_specs = None
         self.source_cache_specs = None
@@ -163,7 +170,7 @@ class Project():
         self._fully_loaded = False
         self._project_includes = None
 
-        with PROFILER.profile(Topics.LOAD_PROJECT, self.directory.replace(os.sep, '-')):
+        with PROFILER.profile(Topics.LOAD_PROJECT, self.directory.replace(os.sep, "-")):
             self._load(parent_loader=parent_loader, fetch_subprojects=fetch_subprojects)
 
         self._partially_loaded = True
@@ -252,23 +259,24 @@ class Project():
     #    (LoadError): In case that the project path is not valid or does not
     #                 exist
     #
-    def get_path_from_node(self, node, *,
-                           check_is_file=False, check_is_dir=False):
+    def get_path_from_node(self, node, *, check_is_file=False, check_is_dir=False):
         path_str = node.as_str()
         path = Path(path_str)
         full_path = self._absolute_directory_path / path
 
         if full_path.is_symlink():
             provenance = node.get_provenance()
-            raise LoadError("{}: Specified path '{}' must not point to "
-                            "symbolic links ".format(provenance, path_str),
-                            LoadErrorReason.PROJ_PATH_INVALID_KIND)
+            raise LoadError(
+                "{}: Specified path '{}' must not point to " "symbolic links ".format(provenance, path_str),
+                LoadErrorReason.PROJ_PATH_INVALID_KIND,
+            )
 
-        if path.parts and path.parts[0] == '..':
+        if path.parts and path.parts[0] == "..":
             provenance = node.get_provenance()
-            raise LoadError("{}: Specified path '{}' first component must "
-                            "not be '..'".format(provenance, path_str),
-                            LoadErrorReason.PROJ_PATH_INVALID)
+            raise LoadError(
+                "{}: Specified path '{}' first component must " "not be '..'".format(provenance, path_str),
+                LoadErrorReason.PROJ_PATH_INVALID,
+            )
 
         try:
             if sys.version_info[0] == 3 and sys.version_info[1] < 6:
@@ -277,55 +285,81 @@ class Project():
                 full_resolved_path = full_path.resolve(strict=True)  # pylint: disable=unexpected-keyword-arg
         except FileNotFoundError:
             provenance = node.get_provenance()
-            raise LoadError("{}: Specified path '{}' does not exist".format(provenance, path_str),
-                            LoadErrorReason.MISSING_FILE)
+            raise LoadError(
+                "{}: Specified path '{}' does not exist".format(provenance, path_str), LoadErrorReason.MISSING_FILE
+            )
 
         is_inside = self._absolute_directory_path in full_resolved_path.parents or (
-            full_resolved_path == self._absolute_directory_path)
+            full_resolved_path == self._absolute_directory_path
+        )
 
         if not is_inside:
             provenance = node.get_provenance()
-            raise LoadError("{}: Specified path '{}' must not lead outside of the "
-                            "project directory".format(provenance, path_str),
-                            LoadErrorReason.PROJ_PATH_INVALID)
+            raise LoadError(
+                "{}: Specified path '{}' must not lead outside of the "
+                "project directory".format(provenance, path_str),
+                LoadErrorReason.PROJ_PATH_INVALID,
+            )
 
         if path.is_absolute():
             provenance = node.get_provenance()
-            raise LoadError("{}: Absolute path: '{}' invalid.\n"
-                            "Please specify a path relative to the project's root."
-                            .format(provenance, path), LoadErrorReason.PROJ_PATH_INVALID)
+            raise LoadError(
+                "{}: Absolute path: '{}' invalid.\n"
+                "Please specify a path relative to the project's root.".format(provenance, path),
+                LoadErrorReason.PROJ_PATH_INVALID,
+            )
 
-        if full_resolved_path.is_socket() or (
-                full_resolved_path.is_fifo() or
-                full_resolved_path.is_block_device()):
+        if full_resolved_path.is_socket() or (full_resolved_path.is_fifo() or full_resolved_path.is_block_device()):
             provenance = node.get_provenance()
-            raise LoadError("{}: Specified path '{}' points to an unsupported "
-                            "file kind".format(provenance, path_str), LoadErrorReason.PROJ_PATH_INVALID_KIND)
+            raise LoadError(
+                "{}: Specified path '{}' points to an unsupported " "file kind".format(provenance, path_str),
+                LoadErrorReason.PROJ_PATH_INVALID_KIND,
+            )
 
         if check_is_file and not full_resolved_path.is_file():
             provenance = node.get_provenance()
-            raise LoadError("{}: Specified path '{}' is not a regular file"
-                            .format(provenance, path_str), LoadErrorReason.PROJ_PATH_INVALID_KIND)
+            raise LoadError(
+                "{}: Specified path '{}' is not a regular file".format(provenance, path_str),
+                LoadErrorReason.PROJ_PATH_INVALID_KIND,
+            )
 
         if check_is_dir and not full_resolved_path.is_dir():
             provenance = node.get_provenance()
-            raise LoadError("{}: Specified path '{}' is not a directory"
-                            .format(provenance, path_str), LoadErrorReason.PROJ_PATH_INVALID_KIND)
+            raise LoadError(
+                "{}: Specified path '{}' is not a directory".format(provenance, path_str),
+                LoadErrorReason.PROJ_PATH_INVALID_KIND,
+            )
 
         return path_str
 
     def _validate_node(self, node):
-        node.validate_keys([
-            'format-version',
-            'element-path', 'variables',
-            'environment', 'environment-nocache',
-            'split-rules', 'elements', 'plugins',
-            'aliases', 'name', 'defaults',
-            'artifacts', 'options',
-            'fail-on-overlap', 'shell', 'fatal-warnings',
-            'ref-storage', 'sandbox', 'mirrors', 'remote-execution',
-            'sources', 'source-caches', '(@)'
-        ])
+        node.validate_keys(
+            [
+                "format-version",
+                "element-path",
+                "variables",
+                "environment",
+                "environment-nocache",
+                "split-rules",
+                "elements",
+                "plugins",
+                "aliases",
+                "name",
+                "defaults",
+                "artifacts",
+                "options",
+                "fail-on-overlap",
+                "shell",
+                "fatal-warnings",
+                "ref-storage",
+                "sandbox",
+                "mirrors",
+                "remote-execution",
+                "sources",
+                "source-caches",
+                "(@)",
+            ]
+        )
 
     # create_element()
     #
@@ -438,10 +472,7 @@ class Project():
         with self._context.messenger.simple_task("Resolving elements") as task:
             if task:
                 task.set_maximum_progress(self.loader.loaded)
-            elements = [
-                Element._new_from_meta(meta, task)
-                for meta in meta_elements
-            ]
+            elements = [Element._new_from_meta(meta, task) for meta in meta_elements]
 
         Element._clear_meta_elements_cache()
 
@@ -450,13 +481,11 @@ class Project():
         redundant_refs = Element._get_redundant_source_refs()
         if redundant_refs:
             detail = "The following inline specified source references will be ignored:\n\n"
-            lines = [
-                "{}:{}".format(source._get_provenance(), ref)
-                for source, ref in redundant_refs
-            ]
+            lines = ["{}:{}".format(source._get_provenance(), ref) for source, ref in redundant_refs]
             detail += "\n".join(lines)
             self._context.messenger.message(
-                Message(MessageType.WARN, "Ignoring redundant source references", detail=detail))
+                Message(MessageType.WARN, "Ignoring redundant source references", detail=detail)
+            )
 
         return elements
 
@@ -590,49 +619,49 @@ class Project():
         self._project_conf._composite(pre_config_node)
 
         # Assert project's format version early, before validating toplevel keys
-        format_version = pre_config_node.get_int('format-version')
+        format_version = pre_config_node.get_int("format-version")
         if format_version < BST_FORMAT_VERSION_MIN:
             major, minor = utils.get_bst_version()
             raise LoadError(
                 "Project requested format version {}, but BuildStream {}.{} only supports format version {} or above."
-                "Use latest 1.x release"
-                .format(format_version, major, minor, BST_FORMAT_VERSION_MIN), LoadErrorReason.UNSUPPORTED_PROJECT)
+                "Use latest 1.x release".format(format_version, major, minor, BST_FORMAT_VERSION_MIN),
+                LoadErrorReason.UNSUPPORTED_PROJECT,
+            )
 
         if BST_FORMAT_VERSION < format_version:
             major, minor = utils.get_bst_version()
             raise LoadError(
-                "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}"
-                .format(format_version, major, minor, BST_FORMAT_VERSION), LoadErrorReason.UNSUPPORTED_PROJECT)
+                "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}".format(
+                    format_version, major, minor, BST_FORMAT_VERSION
+                ),
+                LoadErrorReason.UNSUPPORTED_PROJECT,
+            )
 
         self._validate_node(pre_config_node)
 
         # The project name, element path and option declarations
         # are constant and cannot be overridden by option conditional statements
         # FIXME: we should be keeping node information for further composition here
-        self.name = self._project_conf.get_str('name')
+        self.name = self._project_conf.get_str("name")
 
         # Validate that project name is a valid symbol name
-        _assert_symbol_name(self.name, "project name",
-                            ref_node=pre_config_node.get_node('name'))
+        _assert_symbol_name(self.name, "project name", ref_node=pre_config_node.get_node("name"))
 
         self.element_path = os.path.join(
-            self.directory,
-            self.get_path_from_node(pre_config_node.get_scalar('element-path'),
-                                    check_is_dir=True)
+            self.directory, self.get_path_from_node(pre_config_node.get_scalar("element-path"), check_is_dir=True)
         )
 
         self.config.options = OptionPool(self.element_path)
         self.first_pass_config.options = OptionPool(self.element_path)
 
-        defaults = pre_config_node.get_mapping('defaults')
-        defaults.validate_keys(['targets'])
+        defaults = pre_config_node.get_mapping("defaults")
+        defaults.validate_keys(["targets"])
         self._default_targets = defaults.get_str_list("targets")
 
         # Fatal warnings
-        self._fatal_warnings = pre_config_node.get_str_list('fatal-warnings', default=[])
+        self._fatal_warnings = pre_config_node.get_str_list("fatal-warnings", default=[])
 
-        self.loader = Loader(self._context, self,
-                             parent=parent_loader, fetch_subprojects=fetch_subprojects)
+        self.loader = Loader(self._context, self, parent=parent_loader, fetch_subprojects=fetch_subprojects)
 
         self._project_includes = Includes(self.loader, copy_tree=False)
 
@@ -641,16 +670,17 @@ class Project():
         config_no_include = self._default_config_node.clone()
         project_conf_first_pass._composite(config_no_include)
 
-        self._load_pass(config_no_include, self.first_pass_config,
-                        ignore_unknown=True)
+        self._load_pass(config_no_include, self.first_pass_config, ignore_unknown=True)
 
         # Use separate file for storing source references
-        ref_storage_node = pre_config_node.get_scalar('ref-storage')
+        ref_storage_node = pre_config_node.get_scalar("ref-storage")
         self.ref_storage = ref_storage_node.as_str()
         if self.ref_storage not in [ProjectRefStorage.INLINE, ProjectRefStorage.PROJECT_REFS]:
             p = ref_storage_node.get_provenance()
-            raise LoadError("{}: Invalid value '{}' specified for ref-storage"
-                            .format(p, self.ref_storage), LoadErrorReason.INVALID_DATA)
+            raise LoadError(
+                "{}: Invalid value '{}' specified for ref-storage".format(p, self.ref_storage),
+                LoadErrorReason.INVALID_DATA,
+            )
 
         if self.ref_storage == ProjectRefStorage.PROJECT_REFS:
             self.junction_refs.load(self.first_pass_config.options)
@@ -692,8 +722,7 @@ class Project():
 
         # Load remote-execution configuration for this project
         project_specs = SandboxRemote.specs_from_config_node(config, self.directory)
-        override_specs = SandboxRemote.specs_from_config_node(
-            self._context.get_overrides(self.name), self.directory)
+        override_specs = SandboxRemote.specs_from_config_node(self._context.get_overrides(self.name), self.directory)
 
         if override_specs is not None:
             self.remote_execution_specs = override_specs
@@ -703,25 +732,25 @@ class Project():
             self.remote_execution_specs = self._context.remote_execution_specs
 
         # Load sandbox environment variables
-        self.base_environment = config.get_mapping('environment')
-        self.base_env_nocache = config.get_str_list('environment-nocache')
+        self.base_environment = config.get_mapping("environment")
+        self.base_env_nocache = config.get_str_list("environment-nocache")
 
         # Load sandbox configuration
-        self._sandbox = config.get_mapping('sandbox')
+        self._sandbox = config.get_mapping("sandbox")
 
         # Load project split rules
-        self._splits = config.get_mapping('split-rules')
+        self._splits = config.get_mapping("split-rules")
 
         # Support backwards compatibility for fail-on-overlap
-        fail_on_overlap = config.get_scalar('fail-on-overlap', None)
+        fail_on_overlap = config.get_scalar("fail-on-overlap", None)
 
         # Deprecation check
         if not fail_on_overlap.is_none():
             self._context.messenger.message(
                 Message(
                     MessageType.WARN,
-                    "Use of fail-on-overlap within project.conf " +
-                    "is deprecated. Consider using fatal-warnings instead."
+                    "Use of fail-on-overlap within project.conf "
+                    + "is deprecated. Consider using fatal-warnings instead.",
                 )
             )
 
@@ -733,29 +762,29 @@ class Project():
             self.refs.load(self.options)
 
         # Parse shell options
-        shell_options = config.get_mapping('shell')
-        shell_options.validate_keys(['command', 'environment', 'host-files'])
-        self._shell_command = shell_options.get_str_list('command')
+        shell_options = config.get_mapping("shell")
+        shell_options.validate_keys(["command", "environment", "host-files"])
+        self._shell_command = shell_options.get_str_list("command")
 
         # Perform environment expansion right away
-        shell_environment = shell_options.get_mapping('environment', default={})
+        shell_environment = shell_options.get_mapping("environment", default={})
         for key in shell_environment.keys():
             value = shell_environment.get_str(key)
             self._shell_environment[key] = os.path.expandvars(value)
 
         # Host files is parsed as a list for convenience
-        host_files = shell_options.get_sequence('host-files', default=[])
+        host_files = shell_options.get_sequence("host-files", default=[])
         for host_file in host_files:
             if isinstance(host_file, ScalarNode):
                 mount = HostMount(host_file)
             else:
                 # Some validation
-                host_file.validate_keys(['path', 'host_path', 'optional'])
+                host_file.validate_keys(["path", "host_path", "optional"])
 
                 # Parse the host mount
-                path = host_file.get_str('path')
-                host_path = host_file.get_str('host_path', default=None)
-                optional = host_file.get_bool('optional', default=False)
+                path = host_file.get_str("path")
+                host_path = host_file.get_str("host_path", default=None)
+                optional = host_file.get_bool("optional", default=False)
                 mount = HostMount(path, host_path, optional)
 
             self._shell_host_files.append(mount)
@@ -770,22 +799,21 @@ class Project():
     #    output (ProjectConfig) - ProjectConfig to load configuration onto.
     #    ignore_unknown (bool) - Whether option loader shoud ignore unknown options.
     #
-    def _load_pass(self, config, output, *,
-                   ignore_unknown=False):
+    def _load_pass(self, config, output, *, ignore_unknown=False):
 
         # Element and Source  type configurations will be composited later onto
         # element/source types, so we delete it from here and run our final
         # assertion after.
-        output.element_overrides = config.get_mapping('elements', default={})
-        output.source_overrides = config.get_mapping('sources', default={})
-        config.safe_del('elements')
-        config.safe_del('sources')
+        output.element_overrides = config.get_mapping("elements", default={})
+        output.source_overrides = config.get_mapping("sources", default={})
+        config.safe_del("elements")
+        config.safe_del("sources")
         config._assert_fully_composited()
 
         self._load_plugin_factories(config, output)
 
         # Load project options
-        options_node = config.get_mapping('options', default={})
+        options_node = config.get_mapping("options", default={})
         output.options.load(options_node)
         if self.junction:
             # load before user configuration
@@ -793,7 +821,7 @@ class Project():
 
         # Collect option values specified in the user configuration
         overrides = self._context.get_overrides(self.name)
-        override_options = overrides.get_mapping('options', default={})
+        override_options = overrides.get_mapping("options", default={})
         output.options.load_yaml_values(override_options)
         if self._cli_options:
             output.options.load_cli_values(self._cli_options, ignore_unknown=ignore_unknown)
@@ -812,10 +840,10 @@ class Project():
         output.options.process_node(output.source_overrides)
 
         # Load base variables
-        output.base_variables = config.get_mapping('variables')
+        output.base_variables = config.get_mapping("variables")
 
         # Add the project name as a default variable
-        output.base_variables['project-name'] = self.name
+        output.base_variables["project-name"] = self.name
 
         # Extend variables with automatic variables and option exports
         # Initialize it as a string as all variables are processed as strings.
@@ -825,27 +853,24 @@ class Project():
         if self._context.build_max_jobs == 0:
             # User requested automatic max-jobs
             platform = self._context.platform
-            output.base_variables['max-jobs'] = str(platform.get_cpu_count(8))
+            output.base_variables["max-jobs"] = str(platform.get_cpu_count(8))
         else:
             # User requested explicit max-jobs setting
-            output.base_variables['max-jobs'] = str(self._context.build_max_jobs)
+            output.base_variables["max-jobs"] = str(self._context.build_max_jobs)
 
         # Export options into variables, if that was requested
         output.options.export_variables(output.base_variables)
 
         # Override default_mirror if not set by command-line
-        output.default_mirror = self._default_mirror or overrides.get_str(
-            'default-mirror', default=None)
+        output.default_mirror = self._default_mirror or overrides.get_str("default-mirror", default=None)
 
-        mirrors = config.get_sequence('mirrors', default=[])
+        mirrors = config.get_sequence("mirrors", default=[])
         for mirror in mirrors:
-            allowed_mirror_fields = [
-                'name', 'aliases'
-            ]
+            allowed_mirror_fields = ["name", "aliases"]
             mirror.validate_keys(allowed_mirror_fields)
-            mirror_name = mirror.get_str('name')
+            mirror_name = mirror.get_str("name")
             alias_mappings = {}
-            for alias_mapping, uris in mirror.get_mapping('aliases').items():
+            for alias_mapping, uris in mirror.get_mapping("aliases").items():
                 assert type(uris) is SequenceNode  # pylint: disable=unidiomatic-typecheck
                 alias_mappings[alias_mapping] = uris.as_str_list()
             output.mirrors[mirror_name] = alias_mappings
@@ -853,7 +878,7 @@ class Project():
                 output.default_mirror = mirror_name
 
         # Source url aliases
-        output._aliases = config.get_mapping('aliases', default={})
+        output._aliases = config.get_mapping("aliases", default={})
 
     # _find_project_dir()
     #
@@ -873,9 +898,7 @@ class Project():
     def _find_project_dir(self, directory):
         workspace_element = None
         config_filenames = [_PROJECT_CONF_FILE, WORKSPACE_PROJECT_FILE]
-        found_directory, filename = utils._search_upward_for_files(
-            directory, config_filenames
-        )
+        found_directory, filename = utils._search_upward_for_files(directory, config_filenames)
         if filename == _PROJECT_CONF_FILE:
             project_directory = found_directory
         elif filename == WORKSPACE_PROJECT_FILE:
@@ -885,57 +908,62 @@ class Project():
                 project_directory = workspace_project.get_default_project_path()
                 workspace_element = workspace_project.get_default_element()
         else:
-            raise LoadError("None of {names} found in '{path}' or any of its parent directories"
-                            .format(names=config_filenames, path=directory), LoadErrorReason.MISSING_PROJECT_CONF)
+            raise LoadError(
+                "None of {names} found in '{path}' or any of its parent directories".format(
+                    names=config_filenames, path=directory
+                ),
+                LoadErrorReason.MISSING_PROJECT_CONF,
+            )
 
         return project_directory, workspace_element
 
     def _load_plugin_factories(self, config, output):
-        plugin_source_origins = []   # Origins of custom sources
+        plugin_source_origins = []  # Origins of custom sources
         plugin_element_origins = []  # Origins of custom elements
 
         # Plugin origins and versions
-        origins = config.get_sequence('plugins', default=[])
+        origins = config.get_sequence("plugins", default=[])
         source_format_versions = {}
         element_format_versions = {}
         for origin in origins:
             allowed_origin_fields = [
-                'origin', 'sources', 'elements',
-                'package-name', 'path',
+                "origin",
+                "sources",
+                "elements",
+                "package-name",
+                "path",
             ]
             origin.validate_keys(allowed_origin_fields)
 
             # Store source versions for checking later
-            source_versions = origin.get_mapping('sources', default={})
+            source_versions = origin.get_mapping("sources", default={})
             for key in source_versions.keys():
                 if key in source_format_versions:
-                    raise LoadError("Duplicate listing of source '{}'".format(key),
-                                    LoadErrorReason.INVALID_YAML)
+                    raise LoadError("Duplicate listing of source '{}'".format(key), LoadErrorReason.INVALID_YAML)
                 source_format_versions[key] = source_versions.get_int(key)
 
             # Store element versions for checking later
-            element_versions = origin.get_mapping('elements', default={})
+            element_versions = origin.get_mapping("elements", default={})
             for key in element_versions.keys():
                 if key in element_format_versions:
-                    raise LoadError("Duplicate listing of element '{}'".format(key),
-                                    LoadErrorReason.INVALID_YAML)
+                    raise LoadError("Duplicate listing of element '{}'".format(key), LoadErrorReason.INVALID_YAML)
                 element_format_versions[key] = element_versions.get_int(key)
 
             # Store the origins if they're not 'core'.
             # core elements are loaded by default, so storing is unnecessary.
-            origin_value = origin.get_enum('origin', PluginOrigins)
+            origin_value = origin.get_enum("origin", PluginOrigins)
 
             if origin_value != PluginOrigins.CORE:
-                self._store_origin(origin, 'sources', plugin_source_origins)
-                self._store_origin(origin, 'elements', plugin_element_origins)
+                self._store_origin(origin, "sources", plugin_source_origins)
+                self._store_origin(origin, "elements", plugin_element_origins)
 
-        pluginbase = PluginBase(package='buildstream.plugins')
-        output.element_factory = ElementFactory(pluginbase,
-                                                plugin_origins=plugin_element_origins,
-                                                format_versions=element_format_versions)
-        output.source_factory = SourceFactory(pluginbase,
-                                              plugin_origins=plugin_source_origins,
-                                              format_versions=source_format_versions)
+        pluginbase = PluginBase(package="buildstream.plugins")
+        output.element_factory = ElementFactory(
+            pluginbase, plugin_origins=plugin_element_origins, format_versions=element_format_versions
+        )
+        output.source_factory = SourceFactory(
+            pluginbase, plugin_origins=plugin_source_origins, format_versions=source_format_versions
+        )
 
     # _store_origin()
     #
@@ -951,25 +979,25 @@ class Project():
     # Raises:
     #    LoadError if 'origin' is an unexpected value
     def _store_origin(self, origin, plugin_group, destination):
-        expected_groups = ['sources', 'elements']
+        expected_groups = ["sources", "elements"]
         if plugin_group not in expected_groups:
-            raise LoadError("Unexpected plugin group: {}, expecting {}"
-                            .format(plugin_group, expected_groups),
-                            LoadErrorReason.INVALID_DATA)
+            raise LoadError(
+                "Unexpected plugin group: {}, expecting {}".format(plugin_group, expected_groups),
+                LoadErrorReason.INVALID_DATA,
+            )
         if plugin_group in origin.keys():
             origin_node = origin.clone()
             plugins = origin.get_mapping(plugin_group, default={})
-            origin_node['plugins'] = plugins.keys()
+            origin_node["plugins"] = plugins.keys()
 
             for group in expected_groups:
                 if group in origin_node:
                     del origin_node[group]
 
-            if origin_node.get_enum('origin', PluginOrigins) == PluginOrigins.LOCAL:
-                path = self.get_path_from_node(origin.get_scalar('path'),
-                                               check_is_dir=True)
+            if origin_node.get_enum("origin", PluginOrigins) == PluginOrigins.LOCAL:
+                path = self.get_path_from_node(origin.get_scalar("path"), check_is_dir=True)
                 # paths are passed in relative to the project, but must be absolute
-                origin_node['path'] = os.path.join(self.directory, path)
+                origin_node["path"] = os.path.join(self.directory, path)
             destination.append(origin_node)
 
     # _warning_is_fatal():

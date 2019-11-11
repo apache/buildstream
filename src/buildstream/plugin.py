@@ -127,10 +127,11 @@ if TYPE_CHECKING:
     # pylint: disable=cyclic-import
     from ._context import Context
     from ._project import Project
+
     # pylint: enable=cyclic-import
 
 
-class Plugin():
+class Plugin:
     """Plugin()
 
     Base Plugin class.
@@ -210,15 +211,17 @@ class Plugin():
     #
     # Note that Plugins can only be instantiated in the main process before
     # scheduling tasks.
-    __TABLE = WeakValueDictionary()     # type: WeakValueDictionary[int, Plugin]
+    __TABLE = WeakValueDictionary()  # type: WeakValueDictionary[int, Plugin]
 
-    def __init__(self,
-                 name: str,
-                 context: 'Context',
-                 project: 'Project',
-                 provenance: ProvenanceInformation,
-                 type_tag: str,
-                 unique_id: Optional[int] = None):
+    def __init__(
+        self,
+        name: str,
+        context: "Context",
+        project: "Project",
+        provenance: ProvenanceInformation,
+        type_tag: str,
+        unique_id: Optional[int] = None,
+    ):
 
         self.name = name
         """The plugin name
@@ -248,30 +251,29 @@ class Plugin():
             # plugin in a subprocess and should use the same ID.
             self._unique_id = unique_id
 
-        self.__context = context        # The Context object
+        self.__context = context  # The Context object
 
         # Note that when pickling jobs over to a child process, we rely on this
         # reference to the Project, it keeps the plugin factory alive. If the
         # factory were to be GC'd then we would see undefined behaviour. Make
         # sure to test plugin pickling if this reference is to be removed.
-        self.__project = project        # The Project object
+        self.__project = project  # The Project object
 
         self.__provenance = provenance  # The Provenance information
-        self.__type_tag = type_tag      # The type of plugin (element or source)
-        self.__configuring = False      # Whether we are currently configuring
+        self.__type_tag = type_tag  # The type of plugin (element or source)
+        self.__configuring = False  # Whether we are currently configuring
 
         # Get the full_name as project & type_tag are resolved
         self.__full_name = self.__get_full_name()
 
         # Infer the kind identifier
         modulename = type(self).__module__
-        self.__kind = modulename.split('.')[-1]
+        self.__kind = modulename.split(".")[-1]
         self.debug("Created: {}".format(self))
 
         # If this plugin has been deprecated, emit a warning.
         if self.BST_PLUGIN_DEPRECATED and not self.__deprecation_warning_silenced():
-            detail = "Using deprecated plugin {}: {}".format(self.__kind,
-                                                             self.BST_PLUGIN_DEPRECATION_MESSAGE)
+            detail = "Using deprecated plugin {}: {}".format(self.__kind, self.BST_PLUGIN_DEPRECATION_MESSAGE)
             self.__message(MessageType.WARN, detail)
 
     def __del__(self):
@@ -282,9 +284,8 @@ class Plugin():
 
     def __str__(self):
         return "{kind} {typetag} at {provenance}".format(
-            kind=self.__kind,
-            typetag=self.__type_tag,
-            provenance=self.__provenance)
+            kind=self.__kind, typetag=self.__type_tag, provenance=self.__provenance
+        )
 
     #############################################################
     #                      Abstract Methods                     #
@@ -312,8 +313,9 @@ class Plugin():
            :func:`Element.node_subst_member() <buildstream.element.Element.node_subst_member>`
            method can be used.
         """
-        raise ImplError("{tag} plugin '{kind}' does not implement configure()".format(
-            tag=self.__type_tag, kind=self.get_kind()))
+        raise ImplError(
+            "{tag} plugin '{kind}' does not implement configure()".format(tag=self.__type_tag, kind=self.get_kind())
+        )
 
     def preflight(self) -> None:
         """Preflight Check
@@ -333,8 +335,9 @@ class Plugin():
         them with :func:`utils.get_host_tool() <buildstream.utils.get_host_tool>` which
         will raise an error automatically informing the user that a host tool is needed.
         """
-        raise ImplError("{tag} plugin '{kind}' does not implement preflight()".format(
-            tag=self.__type_tag, kind=self.get_kind()))
+        raise ImplError(
+            "{tag} plugin '{kind}' does not implement preflight()".format(tag=self.__type_tag, kind=self.get_kind())
+        )
 
     def get_unique_key(self) -> SourceRef:
         """Return something which uniquely identifies the plugin input
@@ -355,8 +358,11 @@ class Plugin():
         which is to say that the Source is expected to have an exact *ref* indicating
         exactly what source is going to be staged.
         """
-        raise ImplError("{tag} plugin '{kind}' does not implement get_unique_key()".format(
-            tag=self.__type_tag, kind=self.get_kind()))
+        raise ImplError(
+            "{tag} plugin '{kind}' does not implement get_unique_key()".format(
+                tag=self.__type_tag, kind=self.get_kind()
+            )
+        )
 
     #############################################################
     #                       Public Methods                      #
@@ -369,8 +375,7 @@ class Plugin():
         """
         return self.__kind
 
-    def node_get_project_path(self, node, *,
-                              check_is_file=False, check_is_dir=False):
+    def node_get_project_path(self, node, *, check_is_file=False, check_is_dir=False):
         """Fetches a project path from a dictionary node and validates it
 
         Paths are asserted to never lead to a directory outside of the
@@ -408,9 +413,7 @@ class Plugin():
 
         """
 
-        return self.__project.get_path_from_node(node,
-                                                 check_is_file=check_is_file,
-                                                 check_is_dir=check_is_dir)
+        return self.__project.get_path_from_node(node, check_is_file=check_is_file, check_is_dir=check_is_dir)
 
     def debug(self, brief: str, *, detail: Optional[str] = None) -> None:
         """Print a debugging message
@@ -485,11 +488,9 @@ class Plugin():
         self.__message(MessageType.LOG, brief, detail=detail)
 
     @contextmanager
-    def timed_activity(self,
-                       activity_name: str,
-                       *,
-                       detail: Optional[str] = None,
-                       silent_nested: bool = False) -> Generator[None, None, None]:
+    def timed_activity(
+        self, activity_name: str, *, detail: Optional[str] = None, silent_nested: bool = False
+    ) -> Generator[None, None, None]:
         """Context manager for performing timed activities in plugins
 
         Args:
@@ -511,10 +512,9 @@ class Plugin():
               # This will raise SourceError on its own
               self.call(... command which takes time ...)
         """
-        with self.__context.messenger.timed_activity(activity_name,
-                                                     element_name=self._get_full_name(),
-                                                     detail=detail,
-                                                     silent_nested=silent_nested):
+        with self.__context.messenger.timed_activity(
+            activity_name, element_name=self._get_full_name(), detail=detail, silent_nested=silent_nested
+        ):
             yield
 
     def call(self, *popenargs, fail: Optional[str] = None, fail_temporarily: bool = False, **kwargs) -> int:
@@ -722,8 +722,11 @@ class Plugin():
         # so it's not an ImplError - those apply to custom plugins. Direct
         # descendants of Plugin must implement this, e.g. Element and Source.
         # Raise NotImplementedError as this would be an internal bug.
-        raise NotImplementedError("{tag} plugin '{kind}' does not implement _get_args_for_child_job_pickling()".format(
-            tag=self.__type_tag, kind=self.get_kind()))
+        raise NotImplementedError(
+            "{tag} plugin '{kind}' does not implement _get_args_for_child_job_pickling()".format(
+                tag=self.__type_tag, kind=self.get_kind()
+            )
+        )
 
     #############################################################
     #                     Local Private Methods                 #
@@ -734,20 +737,19 @@ class Plugin():
     def __call(self, *popenargs, collect_stdout=False, fail=None, fail_temporarily=False, **kwargs):
 
         with self._output_file() as output_file:
-            if 'stdout' not in kwargs:
-                kwargs['stdout'] = output_file
-            if 'stderr' not in kwargs:
-                kwargs['stderr'] = output_file
+            if "stdout" not in kwargs:
+                kwargs["stdout"] = output_file
+            if "stderr" not in kwargs:
+                kwargs["stderr"] = output_file
             if collect_stdout:
-                kwargs['stdout'] = subprocess.PIPE
+                kwargs["stdout"] = subprocess.PIPE
 
             self.__note_command(output_file, *popenargs, **kwargs)
 
             exit_code, output = utils._call(*popenargs, **kwargs)
 
             if fail and exit_code:
-                raise PluginError("{plugin}: {message}".format(plugin=self, message=fail),
-                                  temporary=fail_temporarily)
+                raise PluginError("{plugin}: {message}".format(plugin=self, message=fail), temporary=fail_temporarily)
 
         return (exit_code, output)
 
@@ -756,11 +758,11 @@ class Plugin():
         self.__context.messenger.message(message)
 
     def __note_command(self, output, *popenargs, **kwargs):
-        workdir = kwargs.get('cwd', os.getcwd())
+        workdir = kwargs.get("cwd", os.getcwd())
         command = " ".join(popenargs[0])
-        output.write('Running host command {}: {}\n'.format(workdir, command))
+        output.write("Running host command {}: {}\n".format(workdir, command))
         output.flush()
-        self.status('Running host command', detail=command)
+        self.status("Running host command", detail=command)
 
     def __deprecation_warning_silenced(self):
         if not self.BST_PLUGIN_DEPRECATED:
@@ -770,10 +772,10 @@ class Plugin():
             project = self.__project
 
             for key, value in project.element_overrides.items():
-                if value.get_bool('suppress-deprecation-warnings', default=False):
+                if value.get_bool("suppress-deprecation-warnings", default=False):
                     silenced_warnings.add(key)
             for key, value in project.source_overrides.items():
-                if value.get_bool('suppress-deprecation-warnings', default=False):
+                if value.get_bool("suppress-deprecation-warnings", default=False):
                     silenced_warnings.add(key)
 
             return self.get_kind() in silenced_warnings
@@ -783,18 +785,14 @@ class Plugin():
         # Set the name, depending on element or source plugin type
         name = self._element_name if self.__type_tag == "source" else self.name  # pylint: disable=no-member
         if project.junction:
-            return '{}:{}'.format(project.junction.name, name)
+            return "{}:{}".format(project.junction.name, name)
         else:
             return name
 
 
 # A local table for _prefix_warning()
 #
-__CORE_WARNINGS = [
-    value
-    for name, value in CoreWarnings.__dict__.items()
-    if not name.startswith("__")
-]
+__CORE_WARNINGS = [value for name, value in CoreWarnings.__dict__.items() if not name.startswith("__")]
 
 
 # _prefix_warning():

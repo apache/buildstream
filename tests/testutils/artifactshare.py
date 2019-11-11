@@ -29,7 +29,7 @@ class BaseArtifactShare:
         if port is None:
             raise Exception("Error occurred when starting artifact server.")
 
-        self.repo = 'http://localhost:{}'.format(port)
+        self.repo = "http://localhost:{}".format(port)
 
     # run():
     #
@@ -51,7 +51,7 @@ class BaseArtifactShare:
                     cleanup_on_sigterm()
 
                 server = stack.enter_context(self._create_server())
-                port = server.add_insecure_port('localhost:0')
+                port = server.add_insecure_port("localhost:0")
                 server.start()
             except Exception:
                 q.put(None)
@@ -104,7 +104,6 @@ class DummyArtifactShare(BaseArtifactShare):
 #    enable_push (bool): Whether the share should allow pushes
 #
 class ArtifactShare(BaseArtifactShare):
-
     def __init__(self, directory, *, quota=None, casd=False, index_only=False):
 
         # The working directory for the artifact share (in case it
@@ -117,9 +116,9 @@ class ArtifactShare(BaseArtifactShare):
         # Unless this gets more complicated, just use this directly
         # in tests as a remote artifact push/pull configuration
         #
-        self.repodir = os.path.join(self.directory, 'repo')
+        self.repodir = os.path.join(self.directory, "repo")
         os.makedirs(self.repodir)
-        self.artifactdir = os.path.join(self.repodir, 'artifacts', 'refs')
+        self.artifactdir = os.path.join(self.repodir, "artifacts", "refs")
         os.makedirs(self.artifactdir)
 
         self.cas = CASCache(self.repodir, casd=casd)
@@ -130,12 +129,7 @@ class ArtifactShare(BaseArtifactShare):
         super().__init__()
 
     def _create_server(self):
-        return create_server(
-            self.repodir,
-            quota=self.quota,
-            enable_push=True,
-            index_only=self.index_only,
-        )
+        return create_server(self.repodir, quota=self.quota, enable_push=True, index_only=self.index_only,)
 
     # has_object():
     #
@@ -159,7 +153,7 @@ class ArtifactShare(BaseArtifactShare):
         artifact_path = os.path.join(self.artifactdir, artifact_name)
 
         try:
-            with open(artifact_path, 'rb') as f:
+            with open(artifact_path, "rb") as f:
                 artifact_proto.ParseFromString(f.read())
         except FileNotFoundError:
             return None
@@ -171,8 +165,7 @@ class ArtifactShare(BaseArtifactShare):
         reachable = set()
 
         def reachable_dir(digest):
-            self.cas._reachable_refs_dir(
-                reachable, digest, update_mtime=False, check_exists=True)
+            self.cas._reachable_refs_dir(reachable, digest, update_mtime=False, check_exists=True)
 
         try:
             if str(artifact_proto.files):
@@ -262,20 +255,22 @@ def create_dummy_artifact_share():
         share.close()
 
 
-statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize f_bavail')
+statvfs_result = namedtuple("statvfs_result", "f_blocks f_bfree f_bsize f_bavail")
 
 
 # Assert that a given artifact is in the share
 #
-def assert_shared(cli, share, project, element_name, *, project_name='test'):
+def assert_shared(cli, share, project, element_name, *, project_name="test"):
     if not share.get_artifact(cli.get_artifact_name(project, project_name, element_name)):
-        raise AssertionError("Artifact share at {} does not contain the expected element {}"
-                             .format(share.repo, element_name))
+        raise AssertionError(
+            "Artifact share at {} does not contain the expected element {}".format(share.repo, element_name)
+        )
 
 
 # Assert that a given artifact is not in the share
 #
-def assert_not_shared(cli, share, project, element_name, *, project_name='test'):
+def assert_not_shared(cli, share, project, element_name, *, project_name="test"):
     if share.get_artifact(cli.get_artifact_name(project, project_name, element_name)):
-        raise AssertionError("Artifact share at {} unexpectedly contains the element {}"
-                             .format(share.repo, element_name))
+        raise AssertionError(
+            "Artifact share at {} unexpectedly contains the element {}".format(share.repo, element_name)
+        )

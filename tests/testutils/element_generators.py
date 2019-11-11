@@ -28,8 +28,8 @@ def create_element_size(name, project_dir, elements_path, dependencies, size):
     os.makedirs(full_elements_path, exist_ok=True)
 
     # Create a git repo
-    repodir = os.path.join(project_dir, 'repos')
-    repo = create_repo('git', repodir, subdir=name)
+    repodir = os.path.join(project_dir, "repos")
+    repo = create_repo("git", repodir, subdir=name)
 
     with utils._tempdir(dir=project_dir) as tmp:
 
@@ -38,26 +38,24 @@ def create_element_size(name, project_dir, elements_path, dependencies, size):
         # part; this ensures we never include a .git/ directory
         # in the cached artifacts for these sized elements.
         #
-        datadir = os.path.join(tmp, 'data')
+        datadir = os.path.join(tmp, "data")
         os.makedirs(datadir)
 
         # Use /dev/urandom to create the sized file in the datadir
-        with open(os.path.join(datadir, name), 'wb+') as f:
+        with open(os.path.join(datadir, name), "wb+") as f:
             f.write(os.urandom(size))
 
         # Create the git repo from the temp directory
         ref = repo.create(tmp)
 
     element = {
-        'kind': 'import',
-        'sources': [
-            repo.source_config(ref=ref)
-        ],
-        'config': {
+        "kind": "import",
+        "sources": [repo.source_config(ref=ref)],
+        "config": {
             # Extract only the data directory
-            'source': 'data'
+            "source": "data"
         },
-        'depends': dependencies
+        "depends": dependencies,
     }
     _yaml.roundtrip_dump(element, os.path.join(project_dir, elements_path, name))
 
@@ -91,9 +89,9 @@ def update_element_size(name, project_dir, repo, size):
         new_file = os.path.join(tmp, name)
 
         # Use /dev/urandom to create the sized file in the datadir
-        with open(new_file, 'wb+') as f:
+        with open(new_file, "wb+") as f:
             f.write(os.urandom(size))
 
         # Modify the git repo with a new commit to the same path,
         # replacing the original file with a new one.
-        repo.modify_file(new_file, os.path.join('data', name))
+        repo.modify_file(new_file, os.path.join("data", name))

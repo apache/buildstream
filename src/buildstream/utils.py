@@ -52,7 +52,7 @@ from ._utils import url_directory_name  # pylint: disable=unused-import
 BST_ARBITRARY_TIMESTAMP = calendar.timegm((2011, 11, 11, 11, 11, 11))
 
 # The separator we use for user specified aliases
-_ALIAS_SEPARATOR = ':'
+_ALIAS_SEPARATOR = ":"
 _URI_SCHEMES = ["http", "https", "ftp", "file", "git", "sftp", "ssh"]
 
 # Main process pid
@@ -74,6 +74,7 @@ class UtilError(BstError):
     or either of the :class:`.ElementError` or :class:`.SourceError`
     exceptions should be raised from this error.
     """
+
     def __init__(self, message, reason=None):
         super().__init__(message, domain=ErrorDomain.UTIL, reason=reason)
 
@@ -83,6 +84,7 @@ class ProgramNotFoundError(BstError):
 
     It is normally unneeded to handle this exception from plugin code.
     """
+
     def __init__(self, message, reason=None):
         super().__init__(message, domain=ErrorDomain.PROG_NOT_FOUND, reason=reason)
 
@@ -92,7 +94,7 @@ class DirectoryExistsError(OSError):
     """
 
 
-class FileListResult():
+class FileListResult:
     """An object which stores the result of one of the operations
     which run on a list of files.
     """
@@ -112,7 +114,7 @@ class FileListResult():
         self.files_written = []
         """List of files that were written."""
 
-    def combine(self, other: 'FileListResult') -> 'FileListResult':
+    def combine(self, other: "FileListResult") -> "FileListResult":
         """Create a new FileListResult that contains the results of both.
         """
         ret = FileListResult()
@@ -165,10 +167,10 @@ def list_relative_paths(directory: str) -> Iterator[str]:
 
         # We don't want "./" pre-pended to all the entries in the root of
         # `directory`, prefer to have no prefix in that case.
-        basepath = relpath if relpath != '.' and dirpath != directory else ''
+        basepath = relpath if relpath != "." and dirpath != directory else ""
 
         # First yield the walked directory itself, except for the root
-        if basepath != '':
+        if basepath != "":
             yield basepath
 
         # List the filenames in the walked directory
@@ -248,8 +250,7 @@ def sha256sum(filename: str) -> str:
                 h.update(chunk)
 
     except OSError as e:
-        raise UtilError("Failed to get a checksum of file '{}': {}"
-                        .format(filename, e)) from e
+        raise UtilError("Failed to get a checksum of file '{}': {}".format(filename, e)) from e
 
     return h.hexdigest()
 
@@ -274,8 +275,7 @@ def safe_copy(src: str, dest: str, *, result: Optional[FileListResult] = None) -
         os.unlink(dest)
     except OSError as e:
         if e.errno != errno.ENOENT:
-            raise UtilError("Failed to remove destination file '{}': {}"
-                            .format(dest, e)) from e
+            raise UtilError("Failed to remove destination file '{}': {}".format(dest, e)) from e
 
     shutil.copyfile(src, dest)
     try:
@@ -291,8 +291,7 @@ def safe_copy(src: str, dest: str, *, result: Optional[FileListResult] = None) -
             result.failed_attributes.append(dest)
 
     except shutil.Error as e:
-        raise UtilError("Failed to copy '{} -> {}': {}"
-                        .format(src, dest, e)) from e
+        raise UtilError("Failed to copy '{} -> {}': {}".format(src, dest, e)) from e
 
 
 def safe_link(src: str, dest: str, *, result: Optional[FileListResult] = None, _unlink=False) -> None:
@@ -313,8 +312,7 @@ def safe_link(src: str, dest: str, *, result: Optional[FileListResult] = None, _
             os.unlink(dest)
         except OSError as e:
             if e.errno != errno.ENOENT:
-                raise UtilError("Failed to remove destination file '{}': {}"
-                                .format(dest, e)) from e
+                raise UtilError("Failed to remove destination file '{}': {}".format(dest, e)) from e
 
     # If we can't link it due to cross-device hardlink, copy
     try:
@@ -326,8 +324,7 @@ def safe_link(src: str, dest: str, *, result: Optional[FileListResult] = None, _
         elif e.errno == errno.EXDEV:
             safe_copy(src, dest)
         else:
-            raise UtilError("Failed to link '{} -> {}': {}"
-                            .format(src, dest, e)) from e
+            raise UtilError("Failed to link '{} -> {}': {}".format(src, dest, e)) from e
 
 
 def safe_remove(path: str) -> bool:
@@ -363,16 +360,17 @@ def safe_remove(path: str) -> bool:
             # Path does not exist
             return True
 
-        raise UtilError("Failed to remove '{}': {}"
-                        .format(path, e))
+        raise UtilError("Failed to remove '{}': {}".format(path, e))
 
 
-def copy_files(src: str,
-               dest: str,
-               *,
-               filter_callback: Optional[Callable[[str], bool]] = None,
-               ignore_missing: bool = False,
-               report_written: bool = False) -> FileListResult:
+def copy_files(
+    src: str,
+    dest: str,
+    *,
+    filter_callback: Optional[Callable[[str], bool]] = None,
+    ignore_missing: bool = False,
+    report_written: bool = False
+) -> FileListResult:
     """Copy files from source to destination.
 
     Args:
@@ -401,22 +399,28 @@ def copy_files(src: str,
     """
     result = FileListResult()
     try:
-        _process_list(src, dest, safe_copy, result,
-                      filter_callback=filter_callback,
-                      ignore_missing=ignore_missing,
-                      report_written=report_written)
+        _process_list(
+            src,
+            dest,
+            safe_copy,
+            result,
+            filter_callback=filter_callback,
+            ignore_missing=ignore_missing,
+            report_written=report_written,
+        )
     except OSError as e:
-        raise UtilError("Failed to copy '{} -> {}': {}"
-                        .format(src, dest, e))
+        raise UtilError("Failed to copy '{} -> {}': {}".format(src, dest, e))
     return result
 
 
-def link_files(src: str,
-               dest: str,
-               *,
-               filter_callback: Optional[Callable[[str], bool]] = None,
-               ignore_missing: bool = False,
-               report_written: bool = False) -> FileListResult:
+def link_files(
+    src: str,
+    dest: str,
+    *,
+    filter_callback: Optional[Callable[[str], bool]] = None,
+    ignore_missing: bool = False,
+    report_written: bool = False
+) -> FileListResult:
     """Hardlink files from source to destination.
 
     Args:
@@ -450,13 +454,17 @@ def link_files(src: str,
     """
     result = FileListResult()
     try:
-        _process_list(src, dest, safe_link, result,
-                      filter_callback=filter_callback,
-                      ignore_missing=ignore_missing,
-                      report_written=report_written)
+        _process_list(
+            src,
+            dest,
+            safe_link,
+            result,
+            filter_callback=filter_callback,
+            ignore_missing=ignore_missing,
+            report_written=report_written,
+        )
     except OSError as e:
-        raise UtilError("Failed to link '{} -> {}': {}"
-                        .format(src, dest, e))
+        raise UtilError("Failed to link '{} -> {}': {}".format(src, dest, e))
 
     return result
 
@@ -473,7 +481,7 @@ def get_host_tool(name: str) -> str:
     Raises:
        :class:`.ProgramNotFoundError`
     """
-    search_path = os.environ.get('PATH')
+    search_path = os.environ.get("PATH")
     program_path = shutil.which(name, path=search_path)
 
     if not program_path:
@@ -491,22 +499,27 @@ def get_bst_version() -> Tuple[int, int]:
     """
     # Import this only conditionally, it's not resolved at bash complete time
     from . import __version__  # pylint: disable=cyclic-import
-    versions = __version__.split('.')[:2]
 
-    if versions[0] == '0+untagged':
-        raise UtilError("Your git repository has no tags - BuildStream can't "
-                        "determine its version. Please run `git fetch --tags`.")
+    versions = __version__.split(".")[:2]
+
+    if versions[0] == "0+untagged":
+        raise UtilError(
+            "Your git repository has no tags - BuildStream can't "
+            "determine its version. Please run `git fetch --tags`."
+        )
 
     try:
         return (int(versions[0]), int(versions[1]))
     except IndexError:
-        raise UtilError("Cannot detect Major and Minor parts of the version\n"
-                        "Version: {} not in XX.YY.whatever format"
-                        .format(__version__))
+        raise UtilError(
+            "Cannot detect Major and Minor parts of the version\n"
+            "Version: {} not in XX.YY.whatever format".format(__version__)
+        )
     except ValueError:
-        raise UtilError("Cannot convert version to integer numbers\n"
-                        "Version: {} not in Integer.Integer.whatever format"
-                        .format(__version__))
+        raise UtilError(
+            "Cannot convert version to integer numbers\n"
+            "Version: {} not in Integer.Integer.whatever format".format(__version__)
+        )
 
 
 def move_atomic(source: Union[Path, str], destination: Union[Path, str], *, ensure_parents: bool = True) -> None:
@@ -548,16 +561,18 @@ def move_atomic(source: Union[Path, str], destination: Union[Path, str], *, ensu
 
 
 @contextmanager
-def save_file_atomic(filename: str,
-                     mode: str = 'w',
-                     *,
-                     buffering: int = -1,
-                     encoding: Optional[str] = None,
-                     errors: Optional[str] = None,
-                     newline: Optional[str] = None,
-                     closefd: bool = True,
-                     opener: Optional[Callable[[str, int], int]] = None,
-                     tempdir: Optional[str] = None) -> Iterator[IO]:
+def save_file_atomic(
+    filename: str,
+    mode: str = "w",
+    *,
+    buffering: int = -1,
+    encoding: Optional[str] = None,
+    errors: Optional[str] = None,
+    newline: Optional[str] = None,
+    closefd: bool = True,
+    opener: Optional[Callable[[str, int], int]] = None,
+    tempdir: Optional[str] = None
+) -> Iterator[IO]:
     """Save a file with a temporary name and rename it into place when ready.
 
     This is a context manager which is meant for saving data to files.
@@ -589,8 +604,16 @@ def save_file_atomic(filename: str,
     fd, tempname = tempfile.mkstemp(dir=tempdir)
     os.close(fd)
 
-    f = open(tempname, mode=mode, buffering=buffering, encoding=encoding,
-             errors=errors, newline=newline, closefd=closefd, opener=opener)
+    f = open(
+        tempname,
+        mode=mode,
+        buffering=buffering,
+        encoding=encoding,
+        errors=errors,
+        newline=newline,
+        closefd=closefd,
+        opener=opener,
+    )
 
     def cleanup_tempfile():
         f.close()
@@ -604,7 +627,7 @@ def save_file_atomic(filename: str,
     try:
         with _signals.terminator(cleanup_tempfile):
             # Disable type-checking since "IO[Any]" has no attribute "real_filename"
-            f.real_filename = filename		# type: ignore
+            f.real_filename = filename  # type: ignore
             yield f
             f.close()
             # This operation is atomic, at least on platforms we care about:
@@ -660,8 +683,7 @@ def _get_volume_size(path):
     try:
         usage = shutil.disk_usage(path)
     except OSError as e:
-        raise UtilError("Failed to retrieve stats on volume for path '{}': {}"
-                        .format(path, e)) from e
+        raise UtilError("Failed to retrieve stats on volume for path '{}': {}".format(path, e)) from e
     return usage.total, usage.free
 
 
@@ -685,16 +707,16 @@ def _get_volume_size(path):
 #     UtilError if the string is not a valid data size.
 #
 def _parse_size(size, volume):
-    if size == 'infinity':
+    if size == "infinity":
         return None
 
-    matches = re.fullmatch(r'([0-9]+\.?[0-9]*)([KMGT%]?)', size)
+    matches = re.fullmatch(r"([0-9]+\.?[0-9]*)([KMGT%]?)", size)
     if matches is None:
         raise UtilError("{} is not a valid data size.".format(size))
 
     num, unit = matches.groups()
 
-    if unit == '%':
+    if unit == "%":
         num = float(num)
         if num > 100:
             raise UtilError("{}% is not a valid percentage value.".format(num))
@@ -703,8 +725,8 @@ def _parse_size(size, volume):
 
         return disk_size * (num / 100)
 
-    units = ('', 'K', 'M', 'G', 'T')
-    return int(num) * 1024**units.index(unit)
+    units = ("", "K", "M", "G", "T")
+    return int(num) * 1024 ** units.index(unit)
 
 
 # _pretty_size()
@@ -720,8 +742,8 @@ def _parse_size(size, volume):
 #   (str): The string representation of the number of bytes in the largest
 def _pretty_size(size, dec_places=0):
     psize = size
-    unit = 'B'
-    units = ('B', 'K', 'M', 'G', 'T')
+    unit = "B"
+    units = ("B", "K", "M", "G", "T")
     for unit in units:
         if psize < 1024:
             break
@@ -746,19 +768,17 @@ def _force_rmtree(rootpath, **kwargs):
     os.chmod(rootpath, 0o755)
     for root, dirs, _ in os.walk(rootpath):
         for d in dirs:
-            path = os.path.join(root, d.lstrip('/'))
+            path = os.path.join(root, d.lstrip("/"))
             if os.path.exists(path) and not os.path.islink(path):
                 try:
                     os.chmod(path, 0o755)
                 except OSError as e:
-                    raise UtilError("Failed to ensure write permission on file '{}': {}"
-                                    .format(path, e))
+                    raise UtilError("Failed to ensure write permission on file '{}': {}".format(path, e))
 
     try:
         shutil.rmtree(rootpath, **kwargs)
     except OSError as e:
-        raise UtilError("Failed to remove cache directory '{}': {}"
-                        .format(rootpath, e))
+        raise UtilError("Failed to remove cache directory '{}': {}".format(rootpath, e))
 
 
 # Recursively make directories in target area
@@ -779,8 +799,7 @@ def _copy_directories(srcdir, destdir, target):
                 os.makedirs(new_dir)
                 yield (new_dir, mode)
             else:
-                raise UtilError('Source directory tree has file where '
-                                'directory expected: {}'.format(old_dir))
+                raise UtilError("Source directory tree has file where " "directory expected: {}".format(old_dir))
     else:
         if not os.access(new_dir, os.W_OK):
             # If the destination directory is not writable, change permissions to make it
@@ -806,16 +825,16 @@ def _ensure_real_directory(root, path):
         try:
             deststat = os.lstat(destpath)
             if not stat.S_ISDIR(deststat.st_mode):
-                relpath = destpath[len(root):]
+                relpath = destpath[len(root) :]
 
                 if stat.S_ISLNK(deststat.st_mode):
-                    filetype = 'symlink'
+                    filetype = "symlink"
                 elif stat.S_ISREG(deststat.st_mode):
-                    filetype = 'regular file'
+                    filetype = "regular file"
                 else:
-                    filetype = 'special file'
+                    filetype = "special file"
 
-                raise UtilError('Destination is a {}, not a directory: {}'.format(filetype, relpath))
+                raise UtilError("Destination is a {}, not a directory: {}".format(filetype, relpath))
         except FileNotFoundError:
             os.makedirs(destpath)
 
@@ -836,9 +855,9 @@ def _ensure_real_directory(root, path):
 #    ignore_missing: Dont raise any error if a source file is missing
 #
 #
-def _process_list(srcdir, destdir, actionfunc, result,
-                  filter_callback=None,
-                  ignore_missing=False, report_written=False):
+def _process_list(
+    srcdir, destdir, actionfunc, result, filter_callback=None, ignore_missing=False, report_written=False
+):
 
     # Keep track of directory permissions, since these need to be set
     # *after* files have been written.
@@ -921,7 +940,7 @@ def _process_list(srcdir, destdir, actionfunc, result,
 
         else:
             # Unsupported type.
-            raise UtilError('Cannot extract {} into staging-area. Unsupported type.'.format(srcpath))
+            raise UtilError("Cannot extract {} into staging-area. Unsupported type.".format(srcpath))
 
     # Write directory permissions now that all files have been written
     for d, perms in permissions:
@@ -1035,8 +1054,9 @@ def _tempnamedfile(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefi
         if temp is not None:
             temp.close()
 
-    with _signals.terminator(close_tempfile), \
-            tempfile.NamedTemporaryFile(suffix=suffix, prefix=prefix, dir=dir) as temp:
+    with _signals.terminator(close_tempfile), tempfile.NamedTemporaryFile(
+        suffix=suffix, prefix=prefix, dir=dir
+    ) as temp:
         yield temp
 
 
@@ -1145,13 +1165,13 @@ def _kill_process_tree(pid):
 #
 def _call(*popenargs, terminate=False, **kwargs):
 
-    kwargs['start_new_session'] = True
+    kwargs["start_new_session"] = True
 
     process = None
 
-    old_preexec_fn = kwargs.get('preexec_fn')
-    if 'preexec_fn' in kwargs:
-        del kwargs['preexec_fn']
+    old_preexec_fn = kwargs.get("preexec_fn")
+    if "preexec_fn" in kwargs:
+        del kwargs["preexec_fn"]
 
     def preexec_fn():
         os.umask(stat.S_IWGRP | stat.S_IWOTH)
@@ -1203,7 +1223,8 @@ def _call(*popenargs, terminate=False, **kwargs):
 
     with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
         process = subprocess.Popen(  # pylint: disable=subprocess-popen-preexec-fn
-            *popenargs, preexec_fn=preexec_fn, universal_newlines=True, **kwargs)
+            *popenargs, preexec_fn=preexec_fn, universal_newlines=True, **kwargs
+        )
         output, _ = process.communicate()
         exit_code = process.poll()
 
@@ -1237,44 +1258,44 @@ def _call(*popenargs, terminate=False, **kwargs):
 #
 def _glob2re(pat):
     i, n = 0, len(pat)
-    res = '(?ms)'
+    res = "(?ms)"
     while i < n:
         c = pat[i]
         i = i + 1
-        if c == '*':
+        if c == "*":
             # fnmatch.translate() simply uses the '.*' separator here,
             # we only want that for double asterisk (bash 'globstar' behavior)
             #
-            if i < n and pat[i] == '*':
-                res = res + '.*'
+            if i < n and pat[i] == "*":
+                res = res + ".*"
                 i = i + 1
             else:
-                res = res + '[^/]*'
-        elif c == '?':
+                res = res + "[^/]*"
+        elif c == "?":
             # fnmatch.translate() simply uses the '.' wildcard here, but
             # we dont want to match path separators here
-            res = res + '[^/]'
-        elif c == '[':
+            res = res + "[^/]"
+        elif c == "[":
             j = i
-            if j < n and pat[j] == '!':
+            if j < n and pat[j] == "!":
                 j = j + 1
-            if j < n and pat[j] == ']':
+            if j < n and pat[j] == "]":
                 j = j + 1
-            while j < n and pat[j] != ']':
+            while j < n and pat[j] != "]":
                 j = j + 1
             if j >= n:
-                res = res + '\\['
+                res = res + "\\["
             else:
-                stuff = pat[i:j].replace('\\', '\\\\')
+                stuff = pat[i:j].replace("\\", "\\\\")
                 i = j + 1
-                if stuff[0] == '!':
-                    stuff = '^' + stuff[1:]
-                elif stuff[0] == '^':
-                    stuff = '\\' + stuff
-                res = '{}[{}]'.format(res, stuff)
+                if stuff[0] == "!":
+                    stuff = "^" + stuff[1:]
+                elif stuff[0] == "^":
+                    stuff = "\\" + stuff
+                res = "{}[{}]".format(res, stuff)
         else:
             res = res + re.escape(c)
-    return res + r'\Z'
+    return res + r"\Z"
 
 
 # _deduplicate()
@@ -1392,7 +1413,7 @@ def _deterministic_umask():
 #
 #
 def _get_compression(tar):
-    mapped_extensions = {'.tar': '', '.gz': 'gz', '.xz': 'xz', '.bz2': 'bz2'}
+    mapped_extensions = {".tar": "", ".gz": "gz", ".xz": "xz", ".bz2": "bz2"}
 
     name, ext = os.path.splitext(tar)
 
@@ -1403,12 +1424,14 @@ def _get_compression(tar):
         # If so, we assume we have been given an unsupported extension,
         # which expects compression. Raise an error
         _, suffix = os.path.splitext(name)
-        if suffix == '.tar':
-            raise UtilError("Expected compression with unknown file extension ('{}'), "
-                            "supported extensions are ('.tar'), ('.gz'), ('.xz'), ('.bz2')".format(ext))
+        if suffix == ".tar":
+            raise UtilError(
+                "Expected compression with unknown file extension ('{}'), "
+                "supported extensions are ('.tar'), ('.gz'), ('.xz'), ('.bz2')".format(ext)
+            )
 
         # Assume just an unconventional name was provided, default to uncompressed
-        return ''
+        return ""
 
 
 # _is_single_threaded()
