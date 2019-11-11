@@ -377,6 +377,10 @@ class Stream():
                        track_except_targets=except_targets,
                        track_cross_junctions=cross_junctions)
 
+        # FIXME: this can be refactored after element._update_state is simplified/removed
+        elements = [element for element in elements if element._schedule_tracking()]
+        self._pipeline.resolve_elements(elements)
+
         self._scheduler.clear_queues()
         track_queue = TrackQueue(self._scheduler)
         self._add_queue(track_queue, track=True)
@@ -1209,16 +1213,6 @@ class Stream():
         # Hold on to the targets
         self.targets = elements + artifacts
 
-        # Here we should raise an error if the track_elements targets
-        # are not dependencies of the primary targets, this is not
-        # supported.
-        #
-        # This can happen with `bst build --track`
-        #
-        if targets and not self._pipeline.targets_include(elements, track_elements):
-            raise StreamError("Specified tracking targets that are not "
-                              "within the scope of primary targets")
-
         # First take care of marking tracking elements, this must be
         # done before resolving element states.
         #
@@ -1248,11 +1242,7 @@ class Stream():
                                                         track_selected,
                                                         track_except_elements)
 
-        for element in track_selected:
-            element._schedule_tracking()
-
         if not targets:
-            self._pipeline.resolve_elements(track_selected)
             return [], track_selected
 
         # ArtifactCache.setup_remotes expects all projects to be fully loaded

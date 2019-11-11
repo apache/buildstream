@@ -1331,8 +1331,22 @@ class Element(Plugin):
     # and reinterrogation of element state after tracking of elements
     # succeeds.
     #
-    def _schedule_tracking(self):
-        self.__tracking_scheduled = True
+    # This method should return the value of `__tracking_scheduled` to report
+    # to callers that the element was marked for tracking.
+    #
+    # If `__tracking_scheduled` is not already determined then set it to `True`
+    # if at least one source advertises that it can be tracked.
+    #
+    # Returns:
+    #    (bool): value of the `__tracking_scheduled` attribute
+    #
+    def _schedule_tracking(self) -> bool:
+        # if the tracking schedule is already determined then this can be skipped
+        if not self.__tracking_scheduled:
+            # Tracking does not make sense in cases where no sources can be tracked.
+            if any(source._is_trackable() for source in self.__sources):
+                self.__tracking_scheduled = True
+        return self.__tracking_scheduled
 
     # _tracking_done():
     #

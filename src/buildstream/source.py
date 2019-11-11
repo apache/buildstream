@@ -1087,6 +1087,16 @@ class Source(Plugin):
 
         return new_ref
 
+    # _is_trackable()
+    #
+    # Returns:
+    #   (bool): Whether this source is trackable
+    #
+    def _is_trackable(self) -> bool:
+        """Report whether this source can be tracked."""
+        # sources that require staging to generate keys cannot be tracked
+        return not self.BST_KEY_REQUIRES_STAGE
+
     # _requires_previous_sources()
     #
     # If a plugin requires access to previous sources at track or fetch time,
