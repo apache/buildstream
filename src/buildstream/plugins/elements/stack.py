@@ -39,6 +39,9 @@ class StackElement(Element):
     # This element does not allow sources
     BST_FORBID_SOURCES = True
 
+    # Stack elements do not run any commands
+    BST_RUN_COMMANDS = False
+
     def configure(self, node):
         pass
 
