@@ -34,6 +34,9 @@ from .._message import Message, MessageType
 from ..plugin import Plugin
 
 
+_MAX_TIMEOUT_TO_KILL_CHILDREN = 20  # in seconds
+
+
 # A decent return code for Scheduler.run()
 class SchedStatus(FastEnum):
     SUCCESS = 0
@@ -530,8 +533,8 @@ class Scheduler():
             for job_ in self._active_jobs:
                 job_.kill()
 
-        # Schedule all jobs to be killed if they have not exited in 20 sec
-        self.loop.call_later(20, kill_jobs)
+        # Schedule all jobs to be killed if they have not exited after timeout
+        self.loop.call_later(_MAX_TIMEOUT_TO_KILL_CHILDREN, kill_jobs)
 
         for job in self._active_jobs:
             job.terminate()
