@@ -10,10 +10,7 @@ from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
 from buildstream.testing._utils.site import HAVE_GIT
 
-DATA_DIR = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    'no-fetch-cached'
-)
+DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "no-fetch-cached")
 
 
 ##################################################################
@@ -26,23 +23,13 @@ def test_no_fetch_cached(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     # Create the repo from 'files' subdir
-    repo = create_repo('git', str(tmpdir))
-    ref = repo.create(os.path.join(project, 'files'))
+    repo = create_repo("git", str(tmpdir))
+    ref = repo.create(os.path.join(project, "files"))
 
     # Write out test target with a cached and a non-cached source
-    element = {
-        'kind': 'import',
-        'sources': [
-            repo.source_config(ref=ref),
-            {
-                'kind': 'always_cached'
-            }
-        ]
-    }
-    _yaml.roundtrip_dump(element, os.path.join(project, 'target.bst'))
+    element = {"kind": "import", "sources": [repo.source_config(ref=ref), {"kind": "always_cached"}]}
+    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
 
     # Test fetch of target with a cached and a non-cached source
-    result = cli.run(project=project, args=[
-        'source', 'fetch', 'target.bst'
-    ])
+    result = cli.run(project=project, args=["source", "fetch", "target.bst"])
     result.assert_success()

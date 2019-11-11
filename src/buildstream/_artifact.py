@@ -47,7 +47,7 @@ from .storage._casbaseddirectory import CasBasedDirectory
 #     strong_key (str): The elements strong cache key, dependent on context
 #     weak_key (str): The elements weak cache key
 #
-class Artifact():
+class Artifact:
 
     version = 0
 
@@ -61,11 +61,11 @@ class Artifact():
         self._tmpdir = context.tmpdir
         self._proto = None
 
-        self._metadata_keys = None                    # Strong and weak key tuple extracted from the artifact
-        self._metadata_dependencies = None             # Dictionary of dependency strong keys from the artifact
-        self._metadata_workspaced = None              # Boolean of whether it's a workspaced artifact
+        self._metadata_keys = None  # Strong and weak key tuple extracted from the artifact
+        self._metadata_dependencies = None  # Dictionary of dependency strong keys from the artifact
+        self._metadata_workspaced = None  # Boolean of whether it's a workspaced artifact
         self._metadata_workspaced_dependencies = None  # List of which dependencies are workspaced from the artifact
-        self._cached = None                          # Boolean of whether the artifact is cached
+        self._cached = None  # Boolean of whether the artifact is cached
 
     # get_files():
     #
@@ -193,12 +193,11 @@ class Artifact():
             artifact.buildtree.CopyFrom(buildtreevdir._get_digest())
             size += buildtreevdir.get_size()
 
-        os.makedirs(os.path.dirname(os.path.join(
-            self._artifactdir, element.get_artifact_name())), exist_ok=True)
+        os.makedirs(os.path.dirname(os.path.join(self._artifactdir, element.get_artifact_name())), exist_ok=True)
         keys = utils._deduplicate([self._cache_key, self._weak_cache_key])
         for key in keys:
             path = os.path.join(self._artifactdir, element.get_artifact_name(key=key))
-            with utils.save_file_atomic(path, mode='wb') as f:
+            with utils.save_file_atomic(path, mode="wb") as f:
                 f.write(artifact.SerializeToString())
 
         return size
@@ -247,7 +246,7 @@ class Artifact():
         # Load the public data from the artifact
         artifact = self._get_proto()
         meta_file = self._cas.objpath(artifact.public_data)
-        data = _yaml.load(meta_file, shortname='public.yaml')
+        data = _yaml.load(meta_file, shortname="public.yaml")
 
         return data
 
@@ -263,9 +262,7 @@ class Artifact():
     def load_build_result(self):
 
         artifact = self._get_proto()
-        build_result = (artifact.build_success,
-                        artifact.build_error,
-                        artifact.build_error_details)
+        build_result = (artifact.build_success, artifact.build_error, artifact.build_error_details)
 
         return build_result
 
@@ -345,8 +342,9 @@ class Artifact():
         # Extract proto
         artifact = self._get_proto()
 
-        self._metadata_workspaced_dependencies = [dep.element_name for dep in artifact.build_deps
-                                                  if dep.was_workspaced]
+        self._metadata_workspaced_dependencies = [
+            dep.element_name for dep in artifact.build_deps if dep.was_workspaced
+        ]
 
         return self._metadata_workspaced_dependencies
 
@@ -419,12 +417,14 @@ class Artifact():
         # Determine whether directories are required
         require_directories = context.require_artifact_directories
         # Determine whether file contents are required as well
-        require_files = (context.require_artifact_files or
-                         self._element._artifact_files_required())
+        require_files = context.require_artifact_files or self._element._artifact_files_required()
 
         # Check whether 'files' subdirectory is available, with or without file contents
-        if (require_directories and str(artifact.files) and
-                not self._cas.contains_directory(artifact.files, with_files=require_files)):
+        if (
+            require_directories
+            and str(artifact.files)
+            and not self._cas.contains_directory(artifact.files, with_files=require_files)
+        ):
             self._cached = False
             return False
 
@@ -471,11 +471,10 @@ class Artifact():
 
         key = self.get_extract_key()
 
-        proto_path = os.path.join(self._artifactdir,
-                                  self._element.get_artifact_name(key=key))
+        proto_path = os.path.join(self._artifactdir, self._element.get_artifact_name(key=key))
         artifact = ArtifactProto()
         try:
-            with open(proto_path, mode='r+b') as f:
+            with open(proto_path, mode="r+b") as f:
                 artifact.ParseFromString(f.read())
         except FileNotFoundError:
             return None

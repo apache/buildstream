@@ -44,19 +44,14 @@ from .widget import TimeCode
 #    stream (Stream): The Stream
 #    colors (bool): Whether to print the ANSI color codes in the output
 #
-class Status():
+class Status:
 
     # Table of the terminal capabilities we require and use
-    _TERM_CAPABILITIES = {
-        'move_up': 'cuu1',
-        'move_x': 'hpa',
-        'clear_eol': 'el'
-    }
+    _TERM_CAPABILITIES = {"move_up": "cuu1", "move_x": "hpa", "clear_eol": "el"}
 
-    def __init__(self, context, state,
-                 content_profile, format_profile,
-                 success_profile, error_profile,
-                 stream, colors=False):
+    def __init__(
+        self, context, state, content_profile, format_profile, success_profile, error_profile, stream, colors=False
+    ):
 
         self._context = context
         self._state = state
@@ -69,10 +64,9 @@ class Status():
         self._last_lines = 0  # Number of status lines we last printed to console
         self._spacing = 1
         self._colors = colors
-        self._header = _StatusHeader(context, state,
-                                     content_profile, format_profile,
-                                     success_profile, error_profile,
-                                     stream)
+        self._header = _StatusHeader(
+            context, state, content_profile, format_profile, success_profile, error_profile, stream
+        )
 
         self._term_width, _ = click.get_terminal_size()
         self._alloc_lines = 0
@@ -133,7 +127,7 @@ class Status():
         # feeds for the amount of lines we intend to print first, and
         # move cursor position back to the first line
         for _ in range(self._alloc_lines + self._header.lines):
-            click.echo('', err=True)
+            click.echo("", err=True)
         for _ in range(self._alloc_lines + self._header.lines):
             self._move_up()
 
@@ -145,14 +139,14 @@ class Status():
         # alignment of each column
         n_columns = len(self._alloc_columns)
         for line in self._job_lines(n_columns):
-            text = ''
+            text = ""
             for job in line:
                 column = line.index(job)
                 text += job.render(self._alloc_columns[column] - job.size, elapsed)
 
                 # Add spacing between columns
                 if column < (n_columns - 1):
-                    text += ' ' * self._spacing
+                    text += " " * self._spacing
 
             # Print the line
             click.echo(text, color=self._colors, err=True)
@@ -198,7 +192,7 @@ class Status():
         # Initialized terminal, curses might decide it doesnt
         # support this terminal
         try:
-            curses.setupterm(os.environ.get('TERM', 'dumb'))
+            curses.setupterm(os.environ.get("TERM", "dumb"))
         except curses.error:
             return None
 
@@ -223,7 +217,7 @@ class Status():
             # as well, and should provide better compatibility with most
             # terminals.
             #
-            term_caps[capname] = code.decode('latin1')
+            term_caps[capname] = code.decode("latin1")
 
         return term_caps
 
@@ -238,19 +232,19 @@ class Status():
 
         # Explicitly move to beginning of line, fixes things up
         # when there was a ^C or ^Z printed to the terminal.
-        move_x = curses.tparm(self._term_caps['move_x'].encode('latin1'), 0)
-        move_x = move_x.decode('latin1')
+        move_x = curses.tparm(self._term_caps["move_x"].encode("latin1"), 0)
+        move_x = move_x.decode("latin1")
 
-        move_up = curses.tparm(self._term_caps['move_up'].encode('latin1'))
-        move_up = move_up.decode('latin1')
+        move_up = curses.tparm(self._term_caps["move_up"].encode("latin1"))
+        move_up = move_up.decode("latin1")
 
         click.echo(move_x + move_up, nl=False, err=True)
 
     def _clear_line(self):
         assert self._term_caps is not None
 
-        clear_eol = curses.tparm(self._term_caps['clear_eol'].encode('latin1'))
-        clear_eol = clear_eol.decode('latin1')
+        clear_eol = curses.tparm(self._term_caps["clear_eol"].encode("latin1"))
+        clear_eol = clear_eol.decode("latin1")
         click.echo(clear_eol, nl=False, err=True)
 
     def _allocate(self):
@@ -279,7 +273,7 @@ class Status():
     def _job_lines(self, columns):
         jobs_list = list(self._jobs.values())
         for i in range(0, len(self._jobs), columns):
-            yield jobs_list[i:i + columns]
+            yield jobs_list[i : i + columns]
 
     # Returns an array of integers representing the maximum
     # length in characters for each column, given the current
@@ -309,9 +303,7 @@ class Status():
     def _add_job(self, action_name, full_name):
         task = self._state.tasks[(action_name, full_name)]
         elapsed = task.elapsed_offset
-        job = _StatusJob(self._context, action_name, full_name,
-                         self._content_profile, self._format_profile,
-                         elapsed)
+        job = _StatusJob(self._context, action_name, full_name, self._content_profile, self._format_profile, elapsed)
         self._jobs[(action_name, full_name)] = job
         self._need_alloc = True
 
@@ -340,12 +332,8 @@ class Status():
 #    error_profile (Profile): Formatting profile for error text
 #    stream (Stream): The Stream
 #
-class _StatusHeader():
-
-    def __init__(self, context, state,
-                 content_profile, format_profile,
-                 success_profile, error_profile,
-                 stream):
+class _StatusHeader:
+    def __init__(self, context, state, content_profile, format_profile, success_profile, error_profile, stream):
 
         #
         # Public members
@@ -377,19 +365,22 @@ class _StatusHeader():
         total = str(len(self._stream.total_elements))
 
         size = 0
-        text = ''
+        text = ""
         size += len(total) + len(session) + 4  # Size for (N/N) with a leading space
         size += 8  # Size of time code
         size += len(project.name) + 1
         text += self._time_code.render_time(elapsed)
-        text += ' ' + self._content_profile.fmt(project.name)
-        text += ' ' + self._format_profile.fmt('(') + \
-                self._content_profile.fmt(session) + \
-                self._format_profile.fmt('/') + \
-                self._content_profile.fmt(total) + \
-                self._format_profile.fmt(')')
+        text += " " + self._content_profile.fmt(project.name)
+        text += (
+            " "
+            + self._format_profile.fmt("(")
+            + self._content_profile.fmt(session)
+            + self._format_profile.fmt("/")
+            + self._content_profile.fmt(total)
+            + self._format_profile.fmt(")")
+        )
 
-        line1 = self._centered(text, size, line_length, '=')
+        line1 = self._centered(text, size, line_length, "=")
 
         #
         # Line 2: Dynamic list of queue status reports
@@ -397,7 +388,7 @@ class _StatusHeader():
         #  (Sources Fetched:0 117 0)→ (Built:4 0 0)
         #
         size = 0
-        text = ''
+        text = ""
 
         # Format and calculate size for each queue progress
         for index, task_group in enumerate(self._state.task_groups.values()):
@@ -405,13 +396,13 @@ class _StatusHeader():
             # Add spacing
             if index > 0:
                 size += 2
-                text += self._format_profile.fmt('→ ')
+                text += self._format_profile.fmt("→ ")
 
             group_text, group_size = self._render_task_group(task_group)
             size += group_size
             text += group_text
 
-        line2 = self._centered(text, size, line_length, ' ')
+        line2 = self._centered(text, size, line_length, " ")
 
         #
         # Line 3: Cache usage percentage report
@@ -425,7 +416,7 @@ class _StatusHeader():
         if usage.used_size is None:
             # Cache usage is unknown
             size = 0
-            text = ''
+            text = ""
         else:
             size = 21
             size += len(usage_string)
@@ -436,15 +427,17 @@ class _StatusHeader():
             else:
                 formatted_usage = self._success_profile.fmt(usage_string)
 
-            text = self._format_profile.fmt("~~~~~~ ") + \
-                self._content_profile.fmt('cache') + \
-                self._format_profile.fmt(': ') + \
-                formatted_usage + \
-                self._format_profile.fmt(' ~~~~~~')
+            text = (
+                self._format_profile.fmt("~~~~~~ ")
+                + self._content_profile.fmt("cache")
+                + self._format_profile.fmt(": ")
+                + formatted_usage
+                + self._format_profile.fmt(" ~~~~~~")
+            )
 
-        line3 = self._centered(text, size, line_length, ' ')
+        line3 = self._centered(text, size, line_length, " ")
 
-        return line1 + '\n' + line2 + '\n' + line3
+        return line1 + "\n" + line2 + "\n" + line3
 
     ###################################################
     #                 Private Methods                 #
@@ -457,13 +450,17 @@ class _StatusHeader():
         size = 5  # Space for the formatting '[', ':', ' ', ' ' and ']'
         size += len(group.complete_name)
         size += len(processed) + len(skipped) + len(failed)
-        text = self._format_profile.fmt("(") + \
-            self._content_profile.fmt(group.complete_name) + \
-            self._format_profile.fmt(":") + \
-            self._success_profile.fmt(processed) + ' ' + \
-            self._content_profile.fmt(skipped) + ' ' + \
-            self._error_profile.fmt(failed) + \
-            self._format_profile.fmt(")")
+        text = (
+            self._format_profile.fmt("(")
+            + self._content_profile.fmt(group.complete_name)
+            + self._format_profile.fmt(":")
+            + self._success_profile.fmt(processed)
+            + " "
+            + self._content_profile.fmt(skipped)
+            + " "
+            + self._error_profile.fmt(failed)
+            + self._format_profile.fmt(")")
+        )
 
         return (text, size)
 
@@ -471,9 +468,9 @@ class _StatusHeader():
         remaining = line_length - size
         remaining -= 2
 
-        final_text = self._format_profile.fmt(fill * (remaining // 2)) + ' '
+        final_text = self._format_profile.fmt(fill * (remaining // 2)) + " "
         final_text += text
-        final_text += ' ' + self._format_profile.fmt(fill * (remaining // 2))
+        final_text += " " + self._format_profile.fmt(fill * (remaining // 2))
 
         return final_text
 
@@ -490,14 +487,13 @@ class _StatusHeader():
 #    format_profile (Profile): Formatting profile for formatting text
 #    elapsed (datetime): The offset into the session when this job is created
 #
-class _StatusJob():
-
+class _StatusJob:
     def __init__(self, context, action_name, full_name, content_profile, format_profile, elapsed):
         #
         # Public members
         #
-        self.action_name = action_name    # The action name
-        self.size = None                  # The number of characters required to render
+        self.action_name = action_name  # The action name
+        self.size = None  # The number of characters required to render
         self.full_name = full_name
 
         #
@@ -570,24 +566,26 @@ class _StatusJob():
     #    elapsed (datetime): The session elapsed time offset
     #
     def render(self, padding, elapsed):
-        text = self._format_profile.fmt('[') + \
-            self._time_code.render_time(elapsed - self._offset) + \
-            self._format_profile.fmt(']')
+        text = (
+            self._format_profile.fmt("[")
+            + self._time_code.render_time(elapsed - self._offset)
+            + self._format_profile.fmt("]")
+        )
 
-        text += self._format_profile.fmt('[') + \
-            self._content_profile.fmt(self.action_name) + \
-            self._format_profile.fmt(':') + \
-            self._content_profile.fmt(self.full_name)
+        text += (
+            self._format_profile.fmt("[")
+            + self._content_profile.fmt(self.action_name)
+            + self._format_profile.fmt(":")
+            + self._content_profile.fmt(self.full_name)
+        )
 
         if self._current_progress is not None:
-            text += self._format_profile.fmt(':') + \
-                self._content_profile.fmt(str(self._current_progress))
+            text += self._format_profile.fmt(":") + self._content_profile.fmt(str(self._current_progress))
             if self._maximum_progress is not None:
-                text += self._format_profile.fmt('/') + \
-                    self._content_profile.fmt(str(self._maximum_progress))
+                text += self._format_profile.fmt("/") + self._content_profile.fmt(str(self._maximum_progress))
 
         # Add padding before terminating ']'
-        terminator = (' ' * padding) + ']'
+        terminator = (" " * padding) + "]"
         text += self._format_profile.fmt(terminator)
 
         return text

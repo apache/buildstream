@@ -29,7 +29,7 @@ from .._fuse import SafeHardlinks
 #
 # Helper data object representing a single mount point in the mount map
 #
-class Mount():
+class Mount:
     def __init__(self, sandbox, mount_point, safe_hardlinks, fuse_mount_options=None):
         # Getting _get_underlying_directory() here is acceptable as
         # we're part of the sandbox code. This will fail if our
@@ -54,8 +54,8 @@ class Mount():
             # Redirected mount
             self.mount_origin = os.path.join(root_directory, mount_point.lstrip(os.sep))
             self.mount_base = os.path.join(scratch_directory, utils.url_directory_name(mount_point))
-            self.mount_source = os.path.join(self.mount_base, 'mount')
-            self.mount_tempdir = os.path.join(self.mount_base, 'temp')
+            self.mount_source = os.path.join(self.mount_base, "mount")
+            self.mount_tempdir = os.path.join(self.mount_base, "temp")
             os.makedirs(self.mount_origin, exist_ok=True)
             os.makedirs(self.mount_tempdir, exist_ok=True)
         else:
@@ -74,10 +74,10 @@ class Mount():
                 # When mounting a regular file, ensure the parent
                 # directory exists in the sandbox; and that an empty
                 # file is created at the mount location.
-                parent_dir = os.path.dirname(self.mount_source.rstrip('/'))
+                parent_dir = os.path.dirname(self.mount_source.rstrip("/"))
                 os.makedirs(parent_dir, exist_ok=True)
                 if not os.path.exists(self.mount_source):
-                    with open(self.mount_source, 'w'):
+                    with open(self.mount_source, "w"):
                         pass
 
     @contextmanager
@@ -99,8 +99,7 @@ class Mount():
 #    sandbox (Sandbox): The sandbox object
 #    root_readonly (bool): Whether the sandbox root is readonly
 #
-class MountMap():
-
+class MountMap:
     def __init__(self, sandbox, root_readonly, fuse_mount_options=None):
         # We will be doing the mounts in the order in which they were declared.
         self.mounts = OrderedDict()
@@ -109,11 +108,11 @@ class MountMap():
             fuse_mount_options = {}
 
         # We want safe hardlinks on rootfs whenever root is not readonly
-        self.mounts['/'] = Mount(sandbox, '/', not root_readonly, fuse_mount_options)
+        self.mounts["/"] = Mount(sandbox, "/", not root_readonly, fuse_mount_options)
 
         for mark in sandbox._get_marked_directories():
-            directory = mark['directory']
-            artifact = mark['artifact']
+            directory = mark["directory"]
+            artifact = mark["artifact"]
 
             # We want safe hardlinks for any non-root directory where
             # artifacts will be staged to

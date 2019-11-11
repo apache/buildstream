@@ -2,7 +2,6 @@ from buildstream import Source, Consistency
 
 
 class FooSource(Source):
-
     def preflight(self):
         pass
 

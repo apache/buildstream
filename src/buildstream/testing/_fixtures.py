@@ -30,6 +30,7 @@ def thread_check():
     yield
     assert utils._is_single_threaded()
 
+
 # Reset global state in node.pyx to improve test isolation
 @pytest.fixture(autouse=True)
 def reset_global_node_state():

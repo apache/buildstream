@@ -151,7 +151,7 @@ class Consistency(FastEnum):
         return self.value < other.value
 
 
-class CoreWarnings():
+class CoreWarnings:
     """CoreWarnings()
 
     Some common warnings which are raised by core functionalities within BuildStream are found in this class.

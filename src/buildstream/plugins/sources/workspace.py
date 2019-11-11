@@ -62,9 +62,9 @@ class WorkspaceSource(Source):
         return None
 
     def configure(self, node: MappingNode) -> None:
-        node.validate_keys(['path', 'ref', 'kind'])
-        self.path = node.get_str('path')
-        self.__digest = node.get_str('ref')
+        node.validate_keys(["path", "ref", "kind"])
+        self.path = node.get_str("path")
+        self.__digest = node.get_str("ref")
 
     def preflight(self) -> None:
         pass  # pragma: nocover
@@ -82,7 +82,7 @@ class WorkspaceSource(Source):
     #
     # Raises AssertionError: existing workspaces should not be reinitialized
     def init_workspace(self, directory: Directory) -> None:
-        raise AssertionError('Attempting to re-open an existing workspace')
+        raise AssertionError("Attempting to re-open an existing workspace")
 
     def get_consistency(self):
         # always return cached state
@@ -98,8 +98,8 @@ class WorkspaceSource(Source):
 
             if result.overwritten or result.ignored:
                 raise SourceError(
-                    "Failed to stage source: files clash with existing directory",
-                    reason='ensure-stage-dir-fail')
+                    "Failed to stage source: files clash with existing directory", reason="ensure-stage-dir-fail"
+                )
 
     def _get_local_path(self) -> str:
         return self.path

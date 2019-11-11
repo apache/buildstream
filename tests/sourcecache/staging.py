@@ -45,12 +45,10 @@ def relative_walk(rootdir):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_staged(tmpdir, cli, datafiles):
-    project_dir = os.path.join(datafiles.dirname, datafiles.basename, 'project')
-    cachedir = os.path.join(str(tmpdir), 'cache')
+    project_dir = os.path.join(datafiles.dirname, datafiles.basename, "project")
+    cachedir = os.path.join(str(tmpdir), "cache")
 
-    cli.configure({
-        'cachedir': cachedir
-    })
+    cli.configure({"cachedir": cachedir})
 
     res = cli.run(project=project_dir, args=["build", "import-bin.bst"])
     res.assert_success()
@@ -83,12 +81,10 @@ def test_source_staged(tmpdir, cli, datafiles):
 # Check sources are staged during a fetch
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_fetch(tmpdir, cli, datafiles):
-    project_dir = os.path.join(datafiles.dirname, datafiles.basename, 'project')
-    cachedir = os.path.join(str(tmpdir), 'cache')
+    project_dir = os.path.join(datafiles.dirname, datafiles.basename, "project")
+    cachedir = os.path.join(str(tmpdir), "cache")
 
-    cli.configure({
-        'cachedir': cachedir
-    })
+    cli.configure({"cachedir": cachedir})
 
     res = cli.run(project=project_dir, args=["source", "fetch", "import-dev.bst"])
     res.assert_success()
@@ -118,17 +114,15 @@ def test_source_fetch(tmpdir, cli, datafiles):
 # Check that with sources only in the CAS build successfully completes
 @pytest.mark.datafiles(DATA_DIR)
 def test_staged_source_build(tmpdir, datafiles, cli):
-    project_dir = os.path.join(datafiles.dirname, datafiles.basename, 'project')
-    cachedir = os.path.join(str(tmpdir), 'cache')
-    element_path = 'elements'
-    source_protos = os.path.join(str(tmpdir), 'cache', 'source_protos')
-    source_dir = os.path.join(str(tmpdir), 'cache', 'sources')
+    project_dir = os.path.join(datafiles.dirname, datafiles.basename, "project")
+    cachedir = os.path.join(str(tmpdir), "cache")
+    element_path = "elements"
+    source_protos = os.path.join(str(tmpdir), "cache", "source_protos")
+    source_dir = os.path.join(str(tmpdir), "cache", "sources")
 
-    cli.configure({
-        'cachedir': cachedir
-    })
+    cli.configure({"cachedir": cachedir})
 
-    create_element_size('target.bst', project_dir, element_path, [], 10000)
+    create_element_size("target.bst", project_dir, element_path, [], 10000)
 
     with dummy_context() as context:
         context.cachedir = cachedir
@@ -140,23 +134,23 @@ def test_staged_source_build(tmpdir, datafiles, cli):
         # check consistency of the source
         assert not element._source_cached()
 
-    res = cli.run(project=project_dir, args=['build', 'target.bst'])
+    res = cli.run(project=project_dir, args=["build", "target.bst"])
     res.assert_success()
 
     # delete artifacts check state is buildable
-    cli.remove_artifact_from_cache(project_dir, 'target.bst')
-    states = cli.get_element_states(project_dir, ['target.bst'])
-    assert states['target.bst'] == 'buildable'
+    cli.remove_artifact_from_cache(project_dir, "target.bst")
+    states = cli.get_element_states(project_dir, ["target.bst"])
+    assert states["target.bst"] == "buildable"
 
     # delete source dir and check that state is still buildable
     shutil.rmtree(source_dir)
-    states = cli.get_element_states(project_dir, ['target.bst'])
-    assert states['target.bst'] == 'buildable'
+    states = cli.get_element_states(project_dir, ["target.bst"])
+    assert states["target.bst"] == "buildable"
 
     # build and check that no fetching was done.
-    res = cli.run(project=project_dir, args=['build', 'target.bst'])
+    res = cli.run(project=project_dir, args=["build", "target.bst"])
     res.assert_success()
-    assert 'Fetching from' not in res.stderr
+    assert "Fetching from" not in res.stderr
 
     # assert the source directory is still empty (though there may be
     # directories from staging etc.)
@@ -167,11 +161,11 @@ def test_staged_source_build(tmpdir, datafiles, cli):
 
     # Now remove the source refs and check the state
     shutil.rmtree(source_protos)
-    cli.remove_artifact_from_cache(project_dir, 'target.bst')
-    states = cli.get_element_states(project_dir, ['target.bst'])
-    assert states['target.bst'] == 'fetch needed'
+    cli.remove_artifact_from_cache(project_dir, "target.bst")
+    states = cli.get_element_states(project_dir, ["target.bst"])
+    assert states["target.bst"] == "fetch needed"
 
     # Check that it now fetches from when building the target
-    res = cli.run(project=project_dir, args=['build', 'target.bst'])
+    res = cli.run(project=project_dir, args=["build", "target.bst"])
     res.assert_success()
-    assert 'Fetching from' in res.stderr
+    assert "Fetching from" in res.stderr

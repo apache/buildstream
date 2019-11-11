@@ -36,7 +36,7 @@ from .optionenum import OptionEnum
 #
 class OptionArch(OptionEnum):
 
-    OPTION_TYPE = 'arch'
+    OPTION_TYPE = "arch"
 
     def load(self, node):
         super().load_special(node, allow_default_definition=False)
@@ -54,12 +54,14 @@ class OptionArch(OptionEnum):
                     # Do not terminate the loop early to ensure we validate
                     # all values in the list.
             except PlatformError as e:
-                provenance = node.get_sequence('values').scalar_at(index).get_provenance()
+                provenance = node.get_sequence("values").scalar_at(index).get_provenance()
                 prefix = ""
                 if provenance:
                     prefix = "{}: ".format(provenance)
-                raise LoadError("{}Invalid value for {} option '{}': {}"
-                                .format(prefix, self.OPTION_TYPE, self.name, e), LoadErrorReason.INVALID_DATA)
+                raise LoadError(
+                    "{}Invalid value for {} option '{}': {}".format(prefix, self.OPTION_TYPE, self.name, e),
+                    LoadErrorReason.INVALID_DATA,
+                )
 
         if default_value is None:
             # Host architecture is not supported by the project.

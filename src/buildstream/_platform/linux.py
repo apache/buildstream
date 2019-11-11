@@ -28,17 +28,16 @@ from .._exceptions import PlatformError
 
 
 class Linux(Platform):
-
     def _setup_sandbox(self, force_sandbox):
         sandbox_setups = {
-            'bwrap': self._setup_bwrap_sandbox,
-            'buildbox': self._setup_buildbox_sandbox,
-            'chroot': self._setup_chroot_sandbox,
-            'dummy': self._setup_dummy_sandbox,
+            "bwrap": self._setup_bwrap_sandbox,
+            "buildbox": self._setup_buildbox_sandbox,
+            "chroot": self._setup_chroot_sandbox,
+            "dummy": self._setup_dummy_sandbox,
         }
 
         preferred_sandboxes = [
-            'bwrap',
+            "bwrap",
         ]
 
         self._try_sandboxes(force_sandbox, sandbox_setups, preferred_sandboxes)
@@ -54,11 +53,12 @@ class Linux(Platform):
 
     def can_crossbuild(self, config):
         host_arch = self.get_host_arch()
-        if ((config.build_arch == "x86-32" and host_arch == "x86-64") or
-                (config.build_arch == "aarch32" and host_arch == "aarch64")):
+        if (config.build_arch == "x86-32" and host_arch == "x86-64") or (
+            config.build_arch == "aarch32" and host_arch == "aarch64"
+        ):
             if self.linux32 is None:
                 try:
-                    utils.get_host_tool('linux32')
+                    utils.get_host_tool("linux32")
                     self.linux32 = True
                 except utils.ProgramNotFoundError:
                     self.linux32 = False
@@ -76,7 +76,7 @@ class Linux(Platform):
 
     def _create_dummy_sandbox(self, *args, **kwargs):
         dummy_reasons = " and ".join(self.dummy_reasons)
-        kwargs['dummy_reason'] = dummy_reasons
+        kwargs["dummy_reason"] = dummy_reasons
         return SandboxDummy(*args, **kwargs)
 
     def _setup_dummy_sandbox(self):
@@ -87,11 +87,13 @@ class Linux(Platform):
     # Bubble-wrap sandbox methods
     def _check_sandbox_config_bwrap(self, config):
         from ..sandbox._sandboxbwrap import SandboxBwrap
+
         return SandboxBwrap.check_sandbox_config(self, config)
 
     def _create_bwrap_sandbox(self, *args, **kwargs):
         from ..sandbox._sandboxbwrap import SandboxBwrap
-        kwargs['linux32'] = self.linux32
+
+        kwargs["linux32"] = self.linux32
         return SandboxBwrap(*args, **kwargs)
 
     def _setup_bwrap_sandbox(self):
@@ -110,15 +112,18 @@ class Linux(Platform):
     # Chroot sandbox methods
     def _check_sandbox_config_chroot(self, config):
         from ..sandbox._sandboxchroot import SandboxChroot
+
         return SandboxChroot.check_sandbox_config(self, config)
 
     @staticmethod
     def _create_chroot_sandbox(*args, **kwargs):
         from ..sandbox._sandboxchroot import SandboxChroot
+
         return SandboxChroot(*args, **kwargs)
 
     def _setup_chroot_sandbox(self):
         from ..sandbox._sandboxchroot import SandboxChroot
+
         self._check_sandbox(SandboxChroot)
         self.check_sandbox_config = self._check_sandbox_config_chroot
         self.create_sandbox = Linux._create_chroot_sandbox
@@ -127,18 +132,23 @@ class Linux(Platform):
     # Buildbox sandbox methods
     def _check_sandbox_config_buildbox(self, config):
         from ..sandbox._sandboxbuildbox import SandboxBuildBox
+
         return SandboxBuildBox.check_sandbox_config(self, config)
 
     @staticmethod
     def _create_buildbox_sandbox(*args, **kwargs):
         from ..sandbox._sandboxbuildbox import SandboxBuildBox
-        if kwargs.get('allow_real_directory'):
-            raise PlatformError("The BuildBox Sandbox does not support real directories.",
-                                reason="You are using BuildBox sandbox because BST_FORCE_SANBOX=buildbox")
+
+        if kwargs.get("allow_real_directory"):
+            raise PlatformError(
+                "The BuildBox Sandbox does not support real directories.",
+                reason="You are using BuildBox sandbox because BST_FORCE_SANBOX=buildbox",
+            )
         return SandboxBuildBox(*args, **kwargs)
 
     def _setup_buildbox_sandbox(self):
         from ..sandbox._sandboxbuildbox import SandboxBuildBox
+
         self._check_sandbox(SandboxBuildBox)
         self.check_sandbox_config = self._check_sandbox_config_buildbox
         self.create_sandbox = self._create_buildbox_sandbox

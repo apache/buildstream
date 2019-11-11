@@ -30,14 +30,15 @@ from .element import Element
 #     plugin_origins (list):    Data used to search for external Element plugins
 #
 class ElementFactory(PluginContext):
+    def __init__(self, plugin_base, *, format_versions={}, plugin_origins=None):
 
-    def __init__(self, plugin_base, *,
-                 format_versions={},
-                 plugin_origins=None):
-
-        super().__init__(plugin_base, Element, [_site.element_plugins],
-                         plugin_origins=plugin_origins,
-                         format_versions=format_versions)
+        super().__init__(
+            plugin_base,
+            Element,
+            [_site.element_plugins],
+            plugin_origins=plugin_origins,
+            format_versions=format_versions,
+        )
 
     # create():
     #

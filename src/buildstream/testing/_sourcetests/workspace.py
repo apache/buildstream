@@ -30,10 +30,10 @@ from .utils import kind  # pylint: disable=unused-import
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
-DATA_DIR = os.path.join(TOP_DIR, 'project')
+DATA_DIR = os.path.join(TOP_DIR, "project")
 
 
-class WorkspaceCreator():
+class WorkspaceCreator:
     def __init__(self, cli, tmpdir, datafiles, project_path=None):
         self.cli = cli
         self.tmpdir = tmpdir
@@ -45,17 +45,16 @@ class WorkspaceCreator():
             shutil.copytree(str(datafiles), project_path)
 
         self.project_path = project_path
-        self.bin_files_path = os.path.join(project_path, 'files', 'bin-files')
+        self.bin_files_path = os.path.join(project_path, "files", "bin-files")
 
-        self.workspace_cmd = os.path.join(self.project_path, 'workspace_cmd')
+        self.workspace_cmd = os.path.join(self.project_path, "workspace_cmd")
 
-    def create_workspace_element(self, kind, track, suffix='', workspace_dir=None,
-                                 element_attrs=None):
-        element_name = 'workspace-test-{}{}.bst'.format(kind, suffix)
-        element_path = os.path.join(self.project_path, 'elements')
+    def create_workspace_element(self, kind, track, suffix="", workspace_dir=None, element_attrs=None):
+        element_name = "workspace-test-{}{}.bst".format(kind, suffix)
+        element_path = os.path.join(self.project_path, "elements")
         if not workspace_dir:
             workspace_dir = os.path.join(self.workspace_cmd, element_name)
-            if workspace_dir[-4:] == '.bst':
+            if workspace_dir[-4:] == ".bst":
                 workspace_dir = workspace_dir[:-4]
 
         # Create our repo object of the given source type with
@@ -66,64 +65,53 @@ class WorkspaceCreator():
             ref = None
 
         # Write out our test target
-        element = {
-            'kind': 'import',
-            'sources': [
-                repo.source_config(ref=ref)
-            ]
-        }
+        element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
         if element_attrs:
             element = {**element, **element_attrs}
-        _yaml.roundtrip_dump(element,
-                             os.path.join(element_path, element_name))
+        _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
         return element_name, element_path, workspace_dir
 
-    def create_workspace_elements(self, kinds, track, suffixs=None, workspace_dir_usr=None,
-                                  element_attrs=None):
+    def create_workspace_elements(self, kinds, track, suffixs=None, workspace_dir_usr=None, element_attrs=None):
 
         element_tuples = []
 
         if suffixs is None:
-            suffixs = ['', ] * len(kinds)
+            suffixs = ["",] * len(kinds)
         else:
             if len(suffixs) != len(kinds):
                 raise "terable error"
 
         for suffix, kind in zip(suffixs, kinds):
-            element_name, _, workspace_dir = \
-                self.create_workspace_element(kind, track, suffix, workspace_dir_usr,
-                                              element_attrs)
+            element_name, _, workspace_dir = self.create_workspace_element(
+                kind, track, suffix, workspace_dir_usr, element_attrs
+            )
             element_tuples.append((element_name, workspace_dir))
 
         # Assert that there is no reference, a track & fetch is needed
-        states = self.cli.get_element_states(self.project_path, [
-            e for e, _ in element_tuples
-        ])
+        states = self.cli.get_element_states(self.project_path, [e for e, _ in element_tuples])
         if track:
-            assert not any(states[e] != 'no reference' for e, _ in element_tuples)
+            assert not any(states[e] != "no reference" for e, _ in element_tuples)
         else:
-            assert not any(states[e] != 'fetch needed' for e, _ in element_tuples)
+            assert not any(states[e] != "fetch needed" for e, _ in element_tuples)
 
         return element_tuples
 
-    def open_workspaces(self, kinds, track, suffixs=None, workspace_dir=None,
-                        element_attrs=None, no_checkout=False):
+    def open_workspaces(self, kinds, track, suffixs=None, workspace_dir=None, element_attrs=None, no_checkout=False):
 
-        element_tuples = self.create_workspace_elements(kinds, track, suffixs, workspace_dir,
-                                                        element_attrs)
+        element_tuples = self.create_workspace_elements(kinds, track, suffixs, workspace_dir, element_attrs)
         os.makedirs(self.workspace_cmd, exist_ok=True)
 
         # Now open the workspace, this should have the effect of automatically
         # tracking & fetching the source from the repo.
-        args = ['workspace', 'open']
+        args = ["workspace", "open"]
         if track:
-            args.append('--track')
+            args.append("--track")
         if no_checkout:
-            args.append('--no-checkout')
+            args.append("--no-checkout")
         if workspace_dir is not None:
             assert len(element_tuples) == 1, "test logic error"
             _, workspace_dir = element_tuples[0]
-            args.extend(['--directory', workspace_dir])
+            args.extend(["--directory", workspace_dir])
 
         args.extend([element_name for element_name, workspace_dir_suffix in element_tuples])
         result = self.cli.run(cwd=self.workspace_cmd, project=self.project_path, args=args)
@@ -132,24 +120,31 @@ class WorkspaceCreator():
 
         if not no_checkout:
             # Assert that we are now buildable because the source is now cached.
-            states = self.cli.get_element_states(self.project_path, [
-                e for e, _ in element_tuples
-            ])
-            assert not any(states[e] != 'buildable' for e, _ in element_tuples)
+            states = self.cli.get_element_states(self.project_path, [e for e, _ in element_tuples])
+            assert not any(states[e] != "buildable" for e, _ in element_tuples)
 
             # Check that the executable hello file is found in each workspace
             for _, workspace in element_tuples:
-                filename = os.path.join(workspace, 'usr', 'bin', 'hello')
+                filename = os.path.join(workspace, "usr", "bin", "hello")
                 assert os.path.exists(filename)
 
         return element_tuples
 
 
-def open_workspace(cli, tmpdir, datafiles, kind, track, suffix='', workspace_dir=None,
-                   project_path=None, element_attrs=None, no_checkout=False):
+def open_workspace(
+    cli,
+    tmpdir,
+    datafiles,
+    kind,
+    track,
+    suffix="",
+    workspace_dir=None,
+    project_path=None,
+    element_attrs=None,
+    no_checkout=False,
+):
     workspace_object = WorkspaceCreator(cli, tmpdir, datafiles, project_path)
-    workspaces = workspace_object.open_workspaces((kind, ), track, (suffix, ), workspace_dir,
-                                                  element_attrs, no_checkout)
+    workspaces = workspace_object.open_workspaces((kind,), track, (suffix,), workspace_dir, element_attrs, no_checkout)
     assert len(workspaces) == 1
     element_name, workspace = workspaces[0]
     return element_name, workspace_object.project_path, workspace

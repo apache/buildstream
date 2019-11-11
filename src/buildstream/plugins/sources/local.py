@@ -55,8 +55,8 @@ class LocalSource(Source):
         self.__unique_key = None
 
     def configure(self, node):
-        node.validate_keys(['path', *Source.COMMON_CONFIG_KEYS])
-        self.path = self.node_get_project_path(node.get_scalar('path'))
+        node.validate_keys(["path", *Source.COMMON_CONFIG_KEYS])
+        self.path = self.node_get_project_path(node.get_scalar("path"))
         self.fullpath = os.path.join(self.get_project_directory(), self.path)
 
     def preflight(self):
@@ -90,8 +90,8 @@ class LocalSource(Source):
 
             if result.overwritten or result.ignored:
                 raise SourceError(
-                    "Failed to stage source: files clash with existing directory",
-                    reason='ensure-stage-dir-fail')
+                    "Failed to stage source: files clash with existing directory", reason="ensure-stage-dir-fail"
+                )
 
     def _get_local_path(self):
         return self.fullpath

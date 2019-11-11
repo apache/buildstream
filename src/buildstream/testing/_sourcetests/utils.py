@@ -27,9 +27,8 @@ import os
 try:
     import pytest
 except ImportError:
-    module_name = globals()['__name__']
-    msg = "Could not import pytest:\n" \
-          "To use the {} module, you must have pytest installed.".format(module_name)
+    module_name = globals()["__name__"]
+    msg = "Could not import pytest:\n" "To use the {} module, you must have pytest installed.".format(module_name)
     raise ImportError(msg)
 
 from buildstream import _yaml
@@ -72,13 +71,7 @@ def add_plugins_conf(project, plugin_kind):
 
     if plugin_package is not None:
         project_conf["plugins"] = [
-            {
-                "origin": "pip",
-                "package-name": plugin_package,
-                "sources": {
-                    plugin_kind: 0,
-                },
-            },
+            {"origin": "pip", "package-name": plugin_package, "sources": {plugin_kind: 0,},},
         ]
 
     _yaml.roundtrip_dump(project_conf, project_conf_file)
@@ -96,7 +89,7 @@ def add_plugins_conf(project, plugin_kind):
 #   updated_configuration (dict): configuration to merge into the existing one
 #
 def update_project_configuration(project_path, updated_configuration):
-    project_conf_path = os.path.join(project_path, 'project.conf')
+    project_conf_path = os.path.join(project_path, "project.conf")
     project_conf = _yaml.roundtrip_load(project_conf_path)
 
     project_conf.update(updated_configuration)

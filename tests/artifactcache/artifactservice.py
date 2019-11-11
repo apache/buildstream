@@ -22,11 +22,9 @@ from urllib.parse import urlparse
 import grpc
 import pytest
 
-from buildstream._protos.buildstream.v2.artifact_pb2 \
-    import Artifact, GetArtifactRequest, UpdateArtifactRequest
+from buildstream._protos.buildstream.v2.artifact_pb2 import Artifact, GetArtifactRequest, UpdateArtifactRequest
 from buildstream._protos.buildstream.v2.artifact_pb2_grpc import ArtifactServiceStub
-from buildstream._protos.build.bazel.remote.execution.v2 \
-    import remote_execution_pb2 as re_pb2
+from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2 as re_pb2
 from buildstream import utils
 
 from tests.testutils.artifactshare import create_artifact_share

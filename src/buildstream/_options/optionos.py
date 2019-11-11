@@ -1,4 +1,3 @@
-
 #
 #  Copyright (C) 2017 Codethink Limited
 #
@@ -26,7 +25,7 @@ from .optionenum import OptionEnum
 #
 class OptionOS(OptionEnum):
 
-    OPTION_TYPE = 'os'
+    OPTION_TYPE = "os"
 
     def load(self, node):
         super().load_special(node, allow_default_definition=False)

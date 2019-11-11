@@ -38,10 +38,20 @@ from ._filebaseddirectory import FileBasedDirectory
 from ..utils import FileListResult, BST_ARBITRARY_TIMESTAMP
 
 
-class IndexEntry():
+class IndexEntry:
     """ Directory entry used in CasBasedDirectory.index """
-    def __init__(self, name, entrytype, *, digest=None, target=None, is_executable=False,
-                 buildstream_object=None, modified=False):
+
+    def __init__(
+        self,
+        name,
+        entrytype,
+        *,
+        digest=None,
+        target=None,
+        is_executable=False,
+        buildstream_object=None,
+        modified=False
+    ):
         self.name = name
         self.type = entrytype
         self.digest = digest
@@ -52,8 +62,9 @@ class IndexEntry():
 
     def get_directory(self, parent):
         if not self.buildstream_object:
-            self.buildstream_object = CasBasedDirectory(parent.cas_cache, digest=self.digest,
-                                                        parent=parent, filename=self.name)
+            self.buildstream_object = CasBasedDirectory(
+                parent.cas_cache, digest=self.digest, parent=parent, filename=self.name
+            )
             self.digest = None
 
         return self.buildstream_object
@@ -68,6 +79,7 @@ class IndexEntry():
 # CasBasedDirectory intentionally doesn't call its superclass constuctor,
 # which is meant to be unimplemented.
 # pylint: disable=super-init-not-called
+
 
 class CasBasedDirectory(Directory):
     """
@@ -100,21 +112,19 @@ class CasBasedDirectory(Directory):
     def _populate_index(self, digest):
         try:
             pb2_directory = remote_execution_pb2.Directory()
-            with open(self.cas_cache.objpath(digest), 'rb') as f:
+            with open(self.cas_cache.objpath(digest), "rb") as f:
                 pb2_directory.ParseFromString(f.read())
         except FileNotFoundError as e:
             raise VirtualDirectoryError("Directory not found in local cache: {}".format(e)) from e
 
         for entry in pb2_directory.directories:
-            self.index[entry.name] = IndexEntry(entry.name, _FileType.DIRECTORY,
-                                                digest=entry.digest)
+            self.index[entry.name] = IndexEntry(entry.name, _FileType.DIRECTORY, digest=entry.digest)
         for entry in pb2_directory.files:
-            self.index[entry.name] = IndexEntry(entry.name, _FileType.REGULAR_FILE,
-                                                digest=entry.digest,
-                                                is_executable=entry.is_executable)
+            self.index[entry.name] = IndexEntry(
+                entry.name, _FileType.REGULAR_FILE, digest=entry.digest, is_executable=entry.is_executable
+            )
         for entry in pb2_directory.symlinks:
-            self.index[entry.name] = IndexEntry(entry.name, _FileType.SYMLINK,
-                                                target=entry.target)
+            self.index[entry.name] = IndexEntry(entry.name, _FileType.SYMLINK, target=entry.target)
 
     def _find_self_in_parent(self):
         assert self.parent is not None
@@ -136,8 +146,7 @@ class CasBasedDirectory(Directory):
         return newdir
 
     def _add_file(self, basename, filename, modified=False, can_link=False):
-        entry = IndexEntry(filename, _FileType.REGULAR_FILE,
-                           modified=modified or filename in self.index)
+        entry = IndexEntry(filename, _FileType.REGULAR_FILE, modified=modified or filename in self.index)
         path = os.path.join(basename, filename)
         entry.digest = self.cas_cache.add_object(path=path, link_directly=can_link)
         entry.is_executable = os.access(path, os.X_OK)
@@ -206,14 +215,13 @@ class CasBasedDirectory(Directory):
                         current_dir = current_dir.descend(*newpaths, follow_symlinks=True)
                 else:
                     error = "Cannot descend into {}, which is a '{}' in the directory {}"
-                    raise VirtualDirectoryError(error.format(path,
-                                                             current_dir.index[path].type,
-                                                             current_dir),
-                                                reason="not-a-directory")
+                    raise VirtualDirectoryError(
+                        error.format(path, current_dir.index[path].type, current_dir), reason="not-a-directory"
+                    )
             else:
-                if path == '.':
+                if path == ".":
                     continue
-                elif path == '..':
+                elif path == "..":
                     if current_dir.parent is not None:
                         current_dir = current_dir.parent
                     # In POSIX /.. == / so just stay at the root dir
@@ -222,8 +230,7 @@ class CasBasedDirectory(Directory):
                     current_dir = current_dir._add_directory(path)
                 else:
                     error = "'{}' not found in {}"
-                    raise VirtualDirectoryError(error.format(path, str(current_dir)),
-                                                reason="directory-not-found")
+                    raise VirtualDirectoryError(error.format(path, str(current_dir)), reason="directory-not-found")
 
         return current_dir
 
@@ -299,12 +306,13 @@ class CasBasedDirectory(Directory):
                         dest_subdir = self.descend(name, create=create_subdir)
                     except VirtualDirectoryError:
                         filetype = self.index[name].type
-                        raise VirtualDirectoryError('Destination is a {}, not a directory: /{}'
-                                                    .format(filetype, relative_pathname))
+                        raise VirtualDirectoryError(
+                            "Destination is a {}, not a directory: /{}".format(filetype, relative_pathname)
+                        )
 
-                    dest_subdir._partial_import_cas_into_cas(src_subdir, filter_callback,
-                                                             path_prefix=relative_pathname,
-                                                             origin=origin, result=result)
+                    dest_subdir._partial_import_cas_into_cas(
+                        src_subdir, filter_callback, path_prefix=relative_pathname, origin=origin, result=result
+                    )
 
             if filter_callback and not filter_callback(relative_pathname):
                 if is_dir and create_subdir and dest_subdir.is_empty():
@@ -317,20 +325,22 @@ class CasBasedDirectory(Directory):
             if not is_dir:
                 if self._check_replacement(name, relative_pathname, result):
                     if entry.type == _FileType.REGULAR_FILE:
-                        self.index[name] = IndexEntry(name, _FileType.REGULAR_FILE,
-                                                      digest=entry.digest,
-                                                      is_executable=entry.is_executable,
-                                                      modified=True)
+                        self.index[name] = IndexEntry(
+                            name,
+                            _FileType.REGULAR_FILE,
+                            digest=entry.digest,
+                            is_executable=entry.is_executable,
+                            modified=True,
+                        )
                         self.__invalidate_digest()
                     else:
                         assert entry.type == _FileType.SYMLINK
                         self._add_new_link_direct(name=name, target=entry.target)
                     result.files_written.append(relative_pathname)
 
-    def import_files(self, external_pathspec, *,
-                     filter_callback=None,
-                     report_written=True, update_mtime=False,
-                     can_link=False):
+    def import_files(
+        self, external_pathspec, *, filter_callback=None, report_written=True, update_mtime=False, can_link=False
+    ):
         """ See superclass Directory for arguments """
 
         result = FileListResult()
@@ -358,13 +368,12 @@ class CasBasedDirectory(Directory):
 
     def import_single_file(self, external_pathspec):
         result = FileListResult()
-        if self._check_replacement(os.path.basename(external_pathspec),
-                                   os.path.dirname(external_pathspec),
-                                   result):
-            self._add_file(os.path.dirname(external_pathspec),
-                           os.path.basename(external_pathspec),
-                           modified=os.path.basename(external_pathspec)
-                           in result.overwritten)
+        if self._check_replacement(os.path.basename(external_pathspec), os.path.dirname(external_pathspec), result):
+            self._add_file(
+                os.path.dirname(external_pathspec),
+                os.path.basename(external_pathspec),
+                modified=os.path.basename(external_pathspec) in result.overwritten,
+            )
             result.files_written.append(external_pathspec)
         return result
 
@@ -516,10 +525,8 @@ class CasBasedDirectory(Directory):
 
         """
 
-        file_list = list(filter(lambda i: i[1].type != _FileType.DIRECTORY,
-                                self.index.items()))
-        directory_list = filter(lambda i: i[1].type == _FileType.DIRECTORY,
-                                self.index.items())
+        file_list = list(filter(lambda i: i[1].type != _FileType.DIRECTORY, self.index.items()))
+        directory_list = filter(lambda i: i[1].type == _FileType.DIRECTORY, self.index.items())
 
         if prefix != "":
             yield prefix
@@ -553,10 +560,7 @@ class CasBasedDirectory(Directory):
           """
         for leaf in sorted(self.index.keys()):
             entry = self.index[leaf]
-            info = {
-                "name": os.path.join(prefix, leaf),
-                "type": entry.type
-            }
+            info = {"name": os.path.join(prefix, leaf), "type": entry.type}
             if entry.type == _FileType.REGULAR_FILE:
                 info["executable"] = entry.is_executable
                 info["size"] = self.get_size()
@@ -599,8 +603,9 @@ class CasBasedDirectory(Directory):
     def _get_underlying_directory(self):
         """ There is no underlying directory for a CAS-backed directory, so
         throw an exception. """
-        raise VirtualDirectoryError("_get_underlying_directory was called on a CAS-backed directory," +
-                                    " which has no underlying directory.")
+        raise VirtualDirectoryError(
+            "_get_underlying_directory was called on a CAS-backed directory," + " which has no underlying directory."
+        )
 
     # _get_digest():
     #

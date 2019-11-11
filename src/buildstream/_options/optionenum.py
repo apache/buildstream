@@ -27,7 +27,7 @@ from .option import Option, OPTION_SYMBOLS
 #
 class OptionEnum(Option):
 
-    OPTION_TYPE = 'enum'
+    OPTION_TYPE = "enum"
 
     def __init__(self, name, definition, pool):
         self.values = None
@@ -39,17 +39,20 @@ class OptionEnum(Option):
     def load_special(self, node, allow_default_definition=True):
         super().load(node)
 
-        valid_symbols = OPTION_SYMBOLS + ['values']
+        valid_symbols = OPTION_SYMBOLS + ["values"]
         if allow_default_definition:
-            valid_symbols += ['default']
+            valid_symbols += ["default"]
 
         node.validate_keys(valid_symbols)
 
-        self.values = node.get_str_list('values', default=[])
+        self.values = node.get_str_list("values", default=[])
         if not self.values:
-            raise LoadError("{}: No values specified for {} option '{}'"
-                            .format(node.get_provenance(), self.OPTION_TYPE, self.name),
-                            LoadErrorReason.INVALID_DATA,)
+            raise LoadError(
+                "{}: No values specified for {} option '{}'".format(
+                    node.get_provenance(), self.OPTION_TYPE, self.name
+                ),
+                LoadErrorReason.INVALID_DATA,
+            )
 
         # Allow subclass to define the default value
         self.value = self.load_default_value(node)
@@ -77,13 +80,14 @@ class OptionEnum(Option):
                 prefix = "{}: ".format(provenance)
             else:
                 prefix = ""
-            raise LoadError("{}Invalid value for {} option '{}': {}\n"
-                            .format(prefix, self.OPTION_TYPE, self.name, value) +
-                            "Valid values: {}".format(", ".join(self.values)),
-                            LoadErrorReason.INVALID_DATA)
+            raise LoadError(
+                "{}Invalid value for {} option '{}': {}\n".format(prefix, self.OPTION_TYPE, self.name, value)
+                + "Valid values: {}".format(", ".join(self.values)),
+                LoadErrorReason.INVALID_DATA,
+            )
 
     def load_default_value(self, node):
-        value_node = node.get_scalar('default')
+        value_node = node.get_scalar("default")
         value = value_node.as_str()
         self.validate(value, value_node)
         return value

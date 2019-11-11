@@ -37,8 +37,8 @@ if TYPE_CHECKING:
 # typing.MutableSequence. However, that is only available in Python versions
 # 3.5.4 onward and 3.6.1 onward.
 # Debian 9 ships with 3.5.3.
-terminator_stack = deque()      # type: MutableSequence[Callable]
-suspendable_stack = deque()     # type: MutableSequence[Callable]
+terminator_stack = deque()  # type: MutableSequence[Callable]
+suspendable_stack = deque()  # type: MutableSequence[Callable]
 
 
 # Per process SIGTERM handler
@@ -47,16 +47,18 @@ def terminator_handler(signal_, frame):
         terminator_ = terminator_stack.pop()
         try:
             terminator_()
-        except:                               # noqa pylint: disable=bare-except
+        except:  # noqa pylint: disable=bare-except
             # Ensure we print something if there's an exception raised when
             # processing the handlers. Note that the default exception
             # handler won't be called because we os._exit next, so we must
             # catch all possible exceptions with the unqualified 'except'
             # clause.
             traceback.print_exc(file=sys.stderr)
-            print('Error encountered in BuildStream while processing custom SIGTERM handler:',
-                  terminator_,
-                  file=sys.stderr)
+            print(
+                "Error encountered in BuildStream while processing custom SIGTERM handler:",
+                terminator_,
+                file=sys.stderr,
+            )
 
     # Use special exit here, terminate immediately, recommended
     # for precisely this situation where child processes are teminated.
@@ -79,7 +81,7 @@ def terminator_handler(signal_, frame):
 #
 @contextmanager
 def terminator(terminate_func):
-    global terminator_stack                   # pylint: disable=global-statement
+    global terminator_stack  # pylint: disable=global-statement
 
     # Signal handling only works in the main thread
     if threading.current_thread() != threading.main_thread():
@@ -101,7 +103,7 @@ def terminator(terminate_func):
 
 
 # Just a simple object for holding on to two callbacks
-class Suspender():
+class Suspender:
     def __init__(self, suspend_callback, resume_callback):
         self.suspend = suspend_callback
         self.resume = resume_callback
@@ -144,7 +146,7 @@ def suspend_handler(sig, frame):
 #
 @contextmanager
 def suspendable(suspend_callback, resume_callback):
-    global suspendable_stack                  # pylint: disable=global-statement
+    global suspendable_stack  # pylint: disable=global-statement
 
     outermost = bool(not suspendable_stack)
     suspender = Suspender(suspend_callback, resume_callback)

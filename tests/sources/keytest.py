@@ -27,8 +27,7 @@ import pytest
 from buildstream._exceptions import ErrorDomain
 from buildstream.testing import cli  # pylint: disable=unused-import
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                        "project_key_test")
+DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project_key_test")
 
 
 # using the key-test plugin to ensure get_unique_key is never called before

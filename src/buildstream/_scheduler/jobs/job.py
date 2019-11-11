@@ -64,7 +64,7 @@ class JobStatus(FastEnum):
 
 
 # Used to distinguish between status messages and return values
-class _Envelope():
+class _Envelope:
     def __init__(self, message_type, message):
         self.message_type = message_type
         self.message = message
@@ -113,35 +113,34 @@ class _MessageType(FastEnum):
 #                   that should be used - should contain {pid}.
 #    max_retries (int): The maximum number of retries
 #
-class Job():
-
+class Job:
     def __init__(self, scheduler, action_name, logfile, *, max_retries=0):
 
         #
         # Public members
         #
-        self.name = None                 # The name of the job, set by the job's subclass
-        self.action_name = action_name   # The action name for the Queue
-        self.child_data = None           # Data to be sent to the main process
+        self.name = None  # The name of the job, set by the job's subclass
+        self.action_name = action_name  # The action name for the Queue
+        self.child_data = None  # Data to be sent to the main process
 
         #
         # Private members
         #
-        self._scheduler = scheduler            # The scheduler
-        self._queue = None                     # A message passing queue
-        self._process = None                   # The Process object
-        self._watcher = None                   # Child process watcher
-        self._listening = False                # Whether the parent is currently listening
-        self._suspended = False                # Whether this job is currently suspended
-        self._max_retries = max_retries        # Maximum number of automatic retries
-        self._result = None                    # Return value of child action in the parent
-        self._tries = 0                        # Try count, for retryable jobs
-        self._terminated = False               # Whether this job has been explicitly terminated
+        self._scheduler = scheduler  # The scheduler
+        self._queue = None  # A message passing queue
+        self._process = None  # The Process object
+        self._watcher = None  # Child process watcher
+        self._listening = False  # Whether the parent is currently listening
+        self._suspended = False  # Whether this job is currently suspended
+        self._max_retries = max_retries  # Maximum number of automatic retries
+        self._result = None  # Return value of child action in the parent
+        self._tries = 0  # Try count, for retryable jobs
+        self._terminated = False  # Whether this job has been explicitly terminated
 
         self._logfile = logfile
-        self._message_element_name = None      # The plugin instance element name for messaging
-        self._message_element_key = None       # The element key for messaging
-        self._element = None                   # The Element() passed to the Job() constructor, if applicable
+        self._message_element_name = None  # The plugin instance element name for messaging
+        self._message_element_key = None  # The element key for messaging
+        self._element = None  # The Element() passed to the Job() constructor, if applicable
 
     # set_name()
     #
@@ -168,23 +167,16 @@ class Job():
             self._max_retries,
             self._tries,
             self._message_element_name,
-            self._message_element_key
+            self._message_element_key,
         )
 
         if self._scheduler.context.platform.does_multiprocessing_start_require_pickling():
-            pickled = pickle_child_job(
-                child_job,
-                self._scheduler.context.get_projects(),
-            )
+            pickled = pickle_child_job(child_job, self._scheduler.context.get_projects(),)
             self._process = _multiprocessing.AsyncioSafeProcess(
-                target=do_pickled_child_job,
-                args=[pickled, self._queue],
+                target=do_pickled_child_job, args=[pickled, self._queue],
             )
         else:
-            self._process = _multiprocessing.AsyncioSafeProcess(
-                target=child_job.child_action,
-                args=[self._queue],
-            )
+            self._process = _multiprocessing.AsyncioSafeProcess(target=child_job.child_action, args=[self._queue],)
 
         # Block signals which are handled in the main process such that
         # the child process does not inherit the parent's state, but the main
@@ -271,8 +263,7 @@ class Job():
     #
     def kill(self):
         # Force kill
-        self.message(MessageType.WARN,
-                     "{} did not terminate gracefully, killing".format(self.action_name))
+        self.message(MessageType.WARN, "{} did not terminate gracefully, killing".format(self.action_name))
         utils._kill_process_tree(self._process.pid)
 
     # suspend()
@@ -281,8 +272,7 @@ class Job():
     #
     def suspend(self):
         if not self._suspended:
-            self.message(MessageType.STATUS,
-                         "{} suspending".format(self.action_name))
+            self.message(MessageType.STATUS, "{} suspending".format(self.action_name))
 
             try:
                 # Use SIGTSTP so that child processes may handle and propagate
@@ -306,8 +296,7 @@ class Job():
     def resume(self, silent=False):
         if self._suspended:
             if not silent and not self._scheduler.terminated:
-                self.message(MessageType.STATUS,
-                             "{} resuming".format(self.action_name))
+                self.message(MessageType.STATUS, "{} resuming".format(self.action_name))
 
             os.kill(self._process.pid, signal.SIGCONT)
             self._suspended = False
@@ -349,7 +338,7 @@ class Job():
     #            override 'element_name' and 'element_key' this way.
     #
     def message(self, message_type, message, element_name=None, element_key=None, **kwargs):
-        kwargs['scheduler'] = True
+        kwargs["scheduler"] = True
         # If default name & key values not provided, set as given job attributes
         if element_name is None:
             element_name = self._message_element_name
@@ -387,8 +376,7 @@ class Job():
     #                   lists, dicts, numbers, but not Element instances).
     #
     def handle_message(self, message):
-        raise ImplError("Job '{kind}' does not implement handle_message()"
-                        .format(kind=type(self).__name__))
+        raise ImplError("Job '{kind}' does not implement handle_message()".format(kind=type(self).__name__))
 
     # parent_complete()
     #
@@ -400,8 +388,7 @@ class Job():
     #    result (any): The result returned by child_process().
     #
     def parent_complete(self, status, result):
-        raise ImplError("Job '{kind}' does not implement parent_complete()"
-                        .format(kind=type(self).__name__))
+        raise ImplError("Job '{kind}' does not implement parent_complete()".format(kind=type(self).__name__))
 
     # create_child_job()
     #
@@ -419,8 +406,7 @@ class Job():
     #    (ChildJob): An instance of a subclass of ChildJob.
     #
     def create_child_job(self, *args, **kwargs):
-        raise ImplError("Job '{kind}' does not implement create_child_job()"
-                        .format(kind=type(self).__name__))
+        raise ImplError("Job '{kind}' does not implement create_child_job()".format(kind=type(self).__name__))
 
     #######################################################
     #                  Local Private Methods              #
@@ -451,9 +437,11 @@ class Job():
             returncode = _ReturnCode(returncode)
         except ValueError:
             # An unexpected return code was returned; fail permanently and report
-            self.message(MessageType.ERROR,
-                         "Internal job process unexpectedly died with exit code {}".format(returncode),
-                         logfile=self._logfile)
+            self.message(
+                MessageType.ERROR,
+                "Internal job process unexpectedly died with exit code {}".format(returncode),
+                logfile=self._logfile,
+            )
             returncode = _ReturnCode.PERM_FAIL
 
         # We don't want to retry if we got OK or a permanent fail.
@@ -503,8 +491,7 @@ class Job():
             # For regression tests only, save the last error domain / reason
             # reported from a child task in the main process, this global state
             # is currently managed in _exceptions.py
-            set_last_task_error(envelope.message['domain'],
-                                envelope.message['reason'])
+            set_last_task_error(envelope.message["domain"], envelope.message["reason"])
         elif envelope.message_type is _MessageType.RESULT:
             assert self._result is None
             self._result = envelope.message
@@ -514,8 +501,7 @@ class Job():
         elif envelope.message_type is _MessageType.SUBCLASS_CUSTOM_MESSAGE:
             self.handle_message(envelope.message)
         else:
-            assert False, "Unhandled message type '{}': {}".format(
-                envelope.message_type, envelope.message)
+            assert False, "Unhandled message type '{}': {}".format(envelope.message_type, envelope.message)
 
     # _parent_process_queue()
     #
@@ -552,8 +538,7 @@ class Job():
         #      http://bugs.python.org/issue3831
         #
         if not self._listening:
-            self._scheduler.loop.add_reader(
-                self._queue._reader.fileno(), self._parent_recv)
+            self._scheduler.loop.add_reader(self._queue._reader.fileno(), self._parent_recv)
             self._listening = True
 
     # _parent_stop_listening()
@@ -589,11 +574,10 @@ class Job():
 #    message_element_key (tuple): None, or the element display key tuple
 #                                to be supplied to the Message() constructor.
 #
-class ChildJob():
-
+class ChildJob:
     def __init__(
-            self, action_name, messenger, logdir, logfile, max_retries, tries,
-            message_element_name, message_element_key):
+        self, action_name, messenger, logdir, logfile, max_retries, tries, message_element_name, message_element_key
+    ):
 
         self.action_name = action_name
 
@@ -624,14 +608,15 @@ class ChildJob():
     #            overriden here.
     #
     def message(self, message_type, message, element_name=None, element_key=None, **kwargs):
-        kwargs['scheduler'] = True
+        kwargs["scheduler"] = True
         # If default name & key values not provided, set as given job attributes
         if element_name is None:
             element_name = self._message_element_name
         if element_key is None:
             element_key = self._message_element_key
-        self._messenger.message(Message(message_type, message, element_name=element_name,
-                                        element_key=element_key, **kwargs))
+        self._messenger.message(
+            Message(message_type, message, element_name=element_name, element_key=element_key, **kwargs)
+        )
 
     # send_message()
     #
@@ -668,8 +653,7 @@ class ChildJob():
     #           the result of the Job.
     #
     def child_process(self):
-        raise ImplError("ChildJob '{kind}' does not implement child_process()"
-                        .format(kind=type(self).__name__))
+        raise ImplError("ChildJob '{kind}' does not implement child_process()".format(kind=type(self).__name__))
 
     # child_process_data()
     #
@@ -723,12 +707,13 @@ class ChildJob():
         def resume_time():
             nonlocal stopped_time
             nonlocal starttime
-            starttime += (datetime.datetime.now() - stopped_time)
+            starttime += datetime.datetime.now() - stopped_time
 
         # Time, log and and run the action function
         #
-        with _signals.suspendable(stop_time, resume_time), \
-                self._messenger.recorded_messages(self._logfile, self._logdir) as filename:
+        with _signals.suspendable(stop_time, resume_time), self._messenger.recorded_messages(
+            self._logfile, self._logdir
+        ) as filename:
 
             self.message(MessageType.START, self.action_name, logfile=filename)
 
@@ -737,8 +722,7 @@ class ChildJob():
                 result = self.child_process()  # pylint: disable=assignment-from-no-return
             except SkipJob as e:
                 elapsed = datetime.datetime.now() - starttime
-                self.message(MessageType.SKIPPED, str(e),
-                             elapsed=elapsed, logfile=filename)
+                self.message(MessageType.SKIPPED, str(e), elapsed=elapsed, logfile=filename)
 
                 # Alert parent of skip by return code
                 self._child_shutdown(_ReturnCode.SKIPPED)
@@ -747,13 +731,16 @@ class ChildJob():
                 retry_flag = e.temporary
 
                 if retry_flag and (self._tries <= self._max_retries):
-                    self.message(MessageType.FAIL,
-                                 "Try #{} failed, retrying".format(self._tries),
-                                 elapsed=elapsed, logfile=filename)
+                    self.message(
+                        MessageType.FAIL,
+                        "Try #{} failed, retrying".format(self._tries),
+                        elapsed=elapsed,
+                        logfile=filename,
+                    )
                 else:
-                    self.message(MessageType.FAIL, str(e),
-                                 elapsed=elapsed, detail=e.detail,
-                                 logfile=filename, sandbox=e.sandbox)
+                    self.message(
+                        MessageType.FAIL, str(e), elapsed=elapsed, detail=e.detail, logfile=filename, sandbox=e.sandbox
+                    )
 
                 self._send_message(_MessageType.CHILD_DATA, self.child_process_data())
 
@@ -764,7 +751,7 @@ class ChildJob():
                 #
                 self._child_shutdown(_ReturnCode.FAIL if retry_flag else _ReturnCode.PERM_FAIL)
 
-            except Exception:                        # pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except
 
                 # If an unhandled (not normalized to BstError) occurs, that's a bug,
                 # send the traceback and formatted exception back to the frontend
@@ -773,9 +760,7 @@ class ChildJob():
                 elapsed = datetime.datetime.now() - starttime
                 detail = "An unhandled exception occured:\n\n{}".format(traceback.format_exc())
 
-                self.message(MessageType.BUG, self.action_name,
-                             elapsed=elapsed, detail=detail,
-                             logfile=filename)
+                self.message(MessageType.BUG, self.action_name, elapsed=elapsed, detail=detail, logfile=filename)
                 # Unhandled exceptions should permenantly fail
                 self._child_shutdown(_ReturnCode.PERM_FAIL)
 
@@ -785,8 +770,7 @@ class ChildJob():
                 self._child_send_result(result)
 
                 elapsed = datetime.datetime.now() - starttime
-                self.message(MessageType.SUCCESS, self.action_name, elapsed=elapsed,
-                             logfile=filename)
+                self.message(MessageType.SUCCESS, self.action_name, elapsed=elapsed, logfile=filename)
 
                 # Shutdown needs to stay outside of the above context manager,
                 # make sure we dont try to handle SIGTERM while the process
@@ -825,10 +809,7 @@ class ChildJob():
             domain = e.domain
             reason = e.reason
 
-        self._send_message(_MessageType.ERROR, {
-            'domain': domain,
-            'reason': reason
-        })
+        self._send_message(_MessageType.ERROR, {"domain": domain, "reason": reason})
 
     # _child_send_result()
     #

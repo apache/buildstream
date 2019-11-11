@@ -12,10 +12,7 @@ from buildstream.testing import cli  # pylint: disable=unused-import
 
 
 # Project directory
-DATA_DIR = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    "missing-dependencies",
-)
+DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "missing-dependencies",)
 
 
 def _symlink_host_tools_to_dir(host_tools, dir_):
@@ -25,85 +22,67 @@ def _symlink_host_tools_to_dir(host_tools, dir_):
         os.symlink(utils.get_host_tool(tool), str(target_path))
 
 
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on Linux')
+@pytest.mark.skipif(not IS_LINUX, reason="Only available on Linux")
 @pytest.mark.datafiles(DATA_DIR)
 def test_missing_bwrap_has_nice_error_message(cli, datafiles, tmp_path):
     # Create symlink to buildbox-casd and git to work with custom PATH
     bin_dir = tmp_path / "bin"
-    _symlink_host_tools_to_dir(['buildbox-casd', 'git'], bin_dir)
+    _symlink_host_tools_to_dir(["buildbox-casd", "git"], bin_dir)
 
     project = str(datafiles)
-    element_path = os.path.join(project, 'elements', 'element.bst')
+    element_path = os.path.join(project, "elements", "element.bst")
 
     # Write out our test target
     element = {
-        'kind': 'script',
-        'depends': [
-            {
-                'filename': 'base.bst',
-                'type': 'build',
-            },
-        ],
-        'config': {
-            'commands': [
-                'false',
-            ],
-        },
+        "kind": "script",
+        "depends": [{"filename": "base.bst", "type": "build",},],
+        "config": {"commands": ["false",],},
     }
     _yaml.roundtrip_dump(element, element_path)
 
     # Build without access to host tools, this should fail with a nice error
     result = cli.run(
-        project=project,
-        args=['build', 'element.bst'],
-        env={'PATH': str(bin_dir),
-             'BST_FORCE_SANDBOX': None})
-    result.assert_task_error(ErrorDomain.SANDBOX, 'unavailable-local-sandbox')
+        project=project, args=["build", "element.bst"], env={"PATH": str(bin_dir), "BST_FORCE_SANDBOX": None}
+    )
+    result.assert_task_error(ErrorDomain.SANDBOX, "unavailable-local-sandbox")
     assert "not found" in result.stderr
 
 
-@pytest.mark.skipif(not IS_LINUX, reason='Only available on Linux')
+@pytest.mark.skipif(not IS_LINUX, reason="Only available on Linux")
 @pytest.mark.datafiles(DATA_DIR)
 def test_old_brwap_has_nice_error_message(cli, datafiles, tmp_path):
-    bwrap = tmp_path.joinpath('bin/bwrap')
+    bwrap = tmp_path.joinpath("bin/bwrap")
     bwrap.parent.mkdir()
-    with bwrap.open('w') as fp:
-        fp.write('''
+    with bwrap.open("w") as fp:
+        fp.write(
+            """
             #!/bin/sh
             echo bubblewrap 0.0.1
-        '''.strip())
+        """.strip()
+        )
 
     bwrap.chmod(0o755)
 
     # Create symlink to buildbox-casd and git to work with custom PATH
     bin_dir = tmp_path / "bin"
-    _symlink_host_tools_to_dir(['buildbox-casd', 'git'], bin_dir)
+    _symlink_host_tools_to_dir(["buildbox-casd", "git"], bin_dir)
 
     project = str(datafiles)
-    element_path = os.path.join(project, 'elements', 'element3.bst')
+    element_path = os.path.join(project, "elements", "element3.bst")
 
     # Write out our test target
     element = {
-        'kind': 'script',
-        'depends': [
-            {
-                'filename': 'base.bst',
-                'type': 'build',
-            },
-        ],
-        'config': {
-            'commands': [
-                'false',
-            ],
-        },
+        "kind": "script",
+        "depends": [{"filename": "base.bst", "type": "build",},],
+        "config": {"commands": ["false",],},
     }
     _yaml.roundtrip_dump(element, element_path)
 
     # Build without access to host tools, this should fail with a nice error
     result = cli.run(
         project=project,
-        args=['--debug', '--verbose', 'build', 'element3.bst'],
-        env={'PATH': str(bin_dir),
-             'BST_FORCE_SANDBOX': None})
-    result.assert_task_error(ErrorDomain.SANDBOX, 'unavailable-local-sandbox')
+        args=["--debug", "--verbose", "build", "element3.bst"],
+        env={"PATH": str(bin_dir), "BST_FORCE_SANDBOX": None},
+    )
+    result.assert_task_error(ErrorDomain.SANDBOX, "unavailable-local-sandbox")
     assert "too old" in result.stderr

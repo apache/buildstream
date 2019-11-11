@@ -47,10 +47,11 @@ if TYPE_CHECKING:
     # pylint: disable=cyclic-import
     from .._context import Context
     from .._project import Project
+
     # pylint: enable=cyclic-import
 
 
-class SandboxFlags():
+class SandboxFlags:
     """Flags indicating how the sandbox should be run.
     """
 
@@ -100,49 +101,45 @@ class SandboxCommandError(SandboxError):
        collect (str): An optional directory containing partial install contents
        reason (str): An optional reason string (defaults to 'command-failed')
     """
-    def __init__(self, message, *, detail=None, collect=None, reason='command-failed'):
+
+    def __init__(self, message, *, detail=None, collect=None, reason="command-failed"):
         super().__init__(message, detail=detail, reason=reason)
 
         self.collect = collect
 
 
-class Sandbox():
+class Sandbox:
     """Sandbox()
 
     Sandbox programming interface for :class:`.Element` plugins.
     """
 
     # Minimal set of devices for the sandbox
-    DEVICES = [
-        '/dev/urandom',
-        '/dev/random',
-        '/dev/zero',
-        '/dev/null'
-    ]
-    _dummy_reasons = []         # type: List[str]
+    DEVICES = ["/dev/urandom", "/dev/random", "/dev/zero", "/dev/null"]
+    _dummy_reasons = []  # type: List[str]
 
-    def __init__(self, context: 'Context', project: 'Project', directory: str, **kwargs):
+    def __init__(self, context: "Context", project: "Project", directory: str, **kwargs):
         self.__context = context
         self.__project = project
-        self.__directories = []     # type: List[Dict[str, Union[int, str]]]
-        self.__cwd = None           # type: Optional[str]
-        self.__env = None           # type: Optional[Dict[str, str]]
-        self.__mount_sources = {}   # type: Dict[str, str]
-        self.__allow_real_directory = kwargs['allow_real_directory']
+        self.__directories = []  # type: List[Dict[str, Union[int, str]]]
+        self.__cwd = None  # type: Optional[str]
+        self.__env = None  # type: Optional[Dict[str, str]]
+        self.__mount_sources = {}  # type: Dict[str, str]
+        self.__allow_real_directory = kwargs["allow_real_directory"]
         self.__allow_run = True
 
         # Plugin element full name for logging
-        plugin = kwargs.get('plugin', None)
+        plugin = kwargs.get("plugin", None)
         if plugin:
             self.__element_name = plugin._get_full_name()
         else:
             self.__element_name = None
 
         # Configuration from kwargs common to all subclasses
-        self.__config = kwargs['config']
-        self.__stdout = kwargs['stdout']
-        self.__stderr = kwargs['stderr']
-        self.__bare_directory = kwargs['bare_directory']
+        self.__config = kwargs["config"]
+        self.__stdout = kwargs["stdout"]
+        self.__stderr = kwargs["stderr"]
+        self.__bare_directory = kwargs["bare_directory"]
 
         # Setup the directories. Root and output_directory should be
         # available to subclasses, hence being single-underscore. The
@@ -153,15 +150,15 @@ class Sandbox():
             self.__scratch = None
             os.makedirs(self._root, exist_ok=True)
         else:
-            self._root = os.path.join(directory, 'root')
-            self.__scratch = os.path.join(directory, 'scratch')
+            self._root = os.path.join(directory, "root")
+            self.__scratch = os.path.join(directory, "scratch")
             for directory_ in [self._root, self.__scratch]:
                 os.makedirs(directory_, exist_ok=True)
 
-        self._output_directory = None       # type: Optional[str]
+        self._output_directory = None  # type: Optional[str]
         self._build_directory = None
         self._build_directory_always = None
-        self._vdir = None                   # type: Optional[Directory]
+        self._vdir = None  # type: Optional[Directory]
         self._usebuildtree = False
 
         # This is set if anyone requests access to the underlying
@@ -255,18 +252,17 @@ class Sandbox():
            Any marked directories will be read-write in the sandboxed
            environment, only the root directory is allowed to be readonly.
         """
-        self.__directories.append({
-            'directory': directory,
-            'artifact': artifact
-        })
+        self.__directories.append({"directory": directory, "artifact": artifact})
 
-    def run(self,
-            command: List[str],
-            flags: int,
-            *,
-            cwd: Optional[str] = None,
-            env: Optional[Dict[str, str]] = None,
-            label: str = None) -> Optional[int]:
+    def run(
+        self,
+        command: List[str],
+        flags: int,
+        *,
+        cwd: Optional[str] = None,
+        env: Optional[Dict[str, str]] = None,
+        label: str = None
+    ) -> Optional[int]:
         """Run a command in the sandbox.
 
         If this is called outside a batch context, the command is immediately
@@ -314,8 +310,7 @@ class Sandbox():
             command = [command]
 
         if self.__batch:
-            assert flags == self.__batch.flags, \
-                "Inconsistent sandbox flags in single command batch"
+            assert flags == self.__batch.flags, "Inconsistent sandbox flags in single command batch"
 
             batch_command = _SandboxBatchCommand(command, cwd=cwd, env=env, label=label)
 
@@ -352,8 +347,7 @@ class Sandbox():
 
         if self.__batch:
             # Nested batch
-            assert flags == self.__batch.flags, \
-                "Inconsistent sandbox flags in single command batch"
+            assert flags == self.__batch.flags, "Inconsistent sandbox flags in single command batch"
 
             parent_group = self.__batch.current_group
             parent_group.append(group)
@@ -394,8 +388,7 @@ class Sandbox():
     #    (int): The program exit code.
     #
     def _run(self, command, flags, *, cwd, env):
-        raise ImplError("Sandbox of type '{}' does not implement _run()"
-                        .format(type(self).__name__))
+        raise ImplError("Sandbox of type '{}' does not implement _run()".format(type(self).__name__))
 
     # _create_batch()
     #
@@ -425,7 +418,7 @@ class Sandbox():
         if not self.__allow_real_directory and not self.__allow_run:
             return True
 
-        return 'BST_CAS_DIRECTORIES' in os.environ
+        return "BST_CAS_DIRECTORIES" in os.environ
 
     # _fetch_missing_blobs()
     #
@@ -513,7 +506,7 @@ class Sandbox():
         # what directory it is in makes it unnecessary to call the faulty
         # getcwd.
         env = dict(env)
-        env['PWD'] = cwd
+        env["PWD"] = cwd
 
         return env
 
@@ -528,7 +521,7 @@ class Sandbox():
     # Returns:
     #    (str): The sandbox work directory
     def _get_work_directory(self, *, cwd=None):
-        return cwd or self.__cwd or '/'
+        return cwd or self.__cwd or "/"
 
     # _get_scratch_directory()
     #
@@ -584,7 +577,7 @@ class Sandbox():
         if len(command_as_parts) > 1:
             return False
 
-        for path in env.get('PATH').split(':'):
+        for path in env.get("PATH").split(":"):
             path_as_parts = path.lstrip(os.sep).split(os.sep)
             if vroot._exists(*path_as_parts, command, follow_symlinks=True):
                 return True
@@ -649,20 +642,14 @@ class Sandbox():
     #    message (str): A message to issue
     #    details (str): optional, more detatils
     def _issue_warning(self, message, detail=None):
-        self.__context.messenger.message(
-            Message(MessageType.WARN,
-                    message,
-                    detail=detail
-                    )
-        )
+        self.__context.messenger.message(Message(MessageType.WARN, message, detail=detail))
 
 
 # _SandboxBatch()
 #
 # A batch of sandbox commands.
 #
-class _SandboxBatch():
-
+class _SandboxBatch:
     def __init__(self, sandbox, main_group, flags, *, collect=None):
         self.sandbox = sandbox
         self.main_group = main_group
@@ -686,16 +673,21 @@ class _SandboxBatch():
     def execute_command(self, command):
         if command.label:
             context = self.sandbox._get_context()
-            message = Message(MessageType.STATUS, 'Running command', detail=command.label,
-                              element_name=self.sandbox._get_element_name())
+            message = Message(
+                MessageType.STATUS,
+                "Running command",
+                detail=command.label,
+                element_name=self.sandbox._get_element_name(),
+            )
             context.messenger.message(message)
 
         exitcode = self.sandbox._run(command.command, self.flags, cwd=command.cwd, env=command.env)
         if exitcode != 0:
-            cmdline = ' '.join(shlex.quote(cmd) for cmd in command.command)
+            cmdline = " ".join(shlex.quote(cmd) for cmd in command.command)
             label = command.label or cmdline
-            raise SandboxCommandError("Command failed with exitcode {}".format(exitcode),
-                                      detail=label, collect=self.collect)
+            raise SandboxCommandError(
+                "Command failed with exitcode {}".format(exitcode), detail=label, collect=self.collect
+            )
 
     def execute_call(self, call):
         call.callback()
@@ -705,8 +697,7 @@ class _SandboxBatch():
 #
 # An item in a command batch.
 #
-class _SandboxBatchItem():
-
+class _SandboxBatchItem:
     def __init__(self, *, label=None):
         self.label = label
 
@@ -716,7 +707,6 @@ class _SandboxBatchItem():
 # A command item in a command batch.
 #
 class _SandboxBatchCommand(_SandboxBatchItem):
-
     def __init__(self, command, *, cwd, env, label=None):
         super().__init__(label=label)
 
@@ -733,7 +723,6 @@ class _SandboxBatchCommand(_SandboxBatchItem):
 # A group in a command batch.
 #
 class _SandboxBatchGroup(_SandboxBatchItem):
-
     def __init__(self, *, label=None):
         super().__init__(label=label)
 
@@ -755,7 +744,6 @@ class _SandboxBatchGroup(_SandboxBatchItem):
 # A call item in a command batch.
 #
 class _SandboxBatchCall(_SandboxBatchItem):
-
     def __init__(self, callback):
         super().__init__()
 

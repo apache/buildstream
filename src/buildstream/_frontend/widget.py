@@ -45,8 +45,7 @@ ERROR_MESSAGES = [MessageType.FAIL, MessageType.ERROR, MessageType.BUG]
 #
 # An abstract class for printing output columns in our text UI.
 #
-class Widget():
-
+class Widget:
     def __init__(self, context, content_profile, format_profile):
 
         # The context
@@ -74,7 +73,6 @@ class Widget():
 
 # Used to add fixed text between columns
 class FixedText(Widget):
-
     def __init__(self, context, text, content_profile, format_profile):
         super().__init__(context, content_profile, format_profile)
         self.text = text
@@ -91,15 +89,13 @@ class WallclockTime(Widget):
 
     def render(self, message):
 
-        fields = [self.content_profile.fmt("{:02d}".format(x)) for x in
-                  [message.creation_time.hour,
-                   message.creation_time.minute,
-                   message.creation_time.second,
-                   ]
-                  ]
+        fields = [
+            self.content_profile.fmt("{:02d}".format(x))
+            for x in [message.creation_time.hour, message.creation_time.minute, message.creation_time.second,]
+        ]
         text = self.format_profile.fmt(":").join(fields)
 
-        if self._output_format == 'us':
+        if self._output_format == "us":
             text += self.content_profile.fmt(".{:06d}".format(message.creation_time.microsecond))
 
         return text
@@ -107,11 +103,10 @@ class WallclockTime(Widget):
 
 # A widget for rendering the debugging column
 class Debug(Widget):
-
     def render(self, message):
         element_name = "n/a" if message.element_name is None else message.element_name
 
-        text = self.format_profile.fmt('pid:')
+        text = self.format_profile.fmt("pid:")
         text += self.content_profile.fmt("{: <5}".format(message.pid))
         text += self.format_profile.fmt("element name:")
         text += self.content_profile.fmt("{: <30}".format(element_name))
@@ -130,19 +125,13 @@ class TimeCode(Widget):
 
     def render_time(self, elapsed):
         if elapsed is None:
-            fields = [
-                self.content_profile.fmt('--')
-                for i in range(3)
-            ]
+            fields = [self.content_profile.fmt("--") for i in range(3)]
         else:
             hours, remainder = divmod(int(elapsed.total_seconds()), 60 * 60)
             minutes, seconds = divmod(remainder, 60)
-            fields = [
-                self.content_profile.fmt("{0:02d}".format(field))
-                for field in [hours, minutes, seconds]
-            ]
+            fields = [self.content_profile.fmt("{0:02d}".format(field)) for field in [hours, minutes, seconds]]
 
-        text = self.format_profile.fmt(':').join(fields)
+        text = self.format_profile.fmt(":").join(fields)
 
         if self._microseconds:
             if elapsed is not None:
@@ -169,41 +158,43 @@ class TypeName(Widget):
     }
 
     def render(self, message):
-        return self.content_profile.fmt("{: <7}"
-                                        .format(message.message_type.upper()),
-                                        bold=True, dim=True,
-                                        fg=self._action_colors[message.message_type])
+        return self.content_profile.fmt(
+            "{: <7}".format(message.message_type.upper()),
+            bold=True,
+            dim=True,
+            fg=self._action_colors[message.message_type],
+        )
 
 
 # A widget for displaying the Element name
 class ElementName(Widget):
-
     def render(self, message):
         action_name = message.action_name
         element_name = message.element_name
         if element_name is not None:
-            name = '{: <30}'.format(element_name)
+            name = "{: <30}".format(element_name)
         else:
-            name = 'core activity'
-            name = '{: <30}'.format(name)
+            name = "core activity"
+            name = "{: <30}".format(name)
 
         if not action_name:
             action_name = "Main"
 
-        return self.content_profile.fmt("{: >8}".format(action_name.lower())) + \
-            self.format_profile.fmt(':') + self.content_profile.fmt(name)
+        return (
+            self.content_profile.fmt("{: >8}".format(action_name.lower()))
+            + self.format_profile.fmt(":")
+            + self.content_profile.fmt(name)
+        )
 
 
 # A widget for displaying the primary message text
 class MessageText(Widget):
-
     def render(self, message):
         return message.message
 
 
 # A widget for formatting the element cache key
 class CacheKey(Widget):
-
     def __init__(self, context, content_profile, format_profile, err_profile):
         super().__init__(context, content_profile, format_profile)
 
@@ -216,10 +207,10 @@ class CacheKey(Widget):
             return ""
 
         if message.element_name is None:
-            return ' ' * self._key_length
+            return " " * self._key_length
 
         missing = False
-        key = ' ' * self._key_length
+        key = " " * self._key_length
         if message.element_key:
             _, key, missing = message.element_key
 
@@ -233,7 +224,6 @@ class CacheKey(Widget):
 
 # A widget for formatting the log file
 class LogFile(Widget):
-
     def __init__(self, context, content_profile, format_profile, err_profile):
         super().__init__(context, content_profile, format_profile)
 
@@ -248,7 +238,7 @@ class LogFile(Widget):
             logfile = message.logfile
 
             if abbrev and self._logdir != "" and logfile.startswith(self._logdir):
-                logfile = logfile[len(self._logdir):]
+                logfile = logfile[len(self._logdir) :]
                 logfile = logfile.lstrip(os.sep)
 
             if message.message_type in ERROR_MESSAGES:
@@ -256,7 +246,7 @@ class LogFile(Widget):
             else:
                 text = self.content_profile.fmt(logfile, dim=True)
         else:
-            text = ''
+            text = ""
 
         return text
 
@@ -273,8 +263,7 @@ class MessageOrLogFile(Widget):
 
     def render(self, message):
         # Show the log file only in the main start/success messages
-        if message.logfile and message.scheduler and \
-                message.message_type in [MessageType.START, MessageType.SUCCESS]:
+        if message.logfile and message.scheduler and message.message_type in [MessageType.START, MessageType.SUCCESS]:
             text = self._logfile_widget.render(message)
         else:
             text = self._message_widget.render(message)
@@ -296,14 +285,9 @@ class MessageOrLogFile(Widget):
 #    indent (int): Number of spaces to use for general indentation
 #
 class LogLine(Widget):
-
-    def __init__(self, context, state,
-                 content_profile,
-                 format_profile,
-                 success_profile,
-                 err_profile,
-                 detail_profile,
-                 indent=4):
+    def __init__(
+        self, context, state, content_profile, format_profile, success_profile, err_profile, detail_profile, indent=4
+    ):
         super().__init__(context, content_profile, format_profile)
 
         self._columns = []
@@ -311,7 +295,7 @@ class LogLine(Widget):
         self._success_profile = success_profile
         self._err_profile = err_profile
         self._detail_profile = detail_profile
-        self._indent = ' ' * indent
+        self._indent = " " * indent
         self._log_lines = context.log_error_lines
         self._message_lines = context.log_message_lines
         self._resolved_keys = None
@@ -320,19 +304,17 @@ class LogLine(Widget):
         self._logfile_widget = LogFile(context, content_profile, format_profile, err_profile)
 
         if context.log_debug:
-            self._columns.extend([
-                Debug(context, content_profile, format_profile)
-            ])
+            self._columns.extend([Debug(context, content_profile, format_profile)])
 
         self.logfile_variable_names = {
             "elapsed": TimeCode(context, content_profile, format_profile, microseconds=False),
             "elapsed-us": TimeCode(context, content_profile, format_profile, microseconds=True),
             "wallclock": WallclockTime(context, content_profile, format_profile),
-            "wallclock-us": WallclockTime(context, content_profile, format_profile, output_format='us'),
+            "wallclock-us": WallclockTime(context, content_profile, format_profile, output_format="us"),
             "key": CacheKey(context, content_profile, format_profile, err_profile),
             "element": ElementName(context, content_profile, format_profile),
             "action": TypeName(context, content_profile, format_profile),
-            "message": MessageOrLogFile(context, content_profile, format_profile, err_profile)
+            "message": MessageOrLogFile(context, content_profile, format_profile, err_profile),
         }
         logfile_tokens = self._parse_logfile_format(context.log_message_format, content_profile, format_profile)
         self._columns.extend(logfile_tokens)
@@ -352,7 +334,7 @@ class LogLine(Widget):
     #    (str): The formatted list of elements
     #
     def show_pipeline(self, dependencies, format_):
-        report = ''
+        report = ""
         p = Profile()
 
         for element in dependencies:
@@ -360,57 +342,57 @@ class LogLine(Widget):
 
             full_key, cache_key, dim_keys = element._get_display_key()
 
-            line = p.fmt_subst(line, 'name', element._get_full_name(), fg='blue', bold=True)
-            line = p.fmt_subst(line, 'key', cache_key, fg='yellow', dim=dim_keys)
-            line = p.fmt_subst(line, 'full-key', full_key, fg='yellow', dim=dim_keys)
+            line = p.fmt_subst(line, "name", element._get_full_name(), fg="blue", bold=True)
+            line = p.fmt_subst(line, "key", cache_key, fg="yellow", dim=dim_keys)
+            line = p.fmt_subst(line, "full-key", full_key, fg="yellow", dim=dim_keys)
 
             consistency = element._get_consistency()
             if consistency == Consistency.INCONSISTENT:
-                line = p.fmt_subst(line, 'state', "no reference", fg='red')
+                line = p.fmt_subst(line, "state", "no reference", fg="red")
             else:
                 if element._cached_failure():
-                    line = p.fmt_subst(line, 'state', "failed", fg='red')
+                    line = p.fmt_subst(line, "state", "failed", fg="red")
                 elif element._cached_success():
-                    line = p.fmt_subst(line, 'state', "cached", fg='magenta')
+                    line = p.fmt_subst(line, "state", "cached", fg="magenta")
                 elif consistency == Consistency.RESOLVED and not element._source_cached():
-                    line = p.fmt_subst(line, 'state', "fetch needed", fg='red')
+                    line = p.fmt_subst(line, "state", "fetch needed", fg="red")
                 elif element._buildable():
-                    line = p.fmt_subst(line, 'state', "buildable", fg='green')
+                    line = p.fmt_subst(line, "state", "buildable", fg="green")
                 else:
-                    line = p.fmt_subst(line, 'state', "waiting", fg='blue')
+                    line = p.fmt_subst(line, "state", "waiting", fg="blue")
 
             # Element configuration
             if "%{config" in format_:
                 line = p.fmt_subst(
-                    line, 'config',
-                    yaml.round_trip_dump(element._Element__config, default_flow_style=False, allow_unicode=True))
+                    line,
+                    "config",
+                    yaml.round_trip_dump(element._Element__config, default_flow_style=False, allow_unicode=True),
+                )
 
             # Variables
             if "%{vars" in format_:
                 variables = element._Element__variables.flat
                 line = p.fmt_subst(
-                    line, 'vars',
-                    yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True))
+                    line, "vars", yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True)
+                )
 
             # Environment
             if "%{env" in format_:
                 environment = element._Element__environment
                 line = p.fmt_subst(
-                    line, 'env',
-                    yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
+                    line, "env", yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True)
+                )
 
             # Public
             if "%{public" in format_:
                 environment = element._Element__public
                 line = p.fmt_subst(
-                    line, 'public',
-                    yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True))
+                    line, "public", yaml.round_trip_dump(environment, default_flow_style=False, allow_unicode=True)
+                )
 
             # Workspaced
             if "%{workspaced" in format_:
-                line = p.fmt_subst(
-                    line, 'workspaced',
-                    '(workspaced)' if element._get_workspace() else '', fg='yellow')
+                line = p.fmt_subst(line, "workspaced", "(workspaced)" if element._get_workspace() else "", fg="yellow")
 
             # Workspace-dirs
             if "%{workspace-dirs" in format_:
@@ -418,36 +400,31 @@ class LogLine(Widget):
                 if workspace is not None:
                     path = workspace.get_absolute_path()
                     if path.startswith("~/"):
-                        path = os.path.join(os.getenv('HOME', '/root'), path[2:])
-                    line = p.fmt_subst(line, 'workspace-dirs', "Workspace: {}".format(path))
+                        path = os.path.join(os.getenv("HOME", "/root"), path[2:])
+                    line = p.fmt_subst(line, "workspace-dirs", "Workspace: {}".format(path))
                 else:
-                    line = p.fmt_subst(
-                        line, 'workspace-dirs', '')
+                    line = p.fmt_subst(line, "workspace-dirs", "")
 
             # Dependencies
             if "%{deps" in format_:
                 deps = [e.name for e in element.dependencies(Scope.ALL, recurse=False)]
-                line = p.fmt_subst(
-                    line, 'deps',
-                    yaml.safe_dump(deps, default_style=None).rstrip('\n'))
+                line = p.fmt_subst(line, "deps", yaml.safe_dump(deps, default_style=None).rstrip("\n"))
 
             # Build Dependencies
             if "%{build-deps" in format_:
                 build_deps = [e.name for e in element.dependencies(Scope.BUILD, recurse=False)]
-                line = p.fmt_subst(
-                    line, 'build-deps',
-                    yaml.safe_dump(build_deps, default_style=False).rstrip('\n'))
+                line = p.fmt_subst(line, "build-deps", yaml.safe_dump(build_deps, default_style=False).rstrip("\n"))
 
             # Runtime Dependencies
             if "%{runtime-deps" in format_:
                 runtime_deps = [e.name for e in element.dependencies(Scope.RUN, recurse=False)]
                 line = p.fmt_subst(
-                    line, 'runtime-deps',
-                    yaml.safe_dump(runtime_deps, default_style=False).rstrip('\n'))
+                    line, "runtime-deps", yaml.safe_dump(runtime_deps, default_style=False).rstrip("\n")
+                )
 
-            report += line + '\n'
+            report += line + "\n"
 
-        return report.rstrip('\n')
+        return report.rstrip("\n")
 
     # print_heading()
     #
@@ -463,25 +440,24 @@ class LogLine(Widget):
     def print_heading(self, project, stream, *, log_file):
         context = self.context
         starttime = datetime.datetime.now()
-        text = ''
+        text = ""
 
         self._resolved_keys = {element: element._get_cache_key() for element in stream.session_elements}
 
         # Main invocation context
-        text += '\n'
+        text += "\n"
         text += self.content_profile.fmt("BuildStream Version {}\n".format(bst_version), bold=True)
         values = OrderedDict()
-        values["Session Start"] = starttime.strftime('%A, %d-%m-%Y at %H:%M:%S')
+        values["Session Start"] = starttime.strftime("%A, %d-%m-%Y at %H:%M:%S")
         values["Project"] = "{} ({})".format(project.name, project.directory)
         values["Targets"] = ", ".join([t.name for t in stream.targets])
         text += self._format_values(values)
 
         # User configurations
-        text += '\n'
+        text += "\n"
         text += self.content_profile.fmt("User Configuration\n", bold=True)
         values = OrderedDict()
-        values["Configuration File"] = \
-            "Default Configuration" if not context.config_origin else context.config_origin
+        values["Configuration File"] = "Default Configuration" if not context.config_origin else context.config_origin
         values["Cache Directory"] = context.cachedir
         values["Log Files"] = context.logdir
         values["Source Mirrors"] = context.sourcedir
@@ -492,7 +468,7 @@ class LogLine(Widget):
         values["Maximum Push Tasks"] = context.sched_pushers
         values["Maximum Network Retries"] = context.sched_network_retries
         text += self._format_values(values)
-        text += '\n'
+        text += "\n"
 
         # Project Options
         values = OrderedDict()
@@ -500,22 +476,25 @@ class LogLine(Widget):
         if values:
             text += self.content_profile.fmt("Project Options\n", bold=True)
             text += self._format_values(values)
-            text += '\n'
+            text += "\n"
 
         # Plugins
-        text += self._format_plugins(project.first_pass_config.element_factory.loaded_dependencies,
-                                     project.first_pass_config.source_factory.loaded_dependencies)
+        text += self._format_plugins(
+            project.first_pass_config.element_factory.loaded_dependencies,
+            project.first_pass_config.source_factory.loaded_dependencies,
+        )
         if project.config.element_factory and project.config.source_factory:
-            text += self._format_plugins(project.config.element_factory.loaded_dependencies,
-                                         project.config.source_factory.loaded_dependencies)
+            text += self._format_plugins(
+                project.config.element_factory.loaded_dependencies, project.config.source_factory.loaded_dependencies
+            )
 
         # Pipeline state
         text += self.content_profile.fmt("Pipeline\n", bold=True)
         text += self.show_pipeline(stream.total_elements, context.log_element_format)
-        text += '\n'
+        text += "\n"
 
         # Separator line before following output
-        text += self.format_profile.fmt("=" * 79 + '\n')
+        text += self.format_profile.fmt("=" * 79 + "\n")
 
         click.echo(text, nl=False, err=True)
         if log_file:
@@ -537,7 +516,7 @@ class LogLine(Widget):
         if not self._state.task_groups:
             return
 
-        text = ''
+        text = ""
 
         assert self._resolved_keys is not None
         elements = sorted(e for (e, k) in self._resolved_keys.items() if k != e._get_cache_key())
@@ -554,7 +533,7 @@ class LogLine(Widget):
                     # Exclude the failure messages if the job didn't ultimately fail
                     # (e.g. succeeded on retry)
                     if element_name in group.failed_tasks:
-                        values[element_name] = ''.join(self._render(v) for v in messages)
+                        values[element_name] = "".join(self._render(v) for v in messages)
 
             if values:
                 text += self.content_profile.fmt("Failure Summary\n", bold=True)
@@ -563,8 +542,8 @@ class LogLine(Widget):
         text += self.content_profile.fmt("Pipeline Summary\n", bold=True)
         values = OrderedDict()
 
-        values['Total'] = self.content_profile.fmt(str(len(stream.total_elements)))
-        values['Session'] = self.content_profile.fmt(str(len(stream.session_elements)))
+        values["Total"] = self.content_profile.fmt(str(len(stream.total_elements)))
+        values["Session"] = self.content_profile.fmt(str(len(stream.session_elements)))
 
         processed_maxlen = 1
         skipped_maxlen = 1
@@ -579,20 +558,25 @@ class LogLine(Widget):
             skipped = str(group.skipped_tasks)
             failed = str(len(group.failed_tasks))
 
-            processed_align = ' ' * (processed_maxlen - len(processed))
-            skipped_align = ' ' * (skipped_maxlen - len(skipped))
-            failed_align = ' ' * (failed_maxlen - len(failed))
+            processed_align = " " * (processed_maxlen - len(processed))
+            skipped_align = " " * (skipped_maxlen - len(skipped))
+            failed_align = " " * (failed_maxlen - len(failed))
 
-            status_text = self.content_profile.fmt("processed ") + \
-                self._success_profile.fmt(processed) + \
-                self.format_profile.fmt(', ') + processed_align
+            status_text = (
+                self.content_profile.fmt("processed ")
+                + self._success_profile.fmt(processed)
+                + self.format_profile.fmt(", ")
+                + processed_align
+            )
 
-            status_text += self.content_profile.fmt("skipped ") + \
-                self.content_profile.fmt(skipped) + \
-                self.format_profile.fmt(', ') + skipped_align
+            status_text += (
+                self.content_profile.fmt("skipped ")
+                + self.content_profile.fmt(skipped)
+                + self.format_profile.fmt(", ")
+                + skipped_align
+            )
 
-            status_text += self.content_profile.fmt("failed ") + \
-                self._err_profile.fmt(failed) + ' ' + failed_align
+            status_text += self.content_profile.fmt("failed ") + self._err_profile.fmt(failed) + " " + failed_align
             values["{} Queue".format(group.name)] = status_text
 
         text += self._format_values(values, style_value=False)
@@ -627,7 +611,7 @@ class LogLine(Widget):
             m = re.search(r"^%\{([^\}]+)\}", format_string)
             if m is not None:
                 variable = m.group(1)
-                format_string = format_string[m.end(0):]
+                format_string = format_string[m.end(0) :]
                 if variable not in self.logfile_variable_names:
                     raise Exception("'{0}' is not a valid log variable name.".format(variable))
                 logfile_tokens.append(self.logfile_variable_names[variable])
@@ -635,7 +619,7 @@ class LogLine(Widget):
                 m = re.search("^[^%]+", format_string)
                 if m is not None:
                     text = FixedText(self.context, m.group(0), content_profile, format_profile)
-                    format_string = format_string[m.end(0):]
+                    format_string = format_string[m.end(0) :]
                     logfile_tokens.append(text)
                 else:
                     # No idea what to do now
@@ -645,11 +629,11 @@ class LogLine(Widget):
     def _render(self, message):
 
         # Render the column widgets first
-        text = ''
+        text = ""
         for widget in self._columns:
             text += widget.render(message)
 
-        text += '\n'
+        text += "\n"
 
         extra_nl = False
 
@@ -664,51 +648,53 @@ class LogLine(Widget):
 
             n_lines = len(lines)
             abbrev = False
-            if message.message_type not in ERROR_MESSAGES \
-               and not frontend_message and n_lines > self._message_lines:
-                lines = lines[0:self._message_lines]
+            if message.message_type not in ERROR_MESSAGES and not frontend_message and n_lines > self._message_lines:
+                lines = lines[0 : self._message_lines]
                 if self._message_lines > 0:
                     abbrev = True
             else:
-                lines[n_lines - 1] = lines[n_lines - 1].rstrip('\n')
+                lines[n_lines - 1] = lines[n_lines - 1].rstrip("\n")
 
             detail = self._indent + self._indent.join(lines)
 
-            text += '\n'
+            text += "\n"
             if message.message_type in ERROR_MESSAGES:
                 text += self._err_profile.fmt(detail, bold=True)
             else:
                 text += self._detail_profile.fmt(detail)
 
             if abbrev:
-                text += self._indent + \
-                    self.content_profile.fmt('Message contains {} additional lines'
-                                             .format(n_lines - self._message_lines), dim=True)
-            text += '\n'
+                text += self._indent + self.content_profile.fmt(
+                    "Message contains {} additional lines".format(n_lines - self._message_lines), dim=True
+                )
+            text += "\n"
 
             extra_nl = True
 
         if message.scheduler and message.message_type == MessageType.FAIL:
-            text += '\n'
+            text += "\n"
 
             if self.context is not None and not self.context.log_verbose:
                 text += self._indent + self._err_profile.fmt("Log file: ")
-                text += self._indent + self._logfile_widget.render(message) + '\n'
+                text += self._indent + self._logfile_widget.render(message) + "\n"
             elif self._log_lines > 0:
-                text += self._indent + self._err_profile.fmt("Printing the last {} lines from log file:"
-                                                             .format(self._log_lines)) + '\n'
-                text += self._indent + self._logfile_widget.render_abbrev(message, abbrev=False) + '\n'
-                text += self._indent + self._err_profile.fmt("=" * 70) + '\n'
+                text += (
+                    self._indent
+                    + self._err_profile.fmt("Printing the last {} lines from log file:".format(self._log_lines))
+                    + "\n"
+                )
+                text += self._indent + self._logfile_widget.render_abbrev(message, abbrev=False) + "\n"
+                text += self._indent + self._err_profile.fmt("=" * 70) + "\n"
 
                 log_content = self._read_last_lines(message.logfile)
                 log_content = textwrap.indent(log_content, self._indent)
                 text += self._detail_profile.fmt(log_content)
-                text += '\n'
-                text += self._indent + self._err_profile.fmt("=" * 70) + '\n'
+                text += "\n"
+                text += self._indent + self._err_profile.fmt("=" * 70) + "\n"
             extra_nl = True
 
         if extra_nl:
-            text += '\n'
+            text += "\n"
 
         return text
 
@@ -716,14 +702,14 @@ class LogLine(Widget):
         with ExitStack() as stack:
             # mmap handles low-level memory details, allowing for
             # faster searches
-            f = stack.enter_context(open(logfile, 'r+'))
+            f = stack.enter_context(open(logfile, "r+"))
             log = stack.enter_context(mmap(f.fileno(), os.path.getsize(f.name)))
 
             count = 0
             end = log.size() - 1
 
             while count < self._log_lines and end >= 0:
-                location = log.rfind(b'\n', 0, end)
+                location = log.rfind(b"\n", 0, end)
                 count += 1
 
                 # If location is -1 (none found), this will print the
@@ -735,8 +721,8 @@ class LogLine(Widget):
             # then we get the first characther. If end is a newline position,
             # we discard it and only want to print the beginning of the next
             # line.
-            lines = log[(end + 1):].splitlines()
-            return '\n'.join([line.decode('utf-8') for line in lines]).rstrip()
+            lines = log[(end + 1) :].splitlines()
+            return "\n".join([line.decode("utf-8") for line in lines]).rstrip()
 
     def _format_plugins(self, element_plugins, source_plugins):
         text = ""
@@ -756,7 +742,7 @@ class LogLine(Widget):
             for plugin in source_plugins:
                 text += self.content_profile.fmt("    - {}\n".format(plugin))
 
-        text += '\n'
+        text += "\n"
 
         return text
 
@@ -773,23 +759,23 @@ class LogLine(Widget):
     #    (str): The formatted values
     #
     def _format_values(self, values, style_value=True):
-        text = ''
+        text = ""
         max_key_len = 0
         for key, value in values.items():
             max_key_len = max(len(key), max_key_len)
 
         for key, value in values.items():
-            if isinstance(value, str) and '\n' in value:
+            if isinstance(value, str) and "\n" in value:
                 text += self.format_profile.fmt("  {}:\n".format(key))
                 text += textwrap.indent(value, self._indent)
                 continue
 
-            text += self.format_profile.fmt("  {}: {}".format(key, ' ' * (max_key_len - len(key))))
+            text += self.format_profile.fmt("  {}: {}".format(key, " " * (max_key_len - len(key))))
             if style_value:
                 text += self.content_profile.fmt(str(value))
             else:
                 text += str(value)
-            text += '\n'
+            text += "\n"
 
         return text
 
@@ -806,20 +792,20 @@ class LogLine(Widget):
     #    (str): The formatted values
     #
     def _pretty_print_dictionary(self, values, long_=False, style_value=True):
-        text = ''
+        text = ""
         max_key_len = 0
         try:
             max_key_len = max(len(key) for key in values.keys())
         except ValueError:
-            text = ''
+            text = ""
 
         for key, value in values.items():
-            if isinstance(value, str) and '\n' in value:
+            if isinstance(value, str) and "\n" in value:
                 text += self.format_profile.fmt("  {}:".format(key))
                 text += textwrap.indent(value, self._indent)
                 continue
 
-            text += self.format_profile.fmt("  {}:{}".format(key, ' ' * (max_key_len - len(key))))
+            text += self.format_profile.fmt("  {}:{}".format(key, " " * (max_key_len - len(key))))
 
             value_list = "\n\t" + "\n\t".join((self._get_filestats(v, list_long=long_) for v in value))
             if value == []:
@@ -832,7 +818,7 @@ class LogLine(Widget):
                 text += self.content_profile.fmt(value_list)
             else:
                 text += value_list
-            text += '\n'
+            text += "\n"
 
         return text
 
@@ -854,22 +840,22 @@ class LogLine(Widget):
     #                              cached status of
     #
     def show_state_of_artifacts(self, targets):
-        report = ''
+        report = ""
         p = Profile()
         for element in targets:
-            line = '%{state: >12} %{name}'
-            line = p.fmt_subst(line, 'name', element.name, fg='yellow')
+            line = "%{state: >12} %{name}"
+            line = p.fmt_subst(line, "name", element.name, fg="yellow")
 
             if element._cached_success():
-                line = p.fmt_subst(line, 'state', "cached", fg='magenta')
+                line = p.fmt_subst(line, "state", "cached", fg="magenta")
             elif element._cached():
-                line = p.fmt_subst(line, 'state', "failed", fg='red')
+                line = p.fmt_subst(line, "state", "failed", fg="red")
             elif element._cached_remotely():
-                line = p.fmt_subst(line, 'state', "available", fg='green')
+                line = p.fmt_subst(line, "state", "available", fg="green")
             else:
-                line = p.fmt_subst(line, 'state', "not cached", fg='bright_red')
+                line = p.fmt_subst(line, "state", "not cached", fg="bright_red")
 
-            report += line + '\n'
+            report += line + "\n"
 
         return report
 
@@ -890,15 +876,27 @@ class LogLine(Widget):
             # Support files up to 99G, meaning maximum characters is 11
             max_v_len = 11
             if entry["type"] == _FileType.DIRECTORY:
-                return "drwxr-xr-x  dir    {}".format(entry["size"]) +\
-                       "{} ".format(' ' * (max_v_len - len(size))) + "{}".format(entry["name"])
+                return (
+                    "drwxr-xr-x  dir    {}".format(entry["size"])
+                    + "{} ".format(" " * (max_v_len - len(size)))
+                    + "{}".format(entry["name"])
+                )
             elif entry["type"] == _FileType.SYMLINK:
-                return "lrwxrwxrwx  link   {}".format(entry["size"]) +\
-                       "{} ".format(' ' * (max_v_len - len(size))) + "{} -> {}".format(entry["name"], entry["target"])
+                return (
+                    "lrwxrwxrwx  link   {}".format(entry["size"])
+                    + "{} ".format(" " * (max_v_len - len(size)))
+                    + "{} -> {}".format(entry["name"], entry["target"])
+                )
             elif entry["executable"]:
-                return "-rwxr-xr-x  exe    {}".format(entry["size"]) +\
-                       "{} ".format(' ' * (max_v_len - len(size))) + "{}".format(entry["name"])
+                return (
+                    "-rwxr-xr-x  exe    {}".format(entry["size"])
+                    + "{} ".format(" " * (max_v_len - len(size)))
+                    + "{}".format(entry["name"])
+                )
             else:
-                return "-rw-r--r--  reg    {}".format(entry["size"]) +\
-                       "{} ".format(' ' * (max_v_len - len(size))) + "{}".format(entry["name"])
+                return (
+                    "-rw-r--r--  reg    {}".format(entry["size"])
+                    + "{} ".format(" " * (max_v_len - len(size)))
+                    + "{}".format(entry["name"])
+                )
         return entry["name"]

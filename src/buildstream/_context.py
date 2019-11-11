@@ -46,13 +46,12 @@ from .sandbox import SandboxRemote
 # verbosity levels and basically anything pertaining to the context
 # in which BuildStream was invoked.
 #
-class Context():
-
+class Context:
     def __init__(self, *, use_casd=True):
 
         # Whether we are running as part of a test suite. This is only relevant
         # for developing BuildStream itself.
-        self.is_running_in_test_suite = 'BST_TEST_SUITE' in os.environ
+        self.is_running_in_test_suite = "BST_TEST_SUITE" in os.environ
 
         # Filename indicating which configuration file was used, or None for the defaults
         self.config_origin = None
@@ -216,8 +215,7 @@ class Context():
         # a $XDG_CONFIG_HOME/buildstream.conf file
         #
         if not config:
-            default_config = os.path.join(os.environ['XDG_CONFIG_HOME'],
-                                          'buildstream.conf')
+            default_config = os.path.join(os.environ["XDG_CONFIG_HOME"], "buildstream.conf")
             if os.path.exists(default_config):
                 config = default_config
 
@@ -231,19 +229,32 @@ class Context():
             user_config._composite(defaults)
 
         # Give obsoletion warnings
-        if 'builddir' in defaults:
+        if "builddir" in defaults:
             raise LoadError("builddir is obsolete, use cachedir", LoadErrorReason.INVALID_DATA)
 
-        if 'artifactdir' in defaults:
+        if "artifactdir" in defaults:
             raise LoadError("artifactdir is obsolete", LoadErrorReason.INVALID_DATA)
 
-        defaults.validate_keys([
-            'cachedir', 'sourcedir', 'builddir', 'logdir', 'scheduler', 'build',
-            'artifacts', 'source-caches', 'logging', 'projects', 'cache', 'prompt',
-            'workspacedir', 'remote-execution',
-        ])
+        defaults.validate_keys(
+            [
+                "cachedir",
+                "sourcedir",
+                "builddir",
+                "logdir",
+                "scheduler",
+                "build",
+                "artifacts",
+                "source-caches",
+                "logging",
+                "projects",
+                "cache",
+                "prompt",
+                "workspacedir",
+                "remote-execution",
+            ]
+        )
 
-        for directory in ['cachedir', 'sourcedir', 'logdir', 'workspacedir']:
+        for directory in ["cachedir", "sourcedir", "logdir", "workspacedir"]:
             # Allow the ~ tilde expansion and any environment variables in
             # path specification in the config files.
             #
@@ -256,25 +267,23 @@ class Context():
             # Relative paths don't make sense in user configuration. The exception is
             # workspacedir where `.` is useful as it will be combined with the name
             # specified on the command line.
-            if not os.path.isabs(path) and not (directory == 'workspacedir' and path == '.'):
+            if not os.path.isabs(path) and not (directory == "workspacedir" and path == "."):
                 raise LoadError("{} must be an absolute path".format(directory), LoadErrorReason.INVALID_DATA)
 
         # add directories not set by users
-        self.tmpdir = os.path.join(self.cachedir, 'tmp')
-        self.casdir = os.path.join(self.cachedir, 'cas')
-        self.builddir = os.path.join(self.cachedir, 'build')
-        self.artifactdir = os.path.join(self.cachedir, 'artifacts', 'refs')
+        self.tmpdir = os.path.join(self.cachedir, "tmp")
+        self.casdir = os.path.join(self.cachedir, "cas")
+        self.builddir = os.path.join(self.cachedir, "build")
+        self.artifactdir = os.path.join(self.cachedir, "artifacts", "refs")
 
         # Move old artifact cas to cas if it exists and create symlink
-        old_casdir = os.path.join(self.cachedir, 'artifacts', 'cas')
-        if (os.path.exists(old_casdir) and not os.path.islink(old_casdir) and
-                not os.path.exists(self.casdir)):
+        old_casdir = os.path.join(self.cachedir, "artifacts", "cas")
+        if os.path.exists(old_casdir) and not os.path.islink(old_casdir) and not os.path.exists(self.casdir):
             os.rename(old_casdir, self.casdir)
             os.symlink(self.casdir, old_casdir)
 
         # Cleanup old extract directories
-        old_extractdirs = [os.path.join(self.cachedir, 'artifacts', 'extract'),
-                           os.path.join(self.cachedir, 'extract')]
+        old_extractdirs = [os.path.join(self.cachedir, "artifacts", "extract"), os.path.join(self.cachedir, "extract")]
         for old_extractdir in old_extractdirs:
             if os.path.isdir(old_extractdir):
                 shutil.rmtree(old_extractdir, ignore_errors=True)
@@ -282,21 +291,22 @@ class Context():
         # Load quota configuration
         # We need to find the first existing directory in the path of our
         # casdir - the casdir may not have been created yet.
-        cache = defaults.get_mapping('cache')
-        cache.validate_keys(['quota', 'pull-buildtrees', 'cache-buildtrees'])
+        cache = defaults.get_mapping("cache")
+        cache.validate_keys(["quota", "pull-buildtrees", "cache-buildtrees"])
 
         cas_volume = self.casdir
         while not os.path.exists(cas_volume):
             cas_volume = os.path.dirname(cas_volume)
 
-        self.config_cache_quota_string = cache.get_str('quota')
+        self.config_cache_quota_string = cache.get_str("quota")
         try:
-            self.config_cache_quota = utils._parse_size(self.config_cache_quota_string,
-                                                        cas_volume)
+            self.config_cache_quota = utils._parse_size(self.config_cache_quota_string, cas_volume)
         except utils.UtilError as e:
-            raise LoadError("{}\nPlease specify the value in bytes or as a % of full disk space.\n"
-                            "\nValid values are, for example: 800M 10G 1T 50%\n"
-                            .format(str(e)), LoadErrorReason.INVALID_DATA) from e
+            raise LoadError(
+                "{}\nPlease specify the value in bytes or as a % of full disk space.\n"
+                "\nValid values are, for example: 800M 10G 1T 50%\n".format(str(e)),
+                LoadErrorReason.INVALID_DATA,
+            ) from e
 
         # Load artifact share configuration
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(defaults)
@@ -305,73 +315,70 @@ class Context():
         self.source_cache_specs = SourceCache.specs_from_config_node(defaults)
 
         # Load remote execution config getting pull-artifact-files from it
-        remote_execution = defaults.get_mapping('remote-execution', default=None)
+        remote_execution = defaults.get_mapping("remote-execution", default=None)
         if remote_execution:
-            self.pull_artifact_files = remote_execution.get_bool('pull-artifact-files', default=True)
+            self.pull_artifact_files = remote_execution.get_bool("pull-artifact-files", default=True)
             # This stops it being used in the remote service set up
-            remote_execution.safe_del('pull-artifact-files')
+            remote_execution.safe_del("pull-artifact-files")
             # Don't pass the remote execution settings if that was the only option
             if remote_execution.keys() == []:
-                del defaults['remote-execution']
+                del defaults["remote-execution"]
         else:
             self.pull_artifact_files = True
 
         self.remote_execution_specs = SandboxRemote.specs_from_config_node(defaults)
 
         # Load pull build trees configuration
-        self.pull_buildtrees = cache.get_bool('pull-buildtrees')
+        self.pull_buildtrees = cache.get_bool("pull-buildtrees")
 
         # Load cache build trees configuration
-        self.cache_buildtrees = cache.get_enum('cache-buildtrees', _CacheBuildTrees)
+        self.cache_buildtrees = cache.get_enum("cache-buildtrees", _CacheBuildTrees)
 
         # Load logging config
-        logging = defaults.get_mapping('logging')
-        logging.validate_keys([
-            'key-length', 'verbose',
-            'error-lines', 'message-lines',
-            'debug', 'element-format', 'message-format'
-        ])
-        self.log_key_length = logging.get_int('key-length')
-        self.log_debug = logging.get_bool('debug')
-        self.log_verbose = logging.get_bool('verbose')
-        self.log_error_lines = logging.get_int('error-lines')
-        self.log_message_lines = logging.get_int('message-lines')
-        self.log_element_format = logging.get_str('element-format')
-        self.log_message_format = logging.get_str('message-format')
+        logging = defaults.get_mapping("logging")
+        logging.validate_keys(
+            ["key-length", "verbose", "error-lines", "message-lines", "debug", "element-format", "message-format"]
+        )
+        self.log_key_length = logging.get_int("key-length")
+        self.log_debug = logging.get_bool("debug")
+        self.log_verbose = logging.get_bool("verbose")
+        self.log_error_lines = logging.get_int("error-lines")
+        self.log_message_lines = logging.get_int("message-lines")
+        self.log_element_format = logging.get_str("element-format")
+        self.log_message_format = logging.get_str("message-format")
 
         # Load scheduler config
-        scheduler = defaults.get_mapping('scheduler')
-        scheduler.validate_keys([
-            'on-error', 'fetchers', 'builders',
-            'pushers', 'network-retries'
-        ])
-        self.sched_error_action = scheduler.get_enum('on-error', _SchedulerErrorAction)
-        self.sched_fetchers = scheduler.get_int('fetchers')
-        self.sched_builders = scheduler.get_int('builders')
-        self.sched_pushers = scheduler.get_int('pushers')
-        self.sched_network_retries = scheduler.get_int('network-retries')
+        scheduler = defaults.get_mapping("scheduler")
+        scheduler.validate_keys(["on-error", "fetchers", "builders", "pushers", "network-retries"])
+        self.sched_error_action = scheduler.get_enum("on-error", _SchedulerErrorAction)
+        self.sched_fetchers = scheduler.get_int("fetchers")
+        self.sched_builders = scheduler.get_int("builders")
+        self.sched_pushers = scheduler.get_int("pushers")
+        self.sched_network_retries = scheduler.get_int("network-retries")
 
         # Load build config
-        build = defaults.get_mapping('build')
-        build.validate_keys(['max-jobs', 'dependencies'])
-        self.build_max_jobs = build.get_int('max-jobs')
+        build = defaults.get_mapping("build")
+        build.validate_keys(["max-jobs", "dependencies"])
+        self.build_max_jobs = build.get_int("max-jobs")
 
-        self.build_dependencies = build.get_str('dependencies')
-        if self.build_dependencies not in ['plan', 'all']:
-            provenance = build.get_scalar('dependencies').get_provenance()
-            raise LoadError("{}: Invalid value for 'dependencies'. Choose 'plan' or 'all'."
-                            .format(provenance), LoadErrorReason.INVALID_DATA)
+        self.build_dependencies = build.get_str("dependencies")
+        if self.build_dependencies not in ["plan", "all"]:
+            provenance = build.get_scalar("dependencies").get_provenance()
+            raise LoadError(
+                "{}: Invalid value for 'dependencies'. Choose 'plan' or 'all'.".format(provenance),
+                LoadErrorReason.INVALID_DATA,
+            )
 
         # Load per-projects overrides
-        self._project_overrides = defaults.get_mapping('projects', default={})
+        self._project_overrides = defaults.get_mapping("projects", default={})
 
         # Shallow validation of overrides, parts of buildstream which rely
         # on the overrides are expected to validate elsewhere.
         for overrides_project in self._project_overrides.keys():
             overrides = self._project_overrides.get_mapping(overrides_project)
-            overrides.validate_keys(['artifacts', 'source-caches', 'options',
-                                     'strict', 'default-mirror',
-                                     'remote-execution'])
+            overrides.validate_keys(
+                ["artifacts", "source-caches", "options", "strict", "default-mirror", "remote-execution"]
+            )
 
     @property
     def platform(self):
@@ -474,7 +481,7 @@ class Context():
             # so work out if we should be strict, and then cache the result
             toplevel = self.get_toplevel_project()
             overrides = self.get_overrides(toplevel.name)
-            self._strict_build_plan = overrides.get_bool('strict', default=True)
+            self._strict_build_plan = overrides.get_bool("strict", default=True)
 
         # If it was set by the CLI, it overrides any config
         # Ditto if we've already computed this, then we return the computed
@@ -505,12 +512,12 @@ class Context():
     # preferred locations of things from user configuration
     # files.
     def _init_xdg(self):
-        if not os.environ.get('XDG_CACHE_HOME'):
-            os.environ['XDG_CACHE_HOME'] = os.path.expanduser('~/.cache')
-        if not os.environ.get('XDG_CONFIG_HOME'):
-            os.environ['XDG_CONFIG_HOME'] = os.path.expanduser('~/.config')
-        if not os.environ.get('XDG_DATA_HOME'):
-            os.environ['XDG_DATA_HOME'] = os.path.expanduser('~/.local/share')
+        if not os.environ.get("XDG_CACHE_HOME"):
+            os.environ["XDG_CACHE_HOME"] = os.path.expanduser("~/.cache")
+        if not os.environ.get("XDG_CONFIG_HOME"):
+            os.environ["XDG_CONFIG_HOME"] = os.path.expanduser("~/.config")
+        if not os.environ.get("XDG_DATA_HOME"):
+            os.environ["XDG_DATA_HOME"] = os.path.expanduser("~/.local/share")
 
     def get_cascache(self):
         if self._cascache is None:
@@ -521,10 +528,9 @@ class Context():
             else:
                 log_level = CASLogLevel.WARNING
 
-            self._cascache = CASCache(self.cachedir,
-                                      casd=self.use_casd,
-                                      cache_quota=self.config_cache_quota,
-                                      log_level=log_level)
+            self._cascache = CASCache(
+                self.cachedir, casd=self.use_casd, cache_quota=self.config_cache_quota, log_level=log_level
+            )
         return self._cascache
 
     # prepare_fork():

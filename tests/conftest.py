@@ -45,28 +45,26 @@ from tests.testutils.repo.zip import Zip
 #            Implement pytest option            #
 #################################################
 def pytest_addoption(parser):
-    parser.addoption('--integration', action='store_true', default=False,
-                     help='Run integration tests')
+    parser.addoption("--integration", action="store_true", default=False, help="Run integration tests")
 
-    parser.addoption('--remote-execution', action='store_true', default=False,
-                     help='Run remote-execution tests only')
+    parser.addoption("--remote-execution", action="store_true", default=False, help="Run remote-execution tests only")
 
 
 def pytest_runtest_setup(item):
     # Without --integration: skip tests not marked with 'integration'
-    if not item.config.getvalue('integration'):
-        if item.get_closest_marker('integration'):
-            pytest.skip('skipping integration test')
+    if not item.config.getvalue("integration"):
+        if item.get_closest_marker("integration"):
+            pytest.skip("skipping integration test")
 
     # With --remote-execution: only run tests marked with 'remoteexecution'
-    if item.config.getvalue('remote_execution'):
-        if not item.get_closest_marker('remoteexecution'):
-            pytest.skip('skipping non remote-execution test')
+    if item.config.getvalue("remote_execution"):
+        if not item.get_closest_marker("remoteexecution"):
+            pytest.skip("skipping non remote-execution test")
 
     # Without --remote-execution: skip tests marked with 'remoteexecution'
     else:
-        if item.get_closest_marker('remoteexecution'):
-            pytest.skip('skipping remote-execution test')
+        if item.get_closest_marker("remoteexecution"):
+            pytest.skip("skipping remote-execution test")
 
 
 #################################################
@@ -75,30 +73,29 @@ def pytest_runtest_setup(item):
 #
 # This is returned by the `remote_services` fixture
 #
-class RemoteServices():
-
+class RemoteServices:
     def __init__(self, **kwargs):
-        self.action_service = kwargs.get('action_service')
-        self.artifact_service = kwargs.get('artifact_service')
-        self.exec_service = kwargs.get('exec_service')
-        self.source_service = kwargs.get('source_service')
-        self.storage_service = kwargs.get('storage_service')
+        self.action_service = kwargs.get("action_service")
+        self.artifact_service = kwargs.get("artifact_service")
+        self.exec_service = kwargs.get("exec_service")
+        self.source_service = kwargs.get("source_service")
+        self.storage_service = kwargs.get("storage_service")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def remote_services(request):
     kwargs = {}
     # Look for remote services configuration in environment.
-    if 'ARTIFACT_CACHE_SERVICE' in os.environ:
-        kwargs['artifact_service'] = os.environ.get('ARTIFACT_CACHE_SERVICE')
+    if "ARTIFACT_CACHE_SERVICE" in os.environ:
+        kwargs["artifact_service"] = os.environ.get("ARTIFACT_CACHE_SERVICE")
 
-    if 'REMOTE_EXECUTION_SERVICE' in os.environ:
-        kwargs['action_service'] = os.environ.get('REMOTE_EXECUTION_SERVICE')
-        kwargs['exec_service'] = os.environ.get('REMOTE_EXECUTION_SERVICE')
-        kwargs['storage_service'] = os.environ.get('REMOTE_EXECUTION_SERVICE')
+    if "REMOTE_EXECUTION_SERVICE" in os.environ:
+        kwargs["action_service"] = os.environ.get("REMOTE_EXECUTION_SERVICE")
+        kwargs["exec_service"] = os.environ.get("REMOTE_EXECUTION_SERVICE")
+        kwargs["storage_service"] = os.environ.get("REMOTE_EXECUTION_SERVICE")
 
-    if 'SOURCE_CACHE_SERVICE' in os.environ:
-        kwargs['source_service'] = os.environ.get('SOURCE_CACHE_SERVICE')
+    if "SOURCE_CACHE_SERVICE" in os.environ:
+        kwargs["source_service"] = os.environ.get("SOURCE_CACHE_SERVICE")
 
     return RemoteServices(**kwargs)
 
@@ -106,10 +103,10 @@ def remote_services(request):
 #################################################
 # Setup for templated source tests              #
 #################################################
-register_repo_kind('git', Git, None)
-register_repo_kind('bzr', Bzr, None)
-register_repo_kind('tar', Tar, None)
-register_repo_kind('zip', Zip, None)
+register_repo_kind("git", Git, None)
+register_repo_kind("bzr", Bzr, None)
+register_repo_kind("tar", Tar, None)
+register_repo_kind("zip", Zip, None)
 
 
 # This hook enables pytest to collect the templated source tests from
@@ -124,10 +121,10 @@ def pytest_sessionstart(session):
 @pytest.fixture(scope="session", autouse=True)
 def set_xdg_paths(pytestconfig):
     for env_var, default in [
-            ("HOME", "tmp"),
-            ("XDG_CACHE_HOME", "tmp/cache"),
-            ("XDG_CONFIG_HOME", "tmp/config"),
-            ("XDG_DATA_HOME", "tmp/share"),
+        ("HOME", "tmp"),
+        ("XDG_CACHE_HOME", "tmp/cache"),
+        ("XDG_CONFIG_HOME", "tmp/config"),
+        ("XDG_DATA_HOME", "tmp/share"),
     ]:
         value = os.environ.get("BST_TEST_{}".format(env_var))
         if value is None:
@@ -141,10 +138,9 @@ def pytest_configure(config):
     # possible. Note that some tests implicitly set the start method by using
     # multiprocessing. If we wait for bst to do it, it will already be too
     # late.
-    if 'BST_FORCE_START_METHOD' in os.environ:
-        start_method = os.environ['BST_FORCE_START_METHOD']
+    if "BST_FORCE_START_METHOD" in os.environ:
+        start_method = os.environ["BST_FORCE_START_METHOD"]
         multiprocessing.set_start_method(start_method)
         print(
-            "Multiprocessing method set to:",
-            start_method,
+            "Multiprocessing method set to:", start_method,
         )

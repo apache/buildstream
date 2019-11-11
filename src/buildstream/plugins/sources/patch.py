@@ -56,8 +56,7 @@ class PatchSource(Source):
 
     def configure(self, node):
         node.validate_keys(["path", "strip-level", *Source.COMMON_CONFIG_KEYS])
-        self.path = self.node_get_project_path(node.get_scalar('path'),
-                                               check_is_file=True)
+        self.path = self.node_get_project_path(node.get_scalar("path"), check_is_file=True)
         self.strip_level = node.get_int("strip-level", default=1)
         self.fullpath = os.path.join(self.get_project_directory(), self.path)
 
@@ -89,12 +88,13 @@ class PatchSource(Source):
 
             # Bail out with a comprehensive message if the target directory is empty
             if not os.listdir(directory):
-                raise SourceError("Nothing to patch in directory '{}'".format(directory),
-                                  reason="patch-no-files")
+                raise SourceError("Nothing to patch in directory '{}'".format(directory), reason="patch-no-files")
 
             strip_level_option = "-p{}".format(self.strip_level)
-            self.call([self.host_patch, strip_level_option, "-i", self.fullpath, "-d", directory],
-                      fail="Failed to apply patch {}".format(self.path))
+            self.call(
+                [self.host_patch, strip_level_option, "-i", self.fullpath, "-d", directory],
+                fail="Failed to apply patch {}".format(self.path),
+            )
 
 
 # Plugin entry point

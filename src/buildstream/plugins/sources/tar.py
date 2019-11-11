@@ -73,6 +73,7 @@ class ReadableTarInfo(tarfile.TarInfo):
            `mode` attribute in `TarInfo`, the class that encapsulates the internal meta-data of the tarball,
            so that the owner-read bit is always set.
     """
+
     @property
     def mode(self):
         # ensure file is readable by owner
@@ -89,13 +90,13 @@ class TarSource(DownloadableFileSource):
     def configure(self, node):
         super().configure(node)
 
-        self.base_dir = node.get_str('base-dir', '*')
-        node.validate_keys(DownloadableFileSource.COMMON_CONFIG_KEYS + ['base-dir'])
+        self.base_dir = node.get_str("base-dir", "*")
+        node.validate_keys(DownloadableFileSource.COMMON_CONFIG_KEYS + ["base-dir"])
 
     def preflight(self):
         self.host_lzip = None
-        if self.url.endswith('.lz'):
-            self.host_lzip = utils.get_host_tool('lzip')
+        if self.url.endswith(".lz"):
+            self.host_lzip = utils.get_host_tool("lzip")
 
     def get_unique_key(self):
         return super().get_unique_key() + [self.base_dir]
@@ -104,19 +105,17 @@ class TarSource(DownloadableFileSource):
     def _run_lzip(self):
         assert self.host_lzip
         with TemporaryFile() as lzip_stdout:
-            with open(self._get_mirror_file(), 'r') as lzip_file:
-                self.call([self.host_lzip, '-d'],
-                          stdin=lzip_file,
-                          stdout=lzip_stdout)
+            with open(self._get_mirror_file(), "r") as lzip_file:
+                self.call([self.host_lzip, "-d"], stdin=lzip_file, stdout=lzip_stdout)
 
             lzip_stdout.seek(0, 0)
             yield lzip_stdout
 
     @contextmanager
     def _get_tar(self):
-        if self.url.endswith('.lz'):
+        if self.url.endswith(".lz"):
             with self._run_lzip() as lzip_dec:
-                with tarfile.open(fileobj=lzip_dec, mode='r:', tarinfo=ReadableTarInfo) as tar:
+                with tarfile.open(fileobj=lzip_dec, mode="r:", tarinfo=ReadableTarInfo) as tar:
                     yield tar
         else:
             with tarfile.open(self._get_mirror_file(), tarinfo=ReadableTarInfo) as tar:
@@ -147,14 +146,18 @@ class TarSource(DownloadableFileSource):
         def assert_safe(member):
             final_path = os.path.abspath(os.path.join(target_dir, member.path))
             if not final_path.startswith(target_dir):
-                raise SourceError("{}: Tarfile attempts to extract outside the staging area: "
-                                  "{} -> {}".format(self, member.path, final_path))
+                raise SourceError(
+                    "{}: Tarfile attempts to extract outside the staging area: "
+                    "{} -> {}".format(self, member.path, final_path)
+                )
 
             if member.islnk():
                 linked_path = os.path.abspath(os.path.join(target_dir, member.linkname))
                 if not linked_path.startswith(target_dir):
-                    raise SourceError("{}: Tarfile attempts to hardlink outside the staging area: "
-                                      "{} -> {}".format(self, member.path, final_path))
+                    raise SourceError(
+                        "{}: Tarfile attempts to hardlink outside the staging area: "
+                        "{} -> {}".format(self, member.path, final_path)
+                    )
 
             # Don't need to worry about symlinks because they're just
             # files here and won't be able to do much harm once we are
@@ -167,9 +170,9 @@ class TarSource(DownloadableFileSource):
         for member in tar.getmembers():
 
             # First, ensure that a member never starts with `./`
-            if member.path.startswith('./'):
+            if member.path.startswith("./"):
                 member.path = member.path[2:]
-            if member.islnk() and member.linkname.startswith('./'):
+            if member.islnk() and member.linkname.startswith("./"):
                 member.linkname = member.linkname[2:]
 
             # Now extract only the paths which match the normalized path
@@ -202,16 +205,16 @@ class TarSource(DownloadableFileSource):
 
             # Remove any possible leading './', offer more consistent behavior
             # across tarballs encoded with or without a leading '.'
-            member_name = member.name.lstrip('./')
+            member_name = member.name.lstrip("./")
 
             if not member.isdir():
 
                 # Loop over the components of a path, for a path of a/b/c/d
                 # we will first visit 'a', then 'a/b' and then 'a/b/c', excluding
                 # the final component
-                components = member_name.split('/')
+                components = member_name.split("/")
                 for i in range(len(components) - 1):
-                    dir_component = '/'.join([components[j] for j in range(i + 1)])
+                    dir_component = "/".join([components[j] for j in range(i + 1)])
                     if dir_component not in visited:
                         visited.add(dir_component)
                         try:
@@ -219,7 +222,7 @@ class TarSource(DownloadableFileSource):
                             # exist in the archive
                             _ = tar.getmember(dir_component)
                         except KeyError:
-                            if dir_component != '.':
+                            if dir_component != ".":
                                 yield dir_component
 
                 continue
@@ -227,7 +230,7 @@ class TarSource(DownloadableFileSource):
             # Avoid considering the '.' directory, if any is included in the archive
             # this is to avoid the default 'base-dir: *' value behaving differently
             # depending on whether the tarball was encoded with a leading '.' or not
-            elif member_name == '.':
+            elif member_name == ".":
                 continue
 
             yield member_name

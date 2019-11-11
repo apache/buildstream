@@ -61,14 +61,8 @@ from buildstream._protos.buildstream.v2 import artifact_pb2
 
 
 # Wrapper for the click.testing result
-class Result():
-
-    def __init__(self,
-                 exit_code=None,
-                 exception=None,
-                 exc_info=None,
-                 output=None,
-                 stderr=None):
+class Result:
+    def __init__(self, exit_code=None, exception=None, exc_info=None, output=None, stderr=None):
         self.exit_code = exit_code
         self.exc = exception
         self.exc_info = exc_info
@@ -94,8 +88,7 @@ class Result():
                 self.unhandled_exception = True
 
             self.exception = get_last_exception()
-            self.task_error_domain, \
-                self.task_error_reason = get_last_task_error()
+            self.task_error_domain, self.task_error_reason = get_last_task_error()
         else:
             self.exception = None
             self.task_error_domain = None
@@ -111,7 +104,7 @@ class Result():
     # Raises:
     #    (AssertionError): If the session did not complete successfully
     #
-    def assert_success(self, fail_message=''):
+    def assert_success(self, fail_message=""):
         assert self.exit_code == 0, fail_message
         assert self.exc is None, fail_message
         assert self.exception is None, fail_message
@@ -131,11 +124,7 @@ class Result():
     # Raises:
     #    (AssertionError): If any of the assertions fail
     #
-    def assert_main_error(self,
-                          error_domain,
-                          error_reason,
-                          fail_message='',
-                          *, debug=False):
+    def assert_main_error(self, error_domain, error_reason, fail_message="", *, debug=False):
         if debug:
             print(
                 """
@@ -144,11 +133,9 @@ class Result():
                 Domain:    {}
                 Reason:    {}
                 """.format(
-                    self.exit_code,
-                    self.exception,
-                    self.exception.domain,
-                    self.exception.reason
-                ))
+                    self.exit_code, self.exception, self.exception.domain, self.exception.reason
+                )
+            )
         assert self.exit_code == -1, fail_message
         assert self.exc is not None, fail_message
         assert self.exception is not None, fail_message
@@ -172,10 +159,7 @@ class Result():
     # Raises:
     #    (AssertionError): If any of the assertions fail
     #
-    def assert_task_error(self,
-                          error_domain,
-                          error_reason,
-                          fail_message=''):
+    def assert_task_error(self, error_domain, error_reason, fail_message=""):
 
         assert self.exit_code == -1, fail_message
         assert self.exc is not None, fail_message
@@ -197,7 +181,7 @@ class Result():
     # Raises:
     #    (AssertionError): If any of the assertions fail
     #
-    def assert_shell_error(self, fail_message=''):
+    def assert_shell_error(self, fail_message=""):
         assert self.exit_code == 1, fail_message
 
     # get_start_order()
@@ -212,7 +196,7 @@ class Result():
     #    (list): A list of element names in the order which they first appeared in the result
     #
     def get_start_order(self, activity):
-        results = re.findall(r'\[\s*{}:(\S+)\s*\]\s*START\s*.*\.log'.format(activity), self.stderr)
+        results = re.findall(r"\[\s*{}:(\S+)\s*\]\s*START\s*.*\.log".format(activity), self.stderr)
         if results is None:
             return []
         return list(results)
@@ -228,29 +212,28 @@ class Result():
     #    (list): A list of element names
     #
     def get_tracked_elements(self):
-        tracked = re.findall(r'\[\s*track:(\S+)\s*]', self.stderr)
+        tracked = re.findall(r"\[\s*track:(\S+)\s*]", self.stderr)
         if tracked is None:
             return []
 
         return list(tracked)
 
     def get_pushed_elements(self):
-        pushed = re.findall(r'\[\s*push:(\S+)\s*\]\s*INFO\s*Pushed artifact', self.stderr)
+        pushed = re.findall(r"\[\s*push:(\S+)\s*\]\s*INFO\s*Pushed artifact", self.stderr)
         if pushed is None:
             return []
 
         return list(pushed)
 
     def get_pulled_elements(self):
-        pulled = re.findall(r'\[\s*pull:(\S+)\s*\]\s*INFO\s*Pulled artifact', self.stderr)
+        pulled = re.findall(r"\[\s*pull:(\S+)\s*\]\s*INFO\s*Pulled artifact", self.stderr)
         if pulled is None:
             return []
 
         return list(pulled)
 
 
-class Cli():
-
+class Cli:
     def __init__(self, directory, verbose=True, default_options=None):
         self.directory = directory
         self.config = None
@@ -286,14 +269,13 @@ class Cli():
     #    element_name (str): The name of the element artifact
     #    cache_dir (str): Specific cache dir to remove artifact from
     #
-    def remove_artifact_from_cache(self, project, element_name,
-                                   *, cache_dir=None):
+    def remove_artifact_from_cache(self, project, element_name, *, cache_dir=None):
         # Read configuration to figure out where artifacts are stored
         if not cache_dir:
-            default = os.path.join(project, 'cache')
+            default = os.path.join(project, "cache")
 
             if self.config is not None:
-                cache_dir = self.config.get('cachedir', default)
+                cache_dir = self.config.get("cachedir", default)
             else:
                 cache_dir = default
 
@@ -313,8 +295,17 @@ class Cli():
     #    args (list): A list of arguments to pass buildstream
     #    binary_capture (bool): Whether to capture the stdout/stderr as binary
     #
-    def run(self, configure=True, project=None, silent=False, env=None,
-            cwd=None, options=None, args=None, binary_capture=False):
+    def run(
+        self,
+        configure=True,
+        project=None,
+        silent=False,
+        env=None,
+        cwd=None,
+        options=None,
+        args=None,
+        binary_capture=False,
+    ):
 
         # We don't want to carry the state of one bst invocation into another
         # bst invocation. Since node _FileInfo objects hold onto BuildStream
@@ -335,22 +326,20 @@ class Cli():
         options = self.default_options + options
 
         with ExitStack() as stack:
-            bst_args = ['--no-colors']
+            bst_args = ["--no-colors"]
 
             if silent:
-                bst_args += ['--no-verbose']
+                bst_args += ["--no-verbose"]
 
             if configure:
-                config_file = stack.enter_context(
-                    configured(self.directory, self.config)
-                )
-                bst_args += ['--config', config_file]
+                config_file = stack.enter_context(configured(self.directory, self.config))
+                bst_args += ["--config", config_file]
 
             if project:
-                bst_args += ['--directory', str(project)]
+                bst_args += ["--directory", str(project)]
 
             for option, value in options:
-                bst_args += ['--option', option, value]
+                bst_args += ["--option", option, value]
 
             bst_args += args
 
@@ -366,15 +355,14 @@ class Cli():
             try:
                 sys.__stdout__.fileno()
             except ValueError:
-                sys.__stdout__ = open('/dev/stdout', 'w')
+                sys.__stdout__ = open("/dev/stdout", "w")
 
             result = self._invoke(bst_cli, bst_args, binary_capture=binary_capture)
 
         # Some informative stdout we can observe when anything fails
         if self.verbose:
             command = "bst " + " ".join(bst_args)
-            print("BuildStream exited with code {} for invocation:\n\t{}"
-                  .format(result.exit_code, command))
+            print("BuildStream exited with code {} for invocation:\n\t{}".format(result.exit_code, command))
             if result.output:
                 print("Program output was:\n{}".format(result.output))
             if result.stderr:
@@ -409,9 +397,9 @@ class Cli():
 
                 exit_code = e.code
                 if not isinstance(exit_code, int):
-                    sys.stdout.write('Program exit code was not an integer: ')
+                    sys.stdout.write("Program exit code was not an integer: ")
                     sys.stdout.write(str(exit_code))
-                    sys.stdout.write('\n')
+                    sys.stdout.write("\n")
                     exit_code = 1
             except Exception as e:  # pylint: disable=broad-except
                 exception = e
@@ -424,11 +412,7 @@ class Cli():
         out, err = capture.readouterr()
         capture.stop_capturing()
 
-        return Result(exit_code=exit_code,
-                      exception=exception,
-                      exc_info=exc_info,
-                      output=out,
-                      stderr=err)
+        return Result(exit_code=exit_code, exception=exception, exc_info=exc_info, output=out, stderr=err)
 
     # Fetch an element state by name by
     # invoking bst show on the project with the CLI
@@ -437,12 +421,9 @@ class Cli():
     # then use get_element_states(s) instead.
     #
     def get_element_state(self, project, element_name):
-        result = self.run(project=project, silent=True, args=[
-            'show',
-            '--deps', 'none',
-            '--format', '%{state}',
-            element_name
-        ])
+        result = self.run(
+            project=project, silent=True, args=["show", "--deps", "none", "--format", "%{state}", element_name]
+        )
         result.assert_success()
         return result.output.strip()
 
@@ -450,18 +431,15 @@ class Cli():
     #
     # Returns a dictionary with the element names as keys
     #
-    def get_element_states(self, project, targets, deps='all'):
-        result = self.run(project=project, silent=True, args=[
-            'show',
-            '--deps', deps,
-            '--format', '%{name}||%{state}',
-            *targets
-        ])
+    def get_element_states(self, project, targets, deps="all"):
+        result = self.run(
+            project=project, silent=True, args=["show", "--deps", deps, "--format", "%{name}||%{state}", *targets]
+        )
         result.assert_success()
         lines = result.output.splitlines()
         states = {}
         for line in lines:
-            split = line.split(sep='||')
+            split = line.split(sep="||")
             states[split[0]] = split[1]
         return states
 
@@ -469,24 +447,18 @@ class Cli():
     # on the project with the CLI
     #
     def get_element_key(self, project, element_name):
-        result = self.run(project=project, silent=True, args=[
-            'show',
-            '--deps', 'none',
-            '--format', '%{full-key}',
-            element_name
-        ])
+        result = self.run(
+            project=project, silent=True, args=["show", "--deps", "none", "--format", "%{full-key}", element_name]
+        )
         result.assert_success()
         return result.output.strip()
 
     # Get the decoded config of an element.
     #
     def get_element_config(self, project, element_name):
-        result = self.run(project=project, silent=True, args=[
-            'show',
-            '--deps', 'none',
-            '--format', '%{config}',
-            element_name
-        ])
+        result = self.run(
+            project=project, silent=True, args=["show", "--deps", "none", "--format", "%{config}", element_name]
+        )
 
         result.assert_success()
         return yaml.safe_load(result.output)
@@ -494,12 +466,12 @@ class Cli():
     # Fetch the elements that would be in the pipeline with the given
     # arguments.
     #
-    def get_pipeline(self, project, elements, except_=None, scope='plan'):
+    def get_pipeline(self, project, elements, except_=None, scope="plan"):
         if except_ is None:
             except_ = []
 
-        args = ['show', '--deps', scope, '--format', '%{name}']
-        args += list(itertools.chain.from_iterable(zip(itertools.repeat('--except'), except_)))
+        args = ["show", "--deps", scope, "--format", "%{name}"]
+        args += list(itertools.chain.from_iterable(zip(itertools.repeat("--except"), except_)))
 
         result = self.run(project=project, silent=True, args=args + elements)
         result.assert_success()
@@ -523,11 +495,27 @@ class CliIntegration(Cli):
     #
     # This supports the same arguments as Cli.run(), see run_project_config().
     #
-    def run(self, configure=True, project=None, silent=False, env=None,
-            cwd=None, options=None, args=None, binary_capture=False):
+    def run(
+        self,
+        configure=True,
+        project=None,
+        silent=False,
+        env=None,
+        cwd=None,
+        options=None,
+        args=None,
+        binary_capture=False,
+    ):
         return self.run_project_config(
-            configure=configure, project=project, silent=silent, env=env,
-            cwd=cwd, options=options, args=args, binary_capture=binary_capture)
+            configure=configure,
+            project=project,
+            silent=silent,
+            env=env,
+            cwd=cwd,
+            options=options,
+            args=args,
+            binary_capture=binary_capture,
+        )
 
     # run_project_config()
     #
@@ -549,9 +537,9 @@ class CliIntegration(Cli):
         # Save the original project.conf, because we will run more than
         # once in the same temp directory
         #
-        project_directory = kwargs['project']
-        project_filename = os.path.join(project_directory, 'project.conf')
-        project_backup = os.path.join(project_directory, 'project.conf.backup')
+        project_directory = kwargs["project"]
+        project_filename = os.path.join(project_directory, "project.conf")
+        project_backup = os.path.join(project_directory, "project.conf.backup")
         project_load_filename = project_filename
 
         if not os.path.exists(project_backup):
@@ -576,8 +564,8 @@ class CliIntegration(Cli):
             #
             with tempfile.TemporaryDirectory(dir=project_directory) as scratchdir:
 
-                temp_project = os.path.join(scratchdir, 'project.conf')
-                with open(temp_project, 'w') as f:
+                temp_project = os.path.join(scratchdir, "project.conf")
+                with open(temp_project, "w") as f:
                     yaml.safe_dump(project_config, f)
 
                 project_config = _yaml.load(temp_project)
@@ -589,7 +577,7 @@ class CliIntegration(Cli):
         else:
 
             # Otherwise, just dump it as is
-            with open(project_filename, 'w') as f:
+            with open(project_filename, "w") as f:
                 f.write(config)
 
         return super().run(**kwargs)
@@ -611,50 +599,49 @@ class CliRemote(CliIntegration):
     #
     # Returns a list of configured services (by names).
     #
-    def ensure_services(self, actions=True, execution=True, storage=True,
-                        artifacts=False, sources=False):
+    def ensure_services(self, actions=True, execution=True, storage=True, artifacts=False, sources=False):
         # Build a list of configured services by name:
         configured_services = []
         if not self.config:
             return configured_services
 
-        if 'remote-execution' in self.config:
-            rexec_config = self.config['remote-execution']
+        if "remote-execution" in self.config:
+            rexec_config = self.config["remote-execution"]
 
-            if 'action-cache-service' in rexec_config:
+            if "action-cache-service" in rexec_config:
                 if actions:
-                    configured_services.append('action-cache')
+                    configured_services.append("action-cache")
                 else:
-                    rexec_config.pop('action-cache-service')
+                    rexec_config.pop("action-cache-service")
 
-            if 'execution-service' in rexec_config:
+            if "execution-service" in rexec_config:
                 if execution:
-                    configured_services.append('execution')
+                    configured_services.append("execution")
                 else:
-                    rexec_config.pop('execution-service')
+                    rexec_config.pop("execution-service")
 
-            if 'storage-service' in rexec_config:
+            if "storage-service" in rexec_config:
                 if storage:
-                    configured_services.append('storage')
+                    configured_services.append("storage")
                 else:
-                    rexec_config.pop('storage-service')
+                    rexec_config.pop("storage-service")
 
-        if 'artifacts' in self.config:
+        if "artifacts" in self.config:
             if artifacts:
-                configured_services.append('artifact-cache')
+                configured_services.append("artifact-cache")
             else:
-                self.config.pop('artifacts')
+                self.config.pop("artifacts")
 
-        if 'source-caches' in self.config:
+        if "source-caches" in self.config:
             if sources:
-                configured_services.append('source-cache')
+                configured_services.append("source-cache")
             else:
-                self.config.pop('source-caches')
+                self.config.pop("source-caches")
 
         return configured_services
 
 
-class TestArtifact():
+class TestArtifact:
 
     # remove_artifact_from_cache():
     #
@@ -666,10 +653,10 @@ class TestArtifact():
     #
     def remove_artifact_from_cache(self, cache_dir, element_name):
 
-        cache_dir = os.path.join(cache_dir, 'artifacts', 'refs')
+        cache_dir = os.path.join(cache_dir, "artifacts", "refs")
 
-        normal_name = element_name.replace(os.sep, '-')
-        cache_dir = os.path.splitext(os.path.join(cache_dir, 'test', normal_name))[0]
+        normal_name = element_name.replace(os.sep, "-")
+        cache_dir = os.path.splitext(os.path.join(cache_dir, "test", normal_name))[0]
         shutil.rmtree(cache_dir)
 
     # is_cached():
@@ -688,7 +675,7 @@ class TestArtifact():
 
         # cas = CASCache(str(cache_dir))
         artifact_ref = element.get_artifact_name(element_key)
-        return os.path.exists(os.path.join(cache_dir, 'artifacts', 'refs', artifact_ref))
+        return os.path.exists(os.path.join(cache_dir, "artifacts", "refs", artifact_ref))
 
     # get_digest():
     #
@@ -705,9 +692,9 @@ class TestArtifact():
     def get_digest(self, cache_dir, element, element_key):
 
         artifact_ref = element.get_artifact_name(element_key)
-        artifact_dir = os.path.join(cache_dir, 'artifacts', 'refs')
+        artifact_dir = os.path.join(cache_dir, "artifacts", "refs")
         artifact_proto = artifact_pb2.Artifact()
-        with open(os.path.join(artifact_dir, artifact_ref), 'rb') as f:
+        with open(os.path.join(artifact_dir, artifact_ref), "rb") as f:
             artifact_proto.ParseFromString(f.read())
         return artifact_proto.files
 
@@ -727,7 +714,7 @@ class TestArtifact():
     def extract_buildtree(self, cache_dir, tmpdir, ref):
         artifact = artifact_pb2.Artifact()
         try:
-            with open(os.path.join(cache_dir, 'artifacts', 'refs', ref), 'rb') as f:
+            with open(os.path.join(cache_dir, "artifacts", "refs", ref), "rb") as f:
                 artifact.ParseFromString(f.read())
         except FileNotFoundError:
             yield None
@@ -768,7 +755,7 @@ class TestArtifact():
 #
 @pytest.fixture()
 def cli(tmpdir):
-    directory = os.path.join(str(tmpdir), 'cache')
+    directory = os.path.join(str(tmpdir), "cache")
     os.makedirs(directory)
     return Cli(directory)
 
@@ -781,27 +768,26 @@ def cli(tmpdir):
 # stacktraces.
 @pytest.fixture()
 def cli_integration(tmpdir, integration_cache):
-    directory = os.path.join(str(tmpdir), 'cache')
+    directory = os.path.join(str(tmpdir), "cache")
     os.makedirs(directory)
 
     fixture = CliIntegration(directory)
 
     # We want to cache sources for integration tests more permanently,
     # to avoid downloading the huge base-sdk repeatedly
-    fixture.configure({
-        'cachedir': integration_cache.cachedir,
-        'sourcedir': integration_cache.sources,
-    })
+    fixture.configure(
+        {"cachedir": integration_cache.cachedir, "sourcedir": integration_cache.sources,}
+    )
 
     yield fixture
 
     # remove following folders if necessary
     try:
-        shutil.rmtree(os.path.join(integration_cache.cachedir, 'build'))
+        shutil.rmtree(os.path.join(integration_cache.cachedir, "build"))
     except FileNotFoundError:
         pass
     try:
-        shutil.rmtree(os.path.join(integration_cache.cachedir, 'tmp'))
+        shutil.rmtree(os.path.join(integration_cache.cachedir, "tmp"))
     except FileNotFoundError:
         pass
 
@@ -813,36 +799,32 @@ def cli_integration(tmpdir, integration_cache):
 # stacktraces.
 @pytest.fixture()
 def cli_remote_execution(tmpdir, remote_services):
-    directory = os.path.join(str(tmpdir), 'cache')
+    directory = os.path.join(str(tmpdir), "cache")
     os.makedirs(directory)
 
     fixture = CliRemote(directory)
 
     if remote_services.artifact_service:
-        fixture.configure({'artifacts': [{
-            'url': remote_services.artifact_service,
-        }]})
+        fixture.configure({"artifacts": [{"url": remote_services.artifact_service,}]})
 
     remote_execution = {}
     if remote_services.action_service:
-        remote_execution['action-cache-service'] = {
-            'url': remote_services.action_service,
+        remote_execution["action-cache-service"] = {
+            "url": remote_services.action_service,
         }
     if remote_services.exec_service:
-        remote_execution['execution-service'] = {
-            'url': remote_services.exec_service,
+        remote_execution["execution-service"] = {
+            "url": remote_services.exec_service,
         }
     if remote_services.storage_service:
-        remote_execution['storage-service'] = {
-            'url': remote_services.storage_service,
+        remote_execution["storage-service"] = {
+            "url": remote_services.storage_service,
         }
     if remote_execution:
-        fixture.configure({'remote-execution': remote_execution})
+        fixture.configure({"remote-execution": remote_execution})
 
     if remote_services.source_service:
-        fixture.configure({'source-caches': [{
-            'url': remote_services.source_service,
-        }]})
+        fixture.configure({"source-caches": [{"url": remote_services.source_service,}]})
 
     return fixture
 
@@ -882,12 +864,12 @@ def configured(directory, config=None):
     if not config:
         config = {}
 
-    if not config.get('sourcedir', False):
-        config['sourcedir'] = os.path.join(directory, 'sources')
-    if not config.get('cachedir', False):
-        config['cachedir'] = directory
-    if not config.get('logdir', False):
-        config['logdir'] = os.path.join(directory, 'logs')
+    if not config.get("sourcedir", False):
+        config["sourcedir"] = os.path.join(directory, "sources")
+    if not config.get("cachedir", False):
+        config["cachedir"] = directory
+    if not config.get("logdir", False):
+        config["logdir"] = os.path.join(directory, "logs")
 
     # Dump it and yield the filename for test scripts to feed it
     # to buildstream as an artument

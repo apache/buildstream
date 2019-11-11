@@ -69,9 +69,9 @@ class ElementJob(Job):
         super().__init__(*args, **kwargs)
         self.set_name(element._get_full_name())
         self.queue = queue
-        self._element = element                # Set the Element pertaining to the job
-        self._action_cb = action_cb            # The action callable function
-        self._complete_cb = complete_cb        # The complete callable function
+        self._element = element  # Set the Element pertaining to the job
+        self._action_cb = action_cb  # The action callable function
+        self._complete_cb = complete_cb  # The complete callable function
 
         # Set the plugin element name & key for logging purposes
         self.set_message_element_name(self.name)
@@ -97,9 +97,7 @@ class ChildElementJob(ChildJob):
         # This should probably be omitted for non-build tasks but it's harmless here
         elt_env = self._element.get_environment()
         env_dump = yaml.round_trip_dump(elt_env, default_flow_style=False, allow_unicode=True)
-        self.message(MessageType.LOG,
-                     "Build environment for element {}".format(self._element.name),
-                     detail=env_dump)
+        self.message(MessageType.LOG, "Build environment for element {}".format(self._element.name), detail=env_dump)
 
         # Run the action
         return self._action_cb(self._element)
@@ -109,6 +107,6 @@ class ChildElementJob(ChildJob):
 
         workspace = self._element._get_workspace()
         if workspace is not None:
-            data['workspace'] = workspace.to_dict()
+            data["workspace"] = workspace.to_dict()
 
         return data

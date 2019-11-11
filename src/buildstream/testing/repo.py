@@ -25,7 +25,7 @@ import os
 import shutil
 
 
-class Repo():
+class Repo:
     """Repo()
 
     Abstract class providing scaffolding for generating data to be
@@ -38,7 +38,8 @@ class Repo():
     subdir (str): The subdir for the repo, in case there is more than one
 
     """
-    def __init__(self, directory, subdir='repo'):
+
+    def __init__(self, directory, subdir="repo"):
 
         # The working directory for the repo object
         #
@@ -100,7 +101,7 @@ class Repo():
         Returns:
         (Repo): A Repo object for the new repository.
         """
-        subdir = self.repo[len(self.directory):].lstrip(os.sep)
+        subdir = self.repo[len(self.directory) :].lstrip(os.sep)
         new_dir = os.path.join(dest, subdir)
         os.makedirs(new_dir, exist_ok=True)
         self.copy_directory(self.repo, new_dir)

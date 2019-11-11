@@ -28,9 +28,10 @@ class SandboxDummy(Sandbox):
     def _run(self, command, flags, *, cwd, env):
 
         if not self._has_command(command[0], env):
-            raise SandboxCommandError("Staged artifacts do not provide command "
-                                      "'{}'".format(command[0]),
-                                      reason='missing-command')
+            raise SandboxCommandError(
+                "Staged artifacts do not provide command " "'{}'".format(command[0]), reason="missing-command"
+            )
 
-        raise SandboxError("This platform does not support local builds: {}".format(self._reason),
-                           reason="unavailable-local-sandbox")
+        raise SandboxError(
+            "This platform does not support local builds: {}".format(self._reason), reason="unavailable-local-sandbox"
+        )

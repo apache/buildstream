@@ -28,7 +28,7 @@ from collections import OrderedDict
 #    state (State): The state object
 #    complete_name (str): Optional name for frontend status rendering, e.g. 'built'
 #
-class TaskGroup():
+class TaskGroup:
     def __init__(self, name, state, complete_name=None):
         self.name = name
         self.complete_name = complete_name
@@ -98,14 +98,14 @@ class TaskGroup():
 # Args:
 #    session_start (datetime): The time the session started
 #
-class State():
+class State:
     def __init__(self, session_start):
         self._session_start = session_start
 
         self.task_groups = OrderedDict()  # key is TaskGroup name
 
         # Note: A Task's full_name is technically unique, but only accidentally.
-        self.tasks = OrderedDict()        # key is a tuple of action_name and full_name
+        self.tasks = OrderedDict()  # key is a tuple of action_name and full_name
 
         self._task_added_cbs = []
         self._task_removed_cbs = []
@@ -281,8 +281,9 @@ class State():
     #
     def add_task(self, action_name, full_name, elapsed_offset=None):
         task_key = (action_name, full_name)
-        assert task_key not in self.tasks, \
-            "Trying to add task '{}:{}' to '{}'".format(action_name, full_name, self.tasks)
+        assert task_key not in self.tasks, "Trying to add task '{}:{}' to '{}'".format(
+            action_name, full_name, self.tasks
+        )
 
         if not elapsed_offset:
             elapsed_offset = self.elapsed_time()
@@ -366,7 +367,7 @@ class State():
 #                     e.g. an element's name.
 #    elapsed_offset (timedelta): The time the task started, relative to
 #                                buildstream's start time.
-class _Task():
+class _Task:
     def __init__(self, state, action_name, full_name, elapsed_offset):
         self._state = state
         self.action_name = action_name

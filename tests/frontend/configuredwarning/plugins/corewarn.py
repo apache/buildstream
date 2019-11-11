@@ -19,8 +19,7 @@ class CoreWarn(Element):
         pass
 
     def assemble(self, sandbox):
-        self.warn("Testing: CoreWarning produced during assemble",
-                  warning_token=CoreWarnings.OVERLAPS)
+        self.warn("Testing: CoreWarning produced during assemble", warning_token=CoreWarnings.OVERLAPS)
 
 
 def setup():
