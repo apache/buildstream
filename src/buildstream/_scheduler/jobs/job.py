@@ -33,6 +33,7 @@ from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
 from ...types import FastEnum
 from ... import _signals, utils
+from .. import _multiprocessing
 
 from .jobpickler import pickle_child_job, do_pickled_child_job
 
@@ -67,15 +68,6 @@ class _Envelope():
     def __init__(self, message_type, message):
         self.message_type = message_type
         self.message = message
-
-
-# Process class that doesn't call waitpid on its own.
-# This prevents conflicts with the asyncio child watcher.
-class Process(multiprocessing.Process):
-    # pylint: disable=attribute-defined-outside-init
-    def start(self):
-        self._popen = self._Popen(self)
-        self._sentinel = self._popen.sentinel
 
 
 class _MessageType(FastEnum):
@@ -184,12 +176,12 @@ class Job():
                 child_job,
                 self._scheduler.context.get_projects(),
             )
-            self._process = Process(
+            self._process = _multiprocessing.AsyncioSafeProcess(
                 target=do_pickled_child_job,
                 args=[pickled, self._queue],
             )
         else:
-            self._process = Process(
+            self._process = _multiprocessing.AsyncioSafeProcess(
                 target=child_job.child_action,
                 args=[self._queue],
             )

@@ -478,11 +478,9 @@ class Scheduler():
     #
     def _interrupt_event(self):
 
-        # FIXME: This should not be needed, but for some reason we receive an
-        #        additional SIGINT event when the user hits ^C a second time
-        #        to inform us that they really intend to terminate; even though
-        #        we have disconnected our handlers at this time.
-        #
+        # The event loop receives a copy of all signals that are sent while it is running
+        # This means that even though we catch the SIGINT in the question to the user,
+        # the loop will receive it too, and thus we need to skip it here.
         if self.terminated:
             return
 
