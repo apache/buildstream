@@ -207,6 +207,11 @@ class SandboxBwrap(Sandbox):
             for device in self.DEVICES:
                 bwrap_command += ['--dev-bind', device, device]
 
+            # Create a tmpfs for /dev/shm, if we're in interactive this
+            # is handled by `--dev /dev`
+            #
+            bwrap_command += ['--tmpfs', '/dev/shm']
+
         # Add bind mounts to any marked directories
         marked_directories = self._get_marked_directories()
         mount_source_overrides = self._get_mount_sources()
@@ -260,7 +265,7 @@ class SandboxBwrap(Sandbox):
             #
             existing_basedirs = {
                 directory: os.path.exists(os.path.join(root_directory, directory))
-                for directory in ['tmp', 'dev', 'proc']
+                for directory in ['dev/shm', 'tmp', 'dev', 'proc']
             }
 
             # Use the MountMap context manager to ensure that any redirected
@@ -294,7 +299,7 @@ class SandboxBwrap(Sandbox):
 
             # Remove /tmp, this is a bwrap owned thing we want to be sure
             # never ends up in an artifact
-            for basedir in ['tmp', 'dev', 'proc']:
+            for basedir in ['dev/shm', 'tmp', 'dev', 'proc']:
 
                 # Skip removal of directories which already existed before
                 # launching bwrap
