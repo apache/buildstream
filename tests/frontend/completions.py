@@ -86,8 +86,8 @@ PROJECT_ELEMENTS = [
 ]
 
 INVALID_ELEMENTS = [
-    "target.foo"
-    "target.bst.bar"
+    "target.foo",
+    "target.bst.bar",
 ]
 
 MIXED_ELEMENTS = PROJECT_ELEMENTS + INVALID_ELEMENTS
