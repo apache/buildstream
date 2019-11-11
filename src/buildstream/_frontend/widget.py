@@ -459,9 +459,8 @@ class LogLine(Widget):
     #    project (Project): The toplevel project we were invoked from
     #    stream (Stream): The stream
     #    log_file (file): An optional file handle for additional logging
-    #    styling (bool): Whether to enable ansi escape codes in the output
     #
-    def print_heading(self, project, stream, *, log_file, styling=False):
+    def print_heading(self, project, stream, *, log_file):
         context = self.context
         starttime = datetime.datetime.now()
         text = ''
@@ -518,7 +517,7 @@ class LogLine(Widget):
         # Separator line before following output
         text += self.format_profile.fmt("=" * 79 + '\n')
 
-        click.echo(text, color=styling, nl=False, err=True)
+        click.echo(text, nl=False, err=True)
         if log_file:
             click.echo(text, file=log_file, color=False, nl=False)
 
@@ -529,9 +528,8 @@ class LogLine(Widget):
     # Args:
     #    stream (Stream): The Stream
     #    log_file (file): An optional file handle for additional logging
-    #    styling (bool): Whether to enable ansi escape codes in the output
     #
-    def print_summary(self, stream, log_file, styling=False):
+    def print_summary(self, stream, log_file):
 
         # Early silent return if there are no queues, can happen
         # only in the case that the stream early returned due to
@@ -599,7 +597,7 @@ class LogLine(Widget):
 
         text += self._format_values(values, style_value=False)
 
-        click.echo(text, color=styling, nl=False, err=True)
+        click.echo(text, nl=False, err=True)
         if log_file:
             click.echo(text, file=log_file, color=False, nl=False)
 

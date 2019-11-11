@@ -251,7 +251,7 @@ class App():
             self._status = Status(self.context, self._state,
                                   self._content_profile, self._format_profile,
                                   self._success_profile, self._error_profile,
-                                  self.stream, colors=self.colors)
+                                  self.stream)
 
             # Mark the beginning of the session
             if session_name:
@@ -680,8 +680,7 @@ class App():
         if self._session_name:
             self.logger.print_heading(self.project,
                                       self.stream,
-                                      log_file=self._main_options['log_file'],
-                                      styling=self.colors)
+                                      log_file=self._main_options['log_file'])
 
     #
     # Print a summary of the queues
@@ -689,8 +688,7 @@ class App():
     def _print_summary(self):
         click.echo("", err=True)
         self.logger.print_summary(self.stream,
-                                  self._main_options['log_file'],
-                                  styling=self.colors)
+                                  self._main_options['log_file'])
 
     # _error_exit()
     #
@@ -749,7 +747,7 @@ class App():
             self._status.clear()
 
         text = self.logger.render(message)
-        click.echo(text, color=self.colors, nl=False, err=True)
+        click.echo(text, nl=False, err=True)
 
         # Maybe render the status area
         self._maybe_render_status()
