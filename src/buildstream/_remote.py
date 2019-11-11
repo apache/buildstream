@@ -72,8 +72,12 @@ class RemoteSpec(namedtuple('RemoteSpec', 'url push server_cert client_key clien
 
         def parse_cert(key):
             cert = spec_node.get_str(key, default=None)
-            if cert and basedir:
-                cert = os.path.join(basedir, cert)
+            if cert:
+                cert = os.path.expanduser(cert)
+
+                if basedir:
+                    cert = os.path.join(basedir, cert)
+
             return cert
 
         cert_keys = ('server-cert', 'client-key', 'client-cert')
