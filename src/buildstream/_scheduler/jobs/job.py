@@ -33,8 +33,7 @@ import traceback
 from ..._exceptions import ImplError, BstError, SkipJob
 from ..._message import Message, MessageType, unconditional_messages
 from ...types import FastEnum
-from ... import _signals, utils
-from .. import _multiprocessing
+from ... import _signals, utils, _multiprocessing
 
 from .jobpickler import pickle_child_job, do_pickled_child_job
 

@@ -65,7 +65,7 @@ from ._profile import Topics, PROFILER
 from ._state import State
 from .types import _KeyStrength, _SchedulerErrorAction
 from .plugin import Plugin
-from . import utils, _yaml, _site, _signals
+from . import utils, _yaml, _site, _signals, _multiprocessing
 from . import Scope
 
 
@@ -152,7 +152,7 @@ class Stream:
     def run_in_subprocess(self, func, *args, **kwargs):
         assert not self._subprocess
 
-        mp_context = mp.get_context(method="fork")
+        # mp_context = _multiprocessing.get_context(method='fork')
         process_name = "stream-{}".format(func.__name__)
 
         self._notify_front_queue = mp.Queue()
@@ -165,7 +165,7 @@ class Stream:
         args.insert(0, self._notify_front_queue)
         args.insert(0, func)
 
-        self._subprocess = mp_context.Process(
+        self._subprocess = _multiprocessing.AsyncioSafeProcess(
             target=Stream._subprocess_main, args=args, kwargs=kwargs, name=process_name
         )
 
