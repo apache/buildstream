@@ -3,9 +3,11 @@ import shutil
 import signal
 import sys
 from collections import namedtuple
-
 from contextlib import ExitStack, contextmanager
+from concurrent import futures
 from multiprocessing import Process, Queue
+
+import grpc
 
 from buildstream._cas import CASCache
 from buildstream._cas.casserver import create_server
@@ -14,40 +16,8 @@ from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution
 from buildstream._protos.buildstream.v2 import artifact_pb2
 
 
-# ArtifactShare()
-#
-# Abstract class providing scaffolding for
-# generating data to be used with various sources
-#
-# Args:
-#    directory (str): The base temp directory for the test
-#    cache_quota (int): Maximum amount of disk space to use
-#    casd (bool): Allow write access via casd
-#
-class ArtifactShare():
-
-    def __init__(self, directory, *, quota=None, casd=False, index_only=False):
-
-        # The working directory for the artifact share (in case it
-        # needs to do something outside of its backend's storage folder).
-        #
-        self.directory = os.path.abspath(directory)
-
-        # The directory the actual repo will be stored in.
-        #
-        # Unless this gets more complicated, just use this directly
-        # in tests as a remote artifact push/pull configuration
-        #
-        self.repodir = os.path.join(self.directory, 'repo')
-        os.makedirs(self.repodir)
-        self.artifactdir = os.path.join(self.repodir, 'artifacts', 'refs')
-        os.makedirs(self.artifactdir)
-
-        self.cas = CASCache(self.repodir, casd=casd)
-
-        self.quota = quota
-        self.index_only = index_only
-
+class BaseArtifactShare:
+    def __init__(self):
         q = Queue()
 
         self.process = Process(target=self.run, args=(q,))
@@ -80,14 +50,7 @@ class ArtifactShare():
                 else:
                     cleanup_on_sigterm()
 
-                server = stack.enter_context(
-                    create_server(
-                        self.repodir,
-                        quota=self.quota,
-                        enable_push=True,
-                        index_only=self.index_only,
-                    )
-                )
+                server = stack.enter_context(self._create_server())
                 port = server.add_insecure_port('localhost:0')
                 server.start()
             except Exception:
@@ -99,6 +62,80 @@ class ArtifactShare():
 
             # Sleep until termination by signal
             signal.pause()
+
+    # _create_server()
+    #
+    # Create the server that will be run in the process
+    #
+    def _create_server(self):
+        raise NotImplementedError()
+
+    # close():
+    #
+    # Remove the artifact share.
+    #
+    def close(self):
+        self.process.terminate()
+        self.process.join()
+
+
+# DummyArtifactShare()
+#
+# A dummy artifact share without any capabilities
+#
+class DummyArtifactShare(BaseArtifactShare):
+    @contextmanager
+    def _create_server(self):
+        max_workers = (os.cpu_count() or 1) * 5
+        server = grpc.server(futures.ThreadPoolExecutor(max_workers))
+
+        yield server
+
+
+# ArtifactShare()
+#
+# Abstract class providing scaffolding for
+# generating data to be used with various sources
+#
+# Args:
+#    directory (str): The base temp directory for the test
+#    cache_quota (int): Maximum amount of disk space to use
+#    casd (bool): Allow write access via casd
+#    enable_push (bool): Whether the share should allow pushes
+#
+class ArtifactShare(BaseArtifactShare):
+
+    def __init__(self, directory, *, quota=None, casd=False, index_only=False):
+
+        # The working directory for the artifact share (in case it
+        # needs to do something outside of its backend's storage folder).
+        #
+        self.directory = os.path.abspath(directory)
+
+        # The directory the actual repo will be stored in.
+        #
+        # Unless this gets more complicated, just use this directly
+        # in tests as a remote artifact push/pull configuration
+        #
+        self.repodir = os.path.join(self.directory, 'repo')
+        os.makedirs(self.repodir)
+        self.artifactdir = os.path.join(self.repodir, 'artifacts', 'refs')
+        os.makedirs(self.artifactdir)
+
+        self.cas = CASCache(self.repodir, casd=casd)
+
+        self.quota = quota
+        self.index_only = index_only
+
+        super().__init__()
+
+    def _create_server(self):
+        return create_server(
+            self.repodir,
+            quota=self.quota,
+            enable_push=True,
+            index_only=self.index_only,
+        )
 
     # has_object():
     #
@@ -180,8 +217,7 @@ class ArtifactShare():
     # Remove the artifact share.
     #
     def close(self):
-        self.process.terminate()
-        self.process.join()
+        super().close()
 
         self.cas.release_resources()
 
@@ -211,6 +247,19 @@ def create_split_share(directory1, directory2, *, quota=None, casd=False):
     finally:
         index.close()
         storage.close()
+
+
+# create_dummy_artifact_share()
+#
+# Create a dummy artifact share that doesn't have any capabilities
+#
+@contextmanager
+def create_dummy_artifact_share():
+    share = DummyArtifactShare()
+    try:
+        yield share
+    finally:
+        share.close()
 
 
 statvfs_result = namedtuple('statvfs_result', 'f_blocks f_bfree f_bsize f_bavail')
