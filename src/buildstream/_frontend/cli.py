@@ -353,6 +353,9 @@ def cli(context, **kwargs):
     context.obj = App.create(dict(kwargs))
     context.call_on_close(context.obj.cleanup)
 
+    # Configure colors
+    context.color = context.obj.colors
+
 
 ##################################################################
 #                           Help Command                         #
@@ -544,7 +547,7 @@ def show(app, elements, deps, except_, order, format_):
             format_ = app.context.log_element_format
 
         report = app.logger.show_pipeline(dependencies, format_)
-        click.echo(report, color=app.colors)
+        click.echo(report)
 
 
 ##################################################################
