@@ -75,8 +75,12 @@ class ReadableTarInfo(tarfile.TarInfo):
     """
     @property
     def mode(self):
-        # ensure file is readable by owner and group
-        return self.__permission | 0o440
+        # ensure file is readable by owner and group, and executable
+        # (=traversable) if it's a directory.
+        if self.isdir():
+            return self.__permission | 0o550
+        else:
+            return self.__permission | 0o440
 
     @mode.setter
     def mode(self, permission):
