@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2017-2018 Codethink Limited
+#  Copyright (C) 2019 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -21,7 +22,7 @@ import os
 import grpc
 
 from ._basecache import BaseCache
-from ._exceptions import ArtifactError, CASError, CASCacheError, CASRemoteError
+from ._exceptions import ArtifactError, CASError, CASCacheError, CASRemoteError, RemoteError
 from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, \
     artifact_pb2, artifact_pb2_grpc
 
@@ -60,10 +61,10 @@ class ArtifactRemote(BaseRemote):
     #
     # Check if this remote provides everything required for the
     # particular kind of remote. This is expected to be called as part
-    # of check(), and must be called in a non-main process.
+    # of check()
     #
-    # Returns:
-    #    (str|None): An error message, or None if no error message.
+    # Raises:
+    #     RemoteError: If the upstream has a problem
     #
     def _check(self):
         capabilities_service = buildstream_pb2_grpc.CapabilitiesStub(self.channel)
@@ -77,18 +78,16 @@ class ArtifactRemote(BaseRemote):
         except grpc.RpcError as e:
             # Check if this remote has the artifact service
             if e.code() == grpc.StatusCode.UNIMPLEMENTED:
-                return ("Configured remote does not have the BuildStream "
-                        "capabilities service. Please check remote configuration.")
+                raise RemoteError("Configured remote does not have the BuildStream "
+                                  "capabilities service. Please check remote configuration.")
             # Else raise exception with details
-            return "Remote initialisation failed: {}".format(e.details())
+            raise RemoteError("Remote initialisation failed: {}".format(e.details()))
 
         if not response.artifact_capabilities:
-            return "Configured remote does not support artifact service"
+            raise RemoteError("Configured remote does not support artifact service")
 
         if self.spec.push and not response.artifact_capabilities.allow_updates:
-            return 'Artifact server does not allow push'
-
-        return None
+            raise RemoteError("Artifact server does not allow push")
 
     # get_artifact():
     #

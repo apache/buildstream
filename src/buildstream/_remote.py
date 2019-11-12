@@ -234,11 +234,11 @@ class BaseRemote():
     # particular kind of remote. This is expected to be called as part
     # of check(), and must be called in a non-main process.
     #
-    # Returns:
-    #    (str|None): An error message, or None if no error message.
+    # Raises:
+    #    RemoteError: when the remote isn't compatible or another error happened.
     #
     def _check(self):
-        return None
+        pass
 
     def __str__(self):
         return self.url
