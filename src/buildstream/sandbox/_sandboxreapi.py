@@ -53,6 +53,10 @@ class SandboxREAPI(Sandbox):
             assert cwd.startswith("/")
             vdir.descend(*cwd[1:].split(os.path.sep), create=True)
 
+        # Ensure directories required for sandboxed execution exist
+        for directory in ["dev", "proc", "tmp"]:
+            vdir.descend(directory, create=True)
+
         # Create directories for all marked directories. This emulates
         # some of the behaviour of other sandboxes, which create these
         # to use as mount points.
