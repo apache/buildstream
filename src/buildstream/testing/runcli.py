@@ -288,24 +288,13 @@ class Cli:
     # to stay contained in the testing environment.
     #
     # Args:
-    #    configure (bool): Whether to pass a --config argument
     #    project (str): An optional path to a project
     #    silent (bool): Whether to pass --no-verbose
     #    env (dict): Environment variables to temporarily set during the test
     #    args (list): A list of arguments to pass buildstream
     #    binary_capture (bool): Whether to capture the stdout/stderr as binary
     #
-    def run(
-        self,
-        configure=True,
-        project=None,
-        silent=False,
-        env=None,
-        cwd=None,
-        options=None,
-        args=None,
-        binary_capture=False,
-    ):
+    def run(self, project=None, silent=False, env=None, cwd=None, options=None, args=None, binary_capture=False):
 
         # We don't want to carry the state of one bst invocation into another
         # bst invocation. Since node _FileInfo objects hold onto BuildStream
@@ -331,9 +320,8 @@ class Cli:
             if silent:
                 bst_args += ["--no-verbose"]
 
-            if configure:
-                config_file = stack.enter_context(configured(self.directory, self.config))
-                bst_args += ["--config", config_file]
+            config_file = stack.enter_context(configured(self.directory, self.config))
+            bst_args += ["--config", config_file]
 
             if project:
                 bst_args += ["--directory", str(project)]
@@ -495,26 +483,9 @@ class CliIntegration(Cli):
     #
     # This supports the same arguments as Cli.run(), see run_project_config().
     #
-    def run(
-        self,
-        configure=True,
-        project=None,
-        silent=False,
-        env=None,
-        cwd=None,
-        options=None,
-        args=None,
-        binary_capture=False,
-    ):
+    def run(self, project=None, silent=False, env=None, cwd=None, options=None, args=None, binary_capture=False):
         return self.run_project_config(
-            configure=configure,
-            project=project,
-            silent=silent,
-            env=env,
-            cwd=cwd,
-            options=options,
-            args=args,
-            binary_capture=binary_capture,
+            project=project, silent=silent, env=env, cwd=cwd, options=options, args=args, binary_capture=binary_capture
         )
 
     # run_project_config()
