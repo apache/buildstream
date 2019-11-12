@@ -842,6 +842,13 @@ def configured(directory, config=None):
     if not config.get("logdir", False):
         config["logdir"] = os.path.join(directory, "logs")
 
+    cas_stage_root = os.environ.get("BST_CAS_STAGING_ROOT")
+    if cas_stage_root:
+        symlink_path = os.path.join(config["cachedir"], "cas", "staging")
+        if not os.path.lexists(symlink_path):
+            os.makedirs(os.path.join(config["cachedir"], "cas"), exist_ok=True)
+            os.symlink(cas_stage_root, symlink_path)
+
     # Dump it and yield the filename for test scripts to feed it
     # to buildstream as an artument
     filename = os.path.join(directory, "buildstream.conf")
