@@ -24,7 +24,7 @@ from ._remote import BaseRemote
 from ._cas.casremote import BlobNotFound
 from .storage._casbaseddirectory import CasBasedDirectory
 from ._basecache import BaseCache
-from ._exceptions import CASError, CASRemoteError, SourceCacheError
+from ._exceptions import CASError, CASRemoteError, SourceCacheError, RemoteError
 from . import utils
 from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, \
     source_pb2, source_pb2_grpc
@@ -48,10 +48,10 @@ class SourceRemote(BaseRemote):
     #
     # Check if this remote provides everything required for the
     # particular kind of remote. This is expected to be called as part
-    # of check(), and must be called in a non-main process.
+    # of check()
     #
-    # Returns:
-    #    (str|None): An error message, or None if no error message.
+    # Raises:
+    #     RemoteError: If the upstream has a problem
     #
     def _check(self):
         capabilities_service = buildstream_pb2_grpc.CapabilitiesStub(self.channel)
@@ -65,18 +65,15 @@ class SourceRemote(BaseRemote):
         except grpc.RpcError as e:
             # Check if this remote has the artifact service
             if e.code() == grpc.StatusCode.UNIMPLEMENTED:
-                return ("Configured remote does not have the BuildStream "
-                        "capabilities service. Please check remote configuration.")
-            # Else raise exception with details
-            return "Remote initialisation failed: {}".format(e.details())
+                raise RemoteError("Configured remote does not have the BuildStream "
+                                  "capabilities service. Please check remote configuration.")
+            raise RemoteError("Remote initialisation failed: {}".format(e.details()))
 
         if not response.source_capabilities:
-            return "Configured remote does not support source service"
+            raise RemoteError("Configured remote does not support source service")
 
         if self.spec.push and not response.source_capabilities.allow_updates:
-            return 'Source server does not allow push'
-
-        return None
+            raise RemoteError("Source server does not allow push")
 
     # get_source():
     #
