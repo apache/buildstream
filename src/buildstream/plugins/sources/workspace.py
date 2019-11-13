@@ -55,7 +55,7 @@ class WorkspaceSource(Source):
         # the digest of the Directory following the import of the workspace
         self.__digest = None
 
-    def track(self) -> SourceRef:
+    def track(self) -> SourceRef:  # pylint: disable=arguments-differ
         return None
 
     def configure(self, node: MappingNode) -> None:
@@ -85,7 +85,7 @@ class WorkspaceSource(Source):
         # always return cached state
         return Consistency.CACHED
 
-    def fetch(self) -> None:
+    def fetch(self) -> None:  # pylint: disable=arguments-differ
         pass  # pragma: nocover
 
     def stage(self, directory: Directory) -> None:

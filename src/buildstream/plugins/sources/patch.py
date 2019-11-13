@@ -80,7 +80,7 @@ class PatchSource(Source):
     def set_ref(self, ref, node):
         pass  # pragma: nocover
 
-    def fetch(self):
+    def fetch(self):  # pylint: disable=arguments-differ
         # Nothing to do here for a local source
         pass  # pragma: nocover
 
