@@ -101,7 +101,7 @@ class BzrSource(Source):
     def set_ref(self, ref, node):
         node['ref'] = self.ref = ref
 
-    def track(self):
+    def track(self):  # pylint: disable=arguments-differ
         with self.timed_activity("Tracking {}".format(self.url),
                                  silent_nested=True), self._locked():
             self._ensure_mirror(skip_ref_check=True)
@@ -115,7 +115,7 @@ class BzrSource(Source):
 
             return out
 
-    def fetch(self):
+    def fetch(self):  # pylint: disable=arguments-differ
         with self.timed_activity("Fetching {}".format(self.url),
                                  silent_nested=True), self._locked():
             self._ensure_mirror()

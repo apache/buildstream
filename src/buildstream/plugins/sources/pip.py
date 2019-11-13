@@ -155,7 +155,7 @@ class PipSource(Source):
     def set_ref(self, ref, node):
         node['ref'] = self.ref = ref
 
-    def track(self, previous_sources_dir):
+    def track(self, previous_sources_dir):  # pylint: disable=arguments-differ
         # XXX pip does not offer any public API other than the CLI tool so it
         # is not feasible to correctly parse the requirements file or to check
         # which package versions pip is going to install.
@@ -177,7 +177,7 @@ class PipSource(Source):
 
         return '\n'.join(["{}=={}".format(pkg, ver) for pkg, ver in reqs])
 
-    def fetch(self):
+    def fetch(self):  # pylint: disable=arguments-differ
         with self.tempdir() as tmpdir:
             packages = self.ref.strip().split('\n')
             package_dir = os.path.join(tmpdir, 'packages')
