@@ -34,6 +34,9 @@ from .._message import Message, MessageType
 from ..plugin import Plugin
 
 
+_MAX_TIMEOUT_TO_KILL_CHILDREN = 20  # in seconds
+
+
 # A decent return code for Scheduler.run()
 class SchedStatus(FastEnum):
     SUCCESS = 0
@@ -526,21 +529,15 @@ class Scheduler():
         self.loop.remove_signal_handler(signal.SIGTERM)
 
     def _terminate_jobs_real(self):
-        # 20 seconds is a long time, it can take a while and sometimes
-        # we still fail, need to look deeper into this again.
-        wait_start = datetime.datetime.now()
-        wait_limit = 20.0
+        def kill_jobs():
+            for job_ in self._active_jobs:
+                job_.kill()
 
-        # First tell all jobs to terminate
+        # Schedule all jobs to be killed if they have not exited after timeout
+        self.loop.call_later(_MAX_TIMEOUT_TO_KILL_CHILDREN, kill_jobs)
+
         for job in self._active_jobs:
             job.terminate()
-
-        # Now wait for them to really terminate
-        for job in self._active_jobs:
-            elapsed = datetime.datetime.now() - wait_start
-            timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
-            if not job.terminate_wait(timeout):
-                job.kill()
 
     # Regular timeout for driving status in the UI
     def _tick(self):

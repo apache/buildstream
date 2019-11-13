@@ -45,6 +45,8 @@ class _ReturnCode(FastEnum):
     FAIL = 1
     PERM_FAIL = 2
     SKIPPED = 3
+    TERMINATED = 4
+    KILLED = -9
 
 
 # JobStatus:
@@ -248,22 +250,6 @@ class Job():
     #
     def get_terminated(self):
         return self._terminated
-
-    # terminate_wait()
-    #
-    # Wait for terminated jobs to complete
-    #
-    # Args:
-    #    timeout (float): Seconds to wait
-    #
-    # Returns:
-    #    (bool): True if the process terminated cleanly, otherwise False
-    #
-    def terminate_wait(self, timeout):
-
-        # Join the child process after sending SIGTERM
-        self._process.join(timeout)
-        return self._process.exitcode is not None
 
     # kill()
     #
@@ -470,6 +456,20 @@ class Job():
         elif returncode == _ReturnCode.SKIPPED:
             status = JobStatus.SKIPPED
         elif returncode in (_ReturnCode.FAIL, _ReturnCode.PERM_FAIL):
+            status = JobStatus.FAIL
+        elif returncode == _ReturnCode.TERMINATED:
+            if self._terminated:
+                self.message(MessageType.INFO, "Process was terminated")
+            else:
+                self.message(MessageType.ERROR, "Process was terminated unexpectedly")
+
+            status = JobStatus.FAIL
+        elif returncode == _ReturnCode.KILLED:
+            if self._terminated:
+                self.message(MessageType.INFO, "Process was killed")
+            else:
+                self.message(MessageType.ERROR, "Process was killed unexpectedly")
+
             status = JobStatus.FAIL
         else:
             status = JobStatus.FAIL
@@ -729,6 +729,12 @@ class ChildJob():
         #
         with _signals.suspendable(stop_time, resume_time), \
                 self._messenger.recorded_messages(self._logfile, self._logdir) as filename:
+
+            # Graciously handle sigterms.
+            def handle_sigterm(_signum, _sigframe):
+                self._child_shutdown(_ReturnCode.TERMINATED)
+
+            signal.signal(signal.SIGTERM, handle_sigterm)
 
             self.message(MessageType.START, self.action_name, logfile=filename)
 
