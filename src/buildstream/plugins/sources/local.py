@@ -39,7 +39,6 @@ details on common configuration options for sources.
 import os
 from buildstream.storage.directory import Directory
 from buildstream import Source, SourceError, Consistency
-from buildstream import utils
 
 
 class LocalSource(Source):
@@ -75,7 +74,7 @@ class LocalSource(Source):
     def set_ref(self, ref, node):
         pass  # pragma: nocover
 
-    def fetch(self):
+    def fetch(self):  # pylint: disable=arguments-differ
         # Nothing to do here for a local source
         pass  # pragma: nocover
 

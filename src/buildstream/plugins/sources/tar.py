@@ -80,7 +80,7 @@ class ReadableTarInfo(tarfile.TarInfo):
 
     @mode.setter
     def mode(self, permission):
-        self.__permission = permission
+        self.__permission = permission  # pylint: disable=attribute-defined-outside-init
 
 
 class TarSource(DownloadableFileSource):

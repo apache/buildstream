@@ -35,11 +35,8 @@ workspace. The node constructed would be specified as follows:
    path: /path/to/workspace
 """
 
-import os
 from buildstream.storage.directory import Directory
-from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream import Source, SourceError, Consistency
-from buildstream import utils
 from buildstream.types import SourceRef
 from buildstream.node import MappingNode
 
@@ -58,7 +55,7 @@ class WorkspaceSource(Source):
         # the digest of the Directory following the import of the workspace
         self.__digest = None
 
-    def track(self) -> SourceRef:
+    def track(self) -> SourceRef:  # pylint: disable=arguments-differ
         return None
 
     def configure(self, node: MappingNode) -> None:
@@ -88,7 +85,7 @@ class WorkspaceSource(Source):
         # always return cached state
         return Consistency.CACHED
 
-    def fetch(self) -> None:
+    def fetch(self) -> None:  # pylint: disable=arguments-differ
         pass  # pragma: nocover
 
     def stage(self, directory: Directory) -> None:

@@ -111,7 +111,7 @@ class DownloadableFileSource(Source):
     def set_ref(self, ref, node):
         node['ref'] = self.ref = ref
 
-    def track(self):
+    def track(self):  # pylint: disable=arguments-differ
         # there is no 'track' field in the source to determine what/whether
         # or not to update refs, because tracking a ref is always a conscious
         # decision by the user.
@@ -128,7 +128,7 @@ class DownloadableFileSource(Source):
 
             return new_ref
 
-    def fetch(self):
+    def fetch(self):  # pylint: disable=arguments-differ
 
         # Just a defensive check, it is impossible for the
         # file to be already cached because Source.fetch() will
