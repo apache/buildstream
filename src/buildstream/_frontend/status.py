@@ -42,7 +42,6 @@ from .widget import TimeCode
 #    success_profile (Profile): Formatting profile for success text
 #    error_profile (Profile): Formatting profile for error text
 #    stream (Stream): The Stream
-#    colors (bool): Whether to print the ANSI color codes in the output
 #
 class Status():
 
@@ -56,7 +55,7 @@ class Status():
     def __init__(self, context, state,
                  content_profile, format_profile,
                  success_profile, error_profile,
-                 stream, colors=False):
+                 stream):
 
         self._context = context
         self._state = state
@@ -68,7 +67,6 @@ class Status():
         self._jobs = OrderedDict()
         self._last_lines = 0  # Number of status lines we last printed to console
         self._spacing = 1
-        self._colors = colors
         self._header = _StatusHeader(context, state,
                                      content_profile, format_profile,
                                      success_profile, error_profile,
@@ -139,7 +137,7 @@ class Status():
 
         # Render the one line header
         text = self._header.render(self._term_width, elapsed)
-        click.echo(text, color=self._colors, err=True)
+        click.echo(text, err=True)
 
         # Now we have the number of columns, and an allocation for
         # alignment of each column
@@ -155,7 +153,7 @@ class Status():
                     text += ' ' * self._spacing
 
             # Print the line
-            click.echo(text, color=self._colors, err=True)
+            click.echo(text, err=True)
 
         # Track what we printed last, for the next clear
         self._last_lines = self._alloc_lines + self._header.lines
