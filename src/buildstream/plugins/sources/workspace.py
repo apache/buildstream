@@ -35,11 +35,8 @@ workspace. The node constructed would be specified as follows:
    path: /path/to/workspace
 """
 
-import os
 from buildstream.storage.directory import Directory
-from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream import Source, SourceError, Consistency
-from buildstream import utils
 from buildstream.types import SourceRef
 from buildstream.node import MappingNode
 

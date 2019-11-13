@@ -39,7 +39,6 @@ details on common configuration options for sources.
 import os
 from buildstream.storage.directory import Directory
 from buildstream import Source, SourceError, Consistency
-from buildstream import utils
 
 
 class LocalSource(Source):
