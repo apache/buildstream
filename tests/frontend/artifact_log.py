@@ -25,10 +25,7 @@ from buildstream.testing import cli  # pylint: disable=unused-import
 
 
 # Project directory
-DATA_DIR = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    "project",
-)
+DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -36,32 +33,32 @@ def test_artifact_log(cli, datafiles):
     project = str(datafiles)
 
     # Get the cache key of our test element
-    result = cli.run(project=project, silent=True, args=[
-        '--no-colors',
-        'show', '--deps', 'none', '--format', '%{full-key}',
-        'target.bst'
-    ])
+    result = cli.run(
+        project=project,
+        silent=True,
+        args=["--no-colors", "show", "--deps", "none", "--format", "%{full-key}", "target.bst"],
+    )
     key = result.output.strip()
 
     # Ensure we have an artifact to read
-    result = cli.run(project=project, args=['build', 'target.bst'])
+    result = cli.run(project=project, args=["build", "target.bst"])
     assert result.exit_code == 0
 
     # Read the log via the element name
-    result = cli.run(project=project, args=['artifact', 'log', 'target.bst'])
+    result = cli.run(project=project, args=["artifact", "log", "target.bst"])
     assert result.exit_code == 0
     log = result.output
 
     # Assert that there actually was a log file
-    assert log != ''
+    assert log != ""
 
     # Read the log via the key
-    result = cli.run(project=project, args=['artifact', 'log', 'test/target/' + key])
+    result = cli.run(project=project, args=["artifact", "log", "test/target/" + key])
     assert result.exit_code == 0
     assert log == result.output
 
     # Read the log via glob
-    result = cli.run(project=project, args=['artifact', 'log', 'test/target/*'])
+    result = cli.run(project=project, args=["artifact", "log", "test/target/*"])
     assert result.exit_code == 0
     # The artifact is cached under both a strong key and a weak key
     assert log == result.output
@@ -72,7 +69,7 @@ def test_artifact_log_files(cli, datafiles):
     project = str(datafiles)
 
     # Ensure we have an artifact to read
-    result = cli.run(project=project, args=['build', 'target.bst'])
+    result = cli.run(project=project, args=["build", "target.bst"])
     assert result.exit_code == 0
 
     logfiles = os.path.join(project, "logfiles")
@@ -84,16 +81,16 @@ def test_artifact_log_files(cli, datafiles):
     assert not os.path.exists(import_bin)
 
     # Run the command and ensure the file now exists
-    result = cli.run(project=project, args=['artifact', 'log', '--out', logfiles, 'target.bst', 'import-bin.bst'])
+    result = cli.run(project=project, args=["artifact", "log", "--out", logfiles, "target.bst", "import-bin.bst"])
     assert result.exit_code == 0
     assert os.path.exists(logfiles)
     assert os.path.exists(target)
     assert os.path.exists(import_bin)
 
     # Ensure the file contains the logs by checking for the LOG line
-    with open(target, 'r') as f:
+    with open(target, "r") as f:
         data = f.read()
         assert "LOG     target.bst" in data
-    with open(import_bin, 'r') as f:
+    with open(import_bin, "r") as f:
         data = f.read()
         assert "LOG     import-bin.bst" in data

@@ -74,30 +74,28 @@ import re
 
 from buildstream import Consistency, Source, SourceError, utils
 
-_OUTPUT_DIRNAME = '.bst_pip_downloads'
-_PYPI_INDEX_URL = 'https://pypi.org/simple/'
+_OUTPUT_DIRNAME = ".bst_pip_downloads"
+_PYPI_INDEX_URL = "https://pypi.org/simple/"
 
 # Used only for finding pip command
 _PYTHON_VERSIONS = [
-    'python',  # when running in a venv, we might not have the exact version
-    'python2.7',
-    'python3.0',
-    'python3.1',
-    'python3.2',
-    'python3.3',
-    'python3.4',
-    'python3.5',
-    'python3.6',
-    'python3.7',
+    "python",  # when running in a venv, we might not have the exact version
+    "python2.7",
+    "python3.0",
+    "python3.1",
+    "python3.2",
+    "python3.3",
+    "python3.4",
+    "python3.5",
+    "python3.6",
+    "python3.7",
 ]
 
 # List of allowed extensions taken from
 # https://docs.python.org/3/distutils/sourcedist.html.
 # Names of source distribution archives must be of the form
 # '%{package-name}-%{version}.%{extension}'.
-_SDIST_RE = re.compile(
-    r'^([\w.-]+?)-((?:[\d.]+){2,})\.(?:tar|tar.bz2|tar.gz|tar.xz|tar.Z|zip)$',
-    re.IGNORECASE)
+_SDIST_RE = re.compile(r"^([\w.-]+?)-((?:[\d.]+){2,})\.(?:tar|tar.bz2|tar.gz|tar.xz|tar.Z|zip)$", re.IGNORECASE)
 
 
 class PipSource(Source):
@@ -109,16 +107,15 @@ class PipSource(Source):
     BST_REQUIRES_PREVIOUS_SOURCES_TRACK = True
 
     def configure(self, node):
-        node.validate_keys(['url', 'packages', 'ref', 'requirements-files'] +
-                           Source.COMMON_CONFIG_KEYS)
-        self.ref = node.get_str('ref', None)
-        self.original_url = node.get_str('url', _PYPI_INDEX_URL)
+        node.validate_keys(["url", "packages", "ref", "requirements-files"] + Source.COMMON_CONFIG_KEYS)
+        self.ref = node.get_str("ref", None)
+        self.original_url = node.get_str("url", _PYPI_INDEX_URL)
         self.index_url = self.translate_url(self.original_url)
-        self.packages = node.get_str_list('packages', [])
-        self.requirements_files = node.get_str_list('requirements-files', [])
+        self.packages = node.get_str_list("packages", [])
+        self.requirements_files = node.get_str_list("requirements-files", [])
 
         if not (self.packages or self.requirements_files):
-            raise SourceError("{}: Either 'packages' or 'requirements-files' must be specified". format(self))
+            raise SourceError("{}: Either 'packages' or 'requirements-files' must be specified".format(self))
 
     def preflight(self):
         # Try to find a pip version that spports download command
@@ -126,9 +123,9 @@ class PipSource(Source):
         for python in reversed(_PYTHON_VERSIONS):
             try:
                 host_python = utils.get_host_tool(python)
-                rc = self.call([host_python, '-m', 'pip', 'download', '--help'])
+                rc = self.call([host_python, "-m", "pip", "download", "--help"])
                 if rc == 0:
-                    self.host_pip = [host_python, '-m', 'pip']
+                    self.host_pip = [host_python, "-m", "pip"]
                     break
             except utils.ProgramNotFoundError:
                 pass
@@ -150,10 +147,10 @@ class PipSource(Source):
         return self.ref
 
     def load_ref(self, node):
-        self.ref = node.get_str('ref', None)
+        self.ref = node.get_str("ref", None)
 
     def set_ref(self, ref, node):
-        node['ref'] = self.ref = ref
+        node["ref"] = self.ref = ref
 
     def track(self, previous_sources_dir):  # pylint: disable=arguments-differ
         # XXX pip does not offer any public API other than the CLI tool so it
@@ -163,32 +160,44 @@ class PipSource(Source):
         # for details.
         # As a result, we have to wastefully install the packages during track.
         with self.tempdir() as tmpdir:
-            install_args = self.host_pip + ['download',
-                                            '--no-binary', ':all:',
-                                            '--index-url', self.index_url,
-                                            '--dest', tmpdir]
+            install_args = self.host_pip + [
+                "download",
+                "--no-binary",
+                ":all:",
+                "--index-url",
+                self.index_url,
+                "--dest",
+                tmpdir,
+            ]
             for requirement_file in self.requirements_files:
                 fpath = os.path.join(previous_sources_dir, requirement_file)
-                install_args += ['-r', fpath]
+                install_args += ["-r", fpath]
             install_args += self.packages
 
             self.call(install_args, fail="Failed to install python packages")
             reqs = self._parse_sdist_names(tmpdir)
 
-        return '\n'.join(["{}=={}".format(pkg, ver) for pkg, ver in reqs])
+        return "\n".join(["{}=={}".format(pkg, ver) for pkg, ver in reqs])
 
     def fetch(self):  # pylint: disable=arguments-differ
         with self.tempdir() as tmpdir:
-            packages = self.ref.strip().split('\n')
-            package_dir = os.path.join(tmpdir, 'packages')
+            packages = self.ref.strip().split("\n")
+            package_dir = os.path.join(tmpdir, "packages")
             os.makedirs(package_dir)
-            self.call([*self.host_pip,
-                       'download',
-                       '--no-binary', ':all:',
-                       '--index-url', self.index_url,
-                       '--dest', package_dir,
-                       *packages],
-                      fail="Failed to install python packages: {}".format(packages))
+            self.call(
+                [
+                    *self.host_pip,
+                    "download",
+                    "--no-binary",
+                    ":all:",
+                    "--index-url",
+                    self.index_url,
+                    "--dest",
+                    package_dir,
+                    *packages,
+                ],
+                fail="Failed to install python packages: {}".format(packages),
+            )
 
             # If the mirror directory already exists, assume that some other
             # process has fetched the sources before us and ensure that we do
@@ -200,8 +209,11 @@ class PipSource(Source):
                 # before us.
                 pass
             except OSError as e:
-                raise SourceError("{}: Failed to move downloaded pip packages from '{}' to '{}': {}"
-                                  .format(self, package_dir, self._mirror, e)) from e
+                raise SourceError(
+                    "{}: Failed to move downloaded pip packages from '{}' to '{}': {}".format(
+                        self, package_dir, self._mirror, e
+                    )
+                ) from e
 
     def stage(self, directory):
         with self.timed_activity("Staging Python packages", silent_nested=True):
@@ -213,9 +225,11 @@ class PipSource(Source):
     def _mirror(self):
         if not self.ref:
             return None
-        return os.path.join(self.get_mirror_directory(),
-                            utils.url_directory_name(self.original_url),
-                            hashlib.sha256(self.ref.encode()).hexdigest())
+        return os.path.join(
+            self.get_mirror_directory(),
+            utils.url_directory_name(self.original_url),
+            hashlib.sha256(self.ref.encode()).hexdigest(),
+        )
 
     # Parse names of downloaded source distributions
     #

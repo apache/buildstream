@@ -23,7 +23,6 @@ from buildstream.buildelement import BuildElement
 
 
 class AlwaysFail(BuildElement):
-
     def assemble(self, sandbox):
         raise ElementError("Always fails")
 

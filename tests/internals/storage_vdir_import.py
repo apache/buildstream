@@ -38,11 +38,11 @@ from buildstream.storage.directory import VirtualDirectoryError
 # (directory) with content being the contents for a file or the
 # destination for a symlink.
 root_filesets = [
-    [('a/b/c/textfile1', 'F', 'This is textfile 1\n')],
-    [('a/b/c/textfile1', 'F', 'This is the replacement textfile 1\n')],
-    [('a/b/f', 'S', '/a/b/c')],
-    [('a/b/c', 'D', ''), ('a/b/f', 'S', '/a/b/c')],
-    [('a/b/f', 'F', 'This is textfile 1\n')],
+    [("a/b/c/textfile1", "F", "This is textfile 1\n")],
+    [("a/b/c/textfile1", "F", "This is the replacement textfile 1\n")],
+    [("a/b/f", "S", "/a/b/c")],
+    [("a/b/c", "D", ""), ("a/b/f", "S", "/a/b/c")],
+    [("a/b/f", "F", "This is textfile 1\n")],
 ]
 
 empty_hash_ref = sha256().hexdigest()
@@ -60,14 +60,14 @@ def generate_import_root(rootdir, filelist):
     if os.path.exists(rootdir):
         return
     for (path, typesymbol, content) in filelist:
-        if typesymbol == 'F':
+        if typesymbol == "F":
             (dirnames, filename) = os.path.split(path)
             os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
             with open(os.path.join(rootdir, dirnames, filename), "wt") as f:
                 f.write(content)
-        elif typesymbol == 'D':
+        elif typesymbol == "D":
             os.makedirs(os.path.join(rootdir, path), exist_ok=True)
-        elif typesymbol == 'S':
+        elif typesymbol == "S":
             (dirnames, filename) = os.path.split(path)
             os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
             os.symlink(content, os.path.join(rootdir, path))
@@ -83,26 +83,26 @@ def generate_random_root(rootno, directory):
     if os.path.exists(rootdir):
         return
     things = []
-    locations = ['.']
+    locations = ["."]
     os.makedirs(rootdir)
     for i in range(0, 100):
         location = random.choice(locations)
         thingname = "node{}".format(i)
-        thing = random.choice(['dir', 'link', 'file'])
-        if thing == 'dir':
+        thing = random.choice(["dir", "link", "file"])
+        if thing == "dir":
             thingname = "dir" + thingname
         target = os.path.join(rootdir, location, thingname)
-        if thing == 'dir':
+        if thing == "dir":
             os.makedirs(target)
             locations.append(os.path.join(location, thingname))
-        elif thing == 'file':
+        elif thing == "file":
             with open(target, "wt") as f:
                 f.write("This is node {}\n".format(i))
-        elif thing == 'link':
-            symlink_type = random.choice(['absolute', 'relative', 'broken'])
-            if symlink_type == 'broken' or not things:
+        elif thing == "link":
+            symlink_type = random.choice(["absolute", "relative", "broken"])
+            if symlink_type == "broken" or not things:
                 os.symlink("/broken", target)
-            elif symlink_type == 'absolute':
+            elif symlink_type == "absolute":
                 symlink_destination = random.choice(things)
                 os.symlink(symlink_destination, target)
             else:
@@ -159,7 +159,7 @@ def resolve_symlinks(path, root):
         if os.path.islink(location):
             # Resolve the link, add on all the remaining components
             target = os.path.join(os.readlink(location))
-            tail = os.path.sep.join(components[i + 1:])
+            tail = os.path.sep.join(components[i + 1 :])
 
             if target.startswith(os.path.sep):
                 # Absolute link - relative to root
@@ -202,22 +202,23 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
             for item in root_filesets[overlay - 1]:
                 (path, typename, content) = item
                 realpath = resolve_symlinks(path, export_dir)
-                if typename == 'F':
+                if typename == "F":
                     if os.path.isdir(realpath) and directory_not_empty(realpath):
                         # The file should not have overwritten the directory in this case.
                         pass
                     else:
-                        assert os.path.isfile(realpath), \
-                            "{} did not exist in the combined virtual directory".format(path)
+                        assert os.path.isfile(realpath), "{} did not exist in the combined virtual directory".format(
+                            path
+                        )
                         assert file_contents_are(realpath, content)
-                elif typename == 'S':
+                elif typename == "S":
                     if os.path.isdir(realpath) and directory_not_empty(realpath):
                         # The symlink should not have overwritten the directory in this case.
                         pass
                     else:
                         assert os.path.islink(realpath)
                         assert os.readlink(realpath) == content
-                elif typename == 'D':
+                elif typename == "D":
                     # We can't do any more tests than this because it
                     # depends on things present in the original. Blank
                     # directories here will be ignored and the original
@@ -274,22 +275,18 @@ def test_fixed_directory_listing(tmpdir, root):
 
 # Check that the vdir is decending and readable
 def test_descend(tmpdir):
-    cas_dir = os.path.join(str(tmpdir), 'cas')
+    cas_dir = os.path.join(str(tmpdir), "cas")
     cas_cache = CASCache(cas_dir)
     try:
         d = CasBasedDirectory(cas_cache)
 
-        Content_to_check = 'You got me'
-        test_dir = os.path.join(str(tmpdir), 'importfrom')
-        filesys_discription = [
-            ('a', 'D', ''),
-            ('a/l', 'D', ''),
-            ('a/l/g', 'F', Content_to_check)
-        ]
+        Content_to_check = "You got me"
+        test_dir = os.path.join(str(tmpdir), "importfrom")
+        filesys_discription = [("a", "D", ""), ("a/l", "D", ""), ("a/l/g", "F", Content_to_check)]
         generate_import_root(test_dir, filesys_discription)
 
         d.import_files(test_dir)
-        digest = d.descend('a', 'l').index['g'].get_digest()
+        digest = d.descend("a", "l").index["g"].get_digest()
 
         assert Content_to_check == open(cas_cache.objpath(digest)).read()
     finally:
@@ -300,31 +297,27 @@ def test_descend(tmpdir):
 # Make sure the correct erros are raised when trying
 # to decend in to files or links to files
 def test_bad_symlinks(tmpdir):
-    cas_dir = os.path.join(str(tmpdir), 'cas')
+    cas_dir = os.path.join(str(tmpdir), "cas")
     cas_cache = CASCache(cas_dir)
     try:
         d = CasBasedDirectory(cas_cache)
 
-        test_dir = os.path.join(str(tmpdir), 'importfrom')
-        filesys_discription = [
-            ('a', 'D', ''),
-            ('a/l', 'S', '../target'),
-            ('target', 'F', 'You got me')
-        ]
+        test_dir = os.path.join(str(tmpdir), "importfrom")
+        filesys_discription = [("a", "D", ""), ("a/l", "S", "../target"), ("target", "F", "You got me")]
         generate_import_root(test_dir, filesys_discription)
         d.import_files(test_dir)
         exp_reason = "not-a-directory"
 
         with pytest.raises(VirtualDirectoryError) as error:
-            d.descend('a', 'l', follow_symlinks=True)
+            d.descend("a", "l", follow_symlinks=True)
             assert error.reason == exp_reason
 
         with pytest.raises(VirtualDirectoryError) as error:
-            d.descend('a', 'l')
+            d.descend("a", "l")
             assert error.reason == exp_reason
 
         with pytest.raises(VirtualDirectoryError) as error:
-            d.descend('a', 'f')
+            d.descend("a", "f")
             assert error.reason == exp_reason
     finally:
         cas_cache.release_resources()
@@ -333,23 +326,23 @@ def test_bad_symlinks(tmpdir):
 # Check symlink logic for edgecases
 # Check decend accross relitive link
 def test_relative_symlink(tmpdir):
-    cas_dir = os.path.join(str(tmpdir), 'cas')
+    cas_dir = os.path.join(str(tmpdir), "cas")
     cas_cache = CASCache(cas_dir)
     try:
         d = CasBasedDirectory(cas_cache)
 
-        Content_to_check = 'You got me'
-        test_dir = os.path.join(str(tmpdir), 'importfrom')
+        Content_to_check = "You got me"
+        test_dir = os.path.join(str(tmpdir), "importfrom")
         filesys_discription = [
-            ('a', 'D', ''),
-            ('a/l', 'S', '../target'),
-            ('target', 'D', ''),
-            ('target/file', 'F', Content_to_check)
+            ("a", "D", ""),
+            ("a/l", "S", "../target"),
+            ("target", "D", ""),
+            ("target/file", "F", Content_to_check),
         ]
         generate_import_root(test_dir, filesys_discription)
         d.import_files(test_dir)
 
-        digest = d.descend('a', 'l', follow_symlinks=True).index['file'].get_digest()
+        digest = d.descend("a", "l", follow_symlinks=True).index["file"].get_digest()
         assert Content_to_check == open(cas_cache.objpath(digest)).read()
     finally:
         cas_cache.release_resources()
@@ -358,23 +351,23 @@ def test_relative_symlink(tmpdir):
 # Check symlink logic for edgecases
 # Check deccend accross abs link
 def test_abs_symlink(tmpdir):
-    cas_dir = os.path.join(str(tmpdir), 'cas')
+    cas_dir = os.path.join(str(tmpdir), "cas")
     cas_cache = CASCache(cas_dir)
     try:
         d = CasBasedDirectory(cas_cache)
 
-        Content_to_check = 'two step file'
-        test_dir = os.path.join(str(tmpdir), 'importfrom')
+        Content_to_check = "two step file"
+        test_dir = os.path.join(str(tmpdir), "importfrom")
         filesys_discription = [
-            ('a', 'D', ''),
-            ('a/l', 'S', '/target'),
-            ('target', 'D', ''),
-            ('target/file', 'F', Content_to_check)
+            ("a", "D", ""),
+            ("a/l", "S", "/target"),
+            ("target", "D", ""),
+            ("target/file", "F", Content_to_check),
         ]
         generate_import_root(test_dir, filesys_discription)
         d.import_files(test_dir)
 
-        digest = d.descend('a', 'l', follow_symlinks=True).index['file'].get_digest()
+        digest = d.descend("a", "l", follow_symlinks=True).index["file"].get_digest()
 
         assert Content_to_check == open(cas_cache.objpath(digest)).read()
     finally:
@@ -384,24 +377,24 @@ def test_abs_symlink(tmpdir):
 # Check symlink logic for edgecases
 # Check symlink can not escape root
 def test_bad_sym_escape(tmpdir):
-    cas_dir = os.path.join(str(tmpdir), 'cas')
+    cas_dir = os.path.join(str(tmpdir), "cas")
     cas_cache = CASCache(cas_dir)
     try:
         d = CasBasedDirectory(cas_cache)
 
-        test_dir = os.path.join(str(tmpdir), 'importfrom')
+        test_dir = os.path.join(str(tmpdir), "importfrom")
         filesys_discription = [
-            ('jail', 'D', ''),
-            ('jail/a', 'D', ''),
-            ('jail/a/l', 'S', '../../target'),
-            ('target', 'D', ''),
-            ('target/file', 'F', 'two step file')
+            ("jail", "D", ""),
+            ("jail/a", "D", ""),
+            ("jail/a/l", "S", "../../target"),
+            ("target", "D", ""),
+            ("target/file", "F", "two step file"),
         ]
         generate_import_root(test_dir, filesys_discription)
-        d.import_files(os.path.join(test_dir, 'jail'))
+        d.import_files(os.path.join(test_dir, "jail"))
 
         with pytest.raises(VirtualDirectoryError) as error:
-            d.descend('a', 'l', follow_symlinks=True)
+            d.descend("a", "l", follow_symlinks=True)
             assert error.reason == "directory-not-found"
     finally:
         cas_cache.release_resources()

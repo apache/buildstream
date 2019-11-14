@@ -46,11 +46,12 @@ class VirtualDirectoryError(BstError):
     or either of the :class:`.ElementError` or :class:`.SourceError`
     exceptions should be raised from this error.
     """
+
     def __init__(self, message, reason=None):
         super().__init__(message, domain=ErrorDomain.VIRTUAL_FS, reason=reason)
 
 
-class Directory():
+class Directory:
     def __init__(self, external_directory=None):
         raise NotImplementedError()
 
@@ -74,10 +75,15 @@ class Directory():
         raise NotImplementedError()
 
     # Import and export of files and links
-    def import_files(self, external_pathspec: Union['Directory', str], *,
-                     filter_callback: Optional[Callable[[str], bool]] = None,
-                     report_written: bool = True, update_mtime: bool = False,
-                     can_link: bool = False) -> FileListResult:
+    def import_files(
+        self,
+        external_pathspec: Union["Directory", str],
+        *,
+        filter_callback: Optional[Callable[[str], bool]] = None,
+        report_written: bool = True,
+        update_mtime: bool = False,
+        can_link: bool = False
+    ) -> FileListResult:
         """Imports some or all files from external_path into this directory.
 
         Args:
@@ -214,4 +220,4 @@ class _FileType(FastEnum):
 
     def __str__(self):
         # https://github.com/PyCQA/pylint/issues/2062
-        return self.name.lower().replace('_', ' ')  # pylint: disable=no-member
+        return self.name.lower().replace("_", " ")  # pylint: disable=no-member

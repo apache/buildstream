@@ -1,5 +1,4 @@
 pylint
-pycodestyle
 pytest >= 3.9
 pytest-datafiles >= 2.0
 pytest-env

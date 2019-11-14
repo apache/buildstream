@@ -39,15 +39,14 @@ if "BST_TEST_SUITE" in os.environ:
 
 # TimeData class to contain times in an object that can be passed around
 # and updated from different places
-class _TimeData():
-    __slots__ = ['start_time']
+class _TimeData:
+    __slots__ = ["start_time"]
 
     def __init__(self, start_time):
         self.start_time = start_time
 
 
-class Messenger():
-
+class Messenger:
     def __init__(self):
         self._message_handler = None
         self._silence_scope_depth = 0
@@ -238,8 +237,9 @@ class Messenger():
                     detail = "{} of {} subtasks processed".format(task.current_progress, task.maximum_progress)
                 else:
                     detail = "{} subtasks processed".format(task.current_progress)
-            message = Message(MessageType.SUCCESS, activity_name, elapsed=elapsed, detail=detail,
-                              element_name=element_name)
+            message = Message(
+                MessageType.SUCCESS, activity_name, elapsed=elapsed, detail=detail, element_name=element_name
+            )
             self.message(message)
 
     # recorded_messages()
@@ -274,14 +274,13 @@ class Messenger():
 
         # Create the fully qualified logfile in the log directory,
         # appending the pid and .log extension at the end.
-        self._log_filename = os.path.join(logdir,
-                                          '{}.{}.log'.format(filename, os.getpid()))
+        self._log_filename = os.path.join(logdir, "{}.{}.log".format(filename, os.getpid()))
 
         # Ensure the directory exists first
         directory = os.path.dirname(self._log_filename)
         os.makedirs(directory, exist_ok=True)
 
-        with open(self._log_filename, 'a') as logfile:
+        with open(self._log_filename, "a") as logfile:
 
             # Write one last line to the log and flush it to disk
             def flush_log():
@@ -291,7 +290,7 @@ class Messenger():
                 #
                 # So just try to flush as well as we can at SIGTERM time
                 try:
-                    logfile.write('\n\nForcefully terminated\n')
+                    logfile.write("\n\nForcefully terminated\n")
                     logfile.flush()
                 except RuntimeError:
                     os.fsync(logfile.fileno())
@@ -352,26 +351,28 @@ class Messenger():
 
         template += ": {message}"
 
-        detail = ''
+        detail = ""
         if message.detail is not None:
             template += "\n\n{detail}"
-            detail = message.detail.rstrip('\n')
+            detail = message.detail.rstrip("\n")
             detail = INDENT + INDENT.join(detail.splitlines(True))
 
         timecode = EMPTYTIME
         if message.message_type in (MessageType.SUCCESS, MessageType.FAIL):
-            hours, remainder = divmod(int(message.elapsed.total_seconds()), 60**2)
+            hours, remainder = divmod(int(message.elapsed.total_seconds()), 60 ** 2)
             minutes, seconds = divmod(remainder, 60)
             timecode = "{0:02d}:{1:02d}:{2:02d}".format(hours, minutes, seconds)
 
-        text = template.format(timecode=timecode,
-                               element_name=element_name,
-                               type=message.message_type.upper(),
-                               message=message.message,
-                               detail=detail)
+        text = template.format(
+            timecode=timecode,
+            element_name=element_name,
+            type=message.message_type.upper(),
+            message=message.message,
+            detail=detail,
+        )
 
         # Write to the open log file
-        self._log_handle.write('{}\n'.format(text))
+        self._log_handle.write("{}\n".format(text))
         self._log_handle.flush()
 
     # get_state_for_child_job_pickling(self)
@@ -399,21 +400,21 @@ class Messenger():
         # access to private details of Messenger, but it would open up a window
         # where messagesw wouldn't be handled as expected.
         #
-        del state['_message_handler']
+        del state["_message_handler"]
 
         # The render status callback is only used in the main process
         #
-        del state['_render_status_cb']
+        del state["_render_status_cb"]
 
         # The "simple_task" context manager is not needed outside the main
         # process. During testing we override it to something that cannot
         # pickle, so just drop it when pickling to a child job. Note that it
         # will only appear in 'state' if it has been overridden.
         #
-        state.pop('simple_task', None)
+        state.pop("simple_task", None)
 
         # The State object is not needed outside the main process
-        del state['_state']
+        del state["_state"]
 
         return state
 

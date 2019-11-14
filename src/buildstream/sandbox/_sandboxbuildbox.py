@@ -34,22 +34,20 @@ from .._exceptions import SandboxError
 # BuildBox-based sandbox implementation.
 #
 class SandboxBuildBox(Sandbox):
-
     def __init__(self, context, project, directory, **kwargs):
-        if kwargs.get('allow_real_directory'):
+        if kwargs.get("allow_real_directory"):
             raise SandboxError("BuildBox does not support real directories")
 
-        kwargs['allow_real_directory'] = False
+        kwargs["allow_real_directory"] = False
         super().__init__(context, project, directory, **kwargs)
 
     @classmethod
     def check_available(cls):
         try:
-            utils.get_host_tool('buildbox')
+            utils.get_host_tool("buildbox")
         except utils.ProgramNotFoundError as Error:
             cls._dummy_reasons += ["buildbox not found"]
-            raise SandboxError(" and ".join(cls._dummy_reasons),
-                               reason="unavailable-local-sandbox") from Error
+            raise SandboxError(" and ".join(cls._dummy_reasons), reason="unavailable-local-sandbox") from Error
 
     @classmethod
     def check_sandbox_config(cls, platform, config):
@@ -73,42 +71,42 @@ class SandboxBuildBox(Sandbox):
         scratch_directory = self._get_scratch_directory()
 
         if not self._has_command(command[0], env):
-            raise SandboxCommandError("Staged artifacts do not provide command "
-                                      "'{}'".format(command[0]),
-                                      reason='missing-command')
+            raise SandboxCommandError(
+                "Staged artifacts do not provide command " "'{}'".format(command[0]), reason="missing-command"
+            )
 
         # Grab the full path of the buildbox binary
         try:
-            buildbox_command = [utils.get_host_tool('buildbox')]
+            buildbox_command = [utils.get_host_tool("buildbox")]
         except ProgramNotFoundError as Err:
-            raise SandboxError(("BuildBox not on path, you are using the BuildBox sandbox because "
-                                "BST_FORCE_SANDBOX=buildbox")) from Err
+            raise SandboxError(
+                ("BuildBox not on path, you are using the BuildBox sandbox because " "BST_FORCE_SANDBOX=buildbox")
+            ) from Err
 
         for mark in self._get_marked_directories():
-            path = mark['directory']
-            assert path.startswith('/') and len(path) > 1
+            path = mark["directory"]
+            assert path.startswith("/") and len(path) > 1
             root_directory.descend(*path[1:].split(os.path.sep), create=True)
 
         digest = root_directory._get_digest()
-        with open(os.path.join(scratch_directory, 'in'), 'wb') as input_digest_file:
+        with open(os.path.join(scratch_directory, "in"), "wb") as input_digest_file:
             input_digest_file.write(digest.SerializeToString())
 
         buildbox_command += ["--local=" + root_directory.cas_cache.casdir]
         buildbox_command += ["--input-digest=in"]
         buildbox_command += ["--output-digest=out"]
 
-        common_details = ("BuildBox is a experimental sandbox and does not support the requested feature.\n"
-                          "You are using this feature because BST_FORCE_SANDBOX=buildbox.")
+        common_details = (
+            "BuildBox is a experimental sandbox and does not support the requested feature.\n"
+            "You are using this feature because BST_FORCE_SANDBOX=buildbox."
+        )
 
         if not flags & SandboxFlags.NETWORK_ENABLED:
             # TODO
-            self._issue_warning(
-                "BuildBox sandbox does not have Networking yet",
-                detail=common_details
-            )
+            self._issue_warning("BuildBox sandbox does not have Networking yet", detail=common_details)
 
         if cwd is not None:
-            buildbox_command += ['--chdir=' + cwd]
+            buildbox_command += ["--chdir=" + cwd]
 
         # In interactive mode, we want a complete devpts inside
         # the container, so there is a /dev/console and such. In
@@ -118,27 +116,24 @@ class SandboxBuildBox(Sandbox):
         if flags & SandboxFlags.INTERACTIVE:
             # TODO
             self._issue_warning(
-                "BuildBox sandbox does not fully support BuildStream shells yet",
-                detail=common_details
+                "BuildBox sandbox does not fully support BuildStream shells yet", detail=common_details
             )
 
         if flags & SandboxFlags.ROOT_READ_ONLY:
             # TODO
             self._issue_warning(
-                "BuildBox sandbox does not fully support BuildStream `Read only Root`",
-                detail=common_details
+                "BuildBox sandbox does not fully support BuildStream `Read only Root`", detail=common_details
             )
 
         # Set UID and GID
         if not flags & SandboxFlags.INHERIT_UID:
             # TODO
             self._issue_warning(
-                "BuildBox sandbox does not fully support BuildStream Inherit UID",
-                detail=common_details
+                "BuildBox sandbox does not fully support BuildStream Inherit UID", detail=common_details
             )
 
-        os.makedirs(os.path.join(scratch_directory, 'mnt'), exist_ok=True)
-        buildbox_command += ['mnt']
+        os.makedirs(os.path.join(scratch_directory, "mnt"), exist_ok=True)
+        buildbox_command += ["mnt"]
 
         # Add the command
         buildbox_command += command
@@ -150,7 +145,7 @@ class SandboxBuildBox(Sandbox):
         with ExitStack() as stack:
             # Ensure the cwd exists
             if cwd is not None and len(cwd) > 1:
-                assert cwd.startswith('/')
+                assert cwd.startswith("/")
                 root_directory.descend(*cwd[1:].split(os.path.sep), create=True)
 
             # If we're interactive, we want to inherit our stdin,
@@ -162,12 +157,18 @@ class SandboxBuildBox(Sandbox):
                 stdin = stack.enter_context(open(os.devnull, "r"))
 
             # Run buildbox !
-            exit_code = self.run_buildbox(buildbox_command, stdin, stdout, stderr, env,
-                                          interactive=(flags & SandboxFlags.INTERACTIVE),
-                                          cwd=scratch_directory)
+            exit_code = self.run_buildbox(
+                buildbox_command,
+                stdin,
+                stdout,
+                stderr,
+                env,
+                interactive=(flags & SandboxFlags.INTERACTIVE),
+                cwd=scratch_directory,
+            )
 
             if exit_code == 0:
-                with open(os.path.join(scratch_directory, 'out'), 'rb') as output_digest_file:
+                with open(os.path.join(scratch_directory, "out"), "rb") as output_digest_file:
                     output_digest = remote_execution_pb2.Digest()
                     output_digest.ParseFromString(output_digest_file.read())
                     self._vdir = CasBasedDirectory(root_directory.cas_cache, digest=output_digest)
@@ -203,7 +204,7 @@ class SandboxBuildBox(Sandbox):
                 stdout=stdout,
                 stderr=stderr,
                 cwd=cwd,
-                start_new_session=interactive
+                start_new_session=interactive,
             )
 
             # Wait for the child process to finish, ensuring that

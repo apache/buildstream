@@ -27,7 +27,7 @@ from .option import Option, OPTION_SYMBOLS
 #
 class OptionFlags(Option):
 
-    OPTION_TYPE = 'flags'
+    OPTION_TYPE = "flags"
 
     def __init__(self, name, definition, pool):
         self.values = None
@@ -39,20 +39,23 @@ class OptionFlags(Option):
     def load_special(self, node, allow_value_definitions=True):
         super().load(node)
 
-        valid_symbols = OPTION_SYMBOLS + ['default']
+        valid_symbols = OPTION_SYMBOLS + ["default"]
         if allow_value_definitions:
-            valid_symbols += ['values']
+            valid_symbols += ["values"]
 
         node.validate_keys(valid_symbols)
 
         # Allow subclass to define the valid values
         self.values = self.load_valid_values(node)
         if not self.values:
-            raise LoadError("{}: No values specified for {} option '{}'"
-                            .format(node.get_provenance(), self.OPTION_TYPE, self.name),
-                            LoadErrorReason.INVALID_DATA)
+            raise LoadError(
+                "{}: No values specified for {} option '{}'".format(
+                    node.get_provenance(), self.OPTION_TYPE, self.name
+                ),
+                LoadErrorReason.INVALID_DATA,
+            )
 
-        value_node = node.get_sequence('default', default=[])
+        value_node = node.get_sequence("default", default=[])
         self.value = value_node.as_str_list()
         self.validate(self.value, value_node)
 
@@ -70,7 +73,7 @@ class OptionFlags(Option):
         stripped = "".join(value.split())
 
         # Get the comma separated values
-        list_value = stripped.split(',')
+        list_value = stripped.split(",")
 
         self.validate(list_value)
         self.value = sorted(list_value)
@@ -86,12 +89,13 @@ class OptionFlags(Option):
                     prefix = "{}: ".format(provenance)
                 else:
                     prefix = ""
-                raise LoadError("{}Invalid value for flags option '{}': {}\n"
-                                .format(prefix, self.name, value) +
-                                "Valid values: {}".format(", ".join(self.values)),
-                                LoadErrorReason.INVALID_DATA)
+                raise LoadError(
+                    "{}Invalid value for flags option '{}': {}\n".format(prefix, self.name, value)
+                    + "Valid values: {}".format(", ".join(self.values)),
+                    LoadErrorReason.INVALID_DATA,
+                )
 
     def load_valid_values(self, node):
         # Allow the more descriptive error to raise when no values
         # exist rather than bailing out here (by specifying default_value)
-        return node.get_str_list('values', default=[])
+        return node.get_str_list("values", default=[])

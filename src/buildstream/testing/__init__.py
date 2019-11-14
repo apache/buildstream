@@ -31,9 +31,8 @@ from .integration import integration_cache
 try:
     import pytest
 except ImportError:
-    module_name = globals()['__name__']
-    msg = "Could not import pytest:\n" \
-          "To use the {} module, you must have pytest installed.".format(module_name)
+    module_name = globals()["__name__"]
+    msg = "Could not import pytest:\n" "To use the {} module, you must have pytest installed.".format(module_name)
     raise ImportError(msg)
 
 
@@ -41,7 +40,7 @@ except ImportError:
 ALL_REPO_KINDS = OrderedDict()  # type: OrderedDict[Repo, str]
 
 
-def create_repo(kind, directory, subdir='repo'):
+def create_repo(kind, directory, subdir="repo"):
     """Convenience method for creating a Repo
 
     Args:
@@ -92,6 +91,7 @@ def sourcetests_collection_hook(session):
     Args:
         session (pytest.Session): The current pytest session
     """
+
     def should_collect_tests(config):
         args = config.args
         rootdir = config.rootdir
@@ -112,6 +112,7 @@ def sourcetests_collection_hook(session):
         return True
 
     from . import _sourcetests
+
     source_test_path = os.path.dirname(_sourcetests.__file__)
     # Add the location of the source tests to the session's
     # python_files config. Without this, pytest may filter out these

@@ -35,7 +35,7 @@ from . import utils
 from .types import FastEnum
 from .utils import move_atomic, DirectoryExistsError
 
-GIT_MODULES = '.gitmodules'
+GIT_MODULES = ".gitmodules"
 
 # Warnings
 WARN_INCONSISTENT_SUBMODULE = "inconsistent-submodule"
@@ -53,7 +53,6 @@ class _RefFormat(FastEnum):
 # might have at a given time
 #
 class _GitMirror(SourceFetcher):
-
     def __init__(self, source, path, url, ref, *, primary=False, tags=[]):
 
         super().__init__()
@@ -80,59 +79,64 @@ class _GitMirror(SourceFetcher):
             # system configured tmpdir is not on the same partition.
             #
             with self.source.tempdir() as tmpdir:
-                url = self.source.translate_url(self.url, alias_override=alias_override,
-                                                primary=self.primary)
-                self.source.call([self.source.host_git, 'clone', '--mirror', '-n', url, tmpdir],
-                                 fail="Failed to clone git repository {}".format(url),
-                                 fail_temporarily=True)
+                url = self.source.translate_url(self.url, alias_override=alias_override, primary=self.primary)
+                self.source.call(
+                    [self.source.host_git, "clone", "--mirror", "-n", url, tmpdir],
+                    fail="Failed to clone git repository {}".format(url),
+                    fail_temporarily=True,
+                )
 
                 try:
                     move_atomic(tmpdir, self.mirror)
                 except DirectoryExistsError:
                     # Another process was quicker to download this repository.
                     # Let's discard our own
-                    self.source.status("{}: Discarding duplicate clone of {}"
-                                       .format(self.source, url))
+                    self.source.status("{}: Discarding duplicate clone of {}".format(self.source, url))
                 except OSError as e:
-                    raise SourceError("{}: Failed to move cloned git repository {} from '{}' to '{}': {}"
-                                      .format(self.source, url, tmpdir, self.mirror, e)) from e
+                    raise SourceError(
+                        "{}: Failed to move cloned git repository {} from '{}' to '{}': {}".format(
+                            self.source, url, tmpdir, self.mirror, e
+                        )
+                    ) from e
 
     def _fetch(self, alias_override=None):
-        url = self.source.translate_url(self.url,
-                                        alias_override=alias_override,
-                                        primary=self.primary)
+        url = self.source.translate_url(self.url, alias_override=alias_override, primary=self.primary)
 
         if alias_override:
             remote_name = utils.url_directory_name(alias_override)
             _, remotes = self.source.check_output(
-                [self.source.host_git, 'remote'],
+                [self.source.host_git, "remote"],
                 fail="Failed to retrieve list of remotes in {}".format(self.mirror),
-                cwd=self.mirror
+                cwd=self.mirror,
             )
             if remote_name not in remotes:
                 self.source.call(
-                    [self.source.host_git, 'remote', 'add', remote_name, url],
+                    [self.source.host_git, "remote", "add", remote_name, url],
                     fail="Failed to add remote {} with url {}".format(remote_name, url),
-                    cwd=self.mirror
+                    cwd=self.mirror,
                 )
         else:
             remote_name = "origin"
 
-        self.source.call([self.source.host_git, 'fetch', remote_name, '--prune',
-                          '+refs/heads/*:refs/heads/*', '+refs/tags/*:refs/tags/*'],
-                         fail="Failed to fetch from remote git repository: {}".format(url),
-                         fail_temporarily=True,
-                         cwd=self.mirror)
+        self.source.call(
+            [
+                self.source.host_git,
+                "fetch",
+                remote_name,
+                "--prune",
+                "+refs/heads/*:refs/heads/*",
+                "+refs/tags/*:refs/tags/*",
+            ],
+            fail="Failed to fetch from remote git repository: {}".format(url),
+            fail_temporarily=True,
+            cwd=self.mirror,
+        )
 
     def fetch(self, alias_override=None):  # pylint: disable=arguments-differ
         # Resolve the URL for the message
-        resolved_url = self.source.translate_url(self.url,
-                                                 alias_override=alias_override,
-                                                 primary=self.primary)
+        resolved_url = self.source.translate_url(self.url, alias_override=alias_override, primary=self.primary)
 
-        with self.source.timed_activity("Fetching from {}"
-                                        .format(resolved_url),
-                                        silent_nested=True):
+        with self.source.timed_activity("Fetching from {}".format(resolved_url), silent_nested=True):
             self.ensure(alias_override)
             if not self.has_ref():
                 self._fetch(alias_override)
@@ -147,48 +151,49 @@ class _GitMirror(SourceFetcher):
             return False
 
         # Check if the ref is really there
-        rc = self.source.call([self.source.host_git, 'cat-file', '-t', self.ref], cwd=self.mirror)
+        rc = self.source.call([self.source.host_git, "cat-file", "-t", self.ref], cwd=self.mirror)
         return rc == 0
 
     def assert_ref(self):
         if not self.has_ref():
-            raise SourceError("{}: expected ref '{}' was not found in git repository: '{}'"
-                              .format(self.source, self.ref, self.url))
+            raise SourceError(
+                "{}: expected ref '{}' was not found in git repository: '{}'".format(self.source, self.ref, self.url)
+            )
 
     def latest_commit_with_tags(self, tracking, track_tags=False):
         _, output = self.source.check_output(
-            [self.source.host_git, 'rev-parse', tracking],
+            [self.source.host_git, "rev-parse", tracking],
             fail="Unable to find commit for specified branch name '{}'".format(tracking),
-            cwd=self.mirror)
-        ref = output.rstrip('\n')
+            cwd=self.mirror,
+        )
+        ref = output.rstrip("\n")
 
         if self.source.ref_format == _RefFormat.GIT_DESCRIBE:
             # Prefix the ref with the closest tag, if available,
             # to make the ref human readable
             exit_code, output = self.source.check_output(
-                [self.source.host_git, 'describe', '--tags', '--abbrev=40', '--long', ref],
-                cwd=self.mirror)
+                [self.source.host_git, "describe", "--tags", "--abbrev=40", "--long", ref], cwd=self.mirror
+            )
             if exit_code == 0:
-                ref = output.rstrip('\n')
+                ref = output.rstrip("\n")
 
         if not track_tags:
             return ref, []
 
         tags = set()
-        for options in [[], ['--first-parent'], ['--tags'], ['--tags', '--first-parent']]:
+        for options in [[], ["--first-parent"], ["--tags"], ["--tags", "--first-parent"]]:
             exit_code, output = self.source.check_output(
-                [self.source.host_git, 'describe', '--abbrev=0', ref, *options],
-                cwd=self.mirror)
+                [self.source.host_git, "describe", "--abbrev=0", ref, *options], cwd=self.mirror
+            )
             if exit_code == 0:
                 tag = output.strip()
                 _, commit_ref = self.source.check_output(
-                    [self.source.host_git, 'rev-parse', tag + '^{commit}'],
+                    [self.source.host_git, "rev-parse", tag + "^{commit}"],
                     fail="Unable to resolve tag '{}'".format(tag),
-                    cwd=self.mirror)
-                exit_code = self.source.call(
-                    [self.source.host_git, 'cat-file', 'tag', tag],
-                    cwd=self.mirror)
-                annotated = (exit_code == 0)
+                    cwd=self.mirror,
+                )
+                exit_code = self.source.call([self.source.host_git, "cat-file", "tag", tag], cwd=self.mirror)
+                annotated = exit_code == 0
 
                 tags.add((tag, commit_ref.strip(), annotated))
 
@@ -200,13 +205,17 @@ class _GitMirror(SourceFetcher):
         # Using --shared here avoids copying the objects into the checkout, in any
         # case we're just checking out a specific commit and then removing the .git/
         # directory.
-        self.source.call([self.source.host_git, 'clone', '--no-checkout', '--shared', self.mirror, fullpath],
-                         fail="Failed to create git mirror {} in directory: {}".format(self.mirror, fullpath),
-                         fail_temporarily=True)
+        self.source.call(
+            [self.source.host_git, "clone", "--no-checkout", "--shared", self.mirror, fullpath],
+            fail="Failed to create git mirror {} in directory: {}".format(self.mirror, fullpath),
+            fail_temporarily=True,
+        )
 
-        self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
-                         fail="Failed to checkout git ref {}".format(self.ref),
-                         cwd=fullpath)
+        self.source.call(
+            [self.source.host_git, "checkout", "--force", self.ref],
+            fail="Failed to checkout git ref {}".format(self.ref),
+            cwd=fullpath,
+        )
 
         # Remove .git dir
         shutil.rmtree(os.path.join(fullpath, ".git"))
@@ -217,34 +226,37 @@ class _GitMirror(SourceFetcher):
         fullpath = os.path.join(directory, self.path)
         url = self.source.translate_url(self.url)
 
-        self.source.call([self.source.host_git, 'clone', '--no-checkout', self.mirror, fullpath],
-                         fail="Failed to clone git mirror {} in directory: {}".format(self.mirror, fullpath),
-                         fail_temporarily=True)
+        self.source.call(
+            [self.source.host_git, "clone", "--no-checkout", self.mirror, fullpath],
+            fail="Failed to clone git mirror {} in directory: {}".format(self.mirror, fullpath),
+            fail_temporarily=True,
+        )
 
-        self.source.call([self.source.host_git, 'remote', 'set-url', 'origin', url],
-                         fail='Failed to add remote origin "{}"'.format(url),
-                         cwd=fullpath)
+        self.source.call(
+            [self.source.host_git, "remote", "set-url", "origin", url],
+            fail='Failed to add remote origin "{}"'.format(url),
+            cwd=fullpath,
+        )
 
-        self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
-                         fail="Failed to checkout git ref {}".format(self.ref),
-                         cwd=fullpath)
+        self.source.call(
+            [self.source.host_git, "checkout", "--force", self.ref],
+            fail="Failed to checkout git ref {}".format(self.ref),
+            cwd=fullpath,
+        )
 
     # List the submodules (path/url tuples) present at the given ref of this repo
     def submodule_list(self):
         modules = "{}:{}".format(self.ref, GIT_MODULES)
-        exit_code, output = self.source.check_output(
-            [self.source.host_git, 'show', modules], cwd=self.mirror)
+        exit_code, output = self.source.check_output([self.source.host_git, "show", modules], cwd=self.mirror)
 
         # If git show reports error code 128 here, we take it to mean there is
         # no .gitmodules file to display for the given revision.
         if exit_code == 128:
             return
         elif exit_code != 0:
-            raise SourceError(
-                "{plugin}: Failed to show gitmodules at ref {ref}".format(
-                    plugin=self, ref=self.ref))
+            raise SourceError("{plugin}: Failed to show gitmodules at ref {ref}".format(plugin=self, ref=self.ref))
 
-        content = '\n'.join([l.strip() for l in output.splitlines()])
+        content = "\n".join([l.strip() for l in output.splitlines()])
 
         io = StringIO(content)
         parser = RawConfigParser()
@@ -253,8 +265,8 @@ class _GitMirror(SourceFetcher):
         for section in parser.sections():
             # validate section name against the 'submodule "foo"' pattern
             if re.match(r'submodule "(.*)"', section):
-                path = parser.get(section, 'path')
-                url = parser.get(section, 'url')
+                path = parser.get(section, "path")
+                url = parser.get(section, "url")
 
                 yield (path, url)
 
@@ -266,31 +278,37 @@ class _GitMirror(SourceFetcher):
 
         # list objects in the parent repo tree to find the commit
         # object that corresponds to the submodule
-        _, output = self.source.check_output([self.source.host_git, 'ls-tree', ref, submodule],
-                                             fail="ls-tree failed for commit {} and submodule: {}".format(
-                                                 ref, submodule),
-                                             cwd=self.mirror)
+        _, output = self.source.check_output(
+            [self.source.host_git, "ls-tree", ref, submodule],
+            fail="ls-tree failed for commit {} and submodule: {}".format(ref, submodule),
+            cwd=self.mirror,
+        )
 
         # read the commit hash from the output
         fields = output.split()
-        if len(fields) >= 2 and fields[1] == 'commit':
+        if len(fields) >= 2 and fields[1] == "commit":
             submodule_commit = output.split()[2]
 
             # fail if the commit hash is invalid
             if len(submodule_commit) != 40:
-                raise SourceError("{}: Error reading commit information for submodule '{}'"
-                                  .format(self.source, submodule))
+                raise SourceError(
+                    "{}: Error reading commit information for submodule '{}'".format(self.source, submodule)
+                )
 
             return submodule_commit
 
         else:
-            detail = "The submodule '{}' is defined either in the BuildStream source\n".format(submodule) + \
-                     "definition, or in a .gitmodules file. But the submodule was never added to the\n" + \
-                     "underlying git repository with `git submodule add`."
+            detail = (
+                "The submodule '{}' is defined either in the BuildStream source\n".format(submodule)
+                + "definition, or in a .gitmodules file. But the submodule was never added to the\n"
+                + "underlying git repository with `git submodule add`."
+            )
 
-            self.source.warn("{}: Ignoring inconsistent submodule '{}'"
-                             .format(self.source, submodule), detail=detail,
-                             warning_token=WARN_INCONSISTENT_SUBMODULE)
+            self.source.warn(
+                "{}: Ignoring inconsistent submodule '{}'".format(self.source, submodule),
+                detail=detail,
+                warning_token=WARN_INCONSISTENT_SUBMODULE,
+            )
 
             return None
 
@@ -307,17 +325,24 @@ class _GitMirror(SourceFetcher):
                     # rev-list does not work in case of same rev
                     shallow.add(self.ref)
                 else:
-                    _, out = self.source.check_output([self.source.host_git, 'rev-list',
-                                                       '--ancestry-path', '--boundary',
-                                                       '{}..{}'.format(commit_ref, self.ref)],
-                                                      fail="Failed to get git history {}..{} in directory: {}"
-                                                      .format(commit_ref, self.ref, fullpath),
-                                                      fail_temporarily=True,
-                                                      cwd=self.mirror)
+                    _, out = self.source.check_output(
+                        [
+                            self.source.host_git,
+                            "rev-list",
+                            "--ancestry-path",
+                            "--boundary",
+                            "{}..{}".format(commit_ref, self.ref),
+                        ],
+                        fail="Failed to get git history {}..{} in directory: {}".format(
+                            commit_ref, self.ref, fullpath
+                        ),
+                        fail_temporarily=True,
+                        cwd=self.mirror,
+                    )
                     self.source.warn("refs {}..{}: {}".format(commit_ref, self.ref, out.splitlines()))
                     for line in out.splitlines():
-                        rev = line.lstrip('-')
-                        if line[0] == '-':
+                        rev = line.lstrip("-")
+                        if line[0] == "-":
                             shallow.add(rev)
                         else:
                             included.add(rev)
@@ -325,52 +350,64 @@ class _GitMirror(SourceFetcher):
             shallow -= included
             included |= shallow
 
-            self.source.call([self.source.host_git, 'init'],
-                             fail="Cannot initialize git repository: {}".format(fullpath),
-                             cwd=fullpath)
+            self.source.call(
+                [self.source.host_git, "init"],
+                fail="Cannot initialize git repository: {}".format(fullpath),
+                cwd=fullpath,
+            )
 
             for rev in included:
                 with TemporaryFile(dir=tmpdir) as commit_file:
-                    self.source.call([self.source.host_git, 'cat-file', 'commit', rev],
-                                     stdout=commit_file,
-                                     fail="Failed to get commit {}".format(rev),
-                                     cwd=self.mirror)
+                    self.source.call(
+                        [self.source.host_git, "cat-file", "commit", rev],
+                        stdout=commit_file,
+                        fail="Failed to get commit {}".format(rev),
+                        cwd=self.mirror,
+                    )
                     commit_file.seek(0, 0)
-                    self.source.call([self.source.host_git, 'hash-object', '-w', '-t', 'commit', '--stdin'],
-                                     stdin=commit_file,
-                                     fail="Failed to add commit object {}".format(rev),
-                                     cwd=fullpath)
+                    self.source.call(
+                        [self.source.host_git, "hash-object", "-w", "-t", "commit", "--stdin"],
+                        stdin=commit_file,
+                        fail="Failed to add commit object {}".format(rev),
+                        cwd=fullpath,
+                    )
 
-            with open(os.path.join(fullpath, '.git', 'shallow'), 'w') as shallow_file:
+            with open(os.path.join(fullpath, ".git", "shallow"), "w") as shallow_file:
                 for rev in shallow:
-                    shallow_file.write('{}\n'.format(rev))
+                    shallow_file.write("{}\n".format(rev))
 
             for tag, commit_ref, annotated in self.tags:
                 if annotated:
                     with TemporaryFile(dir=tmpdir) as tag_file:
-                        tag_data = 'object {}\ntype commit\ntag {}\n'.format(commit_ref, tag)
-                        tag_file.write(tag_data.encode('ascii'))
+                        tag_data = "object {}\ntype commit\ntag {}\n".format(commit_ref, tag)
+                        tag_file.write(tag_data.encode("ascii"))
                         tag_file.seek(0, 0)
                         _, tag_ref = self.source.check_output(
-                            [self.source.host_git, 'hash-object', '-w', '-t',
-                             'tag', '--stdin'],
+                            [self.source.host_git, "hash-object", "-w", "-t", "tag", "--stdin"],
                             stdin=tag_file,
                             fail="Failed to add tag object {}".format(tag),
-                            cwd=fullpath)
+                            cwd=fullpath,
+                        )
 
-                    self.source.call([self.source.host_git, 'tag', tag, tag_ref.strip()],
-                                     fail="Failed to tag: {}".format(tag),
-                                     cwd=fullpath)
+                    self.source.call(
+                        [self.source.host_git, "tag", tag, tag_ref.strip()],
+                        fail="Failed to tag: {}".format(tag),
+                        cwd=fullpath,
+                    )
                 else:
-                    self.source.call([self.source.host_git, 'tag', tag, commit_ref],
-                                     fail="Failed to tag: {}".format(tag),
-                                     cwd=fullpath)
+                    self.source.call(
+                        [self.source.host_git, "tag", tag, commit_ref],
+                        fail="Failed to tag: {}".format(tag),
+                        cwd=fullpath,
+                    )
 
-            with open(os.path.join(fullpath, '.git', 'HEAD'), 'w') as head:
-                self.source.call([self.source.host_git, 'rev-parse', self.ref],
-                                 stdout=head,
-                                 fail="Failed to parse commit {}".format(self.ref),
-                                 cwd=self.mirror)
+            with open(os.path.join(fullpath, ".git", "HEAD"), "w") as head:
+                self.source.call(
+                    [self.source.host_git, "rev-parse", self.ref],
+                    stdout=head,
+                    fail="Failed to parse commit {}".format(self.ref),
+                    cwd=self.mirror,
+                )
 
 
 class _GitSourceBase(Source):
@@ -382,58 +419,57 @@ class _GitSourceBase(Source):
     BST_MIRROR_CLASS = _GitMirror
 
     def configure(self, node):
-        ref = node.get_str('ref', None)
+        ref = node.get_str("ref", None)
 
-        config_keys = ['url', 'track', 'ref', 'submodules',
-                       'checkout-submodules', 'ref-format',
-                       'track-tags', 'tags']
+        config_keys = ["url", "track", "ref", "submodules", "checkout-submodules", "ref-format", "track-tags", "tags"]
         node.validate_keys(config_keys + Source.COMMON_CONFIG_KEYS)
 
-        tags_node = node.get_sequence('tags', [])
+        tags_node = node.get_sequence("tags", [])
         for tag_node in tags_node:
-            tag_node.validate_keys(['tag', 'commit', 'annotated'])
+            tag_node.validate_keys(["tag", "commit", "annotated"])
 
         tags = self._load_tags(node)
-        self.track_tags = node.get_bool('track-tags', default=False)
+        self.track_tags = node.get_bool("track-tags", default=False)
 
-        self.original_url = node.get_str('url')
-        self.mirror = self.BST_MIRROR_CLASS(self, '', self.original_url, ref, tags=tags, primary=True)
-        self.tracking = node.get_str('track', None)
+        self.original_url = node.get_str("url")
+        self.mirror = self.BST_MIRROR_CLASS(self, "", self.original_url, ref, tags=tags, primary=True)
+        self.tracking = node.get_str("track", None)
 
-        self.ref_format = node.get_enum('ref-format', _RefFormat, _RefFormat.SHA1)
+        self.ref_format = node.get_enum("ref-format", _RefFormat, _RefFormat.SHA1)
 
         # At this point we now know if the source has a ref and/or a track.
         # If it is missing both then we will be unable to track or build.
         if self.mirror.ref is None and self.tracking is None:
-            raise SourceError("{}: Git sources require a ref and/or track".format(self),
-                              reason="missing-track-and-ref")
+            raise SourceError(
+                "{}: Git sources require a ref and/or track".format(self), reason="missing-track-and-ref"
+            )
 
-        self.checkout_submodules = node.get_bool('checkout-submodules', default=True)
+        self.checkout_submodules = node.get_bool("checkout-submodules", default=True)
         self.submodules = []
 
         # Parse a dict of submodule overrides, stored in the submodule_overrides
         # and submodule_checkout_overrides dictionaries.
         self.submodule_overrides = {}
         self.submodule_checkout_overrides = {}
-        modules = node.get_mapping('submodules', {})
+        modules = node.get_mapping("submodules", {})
         for path in modules.keys():
             submodule = modules.get_mapping(path)
-            url = submodule.get_str('url', None)
+            url = submodule.get_str("url", None)
 
             # Make sure to mark all URLs that are specified in the configuration
             if url:
                 self.mark_download_url(url, primary=False)
 
             self.submodule_overrides[path] = url
-            if 'checkout' in submodule:
-                checkout = submodule.get_bool('checkout')
+            if "checkout" in submodule:
+                checkout = submodule.get_bool("checkout")
                 self.submodule_checkout_overrides[path] = checkout
 
         self.mark_download_url(self.original_url)
 
     def preflight(self):
         # Check if git is installed, get the binary at the same time
-        self.host_git = utils.get_host_tool('git')
+        self.host_git = utils.get_host_tool("git")
 
     def get_unique_key(self):
         # Here we want to encode the local name of the repository and
@@ -442,7 +478,7 @@ class _GitSourceBase(Source):
         key = [self.original_url, self.mirror.ref]
         if self.mirror.tags:
             tags = {tag: (commit, annotated) for tag, commit, annotated in self.mirror.tags}
-            key.append({'tags': tags})
+            key.append({"tags": tags})
 
         # Only modify the cache key with checkout_submodules if it's something
         # other than the default behaviour.
@@ -467,7 +503,7 @@ class _GitSourceBase(Source):
         return Consistency.INCONSISTENT
 
     def load_ref(self, node):
-        self.mirror.ref = node.get_str('ref', None)
+        self.mirror.ref = node.get_str("ref", None)
         self.mirror.tags = self._load_tags(node)
 
     def get_ref(self):
@@ -478,25 +514,23 @@ class _GitSourceBase(Source):
     def set_ref(self, ref, node):
         if not ref:
             self.mirror.ref = None
-            if 'ref' in node:
-                del node['ref']
+            if "ref" in node:
+                del node["ref"]
             self.mirror.tags = []
-            if 'tags' in node:
-                del node['tags']
+            if "tags" in node:
+                del node["tags"]
         else:
             actual_ref, tags = ref
-            node['ref'] = self.mirror.ref = actual_ref
+            node["ref"] = self.mirror.ref = actual_ref
             self.mirror.tags = tags
             if tags:
-                node['tags'] = []
+                node["tags"] = []
                 for tag, commit_ref, annotated in tags:
-                    data = {'tag': tag,
-                            'commit': commit_ref,
-                            'annotated': annotated}
-                    node['tags'].append(data)
+                    data = {"tag": tag, "commit": commit_ref, "annotated": annotated}
+                    node["tags"].append(data)
             else:
-                if 'tags' in node:
-                    del node['tags']
+                if "tags" in node:
+                    del node["tags"]
 
     def track(self):  # pylint: disable=arguments-differ
 
@@ -504,17 +538,13 @@ class _GitSourceBase(Source):
         if not self.tracking:
             # Is there a better way to check if a ref is given.
             if self.mirror.ref is None:
-                detail = 'Without a tracking branch ref can not be updated. Please ' + \
-                         'provide a ref or a track.'
-                raise SourceError("{}: No track or ref".format(self),
-                                  detail=detail, reason="track-attempt-no-track")
+                detail = "Without a tracking branch ref can not be updated. Please " + "provide a ref or a track."
+                raise SourceError("{}: No track or ref".format(self), detail=detail, reason="track-attempt-no-track")
             return None
 
         # Resolve the URL for the message
         resolved_url = self.translate_url(self.mirror.url)
-        with self.timed_activity("Tracking {} from {}"
-                                 .format(self.tracking, resolved_url),
-                                 silent_nested=True):
+        with self.timed_activity("Tracking {} from {}".format(self.tracking, resolved_url), silent_nested=True):
             self.mirror.ensure()
             self.mirror._fetch()
 
@@ -578,11 +608,12 @@ class _GitSourceBase(Source):
             for path, url in invalid_submodules:
                 detail.append("  Submodule URL '{}' at path '{}'".format(url, path))
 
-            self.warn("{}: Invalid submodules specified".format(self),
-                      warning_token=WARN_INVALID_SUBMODULE,
-                      detail="The following submodules are specified in the source "
-                      "description but do not exist according to the repository\n\n" +
-                      "\n".join(detail))
+            self.warn(
+                "{}: Invalid submodules specified".format(self),
+                warning_token=WARN_INVALID_SUBMODULE,
+                detail="The following submodules are specified in the source "
+                "description but do not exist according to the repository\n\n" + "\n".join(detail),
+            )
 
         # Warn about submodules which exist but have not been explicitly configured
         if unlisted_submodules:
@@ -590,37 +621,47 @@ class _GitSourceBase(Source):
             for path, url in unlisted_submodules:
                 detail.append("  Submodule URL '{}' at path '{}'".format(url, path))
 
-            self.warn("{}: Unlisted submodules exist".format(self),
-                      warning_token=WARN_UNLISTED_SUBMODULE,
-                      detail="The following submodules exist but are not specified " +
-                      "in the source description\n\n" +
-                      "\n".join(detail))
+            self.warn(
+                "{}: Unlisted submodules exist".format(self),
+                warning_token=WARN_UNLISTED_SUBMODULE,
+                detail="The following submodules exist but are not specified "
+                + "in the source description\n\n"
+                + "\n".join(detail),
+            )
 
         # Assert that the ref exists in the track tag/branch, if track has been specified.
         ref_in_track = False
         if self.tracking:
-            _, branch = self.check_output([self.host_git, 'branch', '--list', self.tracking,
-                                           '--contains', self.mirror.ref],
-                                          cwd=self.mirror.mirror)
+            _, branch = self.check_output(
+                [self.host_git, "branch", "--list", self.tracking, "--contains", self.mirror.ref],
+                cwd=self.mirror.mirror,
+            )
             if branch:
                 ref_in_track = True
             else:
-                _, tag = self.check_output([self.host_git, 'tag', '--list', self.tracking,
-                                            '--contains', self.mirror.ref],
-                                           cwd=self.mirror.mirror)
+                _, tag = self.check_output(
+                    [self.host_git, "tag", "--list", self.tracking, "--contains", self.mirror.ref],
+                    cwd=self.mirror.mirror,
+                )
                 if tag:
                     ref_in_track = True
 
             if not ref_in_track:
-                detail = "The ref provided for the element does not exist locally " + \
-                         "in the provided track branch / tag '{}'.\n".format(self.tracking) + \
-                         "You may wish to track the element to update the ref from '{}' ".format(self.tracking) + \
-                         "with `bst source track`,\n" + \
-                         "or examine the upstream at '{}' for the specific ref.".format(self.mirror.url)
+                detail = (
+                    "The ref provided for the element does not exist locally "
+                    + "in the provided track branch / tag '{}'.\n".format(self.tracking)
+                    + "You may wish to track the element to update the ref from '{}' ".format(self.tracking)
+                    + "with `bst source track`,\n"
+                    + "or examine the upstream at '{}' for the specific ref.".format(self.mirror.url)
+                )
 
-                self.warn("{}: expected ref '{}' was not found in given track '{}' for staged repository: '{}'\n"
-                          .format(self, self.mirror.ref, self.tracking, self.mirror.url),
-                          detail=detail, warning_token=CoreWarnings.REF_NOT_IN_TRACK)
+                self.warn(
+                    "{}: expected ref '{}' was not found in given track '{}' for staged repository: '{}'\n".format(
+                        self, self.mirror.ref, self.tracking, self.mirror.url
+                    ),
+                    detail=detail,
+                    warning_token=CoreWarnings.REF_NOT_IN_TRACK,
+                )
 
     ###########################################################
     #                     Local Functions                     #
@@ -668,11 +709,11 @@ class _GitSourceBase(Source):
 
     def _load_tags(self, node):
         tags = []
-        tags_node = node.get_sequence('tags', [])
+        tags_node = node.get_sequence("tags", [])
         for tag_node in tags_node:
-            tag = tag_node.get_str('tag')
-            commit_ref = tag_node.get_str('commit')
-            annotated = tag_node.get_bool('annotated')
+            tag = tag_node.get_str("tag")
+            commit_ref = tag_node.get_str("commit")
+            annotated = tag_node.get_bool("annotated")
             tags.append((tag, commit_ref, annotated))
         return tags
 

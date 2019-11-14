@@ -28,12 +28,7 @@ def generate_junction(tmpdir, subproject_path, junction_path, *, store_ref=True)
     if not store_ref:
         source_ref = None
 
-    element = {
-        'kind': 'junction',
-        'sources': [
-            repo.source_config(ref=source_ref)
-        ]
-    }
+    element = {"kind": "junction", "sources": [repo.source_config(ref=source_ref)]}
     _yaml.roundtrip_dump(element, junction_path)
 
     return ref
@@ -41,46 +36,38 @@ def generate_junction(tmpdir, subproject_path, junction_path, *, store_ref=True)
 
 # A barebones Git Repo class to use for generating junctions
 class _SimpleGit(Repo):
-    def __init__(self, directory, subdir='repo'):
+    def __init__(self, directory, subdir="repo"):
         if not HAVE_GIT:
-            pytest.skip('git is not available')
+            pytest.skip("git is not available")
         super().__init__(directory, subdir)
 
     def create(self, directory):
         self.copy_directory(directory, self.repo)
-        self._run_git('init', '.')
-        self._run_git('add', '.')
-        self._run_git('commit', '-m', 'Initial commit')
+        self._run_git("init", ".")
+        self._run_git("add", ".")
+        self._run_git("commit", "-m", "Initial commit")
         return self.latest_commit()
 
     def latest_commit(self):
-        return self._run_git(
-            'rev-parse', 'HEAD',
-            stdout=subprocess.PIPE,
-            universal_newlines=True,
-        ).stdout.strip()
+        return self._run_git("rev-parse", "HEAD", stdout=subprocess.PIPE, universal_newlines=True,).stdout.strip()
 
     def source_config(self, ref=None):
         return self.source_config_extra(ref)
 
     def source_config_extra(self, ref=None, checkout_submodules=None):
-        config = {
-            'kind': 'git',
-            'url': 'file://' + self.repo,
-            'track': 'master'
-        }
+        config = {"kind": "git", "url": "file://" + self.repo, "track": "master"}
         if ref is not None:
-            config['ref'] = ref
+            config["ref"] = ref
         if checkout_submodules is not None:
-            config['checkout-submodules'] = checkout_submodules
+            config["checkout-submodules"] = checkout_submodules
 
         return config
 
     def _run_git(self, *args, **kwargs):
         argv = [GIT]
         argv.extend(args)
-        if 'env' not in kwargs:
-            kwargs['env'] = dict(GIT_ENV, PWD=self.repo)
-        kwargs.setdefault('cwd', self.repo)
-        kwargs.setdefault('check', True)
+        if "env" not in kwargs:
+            kwargs["env"] = dict(GIT_ENV, PWD=self.repo)
+        kwargs.setdefault("cwd", self.repo)
+        kwargs.setdefault("check", True)
         return subprocess.run(argv, **kwargs)

@@ -29,7 +29,7 @@ from .._exceptions import PlatformError, ImplError, SandboxError
 from .. import utils
 
 
-class Platform():
+class Platform:
     # Platform()
     #
     # A class to manage platform-specific details. Currently holds the
@@ -45,7 +45,7 @@ class Platform():
         self._setup_sandbox(force_sandbox)
 
     def _setup_sandbox(self, force_sandbox):
-        sandbox_setups = {'dummy': self._setup_dummy_sandbox}
+        sandbox_setups = {"dummy": self._setup_dummy_sandbox}
         preferred_sandboxes = []
         self._try_sandboxes(force_sandbox, sandbox_setups, preferred_sandboxes)
 
@@ -58,12 +58,16 @@ class Platform():
             try:
                 sandbox_setups[force_sandbox]()
             except KeyError:
-                raise PlatformError("Forced Sandbox is unavailable on this platform: BST_FORCE_SANDBOX"
-                                    " is set to {} but it is not available".format(force_sandbox))
+                raise PlatformError(
+                    "Forced Sandbox is unavailable on this platform: BST_FORCE_SANDBOX"
+                    " is set to {} but it is not available".format(force_sandbox)
+                )
             except SandboxError as Error:
-                raise PlatformError("Forced Sandbox Error: BST_FORCE_SANDBOX"
-                                    " is set to {} but cannot be setup".format(force_sandbox),
-                                    detail=" and ".join(self.dummy_reasons)) from Error
+                raise PlatformError(
+                    "Forced Sandbox Error: BST_FORCE_SANDBOX"
+                    " is set to {} but cannot be setup".format(force_sandbox),
+                    detail=" and ".join(self.dummy_reasons),
+                ) from Error
         else:
             for good_sandbox in preferred_sandboxes:
                 try:
@@ -73,7 +77,7 @@ class Platform():
                     continue
                 except utils.ProgramNotFoundError:
                     continue
-            sandbox_setups['dummy']()
+            sandbox_setups["dummy"]()
 
     def _check_sandbox(self, Sandbox):
         try:
@@ -87,29 +91,29 @@ class Platform():
         # Meant for testing purposes and therefore hidden in the
         # deepest corners of the source code. Try not to abuse this,
         # please?
-        if os.getenv('BST_FORCE_SANDBOX'):
-            force_sandbox = os.getenv('BST_FORCE_SANDBOX')
+        if os.getenv("BST_FORCE_SANDBOX"):
+            force_sandbox = os.getenv("BST_FORCE_SANDBOX")
         else:
             force_sandbox = None
 
-        if os.getenv('BST_FORCE_BACKEND'):
-            backend = os.getenv('BST_FORCE_BACKEND')
-        elif sys.platform.startswith('darwin'):
-            backend = 'darwin'
-        elif sys.platform.startswith('linux'):
-            backend = 'linux'
-        elif sys.platform == 'win32':
-            backend = 'win32'
+        if os.getenv("BST_FORCE_BACKEND"):
+            backend = os.getenv("BST_FORCE_BACKEND")
+        elif sys.platform.startswith("darwin"):
+            backend = "darwin"
+        elif sys.platform.startswith("linux"):
+            backend = "linux"
+        elif sys.platform == "win32":
+            backend = "win32"
         else:
-            backend = 'fallback'
+            backend = "fallback"
 
-        if backend == 'linux':
+        if backend == "linux":
             from .linux import Linux as PlatformImpl  # pylint: disable=cyclic-import
-        elif backend == 'darwin':
+        elif backend == "darwin":
             from .darwin import Darwin as PlatformImpl  # pylint: disable=cyclic-import
-        elif backend == 'win32':
+        elif backend == "win32":
             from .win32 import Win32 as PlatformImpl  # pylint: disable=cyclic-import
-        elif backend == 'fallback':
+        elif backend == "fallback":
             from .fallback import Fallback as PlatformImpl  # pylint: disable=cyclic-import
         else:
             raise PlatformError("No such platform: '{}'".format(backend))
@@ -156,11 +160,11 @@ class Platform():
             "sparc64": "sparc-v9",
             "sparc-v9": "sparc-v9",
             "x86-32": "x86-32",
-            "x86-64": "x86-64"
+            "x86-64": "x86-64",
         }
 
         try:
-            return aliases[arch.replace('_', '-').lower()]
+            return aliases[arch.replace("_", "-").lower()]
         except KeyError:
             raise PlatformError("Unknown architecture: {}".format(arch))
 
@@ -188,7 +192,7 @@ class Platform():
     def does_multiprocessing_start_require_pickling(self):
         # Note that if the start method has not been set before now, it will be
         # set to the platform default by `get_start_method`.
-        return multiprocessing.get_start_method() != 'fork'
+        return multiprocessing.get_start_method() != "fork"
 
     ##################################################################
     #                        Sandbox functions                       #
@@ -206,12 +210,12 @@ class Platform():
     #     (Sandbox) A sandbox
     #
     def create_sandbox(self, *args, **kwargs):
-        raise ImplError("Platform {platform} does not implement create_sandbox()"
-                        .format(platform=type(self).__name__))
+        raise ImplError("Platform {platform} does not implement create_sandbox()".format(platform=type(self).__name__))
 
     def check_sandbox_config(self, config):
-        raise ImplError("Platform {platform} does not implement check_sandbox_config()"
-                        .format(platform=type(self).__name__))
+        raise ImplError(
+            "Platform {platform} does not implement check_sandbox_config()".format(platform=type(self).__name__)
+        )
 
     def maximize_open_file_limit(self):
         # Need to set resources for _frontend/app.py as this is dependent on the platform
@@ -230,5 +234,6 @@ class Platform():
             resource.setrlimit(resource.RLIMIT_NOFILE, (hard_limit, hard_limit))
 
     def _setup_dummy_sandbox(self):
-        raise ImplError("Platform {platform} does not implement _setup_dummy_sandbox()"
-                        .format(platform=type(self).__name__))
+        raise ImplError(
+            "Platform {platform} does not implement _setup_dummy_sandbox()".format(platform=type(self).__name__)
+        )

@@ -30,22 +30,22 @@ import subprocess
 root = os.path.dirname(os.path.abspath(__file__))
 
 # The Element plugin directory
-element_plugins = os.path.join(root, 'plugins', 'elements')
+element_plugins = os.path.join(root, "plugins", "elements")
 
 # The Source plugin directory
-source_plugins = os.path.join(root, 'plugins', 'sources')
+source_plugins = os.path.join(root, "plugins", "sources")
 
 # Default user configuration
-default_user_config = os.path.join(root, 'data', 'userconfig.yaml')
+default_user_config = os.path.join(root, "data", "userconfig.yaml")
 
 # Default project configuration
-default_project_config = os.path.join(root, 'data', 'projectconfig.yaml')
+default_project_config = os.path.join(root, "data", "projectconfig.yaml")
 
 # Script template to call module building scripts
-build_all_template = os.path.join(root, 'data', 'build-all.sh.in')
+build_all_template = os.path.join(root, "data", "build-all.sh.in")
 
 # Module building script template
-build_module_template = os.path.join(root, 'data', 'build-module.sh.in')
+build_module_template = os.path.join(root, "data", "build-module.sh.in")
 
 
 def get_bwrap_version():
@@ -53,7 +53,7 @@ def get_bwrap_version():
     #
     # returns None if no bwrap was found
     # otherwise returns a tuple of 3 int: major, minor, patch
-    bwrap_path = shutil.which('bwrap')
+    bwrap_path = shutil.which("bwrap")
 
     if not bwrap_path:
         return None

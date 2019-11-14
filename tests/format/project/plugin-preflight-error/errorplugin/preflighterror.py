@@ -2,15 +2,13 @@ from buildstream import Source, SourceError, Consistency
 
 
 class PreflightErrorSource(Source):
-
     def configure(self, node):
         pass
 
     def preflight(self):
 
         # Raise a preflight error unconditionally
-        raise SourceError("Unsatisfied requirements in preflight, raising this error",
-                          reason="the-preflight-error")
+        raise SourceError("Unsatisfied requirements in preflight, raising this error", reason="the-preflight-error")
 
     def get_unique_key(self):
         return {}

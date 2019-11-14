@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 class ArtifactElement(Element):
 
     # A hash of ArtifactElement by ref
-    __instantiated_artifacts = {}   # type: Dict[str, ArtifactElement]
+    __instantiated_artifacts = {}  # type: Dict[str, ArtifactElement]
 
     # ArtifactElement's require this as the sandbox will use a normal
     # directory when we checkout
@@ -138,7 +138,7 @@ class ArtifactElement(Element):
     #    sandbox (Sandbox)
     #
     def configure_sandbox(self, sandbox):
-        install_root = self.get_variable('install-root')
+        install_root = self.get_variable("install-root")
 
         # Tell the sandbox to mount the build root and install root
         sandbox.mark_directory(install_root)
@@ -173,7 +173,7 @@ class ArtifactElement(Element):
 #
 def verify_artifact_ref(ref):
     try:
-        project, element, key = ref.split('/', 2)  # This will raise a Value error if unable to split
+        project, element, key = ref.split("/", 2)  # This will raise a Value error if unable to split
         # Explicitly raise a ValueError if the key length is not as expected
         if not _cachekey.is_key(key):
             raise ValueError

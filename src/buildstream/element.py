@@ -90,8 +90,7 @@ from pyroaring import BitMap  # pylint: disable=no-name-in-module
 from . import _yaml
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
-from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, \
-    ErrorDomain, SourceCacheError
+from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, ErrorDomain, SourceCacheError
 from .utils import FileListResult
 from . import utils
 from . import _cachekey
@@ -122,6 +121,7 @@ if TYPE_CHECKING:
     from ._context import Context
     from ._loader.metaelement import MetaElement
     from ._project import Project
+
     # pylint: enable=cyclic-import
 
 
@@ -136,13 +136,10 @@ class ElementError(BstError):
        collect: An optional directory containing partial install contents
        temporary: An indicator to whether the error may occur if the operation was run again. (*Since: 1.2*)
     """
-    def __init__(self,
-                 message: str,
-                 *,
-                 detail: str = None,
-                 reason: str = None,
-                 collect: str = None,
-                 temporary: bool = False):
+
+    def __init__(
+        self, message: str, *, detail: str = None, reason: str = None, collect: str = None, temporary: bool = False
+    ):
         super().__init__(message, detail=detail, domain=ErrorDomain.ELEMENT, reason=reason, temporary=temporary)
 
         self.collect = collect
@@ -156,12 +153,13 @@ class Element(Plugin):
     All elements derive from this class, this interface defines how
     the core will be interacting with Elements.
     """
+
     # The defaults from the yaml file and project
     __defaults = None
     # A hash of Element by MetaElement
-    __instantiated_elements = {}    # type: Dict[MetaElement, Element]
+    __instantiated_elements = {}  # type: Dict[MetaElement, Element]
     # A list of (source, ref) tuples which were redundantly specified
-    __redundant_source_refs = []    # type: List[Tuple[Source, SourceRef]]
+    __redundant_source_refs = []  # type: List[Tuple[Source, SourceRef]]
 
     BST_ARTIFACT_VERSION = 0
     """The element plugin's artifact version
@@ -215,10 +213,10 @@ class Element(Plugin):
     *Since: 1.90*
     """
 
-    def __init__(self, context: 'Context', project: 'Project', meta: 'MetaElement', plugin_conf: Dict[str, Any]):
+    def __init__(self, context: "Context", project: "Project", meta: "MetaElement", plugin_conf: Dict[str, Any]):
 
-        self.__cache_key_dict = None            # Dict for cache key calculation
-        self.__cache_key = None                 # Our cached cache key
+        self.__cache_key_dict = None  # Dict for cache key calculation
+        self.__cache_key = None  # Our cached cache key
 
         super().__init__(meta.name, context, project, meta.provenance, "element")
 
@@ -236,75 +234,75 @@ class Element(Plugin):
         """
 
         # Direct runtime dependency Elements
-        self.__runtime_dependencies = []        # type: List[Element]
+        self.__runtime_dependencies = []  # type: List[Element]
         # Direct build dependency Elements
-        self.__build_dependencies = []          # type: List[Element]
+        self.__build_dependencies = []  # type: List[Element]
         # Direct build dependency subset which require strict rebuilds
-        self.__strict_dependencies = []         # type: List[Element]
+        self.__strict_dependencies = []  # type: List[Element]
         # Direct reverse build dependency Elements
-        self.__reverse_build_deps = set()       # type: Set[Element]
+        self.__reverse_build_deps = set()  # type: Set[Element]
         # Direct reverse runtime dependency Elements
-        self.__reverse_runtime_deps = set()     # type: Set[Element]
-        self.__build_deps_without_strict_cache_key = None    # Number of build dependencies without a strict key
+        self.__reverse_runtime_deps = set()  # type: Set[Element]
+        self.__build_deps_without_strict_cache_key = None  # Number of build dependencies without a strict key
         self.__runtime_deps_without_strict_cache_key = None  # Number of runtime dependencies without a strict key
-        self.__build_deps_without_cache_key = None    # Number of build dependencies without a cache key
+        self.__build_deps_without_cache_key = None  # Number of build dependencies without a cache key
         self.__runtime_deps_without_cache_key = None  # Number of runtime dependencies without a cache key
-        self.__build_deps_uncached = None    # Build dependencies which are not yet cached
+        self.__build_deps_uncached = None  # Build dependencies which are not yet cached
         self.__runtime_deps_uncached = None  # Runtime dependencies which are not yet cached
         self.__updated_strict_cache_keys_of_rdeps = False  # Whether we've updated strict cache keys of rdeps
-        self.__ready_for_runtime = False        # Whether the element and its runtime dependencies have cache keys
+        self.__ready_for_runtime = False  # Whether the element and its runtime dependencies have cache keys
         self.__ready_for_runtime_and_cached = False  # Whether all runtime deps are cached, as well as the element
-        self.__cached_remotely = None           # Whether the element is cached remotely
+        self.__cached_remotely = None  # Whether the element is cached remotely
         # List of Sources
-        self.__sources = []                     # type: List[Source]
-        self.__weak_cache_key = None            # Our cached weak cache key
-        self.__strict_cache_key = None          # Our cached cache key for strict builds
+        self.__sources = []  # type: List[Source]
+        self.__weak_cache_key = None  # Our cached weak cache key
+        self.__strict_cache_key = None  # Our cached cache key for strict builds
         self.__artifacts = context.artifactcache  # Artifact cache
         self.__sourcecache = context.sourcecache  # Source cache
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
-        self.__assemble_scheduled = False       # Element is scheduled to be assembled
-        self.__assemble_done = False            # Element is assembled
-        self.__tracking_scheduled = False       # Sources are scheduled to be tracked
-        self.__pull_done = False                # Whether pull was attempted
-        self.__cached_successfully = None       # If the Element is known to be successfully cached
-        self.__source_cached = None             # If the sources are known to be successfully cached
-        self.__splits = None                    # Resolved regex objects for computing split domains
-        self.__whitelist_regex = None           # Resolved regex object to check if file is allowed to overlap
+        self.__assemble_scheduled = False  # Element is scheduled to be assembled
+        self.__assemble_done = False  # Element is assembled
+        self.__tracking_scheduled = False  # Sources are scheduled to be tracked
+        self.__pull_done = False  # Whether pull was attempted
+        self.__cached_successfully = None  # If the Element is known to be successfully cached
+        self.__source_cached = None  # If the sources are known to be successfully cached
+        self.__splits = None  # Resolved regex objects for computing split domains
+        self.__whitelist_regex = None  # Resolved regex object to check if file is allowed to overlap
         # Location where Element.stage_sources() was called
         self.__staged_sources_directory = None  # type: Optional[str]
-        self.__tainted = None                   # Whether the artifact is tainted and should not be shared
-        self.__required = False                 # Whether the artifact is required in the current session
+        self.__tainted = None  # Whether the artifact is tainted and should not be shared
+        self.__required = False  # Whether the artifact is required in the current session
         self.__artifact_files_required = False  # Whether artifact files are required in the local cache
-        self.__build_result = None              # The result of assembling this Element (success, description, detail)
-        self._build_log_path = None             # The path of the build log for this Element
+        self.__build_result = None  # The result of assembling this Element (success, description, detail)
+        self._build_log_path = None  # The path of the build log for this Element
         # Artifact class for direct artifact composite interaction
-        self.__artifact = None                  # type: Optional[Artifact]
-        self.__strict_artifact = None           # Artifact for strict cache key
-        self.__meta_kind = meta.kind            # The kind of this source, required for unpickling
+        self.__artifact = None  # type: Optional[Artifact]
+        self.__strict_artifact = None  # Artifact for strict cache key
+        self.__meta_kind = meta.kind  # The kind of this source, required for unpickling
 
         # the index of the last source in this element that requires previous
         # sources for staging
         self.__last_source_requires_previous_ix = None
 
-        self.__batch_prepare_assemble = False         # Whether batching across prepare()/assemble() is configured
-        self.__batch_prepare_assemble_flags = 0       # Sandbox flags for batching across prepare()/assemble()
+        self.__batch_prepare_assemble = False  # Whether batching across prepare()/assemble() is configured
+        self.__batch_prepare_assemble_flags = 0  # Sandbox flags for batching across prepare()/assemble()
         # Collect dir for batching across prepare()/assemble()
         self.__batch_prepare_assemble_collect = None  # type: Optional[str]
 
         # Callbacks
-        self.__required_callback = None               # Callback to Queues
-        self.__can_query_cache_callback = None        # Callback to PullQueue/FetchQueue
-        self.__buildable_callback = None              # Callback to BuildQueue
+        self.__required_callback = None  # Callback to Queues
+        self.__can_query_cache_callback = None  # Callback to PullQueue/FetchQueue
+        self.__buildable_callback = None  # Callback to BuildQueue
 
-        self._depth = None                            # Depth of Element in its current dependency graph
-        self._resolved_initial_state = False          # Whether the initial state of the Element has been resolved
+        self._depth = None  # Depth of Element in its current dependency graph
+        self._resolved_initial_state = False  # Whether the initial state of the Element has been resolved
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults(project, plugin_conf, meta.kind, meta.is_junction)
 
         # Collect the composited variables and resolve them
         variables = self.__extract_variables(project, meta)
-        variables['element-name'] = self.name
+        variables["element-name"] = self.name
         self.__variables = Variables(variables)
 
         # Collect the composited environment now that we have variables
@@ -348,7 +346,7 @@ class Element(Plugin):
     #############################################################
     #                      Abstract Methods                     #
     #############################################################
-    def configure_sandbox(self, sandbox: 'Sandbox') -> None:
+    def configure_sandbox(self, sandbox: "Sandbox") -> None:
         """Configures the the sandbox for execution
 
         Args:
@@ -360,10 +358,9 @@ class Element(Plugin):
         Elements must implement this method to configure the sandbox object
         for execution.
         """
-        raise ImplError("element plugin '{kind}' does not implement configure_sandbox()".format(
-            kind=self.get_kind()))
+        raise ImplError("element plugin '{kind}' does not implement configure_sandbox()".format(kind=self.get_kind()))
 
-    def stage(self, sandbox: 'Sandbox') -> None:
+    def stage(self, sandbox: "Sandbox") -> None:
         """Stage inputs into the sandbox directories
 
         Args:
@@ -377,10 +374,9 @@ class Element(Plugin):
         objects, by staging the artifacts of the elements this element depends
         on, or both.
         """
-        raise ImplError("element plugin '{kind}' does not implement stage()".format(
-            kind=self.get_kind()))
+        raise ImplError("element plugin '{kind}' does not implement stage()".format(kind=self.get_kind()))
 
-    def prepare(self, sandbox: 'Sandbox') -> None:
+    def prepare(self, sandbox: "Sandbox") -> None:
         """Run one-off preparation commands.
 
         This is run before assemble(), but is guaranteed to run only
@@ -400,7 +396,7 @@ class Element(Plugin):
         *Since: 1.2*
         """
 
-    def assemble(self, sandbox: 'Sandbox') -> str:
+    def assemble(self, sandbox: "Sandbox") -> str:
         """Assemble the output artifact
 
         Args:
@@ -415,8 +411,7 @@ class Element(Plugin):
         Elements must implement this method to create an output
         artifact from its sources and dependencies.
         """
-        raise ImplError("element plugin '{kind}' does not implement assemble()".format(
-            kind=self.get_kind()))
+        raise ImplError("element plugin '{kind}' does not implement assemble()".format(kind=self.get_kind()))
 
     def generate_script(self) -> str:
         """Generate a build (sh) script to build this element
@@ -437,13 +432,12 @@ class Element(Plugin):
         If the script fails, it is expected to return with an exit
         code != 0.
         """
-        raise ImplError("element plugin '{kind}' does not implement write_script()".format(
-            kind=self.get_kind()))
+        raise ImplError("element plugin '{kind}' does not implement write_script()".format(kind=self.get_kind()))
 
     #############################################################
     #                       Public Methods                      #
     #############################################################
-    def sources(self) -> Iterator['Source']:
+    def sources(self) -> Iterator["Source"]:
         """A generator function to enumerate the element sources
 
         Yields:
@@ -452,7 +446,7 @@ class Element(Plugin):
         for source in self.__sources:
             yield source
 
-    def dependencies(self, scope: Scope, *, recurse: bool = True, visited=None) -> Iterator['Element']:
+    def dependencies(self, scope: Scope, *, recurse: bool = True, visited=None) -> Iterator["Element"]:
         """dependencies(scope, *, recurse=True)
 
         A generator function which yields the dependencies of the given element.
@@ -479,6 +473,7 @@ class Element(Plugin):
             if scope in (Scope.RUN, Scope.ALL):
                 yield from self.__runtime_dependencies
         else:
+
             def visit(element, scope, visited):
                 if scope == Scope.ALL:
                     visited[0].add(element._unique_id)
@@ -519,7 +514,7 @@ class Element(Plugin):
 
             yield from visit(self, scope, visited)
 
-    def search(self, scope: Scope, name: str) -> Optional['Element']:
+    def search(self, scope: Scope, name: str) -> Optional["Element"]:
         """Search for a dependency by name
 
         Args:
@@ -535,7 +530,7 @@ class Element(Plugin):
 
         return None
 
-    def node_subst_vars(self, node: 'ScalarNode') -> str:
+    def node_subst_vars(self, node: "ScalarNode") -> str:
         """Replace any variables in the string contained in the node and returns it.
 
         Args:
@@ -559,9 +554,9 @@ class Element(Plugin):
             return self.__variables.subst(node.as_str())
         except LoadError as e:
             provenance = node.get_provenance()
-            raise LoadError('{}: {}'.format(provenance, e), e.reason, detail=e.detail) from e
+            raise LoadError("{}: {}".format(provenance, e), e.reason, detail=e.detail) from e
 
-    def node_subst_sequence_vars(self, node: 'SequenceNode[ScalarNode]') -> List[str]:
+    def node_subst_sequence_vars(self, node: "SequenceNode[ScalarNode]") -> List[str]:
         """Substitute any variables in the given sequence
 
         Args:
@@ -580,14 +575,12 @@ class Element(Plugin):
                 ret.append(self.__variables.subst(value.as_str()))
             except LoadError as e:
                 provenance = value.get_provenance()
-                raise LoadError('{}: {}'.format(provenance, e), e.reason, detail=e.detail) from e
+                raise LoadError("{}: {}".format(provenance, e), e.reason, detail=e.detail) from e
         return ret
 
-    def compute_manifest(self,
-                         *,
-                         include: Optional[List[str]] = None,
-                         exclude: Optional[List[str]] = None,
-                         orphans: bool = True) -> str:
+    def compute_manifest(
+        self, *, include: Optional[List[str]] = None, exclude: Optional[List[str]] = None, orphans: bool = True
+    ) -> str:
         """Compute and return this element's selective manifest
 
         The manifest consists on the list of file paths in the
@@ -630,14 +623,16 @@ class Element(Plugin):
 
         return _compose_artifact_name(self.project_name, self.normal_name, key)
 
-    def stage_artifact(self,
-                       sandbox: 'Sandbox',
-                       *,
-                       path: str = None,
-                       include: Optional[List[str]] = None,
-                       exclude: Optional[List[str]] = None,
-                       orphans: bool = True,
-                       update_mtimes: Optional[List[str]] = None) -> FileListResult:
+    def stage_artifact(
+        self,
+        sandbox: "Sandbox",
+        *,
+        path: str = None,
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
+        orphans: bool = True,
+        update_mtimes: Optional[List[str]] = None
+    ) -> FileListResult:
         """Stage this element's output artifact in the sandbox
 
         This will stage the files from the artifact to the sandbox at specified location.
@@ -675,10 +670,11 @@ class Element(Plugin):
         """
 
         if not self._cached():
-            detail = "No artifacts have been cached yet for that element\n" + \
-                     "Try building the element first with `bst build`\n"
-            raise ElementError("No artifacts to stage",
-                               detail=detail, reason="uncached-checkout-attempt")
+            detail = (
+                "No artifacts have been cached yet for that element\n"
+                + "Try building the element first with `bst build`\n"
+            )
+            raise ElementError("No artifacts to stage", detail=detail, reason="uncached-checkout-attempt")
 
         if update_mtimes is None:
             update_mtimes = []
@@ -689,47 +685,49 @@ class Element(Plugin):
         with self.timed_activity("Staging {}/{}".format(self.name, self._get_brief_display_key())):
             # Disable type checking since we can't easily tell mypy that
             # `self.__artifact` can't be None at this stage.
-            files_vdir = self.__artifact.get_files()    # type: ignore
+            files_vdir = self.__artifact.get_files()  # type: ignore
 
             # Hard link it into the staging area
             #
             vbasedir = sandbox.get_virtual_directory()
-            vstagedir = vbasedir \
-                if path is None \
-                else vbasedir.descend(*path.lstrip(os.sep).split(os.sep))
+            vstagedir = vbasedir if path is None else vbasedir.descend(*path.lstrip(os.sep).split(os.sep))
 
             split_filter = self.__split_filter_func(include, exclude, orphans)
 
             # We must not hardlink files whose mtimes we want to update
             if update_mtimes:
+
                 def link_filter(path):
-                    return ((split_filter is None or split_filter(path)) and
-                            path not in update_mtimes)
+                    return (split_filter is None or split_filter(path)) and path not in update_mtimes
 
                 def copy_filter(path):
-                    return ((split_filter is None or split_filter(path)) and
-                            path in update_mtimes)
+                    return (split_filter is None or split_filter(path)) and path in update_mtimes
+
             else:
                 link_filter = split_filter
 
-            result = vstagedir.import_files(files_vdir, filter_callback=link_filter,
-                                            report_written=True, can_link=True)
+            result = vstagedir.import_files(
+                files_vdir, filter_callback=link_filter, report_written=True, can_link=True
+            )
 
             if update_mtimes:
-                copy_result = vstagedir.import_files(files_vdir, filter_callback=copy_filter,
-                                                     report_written=True, update_mtime=True)
+                copy_result = vstagedir.import_files(
+                    files_vdir, filter_callback=copy_filter, report_written=True, update_mtime=True
+                )
                 result = result.combine(copy_result)
 
             return result
 
-    def stage_dependency_artifacts(self,
-                                   sandbox: 'Sandbox',
-                                   scope: Scope,
-                                   *,
-                                   path: str = None,
-                                   include: Optional[List[str]] = None,
-                                   exclude: Optional[List[str]] = None,
-                                   orphans: bool = True) -> None:
+    def stage_dependency_artifacts(
+        self,
+        sandbox: "Sandbox",
+        scope: Scope,
+        *,
+        path: str = None,
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
+        orphans: bool = True
+    ) -> None:
         """Stage element dependencies in scope
 
         This is primarily a convenience wrapper around
@@ -751,8 +749,8 @@ class Element(Plugin):
                                      occur.
         """
         ignored = {}
-        overlaps = OrderedDict()        # type: OrderedDict[str, List[str]]
-        files_written = {}              # type: Dict[str, List[str]]
+        overlaps = OrderedDict()  # type: OrderedDict[str, List[str]]
+        files_written = {}  # type: Dict[str, List[str]]
         old_dep_keys = None
         workspace = self._get_workspace()
         context = self._get_context()
@@ -803,12 +801,9 @@ class Element(Plugin):
                     if utils._is_main_process():
                         context.get_workspaces().save_config()
 
-            result = dep.stage_artifact(sandbox,
-                                        path=path,
-                                        include=include,
-                                        exclude=exclude,
-                                        orphans=orphans,
-                                        update_mtimes=to_update)
+            result = dep.stage_artifact(
+                sandbox, path=path, include=include, exclude=exclude, orphans=orphans, update_mtimes=to_update
+            )
             if result.overwritten:
                 for overwrite in result.overwritten:
                     # Completely new overwrite
@@ -841,8 +836,9 @@ class Element(Plugin):
                 warning_detail += _overlap_error_detail(f, overlap_warning_elements, elements)
 
             if overlap_warning:
-                self.warn("Non-whitelisted overlaps detected", detail=warning_detail,
-                          warning_token=CoreWarnings.OVERLAPS)
+                self.warn(
+                    "Non-whitelisted overlaps detected", detail=warning_detail, warning_token=CoreWarnings.OVERLAPS
+                )
 
         if ignored:
             detail = "Not staging files which would replace non-empty directories:\n"
@@ -851,7 +847,7 @@ class Element(Plugin):
                 detail += "  " + "  ".join(["/" + f + "\n" for f in value])
             self.warn("Ignored files", detail=detail)
 
-    def integrate(self, sandbox: 'Sandbox') -> None:
+    def integrate(self, sandbox: "Sandbox") -> None:
         """Integrate currently staged filesystem against this artifact.
 
         Args:
@@ -863,19 +859,18 @@ class Element(Plugin):
         commands will create and update important system cache files
         required for running the installed software (such as the ld.so.cache).
         """
-        bstdata = self.get_public_data('bst')
+        bstdata = self.get_public_data("bst")
         environment = self.get_environment()
 
         if bstdata is not None:
             with sandbox.batch(SandboxFlags.NONE):
-                commands = bstdata.get_sequence('integration-commands', [])
+                commands = bstdata.get_sequence("integration-commands", [])
                 for command in commands:
                     cmd = self.node_subst_vars(command)
 
-                    sandbox.run(['sh', '-e', '-c', cmd], 0, env=environment, cwd='/',
-                                label=cmd)
+                    sandbox.run(["sh", "-e", "-c", cmd], 0, env=environment, cwd="/", label=cmd)
 
-    def stage_sources(self, sandbox: 'Sandbox', directory: str) -> None:
+    def stage_sources(self, sandbox: "Sandbox", directory: str) -> None:
         """Stage this element's sources to a directory in the sandbox
 
         Args:
@@ -892,7 +887,7 @@ class Element(Plugin):
 
         self._stage_sources_in_sandbox(sandbox, directory)
 
-    def get_public_data(self, domain: str) -> 'MappingNode[Any, Any]':
+    def get_public_data(self, domain: str) -> "MappingNode[Any, Any]":
         """Fetch public data on this element
 
         Args:
@@ -911,13 +906,13 @@ class Element(Plugin):
 
         # Disable type-checking since we can't easily tell mypy that
         # `self.__dynamic_public` can't be None here.
-        data = self.__dynamic_public.get_mapping(domain, default=None)      # type: ignore
+        data = self.__dynamic_public.get_mapping(domain, default=None)  # type: ignore
         if data is not None:
             data = data.clone()
 
         return data
 
-    def set_public_data(self, domain: str, data: 'MappingNode[Any, Any]') -> None:
+    def set_public_data(self, domain: str, data: "MappingNode[Any, Any]") -> None:
         """Set public data on this element
 
         Args:
@@ -935,7 +930,7 @@ class Element(Plugin):
         if data is not None:
             data = data.clone()
 
-        self.__dynamic_public[domain] = data    # type: ignore
+        self.__dynamic_public[domain] = data  # type: ignore
 
     def get_environment(self) -> Dict[str, str]:
         """Fetch the environment suitable for running in the sandbox
@@ -1016,8 +1011,7 @@ class Element(Plugin):
         # Instantiate sources and generate their keys
         for meta_source in meta.sources:
             meta_source.first_pass = meta.is_junction
-            source = meta.project.create_source(meta_source,
-                                                first_pass=meta.first_pass)
+            source = meta.project.create_source(meta_source, first_pass=meta.first_pass)
 
             redundant_ref = source._load_ref()
 
@@ -1190,8 +1184,7 @@ class Element(Plugin):
     #    (bool): Whether this element can currently be built
     #
     def _buildable(self):
-        if self._get_consistency() < Consistency.CACHED and \
-                not self._source_cached():
+        if self._get_consistency() < Consistency.CACHED and not self._source_cached():
             return False
 
         if not self.__assemble_scheduled:
@@ -1261,11 +1254,14 @@ class Element(Plugin):
         # If the element wasn't assembled and isn't scheduled to be assemble,
         # or cached, or waiting to be pulled but has an artifact then schedule
         # the assembly.
-        if (not self.__assemble_scheduled and not self.__assemble_done and
-                self.__artifact and
-                self._is_required() and
-                not self._cached() and
-                not self._pull_pending()):
+        if (
+            not self.__assemble_scheduled
+            and not self.__assemble_done
+            and self.__artifact
+            and self._is_required()
+            and not self._cached()
+            and not self._pull_pending()
+        ):
             self._schedule_assemble()
 
             # If a build has been scheduled, we know that the element
@@ -1298,7 +1294,7 @@ class Element(Plugin):
         cache_key = self._get_cache_key()
 
         if not cache_key:
-            cache_key = "{:?<64}".format('')
+            cache_key = "{:?<64}".format("")
         elif cache_key == self.__strict_cache_key:
             # Strong cache key used in this session matches cache key
             # that would be used in strict build mode
@@ -1378,8 +1374,10 @@ class Element(Plugin):
 
             # Complimentary warning that the new ref will be unused.
             if old_ref != new_ref and self._get_workspace():
-                detail = "This source has an open workspace.\n" \
+                detail = (
+                    "This source has an open workspace.\n"
                     + "To start using the new reference, please close the existing workspace."
+                )
                 source.warn("Updated reference will be ignored as source has open workspace", detail=detail)
 
         return refs
@@ -1393,8 +1391,9 @@ class Element(Plugin):
     def _prepare_sandbox(self, scope, directory, shell=False, integrate=True, usebuildtree=False):
         # bst shell and bst artifact checkout require a local sandbox.
         bare_directory = bool(directory)
-        with self.__sandbox(directory, config=self.__sandbox_config, allow_remote=False,
-                            bare_directory=bare_directory) as sandbox:
+        with self.__sandbox(
+            directory, config=self.__sandbox_config, allow_remote=False, bare_directory=bare_directory
+        ) as sandbox:
             sandbox._usebuildtree = usebuildtree
 
             # Configure always comes first, and we need it.
@@ -1452,8 +1451,9 @@ class Element(Plugin):
 
         # It's advantageous to have this temporary directory on
         # the same file system as the rest of our cache.
-        with self.timed_activity("Staging sources", silent_nested=True), \
-            utils._tempdir(dir=context.tmpdir, prefix='staging-temp') as temp_staging_directory:
+        with self.timed_activity("Staging sources", silent_nested=True), utils._tempdir(
+            dir=context.tmpdir, prefix="staging-temp"
+        ) as temp_staging_directory:
 
             import_dir = temp_staging_directory
 
@@ -1488,12 +1488,12 @@ class Element(Plugin):
                             import_dir.import_files(source_dir)
 
                     except SourceCacheError as e:
-                        raise ElementError("Error trying to export source for {}: {}"
-                                           .format(self.name, e))
+                        raise ElementError("Error trying to export source for {}: {}".format(self.name, e))
                     except VirtualDirectoryError as e:
-                        raise ElementError("Error trying to import sources together for {}: {}"
-                                           .format(self.name, e),
-                                           reason="import-source-files-fail")
+                        raise ElementError(
+                            "Error trying to import sources together for {}: {}".format(self.name, e),
+                            reason="import-source-files-fail",
+                        )
 
             with utils._deterministic_umask():
                 vdirectory.import_files(import_dir)
@@ -1601,8 +1601,7 @@ class Element(Plugin):
         self._update_ready_for_runtime_and_cached()
 
         if self._get_workspace() and self._cached_success():
-            assert utils._is_main_process(), \
-                "Attempted to save workspace configuration from child process"
+            assert utils._is_main_process(), "Attempted to save workspace configuration from child process"
             #
             # Note that this block can only happen in the
             # main process, since `self._cached_success()` cannot
@@ -1638,9 +1637,12 @@ class Element(Plugin):
         with self._output_file() as output_file:
 
             if not self.__sandbox_config_supported:
-                self.warn("Sandbox configuration is not supported by the platform.",
-                          detail="Falling back to UID {} GID {}. Artifact will not be pushed."
-                          .format(self.__sandbox_config.build_uid, self.__sandbox_config.build_gid))
+                self.warn(
+                    "Sandbox configuration is not supported by the platform.",
+                    detail="Falling back to UID {} GID {}. Artifact will not be pushed.".format(
+                        self.__sandbox_config.build_uid, self.__sandbox_config.build_gid
+                    ),
+                )
 
             # Explicitly clean it up, keep the build dir around if exceptions are raised
             os.makedirs(context.builddir, exist_ok=True)
@@ -1650,13 +1652,14 @@ class Element(Plugin):
             def cleanup_rootdir():
                 utils._force_rmtree(rootdir)
 
-            with _signals.terminator(cleanup_rootdir), \
-                self.__sandbox(rootdir, output_file, output_file, self.__sandbox_config) as sandbox:  # noqa
+            with _signals.terminator(cleanup_rootdir), self.__sandbox(
+                rootdir, output_file, output_file, self.__sandbox_config
+            ) as sandbox:  # noqa
 
                 # Let the sandbox know whether the buildtree will be required.
                 # This allows the remote execution sandbox to skip buildtree
                 # download when it's not needed.
-                buildroot = self.get_variable('build-root')
+                buildroot = self.get_variable("build-root")
                 cache_buildtrees = context.cache_buildtrees
                 if cache_buildtrees != _CacheBuildTrees.NEVER:
                     always_cache_buildtrees = cache_buildtrees == _CacheBuildTrees.ALWAYS
@@ -1681,8 +1684,9 @@ class Element(Plugin):
                 self.stage(sandbox)
                 try:
                     if self.__batch_prepare_assemble:
-                        cm = sandbox.batch(self.__batch_prepare_assemble_flags,
-                                           collect=self.__batch_prepare_assemble_collect)
+                        cm = sandbox.batch(
+                            self.__batch_prepare_assemble_flags, collect=self.__batch_prepare_assemble_collect
+                        )
                     else:
                         cm = contextlib.suppress()
 
@@ -1724,11 +1728,13 @@ class Element(Plugin):
         # result. Element types without a build-root dir will be cached
         # with an empty buildtreedir regardless of this configuration.
 
-        if cache_buildtrees == _CacheBuildTrees.ALWAYS or \
-                (cache_buildtrees == _CacheBuildTrees.AUTO and not build_success):
+        if cache_buildtrees == _CacheBuildTrees.ALWAYS or (
+            cache_buildtrees == _CacheBuildTrees.AUTO and not build_success
+        ):
             try:
                 sandbox_build_dir = sandbox_vroot.descend(
-                    *self.get_variable('build-root').lstrip(os.sep).split(os.sep))
+                    *self.get_variable("build-root").lstrip(os.sep).split(os.sep)
+                )
                 sandbox._fetch_missing_blobs(sandbox_build_dir)
             except VirtualDirectoryError:
                 # Directory could not be found. Pre-virtual
@@ -1747,14 +1753,13 @@ class Element(Plugin):
         self._assemble_done()
 
         with self.timed_activity("Caching artifact"):
-            artifact_size = self.__artifact.cache(rootdir, sandbox_build_dir, collectvdir,
-                                                  buildresult, publicdata)
+            artifact_size = self.__artifact.cache(rootdir, sandbox_build_dir, collectvdir, buildresult, publicdata)
 
         if collect is not None and collectvdir is None:
             raise ElementError(
                 "Directory '{}' was not found inside the sandbox, "
-                "unable to collect artifact contents"
-                .format(collect))
+                "unable to collect artifact contents".format(collect)
+            )
 
         return artifact_size
 
@@ -1855,8 +1860,7 @@ class Element(Plugin):
     def _skip_source_push(self):
         if not self.__sources or self._get_workspace():
             return True
-        return not (self.__sourcecache.has_push_remotes(plugin=self) and
-                    self._source_cached())
+        return not (self.__sourcecache.has_push_remotes(plugin=self) and self._source_cached())
 
     def _source_push(self):
         # try and push sources if we've got them
@@ -1931,8 +1935,9 @@ class Element(Plugin):
     # Returns: Exit code
     #
     # If directory is not specified, one will be staged using scope
-    def _shell(self, scope=None, directory=None, *, mounts=None, isolate=False, prompt=None, command=None,
-               usebuildtree=False):
+    def _shell(
+        self, scope=None, directory=None, *, mounts=None, isolate=False, prompt=None, command=None, usebuildtree=False
+    ):
 
         with self._prepare_sandbox(scope, directory, shell=True, usebuildtree=usebuildtree) as sandbox:
             environment = self.get_environment()
@@ -1946,7 +1951,7 @@ class Element(Plugin):
             shell_command, shell_environment, shell_host_files = project.get_shell_config()
 
             if prompt is not None:
-                environment['PS1'] = prompt
+                environment["PS1"] = prompt
 
             # Special configurations for non-isolated sandboxes
             if not isolate:
@@ -2002,8 +2007,7 @@ class Element(Plugin):
         # additional support from Source implementations.
         #
         os.makedirs(context.builddir, exist_ok=True)
-        with utils._tempdir(dir=context.builddir, prefix='workspace-{}'
-                            .format(self.normal_name)) as temp:
+        with utils._tempdir(dir=context.builddir, prefix="workspace-{}".format(self.normal_name)) as temp:
             for source in self.sources():
                 source._init_workspace(temp)
 
@@ -2032,10 +2036,10 @@ class Element(Plugin):
 
         script = script_template.format(
             name=self.normal_name,
-            build_root=self.get_variable('build-root'),
-            install_root=self.get_variable('install-root'),
+            build_root=self.get_variable("build-root"),
+            install_root=self.get_variable("install-root"),
             variables=variable_string,
-            commands=self.generate_script()
+            commands=self.generate_script(),
         )
 
         os.makedirs(directory, exist_ok=True)
@@ -2120,8 +2124,7 @@ class Element(Plugin):
                     continue
 
                 # try and fetch from source cache
-                if source._get_consistency() < Consistency.CACHED and \
-                        self.__sourcecache.has_fetch_remotes():
+                if source._get_consistency() < Consistency.CACHED and self.__sourcecache.has_fetch_remotes():
                     if self.__sourcecache.pull(source):
                         continue
 
@@ -2154,35 +2157,31 @@ class Element(Plugin):
         # Generate dict that is used as base for all cache keys
         if self.__cache_key_dict is None:
             # Filter out nocache variables from the element's environment
-            cache_env = {
-                key: value
-                for key, value in self.__environment.items()
-                if key not in self.__env_nocache
-            }
+            cache_env = {key: value for key, value in self.__environment.items() if key not in self.__env_nocache}
 
             project = self._get_project()
 
             self.__cache_key_dict = {
-                'core-artifact-version': BST_CORE_ARTIFACT_VERSION,
-                'element-plugin-key': self.get_unique_key(),
-                'element-plugin-name': self.get_kind(),
-                'element-plugin-version': self.BST_ARTIFACT_VERSION,
-                'sandbox': self.__sandbox_config.get_unique_key(),
-                'environment': cache_env,
-                'public': self.__public.strip_node_info()
+                "core-artifact-version": BST_CORE_ARTIFACT_VERSION,
+                "element-plugin-key": self.get_unique_key(),
+                "element-plugin-name": self.get_kind(),
+                "element-plugin-version": self.BST_ARTIFACT_VERSION,
+                "sandbox": self.__sandbox_config.get_unique_key(),
+                "environment": cache_env,
+                "public": self.__public.strip_node_info(),
             }
 
-            self.__cache_key_dict['sources'] = []
+            self.__cache_key_dict["sources"] = []
 
             for source in self.__sources:
-                self.__cache_key_dict['sources'].append(
-                    {'key': source._get_unique_key(),
-                     'name': source._get_source_name()})
+                self.__cache_key_dict["sources"].append(
+                    {"key": source._get_unique_key(), "name": source._get_source_name()}
+                )
 
-            self.__cache_key_dict['fatal-warnings'] = sorted(project._fatal_warnings)
+            self.__cache_key_dict["fatal-warnings"] = sorted(project._fatal_warnings)
 
         cache_key_dict = self.__cache_key_dict.copy()
-        cache_key_dict['dependencies'] = dependencies
+        cache_key_dict["dependencies"] = dependencies
 
         return _cachekey.generate_key(cache_key_dict)
 
@@ -2216,8 +2215,9 @@ class Element(Plugin):
         Args:
             fetch_original (bool): whether we need to original unstaged source
         """
-        if (self._get_consistency() == Consistency.CACHED and fetch_original) or \
-           (self._source_cached() and not fetch_original):
+        if (self._get_consistency() == Consistency.CACHED and fetch_original) or (
+            self._source_cached() and not fetch_original
+        ):
             return False
         else:
             return True
@@ -2299,8 +2299,7 @@ class Element(Plugin):
     #
     def _update_ready_for_runtime_and_cached(self):
         if not self.__ready_for_runtime_and_cached:
-            if self.__runtime_deps_uncached == 0 and self._cached_success() and \
-               self.__cache_key:
+            if self.__runtime_deps_uncached == 0 and self._cached_success() and self.__cache_key:
                 self.__ready_for_runtime_and_cached = True
 
                 # Notify reverse dependencies
@@ -2450,6 +2449,7 @@ class Element(Plugin):
             self.prepare(sandbox)
 
             if workspace:
+
                 def mark_workspace_prepared():
                     workspace.prepared = True
 
@@ -2466,23 +2466,31 @@ class Element(Plugin):
 
         if self.BST_FORBID_RDEPENDS and self.BST_FORBID_BDEPENDS:
             if any(self.dependencies(Scope.RUN, recurse=False)) or any(self.dependencies(Scope.BUILD, recurse=False)):
-                raise ElementError("{}: Dependencies are forbidden for '{}' elements"
-                                   .format(self, self.get_kind()), reason="element-forbidden-depends")
+                raise ElementError(
+                    "{}: Dependencies are forbidden for '{}' elements".format(self, self.get_kind()),
+                    reason="element-forbidden-depends",
+                )
 
         if self.BST_FORBID_RDEPENDS:
             if any(self.dependencies(Scope.RUN, recurse=False)):
-                raise ElementError("{}: Runtime dependencies are forbidden for '{}' elements"
-                                   .format(self, self.get_kind()), reason="element-forbidden-rdepends")
+                raise ElementError(
+                    "{}: Runtime dependencies are forbidden for '{}' elements".format(self, self.get_kind()),
+                    reason="element-forbidden-rdepends",
+                )
 
         if self.BST_FORBID_BDEPENDS:
             if any(self.dependencies(Scope.BUILD, recurse=False)):
-                raise ElementError("{}: Build dependencies are forbidden for '{}' elements"
-                                   .format(self, self.get_kind()), reason="element-forbidden-bdepends")
+                raise ElementError(
+                    "{}: Build dependencies are forbidden for '{}' elements".format(self, self.get_kind()),
+                    reason="element-forbidden-bdepends",
+                )
 
         if self.BST_FORBID_SOURCES:
             if any(self.sources()):
-                raise ElementError("{}: Sources are forbidden for '{}' elements"
-                                   .format(self, self.get_kind()), reason="element-forbidden-sources")
+                raise ElementError(
+                    "{}: Sources are forbidden for '{}' elements".format(self, self.get_kind()),
+                    reason="element-forbidden-sources",
+                )
 
         try:
             self.preflight()
@@ -2492,9 +2500,10 @@ class Element(Plugin):
 
         # Ensure that the first source does not need access to previous soruces
         if self.__sources and self.__sources[0]._requires_previous_sources():
-            raise ElementError("{}: {} cannot be the first source of an element "
-                               "as it requires access to previous sources"
-                               .format(self, self.__sources[0]))
+            raise ElementError(
+                "{}: {} cannot be the first source of an element "
+                "as it requires access to previous sources".format(self, self.__sources[0])
+            )
 
         # Preflight the sources
         for source in self.sources():
@@ -2505,8 +2514,7 @@ class Element(Plugin):
     # Raises an error if the artifact is not cached.
     #
     def __assert_cached(self):
-        assert self._cached(), "{}: Missing artifact {}".format(
-            self, self._get_brief_display_key())
+        assert self._cached(), "{}: Missing artifact {}".format(self, self._get_brief_display_key())
 
     # __get_tainted():
     #
@@ -2532,8 +2540,7 @@ class Element(Plugin):
             workspaced_dependencies = self.__artifact.get_metadata_workspaced_dependencies()
 
             # Other conditions should be or-ed
-            self.__tainted = (workspaced or workspaced_dependencies or
-                              not self.__sandbox_config_supported)
+            self.__tainted = workspaced or workspaced_dependencies or not self.__sandbox_config_supported
 
         return self.__tainted
 
@@ -2572,36 +2579,45 @@ class Element(Plugin):
         if directory is not None and allow_remote and self.__use_remote_execution():
 
             if not self.BST_VIRTUAL_DIRECTORY:
-                raise ElementError("Element {} is configured to use remote execution but plugin does not support it."
-                                   .format(self.name), detail="Plugin '{kind}' does not support virtual directories."
-                                   .format(kind=self.get_kind()))
+                raise ElementError(
+                    "Element {} is configured to use remote execution but plugin does not support it.".format(
+                        self.name
+                    ),
+                    detail="Plugin '{kind}' does not support virtual directories.".format(kind=self.get_kind()),
+                )
 
             self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
 
             output_files_required = context.require_artifact_files or self._artifact_files_required()
 
-            sandbox = SandboxRemote(context, project,
-                                    directory,
-                                    plugin=self,
-                                    stdout=stdout,
-                                    stderr=stderr,
-                                    config=config,
-                                    specs=self.__remote_execution_specs,
-                                    bare_directory=bare_directory,
-                                    allow_real_directory=False,
-                                    output_files_required=output_files_required)
+            sandbox = SandboxRemote(
+                context,
+                project,
+                directory,
+                plugin=self,
+                stdout=stdout,
+                stderr=stderr,
+                config=config,
+                specs=self.__remote_execution_specs,
+                bare_directory=bare_directory,
+                allow_real_directory=False,
+                output_files_required=output_files_required,
+            )
             yield sandbox
 
         elif directory is not None and os.path.exists(directory):
 
-            sandbox = platform.create_sandbox(context, project,
-                                              directory,
-                                              plugin=self,
-                                              stdout=stdout,
-                                              stderr=stderr,
-                                              config=config,
-                                              bare_directory=bare_directory,
-                                              allow_real_directory=not self.BST_VIRTUAL_DIRECTORY)
+            sandbox = platform.create_sandbox(
+                context,
+                project,
+                directory,
+                plugin=self,
+                stdout=stdout,
+                stderr=stderr,
+                config=config,
+                bare_directory=bare_directory,
+                allow_real_directory=not self.BST_VIRTUAL_DIRECTORY,
+            )
             yield sandbox
 
         else:
@@ -2609,8 +2625,9 @@ class Element(Plugin):
             rootdir = tempfile.mkdtemp(prefix="{}-".format(self.normal_name), dir=context.builddir)
 
             # Recursive contextmanager...
-            with self.__sandbox(rootdir, stdout=stdout, stderr=stderr, config=config,
-                                allow_remote=allow_remote, bare_directory=False) as sandbox:
+            with self.__sandbox(
+                rootdir, stdout=stdout, stderr=stderr, config=config, allow_remote=allow_remote, bare_directory=False
+            ) as sandbox:
                 yield sandbox
 
             # Cleanup the build dir
@@ -2632,9 +2649,9 @@ class Element(Plugin):
             # Extend project wide split rules with any split rules defined by the element
             element_splits._composite(splits)
 
-        element_bst['split-rules'] = splits
-        element_public['bst'] = element_bst
-        defaults['public'] = element_public
+        element_bst["split-rules"] = splits
+        element_public["bst"] = element_bst
+        defaults["public"] = element_public
 
     @classmethod
     def __init_defaults(cls, project, plugin_conf, kind, is_junction):
@@ -2704,7 +2721,7 @@ class Element(Plugin):
         else:
             project_nocache = project.base_env_nocache
 
-        default_nocache = cls.__defaults.get_str_list('environment-nocache', default=[])
+        default_nocache = cls.__defaults.get_str_list("environment-nocache", default=[])
         element_nocache = meta.env_nocache
 
         # Accumulate values from the element default, the project and the element
@@ -2719,7 +2736,7 @@ class Element(Plugin):
     #
     @classmethod
     def __extract_variables(cls, project, meta):
-        default_vars = cls.__defaults.get_mapping('variables', default={})
+        default_vars = cls.__defaults.get_mapping("variables", default={})
 
         if meta.is_junction:
             variables = project.first_pass_config.base_variables.clone()
@@ -2730,7 +2747,7 @@ class Element(Plugin):
         meta.variables._composite(variables)
         variables._assert_fully_composited()
 
-        for var in ('project-name', 'element-name', 'max-jobs'):
+        for var in ("project-name", "element-name", "max-jobs"):
             node = variables.get_node(var, allow_none=True)
 
             if node is None:
@@ -2738,8 +2755,10 @@ class Element(Plugin):
 
             provenance = node.get_provenance()
             if not provenance._is_synthetic:
-                raise LoadError("{}: invalid redefinition of protected variable '{}'"
-                                .format(provenance, var), LoadErrorReason.PROTECTED_VARIABLE_REDEFINED)
+                raise LoadError(
+                    "{}: invalid redefinition of protected variable '{}'".format(provenance, var),
+                    LoadErrorReason.PROTECTED_VARIABLE_REDEFINED,
+                )
 
         return variables
 
@@ -2750,7 +2769,7 @@ class Element(Plugin):
     def __extract_config(cls, meta):
 
         # The default config is already composited with the project overrides
-        config = cls.__defaults.get_mapping('config', default={})
+        config = cls.__defaults.get_mapping("config", default={})
         config = config.clone()
 
         meta.config._composite(config)
@@ -2763,10 +2782,7 @@ class Element(Plugin):
     @classmethod
     def __extract_sandbox_config(cls, context, project, meta):
         if meta.is_junction:
-            sandbox_config = Node.from_dict({
-                'build-uid': 0,
-                'build-gid': 0
-            })
+            sandbox_config = Node.from_dict({"build-uid": 0, "build-gid": 0})
         else:
             sandbox_config = project._sandbox.clone()
 
@@ -2776,7 +2792,7 @@ class Element(Plugin):
         host_os = platform.get_host_os()
 
         # The default config is already composited with the project overrides
-        sandbox_defaults = cls.__defaults.get_mapping('sandbox', default={})
+        sandbox_defaults = cls.__defaults.get_mapping("sandbox", default={})
         sandbox_defaults = sandbox_defaults.clone()
 
         sandbox_defaults._composite(sandbox_config)
@@ -2784,41 +2800,42 @@ class Element(Plugin):
         sandbox_config._assert_fully_composited()
 
         # Sandbox config, unlike others, has fixed members so we should validate them
-        sandbox_config.validate_keys(['build-uid', 'build-gid', 'build-os', 'build-arch'])
+        sandbox_config.validate_keys(["build-uid", "build-gid", "build-os", "build-arch"])
 
-        build_arch = sandbox_config.get_str('build-arch', default=None)
+        build_arch = sandbox_config.get_str("build-arch", default=None)
         if build_arch:
             build_arch = Platform.canonicalize_arch(build_arch)
         else:
             build_arch = host_arch
 
         return SandboxConfig(
-            sandbox_config.get_int('build-uid'),
-            sandbox_config.get_int('build-gid'),
-            sandbox_config.get_str('build-os', default=host_os),
-            build_arch)
+            sandbox_config.get_int("build-uid"),
+            sandbox_config.get_int("build-gid"),
+            sandbox_config.get_str("build-os", default=host_os),
+            build_arch,
+        )
 
     # This makes a special exception for the split rules, which
     # elements may extend but whos defaults are defined in the project.
     #
     @classmethod
     def __extract_public(cls, meta):
-        base_public = cls.__defaults.get_mapping('public', default={})
+        base_public = cls.__defaults.get_mapping("public", default={})
         base_public = base_public.clone()
 
-        base_bst = base_public.get_mapping('bst', default={})
-        base_splits = base_bst.get_mapping('split-rules', default={})
+        base_bst = base_public.get_mapping("bst", default={})
+        base_splits = base_bst.get_mapping("split-rules", default={})
 
         element_public = meta.public.clone()
-        element_bst = element_public.get_mapping('bst', default={})
-        element_splits = element_bst.get_mapping('split-rules', default={})
+        element_bst = element_public.get_mapping("bst", default={})
+        element_splits = element_bst.get_mapping("split-rules", default={})
 
         # Allow elements to extend the default splits defined in their project or
         # element specific defaults
         element_splits._composite(base_splits)
 
-        element_bst['split-rules'] = base_splits
-        element_public['bst'] = element_bst
+        element_bst["split-rules"] = base_splits
+        element_public["bst"] = element_bst
 
         element_public._assert_fully_composited()
 
@@ -2826,24 +2843,21 @@ class Element(Plugin):
 
     # Expand the splits in the public data using the Variables in the element
     def __expand_splits(self, element_public):
-        element_bst = element_public.get_mapping('bst', default={})
-        element_splits = element_bst.get_mapping('split-rules', default={})
+        element_bst = element_public.get_mapping("bst", default={})
+        element_splits = element_bst.get_mapping("split-rules", default={})
 
         # Resolve any variables in the public split rules directly
         for domain, splits in element_splits.items():
-            splits = [
-                self.__variables.subst(split.strip())
-                for split in splits.as_str_list()
-            ]
+            splits = [self.__variables.subst(split.strip()) for split in splits.as_str_list()]
             element_splits[domain] = splits
 
         return element_public
 
     def __init_splits(self):
-        bstdata = self.get_public_data('bst')
-        splits = bstdata.get_mapping('split-rules')
+        bstdata = self.get_public_data("bst")
+        splits = bstdata.get_mapping("split-rules")
         self.__splits = {
-            domain: re.compile('^(?:' + '|'.join([utils._glob2re(r) for r in rules.as_str_list()]) + ')$')
+            domain: re.compile("^(?:" + "|".join([utils._glob2re(r) for r in rules.as_str_list()]) + ")$")
             for domain, rules in splits.items()
         }
 
@@ -2944,10 +2958,10 @@ class Element(Plugin):
         # the build, but I can think of no reason to change it mid-build.
         # If this ever changes, things will go wrong unexpectedly.
         if not self.__whitelist_regex:
-            bstdata = self.get_public_data('bst')
-            whitelist = bstdata.get_str_list('overlap-whitelist', default=[])
+            bstdata = self.get_public_data("bst")
+            whitelist = bstdata.get_str_list("overlap-whitelist", default=[])
             whitelist_expressions = [utils._glob2re(self.__variables.subst(exp.strip())) for exp in whitelist]
-            expression = ('^(?:' + '|'.join(whitelist_expressions) + ')$')
+            expression = "^(?:" + "|".join(whitelist_expressions) + ")$"
             self.__whitelist_regex = re.compile(expression)
         return self.__whitelist_regex.match(os.path.join(os.sep, path))
 
@@ -3005,8 +3019,7 @@ class Element(Plugin):
     #
     def __pull_weak(self, *, pull_buildtrees):
         weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
-        if not self.__artifacts.pull(self, weak_key,
-                                     pull_buildtrees=pull_buildtrees):
+        if not self.__artifacts.pull(self, weak_key, pull_buildtrees=pull_buildtrees):
             return False
 
         # extract strong cache key from this newly fetched artifact
@@ -3159,8 +3172,9 @@ class Element(Plugin):
             return
 
         if not self.__strict_artifact:
-            self.__strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key,
-                                              weak_key=self.__weak_cache_key)
+            self.__strict_artifact = Artifact(
+                self, context, strong_key=self.__strict_cache_key, weak_key=self.__weak_cache_key
+            )
 
             if context.get_strict():
                 self.__artifact = self.__strict_artifact
@@ -3192,9 +3206,7 @@ class Element(Plugin):
                 self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
                 # Artifact will or has been built, not downloaded
-                dependencies = [
-                    e._get_cache_key() for e in self.dependencies(Scope.BUILD)
-                ]
+                dependencies = [e._get_cache_key() for e in self.dependencies(Scope.BUILD)]
                 self.__cache_key = self._calculate_cache_key(dependencies)
 
             if self.__cache_key is None:
@@ -3216,8 +3228,7 @@ class Element(Plugin):
     #
     def __update_strict_cache_key_of_rdeps(self):
         if not self.__updated_strict_cache_keys_of_rdeps:
-            if self.__runtime_deps_without_strict_cache_key == 0 and \
-               self.__strict_cache_key is not None:
+            if self.__runtime_deps_without_strict_cache_key == 0 and self.__strict_cache_key is not None:
                 self.__updated_strict_cache_keys_of_rdeps = True
 
                 # Notify reverse dependencies
@@ -3251,8 +3262,7 @@ class Element(Plugin):
     #
     def __update_ready_for_runtime(self):
         if not self.__ready_for_runtime:
-            if self.__runtime_deps_without_cache_key == 0 and \
-               self.__cache_key is not None:
+            if self.__runtime_deps_without_cache_key == 0 and self.__cache_key is not None:
                 self.__ready_for_runtime = True
 
                 # Notify reverse dependencies
@@ -3279,10 +3289,12 @@ class Element(Plugin):
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):
     if forbidden_overlap_elements:
-        return ("/{}: {} {} not permitted to overlap other elements, order {} \n"
-                .format(f, " and ".join(forbidden_overlap_elements),
-                        "is" if len(forbidden_overlap_elements) == 1 else "are",
-                        " above ".join(reversed(elements))))
+        return "/{}: {} {} not permitted to overlap other elements, order {} \n".format(
+            f,
+            " and ".join(forbidden_overlap_elements),
+            "is" if len(forbidden_overlap_elements) == 1 else "are",
+            " above ".join(reversed(elements)),
+        )
     else:
         return ""
 
@@ -3299,7 +3311,7 @@ def _overlap_error_detail(f, forbidden_overlap_elements, elements):
 #     (str): The normalised element name
 #
 def _get_normal_name(element_name):
-    return os.path.splitext(element_name.replace(os.sep, '-'))[0]
+    return os.path.splitext(element_name.replace(os.sep, "-"))[0]
 
 
 # _compose_artifact_name():
@@ -3315,12 +3327,9 @@ def _get_normal_name(element_name):
 #     (str): The constructed artifact name path
 #
 def _compose_artifact_name(project_name, normal_name, cache_key):
-    valid_chars = string.digits + string.ascii_letters + '-._'
-    normal_name = ''.join([
-        x if x in valid_chars else '_'
-        for x in normal_name
-    ])
+    valid_chars = string.digits + string.ascii_letters + "-._"
+    normal_name = "".join([x if x in valid_chars else "_" for x in normal_name])
 
     # Note that project names are not allowed to contain slashes. Element names containing
     # a '/' will have this replaced with a '-' upon Element object instantiation.
-    return '{0}/{1}/{2}'.format(project_name, normal_name, cache_key)
+    return "{0}/{1}/{2}".format(project_name, normal_name, cache_key)

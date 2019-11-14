@@ -65,23 +65,22 @@ class FileBasedDirectory(Directory):
             try:
                 st = os.lstat(new_path)
                 if not stat.S_ISDIR(st.st_mode):
-                    raise VirtualDirectoryError("Cannot descend into '{}': '{}' is not a directory"
-                                                .format(path, new_path))
+                    raise VirtualDirectoryError(
+                        "Cannot descend into '{}': '{}' is not a directory".format(path, new_path)
+                    )
             except FileNotFoundError:
                 if create:
                     os.mkdir(new_path)
                 else:
-                    raise VirtualDirectoryError("Cannot descend into '{}': '{}' does not exist"
-                                                .format(path, new_path))
+                    raise VirtualDirectoryError("Cannot descend into '{}': '{}' does not exist".format(path, new_path))
 
             current_dir = FileBasedDirectory(new_path)
 
         return current_dir
 
-    def import_files(self, external_pathspec, *,
-                     filter_callback=None,
-                     report_written=True, update_mtime=False,
-                     can_link=False):
+    def import_files(
+        self, external_pathspec, *, filter_callback=None, report_written=True, update_mtime=False, can_link=False
+    ):
         """ See superclass Directory for arguments """
 
         from ._casbaseddirectory import CasBasedDirectory  # pylint: disable=cyclic-import
@@ -101,13 +100,21 @@ class FileBasedDirectory(Directory):
                 source_directory = external_pathspec
 
             if can_link and not update_mtime:
-                import_result = link_files(source_directory, self.external_directory,
-                                           filter_callback=filter_callback,
-                                           ignore_missing=False, report_written=report_written)
+                import_result = link_files(
+                    source_directory,
+                    self.external_directory,
+                    filter_callback=filter_callback,
+                    ignore_missing=False,
+                    report_written=report_written,
+                )
             else:
-                import_result = copy_files(source_directory, self.external_directory,
-                                           filter_callback=filter_callback,
-                                           ignore_missing=False, report_written=report_written)
+                import_result = copy_files(
+                    source_directory,
+                    self.external_directory,
+                    filter_callback=filter_callback,
+                    ignore_missing=False,
+                    report_written=report_written,
+                )
 
         if update_mtime:
             cur_time = time.time()
@@ -190,8 +197,11 @@ class FileBasedDirectory(Directory):
 
         Return value: List(str) - list of modified paths
         """
-        return [f for f in list_relative_paths(self.external_directory)
-                if _get_link_mtime(os.path.join(self.external_directory, f)) != BST_ARBITRARY_TIMESTAMP]
+        return [
+            f
+            for f in list_relative_paths(self.external_directory)
+            if _get_link_mtime(os.path.join(self.external_directory, f)) != BST_ARBITRARY_TIMESTAMP
+        ]
 
     def list_relative_paths(self):
         """Provide a list of all relative paths.
@@ -251,11 +261,13 @@ class FileBasedDirectory(Directory):
                     dest_subdir = self.descend(name, create=create_subdir)
                 except VirtualDirectoryError:
                     filetype = self._get_filetype(name)
-                    raise VirtualDirectoryError('Destination is a {}, not a directory: /{}'
-                                                .format(filetype, relative_pathname))
+                    raise VirtualDirectoryError(
+                        "Destination is a {}, not a directory: /{}".format(filetype, relative_pathname)
+                    )
 
-                dest_subdir._import_files_from_cas(src_subdir, actionfunc, filter_callback,
-                                                   path_prefix=relative_pathname, result=result)
+                dest_subdir._import_files_from_cas(
+                    src_subdir, actionfunc, filter_callback, path_prefix=relative_pathname, result=result
+                )
 
             if filter_callback and not filter_callback(relative_pathname):
                 if is_dir and create_subdir and dest_subdir.is_empty():
@@ -279,8 +291,16 @@ class FileBasedDirectory(Directory):
                     src_path = source_directory.cas_cache.objpath(entry.digest)
                     actionfunc(src_path, dest_path, result=result)
                     if entry.is_executable:
-                        os.chmod(dest_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
-                                 stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+                        os.chmod(
+                            dest_path,
+                            stat.S_IRUSR
+                            | stat.S_IWUSR
+                            | stat.S_IXUSR
+                            | stat.S_IRGRP
+                            | stat.S_IXGRP
+                            | stat.S_IROTH
+                            | stat.S_IXOTH,
+                        )
                 else:
                     assert entry.type == _FileType.SYMLINK
                     os.symlink(entry.target, dest_path)

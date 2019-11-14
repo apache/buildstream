@@ -57,11 +57,11 @@ class QueueStatus(FastEnum):
 # Args:
 #    scheduler (Scheduler): The Scheduler
 #
-class Queue():
+class Queue:
 
     # These should be overridden on class data of of concrete Queue implementations
-    action_name = None      # type: Optional[str]
-    complete_name = None    # type: Optional[str]
+    action_name = None  # type: Optional[str]
+    complete_name = None  # type: Optional[str]
     # Resources this queues' jobs want
     resources = []  # type: List[int]
 
@@ -72,11 +72,11 @@ class Queue():
         #
         self._scheduler = scheduler
         self._resources = scheduler.resources  # Shared resource pool
-        self._ready_queue = []                 # Ready elements
-        self._done_queue = deque()             # Processed / Skipped elements
+        self._ready_queue = []  # Ready elements
+        self._done_queue = deque()  # Processed / Skipped elements
         self._max_retries = 0
 
-        self._required_element_check = False   # Whether we should check that elements are required before enqueuing
+        self._required_element_check = False  # Whether we should check that elements are required before enqueuing
 
         # Assert the subclass has setup class data
         assert self.action_name is not None
@@ -162,8 +162,7 @@ class Queue():
     #    element (Element): The element waiting to be pushed into the queue
     #
     def register_pending_element(self, element):
-        raise ImplError("Queue type: {} does not implement register_pending_element()"
-                        .format(self.action_name))
+        raise ImplError("Queue type: {} does not implement register_pending_element()".format(self.action_name))
 
     #####################################################
     #          Scheduler / Pipeline facing APIs         #
@@ -229,12 +228,16 @@ class Queue():
             ready.append(element)
 
         return [
-            ElementJob(self._scheduler, self.action_name,
-                       self._element_log_path(element),
-                       element=element, queue=self,
-                       action_cb=self.get_process_func(),
-                       complete_cb=self._job_done,
-                       max_retries=self._max_retries)
+            ElementJob(
+                self._scheduler,
+                self.action_name,
+                self._element_log_path(element),
+                element=element,
+                queue=self,
+                action_cb=self.get_process_func(),
+                complete_cb=self._job_done,
+                max_retries=self._max_retries,
+            )
             for element in ready
         ]
 
@@ -267,7 +270,7 @@ class Queue():
     def _update_workspaces(self, element, job):
         workspace_dict = None
         if job.child_data:
-            workspace_dict = job.child_data.get('workspace', None)
+            workspace_dict = job.child_data.get("workspace", None)
 
         # Handle any workspace modifications now
         #
@@ -279,10 +282,13 @@ class Queue():
                     workspaces.save_config()
                 except BstError as e:
                     self._message(element, MessageType.ERROR, "Error saving workspaces", detail=str(e))
-                except Exception:   # pylint: disable=broad-except
-                    self._message(element, MessageType.BUG,
-                                  "Unhandled exception while saving workspaces",
-                                  detail=traceback.format_exc())
+                except Exception:  # pylint: disable=broad-except
+                    self._message(
+                        element,
+                        MessageType.BUG,
+                        "Unhandled exception while saving workspaces",
+                        detail=traceback.format_exc(),
+                    )
 
     # _job_done()
     #
@@ -322,13 +328,13 @@ class Queue():
             #
             set_last_task_error(e.domain, e.reason)
 
-        except Exception:   # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
 
             # Report unhandled exceptions and mark as failed
             #
-            self._message(element, MessageType.BUG,
-                          "Unhandled exception in post processing",
-                          detail=traceback.format_exc())
+            self._message(
+                element, MessageType.BUG, "Unhandled exception in post processing", detail=traceback.format_exc()
+            )
             self._task_group.add_failed_task(element._get_full_name())
         else:
             # All elements get placed on the done queue for later processing.
@@ -372,7 +378,7 @@ class Queue():
         if status == QueueStatus.SKIP:
             # Place skipped elements into the done queue immediately
             self._task_group.add_skipped_task()
-            self._done_queue.append(element)   # Elements to proceed to the next queue
+            self._done_queue.append(element)  # Elements to proceed to the next queue
         elif status == QueueStatus.READY:
             # Push elements which are ready to be processed immediately into the queue
             heapq.heappush(self._ready_queue, (element._depth, element))

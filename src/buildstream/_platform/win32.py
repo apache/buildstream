@@ -20,7 +20,6 @@ from .platform import Platform
 
 
 class Win32(Platform):
-
     def maximize_open_file_limit(self):
         # Note that on Windows, we don't have the 'resource' module to help us
         # configure open file limits.
@@ -50,7 +49,7 @@ class Win32(Platform):
 
     @staticmethod
     def _create_dummy_sandbox(*args, **kwargs):
-        kwargs['dummy_reason'] = "There are no supported sandbox technologies for Win32 at this time."
+        kwargs["dummy_reason"] = "There are no supported sandbox technologies for Win32 at this time."
         return SandboxDummy(*args, **kwargs)
 
     def _setup_dummy_sandbox(self):

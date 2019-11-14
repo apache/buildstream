@@ -50,10 +50,15 @@ class BuildQueue(Queue):
             self._tried.add(element)
             _, description, detail = element._get_build_result()
             logfile = element._get_build_log()
-            self._message(element, MessageType.FAIL, description,
-                          detail=detail, action_name=self.action_name,
-                          elapsed=timedelta(seconds=0),
-                          logfile=logfile)
+            self._message(
+                element,
+                MessageType.FAIL,
+                description,
+                detail=detail,
+                action_name=self.action_name,
+                elapsed=timedelta(seconds=0),
+                logfile=logfile,
+            )
             self._done_queue.append(element)
             element_name = element._get_full_name()
             self._task_group.add_failed_task(element_name)

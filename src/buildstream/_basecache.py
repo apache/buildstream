@@ -37,21 +37,21 @@ if TYPE_CHECKING:
 
 # Base Cache for Caches to derive from
 #
-class BaseCache():
+class BaseCache:
 
     # None of these should ever be called in the base class, but this appeases
     # pylint to some degree
-    spec_name = None                  # type: str
-    spec_error = None                 # type: Type[BstError]
-    config_node_name = None           # type: str
-    index_remote_class = None         # type: Type[BaseRemote]
+    spec_name = None  # type: str
+    spec_error = None  # type: Type[BstError]
+    config_node_name = None  # type: str
+    index_remote_class = None  # type: Type[BaseRemote]
     storage_remote_class = CASRemote  # type: Type[BaseRemote]
 
     def __init__(self, context):
         self.context = context
         self.cas = context.get_cascache()
 
-        self._remotes_setup = False           # Check to prevent double-setup of remotes
+        self._remotes_setup = False  # Check to prevent double-setup of remotes
         # Per-project list of Remote instances.
         self._storage_remotes = {}
         self._index_remotes = {}
@@ -116,8 +116,12 @@ class BaseCache():
                 artifacts = config_node.get_sequence(cls.config_node_name, default=[])
             except LoadError:
                 provenance = config_node.get_node(cls.config_node_name).get_provenance()
-                raise _yaml.LoadError("{}: '{}' must be a single remote mapping, or a list of mappings"
-                                      .format(provenance, cls.config_node_name), _yaml.LoadErrorReason.INVALID_DATA)
+                raise _yaml.LoadError(
+                    "{}: '{}' must be a single remote mapping, or a list of mappings".format(
+                        provenance, cls.config_node_name
+                    ),
+                    _yaml.LoadErrorReason.INVALID_DATA,
+                )
 
         for spec_node in artifacts:
             cache_specs.append(RemoteSpec.new_from_config_node(spec_node))
@@ -144,8 +148,7 @@ class BaseCache():
         project_specs = getattr(project, cls.spec_name)
         context_specs = getattr(context, cls.spec_name)
 
-        return list(utils._deduplicate(
-            project_extra_specs + project_specs + context_specs))
+        return list(utils._deduplicate(project_extra_specs + project_specs + context_specs))
 
     # setup_remotes():
     #
@@ -266,8 +269,9 @@ class BaseCache():
             # Check whether the specified element's project has push remotes
             index_remotes = self._index_remotes[plugin._get_project()]
             storage_remotes = self._storage_remotes[plugin._get_project()]
-            return (any(remote.spec.push for remote in index_remotes) and
-                    any(remote.spec.push for remote in storage_remotes))
+            return any(remote.spec.push for remote in index_remotes) and any(
+                remote.spec.push for remote in storage_remotes
+            )
 
     ################################################
     #               Local Private Methods          #
@@ -323,8 +327,9 @@ class BaseCache():
                 storage_remotes[remote_spec] = storage
 
         self._has_fetch_remotes = storage_remotes and index_remotes
-        self._has_push_remotes = (any(spec.push for spec in storage_remotes) and
-                                  any(spec.push for spec in index_remotes))
+        self._has_push_remotes = any(spec.push for spec in storage_remotes) and any(
+            spec.push for spec in index_remotes
+        )
 
         return index_remotes, storage_remotes
 
@@ -366,8 +371,7 @@ class BaseCache():
     #
     def _message(self, message_type, message, **kwargs):
         args = dict(kwargs)
-        self.context.messenger.message(
-            Message(message_type, message, **args))
+        self.context.messenger.message(Message(message_type, message, **args))
 
     # _set_remotes():
     #

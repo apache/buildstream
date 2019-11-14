@@ -39,11 +39,11 @@ def walk_dir(root):
 
         # print path to all subdirectories first.
         for subdirname in dirnames:
-            yield os.path.join(dirname, subdirname)[len(root):]
+            yield os.path.join(dirname, subdirname)[len(root) :]
 
         # print path to all filenames.
         for filename in filenames:
-            yield os.path.join(dirname, filename)[len(root):]
+            yield os.path.join(dirname, filename)[len(root) :]
 
 
 # Ensure that a directory contains the given filenames.
@@ -51,35 +51,33 @@ def assert_contains(directory, expected):
     missing = set(expected)
     missing.difference_update(walk_dir(directory))
     if missing:
-        raise AssertionError("Missing {} expected elements from list: {}"
-                             .format(len(missing), missing))
+        raise AssertionError("Missing {} expected elements from list: {}".format(len(missing), missing))
 
 
 class IntegrationCache:
-
     def __init__(self, cache):
         self.root = os.path.abspath(cache)
         os.makedirs(cache, exist_ok=True)
 
         # Use the same sources every time
-        self.sources = os.path.join(self.root, 'sources')
+        self.sources = os.path.join(self.root, "sources")
 
         # Create a temp directory for the duration of the test for
         # the artifacts directory
         try:
-            self.cachedir = tempfile.mkdtemp(dir=self.root, prefix='cache-')
+            self.cachedir = tempfile.mkdtemp(dir=self.root, prefix="cache-")
         except OSError as e:
             raise AssertionError("Unable to create test directory !") from e
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def integration_cache(request):
     # Set the cache dir to the INTEGRATION_CACHE variable, or the
     # default if that is not set.
-    if 'INTEGRATION_CACHE' in os.environ:
-        cache_dir = os.environ['INTEGRATION_CACHE']
+    if "INTEGRATION_CACHE" in os.environ:
+        cache_dir = os.environ["INTEGRATION_CACHE"]
     else:
-        cache_dir = os.path.abspath('./integration-cache')
+        cache_dir = os.path.abspath("./integration-cache")
 
     cache = IntegrationCache(cache_dir)
 
@@ -92,6 +90,6 @@ def integration_cache(request):
     except FileNotFoundError:
         pass
     try:
-        shutil.rmtree(os.path.join(cache.root, 'cas'))
+        shutil.rmtree(os.path.join(cache.root, "cas"))
     except FileNotFoundError:
         pass

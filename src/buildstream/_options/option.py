@@ -27,11 +27,7 @@ if TYPE_CHECKING:
 
 # Shared symbols for validation purposes
 #
-OPTION_SYMBOLS = [
-    'type',
-    'description',
-    'variable'
-]
+OPTION_SYMBOLS = ["type", "description", "variable"]
 
 
 # Option()
@@ -42,7 +38,7 @@ OPTION_SYMBOLS = [
 # the loaded project options is a collection of typed Option
 # instances.
 #
-class Option():
+class Option:
 
     # Subclasses use this to specify the type name used
     # for the yaml format and error messages
@@ -66,12 +62,12 @@ class Option():
     def load(self, node):
         # We don't use the description, but we do require that options have a
         # description.
-        node.get_str('description')
-        self.variable = node.get_str('variable', default=None)
+        node.get_str("description")
+        self.variable = node.get_str("variable", default=None)
 
         # Assert valid symbol name for variable name
         if self.variable is not None:
-            _assert_symbol_name(self.variable, 'variable name', ref_node=node.get_node('variable'))
+            _assert_symbol_name(self.variable, "variable name", ref_node=node.get_node("variable"))
 
     # load_value()
     #

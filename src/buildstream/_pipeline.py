@@ -40,27 +40,27 @@ from ._project import ProjectRefStorage
 #
 # These values correspond to the CLI `--deps` arguments for convenience.
 #
-class PipelineSelection():
+class PipelineSelection:
 
     # Select only the target elements in the associated targets
-    NONE = 'none'
+    NONE = "none"
 
     # As NONE, but redirect elements that are capable of it
-    REDIRECT = 'redirect'
+    REDIRECT = "redirect"
 
     # Select elements which must be built for the associated targets to be built
-    PLAN = 'plan'
+    PLAN = "plan"
 
     # All dependencies of all targets, including the targets
-    ALL = 'all'
+    ALL = "all"
 
     # All direct build dependencies and their recursive runtime dependencies,
     # excluding the targets
-    BUILD = 'build'
+    BUILD = "build"
 
     # All direct runtime dependencies and their recursive runtime dependencies,
     # including the targets
-    RUN = 'run'
+    RUN = "run"
 
 
 # Pipeline()
@@ -70,12 +70,11 @@ class PipelineSelection():
 #    context (Context): The Context object
 #    artifacts (Context): The ArtifactCache object
 #
-class Pipeline():
-
+class Pipeline:
     def __init__(self, context, project, artifacts):
 
-        self._context = context     # The Context
-        self._project = project     # The toplevel project
+        self._context = context  # The Context
+        self._project = project  # The toplevel project
 
         #
         # Private members
@@ -108,10 +107,7 @@ class Pipeline():
 
             # Now create element groups to match the input target groups
             elt_iter = iter(elements)
-            element_groups = [
-                [next(elt_iter) for i in range(len(group))]
-                for group in target_groups
-            ]
+            element_groups = [[next(elt_iter) for i in range(len(group))] for group in target_groups]
 
             return tuple(element_groups)
 
@@ -240,8 +236,7 @@ class Pipeline():
             for t in targets:
                 new_elm = t._get_source_element()
                 if new_elm != t and not silent:
-                    self._message(MessageType.INFO, "Element '{}' redirected to '{}'"
-                                  .format(t.name, new_elm.name))
+                    self._message(MessageType.INFO, "Element '{}' redirected to '{}'".format(t.name, new_elm.name))
                 if new_elm not in elements:
                     elements.append(new_elm)
         elif mode == PipelineSelection.PLAN:
@@ -296,9 +291,7 @@ class Pipeline():
         # Build a list of 'intersection' elements, i.e. the set of
         # elements that lie on the border closest to excepted elements
         # between excepted and target elements.
-        intersection = list(itertools.chain.from_iterable(
-            find_intersection(element) for element in except_targets
-        ))
+        intersection = list(itertools.chain.from_iterable(find_intersection(element) for element in except_targets))
 
         # Now use this set of elements to traverse the targeted
         # elements, except 'intersection' elements and their unique
@@ -354,10 +347,7 @@ class Pipeline():
     #
     def subtract_elements(self, elements, subtract):
         subtract_set = set(subtract)
-        return [
-            e for e in elements
-            if e not in subtract_set
-        ]
+        return [e for e in elements if e not in subtract_set]
 
     # add_elements()
     #
@@ -426,14 +416,13 @@ class Pipeline():
                 for source in element.sources():
                     if source._get_consistency() == Consistency.INCONSISTENT:
                         detail += "    {} is missing ref\n".format(source)
-                detail += '\n'
+                detail += "\n"
             detail += "Try tracking these elements first with `bst source track`\n"
 
             raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline")
 
         if inconsistent_workspaced:
-            detail = "Some workspaces exist but are not closed\n" + \
-                     "Try closing them with `bst workspace close`\n\n"
+            detail = "Some workspaces exist but are not closed\n" + "Try closing them with `bst workspace close`\n\n"
             for element in inconsistent_workspaced:
                 detail += "  " + element._get_full_name() + "\n"
             raise PipelineError("Inconsistent pipeline", detail=detail, reason="inconsistent-pipeline-workspaced")
@@ -449,8 +438,7 @@ class Pipeline():
         uncached = []
         with self._context.messenger.timed_activity("Checking sources"):
             for element in elements:
-                if element._get_consistency() < Consistency.CACHED and \
-                        not element._source_cached():
+                if element._get_consistency() < Consistency.CACHED and not element._source_cached():
                     uncached.append(element)
 
         if uncached:
@@ -460,9 +448,11 @@ class Pipeline():
                 for source in element.sources():
                     if source._get_consistency() < Consistency.CACHED:
                         detail += "    {}\n".format(source)
-                detail += '\n'
-            detail += "Try fetching these elements first with `bst source fetch`,\n" + \
-                      "or run this command with `--fetch` option\n"
+                detail += "\n"
+            detail += (
+                "Try fetching these elements first with `bst source fetch`,\n"
+                + "or run this command with `--fetch` option\n"
+            )
 
             raise PipelineError("Uncached sources", detail=detail, reason="uncached-sources")
 
@@ -483,10 +473,7 @@ class Pipeline():
     #            not contain any cross junction elements.
     #
     def _filter_cross_junctions(self, project, elements):
-        return [
-            element for element in elements
-            if element._get_project() is project
-        ]
+        return [element for element in elements if element._get_project() is project]
 
     # _assert_junction_tracking()
     #
@@ -511,8 +498,10 @@ class Pipeline():
         for element in elements:
             element_project = element._get_project()
             if element_project is not self._project:
-                detail = "Requested to track sources across junction boundaries\n" + \
-                         "in a project which does not use project.refs ref-storage."
+                detail = (
+                    "Requested to track sources across junction boundaries\n"
+                    + "in a project which does not use project.refs ref-storage."
+                )
 
                 raise PipelineError("Untrackable sources", detail=detail, reason="untrackable-sources")
 
@@ -522,8 +511,7 @@ class Pipeline():
     #
     def _message(self, message_type, message, **kwargs):
         args = dict(kwargs)
-        self._context.messenger.message(
-            Message(message_type, message, **args))
+        self._context.messenger.message(Message(message_type, message, **args))
 
 
 # _Planner()
@@ -533,7 +521,7 @@ class Pipeline():
 # parts need to be built depending on build only dependencies
 # being cached, and depth sorting for more efficient processing.
 #
-class _Planner():
+class _Planner:
     def __init__(self):
         self.depth_map = OrderedDict()
         self.visiting_elements = set()

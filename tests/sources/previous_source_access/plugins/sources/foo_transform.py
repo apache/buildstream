@@ -25,14 +25,13 @@ class FooTransformSource(Source):
         """Directory where this source should stage its files
 
         """
-        path = os.path.join(self.get_mirror_directory(), self.name,
-                            self.ref.strip())
+        path = os.path.join(self.get_mirror_directory(), self.name, self.ref.strip())
         os.makedirs(path, exist_ok=True)
         return path
 
     def configure(self, node):
-        node.validate_keys(['ref', *Source.COMMON_CONFIG_KEYS])
-        self.ref = node.get_str('ref', None)
+        node.validate_keys(["ref", *Source.COMMON_CONFIG_KEYS])
+        self.ref = node.get_str("ref", None)
 
     def preflight(self):
         pass
@@ -45,9 +44,9 @@ class FooTransformSource(Source):
             return Consistency.INCONSISTENT
         # If we have a file called "filetransform", verify that its checksum
         # matches our ref. Otherwise, it resolved but not cached.
-        fpath = os.path.join(self.mirror, 'filetransform')
+        fpath = os.path.join(self.mirror, "filetransform")
         try:
-            with open(fpath, 'rb') as f:
+            with open(fpath, "rb") as f:
                 if hashlib.sha256(f.read()).hexdigest() == self.ref.strip():
                     return Consistency.CACHED
         except Exception:
@@ -58,30 +57,29 @@ class FooTransformSource(Source):
         return self.ref
 
     def set_ref(self, ref, node):
-        self.ref = node['ref'] = ref
+        self.ref = node["ref"] = ref
 
     def track(self, previous_sources_dir):
         # Store the checksum of the file from previous source as our ref
-        fpath = os.path.join(previous_sources_dir, 'file')
-        with open(fpath, 'rb') as f:
+        fpath = os.path.join(previous_sources_dir, "file")
+        with open(fpath, "rb") as f:
             return hashlib.sha256(f.read()).hexdigest()
 
     def fetch(self, previous_sources_dir):
-        fpath = os.path.join(previous_sources_dir, 'file')
+        fpath = os.path.join(previous_sources_dir, "file")
         # Verify that the checksum of the file from previous source matches
         # our ref
-        with open(fpath, 'rb') as f:
+        with open(fpath, "rb") as f:
             if hashlib.sha256(f.read()).hexdigest() != self.ref.strip():
                 raise SourceError("Element references do not match")
 
         # Copy "file" as "filetransform"
-        newfpath = os.path.join(self.mirror, 'filetransform')
+        newfpath = os.path.join(self.mirror, "filetransform")
         utils.safe_copy(fpath, newfpath)
 
     def stage(self, directory):
         # Simply stage the "filetransform" file
-        utils.safe_copy(os.path.join(self.mirror, 'filetransform'),
-                        os.path.join(directory, 'filetransform'))
+        utils.safe_copy(os.path.join(self.mirror, "filetransform"), os.path.join(directory, "filetransform"))
 
 
 def setup():

@@ -27,13 +27,13 @@ from .option import Option, OPTION_SYMBOLS
 #
 class OptionBool(Option):
 
-    OPTION_TYPE = 'bool'
+    OPTION_TYPE = "bool"
 
     def load(self, node):
 
         super().load(node)
-        node.validate_keys(OPTION_SYMBOLS + ['default'])
-        self.value = node.get_bool('default')
+        node.validate_keys(OPTION_SYMBOLS + ["default"])
+        self.value = node.get_bool("default")
 
     def load_value(self, node, *, transform=None):
         if transform:
@@ -42,13 +42,14 @@ class OptionBool(Option):
             self.value = node.get_bool(self.name)
 
     def set_value(self, value):
-        if value in ('True', 'true'):
+        if value in ("True", "true"):
             self.value = True
-        elif value in ('False', 'false'):
+        elif value in ("False", "false"):
             self.value = False
         else:
-            raise LoadError("Invalid value for boolean option {}: {}".format(self.name, value),
-                            LoadErrorReason.INVALID_DATA)
+            raise LoadError(
+                "Invalid value for boolean option {}: {}".format(self.name, value), LoadErrorReason.INVALID_DATA
+            )
 
     def get_value(self):
         if self.value:

@@ -22,14 +22,10 @@ class FetchFetcher(SourceFetcher):
         self.mark_download_url(url)
 
     def fetch(self, alias_override=None):
-        url = self.source.translate_url(self.original_url,
-                                        alias_override=alias_override,
-                                        primary=self.primary)
+        url = self.source.translate_url(self.original_url, alias_override=alias_override, primary=self.primary)
         with open(self.source.output_file, "a") as f:
             success = url in self.source.fetch_succeeds and self.source.fetch_succeeds[url]
-            message = "Fetch {} {} from {}\n".format(self.original_url,
-                                                     "succeeded" if success else "failed",
-                                                     url)
+            message = "Fetch {} {} from {}\n".format(self.original_url, "succeeded" if success else "failed", url)
             f.write(message)
             if not success:
                 raise SourceError("Failed to fetch {}".format(url))
@@ -38,12 +34,9 @@ class FetchFetcher(SourceFetcher):
 class FetchSource(Source):
     # Read config to know which URLs to fetch
     def configure(self, node):
-        self.original_urls = node.get_str_list('urls')
-        self.output_file = node.get_str('output-text')
-        self.fetch_succeeds = {
-            key: value.as_bool()
-            for key, value in node.get_mapping('fetch-succeeds', {}).items()
-        }
+        self.original_urls = node.get_str_list("urls")
+        self.output_file = node.get_str("output-text")
+        self.fetch_succeeds = {key: value.as_bool() for key, value in node.get_mapping("fetch-succeeds", {}).items()}
 
         # First URL is the primary one for this test
         #

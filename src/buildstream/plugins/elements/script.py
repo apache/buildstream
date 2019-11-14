@@ -46,21 +46,19 @@ class ScriptElement(buildstream.ScriptElement):
     BST_VIRTUAL_DIRECTORY = True
 
     def configure(self, node):
-        for n in node.get_sequence('layout', []):
-            dst = self.node_subst_vars(n.get_scalar('destination'))
-            elm = self.node_subst_vars(n.get_scalar('element', None))
+        for n in node.get_sequence("layout", []):
+            dst = self.node_subst_vars(n.get_scalar("destination"))
+            elm = self.node_subst_vars(n.get_scalar("element", None))
             self.layout_add(elm, dst)
 
-        node.validate_keys([
-            'commands', 'root-read-only', 'layout'
-        ])
+        node.validate_keys(["commands", "root-read-only", "layout"])
 
         cmds = self.node_subst_sequence_vars(node.get_sequence("commands"))
         self.add_commands("commands", cmds)
 
         self.set_work_dir()
         self.set_install_root()
-        self.set_root_read_only(node.get_bool('root-read-only', default=False))
+        self.set_root_read_only(node.get_bool("root-read-only", default=False))
 
 
 # Plugin entry point

@@ -20,7 +20,7 @@
 from ..node import Node
 
 
-class MetaElement():
+class MetaElement:
 
     # MetaElement()
     #
@@ -40,9 +40,21 @@ class MetaElement():
     #    sandbox: Configuration specific to the sandbox environment
     #    first_pass: The element is to be loaded with first pass configuration (junction)
     #
-    def __init__(self, project, name, kind=None, provenance=None, sources=None, config=None,
-                 variables=None, environment=None, env_nocache=None, public=None,
-                 sandbox=None, first_pass=False):
+    def __init__(
+        self,
+        project,
+        name,
+        kind=None,
+        provenance=None,
+        sources=None,
+        config=None,
+        variables=None,
+        environment=None,
+        env_nocache=None,
+        public=None,
+        sandbox=None,
+        first_pass=False,
+    ):
         self.project = project
         self.name = name
         self.kind = kind

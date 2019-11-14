@@ -36,20 +36,20 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_checkout(tmpdir, datafiles, cli):
-    project_dir = os.path.join(str(tmpdir), 'project')
-    element_path = 'elements'
-    cache_dir = os.path.join(str(tmpdir), 'cache')
-    source_dir = os.path.join(cache_dir, 'sources')
+    project_dir = os.path.join(str(tmpdir), "project")
+    element_path = "elements"
+    cache_dir = os.path.join(str(tmpdir), "cache")
+    source_dir = os.path.join(cache_dir, "sources")
 
-    cli.configure({
-        'cachedir': cache_dir,
-    })
-    target_dir = os.path.join(str(tmpdir), 'target')
+    cli.configure(
+        {"cachedir": cache_dir,}
+    )
+    target_dir = os.path.join(str(tmpdir), "target")
 
-    repo = create_element_size('target.bst', project_dir, element_path, [], 100000)
+    repo = create_element_size("target.bst", project_dir, element_path, [], 100000)
 
     # check implicit fetching
-    res = cli.run(project=project_dir, args=['source', 'checkout', '--directory', target_dir, 'target.bst'])
+    res = cli.run(project=project_dir, args=["source", "checkout", "--directory", target_dir, "target.bst"])
     res.assert_success()
     assert "Fetching from" in res.stderr
 
@@ -59,15 +59,13 @@ def test_source_checkout(tmpdir, datafiles, cli):
     shutil.rmtree(target_dir)
     shutil.rmtree(source_dir)
 
-    res = cli.run(project=project_dir,
-                  args=['source', 'checkout', '--directory', target_dir, 'target.bst'])
+    res = cli.run(project=project_dir, args=["source", "checkout", "--directory", target_dir, "target.bst"])
     res.assert_success()
     assert "Fetching from" not in res.stderr
 
     # remove the CAS and check it doesn't work again
     shutil.rmtree(target_dir)
-    shutil.rmtree(os.path.join(cache_dir, 'cas'))
+    shutil.rmtree(os.path.join(cache_dir, "cas"))
 
-    res = cli.run(project=project_dir,
-                  args=['source', 'checkout', '--directory', target_dir, 'target.bst'])
+    res = cli.run(project=project_dir, args=["source", "checkout", "--directory", target_dir, "target.bst"])
     res.assert_task_error(ErrorDomain.PLUGIN, None)

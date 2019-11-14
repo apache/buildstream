@@ -26,12 +26,10 @@ from .storage._casbaseddirectory import CasBasedDirectory
 from ._basecache import BaseCache
 from ._exceptions import CASError, CASRemoteError, SourceCacheError, RemoteError
 from . import utils
-from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, \
-    source_pb2, source_pb2_grpc
+from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, source_pb2, source_pb2_grpc
 
 
 class SourceRemote(BaseRemote):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.source_service = None
@@ -65,8 +63,10 @@ class SourceRemote(BaseRemote):
         except grpc.RpcError as e:
             # Check if this remote has the artifact service
             if e.code() == grpc.StatusCode.UNIMPLEMENTED:
-                raise RemoteError("Configured remote does not have the BuildStream "
-                                  "capabilities service. Please check remote configuration.")
+                raise RemoteError(
+                    "Configured remote does not have the BuildStream "
+                    "capabilities service. Please check remote configuration."
+                )
             raise RemoteError("Remote initialisation failed: {}".format(e.details()))
 
         if not response.source_capabilities:
@@ -129,7 +129,7 @@ class SourceCache(BaseCache):
     def __init__(self, context):
         super().__init__(context)
 
-        self.sourcerefdir = os.path.join(context.cachedir, 'source_protos')
+        self.sourcerefdir = os.path.join(context.cachedir, "source_protos")
         os.makedirs(self.sourcerefdir, exist_ok=True)
 
     # list_sources()
@@ -182,7 +182,7 @@ class SourceCache(BaseCache):
             vdir.import_files(self.export(previous_source))
 
         if not source.BST_STAGE_VIRTUAL_DIRECTORY:
-            with utils._tempdir(dir=self.context.tmpdir, prefix='staging-temp') as tmpdir:
+            with utils._tempdir(dir=self.context.tmpdir, prefix="staging-temp") as tmpdir:
                 if not vdir.is_empty():
                     vdir.export_files(tmpdir)
                 source._stage(tmpdir)
@@ -233,12 +233,12 @@ class SourceCache(BaseCache):
 
                 source_proto = self._pull_source(ref, remote)
                 if source_proto is None:
-                    source.info("Remote source service ({}) does not have source {} cached".format(
-                        remote, display_key))
+                    source.info(
+                        "Remote source service ({}) does not have source {} cached".format(remote, display_key)
+                    )
                     continue
             except CASError as e:
-                raise SourceCacheError("Failed to pull source {}: {}".format(
-                    display_key, e)) from e
+                raise SourceCacheError("Failed to pull source {}: {}".format(display_key, e)) from e
 
         if not source_proto:
             return False
@@ -255,8 +255,7 @@ class SourceCache(BaseCache):
                 missing_blobs = self.cas.fetch_blobs(remote, missing_blobs)
 
                 if missing_blobs:
-                    source.info("Remote cas ({}) does not have source {} cached".format(
-                        remote, display_key))
+                    source.info("Remote cas ({}) does not have source {} cached".format(remote, display_key))
                     continue
 
                 source.info("Pulled source {} <- {}".format(display_key, remote))
@@ -266,8 +265,7 @@ class SourceCache(BaseCache):
                 source.info("Remote cas ({}) does not have blob {} cached".format(remote, e.blob))
                 continue
             except CASError as e:
-                raise SourceCacheError("Failed to pull source {}: {}".format(
-                    display_key, e)) from e
+                raise SourceCacheError("Failed to pull source {}: {}".format(display_key, e)) from e
 
         return False
 
@@ -315,8 +313,7 @@ class SourceCache(BaseCache):
 
             # check whether cache has files already
             if self._pull_source(ref, remote) is not None:
-                source.info("Remote ({}) already has source {} cached"
-                            .format(remote, display_key))
+                source.info("Remote ({}) already has source {} cached".format(remote, display_key))
                 continue
 
             if not self._push_source(ref, remote):
@@ -340,19 +337,18 @@ class SourceCache(BaseCache):
     def _store_proto(self, proto, ref):
         path = self._source_path(ref)
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with utils.save_file_atomic(path, 'w+b') as f:
+        with utils.save_file_atomic(path, "w+b") as f:
             f.write(proto.SerializeToString())
 
     def _get_source(self, ref):
         path = self._source_path(ref)
         source_proto = source_pb2.Source()
         try:
-            with open(path, 'r+b') as f:
+            with open(path, "r+b") as f:
                 source_proto.ParseFromString(f.read())
                 return source_proto
         except FileNotFoundError as e:
-            raise SourceCacheError("Attempted to access unavailable source: {}"
-                                   .format(e)) from e
+            raise SourceCacheError("Attempted to access unavailable source: {}".format(e)) from e
 
     def _source_path(self, ref):
         return os.path.join(self.sourcerefdir, ref)
@@ -361,7 +357,7 @@ class SourceCache(BaseCache):
         for root, _, files in os.walk(self.sourcerefdir):
             for source_file in files:
                 source = source_pb2.Source()
-                with open(os.path.join(root, source_file), 'r+b') as f:
+                with open(os.path.join(root, source_file), "r+b") as f:
                     source.ParseFromString(f.read())
 
                 yield source.files

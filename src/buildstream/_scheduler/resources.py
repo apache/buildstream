@@ -1,17 +1,17 @@
-class ResourceType():
+class ResourceType:
     CACHE = 0
     DOWNLOAD = 1
     PROCESS = 2
     UPLOAD = 3
 
 
-class Resources():
+class Resources:
     def __init__(self, num_builders, num_fetchers, num_pushers):
         self._max_resources = {
             ResourceType.CACHE: 0,
             ResourceType.DOWNLOAD: num_fetchers,
             ResourceType.PROCESS: num_builders,
-            ResourceType.UPLOAD: num_pushers
+            ResourceType.UPLOAD: num_pushers,
         }
 
         # Resources jobs are currently using.
@@ -19,7 +19,7 @@ class Resources():
             ResourceType.CACHE: 0,
             ResourceType.DOWNLOAD: 0,
             ResourceType.PROCESS: 0,
-            ResourceType.UPLOAD: 0
+            ResourceType.UPLOAD: 0,
         }
 
         # Resources jobs currently want exclusive access to. The set
@@ -31,7 +31,7 @@ class Resources():
             ResourceType.CACHE: set(),
             ResourceType.DOWNLOAD: set(),
             ResourceType.PROCESS: set(),
-            ResourceType.UPLOAD: set()
+            ResourceType.UPLOAD: set(),
         }
 
     # reserve()
@@ -90,8 +90,7 @@ class Resources():
         # available. If we don't have enough, the job cannot be
         # scheduled.
         for resource in resources:
-            if (self._max_resources[resource] > 0 and
-                    self._used_resources[resource] >= self._max_resources[resource]):
+            if self._max_resources[resource] > 0 and self._used_resources[resource] >= self._max_resources[resource]:
                 return False
 
         # Now we register the fact that our job is using the resources

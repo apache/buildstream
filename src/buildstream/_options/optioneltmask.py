@@ -28,7 +28,7 @@ from .optionflags import OptionFlags
 #
 class OptionEltMask(OptionFlags):
 
-    OPTION_TYPE = 'element-mask'
+    OPTION_TYPE = "element-mask"
 
     def load(self, node):
         # Ask the parent constructor to disallow value definitions,
@@ -41,6 +41,6 @@ class OptionEltMask(OptionFlags):
     def load_valid_values(self, node):
         values = []
         for filename in utils.list_relative_paths(self.pool.element_path):
-            if filename.endswith('.bst'):
+            if filename.endswith(".bst"):
                 values.append(filename)
         return values

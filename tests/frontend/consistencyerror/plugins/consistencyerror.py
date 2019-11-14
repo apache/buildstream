@@ -2,7 +2,6 @@ from buildstream import Source, SourceError
 
 
 class ConsistencyErrorSource(Source):
-
     def configure(self, node):
         pass
 
@@ -15,8 +14,7 @@ class ConsistencyErrorSource(Source):
     def get_consistency(self):
 
         # Raise an error unconditionally
-        raise SourceError("Something went terribly wrong",
-                          reason="the-consistency-error")
+        raise SourceError("Something went terribly wrong", reason="the-consistency-error")
 
     def get_ref(self):
         return None

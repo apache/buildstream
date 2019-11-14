@@ -68,15 +68,14 @@ class CASLogLevel(FastEnum):
 #     protect_session_blobs (bool): Disable expiry for blobs used in the current session
 #     log_level (LogLevel): Log level to give to buildbox-casd for logging
 #
-class CASCache():
-
+class CASCache:
     def __init__(
-            self, path, *, casd=True, cache_quota=None, protect_session_blobs=True, log_level=CASLogLevel.WARNING
+        self, path, *, casd=True, cache_quota=None, protect_session_blobs=True, log_level=CASLogLevel.WARNING
     ):
-        self.casdir = os.path.join(path, 'cas')
-        self.tmpdir = os.path.join(path, 'tmp')
-        os.makedirs(os.path.join(self.casdir, 'refs', 'heads'), exist_ok=True)
-        os.makedirs(os.path.join(self.casdir, 'objects'), exist_ok=True)
+        self.casdir = os.path.join(path, "cas")
+        self.tmpdir = os.path.join(path, "tmp")
+        os.makedirs(os.path.join(self.casdir, "refs", "heads"), exist_ok=True)
+        os.makedirs(os.path.join(self.casdir, "objects"), exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
 
         self._casd_channel = None
@@ -88,19 +87,19 @@ class CASCache():
         if casd:
             # Place socket in global/user temporary directory to avoid hitting
             # the socket path length limit.
-            self._casd_socket_tempdir = tempfile.mkdtemp(prefix='buildstream')
-            self._casd_socket_path = os.path.join(self._casd_socket_tempdir, 'casd.sock')
+            self._casd_socket_tempdir = tempfile.mkdtemp(prefix="buildstream")
+            self._casd_socket_path = os.path.join(self._casd_socket_tempdir, "casd.sock")
 
-            casd_args = [utils.get_host_tool('buildbox-casd')]
-            casd_args.append('--bind=unix:' + self._casd_socket_path)
-            casd_args.append('--log-level=' + log_level.value)
+            casd_args = [utils.get_host_tool("buildbox-casd")]
+            casd_args.append("--bind=unix:" + self._casd_socket_path)
+            casd_args.append("--log-level=" + log_level.value)
 
             if cache_quota is not None:
-                casd_args.append('--quota-high={}'.format(int(cache_quota)))
-                casd_args.append('--quota-low={}'.format(int(cache_quota / 2)))
+                casd_args.append("--quota-high={}".format(int(cache_quota)))
+                casd_args.append("--quota-low={}".format(int(cache_quota / 2)))
 
                 if protect_session_blobs:
-                    casd_args.append('--protect-session-blobs')
+                    casd_args.append("--protect-session-blobs")
 
             casd_args.append(path)
 
@@ -112,7 +111,8 @@ class CASCache():
                 # The frontend will take care of it if needed
                 with _signals.blocked([signal.SIGINT], ignore=False):
                     self._casd_process = subprocess.Popen(
-                        casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT)
+                        casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT
+                    )
 
             self._cache_usage_monitor = _CASCacheUsageMonitor(self)
         else:
@@ -123,16 +123,16 @@ class CASCache():
 
         # Popen objects are not pickle-able, however, child processes only
         # need the information whether a casd subprocess was started or not.
-        assert '_casd_process' in state
-        state['_casd_process'] = bool(self._casd_process)
+        assert "_casd_process" in state
+        state["_casd_process"] = bool(self._casd_process)
 
         # The usage monitor is not pickle-able, but we also don't need it in
         # child processes currently. Make sure that if this changes, we get a
         # bug report, by setting _cache_usage_monitor_forbidden.
-        assert '_cache_usage_monitor' in state
-        assert '_cache_usage_monitor_forbidden' in state
-        state['_cache_usage_monitor'] = None
-        state['_cache_usage_monitor_forbidden'] = True
+        assert "_cache_usage_monitor" in state
+        assert "_cache_usage_monitor_forbidden" in state
+        state["_cache_usage_monitor"] = None
+        state["_cache_usage_monitor_forbidden"] = True
 
         return state
 
@@ -148,7 +148,7 @@ class CASCache():
 
                 time.sleep(0.01)
 
-            self._casd_channel = grpc.insecure_channel('unix:' + self._casd_socket_path)
+            self._casd_channel = grpc.insecure_channel("unix:" + self._casd_socket_path)
             self._casd_cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self._casd_channel)
             self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
 
@@ -179,8 +179,8 @@ class CASCache():
     # Preflight check.
     #
     def preflight(self):
-        headdir = os.path.join(self.casdir, 'refs', 'heads')
-        objdir = os.path.join(self.casdir, 'objects')
+        headdir = os.path.join(self.casdir, "refs", "heads")
+        objdir = os.path.join(self.casdir, "objects")
         if not (os.path.isdir(headdir) and os.path.isdir(objdir)):
             raise CASCacheError("CAS repository check failed for '{}'".format(self.casdir))
 
@@ -285,7 +285,7 @@ class CASCache():
 
         directory = remote_execution_pb2.Directory()
 
-        with open(self.objpath(tree), 'rb') as f:
+        with open(self.objpath(tree), "rb") as f:
             directory.ParseFromString(f.read())
 
         for filenode in directory.files:
@@ -297,8 +297,16 @@ class CASCache():
                 utils.safe_copy(self.objpath(filenode.digest), fullpath)
 
             if filenode.is_executable:
-                os.chmod(fullpath, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
-                         stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+                os.chmod(
+                    fullpath,
+                    stat.S_IRUSR
+                    | stat.S_IWUSR
+                    | stat.S_IXUSR
+                    | stat.S_IRGRP
+                    | stat.S_IXGRP
+                    | stat.S_IROTH
+                    | stat.S_IXOTH,
+                )
 
         for dirnode in directory.directories:
             fullpath = os.path.join(dest, dirnode.name)
@@ -365,7 +373,7 @@ class CASCache():
     #     (str): The path of the object
     #
     def objpath(self, digest):
-        return os.path.join(self.casdir, 'objects', digest.hash[:2], digest.hash[2:])
+        return os.path.join(self.casdir, "objects", digest.hash[:2], digest.hash[2:])
 
     # add_object():
     #
@@ -450,7 +458,7 @@ class CASCache():
 
         treepath = self.objpath(tree_response.tree_digest)
         tree = remote_execution_pb2.Tree()
-        with open(treepath, 'rb') as f:
+        with open(treepath, "rb") as f:
             tree.ParseFromString(f.read())
 
         root_directory = tree.root.SerializeToString()
@@ -467,7 +475,7 @@ class CASCache():
     def set_ref(self, ref, tree):
         refpath = self._refpath(ref)
         os.makedirs(os.path.dirname(refpath), exist_ok=True)
-        with utils.save_file_atomic(refpath, 'wb', tempdir=self.tmpdir) as f:
+        with utils.save_file_atomic(refpath, "wb", tempdir=self.tmpdir) as f:
             f.write(tree.SerializeToString())
 
     # resolve_ref():
@@ -485,7 +493,7 @@ class CASCache():
         refpath = self._refpath(ref)
 
         try:
-            with open(refpath, 'rb') as f:
+            with open(refpath, "rb") as f:
                 if update_mtime:
                     os.utime(refpath)
 
@@ -521,7 +529,7 @@ class CASCache():
     def remove(self, ref, *, basedir=None):
 
         if basedir is None:
-            basedir = os.path.join(self.casdir, 'refs', 'heads')
+            basedir = os.path.join(self.casdir, "refs", "heads")
         # Remove cache ref
         self._remove_ref(ref, basedir)
 
@@ -611,7 +619,7 @@ class CASCache():
 
         directory = remote_execution_pb2.Directory()
 
-        with open(self.objpath(directory_digest), 'rb') as f:
+        with open(self.objpath(directory_digest), "rb") as f:
             directory.ParseFromString(f.read())
 
         for filenode in directory.files:
@@ -626,21 +634,19 @@ class CASCache():
         dir_b = remote_execution_pb2.Directory()
 
         if tree_a:
-            with open(self.objpath(tree_a), 'rb') as f:
+            with open(self.objpath(tree_a), "rb") as f:
                 dir_a.ParseFromString(f.read())
         if tree_b:
-            with open(self.objpath(tree_b), 'rb') as f:
+            with open(self.objpath(tree_b), "rb") as f:
                 dir_b.ParseFromString(f.read())
 
         a = 0
         b = 0
         while a < len(dir_a.files) or b < len(dir_b.files):
-            if b < len(dir_b.files) and (a >= len(dir_a.files) or
-                                         dir_a.files[a].name > dir_b.files[b].name):
+            if b < len(dir_b.files) and (a >= len(dir_a.files) or dir_a.files[a].name > dir_b.files[b].name):
                 added.append(os.path.join(path, dir_b.files[b].name))
                 b += 1
-            elif a < len(dir_a.files) and (b >= len(dir_b.files) or
-                                           dir_b.files[b].name > dir_a.files[a].name):
+            elif a < len(dir_a.files) and (b >= len(dir_b.files) or dir_b.files[b].name > dir_a.files[a].name):
                 removed.append(os.path.join(path, dir_a.files[a].name))
                 a += 1
             else:
@@ -653,24 +659,41 @@ class CASCache():
         a = 0
         b = 0
         while a < len(dir_a.directories) or b < len(dir_b.directories):
-            if b < len(dir_b.directories) and (a >= len(dir_a.directories) or
-                                               dir_a.directories[a].name > dir_b.directories[b].name):
-                self.diff_trees(None, dir_b.directories[b].digest,
-                                added=added, removed=removed, modified=modified,
-                                path=os.path.join(path, dir_b.directories[b].name))
+            if b < len(dir_b.directories) and (
+                a >= len(dir_a.directories) or dir_a.directories[a].name > dir_b.directories[b].name
+            ):
+                self.diff_trees(
+                    None,
+                    dir_b.directories[b].digest,
+                    added=added,
+                    removed=removed,
+                    modified=modified,
+                    path=os.path.join(path, dir_b.directories[b].name),
+                )
                 b += 1
-            elif a < len(dir_a.directories) and (b >= len(dir_b.directories) or
-                                                 dir_b.directories[b].name > dir_a.directories[a].name):
-                self.diff_trees(dir_a.directories[a].digest, None,
-                                added=added, removed=removed, modified=modified,
-                                path=os.path.join(path, dir_a.directories[a].name))
+            elif a < len(dir_a.directories) and (
+                b >= len(dir_b.directories) or dir_b.directories[b].name > dir_a.directories[a].name
+            ):
+                self.diff_trees(
+                    dir_a.directories[a].digest,
+                    None,
+                    added=added,
+                    removed=removed,
+                    modified=modified,
+                    path=os.path.join(path, dir_a.directories[a].name),
+                )
                 a += 1
             else:
                 # Subdirectory exists in both directories
                 if dir_a.directories[a].digest.hash != dir_b.directories[b].digest.hash:
-                    self.diff_trees(dir_a.directories[a].digest, dir_b.directories[b].digest,
-                                    added=added, removed=removed, modified=modified,
-                                    path=os.path.join(path, dir_a.directories[a].name))
+                    self.diff_trees(
+                        dir_a.directories[a].digest,
+                        dir_b.directories[b].digest,
+                        added=added,
+                        removed=removed,
+                        modified=modified,
+                        path=os.path.join(path, dir_a.directories[a].name),
+                    )
                 a += 1
                 b += 1
 
@@ -703,7 +726,7 @@ class CASCache():
         return os.path.join(log_dir, str(self._casd_start_time) + ".log")
 
     def _refpath(self, ref):
-        return os.path.join(self.casdir, 'refs', 'heads', ref)
+        return os.path.join(self.casdir, "refs", "heads", ref)
 
     # _remove_ref()
     #
@@ -763,7 +786,7 @@ class CASCache():
 
         directory = remote_execution_pb2.Directory()
 
-        with open(self.objpath(tree), 'rb') as f:
+        with open(self.objpath(tree), "rb") as f:
             directory.ParseFromString(f.read())
 
         for dirnode in directory.directories:
@@ -783,7 +806,7 @@ class CASCache():
 
             directory = remote_execution_pb2.Directory()
 
-            with open(self.objpath(tree), 'rb') as f:
+            with open(self.objpath(tree), "rb") as f:
                 directory.ParseFromString(f.read())
 
         except FileNotFoundError:
@@ -813,8 +836,7 @@ class CASCache():
     @contextlib.contextmanager
     def _temporary_object(self):
         with utils._tempnamedfile(dir=self.tmpdir) as f:
-            os.chmod(f.name,
-                     stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+            os.chmod(f.name, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
             yield f
 
     # _ensure_blob():
@@ -898,12 +920,13 @@ class CASCache():
             objpath = self._ensure_blob(remote, dir_digest)
 
             directory = remote_execution_pb2.Directory()
-            with open(objpath, 'rb') as f:
+            with open(objpath, "rb") as f:
                 directory.ParseFromString(f.read())
 
             for dirnode in directory.directories:
-                batch = self._fetch_directory_node(remote, dirnode.digest, batch,
-                                                   fetch_queue, fetch_next_queue, recursive=True)
+                batch = self._fetch_directory_node(
+                    remote, dirnode.digest, batch, fetch_queue, fetch_next_queue, recursive=True
+                )
 
         # Fetch final batch
         self._fetch_directory_batch(remote, batch, fetch_queue, fetch_next_queue)
@@ -913,7 +936,7 @@ class CASCache():
 
         tree = remote_execution_pb2.Tree()
 
-        with open(objpath, 'rb') as f:
+        with open(objpath, "rb") as f:
             tree.ParseFromString(f.read())
 
         tree.children.extend([tree.root])
@@ -1062,8 +1085,7 @@ class CASCache():
 #    used_size (int): Total size used by the local cache, in bytes.
 #    quota_size (int): Disk quota for the local cache, in bytes.
 #
-class _CASCacheUsage():
-
+class _CASCacheUsage:
     def __init__(self, used_size, quota_size):
         self.used_size = used_size
         self.quota_size = quota_size
@@ -1080,10 +1102,11 @@ class _CASCacheUsage():
         elif self.quota_size is None:
             return utils._pretty_size(self.used_size, dec_places=1)
         else:
-            return "{} / {} ({}%)" \
-                .format(utils._pretty_size(self.used_size, dec_places=1),
-                        utils._pretty_size(self.quota_size, dec_places=1),
-                        self.used_percent)
+            return "{} / {} ({}%)".format(
+                utils._pretty_size(self.used_size, dec_places=1),
+                utils._pretty_size(self.quota_size, dec_places=1),
+                self.used_percent,
+            )
 
 
 # _CASCacheUsageMonitor

@@ -7,7 +7,7 @@ import sys
 import pytest
 
 
-SETUP_TEMPLATE = '''\
+SETUP_TEMPLATE = """\
 from setuptools import setup
 
 setup(
@@ -22,18 +22,18 @@ setup(
         ]
     }}
 )
-'''
+"""
 
 # All packages generated via generate_pip_package will have the functions below
-INIT_TEMPLATE = '''\
+INIT_TEMPLATE = """\
 def main():
     print('This is {name}')
 
 def hello(actor='world'):
     print('Hello {{}}! This is {name}'.format(actor))
-'''
+"""
 
-HTML_TEMPLATE = '''\
+HTML_TEMPLATE = """\
 <html>
   <head>
     <title>Links for {name}</title>
@@ -42,7 +42,7 @@ HTML_TEMPLATE = '''\
     <a href='{name}-{version}.tar.gz'>{name}-{version}.tar.gz</a><br />
   </body>
 </html>
-'''
+"""
 
 
 # Creates a simple python source distribution and copies this into a specified
@@ -57,11 +57,11 @@ HTML_TEMPLATE = '''\
 # Returns:
 #    None
 #
-def generate_pip_package(tmpdir, pypi, name, version='0.1', dependencies=None):
+def generate_pip_package(tmpdir, pypi, name, version="0.1", dependencies=None):
     if dependencies is None:
         dependencies = []
     # check if package already exists in pypi
-    pypi_package = os.path.join(pypi, re.sub('[^0-9a-zA-Z]+', '-', name))
+    pypi_package = os.path.join(pypi, re.sub("[^0-9a-zA-Z]+", "-", name))
     if os.path.exists(pypi_package):
         return
 
@@ -73,29 +73,22 @@ def generate_pip_package(tmpdir, pypi, name, version='0.1', dependencies=None):
     # `-- package
     #     `-- __init__.py
     #
-    setup_file = os.path.join(tmpdir, 'setup.py')
-    pkgdirname = re.sub('[^0-9a-zA-Z]+', '', name)
-    with open(setup_file, 'w') as f:
-        f.write(
-            SETUP_TEMPLATE.format(
-                name=name,
-                version=version,
-                pkgdirname=pkgdirname,
-                pkgdeps=dependencies
-            )
-        )
+    setup_file = os.path.join(tmpdir, "setup.py")
+    pkgdirname = re.sub("[^0-9a-zA-Z]+", "", name)
+    with open(setup_file, "w") as f:
+        f.write(SETUP_TEMPLATE.format(name=name, version=version, pkgdirname=pkgdirname, pkgdeps=dependencies))
     os.chmod(setup_file, 0o755)
 
     package = os.path.join(tmpdir, pkgdirname)
     os.makedirs(package)
 
-    main_file = os.path.join(package, '__init__.py')
-    with open(main_file, 'w') as f:
+    main_file = os.path.join(package, "__init__.py")
+    with open(main_file, "w") as f:
         f.write(INIT_TEMPLATE.format(name=name))
     os.chmod(main_file, 0o644)
 
     # Run sdist with a fresh process
-    p = subprocess.run([sys.executable, 'setup.py', 'sdist'], cwd=tmpdir)
+    p = subprocess.run([sys.executable, "setup.py", "sdist"], cwd=tmpdir)
     assert p.returncode == 0
 
     # create directory for this package in pypi resulting in a directory
@@ -109,12 +102,12 @@ def generate_pip_package(tmpdir, pypi, name, version='0.1', dependencies=None):
     os.makedirs(pypi_package)
 
     # add an index html page
-    index_html = os.path.join(pypi_package, 'index.html')
-    with open(index_html, 'w') as f:
+    index_html = os.path.join(pypi_package, "index.html")
+    with open(index_html, "w") as f:
         f.write(HTML_TEMPLATE.format(name=name, version=version))
 
     # copy generated tarfile to pypi package
-    dist_dir = os.path.join(tmpdir, 'dist')
+    dist_dir = os.path.join(tmpdir, "dist")
     for tar in os.listdir(dist_dir):
         tarpath = os.path.join(dist_dir, tar)
         shutil.copy(tarpath, pypi_package)
@@ -123,7 +116,7 @@ def generate_pip_package(tmpdir, pypi, name, version='0.1', dependencies=None):
 @pytest.fixture
 def setup_pypi_repo(tmpdir):
     def create_pkgdir(package):
-        pkgdirname = re.sub('[^0-9a-zA-Z]+', '', package)
+        pkgdirname = re.sub("[^0-9a-zA-Z]+", "", package)
         pkgdir = os.path.join(str(tmpdir), pkgdirname)
         os.makedirs(pkgdir)
         return pkgdir

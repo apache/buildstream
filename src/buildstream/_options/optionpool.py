@@ -50,8 +50,7 @@ class OptionTypes(FastEnum):
     OS = OptionOS.OPTION_TYPE
 
 
-class OptionPool():
-
+class OptionPool:
     def __init__(self, element_path):
         # We hold on to the element path for the sake of OptionEltMask
         self.element_path = element_path
@@ -59,7 +58,7 @@ class OptionPool():
         #
         # Private members
         #
-        self._options = {}      # The Options
+        self._options = {}  # The Options
         self._variables = None  # The Options resolved into typed variables
 
         self._environment = None
@@ -69,7 +68,7 @@ class OptionPool():
         state = self.__dict__.copy()
         # Jinja2 Environments don't appear to be serializable. It is easy
         # enough for us to reconstruct this one anyway, so no need to pickle it.
-        del state['_environment']
+        del state["_environment"]
         return state
 
     def __setstate__(self, state):
@@ -90,7 +89,7 @@ class OptionPool():
             # Assert that the option name is a valid symbol
             _assert_symbol_name(option_name, "option name", ref_node=option_definition, allow_dashes=False)
 
-            opt_type_name = option_definition.get_enum('type', OptionTypes)
+            opt_type_name = option_definition.get_enum("type", OptionTypes)
             opt_type = _OPTION_TYPES[opt_type_name.value]
 
             option = opt_type(option_name, option_definition, self)
@@ -110,8 +109,9 @@ class OptionPool():
                 option = self._options[option_name]
             except KeyError as e:
                 p = option_value.get_provenance()
-                raise LoadError("{}: Unknown option '{}' specified"
-                                .format(p, option_name), LoadErrorReason.INVALID_DATA) from e
+                raise LoadError(
+                    "{}: Unknown option '{}' specified".format(p, option_name), LoadErrorReason.INVALID_DATA
+                ) from e
             option.load_value(node, transform=transform)
 
     # load_cli_values()
@@ -129,8 +129,10 @@ class OptionPool():
                 option = self._options[option_name]
             except KeyError as e:
                 if not ignore_unknown:
-                    raise LoadError("Unknown option '{}' specified on the command line"
-                                    .format(option_name), LoadErrorReason.INVALID_DATA) from e
+                    raise LoadError(
+                        "Unknown option '{}' specified on the command line".format(option_name),
+                        LoadErrorReason.INVALID_DATA,
+                    ) from e
             else:
                 option.set_value(option_value)
 
@@ -239,11 +241,13 @@ class OptionPool():
             elif val == "False":
                 return False
             else:  # pragma: nocover
-                raise LoadError("Failed to evaluate expression: {}".format(expression),
-                                LoadErrorReason.EXPRESSION_FAILED)
+                raise LoadError(
+                    "Failed to evaluate expression: {}".format(expression), LoadErrorReason.EXPRESSION_FAILED
+                )
         except jinja2.exceptions.TemplateError as e:
-            raise LoadError("Failed to evaluate expression ({}): {}".format(expression, e),
-                            LoadErrorReason.EXPRESSION_FAILED)
+            raise LoadError(
+                "Failed to evaluate expression ({}): {}".format(expression, e), LoadErrorReason.EXPRESSION_FAILED
+            )
 
     # Recursion assistent for lists, in case there
     # are lists of lists.
@@ -262,25 +266,27 @@ class OptionPool():
     # Return true if a conditional was processed.
     #
     def _process_one_node(self, node):
-        conditions = node.get_sequence('(?)', default=None)
-        assertion = node.get_str('(!)', default=None)
+        conditions = node.get_sequence("(?)", default=None)
+        assertion = node.get_str("(!)", default=None)
 
         # Process assersions first, we want to abort on the first encountered
         # assertion in a given dictionary, and not lose an assertion due to
         # it being overwritten by a later assertion which might also trigger.
         if assertion is not None:
-            p = node.get_scalar('(!)').get_provenance()
+            p = node.get_scalar("(!)").get_provenance()
             raise LoadError("{}: {}".format(p, assertion.strip()), LoadErrorReason.USER_ASSERTION)
 
         if conditions is not None:
-            del node['(?)']
+            del node["(?)"]
 
             for condition in conditions:
                 tuples = list(condition.items())
                 if len(tuples) > 1:
                     provenance = condition.get_provenance()
-                    raise LoadError("{}: Conditional statement has more than one key".format(provenance),
-                                    LoadErrorReason.INVALID_DATA)
+                    raise LoadError(
+                        "{}: Conditional statement has more than one key".format(provenance),
+                        LoadErrorReason.INVALID_DATA,
+                    )
 
                 expression, value = tuples[0]
                 try:
@@ -292,8 +298,10 @@ class OptionPool():
 
                 if type(value) is not MappingNode:  # pylint: disable=unidiomatic-typecheck
                     provenance = condition.get_provenance()
-                    raise LoadError("{}: Only values of type 'dict' can be composed.".format(provenance),
-                                    LoadErrorReason.ILLEGAL_COMPOSITE)
+                    raise LoadError(
+                        "{}: Only values of type 'dict' can be composed.".format(provenance),
+                        LoadErrorReason.ILLEGAL_COMPOSITE,
+                    )
 
                 # Apply the yaml fragment if its condition evaluates to true
                 if apply_fragment:

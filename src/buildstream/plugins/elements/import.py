@@ -45,12 +45,10 @@ class ImportElement(Element):
     BST_RUN_COMMANDS = False
 
     def configure(self, node):
-        node.validate_keys([
-            'source', 'target'
-        ])
+        node.validate_keys(["source", "target"])
 
-        self.source = self.node_subst_vars(node.get_scalar('source'))
-        self.target = self.node_subst_vars(node.get_scalar('target'))
+        self.source = self.node_subst_vars(node.get_scalar("source"))
+        self.target = self.node_subst_vars(node.get_scalar("target"))
 
     def preflight(self):
         # Assert that we have at least one source to fetch.
@@ -60,10 +58,7 @@ class ImportElement(Element):
             raise ElementError("{}: An import element must have at least one source.".format(self))
 
     def get_unique_key(self):
-        return {
-            'source': self.source,
-            'target': self.target
-        }
+        return {"source": self.source, "target": self.target}
 
     def configure_sandbox(self, sandbox):
         pass
@@ -74,11 +69,11 @@ class ImportElement(Element):
     def assemble(self, sandbox):
 
         # Stage sources into the input directory
-        self.stage_sources(sandbox, 'input')
+        self.stage_sources(sandbox, "input")
 
         rootdir = sandbox.get_virtual_directory()
-        inputdir = rootdir.descend('input')
-        outputdir = rootdir.descend('output', create=True)
+        inputdir = rootdir.descend("input")
+        outputdir = rootdir.descend("output", create=True)
 
         # The directory to grab
         inputdir = inputdir.descend(*self.source.strip(os.sep).split(os.sep))
@@ -87,18 +82,17 @@ class ImportElement(Element):
         outputdir = outputdir.descend(*self.target.strip(os.sep).split(os.sep), create=True)
 
         if inputdir.is_empty():
-            raise ElementError("{}: No files were found inside directory '{}'"
-                               .format(self, self.source))
+            raise ElementError("{}: No files were found inside directory '{}'".format(self, self.source))
 
         # Move it over
         outputdir.import_files(inputdir)
 
         # And we're done
-        return '/output'
+        return "/output"
 
     def generate_script(self):
-        build_root = self.get_variable('build-root')
-        install_root = self.get_variable('install-root')
+        build_root = self.get_variable("build-root")
+        install_root = self.get_variable("install-root")
         commands = []
 
         # The directory to grab

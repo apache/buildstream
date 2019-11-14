@@ -48,34 +48,27 @@ class SandboxBwrap(Sandbox):
     _have_good_bwrap = None
 
     # Minimal set of devices for the sandbox
-    DEVICES = [
-        '/dev/full',
-        '/dev/null',
-        '/dev/urandom',
-        '/dev/random',
-        '/dev/zero'
-    ]
+    DEVICES = ["/dev/full", "/dev/null", "/dev/urandom", "/dev/random", "/dev/zero"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.linux32 = kwargs['linux32']
+        self.linux32 = kwargs["linux32"]
 
     @classmethod
     def check_available(cls):
         cls._have_fuse = os.path.exists("/dev/fuse")
         if not cls._have_fuse:
-            cls._dummy_reasons += ['Fuse is unavailable']
+            cls._dummy_reasons += ["Fuse is unavailable"]
 
         try:
-            utils.get_host_tool('bwrap')
+            utils.get_host_tool("bwrap")
         except utils.ProgramNotFoundError as Error:
             cls._bwrap_exists = False
             cls._have_good_bwrap = False
             cls._die_with_parent_available = False
             cls._json_status_available = False
-            cls._dummy_reasons += ['Bubblewrap not found']
-            raise SandboxError(" and ".join(cls._dummy_reasons),
-                               reason="unavailable-local-sandbox") from Error
+            cls._dummy_reasons += ["Bubblewrap not found"]
+            raise SandboxError(" and ".join(cls._dummy_reasons), reason="unavailable-local-sandbox") from Error
 
         bwrap_version = _site.get_bwrap_version()
 
@@ -84,7 +77,7 @@ class SandboxBwrap(Sandbox):
         cls._die_with_parent_available = (0, 1, 8) <= bwrap_version
         cls._json_status_available = (0, 3, 2) <= bwrap_version
         if not cls._have_good_bwrap:
-            cls._dummy_reasons += ['Bubblewrap is too old']
+            cls._dummy_reasons += ["Bubblewrap is too old"]
             raise SandboxError(" and ".join(cls._dummy_reasons))
 
         cls._uid = os.geteuid()
@@ -98,29 +91,26 @@ class SandboxBwrap(Sandbox):
         # issue a warning if it's not available, and save the state
         # locally so that we can inform the sandbox to not try it
         # later on.
-        bwrap = utils.get_host_tool('bwrap')
+        bwrap = utils.get_host_tool("bwrap")
         try:
-            whoami = utils.get_host_tool('whoami')
-            output = subprocess.check_output([
-                bwrap,
-                '--ro-bind', '/', '/',
-                '--unshare-user',
-                '--uid', '0', '--gid', '0',
-                whoami,
-            ], universal_newlines=True).strip()
+            whoami = utils.get_host_tool("whoami")
+            output = subprocess.check_output(
+                [bwrap, "--ro-bind", "/", "/", "--unshare-user", "--uid", "0", "--gid", "0", whoami,],
+                universal_newlines=True,
+            ).strip()
         except subprocess.CalledProcessError:
-            output = ''
+            output = ""
         except utils.ProgramNotFoundError:
-            output = ''
+            output = ""
 
-        return output == 'root'
+        return output == "root"
 
     @classmethod
     def check_sandbox_config(cls, local_platform, config):
         if cls.user_ns_available:
             # User namespace support allows arbitrary build UID/GID settings.
             pass
-        elif (config.build_uid != local_platform._uid or config.build_gid != local_platform._gid):
+        elif config.build_uid != local_platform._uid or config.build_gid != local_platform._gid:
             # Without user namespace support, the UID/GID in the sandbox
             # will match the host UID/GID.
             return False
@@ -141,9 +131,9 @@ class SandboxBwrap(Sandbox):
         root_directory = self.get_virtual_directory()._get_underlying_directory()
 
         if not self._has_command(command[0], env):
-            raise SandboxCommandError("Staged artifacts do not provide command "
-                                      "'{}'".format(command[0]),
-                                      reason='missing-command')
+            raise SandboxCommandError(
+                "Staged artifacts do not provide command " "'{}'".format(command[0]), reason="missing-command"
+            )
 
         # NOTE: MountMap transitively imports `_fuse/fuse.py` which raises an
         # EnvironmentError when fuse is not found. Since this module is
@@ -154,29 +144,29 @@ class SandboxBwrap(Sandbox):
         # Create the mount map, this will tell us where
         # each mount point needs to be mounted from and to
         mount_map = MountMap(self, flags & SandboxFlags.ROOT_READ_ONLY)
-        root_mount_source = mount_map.get_mount_source('/')
+        root_mount_source = mount_map.get_mount_source("/")
 
         # start command with linux32 if needed
         if self.linux32:
-            bwrap_command = [utils.get_host_tool('linux32')]
+            bwrap_command = [utils.get_host_tool("linux32")]
         else:
             bwrap_command = []
 
         # Grab the full path of the bwrap binary
-        bwrap_command += [utils.get_host_tool('bwrap')]
+        bwrap_command += [utils.get_host_tool("bwrap")]
 
         for k, v in env.items():
-            bwrap_command += ['--setenv', k, v]
+            bwrap_command += ["--setenv", k, v]
         for k in os.environ.keys() - env.keys():
-            bwrap_command += ['--unsetenv', k]
+            bwrap_command += ["--unsetenv", k]
 
         # Create a new pid namespace, this also ensures that any subprocesses
         # are cleaned up when the bwrap process exits.
-        bwrap_command += ['--unshare-pid']
+        bwrap_command += ["--unshare-pid"]
 
         # Ensure subprocesses are cleaned up when the bwrap parent dies.
         if self._die_with_parent_available:
-            bwrap_command += ['--die-with-parent']
+            bwrap_command += ["--die-with-parent"]
 
         # Add in the root filesystem stuff first.
         #
@@ -186,15 +176,12 @@ class SandboxBwrap(Sandbox):
         bwrap_command += ["--bind", root_mount_source, "/"]
 
         if not flags & SandboxFlags.NETWORK_ENABLED:
-            bwrap_command += ['--unshare-net']
-            bwrap_command += ['--unshare-uts', '--hostname', 'buildstream']
-            bwrap_command += ['--unshare-ipc']
+            bwrap_command += ["--unshare-net"]
+            bwrap_command += ["--unshare-uts", "--hostname", "buildstream"]
+            bwrap_command += ["--unshare-ipc"]
 
         # Give it a proc and tmpfs
-        bwrap_command += [
-            '--proc', '/proc',
-            '--tmpfs', '/tmp'
-        ]
+        bwrap_command += ["--proc", "/proc", "--tmpfs", "/tmp"]
 
         # In interactive mode, we want a complete devpts inside
         # the container, so there is a /dev/console and such. In
@@ -202,21 +189,21 @@ class SandboxBwrap(Sandbox):
         # a minimal set of devices to expose to the sandbox.
         #
         if flags & SandboxFlags.INTERACTIVE:
-            bwrap_command += ['--dev', '/dev']
+            bwrap_command += ["--dev", "/dev"]
         else:
             for device in self.DEVICES:
-                bwrap_command += ['--dev-bind', device, device]
+                bwrap_command += ["--dev-bind", device, device]
 
             # Create a tmpfs for /dev/shm, if we're in interactive this
             # is handled by `--dev /dev`
             #
-            bwrap_command += ['--tmpfs', '/dev/shm']
+            bwrap_command += ["--tmpfs", "/dev/shm"]
 
         # Add bind mounts to any marked directories
         marked_directories = self._get_marked_directories()
         mount_source_overrides = self._get_mount_sources()
         for mark in marked_directories:
-            mount_point = mark['directory']
+            mount_point = mark["directory"]
             if mount_point in mount_source_overrides:  # pylint: disable=consider-using-get
                 mount_source = mount_source_overrides[mount_point]
             else:
@@ -230,22 +217,22 @@ class SandboxBwrap(Sandbox):
             # harmless to do in a build environment where the directories
             # we mount just never contain device files.
             #
-            bwrap_command += ['--dev-bind', mount_source, mount_point]
+            bwrap_command += ["--dev-bind", mount_source, mount_point]
 
         if flags & SandboxFlags.ROOT_READ_ONLY:
             bwrap_command += ["--remount-ro", "/"]
 
         if cwd is not None:
-            bwrap_command += ['--dir', cwd]
-            bwrap_command += ['--chdir', cwd]
+            bwrap_command += ["--dir", cwd]
+            bwrap_command += ["--chdir", cwd]
 
         # Set UID and GUI
         if self.user_ns_available:
-            bwrap_command += ['--unshare-user']
+            bwrap_command += ["--unshare-user"]
             if not flags & SandboxFlags.INHERIT_UID:
                 uid = self._get_config().build_uid
                 gid = self._get_config().build_gid
-                bwrap_command += ['--uid', str(uid), '--gid', str(gid)]
+                bwrap_command += ["--uid", str(uid), "--gid", str(gid)]
 
         with ExitStack() as stack:
             pass_fds = ()
@@ -253,7 +240,7 @@ class SandboxBwrap(Sandbox):
             if self._json_status_available:
                 json_status_file = stack.enter_context(TemporaryFile())
                 pass_fds = (json_status_file.fileno(),)
-                bwrap_command += ['--json-status-fd', str(json_status_file.fileno())]
+                bwrap_command += ["--json-status-fd", str(json_status_file.fileno())]
 
             # Add the command
             bwrap_command += command
@@ -265,7 +252,7 @@ class SandboxBwrap(Sandbox):
             #
             existing_basedirs = {
                 directory: os.path.exists(os.path.join(root_directory, directory))
-                for directory in ['dev/shm', 'tmp', 'dev', 'proc']
+                for directory in ["dev/shm", "tmp", "dev", "proc"]
             }
 
             # Use the MountMap context manager to ensure that any redirected
@@ -283,15 +270,16 @@ class SandboxBwrap(Sandbox):
                 stdin = stack.enter_context(open(os.devnull, "r"))
 
             # Run bubblewrap !
-            exit_code = self.run_bwrap(bwrap_command, stdin, stdout, stderr,
-                                       (flags & SandboxFlags.INTERACTIVE), pass_fds)
+            exit_code = self.run_bwrap(
+                bwrap_command, stdin, stdout, stderr, (flags & SandboxFlags.INTERACTIVE), pass_fds
+            )
 
             # Cleanup things which bwrap might have left behind, while
             # everything is still mounted because bwrap can be creating
             # the devices on the fuse mount, so we should remove it there.
             if not flags & SandboxFlags.INTERACTIVE:
                 for device in self.DEVICES:
-                    device_path = os.path.join(root_mount_source, device.lstrip('/'))
+                    device_path = os.path.join(root_mount_source, device.lstrip("/"))
 
                     # This will remove the device in a loop, allowing some
                     # retries in case the device file leaked by bubblewrap is still busy
@@ -299,7 +287,7 @@ class SandboxBwrap(Sandbox):
 
             # Remove /tmp, this is a bwrap owned thing we want to be sure
             # never ends up in an artifact
-            for basedir in ['dev/shm', 'tmp', 'dev', 'proc']:
+            for basedir in ["dev/shm", "tmp", "dev", "proc"]:
 
                 # Skip removal of directories which already existed before
                 # launching bwrap
@@ -341,12 +329,14 @@ class SandboxBwrap(Sandbox):
                 for line in json_status_file:
                     with suppress(json.decoder.JSONDecodeError):
                         o = json.loads(line.decode())
-                        if isinstance(o, collections.abc.Mapping) and 'exit-code' in o:
-                            child_exit_code = o['exit-code']
+                        if isinstance(o, collections.abc.Mapping) and "exit-code" in o:
+                            child_exit_code = o["exit-code"]
                             break
                 if child_exit_code is None:
-                    raise SandboxError("`bwrap' terminated during sandbox setup with exitcode {}".format(exit_code),
-                                       reason="bwrap-sandbox-fail")
+                    raise SandboxError(
+                        "`bwrap' terminated during sandbox setup with exitcode {}".format(exit_code),
+                        reason="bwrap-sandbox-fail",
+                    )
                 exit_code = child_exit_code
 
         self._vdir._mark_changed()
@@ -432,7 +422,7 @@ class SandboxBwrap(Sandbox):
                 stdin=stdin,
                 stdout=stdout,
                 stderr=stderr,
-                start_new_session=new_session
+                start_new_session=new_session,
             )
 
             # Wait for the child process to finish, ensuring that

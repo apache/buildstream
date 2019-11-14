@@ -28,9 +28,9 @@ from .app import App
 #
 def _osc_777_supported():
 
-    term = os.environ.get('TERM')
+    term = os.environ.get("TERM")
 
-    if term and (term.startswith('xterm') or term.startswith('vte')):
+    if term and (term.startswith("xterm") or term.startswith("vte")):
 
         # Since vte version 4600, upstream silently ignores
         # the OSC 777 without printing garbage to the terminal.
@@ -39,7 +39,7 @@ def _osc_777_supported():
         # will trigger a desktop notification and bring attention
         # to the terminal.
         #
-        vte_version = os.environ.get('VTE_VERSION')
+        vte_version = os.environ.get("VTE_VERSION")
         try:
             vte_version_int = int(vte_version)
         except (ValueError, TypeError):
@@ -54,7 +54,6 @@ def _osc_777_supported():
 # A linux specific App implementation
 #
 class LinuxApp(App):
-
     def notify(self, title, text):
 
         # Currently we only try this notification method

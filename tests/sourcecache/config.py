@@ -36,27 +36,19 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 # without specifying its counterpart, we get a comprehensive LoadError
 # instead of an unhandled exception.
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize('config_key, config_value', [
-    ('client-cert', 'client.crt'),
-    ('client-key', 'client.key')
-])
+@pytest.mark.parametrize("config_key, config_value", [("client-cert", "client.crt"), ("client-key", "client.key")])
 def test_missing_certs(cli, datafiles, config_key, config_value):
-    project = os.path.join(datafiles.dirname, datafiles.basename, 'missing-certs')
+    project = os.path.join(datafiles.dirname, datafiles.basename, "missing-certs")
 
     project_conf = {
-        'name': 'test',
-
-        'source-caches': {
-            'url': 'https://cache.example.com:12345',
-            'push': 'true',
-            config_key: config_value
-        }
+        "name": "test",
+        "source-caches": {"url": "https://cache.example.com:12345", "push": "true", config_key: config_value},
     }
-    project_conf_file = os.path.join(project, 'project.conf')
+    project_conf_file = os.path.join(project, "project.conf")
     _yaml.roundtrip_dump(project_conf, project_conf_file)
 
     # Use `pull` here to ensure we try to initialize the remotes, triggering the error
     #
     # This does not happen for a simple `bst show`.
-    result = cli.run(project=project, args=['source', 'fetch', 'element.bst'])
+    result = cli.run(project=project, args=["source", "fetch", "element.bst"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
