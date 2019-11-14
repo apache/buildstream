@@ -97,6 +97,7 @@ class ErrorDomain(Enum):
     CAS = 14
     PROG_NOT_FOUND = 15
     REMOTE = 16
+    PROFILE = 17
 
 
 # BstError is an internal base exception class for BuildStream
@@ -378,3 +379,12 @@ class SkipJob(Exception):
 class ArtifactElementError(BstError):
     def __init__(self, message, *, detail=None, reason=None):
         super().__init__(message, detail=detail, domain=ErrorDomain.ELEMENT, reason=reason)
+
+
+# ProfileError
+#
+# Raised when a user provided profile choice isn't valid
+#
+class ProfileError(BstError):
+    def __init__(self, message, detail=None, reason=None):
+        super().__init__(message, detail=detail, domain=ErrorDomain.PROFILE, reason=reason)
