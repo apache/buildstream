@@ -85,7 +85,7 @@ class CASCache:
             )
 
             self._casd_channel = self._casd_process_manager.create_channel()
-            self._cache_usage_monitor = _CASCacheUsageMonitor(self)
+            self._cache_usage_monitor = _CASCacheUsageMonitor(self._casd_channel)
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -133,14 +133,6 @@ class CASCache:
         objdir = os.path.join(self.casdir, "objects")
         if not (os.path.isdir(headdir) and os.path.isdir(objdir)):
             raise CASCacheError("CAS repository check failed for '{}'".format(self.casdir))
-
-    # has_open_grpc_channels():
-    #
-    # Return whether there are gRPC channel instances. This is used to safeguard
-    # against fork() with open gRPC channels.
-    #
-    def has_open_grpc_channels(self):
-        return self._casd_lazy_connection and not self._casd_lazy_connection.is_closed()
 
     # close_grpc_channels():
     #
@@ -977,8 +969,8 @@ class _CASCacheUsage:
 # buildbox-casd.
 #
 class _CASCacheUsageMonitor:
-    def __init__(self, cas):
-        self.cas = cas
+    def __init__(self, connection):
+        self._connection = connection
 
         # Shared memory (64-bit signed integer) for current disk usage and quota
         self._disk_usage = multiprocessing.Value(ctypes.c_longlong, -1)
@@ -986,7 +978,7 @@ class _CASCacheUsageMonitor:
 
         # multiprocessing.Process will fork without exec on Unix.
         # This can't be allowed with background threads or open gRPC channels.
-        assert utils._is_single_threaded() and not cas.has_open_grpc_channels()
+        assert utils._is_single_threaded() and connection.is_closed()
 
         # Block SIGINT, we don't want to kill the process when we interrupt the frontend
         # and this process if very lightweight.
@@ -1018,7 +1010,7 @@ class _CASCacheUsageMonitor:
 
         disk_usage = self._disk_usage
         disk_quota = self._disk_quota
-        local_cas = self.cas.get_local_cas()
+        local_cas = self._connection.get_local_cas()
 
         while True:
             try:

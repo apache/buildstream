@@ -219,7 +219,7 @@ class CASDChannel:
 
     # is_closed():
     #
-    # Return whether the channel is closed or not.
+    # Return whether this connection is closed or not.
     #
     def is_closed(self):
         return self._casd_channel is None
