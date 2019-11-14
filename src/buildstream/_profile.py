@@ -27,6 +27,7 @@ import pstats
 import os
 import datetime
 import time
+from ._exceptions import ProfileError
 
 
 # Use the topic values here to decide what to profile
@@ -112,6 +113,7 @@ class _Profiler:
         self.active_topics = set()
         self.enabled_topics = set()
         self._active_profilers = []
+        self._valid_topics = False
 
         if settings:
             self.enabled_topics = {
@@ -121,6 +123,15 @@ class _Profiler:
 
     @contextlib.contextmanager
     def profile(self, topic, key, message=None):
+
+        # Check if the user enabled topics are valid
+        # NOTE: This is done in the first PROFILER.profile() call and
+        # not __init__ to ensure we handle the exception. This also means
+        # we cannot test for the exception due to the early instantiation and
+        # how the environment is set in the test invocation.
+        if not self._valid_topics:
+            self._check_valid_topics()
+
         if not self._is_profile_enabled(topic):
             yield
             return
@@ -154,6 +165,15 @@ class _Profiler:
 
     def _is_profile_enabled(self, topic):
         return topic in self.enabled_topics or Topics.ALL in self.enabled_topics
+
+    def _check_valid_topics(self):
+        non_valid_topics = [topic for topic in self.enabled_topics if topic not in vars(Topics).values()]
+
+        if non_valid_topics:
+            raise ProfileError("Provided BST_PROFILE topics do not exist: {}"
+                               .format(", ".join(non_valid_topics)))
+
+        self._valid_topics = True
 
 
 # Export a profiler to be used by BuildStream
