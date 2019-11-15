@@ -20,15 +20,15 @@ from .platform import Platform
 
 
 class Fallback(Platform):
-
     def _check_dummy_sandbox_config(self, config):
         return True
 
     def _create_dummy_sandbox(self, *args, **kwargs):
-        kwargs['dummy_reason'] = \
-            ("FallBack platform only implements dummy sandbox, "
-             "Buildstream may be having issues correctly detecting your platform, "
-             "platform can be forced with BST_FORCE_BACKEND")
+        kwargs["dummy_reason"] = (
+            "FallBack platform only implements dummy sandbox, "
+            "Buildstream may be having issues correctly detecting your platform, "
+            "platform can be forced with BST_FORCE_BACKEND"
+        )
         return SandboxDummy(*args, **kwargs)
 
     def _setup_dummy_sandbox(self):

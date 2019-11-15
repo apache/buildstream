@@ -35,14 +35,14 @@ class RemoteType(FastEnum):
     ALL = "all"
 
     def __str__(self):
-        return self.name.lower().replace('_', '-')
+        return self.name.lower().replace("_", "-")
 
 
 # RemoteSpec():
 #
 # Defines the basic structure of a remote specification.
 #
-class RemoteSpec(namedtuple('RemoteSpec', 'url push server_cert client_key client_cert instance_name type')):
+class RemoteSpec(namedtuple("RemoteSpec", "url push server_cert client_key client_cert instance_name type")):
 
     # new_from_config_node
     #
@@ -60,15 +60,15 @@ class RemoteSpec(namedtuple('RemoteSpec', 'url push server_cert client_key clien
     #
     @classmethod
     def new_from_config_node(cls, spec_node, basedir=None):
-        spec_node.validate_keys(['url', 'push', 'server-cert', 'client-key', 'client-cert', 'instance-name', 'type'])
+        spec_node.validate_keys(["url", "push", "server-cert", "client-key", "client-cert", "instance-name", "type"])
 
-        url = spec_node.get_str('url')
+        url = spec_node.get_str("url")
         if not url:
-            provenance = spec_node.get_node('url').get_provenance()
+            provenance = spec_node.get_node("url").get_provenance()
             raise LoadError("{}: empty artifact cache URL".format(provenance), LoadErrorReason.INVALID_DATA)
 
-        push = spec_node.get_bool('push', default=False)
-        instance_name = spec_node.get_str('instance-name', default=None)
+        push = spec_node.get_bool("push", default=False)
+        instance_name = spec_node.get_str("instance-name", default=None)
 
         def parse_cert(key):
             cert = spec_node.get_str(key, default=None)
@@ -80,20 +80,22 @@ class RemoteSpec(namedtuple('RemoteSpec', 'url push server_cert client_key clien
 
             return cert
 
-        cert_keys = ('server-cert', 'client-key', 'client-cert')
+        cert_keys = ("server-cert", "client-key", "client-cert")
         server_cert, client_key, client_cert = tuple(parse_cert(key) for key in cert_keys)
 
         if client_key and not client_cert:
-            provenance = spec_node.get_node('client-key').get_provenance()
-            raise LoadError("{}: 'client-key' was specified without 'client-cert'".format(provenance),
-                            LoadErrorReason.INVALID_DATA)
+            provenance = spec_node.get_node("client-key").get_provenance()
+            raise LoadError(
+                "{}: 'client-key' was specified without 'client-cert'".format(provenance), LoadErrorReason.INVALID_DATA
+            )
 
         if client_cert and not client_key:
-            provenance = spec_node.get_node('client-cert').get_provenance()
-            raise LoadError("{}: 'client-cert' was specified without 'client-key'".format(provenance),
-                            LoadErrorReason.INVALID_DATA)
+            provenance = spec_node.get_node("client-cert").get_provenance()
+            raise LoadError(
+                "{}: 'client-cert' was specified without 'client-key'".format(provenance), LoadErrorReason.INVALID_DATA
+            )
 
-        type_ = spec_node.get_enum('type', RemoteType, default=RemoteType.ALL)
+        type_ = spec_node.get_enum("type", RemoteType, default=RemoteType.ALL)
 
         return cls(url, push, server_cert, client_key, client_cert, instance_name, type_)
 
@@ -108,11 +110,11 @@ class RemoteSpec(namedtuple('RemoteSpec', 'url push server_cert client_key clien
 RemoteSpec.__new__.__defaults__ = (  # type: ignore
     # mandatory          # url            - The url of the remote
     # mandatory          # push           - Whether the remote should be used for pushing
-    None,                # server_cert    - The server certificate
-    None,                # client_key     - The (private) client key
-    None,                # client_cert    - The (public) client certificate
-    None,                # instance_name  - The (grpc) instance name of the remote
-    RemoteType.ALL       # type           - The type of the remote (index, storage, both)
+    None,  # server_cert    - The server certificate
+    None,  # client_key     - The (private) client key
+    None,  # client_cert    - The (public) client certificate
+    None,  # instance_name  - The (grpc) instance name of the remote
+    RemoteType.ALL,  # type           - The type of the remote (index, storage, both)
 )
 
 
@@ -126,7 +128,7 @@ RemoteSpec.__new__.__defaults__ = (  # type: ignore
 # Customization for the particular protocol is expected to be
 # performed in children.
 #
-class BaseRemote():
+class BaseRemote:
     key_name = None
 
     def __init__(self, spec):
@@ -154,25 +156,24 @@ class BaseRemote():
 
         # Set up the communcation channel
         url = urlparse(self.spec.url)
-        if url.scheme == 'http':
+        if url.scheme == "http":
             port = url.port or 80
-            self.channel = grpc.insecure_channel('{}:{}'.format(url.hostname, port))
-        elif url.scheme == 'https':
+            self.channel = grpc.insecure_channel("{}:{}".format(url.hostname, port))
+        elif url.scheme == "https":
             port = url.port or 443
             try:
                 server_cert, client_key, client_cert = _read_files(
-                    self.spec.server_cert,
-                    self.spec.client_key,
-                    self.spec.client_cert)
+                    self.spec.server_cert, self.spec.client_key, self.spec.client_cert
+                )
             except FileNotFoundError as e:
                 raise RemoteError("Could not read certificates: {}".format(e)) from e
             self.server_cert = server_cert
             self.client_key = client_key
             self.client_cert = client_cert
-            credentials = grpc.ssl_channel_credentials(root_certificates=self.server_cert,
-                                                       private_key=self.client_key,
-                                                       certificate_chain=self.client_cert)
-            self.channel = grpc.secure_channel('{}:{}'.format(url.hostname, port), credentials)
+            credentials = grpc.ssl_channel_credentials(
+                root_certificates=self.server_cert, private_key=self.client_key, certificate_chain=self.client_cert
+            )
+            self.channel = grpc.secure_channel("{}:{}".format(url.hostname, port), credentials)
         else:
             raise RemoteError("Unsupported URL: {}".format(self.spec.url))
 
@@ -258,7 +259,8 @@ class BaseRemote():
 def _read_files(*files):
     def read_file(f):
         if f:
-            with open(f, 'rb') as data:
+            with open(f, "rb") as data:
                 return data.read()
         return None
+
     return (read_file(f) for f in files)

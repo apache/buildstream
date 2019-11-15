@@ -28,48 +28,33 @@ from buildstream.testing import cli_remote_execution as cli  # pylint: disable=u
 pytestmark = pytest.mark.remoteexecution
 
 # Project directory
-DATA_DIR = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    "project",
-)
+DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
 
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_build_remote_failure(cli, datafiles):
     project = str(datafiles)
-    element_path = os.path.join(project, 'elements', 'element.bst')
-    checkout_path = os.path.join(cli.directory, 'checkout')
+    element_path = os.path.join(project, "elements", "element.bst")
+    checkout_path = os.path.join(cli.directory, "checkout")
 
     # Write out our test target
     element = {
-        'kind': 'script',
-        'depends': [
-            {
-                'filename': 'base.bst',
-                'type': 'build',
-            },
-        ],
-        'config': {
-            'commands': [
-                'touch %{install-root}/foo',
-                'false',
-            ],
-        },
+        "kind": "script",
+        "depends": [{"filename": "base.bst", "type": "build",},],
+        "config": {"commands": ["touch %{install-root}/foo", "false",],},
     }
     _yaml.roundtrip_dump(element, element_path)
 
     services = cli.ensure_services()
-    assert set(services) == set(['action-cache', 'execution', 'storage'])
+    assert set(services) == set(["action-cache", "execution", "storage"])
 
     # Try to build it, this should result in a failure that contains the content
-    result = cli.run(project=project, args=['build', 'element.bst'])
+    result = cli.run(project=project, args=["build", "element.bst"])
     result.assert_main_error(ErrorDomain.STREAM, None)
 
-    result = cli.run(project=project, args=[
-        'artifact', 'checkout', 'element.bst', '--directory', checkout_path
-    ])
+    result = cli.run(project=project, args=["artifact", "checkout", "element.bst", "--directory", checkout_path])
     result.assert_success()
 
     # check that the file created before the failure exists
-    filename = os.path.join(checkout_path, 'foo')
+    filename = os.path.join(checkout_path, "foo")
     assert os.path.isfile(filename)

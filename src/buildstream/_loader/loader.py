@@ -54,8 +54,7 @@ _NO_PROGRESS = object()
 #    fetch_subprojects (callable): A function to fetch subprojects
 #    parent (Loader): A parent Loader object, in the case this is a junctioned Loader
 #
-class Loader():
-
+class Loader:
     def __init__(self, context, project, *, fetch_subprojects, parent=None):
 
         # Ensure we have an absolute path for the base directory
@@ -66,22 +65,22 @@ class Loader():
         #
         # Public members
         #
-        self.project = project   # The associated Project
-        self.loaded = None       # The number of loaded Elements
+        self.project = project  # The associated Project
+        self.loaded = None  # The number of loaded Elements
 
         #
         # Private members
         #
         self._context = context
-        self._options = project.options      # Project options (OptionPool)
-        self._basedir = basedir              # Base project directory
+        self._options = project.options  # Project options (OptionPool)
+        self._basedir = basedir  # Base project directory
         self._first_pass_options = project.first_pass_config.options  # Project options (OptionPool)
-        self._parent = parent                # The parent loader
+        self._parent = parent  # The parent loader
         self._fetch_subprojects = fetch_subprojects
 
         self._meta_elements = {}  # Dict of resolved meta elements by name
-        self._elements = {}       # Dict of elements
-        self._loaders = {}        # Dict of junction loaders
+        self._elements = {}  # Dict of elements
+        self._loaders = {}  # Dict of junction loaders
 
         self._includes = Includes(self, copy_tree=True)
 
@@ -105,9 +104,11 @@ class Loader():
             if os.path.isabs(filename):
                 # XXX Should this just be an assertion ?
                 # Expect that the caller gives us the right thing at least ?
-                raise LoadError("Target '{}' was not specified as a relative "
-                                "path to the base project directory: {}"
-                                .format(filename, self._basedir), LoadErrorReason.INVALID_DATA)
+                raise LoadError(
+                    "Target '{}' was not specified as a relative "
+                    "path to the base project directory: {}".format(filename, self._basedir),
+                    LoadErrorReason.INVALID_DATA,
+                )
 
         self._warn_invalid_elements(targets)
 
@@ -130,8 +131,7 @@ class Loader():
         dummy_target = LoadElement(Node.from_dict({}), "", self)
         # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
         dummy_target.dependencies.extend(  # pylint: disable=no-member
-            Dependency(element, Symbol.RUNTIME, False)
-            for element in target_elements
+            Dependency(element, Symbol.RUNTIME, False) for element in target_elements
         )
 
         with PROFILER.profile(Topics.CIRCULAR_CHECK, "_".join(targets)):
@@ -180,12 +180,12 @@ class Loader():
         # too late. The only time that seems just right is here, when preparing
         # the child process' copy of the Loader.
         #
-        del state['_fetch_subprojects']
+        del state["_fetch_subprojects"]
 
         # Also there's no gain in pickling over the caches, and they might
         # contain things which are unpleasantly large or unable to pickle.
-        del state['_elements']
-        del state['_meta_elements']
+        del state["_elements"]
+        del state["_meta_elements"]
 
         return state
 
@@ -230,14 +230,14 @@ class Loader():
         # Load the data and process any conditional statements therein
         fullpath = os.path.join(self._basedir, filename)
         try:
-            node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable,
-                              project=self.project)
+            node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable, project=self.project)
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_FILE:
 
                 if self.project.junction:
-                    message = "Could not find element '{}' in project referred to by junction element '{}'" \
-                              .format(filename, self.project.junction.name)
+                    message = "Could not find element '{}' in project referred to by junction element '{}'".format(
+                        filename, self.project.junction.name
+                    )
                 else:
                     message = "Could not find element '{}' in elements directory '{}'".format(filename, self._basedir)
 
@@ -262,8 +262,8 @@ class Loader():
                 if provenance:
                     message = "{}: {}".format(provenance, message)
                 detail = None
-                if os.path.exists(os.path.join(self._basedir, filename + '.bst')):
-                    element_name = filename + '.bst'
+                if os.path.exists(os.path.join(self._basedir, filename + ".bst")):
+                    element_name = filename + ".bst"
                     detail = "Did you mean '{}'?\n".format(element_name)
                 raise LoadError(message, LoadErrorReason.LOADING_DIRECTORY, detail=detail) from e
 
@@ -333,10 +333,9 @@ class Loader():
 
                 if dep.junction:
                     self._load_file(dep.junction, rewritable, ticker, dep.provenance)
-                    loader = self._get_loader(dep.junction,
-                                              rewritable=rewritable,
-                                              ticker=ticker,
-                                              provenance=dep.provenance)
+                    loader = self._get_loader(
+                        dep.junction, rewritable=rewritable, ticker=ticker, provenance=dep.provenance
+                    )
                     dep_element = loader._load_file(dep.name, rewritable, ticker, dep.provenance)
                 else:
                     dep_element = self._elements.get(dep.name)
@@ -350,14 +349,16 @@ class Loader():
                         loader_queue.append((dep_element, list(reversed(dep_deps)), []))
 
                         # Pylint is not very happy about Cython and can't understand 'node' is a 'MappingNode'
-                        if dep_element.node.get_str(Symbol.KIND) == 'junction':  # pylint: disable=no-member
-                            raise LoadError("{}: Cannot depend on junction" .format(dep.provenance),
-                                            LoadErrorReason.INVALID_DATA)
+                        if dep_element.node.get_str(Symbol.KIND) == "junction":  # pylint: disable=no-member
+                            raise LoadError(
+                                "{}: Cannot depend on junction".format(dep.provenance), LoadErrorReason.INVALID_DATA
+                            )
 
                 # All is well, push the dependency onto the LoadElement
                 # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
                 current_element[0].dependencies.append(  # pylint: disable=no-member
-                    Dependency(dep_element, dep.dep_type, dep.strict))
+                    Dependency(dep_element, dep.dep_type, dep.strict)
+                )
             else:
                 # We do not have any more dependencies to load for this
                 # element on the queue, report any invalid dep names
@@ -397,12 +398,14 @@ class Loader():
                     # Create `chain`, the loop of element dependencies from this
                     # element back to itself, by trimming everything before this
                     # element from the sequence under consideration.
-                    chain = [element.full_name for element in sequence[sequence.index(element):]]
+                    chain = [element.full_name for element in sequence[sequence.index(element) :]]
                     chain.append(element.full_name)
-                    raise LoadError(("Circular dependency detected at element: {}\n" +
-                                     "Dependency chain: {}")
-                                    .format(element.full_name, " -> ".join(chain)),
-                                    LoadErrorReason.CIRCULAR_DEPENDENCY)
+                    raise LoadError(
+                        ("Circular dependency detected at element: {}\n" + "Dependency chain: {}").format(
+                            element.full_name, " -> ".join(chain)
+                        ),
+                        LoadErrorReason.CIRCULAR_DEPENDENCY,
+                    )
                 if element not in validated:
                     # We've not already validated this element, so let's
                     # descend into it to check it out
@@ -447,9 +450,9 @@ class Loader():
         workspace = self._context.get_workspaces().get_workspace(element.name)
         skip_workspace = True
         if workspace:
-            workspace_node = {'kind': 'workspace'}
-            workspace_node['path'] = workspace.get_absolute_path()
-            workspace_node['ref'] = str(workspace.to_dict().get('last_successful', 'ignored'))
+            workspace_node = {"kind": "workspace"}
+            workspace_node["path"] = workspace.get_absolute_path()
+            workspace_node["ref"] = str(workspace.to_dict().get("last_successful", "ignored"))
             node[Symbol.SOURCES] = [workspace_node]
             skip_workspace = False
 
@@ -457,7 +460,7 @@ class Loader():
         for index, source in enumerate(sources):
             kind = source.get_str(Symbol.KIND)
             # the workspace source plugin cannot be used unless the element is workspaced
-            if kind == 'workspace' and skip_workspace:
+            if kind == "workspace" and skip_workspace:
                 continue
 
             del source[Symbol.KIND]
@@ -469,15 +472,20 @@ class Loader():
             meta_source = MetaSource(element.name, index, element_kind, kind, source, directory)
             meta_sources.append(meta_source)
 
-        meta_element = MetaElement(self.project, element.name, element_kind,
-                                   elt_provenance, meta_sources,
-                                   node.get_mapping(Symbol.CONFIG, default={}),
-                                   node.get_mapping(Symbol.VARIABLES, default={}),
-                                   node.get_mapping(Symbol.ENVIRONMENT, default={}),
-                                   node.get_str_list(Symbol.ENV_NOCACHE, default=[]),
-                                   node.get_mapping(Symbol.PUBLIC, default={}),
-                                   node.get_mapping(Symbol.SANDBOX, default={}),
-                                   element_kind == 'junction')
+        meta_element = MetaElement(
+            self.project,
+            element.name,
+            element_kind,
+            elt_provenance,
+            meta_sources,
+            node.get_mapping(Symbol.CONFIG, default={}),
+            node.get_mapping(Symbol.VARIABLES, default={}),
+            node.get_mapping(Symbol.ENVIRONMENT, default={}),
+            node.get_str_list(Symbol.ENV_NOCACHE, default=[]),
+            node.get_mapping(Symbol.PUBLIC, default={}),
+            node.get_mapping(Symbol.SANDBOX, default={}),
+            element_kind == "junction",
+        )
 
         # Cache it now, make sure it's already there before recursing
         self._meta_elements[element.name] = meta_element
@@ -522,9 +530,9 @@ class Loader():
                 else:
                     meta_dep = loader._meta_elements[name]
 
-                if dep.dep_type != 'runtime':
+                if dep.dep_type != "runtime":
                     meta_element.build_dependencies.append(meta_dep)
-                if dep.dep_type != 'build':
+                if dep.dep_type != "build":
                     meta_element.dependencies.append(meta_dep)
                 if dep.strict:
                     meta_element.strict_dependencies.append(meta_dep)
@@ -543,8 +551,7 @@ class Loader():
     # Raises: LoadError
     #
     # Returns: A Loader or None if specified junction does not exist
-    def _get_loader(self, filename, *, rewritable=False, ticker=None, level=0,
-                    provenance=None):
+    def _get_loader(self, filename, *, rewritable=False, ticker=None, level=0, provenance=None):
 
         provenance_str = ""
         if provenance is not None:
@@ -557,17 +564,21 @@ class Loader():
             if loader is None:
                 # do not allow junctions with the same name in different
                 # subprojects
-                raise LoadError("{}Conflicting junction {} in subprojects, define junction in {}"
-                                .format(provenance_str, filename, self.project.name),
-                                LoadErrorReason.CONFLICTING_JUNCTION)
+                raise LoadError(
+                    "{}Conflicting junction {} in subprojects, define junction in {}".format(
+                        provenance_str, filename, self.project.name
+                    ),
+                    LoadErrorReason.CONFLICTING_JUNCTION,
+                )
 
             return loader
 
         if self._parent:
             # junctions in the parent take precedence over junctions defined
             # in subprojects
-            loader = self._parent._get_loader(filename, rewritable=rewritable, ticker=ticker,
-                                              level=level + 1, provenance=provenance)
+            loader = self._parent._get_loader(
+                filename, rewritable=rewritable, ticker=ticker, level=level + 1, provenance=provenance
+            )
             if loader:
                 self._loaders[filename] = loader
                 return loader
@@ -599,10 +610,11 @@ class Loader():
         # Any task counting *inside* the junction will be handled by
         # its loader.
         meta_element = self._collect_element_no_deps(self._elements[filename], _NO_PROGRESS)
-        if meta_element.kind != 'junction':
-            raise LoadError("{}{}: Expected junction but element kind is {}"
-                            .format(provenance_str, filename, meta_element.kind),
-                            LoadErrorReason.INVALID_DATA)
+        if meta_element.kind != "junction":
+            raise LoadError(
+                "{}{}: Expected junction but element kind is {}".format(provenance_str, filename, meta_element.kind),
+                LoadErrorReason.INVALID_DATA,
+            )
 
         # We check that junctions have no dependencies a little
         # early. This is cheating, since we don't technically know
@@ -618,9 +630,7 @@ class Loader():
         # would be nice if this could be done for *all* element types,
         # but since we haven't loaded those yet that's impossible.
         if self._elements[filename].dependencies:
-            raise LoadError(
-                "Dependencies are forbidden for 'junction' elements",
-                LoadErrorReason.INVALID_JUNCTION)
+            raise LoadError("Dependencies are forbidden for 'junction' elements", LoadErrorReason.INVALID_JUNCTION)
 
         element = Element._new_from_meta(meta_element)
         element._update_state()
@@ -628,10 +638,12 @@ class Loader():
         # If this junction element points to a sub-sub-project, we need to
         # find loader for that project.
         if element.target:
-            subproject_loader = self._get_loader(element.target_junction, rewritable=rewritable, ticker=ticker,
-                                                 level=level, provenance=provenance)
-            loader = subproject_loader._get_loader(element.target_element, rewritable=rewritable, ticker=ticker,
-                                                   level=level, provenance=provenance)
+            subproject_loader = self._get_loader(
+                element.target_junction, rewritable=rewritable, ticker=ticker, level=level, provenance=provenance
+            )
+            loader = subproject_loader._get_loader(
+                element.target_element, rewritable=rewritable, ticker=ticker, level=level, provenance=provenance
+            )
             self._loaders[filename] = loader
             return loader
 
@@ -639,15 +651,18 @@ class Loader():
         #
         if element._get_consistency() >= Consistency.RESOLVED and not element._source_cached():
             if ticker:
-                ticker(filename, 'Fetching subproject')
+                ticker(filename, "Fetching subproject")
             self._fetch_subprojects([element])
 
         # Handle the case where a subproject has no ref
         #
         elif element._get_consistency() == Consistency.INCONSISTENT:
             detail = "Try tracking the junction element with `bst source track {}`".format(filename)
-            raise LoadError("{}Subproject has no ref for junction: {}".format(provenance_str, filename),
-                            LoadErrorReason.SUBPROJECT_INCONSISTENT, detail=detail)
+            raise LoadError(
+                "{}Subproject has no ref for junction: {}".format(provenance_str, filename),
+                LoadErrorReason.SUBPROJECT_INCONSISTENT,
+                detail=detail,
+            )
 
         sources = list(element.sources())
         if len(sources) == 1 and sources[0]._get_local_path():
@@ -656,8 +671,9 @@ class Loader():
         else:
             # Stage sources
             element._set_required()
-            basedir = os.path.join(self.project.directory, ".bst", "staged-junctions",
-                                   filename, element._get_cache_key())
+            basedir = os.path.join(
+                self.project.directory, ".bst", "staged-junctions", filename, element._get_cache_key()
+            )
             if not os.path.exists(basedir):
                 os.makedirs(basedir, exist_ok=True)
                 element._stage_sources_at(basedir)
@@ -666,9 +682,15 @@ class Loader():
         project_dir = os.path.join(basedir, element.path)
         try:
             from .._project import Project  # pylint: disable=cyclic-import
-            project = Project(project_dir, self._context, junction=element,
-                              parent_loader=self, search_for_project=False,
-                              fetch_subprojects=self._fetch_subprojects)
+
+            project = Project(
+                project_dir,
+                self._context,
+                junction=element,
+                parent_loader=self,
+                search_for_project=False,
+                fetch_subprojects=self._fetch_subprojects,
+            )
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
                 message = (
@@ -706,7 +728,7 @@ class Loader():
         # We allow to split only once since deep junctions names are forbidden.
         # Users who want to refer to elements in sub-sub-projects are required
         # to create junctions on the top level project.
-        junction_path = name.rsplit(':', 1)
+        junction_path = name.rsplit(":", 1)
         if len(junction_path) == 1:
             return None, junction_path[-1], self
         else:
@@ -760,11 +782,17 @@ class Loader():
                 invalid_elements[CoreWarnings.BAD_CHARACTERS_IN_NAME].append(filename)
 
         if invalid_elements[CoreWarnings.BAD_ELEMENT_SUFFIX]:
-            self._warn("Target elements '{}' do not have expected file extension `.bst` "
-                       "Improperly named elements will not be discoverable by commands"
-                       .format(invalid_elements[CoreWarnings.BAD_ELEMENT_SUFFIX]),
-                       warning_token=CoreWarnings.BAD_ELEMENT_SUFFIX)
+            self._warn(
+                "Target elements '{}' do not have expected file extension `.bst` "
+                "Improperly named elements will not be discoverable by commands".format(
+                    invalid_elements[CoreWarnings.BAD_ELEMENT_SUFFIX]
+                ),
+                warning_token=CoreWarnings.BAD_ELEMENT_SUFFIX,
+            )
         if invalid_elements[CoreWarnings.BAD_CHARACTERS_IN_NAME]:
-            self._warn("Target elements '{}' have invalid characerts in their name."
-                       .format(invalid_elements[CoreWarnings.BAD_CHARACTERS_IN_NAME]),
-                       warning_token=CoreWarnings.BAD_CHARACTERS_IN_NAME)
+            self._warn(
+                "Target elements '{}' have invalid characerts in their name.".format(
+                    invalid_elements[CoreWarnings.BAD_CHARACTERS_IN_NAME]
+                ),
+                warning_token=CoreWarnings.BAD_CHARACTERS_IN_NAME,
+            )

@@ -28,7 +28,7 @@ import click
 # Kwargs:
 #    The same keyword arguments which can be used with click.style()
 #
-class Profile():
+class Profile:
     def __init__(self, **kwargs):
         self._kwargs = dict(kwargs)
 
@@ -64,7 +64,6 @@ class Profile():
     #    arguments
     #
     def fmt_subst(self, text, varname, value, **kwargs):
-
         def subst_callback(match):
             # Extract and format the "{(varname)...}" portion of the match
             inner_token = match.group(1)

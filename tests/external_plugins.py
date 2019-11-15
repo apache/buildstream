@@ -16,7 +16,7 @@ import pytest
 #    test_match_patterns (list[str]): A list of shell style globs which may be
 #          used to specify a subset of test files from the repository to run.
 #          These must be specified relative to the root of the repository.
-class ExternalPluginRepo():
+class ExternalPluginRepo:
     def __init__(self, name, url, ref, test_match_patterns=None):
         self.name = name
         self.url = url
@@ -30,17 +30,13 @@ class ExternalPluginRepo():
 
     def clone(self, location):
         self._clone_location = os.path.join(location, self.name)
-        subprocess.run(['git', 'clone',
-                        '--single-branch',
-                        '--branch', self.ref,
-                        '--depth', '1',
-                        self.url,
-                        self._clone_location,
-                        ])
+        subprocess.run(
+            ["git", "clone", "--single-branch", "--branch", self.ref, "--depth", "1", self.url, self._clone_location,]
+        )
         return self._clone_location
 
     def install(self):
-        subprocess.run(['pip3', 'install', self._clone_location])
+        subprocess.run(["pip3", "install", self._clone_location])
 
     def test(self, args):
         test_files = self._match_test_patterns()

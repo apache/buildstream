@@ -50,7 +50,7 @@ details on common configuration options for sources.
 
 import tarfile
 from contextlib import contextmanager
-import arpy                                       # pylint: disable=import-error
+import arpy  # pylint: disable=import-error
 
 from .tar import TarSource
 
@@ -61,14 +61,14 @@ class DebSource(TarSource):
     def configure(self, node):
         super().configure(node)
 
-        self.base_dir = node.get_str('base-dir', None)
+        self.base_dir = node.get_str("base-dir", None)
 
     def preflight(self):
         return
 
     @contextmanager
     def _get_tar(self):
-        with open(self._get_mirror_file(), 'rb') as deb_file:
+        with open(self._get_mirror_file(), "rb") as deb_file:
             arpy_archive = arpy.Archive(fileobj=deb_file)
             arpy_archive.read_all_headers()
             data_tar_arpy = [v for k, v in arpy_archive.archived_files.items() if b"data.tar" in k][0]

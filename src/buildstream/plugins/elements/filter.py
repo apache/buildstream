@@ -167,17 +167,15 @@ class FilterElement(Element):
     BST_RUN_COMMANDS = False
 
     def configure(self, node):
-        node.validate_keys([
-            'include', 'exclude', 'include-orphans', 'pass-integration'
-        ])
+        node.validate_keys(["include", "exclude", "include-orphans", "pass-integration"])
 
-        self.include_node = node.get_sequence('include')
-        self.exclude_node = node.get_sequence('exclude')
+        self.include_node = node.get_sequence("include")
+        self.exclude_node = node.get_sequence("exclude")
 
         self.include = self.include_node.as_str_list()
         self.exclude = self.exclude_node.as_str_list()
-        self.include_orphans = node.get_bool('include-orphans')
-        self.pass_integration = node.get_bool('pass-integration', False)
+        self.include_orphans = node.get_bool("include-orphans")
+        self.pass_integration = node.get_bool("pass-integration", False)
 
     def preflight(self):
         # Exactly one build-depend is permitted
@@ -186,9 +184,13 @@ class FilterElement(Element):
             detail = "Full list of build-depends:\n"
             deps_list = "  \n".join([x.name for x in build_deps])
             detail += deps_list
-            raise ElementError("{}: {} element must have exactly 1 build-dependency, actually have {}"
-                               .format(self, type(self).__name__, len(build_deps)),
-                               detail=detail, reason="filter-bdepend-wrong-count")
+            raise ElementError(
+                "{}: {} element must have exactly 1 build-dependency, actually have {}".format(
+                    self, type(self).__name__, len(build_deps)
+                ),
+                detail=detail,
+                reason="filter-bdepend-wrong-count",
+            )
 
         # That build-depend must not also be a runtime-depend
         runtime_deps = list(self.dependencies(Scope.RUN, recurse=False))
@@ -196,23 +198,29 @@ class FilterElement(Element):
             detail = "Full list of runtime depends:\n"
             deps_list = "  \n".join([x.name for x in runtime_deps])
             detail += deps_list
-            raise ElementError("{}: {} element's build dependency must not also be a runtime dependency"
-                               .format(self, type(self).__name__),
-                               detail=detail, reason="filter-bdepend-also-rdepend")
+            raise ElementError(
+                "{}: {} element's build dependency must not also be a runtime dependency".format(
+                    self, type(self).__name__
+                ),
+                detail=detail,
+                reason="filter-bdepend-also-rdepend",
+            )
 
         # If a parent does not produce an artifact, fail and inform user that the dependency
         # must produce artifacts
         if not build_deps[0].BST_ELEMENT_HAS_ARTIFACT:
             detail = "{} does not produce an artifact, so there is nothing to filter".format(build_deps[0].name)
-            raise ElementError("{}: {} element's build dependency must produce an artifact"
-                               .format(self, type(self).__name__),
-                               detail=detail, reason="filter-bdepend-no-artifact")
+            raise ElementError(
+                "{}: {} element's build dependency must produce an artifact".format(self, type(self).__name__),
+                detail=detail,
+                reason="filter-bdepend-no-artifact",
+            )
 
     def get_unique_key(self):
         key = {
-            'include': sorted(self.include),
-            'exclude': sorted(self.exclude),
-            'orphans': self.include_orphans,
+            "include": sorted(self.include),
+            "exclude": sorted(self.exclude),
+            "orphans": self.include_orphans,
         }
         return key
 
@@ -226,8 +234,8 @@ class FilterElement(Element):
         with self.timed_activity("Staging artifact", silent_nested=True):
             for dep in self.dependencies(Scope.BUILD, recurse=False):
                 # Check that all the included/excluded domains exist
-                pub_data = dep.get_public_data('bst')
-                split_rules = pub_data.get_mapping('split-rules', {})
+                pub_data = dep.get_public_data("bst")
+                split_rules = pub_data.get_mapping("split-rules", {})
                 unfound_includes = []
                 for domain in self.include:
                     if domain not in split_rules:
@@ -240,18 +248,17 @@ class FilterElement(Element):
                 detail = []
                 if unfound_includes:
                     detail.append("Unknown domains were used in {}".format(self.include_node.get_provenance()))
-                    detail.extend([' - {}'.format(domain) for domain in unfound_includes])
+                    detail.extend([" - {}".format(domain) for domain in unfound_includes])
 
                 if unfound_excludes:
                     detail.append("Unknown domains were used in {}".format(self.exclude_node.get_provenance()))
-                    detail.extend([' - {}'.format(domain) for domain in unfound_excludes])
+                    detail.extend([" - {}".format(domain) for domain in unfound_excludes])
 
                 if detail:
-                    detail = '\n'.join(detail)
+                    detail = "\n".join(detail)
                     raise ElementError("Unknown domains declared.", detail=detail)
 
-                dep.stage_artifact(sandbox, include=self.include,
-                                   exclude=self.exclude, orphans=self.include_orphans)
+                dep.stage_artifact(sandbox, include=self.include, exclude=self.exclude, orphans=self.include_orphans)
         return ""
 
     def _get_source_element(self):

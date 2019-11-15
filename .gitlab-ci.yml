@@ -212,6 +212,9 @@ mypy:
 
 # Lint separately from testing
 lint:
+  # We can't use the default debian:9 based image here since that comes with
+  # Python 3.5, and Black requires Python >= 3.6.
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-93453213
   stage: test
 
   before_script:
@@ -219,7 +222,7 @@ lint:
   - python3 --version
 
   script:
-  - tox -e lint
+  - tox -e format-check,lint
   except:
   - schedules
 

@@ -23,8 +23,7 @@ import grpc
 
 from ._basecache import BaseCache
 from ._exceptions import ArtifactError, CASError, CASCacheError, CASRemoteError, RemoteError
-from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, \
-    artifact_pb2, artifact_pb2_grpc
+from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, artifact_pb2, artifact_pb2_grpc
 
 from ._remote import BaseRemote
 from .storage._casbaseddirectory import CasBasedDirectory
@@ -38,7 +37,6 @@ from . import utils
 # artifact remotes.
 #
 class ArtifactRemote(BaseRemote):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.artifact_service = None
@@ -78,8 +76,10 @@ class ArtifactRemote(BaseRemote):
         except grpc.RpcError as e:
             # Check if this remote has the artifact service
             if e.code() == grpc.StatusCode.UNIMPLEMENTED:
-                raise RemoteError("Configured remote does not have the BuildStream "
-                                  "capabilities service. Please check remote configuration.")
+                raise RemoteError(
+                    "Configured remote does not have the BuildStream "
+                    "capabilities service. Please check remote configuration."
+                )
             # Else raise exception with details
             raise RemoteError("Remote initialisation failed: {}".format(e.details()))
 
@@ -263,9 +263,11 @@ class ArtifactCache(BaseCache):
             if self._push_artifact_blobs(artifact, remote):
                 element.info("Pushed data from artifact {} -> {}".format(display_key, remote))
             else:
-                element.info("Remote ({}) already has all data of artifact {} cached".format(
-                    remote, element._get_brief_display_key()
-                ))
+                element.info(
+                    "Remote ({}) already has all data of artifact {} cached".format(
+                        remote, element._get_brief_display_key()
+                    )
+                )
 
         for remote in index_remotes:
             remote.init()
@@ -275,9 +277,9 @@ class ArtifactCache(BaseCache):
                 element.info("Pushed artifact {} -> {}".format(display_key, remote))
                 pushed = True
             else:
-                element.info("Remote ({}) already has artifact {} cached".format(
-                    remote, element._get_brief_display_key()
-                ))
+                element.info(
+                    "Remote ({}) already has artifact {} cached".format(remote, element._get_brief_display_key())
+                )
 
         return pushed
 
@@ -295,7 +297,7 @@ class ArtifactCache(BaseCache):
     #
     def pull(self, element, key, *, pull_buildtrees=False):
         artifact = None
-        display_key = key[:self.context.log_key_length]
+        display_key = key[: self.context.log_key_length]
         project = element._get_project()
 
         errors = []
@@ -310,16 +312,15 @@ class ArtifactCache(BaseCache):
                     element.info("Pulled artifact {} <- {}".format(display_key, remote))
                     break
                 else:
-                    element.info("Remote ({}) does not have artifact {} cached".format(
-                        remote, display_key
-                    ))
+                    element.info("Remote ({}) does not have artifact {} cached".format(remote, display_key))
             except CASError as e:
                 element.warn("Could not pull from remote {}: {}".format(remote, e))
                 errors.append(e)
 
         if errors and not artifact:
-            raise ArtifactError("Failed to pull artifact {}".format(display_key),
-                                detail="\n".join(str(e) for e in errors))
+            raise ArtifactError(
+                "Failed to pull artifact {}".format(display_key), detail="\n".join(str(e) for e in errors)
+            )
 
         # If we don't have an artifact, we can't exactly pull our
         # artifact
@@ -337,16 +338,15 @@ class ArtifactCache(BaseCache):
                     element.info("Pulled data for artifact {} <- {}".format(display_key, remote))
                     return True
 
-                element.info("Remote ({}) does not have artifact {} cached".format(
-                    remote, display_key
-                ))
+                element.info("Remote ({}) does not have artifact {} cached".format(remote, display_key))
             except CASError as e:
                 element.warn("Could not pull from remote {}: {}".format(remote, e))
                 errors.append(e)
 
         if errors:
-            raise ArtifactError("Failed to pull artifact {}".format(display_key),
-                                detail="\n".join(str(e) for e in errors))
+            raise ArtifactError(
+                "Failed to pull artifact {}".format(display_key), detail="\n".join(str(e) for e in errors)
+            )
 
         return False
 
@@ -388,8 +388,9 @@ class ArtifactCache(BaseCache):
             push_remotes = []
 
         if not push_remotes:
-            raise ArtifactError("push_message was called, but no remote artifact " +
-                                "servers are configured as push remotes.")
+            raise ArtifactError(
+                "push_message was called, but no remote artifact " + "servers are configured as push remotes."
+            )
 
         for remote in push_remotes:
             message_digest = remote.push_message(message)
@@ -410,8 +411,7 @@ class ArtifactCache(BaseCache):
         newref = element.get_artifact_name(newkey)
 
         if not os.path.exists(os.path.join(self.artifactdir, newref)):
-            os.link(os.path.join(self.artifactdir, oldref),
-                    os.path.join(self.artifactdir, newref))
+            os.link(os.path.join(self.artifactdir, oldref), os.path.join(self.artifactdir, newref))
 
     # get_artifact_logs():
     #
@@ -425,7 +425,7 @@ class ArtifactCache(BaseCache):
     #
     def get_artifact_logs(self, ref):
         cache_id = self.cas.resolve_ref(ref, update_mtime=True)
-        vdir = CasBasedDirectory(self.cas, digest=cache_id).descend('logs')
+        vdir = CasBasedDirectory(self.cas, digest=cache_id).descend("logs")
         return vdir
 
     # fetch_missing_blobs():
@@ -517,7 +517,7 @@ class ArtifactCache(BaseCache):
         for root, _, files in os.walk(self.artifactdir):
             for artifact_file in files:
                 artifact = artifact_pb2.Artifact()
-                with open(os.path.join(root, artifact_file), 'r+b') as f:
+                with open(os.path.join(root, artifact_file), "r+b") as f:
                     artifact.ParseFromString(f.read())
 
                 if str(artifact.files):
@@ -535,7 +535,7 @@ class ArtifactCache(BaseCache):
         for root, _, files in os.walk(self.artifactdir):
             for artifact_file in files:
                 artifact = artifact_pb2.Artifact()
-                with open(os.path.join(root, artifact_file), 'r+b') as f:
+                with open(os.path.join(root, artifact_file), "r+b") as f:
                     artifact.ParseFromString(f.read())
 
                 if str(artifact.public_data):
@@ -620,8 +620,7 @@ class ArtifactCache(BaseCache):
                 remote.get_artifact(element.get_artifact_name(key=key))
             except grpc.RpcError as e:
                 if e.code() != grpc.StatusCode.NOT_FOUND:
-                    raise ArtifactError("Error checking artifact cache: {}"
-                                        .format(e.details()))
+                    raise ArtifactError("Error checking artifact cache: {}".format(e.details()))
             else:
                 return False
 
@@ -710,7 +709,7 @@ class ArtifactCache(BaseCache):
         # Write the artifact proto to cache
         artifact_path = os.path.join(self.artifactdir, artifact_name)
         os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
-        with utils.save_file_atomic(artifact_path, mode='wb') as f:
+        with utils.save_file_atomic(artifact_path, mode="wb") as f:
             f.write(artifact.SerializeToString())
 
         return artifact

@@ -13,8 +13,8 @@ def prepare_junction_project(cli, tmpdir):
     os.makedirs(str(main_project))
     os.makedirs(str(sub_project))
 
-    _yaml.roundtrip_dump({'name': 'main'}, str(main_project.join("project.conf")))
-    _yaml.roundtrip_dump({'name': 'sub'}, str(sub_project.join("project.conf")))
+    _yaml.roundtrip_dump({"name": "main"}, str(main_project.join("project.conf")))
+    _yaml.roundtrip_dump({"name": "sub"}, str(sub_project.join("project.conf")))
 
     import_dir = tmpdir.join("import")
     os.makedirs(str(import_dir))
@@ -26,20 +26,20 @@ def prepare_junction_project(cli, tmpdir):
     import_repo = create_repo("git", str(import_repo_dir))
     import_ref = import_repo.create(str(import_dir))
 
-    _yaml.roundtrip_dump({'kind': 'import',
-                          'sources': [import_repo.source_config(ref=import_ref)]},
-                         str(sub_project.join("data.bst")))
+    _yaml.roundtrip_dump(
+        {"kind": "import", "sources": [import_repo.source_config(ref=import_ref)]}, str(sub_project.join("data.bst"))
+    )
 
     sub_repo_dir = tmpdir.join("sub_repo")
     os.makedirs(str(sub_repo_dir))
     sub_repo = create_repo("git", str(sub_repo_dir))
     sub_ref = sub_repo.create(str(sub_project))
 
-    _yaml.roundtrip_dump({'kind': 'junction',
-                          'sources': [sub_repo.source_config(ref=sub_ref)]},
-                         str(main_project.join("sub.bst")))
+    _yaml.roundtrip_dump(
+        {"kind": "junction", "sources": [sub_repo.source_config(ref=sub_ref)]}, str(main_project.join("sub.bst"))
+    )
 
-    args = ['source', 'fetch', 'sub.bst']
+    args = ["source", "fetch", "sub.bst"]
     result = cli.run(project=str(main_project), args=args)
     result.assert_success()
 
@@ -50,13 +50,13 @@ def open_cross_junction(cli, tmpdir):
     project = prepare_junction_project(cli, tmpdir)
     workspace = tmpdir.join("workspace")
 
-    element = 'sub.bst:data.bst'
-    args = ['workspace', 'open', '--directory', str(workspace), element]
+    element = "sub.bst:data.bst"
+    args = ["workspace", "open", "--directory", str(workspace), element]
     result = cli.run(project=project, args=args)
     result.assert_success()
 
-    assert cli.get_element_state(project, element) == 'buildable'
-    assert os.path.exists(str(workspace.join('hello.txt')))
+    assert cli.get_element_state(project, element) == "buildable"
+    assert os.path.exists(str(workspace.join("hello.txt")))
 
     return project, workspace
 
@@ -68,55 +68,55 @@ def test_open_cross_junction(cli, tmpdir):
 def test_list_cross_junction(cli, tmpdir):
     project, _ = open_cross_junction(cli, tmpdir)
 
-    element = 'sub.bst:data.bst'
+    element = "sub.bst:data.bst"
 
-    args = ['workspace', 'list']
+    args = ["workspace", "list"]
     result = cli.run(project=project, args=args)
     result.assert_success()
 
     loaded = _yaml.load_data(result.output)
-    workspaces = loaded.get_sequence('workspaces')
+    workspaces = loaded.get_sequence("workspaces")
     assert len(workspaces) == 1
     first_workspace = workspaces.mapping_at(0)
 
-    assert 'element' in first_workspace
-    assert first_workspace.get_str('element') == element
+    assert "element" in first_workspace
+    assert first_workspace.get_str("element") == element
 
 
 def test_close_cross_junction(cli, tmpdir):
     project, workspace = open_cross_junction(cli, tmpdir)
 
-    element = 'sub.bst:data.bst'
-    args = ['workspace', 'close', '--remove-dir', element]
+    element = "sub.bst:data.bst"
+    args = ["workspace", "close", "--remove-dir", element]
     result = cli.run(project=project, args=args)
     result.assert_success()
 
     assert not os.path.exists(str(workspace))
 
-    args = ['workspace', 'list']
+    args = ["workspace", "list"]
     result = cli.run(project=project, args=args)
     result.assert_success()
 
     loaded = _yaml.load_data(result.output)
-    workspaces = loaded.get_sequence('workspaces')
+    workspaces = loaded.get_sequence("workspaces")
     assert not workspaces
 
 
 def test_close_all_cross_junction(cli, tmpdir):
     project, workspace = open_cross_junction(cli, tmpdir)
 
-    args = ['workspace', 'close', '--remove-dir', '--all']
+    args = ["workspace", "close", "--remove-dir", "--all"]
     result = cli.run(project=project, args=args)
     result.assert_success()
 
     assert not os.path.exists(str(workspace))
 
-    args = ['workspace', 'list']
+    args = ["workspace", "list"]
     result = cli.run(project=project, args=args)
     result.assert_success()
 
     loaded = _yaml.load_data(result.output)
-    workspaces = loaded.get_sequence('workspaces')
+    workspaces = loaded.get_sequence("workspaces")
     assert not workspaces
 
 
@@ -124,17 +124,17 @@ def test_subdir_command_cross_junction(cli, tmpdir):
     # i.e. commands can be run successfully from a subdirectory of the
     # junction's workspace, in case project loading logic has gone wrong
     project = prepare_junction_project(cli, tmpdir)
-    workspace = os.path.join(str(tmpdir), 'workspace')
-    junction_element = 'sub.bst'
+    workspace = os.path.join(str(tmpdir), "workspace")
+    junction_element = "sub.bst"
 
     # Open the junction as a workspace
-    args = ['workspace', 'open', '--directory', workspace, junction_element]
+    args = ["workspace", "open", "--directory", workspace, junction_element]
     result = cli.run(project=project, args=args)
     result.assert_success()
 
     # Run commands from a subdirectory of the workspace
     newdir = os.path.join(str(workspace), "newdir")
-    element_name = 'data.bst'
+    element_name = "data.bst"
     os.makedirs(newdir)
-    result = cli.run(project=str(workspace), args=['-C', newdir, 'show', element_name])
+    result = cli.run(project=str(workspace), args=["-C", newdir, "show", element_name])
     result.assert_success()

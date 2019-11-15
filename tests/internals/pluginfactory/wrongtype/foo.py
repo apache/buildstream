@@ -4,7 +4,7 @@
 # This one fails the requirement
 
 
-class Foo():
+class Foo:
     pass
 
 

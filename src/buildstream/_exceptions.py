@@ -51,7 +51,7 @@ def get_last_exception():
 # Used by regression tests
 #
 def get_last_task_error():
-    if 'BST_TEST_SUITE' not in os.environ:
+    if "BST_TEST_SUITE" not in os.environ:
         raise BstError("Getting the last task error is only supported when running tests")
 
     global _last_task_error_domain
@@ -71,7 +71,7 @@ def get_last_task_error():
 # tests about how things failed in a machine readable way
 #
 def set_last_task_error(domain, reason):
-    if 'BST_TEST_SUITE' in os.environ:
+    if "BST_TEST_SUITE" in os.environ:
         global _last_task_error_domain
         global _last_task_error_reason
 
@@ -108,7 +108,6 @@ class ErrorDomain(Enum):
 # context can then be communicated back to the main process.
 #
 class BstError(Exception):
-
     def __init__(self, message, *, detail=None, domain=None, reason=None, temporary=False):
         global _last_exception
 
@@ -133,7 +132,7 @@ class BstError(Exception):
         self.reason = reason
 
         # Hold on to the last raised exception for testing purposes
-        if 'BST_TEST_SUITE' in os.environ:
+        if "BST_TEST_SUITE" in os.environ:
             _last_exception = self
 
 
@@ -330,7 +329,6 @@ class CASCacheError(CASError):
 # Raised from pipeline operations
 #
 class PipelineError(BstError):
-
     def __init__(self, message, *, detail=None, reason=None):
         super().__init__(message, detail=detail, domain=ErrorDomain.PIPELINE, reason=reason)
 
@@ -340,7 +338,6 @@ class PipelineError(BstError):
 # Raised when a stream operation fails
 #
 class StreamError(BstError):
-
     def __init__(self, message=None, *, detail=None, reason=None, terminated=False):
 
         # The empty string should never appear to a user,

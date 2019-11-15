@@ -38,7 +38,7 @@ WORKSPACE_PROJECT_FILE = ".bstproject.yaml"
 # Args:
 #    directory (str): The directory that the workspace exists in.
 #
-class WorkspaceProject():
+class WorkspaceProject:
     def __init__(self, directory):
         self._projects = []
         self._directory = directory
@@ -51,7 +51,7 @@ class WorkspaceProject():
     #    (str): The path to a project
     #
     def get_default_project_path(self):
-        return self._projects[0]['project-path']
+        return self._projects[0]["project-path"]
 
     # get_default_element()
     #
@@ -61,7 +61,7 @@ class WorkspaceProject():
     #    (str): The name of an element
     #
     def get_default_element(self):
-        return self._projects[0]['element-name']
+        return self._projects[0]["element-name"]
 
     # to_dict()
     #
@@ -72,8 +72,8 @@ class WorkspaceProject():
     #
     def to_dict(self):
         ret = {
-            'projects': self._projects,
-            'format-version': BST_WORKSPACE_PROJECT_FORMAT_VERSION,
+            "projects": self._projects,
+            "format-version": BST_WORKSPACE_PROJECT_FORMAT_VERSION,
         }
         return ret
 
@@ -91,13 +91,14 @@ class WorkspaceProject():
     @classmethod
     def from_dict(cls, directory, dictionary):
         # Only know how to handle one format-version at the moment.
-        format_version = int(dictionary['format-version'])
-        assert format_version == BST_WORKSPACE_PROJECT_FORMAT_VERSION, \
-            "Format version {} not found in {}".format(BST_WORKSPACE_PROJECT_FORMAT_VERSION, dictionary)
+        format_version = int(dictionary["format-version"])
+        assert format_version == BST_WORKSPACE_PROJECT_FORMAT_VERSION, "Format version {} not found in {}".format(
+            BST_WORKSPACE_PROJECT_FORMAT_VERSION, dictionary
+        )
 
         workspace_project = cls(directory)
-        for item in dictionary['projects']:
-            workspace_project.add_project(item['project-path'], item['element-name'])
+        for item in dictionary["projects"]:
+            workspace_project.add_project(item["project-path"], item["element-name"])
 
         return workspace_project
 
@@ -145,15 +146,15 @@ class WorkspaceProject():
     #    element_name (str): The name of the element that the workspace belongs to.
     #
     def add_project(self, project_path, element_name):
-        assert (project_path and element_name)
-        self._projects.append({'project-path': project_path, 'element-name': element_name})
+        assert project_path and element_name
+        self._projects.append({"project-path": project_path, "element-name": element_name})
 
 
 # WorkspaceProjectCache()
 #
 # A class to manage workspace project data for multiple workspaces.
 #
-class WorkspaceProjectCache():
+class WorkspaceProjectCache:
     def __init__(self):
         self._projects = {}  # Mapping of a workspace directory to its WorkspaceProject
 
@@ -216,8 +217,9 @@ class WorkspaceProjectCache():
     def remove(self, directory):
         workspace_project = self.get(directory)
         if not workspace_project:
-            raise LoadError("Failed to find a {} file to remove".format(WORKSPACE_PROJECT_FILE),
-                            LoadErrorReason.MISSING_FILE)
+            raise LoadError(
+                "Failed to find a {} file to remove".format(WORKSPACE_PROJECT_FILE), LoadErrorReason.MISSING_FILE
+            )
         path = workspace_project.get_filename()
         try:
             os.unlink(path)
@@ -242,7 +244,7 @@ class WorkspaceProjectCache():
 #                          changed between failed builds. Should be
 #                          made obsolete with failed build artifacts.
 #
-class Workspace():
+class Workspace:
     def __init__(self, toplevel_project, *, last_successful=None, path=None, prepared=False, running_files=None):
         self.prepared = prepared
         self.last_successful = last_successful
@@ -260,11 +262,7 @@ class Workspace():
     #     (dict) A dict representation of the workspace
     #
     def to_dict(self):
-        ret = {
-            'prepared': self.prepared,
-            'path': self._path,
-            'running_files': self.running_files
-        }
+        ret = {"prepared": self.prepared, "path": self._path, "running_files": self.running_files}
         if self.last_successful is not None:
             ret["last_successful"] = self.last_successful
         return ret
@@ -363,8 +361,7 @@ class Workspace():
             try:
                 stat = os.lstat(filename)
             except OSError as e:
-                raise LoadError("Failed to stat file in workspace: {}".format(e),
-                                LoadErrorReason.MISSING_FILE)
+                raise LoadError("Failed to stat file in workspace: {}".format(e), LoadErrorReason.MISSING_FILE)
 
             # Use the mtime of any file with sub second precision
             return stat.st_mtime_ns
@@ -378,8 +375,7 @@ class Workspace():
             if os.path.isdir(fullpath):
                 filelist = utils.list_relative_paths(fullpath)
                 filelist = [
-                    (relpath, os.path.join(fullpath, relpath)) for relpath in filelist
-                    if relpath not in excluded_files
+                    (relpath, os.path.join(fullpath, relpath)) for relpath in filelist if relpath not in excluded_files
                 ]
             else:
                 filelist = [(self.get_absolute_path(), fullpath)]
@@ -404,7 +400,7 @@ class Workspace():
 #    toplevel_project (Project): Top project used to resolve paths.
 #    workspace_project_cache (WorkspaceProjectCache): The cache of WorkspaceProjects
 #
-class Workspaces():
+class Workspaces:
     def __init__(self, toplevel_project, workspace_project_cache):
         self._toplevel_project = toplevel_project
         self._bst_directory = os.path.join(toplevel_project.directory, ".bst")
@@ -525,11 +521,8 @@ class Workspaces():
         assert utils._is_main_process()
 
         config = {
-            'format-version': BST_WORKSPACE_FORMAT_VERSION,
-            'workspaces': {
-                element: workspace.to_dict()
-                for element, workspace in self._workspaces.items()
-            }
+            "format-version": BST_WORKSPACE_FORMAT_VERSION,
+            "workspaces": {element: workspace.to_dict() for element, workspace in self._workspaces.items()},
         }
         os.makedirs(self._bst_directory, exist_ok=True)
         _yaml.roundtrip_dump(config, self._get_filename())
@@ -572,10 +565,11 @@ class Workspaces():
     #
     def _parse_workspace_config(self, workspaces):
         try:
-            version = workspaces.get_int('format-version', default=0)
+            version = workspaces.get_int("format-version", default=0)
         except ValueError:
-            raise LoadError("Format version is not an integer in workspace configuration",
-                            LoadErrorReason.INVALID_DATA)
+            raise LoadError(
+                "Format version is not an integer in workspace configuration", LoadErrorReason.INVALID_DATA
+            )
 
         if version == 0:
             # Pre-versioning format can be of two forms
@@ -588,17 +582,17 @@ class Workspaces():
                 elif config_type is MappingNode:
                     sources = list(config.values())
                     if len(sources) > 1:
-                        detail = "There are multiple workspaces open for '{}'.\n" + \
-                                 "This is not supported anymore.\n" + \
-                                 "Please remove this element from '{}'."
-                        raise LoadError(detail.format(element, self._get_filename()),
-                                        LoadErrorReason.INVALID_DATA)
+                        detail = (
+                            "There are multiple workspaces open for '{}'.\n"
+                            + "This is not supported anymore.\n"
+                            + "Please remove this element from '{}'."
+                        )
+                        raise LoadError(detail.format(element, self._get_filename()), LoadErrorReason.INVALID_DATA)
 
                     workspaces[element] = sources[0]
 
                 else:
-                    raise LoadError("Workspace config is in unexpected format.",
-                                    LoadErrorReason.INVALID_DATA)
+                    raise LoadError("Workspace config is in unexpected format.", LoadErrorReason.INVALID_DATA)
 
             res = {
                 element: Workspace(self._toplevel_project, path=config.as_str())
@@ -607,13 +601,16 @@ class Workspaces():
 
         elif 1 <= version <= BST_WORKSPACE_FORMAT_VERSION:
             workspaces = workspaces.get_mapping("workspaces", default={})
-            res = {element: self._load_workspace(node)
-                   for element, node in workspaces.items()}
+            res = {element: self._load_workspace(node) for element, node in workspaces.items()}
 
         else:
-            raise LoadError("Workspace configuration format version {} not supported."
-                            "Your version of buildstream may be too old. Max supported version: {}"
-                            .format(version, BST_WORKSPACE_FORMAT_VERSION), LoadErrorReason.INVALID_DATA)
+            raise LoadError(
+                "Workspace configuration format version {} not supported."
+                "Your version of buildstream may be too old. Max supported version: {}".format(
+                    version, BST_WORKSPACE_FORMAT_VERSION
+                ),
+                LoadErrorReason.INVALID_DATA,
+            )
 
         return res
 
@@ -628,15 +625,15 @@ class Workspaces():
     #    (Workspace): A newly instantiated Workspace
     #
     def _load_workspace(self, node):
-        running_files = node.get_mapping('running_files', default=None)
+        running_files = node.get_mapping("running_files", default=None)
         if running_files:
             running_files = running_files.strip_node_info()
 
         dictionary = {
-            'prepared': node.get_bool('prepared', default=False),
-            'path': node.get_str('path'),
-            'last_successful': node.get_str('last_successful', default=None),
-            'running_files': running_files,
+            "prepared": node.get_bool("prepared", default=False),
+            "path": node.get_str("path"),
+            "last_successful": node.get_str("last_successful", default=None),
+            "running_files": running_files,
         }
         return Workspace.from_dict(self._toplevel_project, dictionary)
 

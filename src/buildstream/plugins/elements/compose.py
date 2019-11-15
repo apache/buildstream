@@ -62,27 +62,23 @@ class ComposeElement(Element):
     BST_RUN_COMMANDS = False
 
     def configure(self, node):
-        node.validate_keys([
-            'integrate', 'include', 'exclude', 'include-orphans'
-        ])
+        node.validate_keys(["integrate", "include", "exclude", "include-orphans"])
 
         # We name this variable 'integration' only to avoid
         # collision with the Element.integrate() method.
-        self.integration = node.get_bool('integrate')
-        self.include = node.get_str_list('include')
-        self.exclude = node.get_str_list('exclude')
-        self.include_orphans = node.get_bool('include-orphans')
+        self.integration = node.get_bool("integrate")
+        self.include = node.get_str_list("include")
+        self.exclude = node.get_str_list("exclude")
+        self.include_orphans = node.get_bool("include-orphans")
 
     def preflight(self):
         pass
 
     def get_unique_key(self):
-        key = {'integrate': self.integration,
-               'include': sorted(self.include),
-               'orphans': self.include_orphans}
+        key = {"integrate": self.integration, "include": sorted(self.include), "orphans": self.include_orphans}
 
         if self.exclude:
-            key['exclude'] = sorted(self.exclude)
+            key["exclude"] = sorted(self.exclude)
 
         return key
 
@@ -104,9 +100,9 @@ class ComposeElement(Element):
         if require_split:
             with self.timed_activity("Computing split", silent_nested=True):
                 for dep in self.dependencies(Scope.BUILD):
-                    files = dep.compute_manifest(include=self.include,
-                                                 exclude=self.exclude,
-                                                 orphans=self.include_orphans)
+                    files = dep.compute_manifest(
+                        include=self.include, exclude=self.exclude, orphans=self.include_orphans
+                    )
                     manifest.update(files)
 
         # Make a snapshot of all the files.
@@ -141,13 +137,16 @@ class ComposeElement(Element):
                     for path in basedir_contents:
                         if path not in snapshot:
                             added_files.add(path)
-                    self.info("Integration modified {}, added {} and removed {} files"
-                              .format(len(modified_files), len(added_files), len(removed_files)))
+                    self.info(
+                        "Integration modified {}, added {} and removed {} files".format(
+                            len(modified_files), len(added_files), len(removed_files)
+                        )
+                    )
 
         # The remainder of this is expensive, make an early exit if
         # we're not being selective about what is to be included.
         if not require_split:
-            return '/'
+            return "/"
 
         # Do we want to force include files which were modified by
         # the integration commands, even if they were not added ?
@@ -159,7 +158,7 @@ class ComposeElement(Element):
         # instead of into a subdir. The element assemble() method should
         # support this in some way.
         #
-        installdir = vbasedir.descend('buildstream', 'install', create=True)
+        installdir = vbasedir.descend("buildstream", "install", create=True)
 
         # We already saved the manifest for created files in the integration phase,
         # now collect the rest of the manifest.
@@ -189,7 +188,7 @@ class ComposeElement(Element):
             installdir.import_files(vbasedir, filter_callback=import_filter, can_link=True)
 
         # And we're done
-        return os.path.join(os.sep, 'buildstream', 'install')
+        return os.path.join(os.sep, "buildstream", "install")
 
 
 # Plugin entry point

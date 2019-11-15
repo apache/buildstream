@@ -39,9 +39,9 @@ import click
 from click.core import MultiCommand, Option, Argument
 from click.parser import split_arg_string
 
-WORDBREAK = '='
+WORDBREAK = "="
 
-COMPLETION_SCRIPT = '''
+COMPLETION_SCRIPT = """
 %(complete_func)s() {
     local IFS=$'\n'
     COMPREPLY=( $( env COMP_WORDS="${COMP_WORDS[*]}" \\
@@ -51,7 +51,7 @@ COMPLETION_SCRIPT = '''
 }
 
 complete -F %(complete_func)s -o nospace %(script_names)s
-'''
+"""
 
 
 # An exception for our custom completion handler to
@@ -62,7 +62,7 @@ class CompleteUnhandled(Exception):
     pass
 
 
-def complete_path(path_type, incomplete, base_directory='.'):
+def complete_path(path_type, incomplete, base_directory="."):
     """Helper method for implementing the completions() method
     for File and Path parameter types.
     """
@@ -71,7 +71,7 @@ def complete_path(path_type, incomplete, base_directory='.'):
     # specified in `incomplete` minus the last path component,
     # otherwise list files starting from the current working directory.
     entries = []
-    base_path = ''
+    base_path = ""
 
     # This is getting a bit messy
     listed_base_directory = False
@@ -128,11 +128,11 @@ def complete_path(path_type, incomplete, base_directory='.'):
 
     return [
         # Return an appropriate path for each entry
-        fix_path(e) for e in sorted(entries)
-
+        fix_path(e)
+        for e in sorted(entries)
         # Filter out non directory elements when searching for a directory,
         # the opposite is fine, however.
-        if not (path_type == 'Directory' and not entry_is_dir(e))
+        if not (path_type == "Directory" and not entry_is_dir(e))
     ]
 
 
@@ -183,7 +183,7 @@ def start_of_option(param_str):
     :param param_str: param_str to check
     :return: whether or not this is the start of an option declaration (i.e. starts "-" or "--")
     """
-    return param_str and param_str[:1] == '-'
+    return param_str and param_str[:1] == "-"
 
 
 def is_incomplete_option(all_args, cmd_param):
@@ -218,8 +218,11 @@ def is_incomplete_argument(current_params, cmd_param):
         return True
     if cmd_param.nargs == -1:
         return True
-    if isinstance(current_param_values, collections.abc.Iterable) \
-            and cmd_param.nargs > 1 and len(current_param_values) < cmd_param.nargs:
+    if (
+        isinstance(current_param_values, collections.abc.Iterable)
+        and cmd_param.nargs > 1
+        and len(current_param_values) < cmd_param.nargs
+    ):
         return True
     return False
 
@@ -237,10 +240,7 @@ def get_user_autocompletions(args, incomplete, cmd, cmd_param, override):
 
     # Use the type specific default completions unless it was overridden
     try:
-        return override(cmd=cmd,
-                        cmd_param=cmd_param,
-                        args=args,
-                        incomplete=incomplete)
+        return override(cmd=cmd, cmd_param=cmd_param, args=args, incomplete=incomplete)
     except CompleteUnhandled:
         return get_param_type_completion(cmd_param.type, incomplete) or []
 
@@ -269,7 +269,7 @@ def get_choices(cli, prog_name, args, incomplete, override):
         all_args.append(partition_incomplete[0])
         incomplete = partition_incomplete[2]
     elif incomplete == WORDBREAK:
-        incomplete = ''
+        incomplete = ""
 
     choices = []
     found_param = False
@@ -277,8 +277,13 @@ def get_choices(cli, prog_name, args, incomplete, override):
         # completions for options
         for param in ctx.command.params:
             if isinstance(param, Option):
-                choices.extend([param_opt + " " for param_opt in param.opts + param.secondary_opts
-                                if param_opt not in all_args or param.multiple])
+                choices.extend(
+                    [
+                        param_opt + " "
+                        for param_opt in param.opts + param.secondary_opts
+                        if param_opt not in all_args or param.multiple
+                    ]
+                )
         found_param = True
     if not found_param:
         # completion for option values by choices
@@ -297,14 +302,22 @@ def get_choices(cli, prog_name, args, incomplete, override):
 
     if not found_param and isinstance(ctx.command, MultiCommand):
         # completion for any subcommands
-        choices.extend([cmd + " " for cmd in ctx.command.list_commands(ctx)
-                        if not ctx.command.get_command(ctx, cmd).hidden])
+        choices.extend(
+            [cmd + " " for cmd in ctx.command.list_commands(ctx) if not ctx.command.get_command(ctx, cmd).hidden]
+        )
 
-    if not start_of_option(incomplete) and ctx.parent is not None \
-       and isinstance(ctx.parent.command, MultiCommand) and ctx.parent.command.chain:
+    if (
+        not start_of_option(incomplete)
+        and ctx.parent is not None
+        and isinstance(ctx.parent.command, MultiCommand)
+        and ctx.parent.command.chain
+    ):
         # completion for chained commands
-        visible_commands = [cmd for cmd in ctx.parent.command.list_commands(ctx.parent)
-                            if not ctx.parent.command.get_command(ctx.parent, cmd).hidden]
+        visible_commands = [
+            cmd
+            for cmd in ctx.parent.command.list_commands(ctx.parent)
+            if not ctx.parent.command.get_command(ctx.parent, cmd).hidden
+        ]
         remaining_commands = set(visible_commands) - set(ctx.parent.protected_args)
         choices.extend([cmd + " " for cmd in remaining_commands])
 
@@ -314,13 +327,13 @@ def get_choices(cli, prog_name, args, incomplete, override):
 
 
 def do_complete(cli, prog_name, override):
-    cwords = split_arg_string(os.environ['COMP_WORDS'])
-    cword = int(os.environ['COMP_CWORD'])
+    cwords = split_arg_string(os.environ["COMP_WORDS"])
+    cword = int(os.environ["COMP_CWORD"])
     args = cwords[1:cword]
     try:
         incomplete = cwords[cword]
     except IndexError:
-        incomplete = ''
+        incomplete = ""
 
     for item in get_choices(cli, prog_name, args, incomplete, override):
         click.echo(item)
@@ -331,7 +344,7 @@ def do_complete(cli, prog_name, override):
 def main_bashcomplete(cmd, prog_name, override):
     """Internal handler for the bash completion support."""
 
-    if '_BST_COMPLETION' in os.environ:
+    if "_BST_COMPLETION" in os.environ:
         do_complete(cmd, prog_name, override)
         return True
 

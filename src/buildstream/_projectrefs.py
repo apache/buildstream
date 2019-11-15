@@ -26,15 +26,15 @@ from ._exceptions import LoadError, LoadErrorReason
 # ProjectRefStorage()
 #
 # Indicates the type of ref storage
-class ProjectRefStorage():
+class ProjectRefStorage:
 
     # Source references are stored inline
     #
-    INLINE = 'inline'
+    INLINE = "inline"
 
     # Source references are stored in a central project.refs file
     #
-    PROJECT_REFS = 'project.refs'
+    PROJECT_REFS = "project.refs"
 
 
 # ProjectRefs()
@@ -45,8 +45,7 @@ class ProjectRefStorage():
 #    directory (str): The project directory
 #    base_name (str): The project.refs basename
 #
-class ProjectRefs():
-
+class ProjectRefs:
     def __init__(self, directory, base_name):
         directory = os.path.abspath(directory)
         self._fullpath = os.path.join(directory, base_name)
@@ -83,12 +82,12 @@ class ProjectRefs():
             self._toplevel_node = _new_synthetic_file(self._fullpath)
             self._toplevel_save = self._toplevel_node
 
-        self._toplevel_node.validate_keys(['projects'])
+        self._toplevel_node.validate_keys(["projects"])
 
         # Ensure we create our toplevel entry point on the fly here
         for node in [self._toplevel_node, self._toplevel_save]:
-            if 'projects' not in node:
-                node['projects'] = {}
+            if "projects" not in node:
+                node["projects"] = {}
 
     # lookup_ref()
     #
@@ -122,7 +121,7 @@ class ProjectRefs():
     # Looks up a ref node in the project.refs file, creates one if ensure is True.
     #
     def _lookup(self, toplevel, project, element, source_index, *, ensure=False):
-        projects = toplevel.get_mapping('projects')
+        projects = toplevel.get_mapping("projects")
 
         # Fetch the project
         try:

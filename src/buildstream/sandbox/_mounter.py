@@ -25,22 +25,20 @@ from .. import utils, _signals
 
 
 # A class to wrap the `mount` and `umount` system commands
-class Mounter():
+class Mounter:
     @classmethod
-    def _mount(cls, dest, src=None, mount_type=None,
-               stdout=None, stderr=None, options=None,
-               flags=None):
+    def _mount(cls, dest, src=None, mount_type=None, stdout=None, stderr=None, options=None, flags=None):
 
         if stdout is None:
             stdout = sys.stdout
         if stderr is None:
             stderr = sys.stderr
 
-        argv = [utils.get_host_tool('mount')]
+        argv = [utils.get_host_tool("mount")]
         if mount_type:
-            argv.extend(['-t', mount_type])
+            argv.extend(["-t", mount_type])
         if options:
-            argv.extend(['-o', options])
+            argv.extend(["-o", options])
         if flags:
             argv.extend(flags)
 
@@ -48,16 +46,10 @@ class Mounter():
             argv += [src]
         argv += [dest]
 
-        status, _ = utils._call(
-            argv,
-            terminate=True,
-            stdout=stdout,
-            stderr=stderr
-        )
+        status, _ = utils._call(argv, terminate=True, stdout=stdout, stderr=stderr)
 
         if status != 0:
-            raise SandboxError('`{}` failed with exit code {}'
-                               .format(' '.join(argv), status))
+            raise SandboxError("`{}` failed with exit code {}".format(" ".join(argv), status))
 
         return dest
 
@@ -68,17 +60,11 @@ class Mounter():
         if stderr is None:
             stderr = sys.stderr
 
-        cmd = [utils.get_host_tool('umount'), '-R', path]
-        status, _ = utils._call(
-            cmd,
-            terminate=True,
-            stdout=stdout,
-            stderr=stderr
-        )
+        cmd = [utils.get_host_tool("umount"), "-R", path]
+        status, _ = utils._call(cmd, terminate=True, stdout=stdout, stderr=stderr)
 
         if status != 0:
-            raise SandboxError('`{}` failed with exit code {}'
-                               .format(' '.join(cmd), status))
+            raise SandboxError("`{}` failed with exit code {}".format(" ".join(cmd), status))
 
     # mount()
     #
@@ -98,8 +84,7 @@ class Mounter():
     #
     @classmethod
     @contextmanager
-    def mount(cls, dest, src=None, stdout=None,
-              stderr=None, mount_type=None, **kwargs):
+    def mount(cls, dest, src=None, stdout=None, stderr=None, mount_type=None, **kwargs):
         if stdout is None:
             stdout = sys.stdout
         if stderr is None:
@@ -108,7 +93,7 @@ class Mounter():
         def kill_proc():
             cls._umount(dest, stdout, stderr)
 
-        options = ','.join([key for key, val in kwargs.items() if val])
+        options = ",".join([key for key, val in kwargs.items() if val])
 
         path = cls._mount(dest, src, mount_type, stdout=stdout, stderr=stderr, options=options)
         try:
@@ -139,8 +124,7 @@ class Mounter():
     #
     @classmethod
     @contextmanager
-    def bind_mount(cls, dest, src=None, stdout=None,
-                   stderr=None, **kwargs):
+    def bind_mount(cls, dest, src=None, stdout=None, stderr=None, **kwargs):
         if stdout is None:
             stdout = sys.stdout
         if stderr is None:
@@ -149,8 +133,8 @@ class Mounter():
         def kill_proc():
             cls._umount(dest, stdout, stderr)
 
-        kwargs['rbind'] = True
-        options = ','.join([key for key, val in kwargs.items() if val])
+        kwargs["rbind"] = True
+        options = ",".join([key for key, val in kwargs.items() if val])
 
         path = cls._mount(dest, src, None, stdout, stderr, options)
 
@@ -158,7 +142,7 @@ class Mounter():
             with _signals.terminator(kill_proc):
                 # Make the rbind a slave to avoid unmounting vital devices in
                 # /proc
-                cls._mount(dest, flags=['--make-rslave'])
+                cls._mount(dest, flags=["--make-rslave"])
                 yield path
         finally:
             cls._umount(dest, stdout, stderr)

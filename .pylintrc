@@ -64,7 +64,7 @@ confidence=
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
 
-# We have two groups of disabled messages:
+# We have three groups of disabled messages:
 #
 # 1) Messages that are of no use to us
 #    This is either because we don't follow the convention
@@ -75,6 +75,10 @@ confidence=
 #    We introduced linting quite late into the project, so there are
 #    some issues that just grew out of control. Resolving these would
 #    be nice, but too much work atm.
+#
+# 3) Messages related to code formatting
+#    Since we use Black to format code automatically, there's no need for
+#    pylint to also check for those things.
 #
 
 disable=#####################################
@@ -110,6 +114,14 @@ disable=#####################################
         invalid-name,
 
         unused-argument,
+
+        ##################################################
+        # Formatting-related messages, enforced by Black #
+        ##################################################
+
+        bad-continuation,
+        line-too-long,
+        superfluous-parens,
 
 
 # Enable the message, report, category or checker with the given id(s). You can

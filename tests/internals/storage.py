@@ -7,10 +7,7 @@ from buildstream._cas import CASCache
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
 
-DATA_DIR = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    "storage"
-)
+DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "storage")
 
 
 @contextmanager
@@ -25,8 +22,7 @@ def setup_backend(backend_class, tmpdir):
             cas_cache.release_resources()
 
 
-@pytest.mark.parametrize("backend", [
-    FileBasedDirectory, CasBasedDirectory])
+@pytest.mark.parametrize("backend", [FileBasedDirectory, CasBasedDirectory])
 @pytest.mark.datafiles(DATA_DIR)
 def test_import(tmpdir, datafiles, backend):
     original = os.path.join(str(datafiles), "original")
@@ -38,8 +34,7 @@ def test_import(tmpdir, datafiles, backend):
         assert "bin/hello" in c.list_relative_paths()
 
 
-@pytest.mark.parametrize("backend", [
-    FileBasedDirectory, CasBasedDirectory])
+@pytest.mark.parametrize("backend", [FileBasedDirectory, CasBasedDirectory])
 @pytest.mark.datafiles(DATA_DIR)
 def test_modified_file_list(tmpdir, datafiles, backend):
     original = os.path.join(str(datafiles), "original")

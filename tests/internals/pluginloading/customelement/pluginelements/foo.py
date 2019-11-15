@@ -2,7 +2,6 @@ from buildstream import Element
 
 
 class FooElement(Element):
-
     def preflight(self):
         pass
 
