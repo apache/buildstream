@@ -9,7 +9,7 @@ from buildstream._messenger import Messenger
 
 def test_report_when_cascache_dies_before_asked_to(tmp_path, monkeypatch):
     dummy_buildbox_casd = tmp_path.joinpath("buildbox-casd")
-    dummy_buildbox_casd.write_text("#!/bin/bash\nexit 0")
+    dummy_buildbox_casd.write_text("#!/usr/bin/env bash\nexit 0")
     dummy_buildbox_casd.chmod(0o777)
     monkeypatch.setenv("PATH", str(tmp_path), prepend=os.pathsep)
 
@@ -28,7 +28,7 @@ def test_report_when_cascache_dies_before_asked_to(tmp_path, monkeypatch):
 
 def test_report_when_cascache_exist_not_cleanly(tmp_path, monkeypatch):
     dummy_buildbox_casd = tmp_path.joinpath("buildbox-casd")
-    dummy_buildbox_casd.write_text("#!/bin/bash\nwhile :\ndo\nsleep 60\ndone")
+    dummy_buildbox_casd.write_text("#!/usr/bin/env bash\nwhile :\ndo\nsleep 60\ndone")
     dummy_buildbox_casd.chmod(0o777)
     monkeypatch.setenv("PATH", str(tmp_path), prepend=os.pathsep)
 
@@ -47,7 +47,7 @@ def test_report_when_cascache_exist_not_cleanly(tmp_path, monkeypatch):
 
 def test_report_when_cascache_is_forcefully_killed(tmp_path, monkeypatch):
     dummy_buildbox_casd = tmp_path.joinpath("buildbox-casd")
-    dummy_buildbox_casd.write_text("#!/bin/bash\ntrap 'echo hello' SIGTERM\nwhile :\ndo\nsleep 60\ndone")
+    dummy_buildbox_casd.write_text("#!/usr/bin/env bash\ntrap 'echo hello' SIGTERM\nwhile :\ndo\nsleep 60\ndone")
     dummy_buildbox_casd.chmod(0o777)
     monkeypatch.setenv("PATH", str(tmp_path), prepend=os.pathsep)
 
@@ -67,7 +67,7 @@ def test_casd_redirects_stderr_to_file_and_rotate(tmp_path, monkeypatch):
     n_max_log_files = 10
 
     dummy_buildbox_casd = tmp_path.joinpath("buildbox-casd")
-    dummy_buildbox_casd.write_text("#!/bin/bash\necho -e hello")
+    dummy_buildbox_casd.write_text("#!/usr/bin/env bash\necho -e hello")
     dummy_buildbox_casd.chmod(0o777)
     monkeypatch.setenv("PATH", str(tmp_path), prepend=os.pathsep)
 
