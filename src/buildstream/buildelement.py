@@ -266,6 +266,7 @@ class BuildElement(Element):
             with sandbox.batch(SandboxFlags.ROOT_READ_ONLY, label="Running configure-commands"):
                 for cmd in commands:
                     self.__run_command(sandbox, cmd)
+        sandbox.prepared = True
 
     def generate_script(self):
         script = ""

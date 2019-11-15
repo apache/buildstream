@@ -389,6 +389,7 @@ class Element(Plugin):
 
         *Since: 1.2*
         """
+        sandbox.prepared = True
 
     def assemble(self, sandbox: "Sandbox") -> str:
         """Assemble the output artifact
@@ -2378,12 +2379,24 @@ class Element(Plugin):
     # Internal method for calling public abstract prepare() method.
     #
     def __prepare(self, sandbox):
-        # FIXME:
         # We need to ensure that the prepare() method is only called
         # once in workspaces, because the changes will persist across
         # incremental builds - not desirable, for example, in the case
         # of autotools' `./configure`.
-        self.prepare(sandbox)
+        workspace = self._get_workspace()
+        prepared = False
+        if workspace and workspace.prepared:
+            # FIXME: ideally we don't have to check this, eventually we would
+            # like to get the saved old_ref and apply the new workspace on top
+            # to support incremental builds.
+            if [s._key for s in self.__sources] == [workspace.last_successful]:
+                prepared = False
+
+        if not prepared:
+            self.prepare(sandbox)
+
+        if workspace and sandbox.prepared:
+            workspace.prepared = True
 
     # __preflight():
     #

@@ -168,6 +168,9 @@ class Sandbox:
         # Pending command batch
         self.__batch = None
 
+        # was the sandbox prepared
+        self.prepared = False
+
     def get_directory(self) -> str:
         """Fetches the sandbox root directory
 
