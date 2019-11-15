@@ -914,7 +914,7 @@ class Stream:
             if workspace and not no_checkout:
                 workspaces.delete_workspace(target._get_full_name())
                 workspaces.save_config()
-                shutil.rmtree(directory)
+                utils._force_rmtree(directory)
             try:
                 os.makedirs(directory, exist_ok=True)
             except OSError as e:
