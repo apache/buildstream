@@ -961,7 +961,7 @@ class Stream:
     #
     # Args:
     #    targets (list of str): The target elements to reset the workspace for
-    #    soft (bool): Only reset workspace state
+    #    soft (bool): Only set the workspace state to not prepared
     #    track_first (bool): Whether to also track the sources first
     #
     def workspace_reset(self, targets, *, soft, track_first):
