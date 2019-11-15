@@ -50,7 +50,7 @@ details on common configuration options for sources.
 
 import tarfile
 from contextlib import contextmanager
-import arpy  # pylint: disable=import-error
+import arpy
 
 from .tar import TarSource
 
