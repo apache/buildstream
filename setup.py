@@ -301,6 +301,14 @@ with open('requirements/dev-requirements.in') as dev_reqs:
 with open('requirements/requirements.in') as install_reqs:
     install_requires = install_reqs.read().splitlines()
 
+# Dependencies of plugins. These are not strict requirements for installing
+# BuildStream so add them as extras.
+#
+# This is a mapping between the plugin name and its dependencies.
+extras_require = {
+    "deb": ["arpy"],
+}
+
 #####################################################
 #     Prepare package description from README       #
 #####################################################
@@ -469,6 +477,7 @@ setup(name='BuildStream',
       install_requires=install_requires,
       entry_points=bst_install_entry_points,
       tests_require=dev_requires,
+      extras_require=extras_require,
       ext_modules=cythonize(
           BUILD_EXTENSIONS,
           compiler_directives={
