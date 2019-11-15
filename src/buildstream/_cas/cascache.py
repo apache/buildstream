@@ -88,6 +88,11 @@ class CASCache:
             self._cache_usage_monitor = _CASCacheUsageMonitor(self._casd_channel)
 
     def __getstate__(self):
+        # Note that we can't use jobpickler's
+        # 'get_state_for_child_job_pickling' protocol here, since CASCache's
+        # are passed to subprocesses other than child jobs. e.g.
+        # test.utils.ArtifactShare.
+
         state = self.__dict__.copy()
 
         # Child jobs do not need to manage the CASD process, they only need a
