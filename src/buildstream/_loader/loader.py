@@ -33,7 +33,7 @@ from . import loadelement
 from .loadelement import Dependency, LoadElement
 from .metaelement import MetaElement
 from .metasource import MetaSource
-from ..types import CoreWarnings
+from ..types import CoreWarnings, _KeyStrength
 from .._message import Message, MessageType
 
 
@@ -633,7 +633,7 @@ class Loader:
             raise LoadError("Dependencies are forbidden for 'junction' elements", LoadErrorReason.INVALID_JUNCTION)
 
         element = Element._new_from_meta(meta_element)
-        element._update_state()
+        element._initialize_state()
 
         # If this junction element points to a sub-sub-project, we need to
         # find loader for that project.
@@ -671,8 +671,19 @@ class Loader:
         else:
             # Stage sources
             element._set_required()
+
+            # Note: We use _KeyStrength.WEAK here because junctions
+            # cannot have dependencies, therefore the keys are
+            # equivalent.
+            #
+            # Since the element has not necessarily been given a
+            # strong cache key at this point (in a non-strict build
+            # that is set *after* we complete building/pulling, which
+            # we haven't yet for this element),
+            # element._get_cache_key() can fail if used with the
+            # default _KeyStrength.STRONG.
             basedir = os.path.join(
-                self.project.directory, ".bst", "staged-junctions", filename, element._get_cache_key()
+                self.project.directory, ".bst", "staged-junctions", filename, element._get_cache_key(_KeyStrength.WEAK)
             )
             if not os.path.exists(basedir):
                 os.makedirs(basedir, exist_ok=True)

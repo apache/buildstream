@@ -1218,63 +1218,77 @@ class Element(Plugin):
     #    (bool): True if cache can be queried
     #
     def _can_query_cache(self):
-        # If build has already been scheduled, we know that the element is
-        # not cached and thus can allow cache query even if the strict cache key
-        # is not available yet.
-        # This special case is required for workspaced elements to prevent
-        # them from getting blocked in the pull queue.
-        if self.__assemble_scheduled:
-            return True
-
         # cache cannot be queried until strict cache key is available
         return self.__strict_cache_key is not None
 
-    # _update_state()
+    # _initialize_state()
     #
-    # Keep track of element state. Calculate cache keys if possible and
-    # check whether artifacts are cached.
+    # Compute up the elment's initial state. Element state contains
+    # the following mutable sub-states:
     #
-    # This must be called whenever the state of an element may have changed.
+    # - Source state
+    # - Artifact cache key
+    #   - Source key
+    #     - Integral component of the cache key
+    #     - Computed as part of the source state
+    # - Artifact state
+    #   - Cache key
+    #     - Must be known to compute this state
+    # - Build status
+    #   - Artifact state
+    #     - Must be known before we can decide whether to build
     #
-    def _update_state(self):
-        if not self._resolved_initial_state:
-            self._resolved_initial_state = True
-        context = self._get_context()
+    # Note that sub-states are dependent on each other, and changes to
+    # one state will effect changes in the next.
+    #
+    # Changes to these states can be caused by numerous things,
+    # notably jobs executed in sub-processes. Changes are performed by
+    # invocations of the following methods:
+    #
+    # - __update_source_state()
+    #   - Computes the state of all sources of the element.
+    # - __update_cache_keys()
+    #   - Computes the strong and weak cache keys.
+    # - _update_artifact_state()
+    #   - Computes the state of the element's artifact using the
+    #     cache key.
+    # - __schedule_assembly_when_necessary()
+    #   - Schedules assembly of an element, iff its current state
+    #     allows/necessitates it
+    # - __update_cache_key_non_strict()
+    #   - Sets strict cache keys in non-strict builds
+    #     - Some non-strict build actions can create artifacts
+    #       compatible with strict mode (such as pulling), so
+    #       this needs to be done
+    #
+    # When any one of these methods are called and cause a change,
+    # they will invoke methods that have a potential dependency on
+    # them, causing the state change to bubble through all potential
+    # side effects.
+    #
+    # *This* method starts the process by invoking
+    # `__update_source_state()`, which will cause all necessary state
+    # changes. Other functions should use the appropriate methods and
+    # only update what they expect to change - this will ensure that
+    # the minimum amount of work is done.
+    #
+    def _initialize_state(self):
+        assert not self._resolved_initial_state, "_initialize_state() should only be called once"
+        self._resolved_initial_state = True
 
-        # Compute and determine consistency of sources
+        # This will update source state, and for un-initialized
+        # elements recursively initialize anything else (because it
+        # will become considered outdated after source state is
+        # updated).
+        #
+        # FIXME: Currently this method may cause recursion through
+        # `self.__update_strict_cache_key_of_rdeps()`, since this may
+        # invoke reverse dependencies' cache key updates
+        # recursively. This is necessary when we update keys after a
+        # pull/build, however should not occur during initialization
+        # (since we will eventualyl visit reverse dependencies during
+        # our initialization anyway).
         self.__update_source_state()
-
-        if self._get_consistency() == Consistency.INCONSISTENT:
-            # Tracking may still be pending
-            return
-
-        self.__update_cache_keys()
-        self.__update_artifact_state()
-
-        # If the element wasn't assembled and isn't scheduled to be assemble,
-        # or cached, or waiting to be pulled but has an artifact then schedule
-        # the assembly.
-        if (
-            not self.__assemble_scheduled
-            and not self.__assemble_done
-            and self.__artifact
-            and self._is_required()
-            and not self._cached()
-            and not self._pull_pending()
-        ):
-            self._schedule_assemble()
-
-            # If a build has been scheduled, we know that the element
-            # is not cached and can allow cache query even if the strict cache
-            # key is not available yet.
-            if self.__can_query_cache_callback is not None:
-                self.__can_query_cache_callback(self)
-                self.__can_query_cache_callback = None
-
-            return
-
-        if not context.get_strict():
-            self.__update_cache_key_non_strict()
 
     # _get_display_key():
     #
@@ -1353,7 +1367,9 @@ class Element(Plugin):
 
         self.__tracking_scheduled = False
 
-        self._update_state()
+        # Tracking may change the sources' refs, and therefore the
+        # source state. We need to update source state.
+        self.__update_source_state()
 
     # _track():
     #
@@ -1519,7 +1535,12 @@ class Element(Plugin):
         for dep in self.dependencies(Scope.RUN, recurse=False):
             dep._set_required()
 
-        self._update_state()
+        # When an element becomes required, it must be assembled for
+        # the current pipeline. `__schedule_assembly_when_necessary()`
+        # will abort if some other state prevents it from being built,
+        # and changes to such states will cause re-scheduling, so this
+        # is safe.
+        self.__schedule_assembly_when_necessary()
 
         # Callback to the Queue
         if self.__required_callback is not None:
@@ -1556,27 +1577,56 @@ class Element(Plugin):
     def _artifact_files_required(self):
         return self.__artifact_files_required
 
-    # _schedule_assemble():
+    # __should_schedule()
+    #
+    # Returns:
+    #     bool - Whether the element can be scheduled for a build.
+    #
+    def __should_schedule(self):
+        # We're processing if we're already scheduled, we've
+        # finished assembling or if we're waiting to pull.
+        processing = self.__assemble_scheduled or self.__assemble_done or self._pull_pending()
+
+        # We should schedule a build when
+        return (
+            # We're not processing
+            not processing
+            and
+            # We're required for the current build
+            self._is_required()
+            and
+            # We have figured out the state of our artifact
+            self.__artifact
+            and
+            # And we're not cached yet
+            not self._cached()
+        )
+
+    # __schedule_assembly_when_necessary():
     #
     # This is called in the main process before the element is assembled
     # in a subprocess.
     #
-    def _schedule_assemble(self):
-        assert not self.__assemble_scheduled
+    def __schedule_assembly_when_necessary(self):
+        # FIXME: We could reduce the number of function calls a bit by
+        # factoring this out of this method (and checking whether we
+        # should schedule at the calling end).
+        #
+        # This would make the code less pretty, but it's a possible
+        # optimization if we get desperate enough (and we will ;)).
+        if not self.__should_schedule():
+            return
+
         self.__assemble_scheduled = True
 
         # Requests artifacts of build dependencies
         for dep in self.dependencies(Scope.BUILD, recurse=False):
             dep._set_required()
 
-        self._set_required()
-
-        # Invalidate workspace key as the build modifies the workspace directory
-        workspace = self._get_workspace()
-        if workspace:
-            workspace.invalidate_key()
-
-        self._update_state()
+        # Once we schedule an element for assembly, we know that our
+        # build dependencies have strong cache keys, so we can update
+        # our own strong cache key.
+        self.__update_cache_key_non_strict()
 
     # _assemble_done():
     #
@@ -1597,7 +1647,11 @@ class Element(Plugin):
         if self.__artifact:
             self.__artifact.reset_cached()
 
-        self._update_state()
+        # When we're building in non-strict mode, we may have
+        # assembled everything to this point without a strong cache
+        # key. Once the element has been assembled, a strong cache key
+        # can be set, so we do so.
+        self.__update_cache_key_non_strict()
         self._update_ready_for_runtime_and_cached()
 
         if self._get_workspace() and self._cached_success():
@@ -1829,7 +1883,13 @@ class Element(Plugin):
         self.__strict_artifact.reset_cached()
         self.__artifact.reset_cached()
 
-        self._update_state()
+        # We may not have actually pulled an artifact - the pull may
+        # have failed. We might therefore need to schedule assembly.
+        self.__schedule_assembly_when_necessary()
+        # If we've finished pulling, an artifact might now exist
+        # locally, so we might need to update a non-strict strong
+        # cache key.
+        self.__update_cache_key_non_strict()
         self._update_ready_for_runtime_and_cached()
 
     # _pull():
@@ -2395,24 +2455,19 @@ class Element(Plugin):
         if self.__tracking_scheduled:
             return
 
+        old_consistency = self.__consistency
         self.__consistency = Consistency.CACHED
-        workspace = self._get_workspace()
 
-        # Special case for workspaces
-        if workspace:
+        # Determine overall consistency of the element
+        for source in self.__sources:
+            # FIXME: It'd be nice to remove this eventually
+            source._update_state()
+            self.__consistency = min(self.__consistency, source._get_consistency())
 
-            # A workspace is considered inconsistent in the case
-            # that its directory went missing
-            #
-            fullpath = workspace.get_absolute_path()
-            if not os.path.exists(fullpath):
-                self.__consistency = Consistency.INCONSISTENT
-        else:
-
-            # Determine overall consistency of the element
-            for source in self.__sources:
-                source._update_state()
-                self.__consistency = min(self.__consistency, source._get_consistency())
+        # If the source state changes, our cache key must also change,
+        # since it contains the source's key.
+        if old_consistency != self.__consistency:
+            self.__update_cache_keys()
 
     # __can_build_incrementally()
     #
@@ -3088,17 +3143,26 @@ class Element(Plugin):
     # Note that it does not update *all* cache keys - In non-strict mode, the
     # strong cache key is updated in __update_cache_key_non_strict()
     #
-    # If the cache keys are not stable (i.e. workspace that isn't cached),
-    # then cache keys are erased.
-    # Otherwise, the weak and strict cache keys will be calculated if not
-    # already set.
-    # The weak cache key is a cache key that doesn't necessarily change when
-    # its dependencies change, useful for avoiding full rebuilds when one's
-    # dependencies guarantee stability across versions.
-    # The strict cache key is a cache key that changes if any build-dependency
-    # has changed.
+    # If the element's consistency is Consistency.INCONSISTENT this is
+    # a no-op (since inconsistent elements cannot have cache keys).
+    #
+    # The weak and strict cache keys will be calculated if not already
+    # set.
+    #
+    # The weak cache key is a cache key that doesn't change when its
+    # runtime dependencies change, useful for avoiding full rebuilds
+    # when one's dependencies guarantee stability across
+    # versions. Changes in build dependencies still force a rebuild,
+    # since those will change the built artifact directly.
+    #
+    # The strict cache key is a cache key that changes if any
+    # dependency has changed.
     #
     def __update_cache_keys(self):
+        if self._get_consistency() == Consistency.INCONSISTENT:
+            # Tracking may still be pending
+            return
+
         context = self._get_context()
 
         if self.__weak_cache_key is None:
@@ -3149,10 +3213,20 @@ class Element(Plugin):
             self.__can_query_cache_callback(self)
             self.__can_query_cache_callback = None
 
+        # If we've newly calculated a cache key, our artifact's
+        # current state will also change - after all, we can now find
+        # a potential existing artifact.
+        if self.__weak_cache_key is not None or self.__strict_cache_key is not None:
+            self.__update_artifact_state()
+
     # __update_artifact_state()
     #
     # Updates the data involved in knowing about the artifact corresponding
     # to this element.
+    #
+    # If the state changes, this will subsequently call
+    # `self.__schedule_assembly_when_necessary()` to schedule assembly if it becomes
+    # possible.
     #
     # Element.__update_cache_keys() must be called before this to have
     # meaningful results, because the element must know its cache key before
@@ -3167,6 +3241,7 @@ class Element(Plugin):
         if not context.get_strict() and not self.__artifact:
             # We've calculated the weak_key, so instantiate artifact instance member
             self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
+            self.__schedule_assembly_when_necessary()
 
         if not self.__strict_cache_key:
             return
@@ -3178,6 +3253,9 @@ class Element(Plugin):
 
             if context.get_strict():
                 self.__artifact = self.__strict_artifact
+                self.__schedule_assembly_when_necessary()
+            else:
+                self.__update_cache_key_non_strict()
 
     # __update_cache_key_non_strict()
     #
@@ -3227,24 +3305,36 @@ class Element(Plugin):
     # obtained
     #
     def __update_strict_cache_key_of_rdeps(self):
-        if not self.__updated_strict_cache_keys_of_rdeps:
-            if self.__runtime_deps_without_strict_cache_key == 0 and self.__strict_cache_key is not None:
-                self.__updated_strict_cache_keys_of_rdeps = True
+        if any(
+            (
+                # If we've previously updated these we don't need to do so
+                # again.
+                self.__updated_strict_cache_keys_of_rdeps,
+                # We can't do this until none of *our* rdeps are lacking a
+                # strict cache key.
+                not self.__runtime_deps_without_strict_cache_key == 0,
+                # If we don't have a strict cache key we can't do this either.
+                self.__strict_cache_key is None,
+            )
+        ):
+            return
 
-                # Notify reverse dependencies
-                for rdep in self.__reverse_runtime_deps:
-                    rdep.__runtime_deps_without_strict_cache_key -= 1
-                    assert not rdep.__runtime_deps_without_strict_cache_key < 0
+        self.__updated_strict_cache_keys_of_rdeps = True
 
-                    if rdep.__runtime_deps_without_strict_cache_key == 0:
-                        rdep.__update_strict_cache_key_of_rdeps()
+        # Notify reverse dependencies
+        for rdep in self.__reverse_runtime_deps:
+            rdep.__runtime_deps_without_strict_cache_key -= 1
+            assert not rdep.__runtime_deps_without_strict_cache_key < 0
 
-                for rdep in self.__reverse_build_deps:
-                    rdep.__build_deps_without_strict_cache_key -= 1
-                    assert not rdep.__build_deps_without_strict_cache_key < 0
+            if rdep.__runtime_deps_without_strict_cache_key == 0:
+                rdep.__update_strict_cache_key_of_rdeps()
 
-                    if rdep.__build_deps_without_strict_cache_key == 0:
-                        rdep._update_state()
+        for rdep in self.__reverse_build_deps:
+            rdep.__build_deps_without_strict_cache_key -= 1
+            assert not rdep.__build_deps_without_strict_cache_key < 0
+
+            if rdep.__build_deps_without_strict_cache_key == 0:
+                rdep.__update_cache_keys()
 
     # __update_ready_for_runtime()
     #
@@ -3261,30 +3351,41 @@ class Element(Plugin):
     # decrementing the appropriate counters.
     #
     def __update_ready_for_runtime(self):
-        if not self.__ready_for_runtime:
-            if self.__runtime_deps_without_cache_key == 0 and self.__cache_key is not None:
-                self.__ready_for_runtime = True
+        if any(
+            (
+                # We're already ready for runtime; no update required
+                self.__ready_for_runtime,
+                # If not all our dependencies are ready yet, we can't be ready
+                # either.
+                not self.__runtime_deps_without_cache_key == 0,
+                # If our cache state has not been resolved, we can't be ready.
+                self.__cache_key is None,
+            )
+        ):
+            return
 
-                # Notify reverse dependencies
-                for rdep in self.__reverse_runtime_deps:
-                    rdep.__runtime_deps_without_cache_key -= 1
-                    assert not rdep.__runtime_deps_without_cache_key < 0
+        self.__ready_for_runtime = True
 
-                    # If all of our runtimes have cache keys, we can calculate ours
-                    if rdep.__runtime_deps_without_cache_key == 0:
-                        rdep.__update_ready_for_runtime()
+        # Notify reverse dependencies
+        for rdep in self.__reverse_runtime_deps:
+            rdep.__runtime_deps_without_cache_key -= 1
+            assert not rdep.__runtime_deps_without_cache_key < 0
 
-                for rdep in self.__reverse_build_deps:
-                    rdep.__build_deps_without_cache_key -= 1
-                    assert not rdep.__build_deps_without_cache_key < 0
+            # If all of our runtimes have cache keys, we can calculate ours
+            if rdep.__runtime_deps_without_cache_key == 0:
+                rdep.__update_ready_for_runtime()
 
-                    if rdep.__build_deps_without_cache_key == 0:
-                        rdep._update_state()
+        for rdep in self.__reverse_build_deps:
+            rdep.__build_deps_without_cache_key -= 1
+            assert not rdep.__build_deps_without_cache_key < 0
 
-                # If the element is cached, and has all of its runtime dependencies cached,
-                # now that we have the cache key, we are able to notify reverse dependencies
-                # that the element it ready. This is a likely trigger for workspaced elements.
-                self._update_ready_for_runtime_and_cached()
+            if rdep.__build_deps_without_cache_key == 0:
+                rdep.__update_cache_keys()
+
+        # If the element is cached, and has all of its runtime dependencies cached,
+        # now that we have the cache key, we are able to notify reverse dependencies
+        # that the element it ready. This is a likely trigger for workspaced elements.
+        self._update_ready_for_runtime_and_cached()
 
 
 def _overlap_error_detail(f, forbidden_overlap_elements, elements):
