@@ -1351,17 +1351,13 @@ class Stream:
     def _fetch(self, elements, *, fetch_original=False):
 
         # Assert consistency for the fetch elements
-        # Filter out elements with cached sources, only from the fetch plan
-        # let the track plan resolve new refs.
-        cached = [elt for elt in elements if not elt._should_fetch(fetch_original)]
-        fetch_plan = self._pipeline.subtract_elements(elements, cached)
         self._pipeline.assert_consistent(elements)
 
         # Construct queues, enqueue and run
         #
         self._scheduler.clear_queues()
         self._add_queue(FetchQueue(self._scheduler, fetch_original=fetch_original))
-        self._enqueue_plan(fetch_plan)
+        self._enqueue_plan(elements)
         self._run()
 
     # _check_location_writable()
