@@ -761,14 +761,12 @@ def source():
     type=click.Choice(["none", "plan", "all"]),
     help="The dependencies to fetch",
 )
-@click.option("--track", "track_", is_flag=True, help="Track new source references before fetching")
-@click.option("--track-cross-junctions", "-J", is_flag=True, help="Allow tracking to cross junction boundaries")
 @click.option(
     "--remote", "-r", default=None, help="The URL of the remote source cache (defaults to the first configured cache)"
 )
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def source_fetch(app, elements, deps, track_, except_, track_cross_junctions, remote):
+def source_fetch(app, elements, deps, except_, remote):
     """Fetch sources required to build the pipeline
 
     Specifying no elements will result in fetching the default targets
@@ -790,32 +788,11 @@ def source_fetch(app, elements, deps, track_, except_, track_cross_junctions, re
         plan:  Only dependencies required for the build plan
         all:   All dependencies
     """
-    from .._pipeline import PipelineSelection
-
-    if track_cross_junctions and not track_:
-        click.echo("ERROR: The --track-cross-junctions option can only be used with --track", err=True)
-        sys.exit(-1)
-
-    if track_ and deps == PipelineSelection.PLAN:
-        click.echo(
-            "WARNING: --track specified for tracking of a build plan\n\n"
-            "Since tracking modifies the build plan, all elements will be tracked.",
-            err=True,
-        )
-        deps = PipelineSelection.ALL
-
     with app.initialized(session_name="Fetch"):
         if not elements:
             elements = app.project.get_default_targets()
 
-        app.stream.fetch(
-            elements,
-            selection=deps,
-            except_targets=except_,
-            track_targets=track_,
-            track_cross_junctions=track_cross_junctions,
-            remote=remote,
-        )
+        app.stream.fetch(elements, selection=deps, except_targets=except_, remote=remote)
 
 
 ##################################################################
@@ -969,9 +946,6 @@ def workspace():
     + "or if a workspace for that element already exists",
 )
 @click.option(
-    "--track", "track_", is_flag=True, help="Track and fetch new source references before checking out the workspace"
-)
-@click.option(
     "--directory",
     type=click.Path(file_okay=False),
     default=None,
@@ -979,13 +953,11 @@ def workspace():
 )
 @click.argument("elements", nargs=-1, type=click.Path(readable=False), required=True)
 @click.pass_obj
-def workspace_open(app, no_checkout, force, track_, directory, elements):
+def workspace_open(app, no_checkout, force, directory, elements):
     """Open a workspace for manual source modification"""
 
     with app.initialized():
-        app.stream.workspace_open(
-            elements, no_checkout=no_checkout, track_first=track_, force=force, custom_dir=directory
-        )
+        app.stream.workspace_open(elements, no_checkout=no_checkout, force=force, custom_dir=directory)
 
 
 ##################################################################
