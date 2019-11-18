@@ -65,6 +65,11 @@ _INITIAL_NUM_THREADS_IN_MAIN_PROCESS = 1
 # Number of seconds to wait for background threads to exit.
 _AWAIT_THREADS_TIMEOUT_SECONDS = 5
 
+# The process's file mode creation mask.
+# Impossible to retrieve without temporarily changing it on POSIX.
+_UMASK = os.umask(0o777)
+os.umask(_UMASK)
+
 
 class UtilError(BstError):
     """Raised by utility functions when system calls fail.
@@ -636,6 +641,17 @@ def save_file_atomic(
     except Exception:
         cleanup_tempfile()
         raise
+
+
+# get_umask():
+#
+# Get the process's file mode creation mask without changing it.
+#
+# Returns:
+#     (int) The process's file mode creation mask.
+#
+def get_umask():
+    return _UMASK
 
 
 # _get_dir_size():
