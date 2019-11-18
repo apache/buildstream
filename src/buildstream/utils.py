@@ -607,6 +607,8 @@ def save_file_atomic(
     if tempdir is None:
         tempdir = os.path.dirname(filename)
     fd, tempname = tempfile.mkstemp(dir=tempdir)
+    # Apply mode allowed by umask
+    os.fchmod(fd, 0o666 & ~_UMASK)
     os.close(fd)
 
     f = open(
