@@ -370,9 +370,11 @@ class Stream:
             targets, selection=selection, except_targets=except_targets, cross_junctions=cross_junctions
         )
 
-        # FIXME: this can be refactored after element._update_state is simplified/removed
-        elements = [element for element in elements if element._schedule_tracking()]
-        self._pipeline.resolve_elements(elements)
+        # Note: We do not currently need to initialize the state of an
+        # element before it is tracked, since tracking can be done
+        # irrespective of source/artifact condition. Once an element
+        # is tracked, its state must be fully updated in either case,
+        # and we anyway don't do anything else with it.
 
         self._scheduler.clear_queues()
         track_queue = TrackQueue(self._scheduler)

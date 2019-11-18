@@ -262,7 +262,6 @@ class Element(Plugin):
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
         self.__assemble_scheduled = False  # Element is scheduled to be assembled
         self.__assemble_done = False  # Element is assembled
-        self.__tracking_scheduled = False  # Sources are scheduled to be tracked
         self.__pull_done = False  # Whether pull was attempted
         self.__cached_successfully = None  # If the Element is known to be successfully cached
         self.__source_cached = None  # If the sources are known to be successfully cached
@@ -1329,43 +1328,11 @@ class Element(Plugin):
         _, display_key, _ = self._get_display_key()
         return display_key
 
-    # _schedule_tracking():
-    #
-    # Force an element state to be inconsistent. Any sources appear to be
-    # inconsistent.
-    #
-    # This is used across the pipeline in sessions where the
-    # elements in question are going to be tracked, causing the
-    # pipeline to rebuild safely by ensuring cache key recalculation
-    # and reinterrogation of element state after tracking of elements
-    # succeeds.
-    #
-    # This method should return the value of `__tracking_scheduled` to report
-    # to callers that the element was marked for tracking.
-    #
-    # If `__tracking_scheduled` is not already determined then set it to `True`
-    # if at least one source advertises that it can be tracked.
-    #
-    # Returns:
-    #    (bool): value of the `__tracking_scheduled` attribute
-    #
-    def _schedule_tracking(self) -> bool:
-        # if the tracking schedule is already determined then this can be skipped
-        if not self.__tracking_scheduled:
-            # Tracking does not make sense in cases where no sources can be tracked.
-            if any(source._is_trackable() for source in self.__sources):
-                self.__tracking_scheduled = True
-        return self.__tracking_scheduled
-
     # _tracking_done():
     #
     # This is called in the main process after the element has been tracked
     #
     def _tracking_done(self):
-        assert self.__tracking_scheduled
-
-        self.__tracking_scheduled = False
-
         # Tracking may change the sources' refs, and therefore the
         # source state. We need to update source state.
         self.__update_source_state()
@@ -2397,10 +2364,6 @@ class Element(Plugin):
     # from the workspace, is a component of the element's cache keys.
     #
     def __update_source_state(self):
-
-        # Cannot resolve source state until tracked
-        if self.__tracking_scheduled:
-            return
 
         old_consistency = self.__consistency
         self.__consistency = Consistency.CACHED
