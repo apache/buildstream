@@ -669,9 +669,6 @@ class Loader:
             # Optimization for junctions with a single local source
             basedir = sources[0]._get_local_path()
         else:
-            # Stage sources
-            element._set_required()
-
             # Note: We use _KeyStrength.WEAK here because junctions
             # cannot have dependencies, therefore the keys are
             # equivalent.
