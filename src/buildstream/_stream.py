@@ -376,8 +376,8 @@ class Stream:
 
         self._scheduler.clear_queues()
         track_queue = TrackQueue(self._scheduler)
-        self._add_queue(track_queue, track=True)
-        self._enqueue_plan(elements, queue=track_queue)
+        self._add_queue(track_queue)
+        self._enqueue_plan(elements)
         self._run()
 
     # pull()
@@ -1287,11 +1287,8 @@ class Stream:
     #    queue (Queue): Queue to add to the pipeline
     #    track (bool): Whether this is the tracking queue
     #
-    def _add_queue(self, queue, *, track=False):
+    def _add_queue(self, queue):
         self.queues.append(queue)
-        if not (track or self._first_non_track_queue):
-            self._first_non_track_queue = queue
-            self._first_non_track_queue.set_required_element_check()
 
     # _enqueue_plan()
     #
@@ -1302,8 +1299,7 @@ class Stream:
     #    queue (Queue): The target queue, defaults to the first non-track queue
     #
     def _enqueue_plan(self, plan, *, queue=None):
-        queue = queue or self._first_non_track_queue
-
+        queue = queue or self.queues[0]
         queue.enqueue(plan)
         self.session_elements += plan
 
