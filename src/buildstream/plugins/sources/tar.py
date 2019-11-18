@@ -76,12 +76,13 @@ class ReadableTarInfo(tarfile.TarInfo):
 
     @property
     def mode(self):
-        # ensure file is readable by owner, and executable
-        # (=traversable) if it's a directory.
-        if self.isdir():
-            return self.__permission | 0o500
+        # Respect umask instead of the file mode stored in the archive.
+        # The only bit used from the embedded mode is the executable bit for files.
+        umask = utils.get_umask()
+        if self.isdir() or bool(self.__permission | 0o100):
+            return 0o777 & ~umask
         else:
-            return self.__permission | 0o400
+            return 0o666 & ~umask
 
     @mode.setter
     def mode(self, permission):
