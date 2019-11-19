@@ -31,7 +31,7 @@ architecture. For this example we only support the ``i386`` and ``x86_64``
 architectures.
 
 Note that we've added a :ref:`source alias <project_source_aliases>` for
-the ``https://sdk.gnome.org/`` repository to download the SDK from.
+the ``https://dl.flathuhb.org/`` repository to download the SDK from.
 
 
 ``elements/base/sdk.bst``
