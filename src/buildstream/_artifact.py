@@ -459,6 +459,14 @@ class Artifact:
     def reset_cached(self):
         self._cached = None
 
+    # set_cached()
+    #
+    # Mark the artifact as cached without querying the filesystem.
+    # This is used as optimization when we know the artifact is available.
+    #
+    def set_cached(self):
+        self._cached = True
+
     # _get_proto()
     #
     # Returns:

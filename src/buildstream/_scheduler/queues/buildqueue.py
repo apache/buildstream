@@ -23,6 +23,7 @@ from datetime import timedelta
 from . import Queue, QueueStatus
 from ..resources import ResourceType
 from ..._message import MessageType
+from ..jobs import JobStatus
 
 
 # A queue which assembles elements
@@ -80,7 +81,7 @@ class BuildQueue(Queue):
     def done(self, job, element, result, status):
 
         # Inform element in main process that assembly is done
-        element._assemble_done()
+        element._assemble_done(status is JobStatus.OK)
 
     def register_pending_element(self, element):
         # Set a "buildable" callback for an element not yet ready
