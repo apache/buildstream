@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2016-2018 Codethink Limited
+#  Copyright (C) 2019 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -1288,7 +1289,8 @@ class Element(Plugin):
         # pull/build, however should not occur during initialization
         # (since we will eventualyl visit reverse dependencies during
         # our initialization anyway).
-        self.__update_source_state()
+        if not self.__tracking_scheduled:
+            self.__update_source_state()
 
     # _get_display_key():
     #
@@ -1832,7 +1834,8 @@ class Element(Plugin):
         # Fetching cannot change the source state from INCONSISTENT to CACHED because
         # we prevent fetching when it's INCONSISTENT.
         # Therefore, only the source state will change.
-        self.__update_source_state()
+        if not self.__tracking_scheduled:
+            self.__update_source_state()
 
     # _pull_pending()
     #
@@ -2450,10 +2453,7 @@ class Element(Plugin):
     # from the workspace, is a component of the element's cache keys.
     #
     def __update_source_state(self):
-
-        # Cannot resolve source state until tracked
-        if self.__tracking_scheduled:
-            return
+        assert not self.__tracking_scheduled
 
         old_consistency = self.__consistency
         self.__consistency = Consistency.CACHED
