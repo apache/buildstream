@@ -55,14 +55,16 @@ class WorkspaceSource(Source):
         self.__unique_key = None
         # the digest of the Directory following the import of the workspace
         self.__digest = None
+        # the cache key of the last successful workspace
+        self.__last_successful = None
 
     def track(self) -> SourceRef:  # pylint: disable=arguments-differ
         return None
 
     def configure(self, node: MappingNode) -> None:
-        node.validate_keys(["path", "ref", "kind"])
+        node.validate_keys(["path", "last_successful", "kind"])
         self.path = node.get_str("path")
-        self.__digest = node.get_str("ref")
+        self.__last_successful = node.get_str("last_successful")
 
     def preflight(self) -> None:
         pass  # pragma: nocover
