@@ -254,8 +254,6 @@ def test_updated_dependency_nested(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
-@pytest.mark.xfail(HAVE_SANDBOX == "buildbox", reason="Not working with BuildBox")
-@pytest.mark.xfail(reason="Incremental builds are currently incompatible with workspace source plugin.")
 def test_incremental_configure_commands_run_only_once(cli, datafiles):
     project = str(datafiles)
     workspace = os.path.join(cli.directory, "workspace")
@@ -275,16 +273,38 @@ def test_incremental_configure_commands_run_only_once(cli, datafiles):
     res.assert_success()
 
     # Then we build, and check whether the configure step succeeded
-    res = cli.run(project=project, args=["build", element_name])
+    res = cli.run(project=project, args=["--cache-buildtrees", "always", "build", element_name])
     res.assert_success()
-    assert os.path.exists(os.path.join(workspace, "prepared"))
+    # check that the workspace was not configured
+    assert not os.path.exists(os.path.join(workspace, "prepared"))
+
+    # the configure should have been run in the sandbox, so check the buildtree
+    res = cli.run(
+        project=project,
+        args=["shell", "--build", element_name, "--use-buildtree", "always", "--", "find", ".", "-mindepth", "1",],
+    )
+    res.assert_success()
+
+    files = res.output.splitlines()
+    assert "./prepared" in files
+    assert not "./prepared-again" in files
 
     # When we build again, the configure commands should not be
     # called, and we should therefore exit cleanly (the configure
     # commands are set to always fail after the first run)
-    res = cli.run(project=project, args=["build", element_name])
+    res = cli.run(project=project, args=["--cache-buildtrees", "always", "build", element_name])
     res.assert_success()
+
     assert not os.path.exists(os.path.join(workspace, "prepared-again"))
+    res = cli.run(
+        project=project,
+        args=["shell", "--build", element_name, "--use-buildtree", "always", "--", "find", ".", "-mindepth", "1",],
+    )
+    res.assert_success()
+
+    files = res.output.splitlines()
+    assert "./prepared" in files
+    assert not "./prepared-again" in files
 
 
 # Test that rebuilding an already built workspaced element does
