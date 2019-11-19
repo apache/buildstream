@@ -1049,7 +1049,11 @@ def workspace_close(app, remove_dir, all_, elements):
 #                     Workspace Reset Command                    #
 ##################################################################
 @workspace.command(name="reset", short_help="Reset a workspace to its original state")
-@click.option("--soft", is_flag=True, help="Reset workspace state without affecting its contents")
+@click.option(
+    "--soft",
+    is_flag=True,
+    help="Mark workspace to re-execute configuration steps (if any) on next build. Does not alter workspace contents.",
+)
 @click.option("--track", "track_", is_flag=True, help="Track and fetch the latest source before resetting")
 @click.option("--all", "-a", "all_", is_flag=True, help="Reset all open workspaces")
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
