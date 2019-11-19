@@ -405,8 +405,6 @@ class Stream:
             track_cross_junctions=cross_junctions,
         )
 
-        # FIXME: this can be refactored after element._update_state is simplified/removed
-        elements = [element for element in elements if element._schedule_tracking()]
         self._pipeline.resolve_elements(elements)
 
         self._scheduler.clear_queues()
