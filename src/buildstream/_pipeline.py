@@ -139,11 +139,9 @@ class Pipeline:
             if task:
                 task.set_maximum_progress(self._project.loader.loaded)
 
-            # XXX: Now that Element._update_state() can trigger recursive update_state calls
+            # XXX: Element.__update_source_state() can trigger recursive update_state calls;
             # it is possible that we could get a RecursionError. However, this is unlikely
-            # to happen, even for large projects (tested with the Debian stack). Although,
-            # if it does become a problem we may have to set the recursion limit to a
-            # greater value.
+            # to happen, even for large projects (tested with the Debian stack).
             for element in self.dependencies(targets, Scope.ALL):
                 # Determine initial element state.
                 if not element._resolved_initial_state:
