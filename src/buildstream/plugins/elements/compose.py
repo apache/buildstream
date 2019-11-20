@@ -58,9 +58,6 @@ class ComposeElement(Element):
     # This plugin has been modified to avoid the use of Sandbox.get_directory
     BST_VIRTUAL_DIRECTORY = True
 
-    # Compose elements do not run any commands
-    BST_RUN_COMMANDS = False
-
     def configure(self, node):
         node.validate_keys(["integrate", "include", "exclude", "include-orphans"])
 
