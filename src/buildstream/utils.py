@@ -1020,6 +1020,13 @@ def _set_deterministic_mtime(directory):
 #
 # A context manager for doing work in a temporary directory.
 #
+# NOTE: Unlike mkdtemp(), this method may not restrict access to other
+#       users. The process umask is the only access restriction, similar
+#       to mkdir().
+#       This is potentially insecure. Do not create directories in /tmp
+#       with this method. *Only* use this in directories whose parents are
+#       more tightly controlled (i.e., non-public directories).
+#
 # Args:
 #    dir (str): A path to a parent directory for the temporary directory
 #    suffix (str): A suffix for the temproary directory name
@@ -1033,7 +1040,14 @@ def _set_deterministic_mtime(directory):
 # supports cleaning up the temp directory on SIGTERM.
 #
 @contextmanager
-def _tempdir(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefined-builtin
+def _tempdir(*, suffix="", prefix="tmp", dir):  # pylint: disable=redefined-builtin
+    # Do not allow fallback to a global temp directory. Due to the chmod
+    # below, this method is not safe to be used in global temp
+    # directories such as /tmp.
+    assert (
+        dir
+    ), "Creating directories in the public fallback `/tmp` is dangerous. Please use a directory with tight access controls."
+
     tempdir = tempfile.mkdtemp(suffix=suffix, prefix=prefix, dir=dir)
 
     def cleanup_tempdir():
@@ -1042,6 +1056,9 @@ def _tempdir(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefined-bu
 
     try:
         with _signals.terminator(cleanup_tempdir):
+            # Apply mode allowed by umask
+            os.chmod(tempdir, 0o777 & ~_UMASK)
+
             yield tempdir
     finally:
         cleanup_tempdir()
