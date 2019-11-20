@@ -3008,24 +3008,6 @@ class Element(Plugin):
             self.__last_source_requires_previous_ix = last_requires_previous
         return self.__last_source_requires_previous_ix
 
-    # __reset_cache_data()
-    #
-    # Resets all data related to cache key calculation and whether an artifact
-    # is cached.
-    #
-    # This is useful because we need to know whether a workspace is cached
-    # before we know whether to assemble it, and doing that would generate a
-    # different cache key to the initial one.
-    #
-    def __reset_cache_data(self):
-        self.__build_result = None
-        self.__cache_key_dict = None
-        self.__cache_key = None
-        self.__weak_cache_key = None
-        self.__strict_cache_key = None
-        self.__artifact = None
-        self.__strict_artifact = None
-
     # __update_cache_keys()
     #
     # Updates weak and strict cache keys
