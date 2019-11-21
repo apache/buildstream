@@ -2397,23 +2397,12 @@ class Element(Plugin):
     # Internal method for calling public abstract prepare() method.
     #
     def __prepare(self, sandbox):
-        workspace = self._get_workspace()
-
+        # FIXME:
         # We need to ensure that the prepare() method is only called
         # once in workspaces, because the changes will persist across
         # incremental builds - not desirable, for example, in the case
         # of autotools' `./configure`.
-        if not (workspace and workspace.prepared):
-            self.prepare(sandbox)
-
-            if workspace:
-
-                def mark_workspace_prepared():
-                    workspace.prepared = True
-
-                # Defer workspace.prepared setting until pending batch commands
-                # have been executed.
-                sandbox._callback(mark_workspace_prepared)
+        self.prepare(sandbox)
 
     # __preflight():
     #
