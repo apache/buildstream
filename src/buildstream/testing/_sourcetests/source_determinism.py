@@ -23,7 +23,7 @@ import os
 import pytest
 
 from buildstream import _yaml
-from .._utils.site import HAVE_SANDBOX
+from .._utils.site import HAVE_SANDBOX, CASD_SEPARATE_USER
 from .. import create_repo
 from .. import cli  # pylint: disable=unused-import
 from .utils import kind  # pylint: disable=unused-import
@@ -101,4 +101,9 @@ def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
             os.umask(old_umask)
             cli.remove_artifact_from_cache(project, element_name)
 
-    assert get_value_for_umask(0o022) == get_value_for_umask(0o077)
+    if CASD_SEPARATE_USER:
+        # buildbox-casd running as separate user of the same group can't
+        # function in a test environment with a too restrictive umask.
+        assert get_value_for_umask(0o002) == get_value_for_umask(0o007)
+    else:
+        assert get_value_for_umask(0o022) == get_value_for_umask(0o077)

@@ -6,7 +6,7 @@ import pytest
 
 from buildstream import _yaml
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream.testing._utils.site import HAVE_SANDBOX, CASD_SEPARATE_USER
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
@@ -69,4 +69,9 @@ def test_deterministic_source_local(cli, tmpdir, datafiles):
         finally:
             cli.remove_artifact_from_cache(project, element_name)
 
-    assert get_value_for_mask(0o7777) == get_value_for_mask(0o0700)
+    if CASD_SEPARATE_USER:
+        # buildbox-casd running as separate user of the same group can't
+        # read files with too restrictive permissions.
+        assert get_value_for_mask(0o7777) == get_value_for_mask(0o0770)
+    else:
+        assert get_value_for_mask(0o7777) == get_value_for_mask(0o0700)
