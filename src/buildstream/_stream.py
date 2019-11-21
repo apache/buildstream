@@ -29,6 +29,7 @@ import tempfile
 from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
 from collections import deque
+from typing import List, Tuple
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
@@ -46,6 +47,7 @@ from ._scheduler import (
     Notification,
     JobStatus,
 )
+from .element import Element
 from ._pipeline import Pipeline, PipelineSelection
 from ._profile import Topics, PROFILER
 from ._state import State
@@ -1125,6 +1127,64 @@ class Stream:
     #                    Private Methods                        #
     #############################################################
 
+    # __load_elements_from_targets
+    #
+    # Given the usual set of target element names/artifact refs, load
+    # the `Element` objects required to describe the selection.
+    #
+    # The result is returned as a truple - firstly the loaded normal
+    # elements, secondly the loaded "excepting" elements and lastly
+    # the loaded artifact elements.
+    #
+    # Args:
+    #     targets - The target element names/artifact refs
+    #     except_targets - The names of elements to except
+    #     rewritable - Whether to load the elements in re-writable mode
+    #
+    # Returns:
+    #     ([elements], [except_elements], [artifact_elements])
+    #
+    def __load_elements_from_targets(
+        self, targets: List[str], except_targets: List[str], *, rewritable: bool = False
+    ) -> Tuple[List[Element], List[Element], List[Element]]:
+        names, refs = self._classify_artifacts(targets)
+        loadable = [names, except_targets]
+
+        # Load and filter elements
+        if loadable:
+            elements, except_elements = self._pipeline.load(loadable, rewritable=rewritable)
+        else:
+            elements, except_elements = [], []
+
+        # Load artifacts
+        if refs:
+            artifacts = self._pipeline.load_artifacts(refs)
+        else:
+            artifacts = []
+
+        return elements, except_elements, artifacts
+
+    # __connect_remotes()
+    #
+    # Connect to the source and artifact remotes.
+    #
+    # Args:
+    #     artifact_url - The url of the artifact server to connect to.
+    #     source_url - The url of the source server to connect to.
+    #     use_artifact_config - Whether to use the artifact config.
+    #     use_source_config - Whether to use the source config.
+    #
+    def __connect_remotes(
+        self, artifact_url: str, source_url: str, use_artifact_config: bool, use_source_config: bool
+    ):
+        # ArtifactCache.setup_remotes expects all projects to be fully loaded
+        for project in self._context.get_projects():
+            project.ensure_fully_loaded()
+
+        # Connect to remote caches, this needs to be done before resolving element state
+        self._artifacts.setup_remotes(use_config=use_artifact_config, remote_url=artifact_url)
+        self._sourcecache.setup_remotes(use_config=use_source_config, remote_url=source_url)
+
     # _load_tracking()
     #
     # A variant of _load() to be used when the elements should be used
@@ -1146,20 +1206,16 @@ class Stream:
         # We never want to use a PLAN selection when tracking elements
         assert selection != PipelineSelection.PLAN
 
+        elements, except_elements, artifacts = self.__load_elements_from_targets(
+            targets, except_targets, rewritable=True
+        )
+
         # We can't track artifact refs, since they have no underlying
         # elements or sources to interact with. Abort if the user asks
         # us to do that.
-        _, refs = self._classify_artifacts(targets)
-        if refs:
-            detail = "\n".join(refs)
+        if artifacts:
+            detail = "\n".join(artifact.get_artifact_name() for artifact in artifacts)
             raise ArtifactElementError("Cannot perform this operation with artifact refs:", detail=detail)
-
-        # Actually load our elements
-        loadable = [targets, except_targets]
-        if any(loadable):
-            elements, except_elements = self._pipeline.load(loadable, rewritable=True)
-        else:
-            elements, except_elements = [], []
 
         # Hold on to the targets
         self.targets = elements
@@ -1219,41 +1275,25 @@ class Stream:
         dynamic_plan=False,
         load_refs=False
     ):
+        elements, except_elements, artifacts = self.__load_elements_from_targets(
+            targets, except_targets, rewritable=False
+        )
 
-        # Classify element and artifact strings
-        target_elements, target_artifacts = self._classify_artifacts(targets)
-
-        if target_artifacts:
+        if artifacts:
             if not load_refs:
-                detail = "\n".join(target_artifacts)
+                detail = "\n".join(artifact.get_artifact_name() for artifact in artifacts)
                 raise ArtifactElementError("Cannot perform this operation with artifact refs:", detail=detail)
             if selection in (PipelineSelection.ALL, PipelineSelection.RUN):
                 raise StreamError("Error: '--deps {}' is not supported for artifact refs".format(selection))
 
-        # Load all target elements
-        loadable = [target_elements, except_targets]
-        if any(loadable):
-            elements, except_elements = self._pipeline.load(loadable, rewritable=False)
-        else:
-            elements, except_elements = [], []
-
-        # Load all target artifacts
-        artifacts = self._pipeline.load_artifacts(target_artifacts) if target_artifacts else []
-
-        # Optionally filter out junction elements
         if ignore_junction_targets:
             elements = [e for e in elements if e.get_kind() != "junction"]
 
         # Hold on to the targets
         self.targets = elements + artifacts
 
-        # ArtifactCache.setup_remotes expects all projects to be fully loaded
-        for project in self._context.get_projects():
-            project.ensure_fully_loaded()
-
         # Connect to remote caches, this needs to be done before resolving element state
-        self._artifacts.setup_remotes(use_config=use_artifact_config, remote_url=artifact_remote_url)
-        self._sourcecache.setup_remotes(use_config=use_source_config, remote_url=source_remote_url)
+        self.__connect_remotes(artifact_remote_url, source_remote_url, use_artifact_config, use_source_config)
 
         # Now move on to loading primary selection.
         #
