@@ -188,13 +188,7 @@ def get_timemark(cli, project, element_name, marker):
     "modification", [pytest.param("content"), pytest.param("time"),],
 )
 @pytest.mark.parametrize(
-    "buildtype",
-    [
-        pytest.param("non-incremental"),
-        pytest.param(
-            "incremental", marks=pytest.mark.xfail(reason="incremental workspace builds are not yet supported")
-        ),
-    ],
+    "buildtype", [pytest.param("non-incremental"), pytest.param("incremental"),],
 )
 def test_workspace_build(cli, tmpdir, datafiles, modification, buildtype):
     incremental = buildtype == "incremental"
