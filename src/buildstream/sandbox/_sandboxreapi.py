@@ -43,6 +43,11 @@ class SandboxREAPI(Sandbox):
         # set up virtual dircetory
         vdir = self.get_virtual_directory()
 
+        if not self._has_command(command[0], env):
+            raise SandboxCommandError(
+                "Staged artifacts do not provide command " "'{}'".format(command[0]), reason="missing-command"
+            )
+
         # Ensure working directory exists
         if len(cwd) > 1:
             assert cwd.startswith("/")
