@@ -57,12 +57,12 @@ tests-debian-9:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-93453213
   <<: *tests
 
-tests-fedora-29:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-93453213
-  <<: *tests
-
 tests-fedora-30:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-93453213
+  <<: *tests
+
+tests-fedora-31:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
   <<: *tests
 
 tests-ubuntu-18.04:
@@ -87,7 +87,7 @@ overnight-fedora-30-aarch64:
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-93453213
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
   <<: *tests
   variables:
     BST_FORCE_SANDBOX: "chroot"
@@ -104,7 +104,7 @@ tests-unix:
     - ${TEST_COMMAND}
 
 tests-buildbox:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-93453213
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
   <<: *tests
   variables:
     BST_FORCE_SANDBOX: "buildbox"
@@ -134,7 +134,7 @@ tests-buildbox:
 
 tests-fedora-missing-deps:
   # Ensure that tests behave nicely while missing bwrap and ostree
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-93453213
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
   <<: *tests
 
   script:
@@ -153,7 +153,7 @@ tests-fedora-update-deps:
   # Check if the tests pass after updating requirements to their latest
   # allowed version.
   allow_failure: true
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-93453213
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
   <<: *tests
 
   script:
@@ -167,7 +167,7 @@ tests-fedora-update-deps:
 
 tests-remote-execution:
   allow_failure: true
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-93453213
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
   <<: *tests
   before_script:
     - dnf install -y docker docker-compose
@@ -190,7 +190,7 @@ tests-remote-execution:
     PYTEST_ARGS: "--color=yes --remote-execution"
 
 tests-spawn-multiprocessing-start-method:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:29-master-93453213
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
   <<: *tests
   variables:
     BST_FORCE_START_METHOD: "spawn"
@@ -214,7 +214,7 @@ mypy:
 lint:
   # We can't use the default debian:9 based image here since that comes with
   # Python 3.5, and Black requires Python >= 3.6.
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-93453213
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
   stage: test
 
   before_script:
@@ -311,7 +311,7 @@ docs:
 
 .overnight-tests: &overnight-tests-template
   stage: test
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-93453213
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
   variables:
     BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
     BST_EXT_REF: 0.12.0-173-gbe5ac19#egg=bst_plugins_experimental[ostree,cargo]
@@ -395,8 +395,8 @@ coverage:
   dependencies:
   - tests-centos-7.6
   - tests-debian-9
-  - tests-fedora-29
   - tests-fedora-30
+  - tests-fedora-31
   - tests-fedora-missing-deps
   - tests-fedora-update-deps
   - tests-remote-execution
