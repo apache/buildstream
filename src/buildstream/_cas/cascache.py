@@ -25,23 +25,20 @@ import errno
 import contextlib
 import ctypes
 import multiprocessing
-import shutil
 import signal
-import subprocess
-import tempfile
 import time
 
 import grpc
 
 from .._protos.google.rpc import code_pb2
-from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
-from .._protos.build.buildgrid import local_cas_pb2, local_cas_pb2_grpc
+from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+from .._protos.build.buildgrid import local_cas_pb2
 
 from .. import _signals, utils
 from ..types import FastEnum
 from .._exceptions import CASCacheError
-from .._message import Message, MessageType
 
+from .casdprocessmanager import CASDProcessManager
 from .casremote import _CASBatchRead, _CASBatchUpdate
 
 _BUFFER_SIZE = 65536
@@ -49,8 +46,6 @@ _BUFFER_SIZE = 65536
 
 # Refresh interval for disk usage of local cache in seconds
 _CACHE_USAGE_REFRESH = 5
-
-_CASD_MAX_LOGFILES = 10
 
 
 class CASLogLevel(FastEnum):
@@ -78,53 +73,35 @@ class CASCache:
         os.makedirs(os.path.join(self.casdir, "objects"), exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
 
-        self._casd_channel = None
-        self._casd_cas = None
-        self._local_cas = None
         self._cache_usage_monitor = None
         self._cache_usage_monitor_forbidden = False
 
+        self._casd_process_manager = None
+        self._casd_channel = None
         if casd:
-            # Place socket in global/user temporary directory to avoid hitting
-            # the socket path length limit.
-            self._casd_socket_tempdir = tempfile.mkdtemp(prefix="buildstream")
-            self._casd_socket_path = os.path.join(self._casd_socket_tempdir, "casd.sock")
+            log_dir = os.path.join(self.casdir, "logs")
+            self._casd_process_manager = CASDProcessManager(
+                path, log_dir, log_level, cache_quota, protect_session_blobs
+            )
 
-            casd_args = [utils.get_host_tool("buildbox-casd")]
-            casd_args.append("--bind=unix:" + self._casd_socket_path)
-            casd_args.append("--log-level=" + log_level.value)
-
-            if cache_quota is not None:
-                casd_args.append("--quota-high={}".format(int(cache_quota)))
-                casd_args.append("--quota-low={}".format(int(cache_quota / 2)))
-
-                if protect_session_blobs:
-                    casd_args.append("--protect-session-blobs")
-
-            casd_args.append(path)
-
-            self._casd_start_time = time.time()
-            self.casd_logfile = self._rotate_and_get_next_logfile()
-
-            with open(self.casd_logfile, "w") as logfile_fp:
-                # Block SIGINT on buildbox-casd, we don't need to stop it
-                # The frontend will take care of it if needed
-                with _signals.blocked([signal.SIGINT], ignore=False):
-                    self._casd_process = subprocess.Popen(
-                        casd_args, cwd=path, stdout=logfile_fp, stderr=subprocess.STDOUT
-                    )
-
-            self._cache_usage_monitor = _CASCacheUsageMonitor(self)
-        else:
-            self._casd_process = None
+            self._casd_channel = self._casd_process_manager.create_channel()
+            self._cache_usage_monitor = _CASCacheUsageMonitor(self._casd_channel)
 
     def __getstate__(self):
+        # Note that we can't use jobpickler's
+        # 'get_state_for_child_job_pickling' protocol here, since CASCache's
+        # are passed to subprocesses other than child jobs. e.g.
+        # test.utils.ArtifactShare.
+
         state = self.__dict__.copy()
 
-        # Popen objects are not pickle-able, however, child processes only
-        # need the information whether a casd subprocess was started or not.
-        assert "_casd_process" in state
-        state["_casd_process"] = bool(self._casd_process)
+        # Child jobs do not need to manage the CASD process, they only need a
+        # connection to CASD.
+        if state["_casd_process_manager"] is not None:
+            state["_casd_process_manager"] = None
+            # In order to be pickle-able, the connection must be in the initial
+            # 'closed' state.
+            state["_casd_channel"] = self._casd_process_manager.create_channel()
 
         # The usage monitor is not pickle-able, but we also don't need it in
         # child processes currently. Make sure that if this changes, we get a
@@ -136,43 +113,21 @@ class CASCache:
 
         return state
 
-    def _init_casd(self):
-        assert self._casd_process, "CASCache was instantiated without buildbox-casd"
-
-        if not self._casd_channel:
-            while not os.path.exists(self._casd_socket_path):
-                # casd is not ready yet, try again after a 10ms delay,
-                # but don't wait for more than 15s
-                if time.time() > self._casd_start_time + 15:
-                    raise CASCacheError("Timed out waiting for buildbox-casd to become ready")
-
-                time.sleep(0.01)
-
-            self._casd_channel = grpc.insecure_channel("unix:" + self._casd_socket_path)
-            self._casd_cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self._casd_channel)
-            self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
-
-            # Call GetCapabilities() to establish connection to casd
-            capabilities = remote_execution_pb2_grpc.CapabilitiesStub(self._casd_channel)
-            capabilities.GetCapabilities(remote_execution_pb2.GetCapabilitiesRequest())
-
-    # _get_cas():
+    # get_cas():
     #
     # Return ContentAddressableStorage stub for buildbox-casd channel.
     #
-    def _get_cas(self):
-        if not self._casd_cas:
-            self._init_casd()
-        return self._casd_cas
+    def get_cas(self):
+        assert self._casd_channel, "CASCache was created without a channel"
+        return self._casd_channel.get_cas()
 
-    # _get_local_cas():
+    # get_local_cas():
     #
     # Return LocalCAS stub for buildbox-casd channel.
     #
-    def _get_local_cas(self):
-        if not self._local_cas:
-            self._init_casd()
-        return self._local_cas
+    def get_local_cas(self):
+        assert self._casd_channel, "CASCache was created without a channel"
+        return self._casd_channel.get_local_cas()
 
     # preflight():
     #
@@ -184,24 +139,13 @@ class CASCache:
         if not (os.path.isdir(headdir) and os.path.isdir(objdir)):
             raise CASCacheError("CAS repository check failed for '{}'".format(self.casdir))
 
-    # has_open_grpc_channels():
-    #
-    # Return whether there are gRPC channel instances. This is used to safeguard
-    # against fork() with open gRPC channels.
-    #
-    def has_open_grpc_channels(self):
-        return bool(self._casd_channel)
-
     # close_grpc_channels():
     #
     # Close the casd channel if it exists
     #
     def close_grpc_channels(self):
         if self._casd_channel:
-            self._local_cas = None
-            self._casd_cas = None
             self._casd_channel.close()
-            self._casd_channel = None
 
     # release_resources():
     #
@@ -211,10 +155,10 @@ class CASCache:
         if self._cache_usage_monitor:
             self._cache_usage_monitor.release_resources()
 
-        if self._casd_process:
+        if self._casd_process_manager:
             self.close_grpc_channels()
-            self._terminate_casd_process(messenger)
-            shutil.rmtree(self._casd_socket_tempdir)
+            self._casd_process_manager.release_resources(messenger)
+            self._casd_process_manager = None
 
     # contains():
     #
@@ -255,7 +199,7 @@ class CASCache:
     # Returns: True if the directory is available in the local cache
     #
     def contains_directory(self, digest, *, with_files):
-        local_cas = self._get_local_cas()
+        local_cas = self.get_local_cas()
 
         request = local_cas_pb2.FetchTreeRequest()
         request.root_digest.CopyFrom(digest)
@@ -414,7 +358,7 @@ class CASCache:
 
             request.path.append(path)
 
-            local_cas = self._get_local_cas()
+            local_cas = self.get_local_cas()
 
             response = local_cas.CaptureFiles(request)
 
@@ -441,7 +385,7 @@ class CASCache:
     #     (Digest): The digest of the imported directory
     #
     def import_directory(self, path):
-        local_cas = self._get_local_cas()
+        local_cas = self.get_local_cas()
 
         request = local_cas_pb2.CaptureTreeRequest()
         request.path.append(path)
@@ -561,7 +505,7 @@ class CASCache:
     # Returns: List of missing Digest objects
     #
     def remote_missing_blobs(self, remote, blobs):
-        cas = self._get_cas()
+        cas = self.get_cas()
         instance_name = remote.local_cas_instance_name
 
         missing_blobs = dict()
@@ -700,30 +644,6 @@ class CASCache:
     ################################################
     #             Local Private Methods            #
     ################################################
-
-    # _rotate_and_get_next_logfile()
-    #
-    # Get the logfile to use for casd
-    #
-    # This will ensure that we don't create too many casd log files by
-    # rotating the logs and only keeping _CASD_MAX_LOGFILES logs around.
-    #
-    # Returns:
-    #   (str): the path to the log file to use
-    #
-    def _rotate_and_get_next_logfile(self):
-        log_dir = os.path.join(self.casdir, "logs")
-
-        try:
-            existing_logs = sorted(os.listdir(log_dir))
-        except FileNotFoundError:
-            os.makedirs(log_dir)
-        else:
-            while len(existing_logs) >= _CASD_MAX_LOGFILES:
-                logfile_to_delete = existing_logs.pop(0)
-                os.remove(os.path.join(log_dir, logfile_to_delete))
-
-        return os.path.join(log_dir, str(self._casd_start_time) + ".log")
 
     def _refpath(self, ref):
         return os.path.join(self.casdir, "refs", "heads", ref)
@@ -993,67 +913,6 @@ class CASCache:
         # Upload any blobs missing on the server
         self.send_blobs(remote, missing_blobs)
 
-    # _terminate_casd_process()
-    #
-    # Terminate the buildbox casd process
-    #
-    # Args:
-    #   messenger (buildstream._messenger.Messenger): Messenger to forward information to the frontend
-    #
-    def _terminate_casd_process(self, messenger=None):
-        return_code = self._casd_process.poll()
-
-        if return_code is not None:
-            # buildbox-casd is already dead
-            self._casd_process = None
-
-            if messenger:
-                messenger.message(
-                    Message(
-                        MessageType.BUG,
-                        "Buildbox-casd died during the run. Exit code: {}, Logs: {}".format(
-                            return_code, self.casd_logfile
-                        ),
-                    )
-                )
-            return
-
-        self._casd_process.terminate()
-
-        try:
-            # Don't print anything if buildbox-casd terminates quickly
-            return_code = self._casd_process.wait(timeout=0.5)
-        except subprocess.TimeoutExpired:
-            if messenger:
-                cm = messenger.timed_activity("Terminating buildbox-casd")
-            else:
-                cm = contextlib.suppress()
-            with cm:
-                try:
-                    return_code = self._casd_process.wait(timeout=15)
-                except subprocess.TimeoutExpired:
-                    self._casd_process.kill()
-                    self._casd_process.wait(timeout=15)
-
-                    if messenger:
-                        messenger.message(
-                            Message(MessageType.WARN, "Buildbox-casd didn't exit in time and has been killed")
-                        )
-                    self._casd_process = None
-                    return
-
-        if return_code != 0 and messenger:
-            messenger.message(
-                Message(
-                    MessageType.BUG,
-                    "Buildbox-casd didn't exit cleanly. Exit code: {}, Logs: {}".format(
-                        return_code, self.casd_logfile
-                    ),
-                )
-            )
-
-        self._casd_process = None
-
     # get_cache_usage():
     #
     # Fetches the current usage of the CAS local cache.
@@ -1065,16 +924,16 @@ class CASCache:
         assert not self._cache_usage_monitor_forbidden
         return self._cache_usage_monitor.get_cache_usage()
 
-    # get_casd_process()
+    # get_casd_process_manager()
     #
     # Get the underlying buildbox-casd process
     #
     # Returns:
     #   (subprocess.Process): The casd process that is used for the current cascache
     #
-    def get_casd_process(self):
-        assert self._casd_process is not None, "This should only be called with a running buildbox-casd process"
-        return self._casd_process
+    def get_casd_process_manager(self):
+        assert self._casd_process_manager is not None, "Only call this with a running buildbox-casd process"
+        return self._casd_process_manager
 
 
 # _CASCacheUsage
@@ -1115,8 +974,8 @@ class _CASCacheUsage:
 # buildbox-casd.
 #
 class _CASCacheUsageMonitor:
-    def __init__(self, cas):
-        self.cas = cas
+    def __init__(self, connection):
+        self._connection = connection
 
         # Shared memory (64-bit signed integer) for current disk usage and quota
         self._disk_usage = multiprocessing.Value(ctypes.c_longlong, -1)
@@ -1124,7 +983,7 @@ class _CASCacheUsageMonitor:
 
         # multiprocessing.Process will fork without exec on Unix.
         # This can't be allowed with background threads or open gRPC channels.
-        assert utils._is_single_threaded() and not cas.has_open_grpc_channels()
+        assert utils._is_single_threaded() and connection.is_closed()
 
         # Block SIGINT, we don't want to kill the process when we interrupt the frontend
         # and this process if very lightweight.
@@ -1156,7 +1015,7 @@ class _CASCacheUsageMonitor:
 
         disk_usage = self._disk_usage
         disk_quota = self._disk_quota
-        local_cas = self.cas._get_local_cas()
+        local_cas = self._connection.get_local_cas()
 
         while True:
             try:

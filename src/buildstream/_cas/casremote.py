@@ -53,7 +53,7 @@ class CASRemote(BaseRemote):
     # be called outside of init().
     #
     def _configure_protocols(self):
-        local_cas = self.cascache._get_local_cas()
+        local_cas = self.cascache.get_local_cas()
         request = local_cas_pb2.GetInstanceNameForRemoteRequest()
         request.url = self.spec.url
         if self.spec.instance_name:
@@ -113,7 +113,7 @@ class _CASBatchRead:
         if not self._requests:
             return
 
-        local_cas = self._remote.cascache._get_local_cas()
+        local_cas = self._remote.cascache.get_local_cas()
 
         for request in self._requests:
             batch_response = local_cas.FetchMissingBlobs(request)
@@ -167,7 +167,7 @@ class _CASBatchUpdate:
         if not self._requests:
             return
 
-        local_cas = self._remote.cascache._get_local_cas()
+        local_cas = self._remote.cascache.get_local_cas()
 
         for request in self._requests:
             batch_response = local_cas.UploadMissingBlobs(request)
