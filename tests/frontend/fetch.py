@@ -60,16 +60,8 @@ def test_fetch_consistency_error(cli, datafiles):
 def test_fetch_consistency_bug(cli, datafiles):
     project = str(datafiles)
 
-    # FIXME:
-    #
-    #    When a plugin raises an unhandled exception at load
-    #    time, as is the case when running Source.get_consistency()
-    #    for a fetch command, we could report this to the user
-    #    more gracefully as a BUG message.
-    #
     result = cli.run(project=project, args=["source", "fetch", "bug.bst"])
-    assert result.exc is not None
-    assert str(result.exc) == "Something went terribly wrong"
+    result.assert_main_error(ErrorDomain.PLUGIN, "source-bug")
 
 
 @pytest.mark.datafiles(DATA_DIR)

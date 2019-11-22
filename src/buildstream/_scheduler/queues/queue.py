@@ -181,10 +181,7 @@ class Queue:
 
         # Obtain immediate element status
         for elt in elts:
-            if self._required_element_check and not elt._is_required():
-                elt._set_required_callback(self._enqueue_element)
-            else:
-                self._enqueue_element(elt)
+            self._enqueue_element(elt)
 
     # dequeue()
     #
@@ -240,13 +237,6 @@ class Queue:
             )
             for element in ready
         ]
-
-    # set_required_element_check()
-    #
-    # This ensures that, for the first non-track queue, we must check
-    # whether elements are required before enqueuing them
-    def set_required_element_check(self):
-        self._required_element_check = True
 
     # any_failed_elements()
     #
