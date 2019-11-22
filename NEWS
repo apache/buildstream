@@ -5,16 +5,19 @@
 CLI
 ---
 
-  o BREAKING CHANGE: `bst build` no longer accepts any options related to
-    tracking. Please use `bst source track` separately prior to running
-    `bst build`, if you need similar functionality. The full list of removed
-    options is as follows:
+  o BREAKING CHANGE: Commands no longer accept any options related to
+    tracking. Please use `bst source track` separately prior to
+    running commands, if you need similar functionality. The full list
+    of removed options is as follows:
 
-      * `--track`
-      * `--track-all`
-      * `--track-except`
-      * `--track-cross-junctions` / `-J`
-      * `--track-save`
+      * `bst build --track`
+      * `bst build --track-all`
+      * `bst build --track-except`
+      * `bst build --track-cross-junctions` / `bst build -J`
+      * `bst build --track-save`
+      * `bst source fetch --track`
+      * `bst source fetch --track-cross-junctions` / `bst source fetch -J`
+      * `bst workspace open --track`
 
 API
 ---

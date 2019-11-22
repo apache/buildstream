@@ -262,7 +262,6 @@ class Element(Plugin):
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
         self.__assemble_scheduled = False  # Element is scheduled to be assembled
         self.__assemble_done = False  # Element is assembled
-        self.__tracking_scheduled = False  # Sources are scheduled to be tracked
         self.__pull_done = False  # Whether pull was attempted
         self.__cached_successfully = None  # If the Element is known to be successfully cached
         self.__source_cached = None  # If the sources are known to be successfully cached
@@ -290,7 +289,6 @@ class Element(Plugin):
         self.__batch_prepare_assemble_collect = None  # type: Optional[str]
 
         # Callbacks
-        self.__required_callback = None  # Callback to Queues
         self.__can_query_cache_callback = None  # Callback to PullQueue/FetchQueue
         self.__buildable_callback = None  # Callback to BuildQueue
 
@@ -1252,7 +1250,7 @@ class Element(Plugin):
     # - _update_artifact_state()
     #   - Computes the state of the element's artifact using the
     #     cache key.
-    # - __schedule_assembly_when_necessary()
+    # - _schedule_assembly_when_necessary()
     #   - Schedules assembly of an element, iff its current state
     #     allows/necessitates it
     # - __update_cache_key_non_strict()
@@ -1330,43 +1328,11 @@ class Element(Plugin):
         _, display_key, _ = self._get_display_key()
         return display_key
 
-    # _schedule_tracking():
-    #
-    # Force an element state to be inconsistent. Any sources appear to be
-    # inconsistent.
-    #
-    # This is used across the pipeline in sessions where the
-    # elements in question are going to be tracked, causing the
-    # pipeline to rebuild safely by ensuring cache key recalculation
-    # and reinterrogation of element state after tracking of elements
-    # succeeds.
-    #
-    # This method should return the value of `__tracking_scheduled` to report
-    # to callers that the element was marked for tracking.
-    #
-    # If `__tracking_scheduled` is not already determined then set it to `True`
-    # if at least one source advertises that it can be tracked.
-    #
-    # Returns:
-    #    (bool): value of the `__tracking_scheduled` attribute
-    #
-    def _schedule_tracking(self) -> bool:
-        # if the tracking schedule is already determined then this can be skipped
-        if not self.__tracking_scheduled:
-            # Tracking does not make sense in cases where no sources can be tracked.
-            if any(source._is_trackable() for source in self.__sources):
-                self.__tracking_scheduled = True
-        return self.__tracking_scheduled
-
     # _tracking_done():
     #
     # This is called in the main process after the element has been tracked
     #
     def _tracking_done(self):
-        assert self.__tracking_scheduled
-
-        self.__tracking_scheduled = False
-
         # Tracking may change the sources' refs, and therefore the
         # source state. We need to update source state.
         self.__update_source_state()
@@ -1519,34 +1485,6 @@ class Element(Plugin):
         # Ensure deterministic owners of sources at build time
         vdirectory.set_deterministic_user()
 
-    # _set_required():
-    #
-    # Mark this element and its runtime dependencies as required.
-    # This unblocks pull/fetch/build.
-    #
-    def _set_required(self):
-        if self.__required:
-            # Already done
-            return
-
-        self.__required = True
-
-        # Request artifacts of runtime dependencies
-        for dep in self.dependencies(Scope.RUN, recurse=False):
-            dep._set_required()
-
-        # When an element becomes required, it must be assembled for
-        # the current pipeline. `__schedule_assembly_when_necessary()`
-        # will abort if some other state prevents it from being built,
-        # and changes to such states will cause re-scheduling, so this
-        # is safe.
-        self.__schedule_assembly_when_necessary()
-
-        # Callback to the Queue
-        if self.__required_callback is not None:
-            self.__required_callback(self)
-            self.__required_callback = None
-
     # _is_required():
     #
     # Returns whether this element has been marked as required.
@@ -1592,9 +1530,6 @@ class Element(Plugin):
             # We're not processing
             not processing
             and
-            # We're required for the current build
-            self._is_required()
-            and
             # We have figured out the state of our artifact
             self.__artifact
             and
@@ -1602,12 +1537,12 @@ class Element(Plugin):
             not self._cached()
         )
 
-    # __schedule_assembly_when_necessary():
+    # _schedule_assembly_when_necessary():
     #
     # This is called in the main process before the element is assembled
     # in a subprocess.
     #
-    def __schedule_assembly_when_necessary(self):
+    def _schedule_assembly_when_necessary(self):
         # FIXME: We could reduce the number of function calls a bit by
         # factoring this out of this method (and checking whether we
         # should schedule at the calling end).
@@ -1621,7 +1556,7 @@ class Element(Plugin):
 
         # Requests artifacts of build dependencies
         for dep in self.dependencies(Scope.BUILD, recurse=False):
-            dep._set_required()
+            dep._schedule_assembly_when_necessary()
 
         # Once we schedule an element for assembly, we know that our
         # build dependencies have strong cache keys, so we can update
@@ -1885,7 +1820,7 @@ class Element(Plugin):
 
         # We may not have actually pulled an artifact - the pull may
         # have failed. We might therefore need to schedule assembly.
-        self.__schedule_assembly_when_necessary()
+        self._schedule_assembly_when_necessary()
         # If we've finished pulling, an artifact might now exist
         # locally, so we might need to update a non-strict strong
         # cache key.
@@ -2282,22 +2217,6 @@ class Element(Plugin):
         else:
             return True
 
-    # _set_required_callback()
-    #
-    #
-    # Notify the pull/fetch/build queue that the element is potentially
-    # ready to be processed.
-    #
-    # _Set the _required_callback - the _required_callback is invoked when an
-    # element is marked as required. This informs us that the element needs to
-    # either be pulled or fetched + built.
-    #
-    # Args:
-    #    callback (callable) - The callback function
-    #
-    def _set_required_callback(self, callback):
-        self.__required_callback = callback
-
     # _set_can_query_cache_callback()
     #
     # Notify the pull/fetch queue that the element is potentially
@@ -2406,11 +2325,6 @@ class Element(Plugin):
         assert "_Element__buildable_callback" in state
         state["_Element__buildable_callback"] = None
 
-        # This callback is not even read in the child process, so delete it.
-        # If this assumption is invalidated, we will get an attribute error to
-        # let us know, and we will need to update accordingly.
-        del state["_Element__required_callback"]
-
         return self.__meta_kind, state
 
     def _walk_artifact_files(self):
@@ -2450,10 +2364,6 @@ class Element(Plugin):
     # from the workspace, is a component of the element's cache keys.
     #
     def __update_source_state(self):
-
-        # Cannot resolve source state until tracked
-        if self.__tracking_scheduled:
-            return
 
         old_consistency = self.__consistency
         self.__consistency = Consistency.CACHED
@@ -3225,7 +3135,7 @@ class Element(Plugin):
     # to this element.
     #
     # If the state changes, this will subsequently call
-    # `self.__schedule_assembly_when_necessary()` to schedule assembly if it becomes
+    # `self._schedule_assembly_when_necessary()` to schedule assembly if it becomes
     # possible.
     #
     # Element.__update_cache_keys() must be called before this to have
@@ -3241,7 +3151,7 @@ class Element(Plugin):
         if not context.get_strict() and not self.__artifact:
             # We've calculated the weak_key, so instantiate artifact instance member
             self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
-            self.__schedule_assembly_when_necessary()
+            self._schedule_assembly_when_necessary()
 
         if not self.__strict_cache_key:
             return
@@ -3253,7 +3163,7 @@ class Element(Plugin):
 
             if context.get_strict():
                 self.__artifact = self.__strict_artifact
-                self.__schedule_assembly_when_necessary()
+                self._schedule_assembly_when_necessary()
             else:
                 self.__update_cache_key_non_strict()
 

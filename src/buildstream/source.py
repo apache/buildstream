@@ -170,7 +170,7 @@ from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
 from .types import Consistency, SourceRef, Union, List
-from ._exceptions import BstError, ImplError, ErrorDomain
+from ._exceptions import BstError, ImplError, PluginError, ErrorDomain
 from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage
 from ._cachekey import generate_key
@@ -763,7 +763,20 @@ class Source(Plugin):
             # Source consistency interrogations are silent.
             context = self._get_context()
             with context.messenger.silence():
-                self.__consistency = self.get_consistency()  # pylint: disable=assignment-from-no-return
+                try:
+                    self.__consistency = self.get_consistency()  # pylint: disable=assignment-from-no-return
+                except SourceError:
+                    # SourceErrors should be preserved so that the
+                    # plugin can communicate real error cases.
+                    raise
+                except Exception as err:  # pylint: disable=broad-except
+                    # Generic errors point to bugs in the plugin, so
+                    # we need to catch them and make sure they do not
+                    # cause stacktraces
+                    raise PluginError(
+                        "Source plugin '{}' failed to compute source consistency: {}".format(self.get_kind(), err),
+                        reason="source-bug",
+                    )
 
                 # Give the Source an opportunity to validate the cached
                 # sources as soon as the Source becomes Consistency.CACHED.
