@@ -1,7 +1,7 @@
 include:
   - template: Code-Quality.gitlab-ci.yml
 
-image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-93453213
+image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-master-97554983
 
 cache:
   key: "$CI_JOB_NAME-"
@@ -55,6 +55,10 @@ variables:
 
 tests-debian-9:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-93453213
+  <<: *tests
+
+tests-debian-10:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-master-97554983
   <<: *tests
 
 tests-fedora-30:
@@ -395,6 +399,7 @@ coverage:
   dependencies:
   - tests-centos-7.6
   - tests-debian-9
+  - tests-debian-10
   - tests-fedora-30
   - tests-fedora-31
   - tests-fedora-missing-deps
