@@ -1,6 +1,7 @@
 include:
   - template: Code-Quality.gitlab-ci.yml
   - template: License-Management.gitlab-ci.yml
+  - template: SAST.gitlab-ci.yml
 
 image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-master-97554983
 
@@ -15,6 +16,8 @@ stages:
   - publish
 
 variables:
+  SAST_DISABLE_DIND: "true"
+  SAST_GOSEC_LEVEL: 2
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   PYTEST_ARGS: "--color=yes --integration -n 2"
