@@ -1,5 +1,6 @@
 include:
   - template: Code-Quality.gitlab-ci.yml
+  - template: Dependency-Scanning.gitlab-ci.yml
   - template: License-Management.gitlab-ci.yml
   - template: SAST.gitlab-ci.yml
 
@@ -16,6 +17,7 @@ stages:
   - publish
 
 variables:
+  DS_DISABLE_DIND: "true"
   SAST_DISABLE_DIND: "true"
   SAST_GOSEC_LEVEL: 2
   PYTEST_ADDOPTS: "--color=yes"
