@@ -15,6 +15,7 @@ stages:
   - publish
 
 variables:
+  CI_DEBUG_TRACE: "true"
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   PYTEST_ARGS: "--color=yes --integration -n 2"
