@@ -28,8 +28,7 @@ variables:
   COVERAGE_PREFIX: "${CI_JOB_NAME}."
 
 before_script:
-  - cat /etc/os-release
-  - apt-get update && apt-get install -y cython cython3
+  - pip install cython
 
 #####################################################
 #                    Test stage                     #
