@@ -18,6 +18,7 @@ CLI
       * `bst source fetch --track`
       * `bst source fetch --track-cross-junctions` / `bst source fetch -J`
       * `bst workspace open --track`
+      * `bst workspace reset --track`
 
 API
 ---
