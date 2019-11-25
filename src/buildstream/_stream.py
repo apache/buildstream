@@ -172,6 +172,7 @@ class Stream:
 
         # We can now launch another async
         self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
         self._connect_signals()
         self._start_listening()
         self.loop.set_exception_handler(self._handle_exception)

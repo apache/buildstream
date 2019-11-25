@@ -235,6 +235,10 @@ class Scheduler:
         failed = any(queue.any_failed_elements() for queue in self.queues)
         self.loop = None
 
+        # Unset the global event loop, if subprocessed
+        if subprocessed:
+            asyncio.set_event_loop_policy(None)
+
         # Notify that the loop has been reset
         self._notify_front(Notification(NotificationType.RUNNING))
 
