@@ -57,398 +57,406 @@ variables:
     paths:
     - .coverage-reports
 
-tests-debian-9:
+test-stuff:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-93453213
-  <<: *tests
-
-tests-debian-10:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-master-97554983
-  <<: *tests
-
-tests-fedora-30:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-93453213
-  <<: *tests
-
-tests-fedora-31:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
-  <<: *tests
-
-tests-ubuntu-18.04:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-master-93453213
-  <<: *tests
-
-tests-centos-7.6:
-  <<: *tests
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.6.1810-master-93453213
-
-overnight-fedora-30-aarch64:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:aarch64-30-master-59168197
-  tags:
-    - aarch64
-  <<: *tests
-  # We need to override the exclusion from the template
-  # in order to run on schedules
-  except: []
-  only:
-  - schedules
-
-tests-unix:
-  # Use fedora here, to a) run a test on fedora and b) ensure that we
-  # can get rid of ostree - this is not possible with debian-8
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
-  <<: *tests
-  variables:
-    BST_FORCE_SANDBOX: "chroot"
-
-  script:
-
-    # We remove the Bubblewrap and OSTree packages here so that we catch any
-    # codepaths that try to use them. Removing OSTree causes fuse-libs to
-    # disappear unless we mark it as user-installed.
-    - dnf mark install fuse-libs systemd-udev
-    - dnf erase -y bubblewrap ostree
-
-    # Since the unix platform is required to run as root, no user change required
-    - ${TEST_COMMAND}
-
-tests-buildbox:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
-  <<: *tests
-  variables:
-    BST_FORCE_SANDBOX: "buildbox"
-
-  script:
-
-    - dnf install -y fuse3
-
-    # Before buildbox is a first class citizen we need a good install story for users and this test
-    # should mirror that story, for now we build in the test as it is quick and easy.
-
-    # Build and install buildbox
-    - dnf install -y fuse3-devel glibc-static grpc-plugins grpc-devel protobuf-devel cmake gcc gcc-c++ libuuid-devel 
-    - git clone https://gitlab.com/BuildGrid/buildbox/buildbox-fuse.git
-    - cd buildbox-fuse
-    # Pin a specific commit so that any changes to buildbox do not result in unexpected/unannounced buildstream failures
-    - git checkout cdd2b00842c39a8f7162c2ae55bf2cefb925e339
-    - cmake -B build
-    - cmake --build build
-    - cmake --build build --target install
-    - cd ..
-
-    - useradd -Um buildstream
-    - chown -R buildstream:buildstream .
-
-    - su buildstream -c "${TEST_COMMAND}"
-
-tests-fedora-missing-deps:
-  # Ensure that tests behave nicely while missing bwrap and ostree
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
-  <<: *tests
-
-  script:
-    # We remove the Bubblewrap and OSTree packages here so that we catch any
-    # codepaths that try to use them. Removing OSTree causes fuse-libs to
-    # disappear unless we mark it as user-installed.
-    - dnf mark install fuse-libs systemd-udev
-    - dnf erase -y bubblewrap ostree
-
-    - useradd -Um buildstream
-    - chown -R buildstream:buildstream .
-
-    - ${TEST_COMMAND}
-
-tests-fedora-update-deps:
-  # Check if the tests pass after updating requirements to their latest
-  # allowed version.
-  allow_failure: true
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
-  <<: *tests
-
   script:
     - useradd -Um buildstream
     - chown -R buildstream:buildstream .
+    - su buildstream -c "BST_FORCE_SESSION_REBUILD=yes tox -e docs"
+    - git diff
 
-    - make --always-make --directory requirements
-    - cat requirements/*.txt
+# tests-debian-9:
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-93453213
+#   <<: *tests
 
-    - su buildstream -c "${TEST_COMMAND}"
+# tests-debian-10:
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-master-97554983
+#   <<: *tests
 
-tests-remote-execution:
-  allow_failure: true
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
-  <<: *tests
-  before_script:
-    - dnf install -y docker docker-compose
-    - docker-compose --file ${COMPOSE_MANIFEST} up --detach
-  after_script:
-    - docker-compose --file ${COMPOSE_MANIFEST} stop
-    - docker-compose --file ${COMPOSE_MANIFEST} logs
-    - docker-compose --file ${COMPOSE_MANIFEST} down
-  services:
-    - docker:stable-dind
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_DRIVER: overlay2
-    # Required to be able to connect to the docker daemon. See https://gitlab.com/gitlab-org/gitlab-runner/issues/4501
-    DOCKER_TLS_CERTDIR: ""
-    COMPOSE_MANIFEST: .gitlab-ci/buildgrid-compose.yml
-    ARTIFACT_CACHE_SERVICE: http://docker:50052
-    REMOTE_EXECUTION_SERVICE: http://docker:50051
-    SOURCE_CACHE_SERVICE: http://docker:50052
-    PYTEST_ARGS: "--color=yes --remote-execution"
+# tests-fedora-30:
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-93453213
+#   <<: *tests
 
-tests-spawn-multiprocessing-start-method:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
-  <<: *tests
-  variables:
-    BST_FORCE_START_METHOD: "spawn"
-  script:
-    # FIXME: Until all the tests pass as normal, override which tests will run here.
-    - mkdir -p "${INTEGRATION_CACHE}"
-    - useradd -Um buildstream
-    - chown -R buildstream:buildstream .
-    - su buildstream -c "tox -- ${PYTEST_ARGS} tests/{artifactcache,cachekey,elements,format,frontend,internals,plugins,sourcecache}"
+# tests-fedora-31:
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+#   <<: *tests
 
-# Run type checkers
-mypy:
-  stage: test
+# tests-ubuntu-18.04:
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-master-93453213
+#   <<: *tests
 
-  script:
-  - tox -e mypy
-  except:
-  - schedules
+# tests-centos-7.6:
+#   <<: *tests
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.6.1810-master-93453213
 
-# Lint separately from testing
-lint:
-  # We can't use the default debian:9 based image here since that comes with
-  # Python 3.5, and Black requires Python >= 3.6.
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
-  stage: test
+# overnight-fedora-30-aarch64:
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:aarch64-30-master-59168197
+#   tags:
+#     - aarch64
+#   <<: *tests
+#   # We need to override the exclusion from the template
+#   # in order to run on schedules
+#   except: []
+#   only:
+#   - schedules
 
-  before_script:
-  # Diagnostics
-  - python3 --version
+# tests-unix:
+#   # Use fedora here, to a) run a test on fedora and b) ensure that we
+#   # can get rid of ostree - this is not possible with debian-8
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+#   <<: *tests
+#   variables:
+#     BST_FORCE_SANDBOX: "chroot"
 
-  script:
-  - tox -e format-check,lint
-  except:
-  - schedules
+#   script:
 
-# Catch regressions in native windows support
-tests-win32-master:
-  stage: test
-  variables:
-    LC_ALL: C.UTF-8
-    LANG: C.UTF-8
-  tags:
-  - win32
-  script:
-  - tox -e win32
-  only:
-  - master
+#     # We remove the Bubblewrap and OSTree packages here so that we catch any
+#     # codepaths that try to use them. Removing OSTree causes fuse-libs to
+#     # disappear unless we mark it as user-installed.
+#     - dnf mark install fuse-libs systemd-udev
+#     - dnf erase -y bubblewrap ostree
 
-# Optional test to catch regressions in native windows support on non-master branches
-tests-win32-non-master:
-  stage: test
-  variables:
-    LC_ALL: C.UTF-8
-    LANG: C.UTF-8
-  tags:
-  - win32
-  script:
-  - tox -e win32
-  except:
-  - master
-  when: manual
+#     # Since the unix platform is required to run as root, no user change required
+#     - ${TEST_COMMAND}
 
-tests-wsl-master:
-  stage: test
-  variables:
-    LC_ALL: C.UTF-8
-    LANG: C.UTF-8
-  tags:
-  - wsl
-  before_script:
-  - mount
-  - df -h
-  - PATH=/root/.local/bin:$PATH tox --version
-  script:
-  # Install static buildbox-casd binary
-  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
-  - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
+# tests-buildbox:
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+#   <<: *tests
+#   variables:
+#     BST_FORCE_SANDBOX: "buildbox"
 
-  - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
-  only:
-  - master
+#   script:
 
-tests-wsl-non-master:
-  stage: test
-  variables:
-    LC_ALL: C.UTF-8
-    LANG: C.UTF-8
-  tags:
-  - wsl
-  before_script:
-  - mount
-  - df -h
-  - PATH=/root/.local/bin:$PATH tox --version
-  script:
-  # Install static buildbox-casd binary
-  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
-  - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
+#     - dnf install -y fuse3
 
-  - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
-  when: manual
-  except:
-  - master
+#     # Before buildbox is a first class citizen we need a good install story for users and this test
+#     # should mirror that story, for now we build in the test as it is quick and easy.
 
-# Automatically build documentation for every commit, we want to know
-# if building documentation fails even if we're not deploying it.
-docs:
-  stage: test
-  variables:
-    BST_FORCE_SESSION_REBUILD: 1
-  script:
-  - env BST_SOURCE_CACHE="$(pwd)/cache/integration-cache/sources" tox -e docs
-  - mv doc/build/html public
-  except:
-  - schedules
-  artifacts:
-    paths:
-    - public/
+#     # Build and install buildbox
+#     - dnf install -y fuse3-devel glibc-static grpc-plugins grpc-devel protobuf-devel cmake gcc gcc-c++ libuuid-devel 
+#     - git clone https://gitlab.com/BuildGrid/buildbox/buildbox-fuse.git
+#     - cd buildbox-fuse
+#     # Pin a specific commit so that any changes to buildbox do not result in unexpected/unannounced buildstream failures
+#     - git checkout cdd2b00842c39a8f7162c2ae55bf2cefb925e339
+#     - cmake -B build
+#     - cmake --build build
+#     - cmake --build build --target install
+#     - cd ..
 
-.overnight-tests: &overnight-tests-template
-  stage: test
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
-  variables:
-    BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
-    BST_EXT_REF: 0.12.0-173-gbe5ac19#egg=bst_plugins_experimental[ostree,cargo]
-    FD_SDK_REF: freedesktop-sdk-19.08.3-buildstream2-0-gb66129f8e86acb1b6f35b825607b8e60362773a2
-  before_script:
-  - |
-    mkdir -p "${HOME}/.config"
-    cat <<EOF >"${HOME}/.config/buildstream.conf"
-    scheduler:
-      fetchers: 2
-    EOF
-  - dnf install -y ostree python3-gobject-base
-  - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
-  - pip3 wheel --wheel-dir wheels/ --no-deps .
-  - pip3 install --no-index wheels/*
-  - pip3 install --user -e ${BST_EXT_URL}@${BST_EXT_REF}
-  - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
-  - git -C freedesktop-sdk checkout ${FD_SDK_REF}
-  artifacts:
-    paths:
-    - "${HOME}/.cache/buildstream/logs"
-  only:
-  - schedules
+#     - useradd -Um buildstream
+#     - chown -R buildstream:buildstream .
 
-overnight-tests:
-  <<: *overnight-tests-template
-  script:
-  - make -C freedesktop-sdk
-  tags:
-  - overnight-tests
+#     - su buildstream -c "${TEST_COMMAND}"
 
-overnight-tests-no-cache:
-  <<: *overnight-tests-template
-  script:
-  - sed -i '/artifacts:/,+1 d' freedesktop-sdk/project.conf
-  - make -C freedesktop-sdk
-  tags:
-  - overnight-tests
+# tests-fedora-missing-deps:
+#   # Ensure that tests behave nicely while missing bwrap and ostree
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+#   <<: *tests
 
-#####################################################
-#                    Post stage                     #
-#####################################################
+#   script:
+#     # We remove the Bubblewrap and OSTree packages here so that we catch any
+#     # codepaths that try to use them. Removing OSTree causes fuse-libs to
+#     # disappear unless we mark it as user-installed.
+#     - dnf mark install fuse-libs systemd-udev
+#     - dnf erase -y bubblewrap ostree
 
-analysis:
-  stage: post
-  script:
-  - |
-    pip3 install radon
-    mkdir analysis
+#     - useradd -Um buildstream
+#     - chown -R buildstream:buildstream .
 
-  - |
-    echo "Calculating Maintainability Index"
-    radon mi -s -j src/buildstream > analysis/mi.json
-    radon mi -s src/buildstream
+#     - ${TEST_COMMAND}
 
-  - |
-    echo "Calculating Cyclomatic Complexity"
-    radon cc -a -s -j src/buildstream > analysis/cc.json
-    radon cc -a -s src/buildstream
+# tests-fedora-update-deps:
+#   # Check if the tests pass after updating requirements to their latest
+#   # allowed version.
+#   allow_failure: true
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+#   <<: *tests
 
-  - |
-    echo "Calculating Raw Metrics"
-    radon raw -s -j src/buildstream > analysis/raw.json
-    radon raw -s src/buildstream
+#   script:
+#     - useradd -Um buildstream
+#     - chown -R buildstream:buildstream .
 
-  except:
-  - schedules
-  artifacts:
-    paths:
-    - analysis/
+#     - make --always-make --directory requirements
+#     - cat requirements/*.txt
 
-# Collate coverage reports
-#
-coverage:
-  stage: post
-  coverage: '/TOTAL +\d+ +\d+ +(\d+\.\d+)%/'
-  script:
-    - cp -a .coverage-reports/ ./coverage-sources
-    - tox -e coverage
-    - cp -a .coverage-reports/ ./coverage-report
-  dependencies:
-  - tests-centos-7.6
-  - tests-debian-9
-  - tests-debian-10
-  - tests-fedora-30
-  - tests-fedora-31
-  - tests-fedora-missing-deps
-  - tests-fedora-update-deps
-  - tests-remote-execution
-  - tests-ubuntu-18.04
-  - tests-unix
-  except:
-  - schedules
-  artifacts:
-    paths:
-    - coverage-sources/
-    - coverage-report/
+#     - su buildstream -c "${TEST_COMMAND}"
 
-# Deploy, only for merges which land on master branch.
-#
-pages:
-  stage: publish
-  dependencies:
-  - coverage
-  - docs
-  variables:
-    ACME_DIR: public/.well-known/acme-challenge
-    COVERAGE_DIR: public/coverage
-  script:
-  - mkdir -p ${ACME_DIR}
-    # Required to finish the creation of the Let's Encrypt certificate,
-    # which allows using https://docs.buildstream.build/ for accessing
-    # the documentation.
-  - echo ${ACME_CHALLENGE} > ${ACME_DIR}/$(echo ${ACME_CHALLENGE} | cut -c1-43)
-  - mkdir -p ${COVERAGE_DIR}
-  - cp -a ./coverage-report/ ${COVERAGE_DIR}
-  artifacts:
-    paths:
-    - public/
-  only:
-  #
-  # FIXME:
-  #
-  # Ideally we want to publish to a different subdir of
-  # pages depending on which stable branch we are building here,
-  # not currently automatically supported but can be worked around.
-  #
-  # See https://gitlab.com/gitlab-org/gitlab-ce/issues/35141
-  #
-  - master
-  except:
-  - schedules
+# tests-remote-execution:
+#   allow_failure: true
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+#   <<: *tests
+#   before_script:
+#     - dnf install -y docker docker-compose
+#     - docker-compose --file ${COMPOSE_MANIFEST} up --detach
+#   after_script:
+#     - docker-compose --file ${COMPOSE_MANIFEST} stop
+#     - docker-compose --file ${COMPOSE_MANIFEST} logs
+#     - docker-compose --file ${COMPOSE_MANIFEST} down
+#   services:
+#     - docker:stable-dind
+#   variables:
+#     DOCKER_HOST: tcp://docker:2375
+#     DOCKER_DRIVER: overlay2
+#     # Required to be able to connect to the docker daemon. See https://gitlab.com/gitlab-org/gitlab-runner/issues/4501
+#     DOCKER_TLS_CERTDIR: ""
+#     COMPOSE_MANIFEST: .gitlab-ci/buildgrid-compose.yml
+#     ARTIFACT_CACHE_SERVICE: http://docker:50052
+#     REMOTE_EXECUTION_SERVICE: http://docker:50051
+#     SOURCE_CACHE_SERVICE: http://docker:50052
+#     PYTEST_ARGS: "--color=yes --remote-execution"
+
+# tests-spawn-multiprocessing-start-method:
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+#   <<: *tests
+#   variables:
+#     BST_FORCE_START_METHOD: "spawn"
+#   script:
+#     # FIXME: Until all the tests pass as normal, override which tests will run here.
+#     - mkdir -p "${INTEGRATION_CACHE}"
+#     - useradd -Um buildstream
+#     - chown -R buildstream:buildstream .
+#     - su buildstream -c "tox -- ${PYTEST_ARGS} tests/{artifactcache,cachekey,elements,format,frontend,internals,plugins,sourcecache}"
+
+# # Run type checkers
+# mypy:
+#   stage: test
+
+#   script:
+#   - tox -e mypy
+#   except:
+#   - schedules
+
+# # Lint separately from testing
+# lint:
+#   # We can't use the default debian:9 based image here since that comes with
+#   # Python 3.5, and Black requires Python >= 3.6.
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+#   stage: test
+
+#   before_script:
+#   # Diagnostics
+#   - python3 --version
+
+#   script:
+#   - tox -e format-check,lint
+#   except:
+#   - schedules
+
+# # Catch regressions in native windows support
+# tests-win32-master:
+#   stage: test
+#   variables:
+#     LC_ALL: C.UTF-8
+#     LANG: C.UTF-8
+#   tags:
+#   - win32
+#   script:
+#   - tox -e win32
+#   only:
+#   - master
+
+# # Optional test to catch regressions in native windows support on non-master branches
+# tests-win32-non-master:
+#   stage: test
+#   variables:
+#     LC_ALL: C.UTF-8
+#     LANG: C.UTF-8
+#   tags:
+#   - win32
+#   script:
+#   - tox -e win32
+#   except:
+#   - master
+#   when: manual
+
+# tests-wsl-master:
+#   stage: test
+#   variables:
+#     LC_ALL: C.UTF-8
+#     LANG: C.UTF-8
+#   tags:
+#   - wsl
+#   before_script:
+#   - mount
+#   - df -h
+#   - PATH=/root/.local/bin:$PATH tox --version
+#   script:
+#   # Install static buildbox-casd binary
+#   - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
+#   - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
+
+#   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
+#   only:
+#   - master
+
+# tests-wsl-non-master:
+#   stage: test
+#   variables:
+#     LC_ALL: C.UTF-8
+#     LANG: C.UTF-8
+#   tags:
+#   - wsl
+#   before_script:
+#   - mount
+#   - df -h
+#   - PATH=/root/.local/bin:$PATH tox --version
+#   script:
+#   # Install static buildbox-casd binary
+#   - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
+#   - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
+
+#   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
+#   when: manual
+#   except:
+#   - master
+
+# # Automatically build documentation for every commit, we want to know
+# # if building documentation fails even if we're not deploying it.
+# docs:
+#   stage: test
+#   variables:
+#     BST_FORCE_SESSION_REBUILD: 1
+#   script:
+#   - env BST_SOURCE_CACHE="$(pwd)/cache/integration-cache/sources" tox -e docs
+#   - mv doc/build/html public
+#   except:
+#   - schedules
+#   artifacts:
+#     paths:
+#     - public/
+
+# .overnight-tests: &overnight-tests-template
+#   stage: test
+#   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+#   variables:
+#     BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
+#     BST_EXT_REF: 0.12.0-173-gbe5ac19#egg=bst_plugins_experimental[ostree,cargo]
+#     FD_SDK_REF: freedesktop-sdk-19.08.3-buildstream2-0-gb66129f8e86acb1b6f35b825607b8e60362773a2
+#   before_script:
+#   - |
+#     mkdir -p "${HOME}/.config"
+#     cat <<EOF >"${HOME}/.config/buildstream.conf"
+#     scheduler:
+#       fetchers: 2
+#     EOF
+#   - dnf install -y ostree python3-gobject-base
+#   - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
+#   - pip3 wheel --wheel-dir wheels/ --no-deps .
+#   - pip3 install --no-index wheels/*
+#   - pip3 install --user -e ${BST_EXT_URL}@${BST_EXT_REF}
+#   - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
+#   - git -C freedesktop-sdk checkout ${FD_SDK_REF}
+#   artifacts:
+#     paths:
+#     - "${HOME}/.cache/buildstream/logs"
+#   only:
+#   - schedules
+
+# overnight-tests:
+#   <<: *overnight-tests-template
+#   script:
+#   - make -C freedesktop-sdk
+#   tags:
+#   - overnight-tests
+
+# overnight-tests-no-cache:
+#   <<: *overnight-tests-template
+#   script:
+#   - sed -i '/artifacts:/,+1 d' freedesktop-sdk/project.conf
+#   - make -C freedesktop-sdk
+#   tags:
+#   - overnight-tests
+
+# #####################################################
+# #                    Post stage                     #
+# #####################################################
+
+# analysis:
+#   stage: post
+#   script:
+#   - |
+#     pip3 install radon
+#     mkdir analysis
+
+#   - |
+#     echo "Calculating Maintainability Index"
+#     radon mi -s -j src/buildstream > analysis/mi.json
+#     radon mi -s src/buildstream
+
+#   - |
+#     echo "Calculating Cyclomatic Complexity"
+#     radon cc -a -s -j src/buildstream > analysis/cc.json
+#     radon cc -a -s src/buildstream
+
+#   - |
+#     echo "Calculating Raw Metrics"
+#     radon raw -s -j src/buildstream > analysis/raw.json
+#     radon raw -s src/buildstream
+
+#   except:
+#   - schedules
+#   artifacts:
+#     paths:
+#     - analysis/
+
+# # Collate coverage reports
+# #
+# coverage:
+#   stage: post
+#   coverage: '/TOTAL +\d+ +\d+ +(\d+\.\d+)%/'
+#   script:
+#     - cp -a .coverage-reports/ ./coverage-sources
+#     - tox -e coverage
+#     - cp -a .coverage-reports/ ./coverage-report
+#   dependencies:
+#   - tests-centos-7.6
+#   - tests-debian-9
+#   - tests-debian-10
+#   - tests-fedora-30
+#   - tests-fedora-31
+#   - tests-fedora-missing-deps
+#   - tests-fedora-update-deps
+#   - tests-remote-execution
+#   - tests-ubuntu-18.04
+#   - tests-unix
+#   except:
+#   - schedules
+#   artifacts:
+#     paths:
+#     - coverage-sources/
+#     - coverage-report/
+
+# # Deploy, only for merges which land on master branch.
+# #
+# pages:
+#   stage: publish
+#   dependencies:
+#   - coverage
+#   - docs
+#   variables:
+#     ACME_DIR: public/.well-known/acme-challenge
+#     COVERAGE_DIR: public/coverage
+#   script:
+#   - mkdir -p ${ACME_DIR}
+#     # Required to finish the creation of the Let's Encrypt certificate,
+#     # which allows using https://docs.buildstream.build/ for accessing
+#     # the documentation.
+#   - echo ${ACME_CHALLENGE} > ${ACME_DIR}/$(echo ${ACME_CHALLENGE} | cut -c1-43)
+#   - mkdir -p ${COVERAGE_DIR}
+#   - cp -a ./coverage-report/ ${COVERAGE_DIR}
+#   artifacts:
+#     paths:
+#     - public/
+#   only:
+#   #
+#   # FIXME:
+#   #
+#   # Ideally we want to publish to a different subdir of
+#   # pages depending on which stable branch we are building here,
+#   # not currently automatically supported but can be worked around.
+#   #
+#   # See https://gitlab.com/gitlab-org/gitlab-ce/issues/35141
+#   #
+#   - master
+#   except:
+#   - schedules
