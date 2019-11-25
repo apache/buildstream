@@ -14,8 +14,8 @@ variables:
 
 sources:
 - kind: tar
-  url: gnu:automake-1.16.tar.gz
-  ref: 80da43bb5665596ee389e6d8b64b4f122ea4b92a685b1dbd813cd1f0e0c2d83f
+  url: gnu:automake-1.16.1.tar.gz
+  ref: 608a97523f97db32f1f5d5615c98ca69326ced2054c9f82e65bade7fc4c9dea8
 
 depends:
 - base.bst
