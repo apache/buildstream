@@ -96,18 +96,9 @@ depend on a junction element itself.
 
 .. note::
 
-   BuildStream does not implicitly track junction elements. This means
-   that if we were to invoke: `bst build --track-all ELEMENT` on an element
-   which uses a junction element, the ref of the junction element
-   will not automatically be updated if a more recent version exists.
-
-   Therefore, if you require the most up-to-date version of a subproject,
-   you must explicitly track the junction element by invoking:
-   `bst source track JUNCTION_ELEMENT`.
-
-   Furthermore, elements within the subproject are also not tracked by default.
-   For this, we must specify the `--track-cross-junctions` option. This option
-   must be preceeded by `--track ELEMENT` or `--track-all`.
+   Elements within the subproject are not tracked by default when running
+   `bst source track`. You must specify `--cross-junctions` to the track
+   command to explicitly do it.
 
 
 Sources

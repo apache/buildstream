@@ -177,13 +177,7 @@ def override_completions(orig_args, cmd, cmd_param, args, incomplete):
     # modifying click itself, so just do some weak special casing
     # right here and select which parameters we want to handle specially.
     if isinstance(cmd_param.type, click.Path):
-        if (
-            cmd_param.name == "elements"
-            or cmd_param.name == "element"
-            or cmd_param.name == "except_"
-            or cmd_param.opts == ["--track"]
-            or cmd_param.opts == ["--track-except"]
-        ):
+        if cmd_param.name == "elements" or cmd_param.name == "element" or cmd_param.name == "except_":
             return complete_target(args, incomplete)
         if cmd_param.name == "artifacts" or cmd_param.name == "target":
             return complete_artifact(orig_args, args, incomplete)
@@ -1026,11 +1020,10 @@ def workspace_close(app, remove_dir, all_, elements):
     is_flag=True,
     help="Mark workspace to re-execute configuration steps (if any) on next build. Does not alter workspace contents.",
 )
-@click.option("--track", "track_", is_flag=True, help="Track and fetch the latest source before resetting")
 @click.option("--all", "-a", "all_", is_flag=True, help="Reset all open workspaces")
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def workspace_reset(app, soft, track_, all_, elements):
+def workspace_reset(app, soft, all_, elements):
     """Reset a workspace to its original state"""
 
     # Check that the workspaces in question exist
@@ -1049,7 +1042,7 @@ def workspace_reset(app, soft, track_, all_, elements):
         if all_:
             elements = tuple(element_name for element_name, _ in app.context.get_workspaces().list())
 
-        app.stream.workspace_reset(elements, soft=soft, track_first=track_)
+        app.stream.workspace_reset(elements, soft=soft)
 
 
 ##################################################################
@@ -1437,11 +1430,9 @@ def artifact_delete(app, artifacts, deps):
     type=click.Choice(["none", "plan", "all"]),
     help="The dependencies to fetch",
 )
-@click.option("--track", "track_", is_flag=True, help="Track new source references before fetching")
-@click.option("--track-cross-junctions", "-J", is_flag=True, help="Allow tracking to cross junction boundaries")
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def fetch(app, elements, deps, track_, except_, track_cross_junctions):
+def fetch(app, elements, deps, except_):
     click.echo("This command is now obsolete. Use `bst source fetch` instead.", err=True)
     sys.exit(1)
 

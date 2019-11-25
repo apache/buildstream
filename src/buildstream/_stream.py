@@ -54,7 +54,7 @@ from ._state import State
 from .types import _KeyStrength, _SchedulerErrorAction
 from .plugin import Plugin
 from . import utils, _yaml, _site
-from . import Scope, Consistency
+from . import Scope
 
 
 # Stream()
@@ -98,7 +98,6 @@ class Stream:
         self._scheduler = Scheduler(
             context, session_start, self._state, self._notification_queue, self._scheduler_notification_handler
         )
-        self._first_non_track_queue = None
         self._session_start_callback = session_start_callback
         self._ticker_callback = ticker_callback
         self._interrupt_callback = interrupt_callback
@@ -768,7 +767,6 @@ class Stream:
     # Args:
     #    targets (list): List of target elements to open workspaces for
     #    no_checkout (bool): Whether to skip checking out the source
-    #    track_first (bool): Whether to track and fetch first
     #    force (bool): Whether to ignore contents in an existing directory
     #    custom_dir (str): Custom location to create a workspace or false to use default location.
     #
@@ -780,7 +778,6 @@ class Stream:
         workspaces = self._context.get_workspaces()
 
         # If we're going to checkout, we need at least a fetch,
-        # if we were asked to track first, we're going to fetch anyway.
         #
         if not no_checkout:
             self._fetch(elements, fetch_original=True)
@@ -813,15 +810,6 @@ class Stream:
                         )
                     )
                 self.workspace_close(target._get_full_name(), remove_dir=not no_checkout)
-
-            target_consistency = target._get_consistency()
-            if not no_checkout and target_consistency < Consistency.CACHED and target_consistency._source_cached():
-                raise StreamError(
-                    "Could not stage uncached source. For {} ".format(target.name)
-                    + "Use `--track` to track and "
-                    + "fetch the latest version of the "
-                    + "source."
-                )
 
             if not custom_dir:
                 directory = os.path.abspath(os.path.join(self._context.workspacedir, target.name))
@@ -919,9 +907,8 @@ class Stream:
     # Args:
     #    targets (list of str): The target elements to reset the workspace for
     #    soft (bool): Only set the workspace state to not prepared
-    #    track_first (bool): Whether to also track the sources first
     #
-    def workspace_reset(self, targets, *, soft, track_first):
+    def workspace_reset(self, targets, *, soft):
 
         elements = self._load(targets, selection=PipelineSelection.REDIRECT)
 
@@ -1242,10 +1229,7 @@ class Stream:
     # A convenience method for loading element lists
     #
     # If `targets` is not empty used project configuration will be
-    # fully loaded. If `targets` is empty, tracking will still be
-    # resolved for elements in `track_targets`, but no build pipeline
-    # will be resolved. This is behavior is import for track() to
-    # not trigger full loading of project configuration.
+    # fully loaded.
     #
     # Args:
     #    targets (list of str): Main targets to load
@@ -1259,7 +1243,6 @@ class Stream:
     #
     # Returns:
     #    (list of Element): The primary element selection
-    #    (list of Element): The tracking element selection
     #
     def _load(
         self,
@@ -1327,7 +1310,6 @@ class Stream:
     #
     # Args:
     #    queue (Queue): Queue to add to the pipeline
-    #    track (bool): Whether this is the tracking queue
     #
     def _add_queue(self, queue):
         self.queues.append(queue)
@@ -1338,7 +1320,7 @@ class Stream:
     #
     # Args:
     #    plan (list of Element): The list of elements to be enqueued
-    #    queue (Queue): The target queue, defaults to the first non-track queue
+    #    queue (Queue): The target queue, defaults to the first queue
     #
     def _enqueue_plan(self, plan, *, queue=None):
         queue = queue or self.queues[0]
@@ -1387,7 +1369,6 @@ class Stream:
     #
     # Args:
     #    elements (list of Element): Elements to fetch
-    #    track_elements (list of Element): Elements to track
     #    fetch_original (Bool): Whether to fetch original unstaged
     #
     def _fetch(self, elements, *, fetch_original=False):

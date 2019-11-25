@@ -49,7 +49,7 @@ class WorkspaceCreator:
 
         self.workspace_cmd = os.path.join(self.project_path, "workspace_cmd")
 
-    def create_workspace_element(self, kind, track, suffix="", workspace_dir=None, element_attrs=None):
+    def create_workspace_element(self, kind, suffix="", workspace_dir=None, element_attrs=None):
         element_name = "workspace-test-{}{}.bst".format(kind, suffix)
         element_path = os.path.join(self.project_path, "elements")
         if not workspace_dir:
@@ -61,8 +61,6 @@ class WorkspaceCreator:
         # the bin files, and then collect the initial ref.
         repo = create_repo(kind, str(self.tmpdir))
         ref = repo.create(self.bin_files_path)
-        if track:
-            ref = None
 
         # Write out our test target
         element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
@@ -71,7 +69,7 @@ class WorkspaceCreator:
         _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
         return element_name, element_path, workspace_dir
 
-    def create_workspace_elements(self, kinds, track, suffixs=None, workspace_dir_usr=None, element_attrs=None):
+    def create_workspace_elements(self, kinds, suffixs=None, workspace_dir_usr=None, element_attrs=None):
 
         element_tuples = []
 
@@ -83,29 +81,25 @@ class WorkspaceCreator:
 
         for suffix, kind in zip(suffixs, kinds):
             element_name, _, workspace_dir = self.create_workspace_element(
-                kind, track, suffix, workspace_dir_usr, element_attrs
+                kind, suffix, workspace_dir_usr, element_attrs
             )
             element_tuples.append((element_name, workspace_dir))
 
-        # Assert that there is no reference, a track & fetch is needed
+        # Assert that there is no reference, a fetch is needed
         states = self.cli.get_element_states(self.project_path, [e for e, _ in element_tuples])
-        if track:
-            assert not any(states[e] != "no reference" for e, _ in element_tuples)
-        else:
-            assert not any(states[e] != "fetch needed" for e, _ in element_tuples)
+        assert not any(states[e] != "fetch needed" for e, _ in element_tuples)
 
         return element_tuples
 
-    def open_workspaces(self, kinds, track, suffixs=None, workspace_dir=None, element_attrs=None, no_checkout=False):
+    def open_workspaces(self, kinds, suffixs=None, workspace_dir=None, element_attrs=None, no_checkout=False):
 
-        element_tuples = self.create_workspace_elements(kinds, track, suffixs, workspace_dir, element_attrs)
+        element_tuples = self.create_workspace_elements(kinds, suffixs, workspace_dir, element_attrs)
         os.makedirs(self.workspace_cmd, exist_ok=True)
 
         # Now open the workspace, this should have the effect of automatically
-        # tracking & fetching the source from the repo.
+        # fetching the source from the repo.
         args = ["workspace", "open"]
-        if track:
-            args.append("--track")
+
         if no_checkout:
             args.append("--no-checkout")
         if workspace_dir is not None:
@@ -136,7 +130,6 @@ def open_workspace(
     tmpdir,
     datafiles,
     kind,
-    track,
     suffix="",
     workspace_dir=None,
     project_path=None,
@@ -144,7 +137,7 @@ def open_workspace(
     no_checkout=False,
 ):
     workspace_object = WorkspaceCreator(cli, tmpdir, datafiles, project_path)
-    workspaces = workspace_object.open_workspaces((kind,), track, (suffix,), workspace_dir, element_attrs, no_checkout)
+    workspaces = workspace_object.open_workspaces((kind,), (suffix,), workspace_dir, element_attrs, no_checkout)
     assert len(workspaces) == 1
     element_name, workspace = workspaces[0]
     return element_name, workspace_object.project_path, workspace
@@ -152,4 +145,4 @@ def open_workspace(
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_open(cli, tmpdir, datafiles, kind):
-    open_workspace(cli, tmpdir, datafiles, kind, False)
+    open_workspace(cli, tmpdir, datafiles, kind)
