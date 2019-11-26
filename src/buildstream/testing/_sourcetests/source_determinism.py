@@ -50,6 +50,10 @@ def create_test_directory(*path, mode=0o644):
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.skipif(
+    HAVE_SANDBOX == "buildbox-run" and CASD_SEPARATE_USER,
+    reason="Flaky due to timestamps: https://gitlab.com/BuildStream/buildstream/issues/1218",
+)
 def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
     project = str(datafiles)
     element_name = "list.bst"
