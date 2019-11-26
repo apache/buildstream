@@ -38,6 +38,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.xfail(HAVE_SANDBOX == "buildbox-run", reason="Individual commands are not logged with command batching")
 def test_disable_message_lines(cli, datafiles):
     project = str(datafiles)
     element_path = os.path.join(project, "elements")
@@ -66,6 +67,7 @@ def test_disable_message_lines(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.xfail(HAVE_SANDBOX == "buildbox-run", reason="Individual commands are not logged with command batching")
 def test_disable_error_lines(cli, datafiles):
     project = str(datafiles)
     element_path = os.path.join(project, "elements")
