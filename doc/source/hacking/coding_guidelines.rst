@@ -25,21 +25,6 @@ Formatting will be checked automatically when running the testsuite on CI. For
 details on how to format your code locally, see :ref:`formatting code <contributing_formatting_code>`.
 
 
-Line lengths
-''''''''''''
-Regarding laxness on the line length in our linter settings, it should be clarified
-that the line length limit is a hard limit which causes the linter to bail out
-and reject commits which break the high limit - not an invitation to write exceedingly
-long lines of code, comments, or API documenting docstrings.
-
-Code, comments and docstrings should strive to remain written for approximately 80
-or 90 character lines, where exceptions can be made when code would be less readable
-when exceeding 80 or 90 characters (often this happens in conditional statements
-when raising an exception, for example). Or, when comments contain a long link that
-causes the given line to to exceed 80 or 90 characters, we don't want this to cause
-the linter to refuse the commit.
-
-
 .. _contributing_documenting_symbols:
 
 Documenting symbols
