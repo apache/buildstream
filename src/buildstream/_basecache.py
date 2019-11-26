@@ -62,6 +62,8 @@ class BaseCache:
         self._has_fetch_remotes = False
         self._has_push_remotes = False
 
+        self._basedir = None
+
     # has_open_grpc_channels():
     #
     # Return whether there are gRPC channel instances. This is used to safeguard
@@ -439,15 +441,14 @@ class BaseCache:
     #
     # Args:
     #    ref (str): The ref to remove
-    #    basedir (str): Path of base directory the ref is in
     #
     # Raises:
     #    (CASCacheError): If the ref didnt exist, or a system error
     #                     occurred while removing it
     #
-    def _remove_ref(self, ref, basedir):
+    def _remove_ref(self, ref):
         try:
-            utils._remove_path_with_parents(basedir, ref)
+            utils._remove_path_with_parents(self._basedir, ref)
         except FileNotFoundError as e:
             raise CacheError("Could not find ref '{}'".format(ref)) from e
         except OSError as e:

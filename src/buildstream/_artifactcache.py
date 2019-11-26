@@ -146,12 +146,12 @@ class ArtifactCache(BaseCache):
         super().__init__(context)
 
         # create artifact directory
-        self.artifactdir = context.artifactdir
-        os.makedirs(self.artifactdir, exist_ok=True)
+        self._basedir = context.artifactdir
+        os.makedirs(self._basedir, exist_ok=True)
 
     def update_mtime(self, ref):
         try:
-            os.utime(os.path.join(self.artifactdir, ref))
+            os.utime(os.path.join(self._basedir, ref))
         except FileNotFoundError as e:
             raise ArtifactError("Couldn't find artifact: {}".format(ref)) from e
 
@@ -176,7 +176,7 @@ class ArtifactCache(BaseCache):
     def contains(self, element, key):
         ref = element.get_artifact_name(key)
 
-        return os.path.exists(os.path.join(self.artifactdir, ref))
+        return os.path.exists(os.path.join(self._basedir, ref))
 
     # list_artifacts():
     #
@@ -189,7 +189,7 @@ class ArtifactCache(BaseCache):
     #     ([str]) - A list of artifact names as generated in LRU order
     #
     def list_artifacts(self, *, glob=None):
-        return [ref for _, ref in sorted(list(self._list_refs_mtimes(self.artifactdir, glob_expr=glob)))]
+        return [ref for _, ref in sorted(list(self._list_refs_mtimes(self._basedir, glob_expr=glob)))]
 
     # remove():
     #
@@ -202,7 +202,7 @@ class ArtifactCache(BaseCache):
     #
     def remove(self, ref):
         try:
-            self._remove_ref(ref, self.artifactdir)
+            self._remove_ref(ref)
         except CacheError as e:
             raise ArtifactError("{}".format(e)) from e
 
@@ -410,8 +410,8 @@ class ArtifactCache(BaseCache):
         oldref = element.get_artifact_name(oldkey)
         newref = element.get_artifact_name(newkey)
 
-        if not os.path.exists(os.path.join(self.artifactdir, newref)):
-            os.link(os.path.join(self.artifactdir, oldref), os.path.join(self.artifactdir, newref))
+        if not os.path.exists(os.path.join(self._basedir, newref)):
+            os.link(os.path.join(self._basedir, oldref), os.path.join(self._basedir, newref))
 
     # get_artifact_logs():
     #
@@ -514,7 +514,7 @@ class ArtifactCache(BaseCache):
     #     (iter): Iterator over directories digests available from artifacts.
     #
     def _reachable_directories(self):
-        for root, _, files in os.walk(self.artifactdir):
+        for root, _, files in os.walk(self._basedir):
             for artifact_file in files:
                 artifact = artifact_pb2.Artifact()
                 with open(os.path.join(root, artifact_file), "r+b") as f:
@@ -532,7 +532,7 @@ class ArtifactCache(BaseCache):
     #     (iter): Iterator over single file digests in artifacts
     #
     def _reachable_digests(self):
-        for root, _, files in os.walk(self.artifactdir):
+        for root, _, files in os.walk(self._basedir):
             for artifact_file in files:
                 artifact = artifact_pb2.Artifact()
                 with open(os.path.join(root, artifact_file), "r+b") as f:
@@ -707,7 +707,7 @@ class ArtifactCache(BaseCache):
             return None
 
         # Write the artifact proto to cache
-        artifact_path = os.path.join(self.artifactdir, artifact_name)
+        artifact_path = os.path.join(self._basedir, artifact_name)
         os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
         with utils.save_file_atomic(artifact_path, mode="wb") as f:
             f.write(artifact.SerializeToString())

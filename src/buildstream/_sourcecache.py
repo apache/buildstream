@@ -129,8 +129,8 @@ class SourceCache(BaseCache):
     def __init__(self, context):
         super().__init__(context)
 
-        self.sourcerefdir = os.path.join(context.cachedir, "source_protos")
-        os.makedirs(self.sourcerefdir, exist_ok=True)
+        self._basedir = os.path.join(context.cachedir, "source_protos")
+        os.makedirs(self._basedir, exist_ok=True)
 
     # list_sources()
     #
@@ -140,7 +140,7 @@ class SourceCache(BaseCache):
     #     ([str]): iterable over all source refs
     #
     def list_sources(self):
-        return [ref for _, ref in self._list_refs_mtimes(self.sourcerefdir)]
+        return [ref for _, ref in self._list_refs_mtimes(self._basedir)]
 
     # contains()
     #
@@ -326,7 +326,7 @@ class SourceCache(BaseCache):
         return pushed_index and pushed_storage
 
     def _remove_source(self, ref, *, defer_prune=False):
-        return self.cas.remove(ref, basedir=self.sourcerefdir, defer_prune=defer_prune)
+        return self.cas.remove(ref, basedir=self._basedir, defer_prune=defer_prune)
 
     def _store_source(self, ref, digest):
         source_proto = source_pb2.Source()
@@ -351,10 +351,10 @@ class SourceCache(BaseCache):
             raise SourceCacheError("Attempted to access unavailable source: {}".format(e)) from e
 
     def _source_path(self, ref):
-        return os.path.join(self.sourcerefdir, ref)
+        return os.path.join(self._basedir, ref)
 
     def _reachable_directories(self):
-        for root, _, files in os.walk(self.sourcerefdir):
+        for root, _, files in os.walk(self._basedir):
             for source_file in files:
                 source = source_pb2.Source()
                 with open(os.path.join(root, source_file), "r+b") as f:
