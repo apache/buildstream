@@ -29,7 +29,7 @@ from pyroaring import BitMap  # pylint: disable=no-name-in-module
 from ._exceptions import PipelineError
 from ._message import Message, MessageType
 from ._profile import Topics, PROFILER
-from . import Scope, Consistency
+from . import Scope
 from ._project import ProjectRefStorage
 from .types import _PipelineSelection
 
@@ -340,7 +340,7 @@ class Pipeline:
         inconsistent_workspaced = []
         with self._context.messenger.timed_activity("Checking sources"):
             for element in elements:
-                if element._get_consistency() == Consistency.INCONSISTENT:
+                if not element._has_all_sources_resolved():
                     if element._get_workspace():
                         inconsistent_workspaced.append(element)
                     else:
@@ -375,7 +375,7 @@ class Pipeline:
         uncached = []
         with self._context.messenger.timed_activity("Checking sources"):
             for element in elements:
-                if element._get_consistency() < Consistency.CACHED and not element._has_all_sources_in_source_cache():
+                if not element._has_all_sources_in_source_cache() and not element._has_all_sources_cached():
                     uncached.append(element)
 
         if uncached:

@@ -1072,13 +1072,6 @@ class Element(Plugin):
         cls.__instantiated_elements = {}
         cls.__redundant_source_refs = []
 
-    # _get_consistency()
-    #
-    # Returns cached consistency state
-    #
-    def _get_consistency(self):
-        return self.__consistency
-
     # _cached():
     #
     # Returns:
@@ -1169,7 +1162,7 @@ class Element(Plugin):
     #    (bool): Whether this element can currently be built
     #
     def _buildable(self):
-        if self._get_consistency() < Consistency.CACHED and not self._has_all_sources_in_source_cache():
+        if not (self._has_all_sources_in_source_cache() or self._has_all_sources_cached()):
             return False
 
         if not self.__assemble_scheduled:
@@ -2178,13 +2171,28 @@ class Element(Plugin):
         self.__has_all_sources_in_source_cache = True
         return True
 
+    # _has_all_sources_resolved()
+    #
+    # Get whether all sources of the element are resolved
+    #
+    def _has_all_sources_resolved(self):
+        return self.__consistency >= Consistency.RESOLVED
+
+    # _has_all_sources_cached()
+    #
+    # Get whether all the sources of the element have their own cached
+    # copy of their sources.
+    #
+    def _has_all_sources_cached(self):
+        return self.__consistency >= Consistency.CACHED
+
     def _should_fetch(self, fetch_original=False):
         """ return bool of if we need to run the fetch stage for this element
 
         Args:
             fetch_original (bool): whether we need to original unstaged source
         """
-        if (self._get_consistency() == Consistency.CACHED and fetch_original) or (
+        if (self._has_all_sources_cached() and fetch_original) or (
             self._has_all_sources_in_source_cache() and not fetch_original
         ):
             return False
@@ -3018,7 +3026,7 @@ class Element(Plugin):
     # dependency has changed.
     #
     def __update_cache_keys(self):
-        if self._get_consistency() == Consistency.INCONSISTENT:
+        if not self._has_all_sources_resolved():
             # Tracking may still be pending
             return
 

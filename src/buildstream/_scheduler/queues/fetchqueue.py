@@ -18,9 +18,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-# BuildStream toplevel imports
-from ... import Consistency
-
 # Local imports
 from . import Queue, QueueStatus
 from ..resources import ResourceType
@@ -73,7 +70,7 @@ class FetchQueue(Queue):
 
         # Successful fetch, we must be CACHED or in the sourcecache
         if self._should_fetch_original:
-            assert element._get_consistency() == Consistency.CACHED
+            assert element._has_all_sources_cached()
         else:
             assert element._has_all_sources_in_source_cache()
 

@@ -27,7 +27,7 @@ from ruamel import yaml
 import click
 
 from .profile import Profile
-from .. import Consistency, Scope
+from .. import Scope
 from .. import __version__ as bst_version
 from .._exceptions import ImplError
 from .._message import MessageType
@@ -346,8 +346,7 @@ class LogLine(Widget):
             line = p.fmt_subst(line, "key", cache_key, fg="yellow", dim=dim_keys)
             line = p.fmt_subst(line, "full-key", full_key, fg="yellow", dim=dim_keys)
 
-            consistency = element._get_consistency()
-            if consistency == Consistency.INCONSISTENT:
+            if not element._has_all_sources_resolved():
                 line = p.fmt_subst(line, "state", "no reference", fg="red")
             else:
                 if element.get_kind() == "junction":
@@ -356,7 +355,7 @@ class LogLine(Widget):
                     line = p.fmt_subst(line, "state", "failed", fg="red")
                 elif element._cached_success():
                     line = p.fmt_subst(line, "state", "cached", fg="magenta")
-                elif consistency == Consistency.RESOLVED and not element._has_all_sources_in_source_cache():
+                elif not element._has_all_sources_in_source_cache() and not element._has_all_sources_cached():
                     line = p.fmt_subst(line, "state", "fetch needed", fg="red")
                 elif element._buildable():
                     line = p.fmt_subst(line, "state", "buildable", fg="green")
