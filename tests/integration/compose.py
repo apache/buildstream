@@ -129,3 +129,36 @@ def test_compose_include(cli, datafiles, include_domains, exclude_domains, expec
     assert result.exit_code == 0
 
     assert set(walk_dir(checkout)) == set(expected)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.xfail(HAVE_SANDBOX == "buildbox", reason="Not working with BuildBox")
+def test_compose_run_integration(cli, datafiles):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, "checkout")
+    element_path = os.path.join(project, "elements")
+    element_name = "compose/compose-amhello.bst"
+
+    element = {
+        "kind": "compose",
+        "depends": [
+            {"filename": "compose/amhello.bst", "type": "build"},
+            {"filename": "compose/test-integration.bst", "type": "build"},
+        ],
+        "config": {"include": ["runtime"]},
+    }
+
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
+
+    result = cli.run(project=project, args=["source", "track", "compose/amhello.bst"])
+    assert result.exit_code == 0
+
+    result = cli.run(project=project, args=["build", element_name])
+    assert result.exit_code == 0
+
+    result = cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
+    assert result.exit_code == 0
+
+    test_file = os.path.join(checkout, "tests", "test")
+    assert os.path.isfile(test_file)
