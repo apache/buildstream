@@ -6,7 +6,7 @@ import pytest
 
 from buildstream import _yaml
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream.testing._utils.site import HAVE_SANDBOX, BUILDBOX_RUN
 from buildstream._exceptions import ErrorDomain
 from buildstream import utils
 
@@ -134,6 +134,10 @@ def test_env_assign_isolated(cli, datafiles, animal):
 # /bin/sh)
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.xfail(
+    HAVE_SANDBOX == "buildbox-run" and BUILDBOX_RUN == "buildbox-run-userchroot",
+    reason="buildbox-run-userchroot requires a shell",
+)
 def test_no_shell(cli, datafiles):
     project = str(datafiles)
     element_path = os.path.join(project, "elements")
