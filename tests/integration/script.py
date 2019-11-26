@@ -6,7 +6,7 @@ import pytest
 
 from buildstream import _yaml
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream.testing._utils.site import HAVE_SANDBOX, BUILDBOX_RUN
 
 
 pytestmark = pytest.mark.integration
@@ -60,6 +60,10 @@ def test_script(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.xfail(
+    HAVE_SANDBOX == "buildbox-run" and BUILDBOX_RUN == "buildbox-run-userchroot",
+    reason="Root directory not writable with userchroot",
+)
 def test_script_root(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout")
@@ -92,7 +96,8 @@ def test_script_root(cli, datafiles):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
 @pytest.mark.xfail(
-    HAVE_SANDBOX == "buildbox-run", reason="Read-only root directory not supported by buildbox-run",
+    HAVE_SANDBOX == "buildbox-run" and BUILDBOX_RUN != "buildbox-run-userchroot",
+    reason="Read-only root directory not supported by buildbox-run",
 )
 def test_script_no_root(cli, datafiles):
     project = str(datafiles)
@@ -166,6 +171,10 @@ def test_script_layout(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.xfail(
+    HAVE_SANDBOX == "buildbox-run" and BUILDBOX_RUN == "buildbox-run-userchroot",
+    reason="Root directory not writable with userchroot",
+)
 def test_regression_cache_corruption(cli, datafiles):
     project = str(datafiles)
     checkout_original = os.path.join(cli.directory, "checkout-original")
@@ -206,6 +215,10 @@ def test_regression_tmpdir(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.xfail(
+    HAVE_SANDBOX == "buildbox-run" and BUILDBOX_RUN == "buildbox-run-userchroot",
+    reason="Root directory not writable with userchroot",
+)
 def test_regression_cache_corruption_2(cli, datafiles):
     project = str(datafiles)
     checkout_original = os.path.join(cli.directory, "checkout-original")
