@@ -2094,7 +2094,7 @@ class Element(Plugin):
                     continue
 
                 # try and fetch from source cache
-                if source._get_consistency() < Consistency.CACHED and self.__sourcecache.has_fetch_remotes():
+                if not source._is_cached() and self.__sourcecache.has_fetch_remotes():
                     if self.__sourcecache.pull(source):
                         continue
 
@@ -2103,8 +2103,7 @@ class Element(Plugin):
         # We need to fetch original sources
         if fetch_needed or fetch_original:
             for source in self.sources():
-                source_consistency = source._get_consistency()
-                if source_consistency != Consistency.CACHED:
+                if not source._is_cached():
                     source._fetch(previous_sources)
                 previous_sources.append(source)
 
@@ -2347,7 +2346,13 @@ class Element(Plugin):
         for source in self.__sources:
             # FIXME: It'd be nice to remove this eventually
             source._update_state()
-            self.__consistency = min(self.__consistency, source._get_consistency())
+
+            if source._is_cached():
+                self.__consistency = min(self.__consistency, Consistency.CACHED)
+            elif source._is_resolved():
+                self.__consistency = min(self.__consistency, Consistency.RESOLVED)
+            else:
+                self.__consistency = Consistency.INCONSISTENT
 
         # If the source state changes, our cache key must also change,
         # since it contains the source's key.

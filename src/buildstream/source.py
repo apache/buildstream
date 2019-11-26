@@ -783,10 +783,15 @@ class Source(Plugin):
                 if self.__consistency == Consistency.CACHED:
                     self.validate_cache()
 
-    # Return cached consistency
+    # Get whether the source is consistent
     #
-    def _get_consistency(self):
-        return self.__consistency
+    def _is_resolved(self):
+        return self.__consistency >= Consistency.RESOLVED
+
+    # Get whether the source is cached by the source plugin
+    #
+    def _is_cached(self):
+        return self.__consistency >= Consistency.CACHED
 
     # Wrapper function around plugin provided fetch method
     #
