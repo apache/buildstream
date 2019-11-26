@@ -91,7 +91,7 @@ class SandboxREAPI(Sandbox):
 
         return remote_execution_pb2.Command(
             arguments=command,
-            working_directory=working_directory,
+            working_directory=working_directory[1:],
             environment_variables=environment_variables,
             output_files=[],
             output_directories=[output_directory],
