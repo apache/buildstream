@@ -4,7 +4,6 @@
 import os
 import pytest
 
-from buildstream.testing import create_repo
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
@@ -16,34 +15,6 @@ from . import configure_project
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = os.path.join(TOP_DIR, "project")
-
-
-@pytest.mark.datafiles(os.path.join(TOP_DIR, "project_world"))
-def test_fetch_default_targets(cli, tmpdir, datafiles):
-    project = str(datafiles)
-    element_path = os.path.join(project, "elements")
-    element_name = "fetch-test.bst"
-
-    # Create our repo object of the given source type with
-    # the bin files, and then collect the initial ref.
-    #
-    repo = create_repo("git", str(tmpdir))
-    ref = repo.create(project)
-
-    # Write out our test target
-    element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
-    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
-
-    # Assert that a fetch is needed
-    assert cli.get_element_state(project, element_name) == "fetch needed"
-
-    # Now try to fetch it, using the default target feature
-    result = cli.run(project=project, args=["source", "fetch"])
-    result.assert_success()
-
-    # Assert that we are now buildable because the source is
-    # now cached.
-    assert cli.get_element_state(project, element_name) == "buildable"
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, "consistencyerror"))
