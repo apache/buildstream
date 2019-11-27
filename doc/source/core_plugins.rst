@@ -53,6 +53,8 @@ Sources
    sources/pip
 
 
+.. _plugins_external:
+
 External plugins
 ----------------
 External plugins need to be installed separately, here is

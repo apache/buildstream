@@ -1,5 +1,7 @@
 
 
+.. _advanced_junction:
+
 Junction elements
 =================
 BuildStream's junction elements are used to import other BuildStream
