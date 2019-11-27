@@ -305,6 +305,8 @@ class Sandbox:
         cwd = self._get_work_directory(cwd=cwd)
         env = self._get_environment(cwd=cwd, env=env)
 
+        assert cwd.startswith("/"), "The working directory must be an absolute path"
+
         # Convert single-string argument to a list
         if isinstance(command, str):
             command = [command]
@@ -520,7 +522,7 @@ class Sandbox:
     #
     # Returns:
     #    (str): The sandbox work directory
-    def _get_work_directory(self, *, cwd=None):
+    def _get_work_directory(self, *, cwd=None) -> str:
         return cwd or self.__cwd or "/"
 
     # _get_scratch_directory()

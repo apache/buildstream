@@ -43,10 +43,19 @@ class SandboxREAPI(Sandbox):
         # set up virtual dircetory
         vdir = self.get_virtual_directory()
 
+        if not self._has_command(command[0], env):
+            raise SandboxCommandError(
+                "Staged artifacts do not provide command " "'{}'".format(command[0]), reason="missing-command"
+            )
+
         # Ensure working directory exists
         if len(cwd) > 1:
             assert cwd.startswith("/")
             vdir.descend(*cwd[1:].split(os.path.sep), create=True)
+
+        # Ensure directories required for sandboxed execution exist
+        for directory in ["dev", "proc", "tmp"]:
+            vdir.descend(directory, create=True)
 
         # Create directories for all marked directories. This emulates
         # some of the behaviour of other sandboxes, which create these
@@ -91,7 +100,7 @@ class SandboxREAPI(Sandbox):
 
         return remote_execution_pb2.Command(
             arguments=command,
-            working_directory=working_directory,
+            working_directory=working_directory[1:],
             environment_variables=environment_variables,
             output_files=[],
             output_directories=[output_directory],
