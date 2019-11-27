@@ -19,7 +19,7 @@ variables:
   cmake-args: |
 
     -DCMAKE_INSTALL_PREFIX:PATH="%{prefix}" \
-    -DCMAKE_INSTALL_LIBDIR=%{lib} %{cmake-extra} %{cmake-global} %{cmake-local}
+    -DCMAKE_INSTALL_LIBDIR:PATH="%{lib}" %{cmake-extra} %{cmake-global} %{cmake-local}
 
   cmake: |
 
