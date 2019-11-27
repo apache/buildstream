@@ -8,7 +8,7 @@ from buildstream import _yaml
 
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.testing.integration import walk_dir
-from buildstream.testing._utils.site import HAVE_SANDBOX
+from buildstream.testing._utils.site import HAVE_SANDBOX, BUILDBOX_RUN
 
 
 pytestmark = pytest.mark.integration
@@ -133,6 +133,10 @@ def test_compose_include(cli, datafiles, include_domains, exclude_domains, expec
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.xfail(
+    HAVE_SANDBOX == "buildbox-run" and BUILDBOX_RUN == "buildbox-run-userchroot",
+    reason="Root directory not writable with userchroot",
+)
 def test_compose_run_integration(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout")
