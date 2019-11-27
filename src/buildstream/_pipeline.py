@@ -375,7 +375,7 @@ class Pipeline:
         uncached = []
         with self._context.messenger.timed_activity("Checking sources"):
             for element in elements:
-                if element._get_consistency() < Consistency.CACHED and not element._source_cached():
+                if element._get_consistency() < Consistency.CACHED and not element._has_all_sources_in_source_cache():
                     uncached.append(element)
 
         if uncached:

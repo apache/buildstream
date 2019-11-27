@@ -84,7 +84,7 @@ def test_source_push_split(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements(["push.bst"])[0]
-            assert not element._source_cached()
+            assert not element._has_all_sources_in_source_cache()
             source = list(element.sources())[0]
 
             # check we don't have it in the current cache
@@ -133,7 +133,7 @@ def test_source_push(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements(["push.bst"])[0]
-            assert not element._source_cached()
+            assert not element._has_all_sources_in_source_cache()
             source = list(element.sources())[0]
 
             # check we don't have it in the current cache

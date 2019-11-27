@@ -212,7 +212,7 @@ class Stream:
         # definitions to control the execution environment only.
         if directory is None:
 
-            if not element._source_cached():
+            if not element._has_all_sources_in_source_cache():
                 raise StreamError(
                     "Sources for element {} are not cached."
                     "Element must be fetched.".format(element._get_full_name())

@@ -75,7 +75,7 @@ class FetchQueue(Queue):
         if self._should_fetch_original:
             assert element._get_consistency() == Consistency.CACHED
         else:
-            assert element._source_cached()
+            assert element._has_all_sources_in_source_cache()
 
     def register_pending_element(self, element):
         # Set a "can_query_cache" callback for an element not yet ready

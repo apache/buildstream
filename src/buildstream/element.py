@@ -262,7 +262,7 @@ class Element(Plugin):
         self.__assemble_done = False  # Element is assembled
         self.__pull_done = False  # Whether pull was attempted
         self.__cached_successfully = None  # If the Element is known to be successfully cached
-        self.__source_cached = None  # If the sources are known to be successfully cached
+        self.__has_all_sources_in_source_cache = None  # If the sources are known to be successfully cached
         self.__splits = None  # Resolved regex objects for computing split domains
         self.__whitelist_regex = None  # Resolved regex object to check if file is allowed to overlap
         self.__tainted = None  # Whether the artifact is tainted and should not be shared
@@ -1169,7 +1169,7 @@ class Element(Plugin):
     #    (bool): Whether this element can currently be built
     #
     def _buildable(self):
-        if self._get_consistency() < Consistency.CACHED and not self._source_cached():
+        if self._get_consistency() < Consistency.CACHED and not self._has_all_sources_in_source_cache():
             return False
 
         if not self.__assemble_scheduled:
@@ -1442,7 +1442,7 @@ class Element(Plugin):
             else:
 
                 # Assert sources are cached
-                assert self._source_cached()
+                assert self._has_all_sources_in_source_cache()
 
                 if self.__sources:
 
@@ -1830,11 +1830,11 @@ class Element(Plugin):
     def _skip_source_push(self):
         if not self.__sources or self._get_workspace():
             return True
-        return not (self.__sourcecache.has_push_remotes(plugin=self) and self._source_cached())
+        return not (self.__sourcecache.has_push_remotes(plugin=self) and self._has_all_sources_in_source_cache())
 
     def _source_push(self):
         # try and push sources if we've got them
-        if self.__sourcecache.has_push_remotes(plugin=self) and self._source_cached():
+        if self.__sourcecache.has_push_remotes(plugin=self) and self._has_all_sources_in_source_cache():
             for source in self.sources():
                 if not self.__sourcecache.push(source):
                     return False
@@ -2155,9 +2155,9 @@ class Element(Plugin):
         return _cachekey.generate_key(cache_key_dict)
 
     # Check if sources are cached, generating the source key if it hasn't been
-    def _source_cached(self):
-        if self.__source_cached is not None:
-            return self.__source_cached
+    def _has_all_sources_in_source_cache(self):
+        if self.__has_all_sources_in_source_cache is not None:
+            return self.__has_all_sources_in_source_cache
 
         if self.__sources:
             sourcecache = self._get_context().sourcecache
@@ -2175,7 +2175,7 @@ class Element(Plugin):
                 if not sourcecache.contains(source):
                     return False
 
-        self.__source_cached = True
+        self.__has_all_sources_in_source_cache = True
         return True
 
     def _should_fetch(self, fetch_original=False):
@@ -2185,7 +2185,7 @@ class Element(Plugin):
             fetch_original (bool): whether we need to original unstaged source
         """
         if (self._get_consistency() == Consistency.CACHED and fetch_original) or (
-            self._source_cached() and not fetch_original
+            self._has_all_sources_in_source_cache() and not fetch_original
         ):
             return False
         else:
@@ -2968,7 +2968,7 @@ class Element(Plugin):
     # Caches the sources into the local CAS
     #
     def __cache_sources(self):
-        if self.__sources and not self._source_cached():
+        if self.__sources and not self._has_all_sources_in_source_cache():
             last_requires_previous = 0
             # commit all other sources by themselves
             for ix, source in enumerate(self.__sources):
