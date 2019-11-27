@@ -524,6 +524,9 @@ class _GitSourceBase(Source):
             return Consistency.RESOLVED
         return Consistency.INCONSISTENT
 
+    def is_resolved(self):
+        return self.mirror.ref is not None
+
     def load_ref(self, node):
         self.mirror.ref = node.get_str("ref", None)
         self.mirror.tags = self._load_tags(node)

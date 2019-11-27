@@ -351,7 +351,7 @@ class Pipeline:
             for element in inconsistent:
                 detail += "  Element: {} is inconsistent\n".format(element._get_full_name())
                 for source in element.sources():
-                    if not source._is_resolved():
+                    if not source.is_resolved():
                         detail += "    {} is missing ref\n".format(source)
                 detail += "\n"
             detail += "Try tracking these elements first with `bst source track`\n"

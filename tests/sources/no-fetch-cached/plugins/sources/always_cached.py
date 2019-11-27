@@ -20,6 +20,9 @@ class AlwaysCachedSource(Source):
     def get_unique_key(self):
         return None
 
+    def is_resolved(self):
+        return True
+
     def get_consistency(self):
         return Consistency.CACHED
 

@@ -66,6 +66,9 @@ class FetchSource(Source):
     def get_unique_key(self):
         return {"urls": self.original_urls, "output_file": self.output_file}
 
+    def is_resolved(self):
+        return True
+
     def get_consistency(self):
         if not os.path.exists(self.output_file):
             return Consistency.RESOLVED

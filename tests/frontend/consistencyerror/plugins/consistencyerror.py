@@ -11,6 +11,9 @@ class ConsistencyErrorSource(Source):
     def get_unique_key(self):
         return {}
 
+    def is_resolved(self):
+        return True
+
     def get_consistency(self):
 
         # Raise an error unconditionally

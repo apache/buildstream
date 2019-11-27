@@ -67,6 +67,9 @@ class PatchSource(Source):
     def get_unique_key(self):
         return [self.path, utils.sha256sum(self.fullpath), self.strip_level]
 
+    def is_resolved(self):
+        return True
+
     def get_consistency(self):
         return Consistency.CACHED
 

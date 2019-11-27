@@ -2352,15 +2352,16 @@ class Element(Plugin):
 
         # Determine overall consistency of the element
         for source in self.__sources:
-            # FIXME: It'd be nice to remove this eventually
-            source._update_state()
-
-            if source._is_cached():
-                self.__consistency = min(self.__consistency, Consistency.CACHED)
-            elif source._is_resolved():
-                self.__consistency = min(self.__consistency, Consistency.RESOLVED)
-            else:
+            if not source.is_resolved():
                 self.__consistency = Consistency.INCONSISTENT
+            else:
+                # FIXME: It'd be nice to remove this eventually
+                source._update_state()
+
+                if source._is_cached():
+                    self.__consistency = min(self.__consistency, Consistency.CACHED)
+                else:
+                    self.__consistency = min(self.__consistency, Consistency.RESOLVED)
 
         # If the source state changes, our cache key must also change,
         # since it contains the source's key.

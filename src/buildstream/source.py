@@ -705,6 +705,22 @@ class Source(Plugin):
         with utils._tempdir(dir=mirrordir) as tempdir:
             yield tempdir
 
+    def is_resolved(self) -> bool:
+        """Get whether the source is resolved.
+
+        This has a default implementation that checks whether the source
+        has a ref or not. If it has a ref, it is assumed to be resolved.
+
+        Sources that never have a ref or have uncommon requirements can
+        override this method to specify when they should be considered
+        resolved
+
+        Returns: whether the source is fully resolved or not
+
+        *Since: 1.93.0*
+        """
+        return self.get_ref() is not None
+
     #############################################################
     #       Private Abstract Methods used in BuildStream        #
     #############################################################
@@ -782,11 +798,6 @@ class Source(Plugin):
                 # sources as soon as the Source becomes Consistency.CACHED.
                 if self.__consistency == Consistency.CACHED:
                     self.validate_cache()
-
-    # Get whether the source is consistent
-    #
-    def _is_resolved(self):
-        return self.__consistency >= Consistency.RESOLVED
 
     # Get whether the source is cached by the source plugin
     #
@@ -1416,7 +1427,7 @@ class Source(Plugin):
         for index, src in enumerate(previous_sources):
             # BuildStream should track sources in the order they appear so
             # previous sources should never be in an inconsistent state
-            assert src.get_consistency() != Consistency.INCONSISTENT
+            assert src.is_resolved()
 
             if src.get_consistency() == Consistency.RESOLVED:
                 src._fetch(previous_sources[0:index])

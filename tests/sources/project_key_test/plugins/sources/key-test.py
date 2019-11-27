@@ -11,7 +11,10 @@ class KeyTest(Source):
         pass
 
     def configure(self, node):
-        self.ref = node.get_bool("ref", False)
+        if node.get_scalar("ref", None).is_none():
+            self.ref = None
+        else:
+            self.ref = True
 
     def get_unique_key(self):
         assert self.ref
