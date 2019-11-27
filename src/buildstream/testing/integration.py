@@ -49,11 +49,25 @@ def walk_dir(root):
 
 
 # Ensure that a directory contains the given filenames.
-def assert_contains(directory, expected):
+# If `strict` is `True` then no additional filenames are allowed.
+def assert_contains(directory, expected, strict=False):
+    expected = set(expected)
     missing = set(expected)
-    missing.difference_update(walk_dir(directory))
+    found = set(walk_dir(directory))
+
+    # elements expected but not found
+    missing.difference_update(found)
+
     if missing:
-        raise AssertionError("Missing {} expected elements from list: {}".format(len(missing), missing))
+        msg = "Missing {} expected elements from list: {}".format(len(missing), missing)
+        raise AssertionError(msg)
+
+    if strict:
+        # elements found but not expected
+        found.difference_update(expected)
+        msg = "{} additional elements were present in the directory: {}".format(len(found), found)
+        if found:
+            raise AssertionError(msg)
 
 
 class IntegrationCache:
