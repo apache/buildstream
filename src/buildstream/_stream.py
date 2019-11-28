@@ -29,7 +29,7 @@ import tempfile
 from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
 from collections import deque
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
@@ -1137,7 +1137,7 @@ class Stream:
     #     source_url - The url of the source server to connect to.
     #
     def __connect_remotes(
-        self, artifact_url: str, source_url: str
+        self, artifact_url: Optional[str], source_url: Optional[str]
     ):
         # ArtifactCache.setup_remotes expects all projects to be fully loaded
         for project in self._context.get_projects():
