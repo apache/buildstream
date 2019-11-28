@@ -136,6 +136,9 @@ class PipSource(Source):
     def get_unique_key(self):
         return [self.original_url, self.ref]
 
+    def is_cached(self):
+        return os.path.exists(self._mirror) and os.listdir(self._mirror)
+
     def get_consistency(self):
         if not self.ref:
             return Consistency.INCONSISTENT

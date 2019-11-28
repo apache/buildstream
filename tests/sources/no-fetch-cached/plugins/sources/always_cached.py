@@ -23,6 +23,9 @@ class AlwaysCachedSource(Source):
     def is_resolved(self):
         return True
 
+    def is_cached(self):
+        return True
+
     def get_consistency(self):
         return Consistency.CACHED
 

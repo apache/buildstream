@@ -39,6 +39,9 @@ class FooTransformSource(Source):
     def get_unique_key(self):
         return (self.ref,)
 
+    def is_cached(self):
+        return self.get_consistency() == Consistency.CACHED
+
     def get_consistency(self):
         if self.ref is None:
             return Consistency.INCONSISTENT

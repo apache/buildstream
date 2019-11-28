@@ -527,6 +527,9 @@ class _GitSourceBase(Source):
     def is_resolved(self):
         return self.mirror.ref is not None
 
+    def is_cached(self):
+        return self._have_all_refs()
+
     def load_ref(self, node):
         self.mirror.ref = node.get_str("ref", None)
         self.mirror.tags = self._load_tags(node)

@@ -1727,7 +1727,13 @@ class Element(Plugin):
     #
     # Indicates that fetching the sources for this element has been done.
     #
-    def _fetch_done(self):
+    # Args:
+    #   fetched_original (bool): Whether the original sources had been asked (and fetched) or not
+    #
+    def _fetch_done(self, fetched_original):
+        for source in self.__sources:
+            source._fetch_done(fetched_original)
+
         # We are not updating the state recursively here since fetching can
         # never end up in updating them.
 

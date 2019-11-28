@@ -88,6 +88,9 @@ class DownloadableFileSource(Source):
     def get_unique_key(self):
         return [self.original_url, self.ref]
 
+    def is_cached(self) -> bool:
+        return os.path.isfile(self._get_mirror_file())
+
     def get_consistency(self):
         if self.ref is None:
             return Consistency.INCONSISTENT

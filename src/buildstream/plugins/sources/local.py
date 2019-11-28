@@ -67,6 +67,9 @@ class LocalSource(Source):
     def is_resolved(self):
         return True
 
+    def is_cached(self):
+        return True
+
     # We dont have a ref, we're a local file...
     def load_ref(self, node):
         pass

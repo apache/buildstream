@@ -66,13 +66,7 @@ class FetchQueue(Queue):
         if status is JobStatus.FAIL:
             return
 
-        element._fetch_done()
-
-        # Successful fetch, we must be CACHED or in the sourcecache
-        if self._should_fetch_original:
-            assert element._has_all_sources_cached()
-        else:
-            assert element._has_all_sources_in_source_cache()
+        element._fetch_done(self._should_fetch_original)
 
     def register_pending_element(self, element):
         # Set a "can_query_cache" callback for an element not yet ready

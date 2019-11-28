@@ -69,6 +69,9 @@ class FetchSource(Source):
     def is_resolved(self):
         return True
 
+    def is_cached(self) -> bool:
+        return self.get_consistency() == Consistency.CACHED
+
     def get_consistency(self):
         if not os.path.exists(self.output_file):
             return Consistency.RESOLVED

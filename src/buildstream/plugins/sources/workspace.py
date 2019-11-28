@@ -69,6 +69,9 @@ class WorkspaceSource(Source):
     def preflight(self) -> None:
         pass  # pragma: nocover
 
+    def is_cached(self):
+        return True
+
     def is_resolved(self):
         return os.path.exists(self._get_local_path())
 

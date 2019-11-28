@@ -81,6 +81,10 @@ class BzrSource(Source):
     def get_unique_key(self):
         return [self.original_url, self.tracking, self.ref]
 
+    def is_cached(self):
+        with self._locked():
+            return self._check_ref()
+
     def get_consistency(self):
         if self.ref is None or self.tracking is None:
             return Consistency.INCONSISTENT

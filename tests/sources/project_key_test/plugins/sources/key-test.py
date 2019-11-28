@@ -20,6 +20,9 @@ class KeyTest(Source):
         assert self.ref
         return "abcdefg"
 
+    def is_cached(self):
+        return False
+
     def get_consistency(self):
         if self.ref:
             return Consistency.RESOLVED

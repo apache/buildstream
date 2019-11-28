@@ -379,6 +379,8 @@ class Source(Plugin):
         self._configure(self.__config)
         self.__digest = None
 
+        self.__is_cached = None
+
     COMMON_CONFIG_KEYS = ["kind", "directory"]
     """Common source config keys
 
@@ -568,6 +570,19 @@ class Source(Plugin):
 
         *Since: 1.4*
         """
+
+    def is_cached(self) -> bool:
+        """Get whether the source has a local copy of its data.
+
+        This method is guaranteed to only be called whenever
+        :func:`Source.is_resolved() <buildstream.source.Source.is_resolved>`
+        returns `True`.
+
+        Returns: whether the source is cached locally or not.
+
+        *Since: 1.93.0*
+        """
+        raise ImplError("Source plugin '{}' does not implement is_cached()".format(self.get_kind()))
 
     #############################################################
     #                       Public Methods                      #
@@ -802,7 +817,36 @@ class Source(Plugin):
     # Get whether the source is cached by the source plugin
     #
     def _is_cached(self):
-        return self.__consistency >= Consistency.CACHED
+        if self.__is_cached is None:
+            # We guarantee we only ever call this when we are resolved.
+            assert self.is_resolved()
+
+            # Set to 'False' on the first call, this prevents throwing multiple errors if the
+            # plugin throws exception when we display the end result pipeline.
+            # Otherwise, the summary would throw a second exception and we would not
+            # have a nice error reporting.
+            self.__is_cached = False
+
+            try:
+                self.__is_cached = self.is_cached()  # pylint: disable=assignment-from-no-return
+            except SourceError:
+                # SourceErrors should be preserved so that the
+                # plugin can communicate real error cases.
+                raise
+            except Exception as err:  # pylint: broad-except
+                # Generic errors point to bugs in the plugin, so
+                # we need to catch them and make sure they do not
+                # cause stacktraces
+
+                raise PluginError(
+                    "Source plugin '{}' failed to check its cached state: {}".format(self.get_kind(), err),
+                    reason="source-bug",
+                )
+
+            if self.__is_cached:
+                self.validate_cache()
+
+        return self.__is_cached
 
     # Wrapper function around plugin provided fetch method
     #
@@ -818,6 +862,24 @@ class Source(Plugin):
                 self.__do_fetch(previous_sources_dir=self.__ensure_directory(staging_directory))
         else:
             self.__do_fetch()
+
+        self.validate_cache()
+
+    # _fetch_done()
+    #
+    # Indicates that fetching the source has been done.
+    #
+    # Args:
+    #   fetched_original (bool): Whether the original sources had been asked (and fetched) or not
+    #
+    def _fetch_done(self, fetched_original):
+        if fetched_original:
+            # The original was fetched, we know we are cached
+            self.__is_cached = True
+        else:
+            # The original was not requested, we might or might not be cached
+            # Don't recompute, but allow recomputation later if needed
+            self.__is_cached = None
 
     # Wrapper for stage() api which gives the source
     # plugin a fully constructed path considering the
@@ -1429,7 +1491,7 @@ class Source(Plugin):
             # previous sources should never be in an inconsistent state
             assert src.is_resolved()
 
-            if src.get_consistency() == Consistency.RESOLVED:
+            if not src._is_cached():
                 src._fetch(previous_sources[0:index])
 
 
