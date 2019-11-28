@@ -145,7 +145,6 @@ class Stream:
     #    targets (list of str): Targets to pull
     #    selection (PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from fetching
-    #    use_artifact_config (bool): If artifact remote configs should be loaded
     #
     # Returns:
     #    (list of Element): The selected elements
@@ -155,7 +154,6 @@ class Stream:
         *,
         selection=PipelineSelection.NONE,
         except_targets=(),
-        use_artifact_config=False,
         load_refs=False
     ):
         with PROFILER.profile(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, "-") for t in targets)):
@@ -163,7 +161,6 @@ class Stream:
                 targets,
                 selection=selection,
                 except_targets=except_targets,
-                use_artifact_config=use_artifact_config,
                 load_refs=load_refs,
             )
 
@@ -276,17 +273,11 @@ class Stream:
     #
     def build(self, targets, *, selection=PipelineSelection.PLAN, ignore_junction_targets=False, remote=None):
 
-        use_config = True
-        if remote:
-            use_config = False
-
         elements = self._load(
             targets,
             selection=selection,
             ignore_junction_targets=ignore_junction_targets,
-            use_artifact_config=use_config,
             artifact_remote_url=remote,
-            use_source_config=True,
             dynamic_plan=True,
         )
 
@@ -337,15 +328,10 @@ class Stream:
     #
     def fetch(self, targets, *, selection=PipelineSelection.PLAN, except_targets=None, remote=None):
 
-        use_source_config = True
-        if remote:
-            use_source_config = False
-
         elements = self._load(
             targets,
             selection=selection,
             except_targets=except_targets,
-            use_source_config=use_source_config,
             source_remote_url=remote,
         )
 
@@ -398,15 +384,10 @@ class Stream:
     #
     def pull(self, targets, *, selection=PipelineSelection.NONE, ignore_junction_targets=False, remote=None):
 
-        use_config = True
-        if remote:
-            use_config = False
-
         elements = self._load(
             targets,
             selection=selection,
             ignore_junction_targets=ignore_junction_targets,
-            use_artifact_config=use_config,
             artifact_remote_url=remote,
             load_refs=True,
         )
@@ -439,15 +420,10 @@ class Stream:
     #
     def push(self, targets, *, selection=PipelineSelection.NONE, ignore_junction_targets=False, remote=None):
 
-        use_config = True
-        if remote:
-            use_config = False
-
         elements = self._load(
             targets,
             selection=selection,
             ignore_junction_targets=ignore_junction_targets,
-            use_artifact_config=use_config,
             artifact_remote_url=remote,
             load_refs=True,
         )
@@ -535,7 +511,7 @@ class Stream:
         tar=False
     ):
 
-        elements = self._load((target,), selection=selection, use_artifact_config=True, load_refs=True)
+        elements = self._load((target,), selection=selection, load_refs=True)
 
         # self.targets contains a list of the loaded target objects
         # if we specify --deps build, Stream._load() will return a list
@@ -614,7 +590,7 @@ class Stream:
     #
     def artifact_show(self, targets, *, selection=PipelineSelection.NONE):
         # Obtain list of Element and/or ArtifactElement objects
-        target_objects = self.load_selection(targets, selection=selection, use_artifact_config=True, load_refs=True)
+        target_objects = self.load_selection(targets, selection=selection, load_refs=True)
 
         if self._artifacts.has_fetch_remotes():
             self._pipeline.check_remotes(target_objects)
@@ -1159,19 +1135,17 @@ class Stream:
     # Args:
     #     artifact_url - The url of the artifact server to connect to.
     #     source_url - The url of the source server to connect to.
-    #     use_artifact_config - Whether to use the artifact config.
-    #     use_source_config - Whether to use the source config.
     #
     def __connect_remotes(
-        self, artifact_url: str, source_url: str, use_artifact_config: bool, use_source_config: bool
+        self, artifact_url: str, source_url: str
     ):
         # ArtifactCache.setup_remotes expects all projects to be fully loaded
         for project in self._context.get_projects():
             project.ensure_fully_loaded()
 
         # Connect to remote caches, this needs to be done before resolving element state
-        self._artifacts.setup_remotes(use_config=use_artifact_config, remote_url=artifact_url)
-        self._sourcecache.setup_remotes(use_config=use_source_config, remote_url=source_url)
+        self._artifacts.setup_remotes(remote_url=artifact_url)
+        self._sourcecache.setup_remotes(remote_url=source_url)
 
     # _load_tracking()
     #
@@ -1237,8 +1211,6 @@ class Stream:
     #    selection (PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from fetching
     #    ignore_junction_targets (bool): Whether junction targets should be filtered out
-    #    use_artifact_config (bool): Whether to initialize artifacts with the config
-    #    use_source_config (bool): Whether to initialize remote source caches with the config
     #    artifact_remote_url (str): A remote url for initializing the artifacts
     #    source_remote_url (str): A remote url for initializing source caches
     #
@@ -1252,8 +1224,6 @@ class Stream:
         selection=PipelineSelection.NONE,
         except_targets=(),
         ignore_junction_targets=False,
-        use_artifact_config=False,
-        use_source_config=False,
         artifact_remote_url=None,
         source_remote_url=None,
         dynamic_plan=False,
@@ -1277,7 +1247,7 @@ class Stream:
         self.targets = elements + artifacts
 
         # Connect to remote caches, this needs to be done before resolving element state
-        self.__connect_remotes(artifact_remote_url, source_remote_url, use_artifact_config, use_source_config)
+        self.__connect_remotes(artifact_remote_url, source_remote_url)
 
         # Now move on to loading primary selection.
         #

@@ -41,7 +41,7 @@ def test_artifact_cache_with_missing_capabilities_is_skipped(cli, tmpdir, datafi
             artifactcache = context.artifactcache
 
             # Manually setup the CAS remote
-            artifactcache.setup_remotes(use_config=True)
+            artifactcache.setup_remotes()
 
             assert (
                 not artifactcache.has_fetch_remotes()

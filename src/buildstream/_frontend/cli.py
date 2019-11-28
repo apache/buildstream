@@ -655,7 +655,7 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, pull_, c
             if not element:
                 raise AppError('Missing argument "ELEMENT".')
 
-        elements = app.stream.load_selection((element,), selection=selection, use_artifact_config=True)
+        elements = app.stream.load_selection((element,), selection=selection)
 
         # last one will be the element we want to stage, previous ones are
         # elements to try and pull

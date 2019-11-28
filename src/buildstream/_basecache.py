@@ -155,13 +155,12 @@ class BaseCache:
     # Sets up which remotes to use
     #
     # Args:
-    #    use_config (bool): Whether to use project configuration
     #    remote_url (str): Remote cache URL
     #
     # This requires that all of the projects which are to be processed in the session
     # have already been loaded and are observable in the Context.
     #
-    def setup_remotes(self, *, use_config=False, remote_url=None):
+    def setup_remotes(self, *, remote_url=None):
 
         # Ensure we do not double-initialise since this can be expensive
         if self._remotes_setup:
@@ -172,15 +171,17 @@ class BaseCache:
         # Initialize remote caches. We allow the commandline to override
         # the user config in some cases (for example `bst artifact push --remote=...`).
         has_remote_caches = False
-        if remote_url:
+
+        if remote_url is not None:
             self._set_remotes([RemoteSpec(remote_url, push=True)])
             has_remote_caches = True
-        if use_config:
+        else:
             for project in self.context.get_projects():
                 caches = self._configured_remote_cache_specs(self.context, project)
                 if caches:  # caches is a list of RemoteSpec instances
                     self._set_remotes(caches, project=project)
                     has_remote_caches = True
+
         if has_remote_caches:
             self._initialize_remotes()
 

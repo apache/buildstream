@@ -87,7 +87,7 @@ def test_pull(cli, tmpdir, datafiles):
             artifactcache = context.artifactcache
 
             # Manually setup the CAS remote
-            artifactcache.setup_remotes(use_config=True)
+            artifactcache.setup_remotes()
 
             assert artifactcache.has_push_remotes(plugin=element), "No remote configured for element target.bst"
             assert artifactcache.pull(element, element_key), "Pull operation failed"
@@ -140,7 +140,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
 
             artifactcache = context.artifactcache
             # Manually setup the CAS remote
-            artifactcache.setup_remotes(use_config=True)
+            artifactcache.setup_remotes()
             assert artifactcache.has_push_remotes()
 
             directory = remote_execution_pb2.Directory()

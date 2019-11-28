@@ -41,7 +41,7 @@ def _push(cli, cache_dir, project_dir, config_file, target):
                 e._initialize_state()
 
         # Manually setup the CAS remotes
-        artifactcache.setup_remotes(use_config=True)
+        artifactcache.setup_remotes()
         artifactcache.initialize_remotes()
 
         assert artifactcache.has_push_remotes(plugin=element), "No remote configured for element target.bst"
@@ -141,7 +141,7 @@ def test_push_message(tmpdir, datafiles):
             artifactcache = context.artifactcache
 
             # Manually setup the artifact remote
-            artifactcache.setup_remotes(use_config=True)
+            artifactcache.setup_remotes()
             artifactcache.initialize_remotes()
             assert artifactcache.has_push_remotes()
 
