@@ -7,7 +7,7 @@ Used to test that BuildStream core does not call fetch() for cached sources.
 
 """
 
-from buildstream import Consistency, Source
+from buildstream import Source
 
 
 class AlwaysCachedSource(Source):
@@ -25,9 +25,6 @@ class AlwaysCachedSource(Source):
 
     def is_cached(self):
         return True
-
-    def get_consistency(self):
-        return Consistency.CACHED
 
     def load_ref(self, node):
         pass

@@ -7,7 +7,7 @@ import contextlib
 import shutil
 import netrc
 
-from buildstream import Source, SourceError, Consistency
+from buildstream import Source, SourceError
 from buildstream import utils
 
 
@@ -91,16 +91,6 @@ class DownloadableFileSource(Source):
     def is_cached(self) -> bool:
         return os.path.isfile(self._get_mirror_file())
 
-    def get_consistency(self):
-        if self.ref is None:
-            return Consistency.INCONSISTENT
-
-        if os.path.isfile(self._get_mirror_file()):
-            return Consistency.CACHED
-
-        else:
-            return Consistency.RESOLVED
-
     def load_ref(self, node):
         self.ref = node.get_str("ref", None)
         self._warn_deprecated_etag(node)
@@ -133,7 +123,7 @@ class DownloadableFileSource(Source):
 
         # Just a defensive check, it is impossible for the
         # file to be already cached because Source.fetch() will
-        # not be called if the source is already Consistency.CACHED.
+        # not be called if the source is already cached.
         #
         if os.path.isfile(self._get_mirror_file()):
             return  # pragma: nocover
@@ -181,7 +171,7 @@ class DownloadableFileSource(Source):
                     etag = self._get_etag(self.ref)
 
                     # Do not re-download the file if the ETag matches.
-                    if etag and self.get_consistency() == Consistency.CACHED:
+                    if etag and self.is_cached():
                         request.add_header("If-None-Match", etag)
 
                 opener = self.__get_urlopener()

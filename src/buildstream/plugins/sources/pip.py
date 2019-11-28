@@ -72,7 +72,7 @@ import hashlib
 import os
 import re
 
-from buildstream import Consistency, Source, SourceError, utils
+from buildstream import Source, SourceError, utils
 
 _OUTPUT_DIRNAME = ".bst_pip_downloads"
 _PYPI_INDEX_URL = "https://pypi.org/simple/"
@@ -138,13 +138,6 @@ class PipSource(Source):
 
     def is_cached(self):
         return os.path.exists(self._mirror) and os.listdir(self._mirror)
-
-    def get_consistency(self):
-        if not self.ref:
-            return Consistency.INCONSISTENT
-        if os.path.exists(self._mirror) and os.listdir(self._mirror):
-            return Consistency.CACHED
-        return Consistency.RESOLVED
 
     def get_ref(self):
         return self.ref

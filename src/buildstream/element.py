@@ -2361,9 +2361,6 @@ class Element(Plugin):
             if not source.is_resolved():
                 self.__consistency = Consistency.INCONSISTENT
             else:
-                # FIXME: It'd be nice to remove this eventually
-                source._update_state()
-
                 if source._is_cached():
                     self.__consistency = min(self.__consistency, Consistency.CACHED)
                 else:

@@ -1,4 +1,4 @@
-from buildstream import Source, Consistency
+from buildstream import Source
 
 
 class BarSource(Source):
@@ -10,9 +10,6 @@ class BarSource(Source):
 
     def configure(self, node):
         pass
-
-    def get_consistency(self):
-        return Consistency.INCONSISTENT
 
 
 def setup():

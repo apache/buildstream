@@ -541,7 +541,7 @@ def test_track_unlisted_submodule(cli, tmpdir, datafiles, fail):
     assert "git:unlisted-submodule" not in result.stderr
 
     # We won't get a warning/error when tracking either, the source
-    # has not become Consistency.CACHED so the opportunity to check
+    # has not become cached so the opportunity to check
     # for the warning has not yet arisen.
     result = cli.run(project=project, args=["source", "track", "target.bst"])
     result.assert_success()

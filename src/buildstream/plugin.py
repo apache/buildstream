@@ -353,8 +353,8 @@ class Plugin:
         which could possibly affect the output and return a dictionary of these settings.
 
         For Sources, this is guaranteed to only be called if
-        :func:`Source.get_consistency() <buildstream.source.Source.get_consistency>`
-        has not returned :func:`Consistency.INCONSISTENT <buildstream.source.Consistency.INCONSISTENT>`
+        :func:`Source.is_resolved() <buildstream.source.Source.is_resolved>`
+        has returned `True`
         which is to say that the Source is expected to have an exact *ref* indicating
         exactly what source is going to be staged.
         """

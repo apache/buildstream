@@ -38,7 +38,7 @@ details on common configuration options for sources.
 
 import os
 from buildstream.storage.directory import Directory
-from buildstream import Source, SourceError, Consistency
+from buildstream import Source, SourceError
 
 
 class LocalSource(Source):
@@ -60,9 +60,6 @@ class LocalSource(Source):
 
     def preflight(self):
         pass
-
-    def get_consistency(self):
-        return Consistency.CACHED
 
     def is_resolved(self):
         return True

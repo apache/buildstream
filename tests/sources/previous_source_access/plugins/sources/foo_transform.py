@@ -10,7 +10,7 @@ previous sources, and copies its contents to a file called "filetransform".
 import os
 import hashlib
 
-from buildstream import Consistency, Source, SourceError, utils
+from buildstream import Source, SourceError, utils
 
 
 class FooTransformSource(Source):
@@ -40,21 +40,17 @@ class FooTransformSource(Source):
         return (self.ref,)
 
     def is_cached(self):
-        return self.get_consistency() == Consistency.CACHED
-
-    def get_consistency(self):
-        if self.ref is None:
-            return Consistency.INCONSISTENT
         # If we have a file called "filetransform", verify that its checksum
-        # matches our ref. Otherwise, it resolved but not cached.
+        # matches our ref. Otherwise, it is not cached.
         fpath = os.path.join(self.mirror, "filetransform")
         try:
             with open(fpath, "rb") as f:
                 if hashlib.sha256(f.read()).hexdigest() == self.ref.strip():
-                    return Consistency.CACHED
-        except Exception:
+                    return True
+        except FileNotFoundError:
             pass
-        return Consistency.RESOLVED
+
+        return False
 
     def get_ref(self):
         return self.ref

@@ -1,6 +1,6 @@
 import os
 
-from buildstream import Source, Consistency
+from buildstream import Source
 
 
 class KeyTest(Source):
@@ -22,12 +22,6 @@ class KeyTest(Source):
 
     def is_cached(self):
         return False
-
-    def get_consistency(self):
-        if self.ref:
-            return Consistency.RESOLVED
-        else:
-            return Consistency.INCONSISTENT
 
     def load_ref(self, node):
         pass

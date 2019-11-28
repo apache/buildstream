@@ -30,7 +30,7 @@ from tempfile import TemporaryFile
 from configparser import RawConfigParser
 
 from .source import Source, SourceError, SourceFetcher
-from .types import Consistency, CoreWarnings
+from .types import CoreWarnings
 from . import utils
 from .types import FastEnum
 from .utils import move_atomic, DirectoryExistsError
@@ -516,13 +516,6 @@ class _GitSourceBase(Source):
             key.append({"submodule_checkout_overrides": self.submodule_checkout_overrides})
 
         return key
-
-    def get_consistency(self):
-        if self._have_all_refs():
-            return Consistency.CACHED
-        elif self.mirror.ref is not None:
-            return Consistency.RESOLVED
-        return Consistency.INCONSISTENT
 
     def is_resolved(self):
         return self.mirror.ref is not None

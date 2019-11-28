@@ -59,10 +59,6 @@ For loading and configuration purposes, Sources must implement the
 Sources expose the following abstract methods. Unless explicitly mentioned,
 these methods are mandatory to implement.
 
-* :func:`Source.get_consistency() <buildstream.source.Source.get_consistency>`
-
-  Report the sources consistency state.
-
 * :func:`Source.load_ref() <buildstream.source.Source.load_ref>`
 
   Load the ref from a specific YAML node
@@ -169,7 +165,7 @@ from typing import Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
 from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
-from .types import Consistency, SourceRef, Union, List
+from .types import SourceRef, Union, List
 from ._exceptions import BstError, ImplError, PluginError, ErrorDomain
 from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage
@@ -356,7 +352,6 @@ class Source(Plugin):
         self.__element_index = meta.element_index  # The index of the source in the owning element's source list
         self.__element_kind = meta.element_kind  # The kind of the element owning this source
         self.__directory = meta.directory  # Staging relative directory
-        self.__consistency = Consistency.INCONSISTENT  # Cached consistency state
         self.__meta_kind = meta.kind  # The kind of this source, required for unpickling
 
         self.__key = None  # Cache key for source
@@ -391,13 +386,6 @@ class Source(Plugin):
     #############################################################
     #                      Abstract Methods                     #
     #############################################################
-    def get_consistency(self) -> int:
-        """Report whether the source has a resolved reference
-
-        Returns:
-           (:class:`.Consistency`): The source consistency
-        """
-        raise ImplError("Source plugin '{}' does not implement get_consistency()".format(self.get_kind()))
 
     def load_ref(self, node: MappingNode) -> None:
         """Loads the *ref* for this Source from the specified *node*.
@@ -562,9 +550,8 @@ class Source(Plugin):
         """Implement any validations once we know the sources are cached
 
         This is guaranteed to be called only once for a given session
-        once the sources are known to be
-        :attr:`Consistency.CACHED <buildstream.types.Consistency.CACHED>`,
-        if source tracking is enabled in the session for this source,
+        once the sources are known to be cached.
+        If source tracking is enabled in the session for this source,
         then this will only be called if the sources become cached after
         tracking completes.
 
@@ -782,37 +769,6 @@ class Source(Plugin):
         except BstError as e:
             # Prepend provenance to the error
             raise SourceError("{}: {}".format(self, e), reason=e.reason) from e
-
-    # Update cached consistency for a source
-    #
-    # This must be called whenever the state of a source may have changed.
-    #
-    def _update_state(self):
-
-        if self.__consistency < Consistency.CACHED:
-
-            # Source consistency interrogations are silent.
-            context = self._get_context()
-            with context.messenger.silence():
-                try:
-                    self.__consistency = self.get_consistency()  # pylint: disable=assignment-from-no-return
-                except SourceError:
-                    # SourceErrors should be preserved so that the
-                    # plugin can communicate real error cases.
-                    raise
-                except Exception as err:  # pylint: disable=broad-except
-                    # Generic errors point to bugs in the plugin, so
-                    # we need to catch them and make sure they do not
-                    # cause stacktraces
-                    raise PluginError(
-                        "Source plugin '{}' failed to compute source consistency: {}".format(self.get_kind(), err),
-                        reason="source-bug",
-                    )
-
-                # Give the Source an opportunity to validate the cached
-                # sources as soon as the Source becomes Consistency.CACHED.
-                if self.__consistency == Consistency.CACHED:
-                    self.validate_cache()
 
     # Get whether the source is cached by the source plugin
     #
@@ -1312,7 +1268,6 @@ class Source(Plugin):
         #
         clone._preflight()
         clone._load_ref()
-        clone._update_state()
 
         return clone
 

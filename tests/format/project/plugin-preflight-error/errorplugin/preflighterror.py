@@ -1,4 +1,4 @@
-from buildstream import Source, SourceError, Consistency
+from buildstream import Source, SourceError
 
 
 class PreflightErrorSource(Source):
@@ -12,9 +12,6 @@ class PreflightErrorSource(Source):
 
     def get_unique_key(self):
         return {}
-
-    def get_consistency(self):
-        return Consistency.CACHED
 
     def get_ref(self):
         return None

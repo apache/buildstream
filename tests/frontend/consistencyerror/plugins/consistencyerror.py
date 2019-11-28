@@ -15,9 +15,6 @@ class ConsistencyErrorSource(Source):
         return True
 
     def is_cached(self):
-        return True
-
-    def get_consistency(self):
 
         # Raise an error unconditionally
         raise SourceError("Something went terribly wrong", reason="the-consistency-error")

@@ -1,4 +1,4 @@
-from buildstream import Source, Consistency
+from buildstream import Source
 
 
 # Just a dummy plugin which does not support the new load_ref() method.
@@ -14,9 +14,6 @@ class NoLoadRefSource(Source):
 
     def get_unique_key(self):
         return {}
-
-    def get_consistency(self):
-        return Consistency.CACHED
 
     def get_ref(self):
         return None
