@@ -297,7 +297,7 @@ class SandboxRemote(SandboxREAPI):
                         "{} output files are missing on the CAS server".format(len(remote_missing_blobs))
                     )
 
-    def _execute_action(self, action):
+    def _execute_action(self, action, flags):
         context = self._get_context()
         project = self._get_project()
         cascache = context.get_cascache()
