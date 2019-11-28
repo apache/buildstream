@@ -254,5 +254,5 @@ def test_source_push_build_fail(cli, tmpdir, datafiles):
         res.assert_task_error(ErrorDomain.ELEMENT, None)
 
         # Sources are not pushed as the build queue is before the source push
-        # queue. We explicitly don't want to push failed build source by default.
+        # queue.
         assert "Pushed source " not in res.stderr

@@ -1846,8 +1846,7 @@ class Element(Plugin):
         return True
 
     def _skip_source_push(self):
-        # Skip push if we have no sources, are workspaced or the given element failed to build
-        if not self.__sources or self._get_workspace() or not self._get_build_result()[0]:
+        if not self.__sources or self._get_workspace():
             return True
         return not (self.__sourcecache.has_push_remotes(plugin=self) and self._source_cached())
 
