@@ -134,12 +134,6 @@ class Consistency(FastEnum):
     be fetched, however they cannot be staged.
     """
 
-    CACHED = 2
-    """Cached
-
-    Sources have a cached unstaged copy in the source directory.
-    """
-
     def __ge__(self, other):
         if self.__class__ is not other.__class__:
             raise ValueError("Unexpected comparison between {} and {}".format(self, repr(other)))

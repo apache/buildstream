@@ -499,7 +499,9 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
         result.assert_main_error(ErrorDomain.PLUGIN, "git:unlisted-submodule")
     else:
         result.assert_success()
-        assert "git:unlisted-submodule" in result.stderr
+        # We have cached things internally and successfully. Therefore, the plugin
+        # is not involved in checking whether the cache is correct or not.
+        assert "git:unlisted-submodule" not in result.stderr
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -613,7 +615,9 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
         result.assert_main_error(ErrorDomain.PLUGIN, "git:invalid-submodule")
     else:
         result.assert_success()
-        assert "git:invalid-submodule" in result.stderr
+        # We have cached things internally and successfully. Therefore, the plugin
+        # is not involved in checking whether the cache is correct or not.
+        assert "git:invalid-submodule" not in result.stderr
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")

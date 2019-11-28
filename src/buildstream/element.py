@@ -263,6 +263,7 @@ class Element(Plugin):
         self.__pull_done = False  # Whether pull was attempted
         self.__cached_successfully = None  # If the Element is known to be successfully cached
         self.__has_all_sources_in_source_cache = None  # If the sources are known to be successfully cached
+        self.__has_all_sources_cached = False  # Whether all sources have a local copy of their respective sources
         self.__splits = None  # Resolved regex objects for computing split domains
         self.__whitelist_regex = None  # Resolved regex object to check if file is allowed to overlap
         self.__tainted = None  # Whether the artifact is tainted and should not be shared
@@ -1317,6 +1318,13 @@ class Element(Plugin):
         # source state. We need to update source state.
         self.__update_source_state()
 
+        # Check whether sources are now cached.
+        # This is done here so that we don't throw an exception trying to show the pipeline at the end
+        # This has for side-effect to cache this fact too, which will change the object's state.
+        # This is done here rather than later so we can validate that the sources are valid locally
+        self._has_all_sources_in_source_cache()
+        self._has_all_sources_cached()
+
     # _track():
     #
     # Calls track() on the Element sources
@@ -2190,7 +2198,9 @@ class Element(Plugin):
     # copy of their sources.
     #
     def _has_all_sources_cached(self):
-        return self.__consistency >= Consistency.CACHED
+        if not self.__has_all_sources_cached:
+            self.__has_all_sources_cached = all(source._is_cached() for source in self.__sources)
+        return self.__has_all_sources_cached
 
     def _should_fetch(self, fetch_original=False):
         """ return bool of if we need to run the fetch stage for this element
@@ -2352,23 +2362,12 @@ class Element(Plugin):
     # from the workspace, is a component of the element's cache keys.
     #
     def __update_source_state(self):
-
-        old_consistency = self.__consistency
-        self.__consistency = Consistency.CACHED
-
         # Determine overall consistency of the element
         for source in self.__sources:
             if not source.is_resolved():
-                self.__consistency = Consistency.INCONSISTENT
-            else:
-                if source._is_cached():
-                    self.__consistency = min(self.__consistency, Consistency.CACHED)
-                else:
-                    self.__consistency = min(self.__consistency, Consistency.RESOLVED)
-
-        # If the source state changes, our cache key must also change,
-        # since it contains the source's key.
-        if old_consistency != self.__consistency:
+                break
+        else:
+            self.__consistency = Consistency.RESOLVED
             self.__update_cache_keys()
 
     # __can_build_incrementally()
