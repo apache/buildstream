@@ -32,7 +32,6 @@ from buildstream.testing.integration import integration_cache  # pylint: disable
 
 from tests.testutils.repo.git import Git
 from tests.testutils.repo.bzr import Bzr
-from tests.testutils.repo.tar import Tar
 from tests.testutils.repo.zip import Zip
 
 
@@ -112,7 +111,6 @@ def remote_services(request):
 #################################################
 register_repo_kind("git", Git, None)
 register_repo_kind("bzr", Bzr, None)
-register_repo_kind("tar", Tar, None)
 register_repo_kind("zip", Zip, None)
 
 
