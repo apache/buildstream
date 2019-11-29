@@ -53,12 +53,6 @@ except ProgramNotFoundError:
     HAVE_BWRAP = False
     HAVE_BWRAP_JSON_STATUS = False
 
-try:
-    utils.get_host_tool("lzip")
-    HAVE_LZIP = True
-except ProgramNotFoundError:
-    HAVE_LZIP = False
-
 casd_path = utils.get_host_tool("buildbox-casd")
 CASD_SEPARATE_USER = bool(os.stat(casd_path).st_mode & stat.S_ISUID)
 del casd_path

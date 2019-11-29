@@ -50,7 +50,6 @@ information.
 
    sources/local
    sources/remote
-   sources/tar
    sources/zip
    sources/git
    sources/bzr
