@@ -49,7 +49,6 @@ Sources
    sources/git
    sources/bzr
    sources/patch
-   sources/deb
    sources/pip
 
 
