@@ -114,7 +114,7 @@ class Directory:
 
         raise NotImplementedError()
 
-    def import_single_file(self, external_pathspec):
+    def import_single_file(self, external_pathspec, properties=None):
         """Imports a single file from an external path"""
         raise NotImplementedError()
 

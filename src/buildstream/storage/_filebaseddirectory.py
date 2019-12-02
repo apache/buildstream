@@ -130,7 +130,7 @@ class FileBasedDirectory(Directory):
                 os.utime(os.path.join(self.external_directory, f), times=(cur_time, cur_time))
         return import_result
 
-    def import_single_file(self, external_pathspec):
+    def import_single_file(self, external_pathspec, properties=None):
         dstpath = os.path.join(self.external_directory, os.path.basename(external_pathspec))
         result = FileListResult()
         if os.path.exists(dstpath):

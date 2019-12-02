@@ -29,13 +29,14 @@ See also: :ref:`sandboxing`.
 
 import os
 import stat
+import copy
 import tarfile as tarfilelib
 from io import StringIO
 
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .directory import Directory, VirtualDirectoryError, _FileType
 from ._filebaseddirectory import FileBasedDirectory
-from ..utils import FileListResult, BST_ARBITRARY_TIMESTAMP
+from ..utils import FileListResult, BST_ARBITRARY_TIMESTAMP, _get_file_mtimestamp
 
 
 class IndexEntry:
@@ -50,7 +51,8 @@ class IndexEntry:
         target=None,
         is_executable=False,
         buildstream_object=None,
-        modified=False
+        modified=False,
+        node_properties=None
     ):
         self.name = name
         self.type = entrytype
@@ -59,6 +61,7 @@ class IndexEntry:
         self.is_executable = is_executable
         self.buildstream_object = buildstream_object
         self.modified = modified
+        self.node_properties = copy.deepcopy(node_properties)
 
     def get_directory(self, parent):
         if not self.buildstream_object:
@@ -126,7 +129,11 @@ class CasBasedDirectory(Directory):
             self.index[entry.name] = IndexEntry(entry.name, _FileType.DIRECTORY, digest=entry.digest)
         for entry in pb2_directory.files:
             self.index[entry.name] = IndexEntry(
-                entry.name, _FileType.REGULAR_FILE, digest=entry.digest, is_executable=entry.is_executable
+                entry.name,
+                _FileType.REGULAR_FILE,
+                digest=entry.digest,
+                is_executable=entry.is_executable,
+                node_properties=entry.node_properties,
             )
         for entry in pb2_directory.symlinks:
             self.index[entry.name] = IndexEntry(entry.name, _FileType.SYMLINK, target=entry.target)
@@ -150,11 +157,18 @@ class CasBasedDirectory(Directory):
 
         return newdir
 
-    def _add_file(self, basename, filename, modified=False, can_link=False):
+    def _add_file(self, basename, filename, modified=False, can_link=False, properties=None):
         entry = IndexEntry(filename, _FileType.REGULAR_FILE, modified=modified or filename in self.index)
         path = os.path.join(basename, filename)
         entry.digest = self.cas_cache.add_object(path=path, link_directly=can_link)
         entry.is_executable = os.access(path, os.X_OK)
+        properties = properties or []
+        entry.node_properties = []
+        if "MTime" in properties:
+            node_property = remote_execution_pb2.NodeProperty()
+            node_property.name = "MTime"
+            node_property.value = _get_file_mtimestamp(path)
+            entry.node_properties.append(node_property)
         self.index[filename] = entry
 
         self.__invalidate_digest()
@@ -333,6 +347,7 @@ class CasBasedDirectory(Directory):
                             digest=entry.digest,
                             is_executable=entry.is_executable,
                             modified=True,
+                            node_properties=entry.node_properties,
                         )
                         self.__invalidate_digest()
                     else:
@@ -341,7 +356,14 @@ class CasBasedDirectory(Directory):
                     result.files_written.append(relative_pathname)
 
     def import_files(
-        self, external_pathspec, *, filter_callback=None, report_written=True, update_mtime=False, can_link=False
+        self,
+        external_pathspec,
+        *,
+        filter_callback=None,
+        report_written=True,
+        update_mtime=False,
+        can_link=False,
+        properties=None
     ):
         """ See superclass Directory for arguments """
 
@@ -368,13 +390,14 @@ class CasBasedDirectory(Directory):
 
         return result
 
-    def import_single_file(self, external_pathspec):
+    def import_single_file(self, external_pathspec, properties=None):
         result = FileListResult()
         if self._check_replacement(os.path.basename(external_pathspec), os.path.dirname(external_pathspec), result):
             self._add_file(
                 os.path.dirname(external_pathspec),
                 os.path.basename(external_pathspec),
                 modified=os.path.basename(external_pathspec) in result.overwritten,
+                properties=properties,
             )
             result.files_written.append(external_pathspec)
         return result
@@ -639,6 +662,8 @@ class CasBasedDirectory(Directory):
                     filenode.name = name
                     filenode.digest.CopyFrom(entry.digest)
                     filenode.is_executable = entry.is_executable
+                    if entry.node_properties:
+                        filenode.node_properties.extend(copy.deepcopy(sorted(entry.node_properties)))
                 elif entry.type == _FileType.SYMLINK:
                     symlinknode = pb2_directory.symlinks.add()
                     symlinknode.name = name
