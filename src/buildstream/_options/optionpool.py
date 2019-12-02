@@ -312,6 +312,18 @@ class OptionPool:
         return False
 
     def _init_environment(self):
+        # Bandit (our code security linter) requires the function to
+        # be called select_autoescape, not jinja2.select_autoescape,
+        # so we can't use the function in its original scope.
+        from jinja2 import select_autoescape
+
         # jinja2 environment, with default globals cleared out of the way
-        self._environment = jinja2.Environment(undefined=jinja2.StrictUndefined)
+        #
+        # Note: We don't really care what autoescape is set up to
+        # escape, as long as it doesn't escape our strings - we don't
+        # use jinja to produce markup vulnerable to XSS, and we don't
+        # run it on files directly.
+        self._environment = jinja2.Environment(
+            undefined=jinja2.StrictUndefined, autoescape=select_autoescape(default_for_string=False, default=True)
+        )
         self._environment.globals = []
