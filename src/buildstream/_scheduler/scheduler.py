@@ -171,6 +171,14 @@ class Scheduler:
         # Hold on to the queues to process
         self.queues = queues
 
+        # NOTE: Enforce use of `SafeChildWatcher` as we generally don't want
+        # background threads.
+        # In Python 3.8+, `ThreadedChildWatcher` is the default watcher, and not `SafeChildWatcher`
+        # This needs to be done before we call `new_event_loop`, otherwise the loop will not be
+        # setup correctly with the watcher.
+        _watcher = asyncio.SafeChildWatcher()
+        asyncio.set_child_watcher(_watcher)
+
         # Ensure that we have a fresh new event loop, in case we want
         # to run another test in this thread.
         self.loop = asyncio.new_event_loop()
@@ -187,7 +195,6 @@ class Scheduler:
 
         # Watch casd while running to ensure it doesn't die
         self._casd_process = casd_process_manager.process
-        _watcher = asyncio.get_child_watcher()
 
         def abort_casd(pid, returncode):
             asyncio.get_event_loop().call_soon(self._abort_on_casd_failure, pid, returncode)
