@@ -162,7 +162,7 @@ class ZipSource(DownloadableFileSource):
             # Avoid considering the '.' directory, if any is included in the archive
             # this is to avoid the default 'base-dir: *' value behaving differently
             # depending on whether the archive was encoded with a leading '.' or not
-            elif member.filename == "." or member.filename == "./":
+            if member.filename == "." or member.filename == "./":
                 continue
 
             yield member.filename

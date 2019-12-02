@@ -493,17 +493,17 @@ class SandboxBwrap(Sandbox):
                         tries += 1
                         time.sleep(1 / 100)
                         continue
-                    else:
-                        # We've reached the upper limit of tries, bail out now
-                        # because something must have went wrong
-                        #
-                        raise
-                elif e.errno == errno.ENOENT:
+
+                    # We've reached the upper limit of tries, bail out now
+                    # because something must have went wrong
+                    #
+                    raise
+                if e.errno == errno.ENOENT:
                     # Bubblewrap cleaned it up for us, no problem if we cant remove it
                     break
-                else:
-                    # Something unexpected, reraise this error
-                    raise
+
+                # Something unexpected, reraise this error
+                raise
             else:
                 # Successfully removed the symlink
                 break

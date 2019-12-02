@@ -765,7 +765,7 @@ def _pretty_size(size, dec_places=0):
     for unit in units:
         if psize < 1024:
             break
-        elif unit != units[-1]:
+        if unit != units[-1]:
             psize /= 1024
     return "{size:g}{unit}".format(size=round(psize, dec_places), unit=unit)
 
@@ -914,8 +914,8 @@ def _process_list(
             # Skip this missing file
             if ignore_missing:
                 continue
-            else:
-                raise UtilError("Source file is missing: {}".format(srcpath)) from e
+
+            raise UtilError("Source file is missing: {}".format(srcpath)) from e
 
         if stat.S_ISDIR(mode):
             # Ensure directory exists in destination

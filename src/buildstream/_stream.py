@@ -647,7 +647,7 @@ class Stream:
             if not obj._cached():
                 self._message(MessageType.WARN, "{} is not cached".format(ref))
                 continue
-            elif not obj._cached_logs():
+            if not obj._cached_logs():
                 self._message(MessageType.WARN, "{} is cached without log files".format(ref))
                 continue
 
