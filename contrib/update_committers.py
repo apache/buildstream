@@ -2,6 +2,7 @@
 """A script to set up COMMITTERS.rst according to gitlab committers."""
 
 import os
+import sys
 import subprocess
 import argparse
 import json
@@ -49,8 +50,8 @@ def get_table_entry(entry: str) -> str:
 def find_repository_root() -> str:
     root = os.getcwd()
     try:
-        root = subprocess.check_output('git rev-parse --show-toplevel', shell=True)
-    except CalledProcessError as e:
+        root = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'])
+    except subprocess.CalledProcessError as e:
         print('The current working directory is not a git repository. \
                \"git rev-parse --show-toplevel\" exited with code {}.'.format(e.returncode))
         sys.exit(GIT_ERROR)
@@ -61,7 +62,7 @@ def create_committers_file(committers: OrderedDict):
     repository_root = find_repository_root()
     contrib_directory = os.path.join(repository_root, 'contrib')
     file_loader = FileSystemLoader(contrib_directory)
-    env = Environment(loader=file_loader)
+    env = Environment(loader=file_loader, autoescape=True)
     template = env.get_template('COMMITTERS.rst.j2')
     render_output = template.render(committers=committers, get_table_entry=get_table_entry)
     committers_file = os.path.join(repository_root, 'COMMITTERS.rst')
@@ -72,16 +73,15 @@ def create_committers_file(committers: OrderedDict):
 
 def commit_changes_if_needed(token: str):
     committers_file = os.path.join(find_repository_root(), 'COMMITTERS.rst')
-    git_diff = subprocess.call('git diff --quiet {}'.format(committers_file), shell=True)
+    git_diff = subprocess.call(['git', 'diff', '--quiet', committers_file])
     if git_diff:
         commit_message = '\'Update COMMITTERS.rst\''
         branch_name = 'update_committers'
-        subprocess.call('git add {}'.format(committers_file), shell=True)
-        subprocess.call('git commit -m {}'.format(commit_message), shell=True)
+        subprocess.call(['git', 'add', committers_file])
+        subprocess.call(['git', 'commit', '-m', commit_message])
         try:
-            subprocess.call('git push -u origin {} 2>&1'.format(branch_name),
-                            shell=True)
-        except CalledProcessError as e:
+            subprocess.check_call(['git', 'push', '-u', 'origin', branch_name], stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
             print('Could not push to remote branch. \"git push -u origin {}\" \
                    exited with code {}.'.format(branch_name, e.returncode))
             sys.exit(GIT_ERROR)
@@ -90,7 +90,9 @@ def commit_changes_if_needed(token: str):
                                        'title': 'Update COMMITTERS.rst file'})
         request = urllib.request.Request(MERGE_REQUEST, data=bytearray(data, 'ASCII'))
         request.add_header('PRIVATE-TOKEN', token)
-        response = urllib.request.urlopen(request).read().decode('utf-8')
+        response = urllib.request.urlopen(request)
+        if response.getcode() != 200:
+            print("Failed to open MR; please open an MR for branch {} manually".format(branch_name))
 
 
 def main():
