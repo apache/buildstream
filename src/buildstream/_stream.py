@@ -678,7 +678,7 @@ class Stream:
                 continue
             if isinstance(obj, ArtifactElement):
                 obj.name = ref
-            files = [f for f in obj._walk_artifact_files()]
+            files = list(obj._walk_artifact_files())
             elements_to_files[obj.name] = files
         return elements_to_files
 
