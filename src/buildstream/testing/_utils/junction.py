@@ -70,4 +70,4 @@ class _SimpleGit(Repo):
             kwargs["env"] = dict(GIT_ENV, PWD=self.repo)
         kwargs.setdefault("cwd", self.repo)
         kwargs.setdefault("check", True)
-        return subprocess.run(argv, **kwargs)
+        return subprocess.run(argv, **kwargs)  # pylint: disable=subprocess-run-check

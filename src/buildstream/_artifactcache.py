@@ -311,8 +311,8 @@ class ArtifactCache(BaseCache):
                 if artifact:
                     element.info("Pulled artifact {} <- {}".format(display_key, remote))
                     break
-                else:
-                    element.info("Remote ({}) does not have artifact {} cached".format(remote, display_key))
+
+                element.info("Remote ({}) does not have artifact {} cached".format(remote, display_key))
             except CASError as e:
                 element.warn("Could not pull from remote {}: {}".format(remote, e))
                 errors.append(e)

@@ -31,12 +31,13 @@ class ExternalPluginRepo:
     def clone(self, location):
         self._clone_location = os.path.join(location, self.name)
         subprocess.run(
-            ["git", "clone", "--single-branch", "--branch", self.ref, "--depth", "1", self.url, self._clone_location,]
+            ["git", "clone", "--single-branch", "--branch", self.ref, "--depth", "1", self.url, self._clone_location,],
+            check=True,
         )
         return self._clone_location
 
     def install(self):
-        subprocess.run(["pip3", "install", self._clone_location])
+        subprocess.run(["pip3", "install", self._clone_location], check=True)
 
     def test(self, args):
         test_files = self._match_test_patterns()

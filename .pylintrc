@@ -106,6 +106,8 @@ disable=#####################################
         #######################################################
         # Messages that we would like to enable at some point #
         #######################################################
+        # We have many circular imports that need breaking
+        import-outside-toplevel,
 
         duplicate-code,
 

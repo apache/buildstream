@@ -315,8 +315,8 @@ class BaseCache:
                 if on_failure:
                     on_failure(remote_spec, str(err))
                     continue
-                else:
-                    raise
+
+                raise
 
             # Finally, we can instantiate the remote. Note that
             # NamedTuples are hashable, so we can use them as pretty

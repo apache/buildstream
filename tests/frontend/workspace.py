@@ -42,7 +42,7 @@ from buildstream._workspaces import BST_WORKSPACE_FORMAT_VERSION
 
 from tests.testutils import create_artifact_share, create_element_size, wait_for_cache_granularity
 
-repo_kinds = [(kind) for kind in ALL_REPO_KINDS]
+repo_kinds = ALL_REPO_KINDS
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)

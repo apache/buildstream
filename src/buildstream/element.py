@@ -1965,7 +1965,7 @@ class Element(Plugin):
                         sandbox._set_mount_source(mount.path, mount.host_path)
 
             if command:
-                argv = [arg for arg in command]
+                argv = command
             else:
                 argv = shell_command
 

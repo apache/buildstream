@@ -1004,7 +1004,7 @@ class Source(Plugin):
             # If we're synthesising missing list entries, we know we're
             # doing this for project.refs so synthesise empty dicts for the
             # intervening entries too
-            lpath = [step for step in path]
+            lpath = path.copy()
             lpath.append("")  # We know the last step will be a string key
             for step, next_step in zip(lpath, lpath[1:]):
                 if type(step) is str:  # pylint: disable=unidiomatic-typecheck

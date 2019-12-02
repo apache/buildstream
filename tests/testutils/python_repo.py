@@ -88,8 +88,7 @@ def generate_pip_package(tmpdir, pypi, name, version="0.1", dependencies=None):
     os.chmod(main_file, 0o644)
 
     # Run sdist with a fresh process
-    p = subprocess.run([sys.executable, "setup.py", "sdist"], cwd=tmpdir)
-    assert p.returncode == 0
+    subprocess.run([sys.executable, "setup.py", "sdist"], cwd=tmpdir, check=True)
 
     # create directory for this package in pypi resulting in a directory
     # tree resembling the following structure:
