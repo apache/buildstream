@@ -92,7 +92,7 @@ from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, ImplError, SourceCacheError
 from .exceptions import ErrorDomain, LoadErrorReason
-from .utils import FileListResult
+from .utils import FileListResult, BST_ARBITRARY_TIMESTAMP
 from . import utils
 from . import _cachekey
 from . import _site
@@ -1467,11 +1467,10 @@ class Element(Plugin):
                             reason="import-source-files-fail",
                         )
 
+            # Set update_mtime to ensure deterministic mtime of sources at build time
             with utils._deterministic_umask():
-                vdirectory.import_files(import_dir)
+                vdirectory.import_files(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP)
 
-        # Ensure deterministic mtime of sources at build time
-        vdirectory.set_deterministic_mtime()
         # Ensure deterministic owners of sources at build time
         vdirectory.set_deterministic_user()
 
