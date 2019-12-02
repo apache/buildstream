@@ -118,7 +118,7 @@ class _Profiler:
         self._valid_topics = False
 
         if settings:
-            self.enabled_topics = {topic for topic in settings.split(":")}
+            self.enabled_topics = set(settings.split(":"))
 
     @contextlib.contextmanager
     def profile(self, topic, key, message=None):

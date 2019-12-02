@@ -647,7 +647,7 @@ class Stream:
             if not obj._cached():
                 self._message(MessageType.WARN, "{} is not cached".format(ref))
                 continue
-            elif not obj._cached_logs():
+            if not obj._cached_logs():
                 self._message(MessageType.WARN, "{} is cached without log files".format(ref))
                 continue
 
@@ -678,7 +678,7 @@ class Stream:
                 continue
             if isinstance(obj, ArtifactElement):
                 obj.name = ref
-            files = [f for f in obj._walk_artifact_files()]
+            files = list(obj._walk_artifact_files())
             elements_to_files[obj.name] = files
         return elements_to_files
 

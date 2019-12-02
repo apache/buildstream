@@ -91,7 +91,7 @@ def _get_mtimes(root):
 
 
 def get_mtimes(root):
-    return {k: v for (k, v) in set(_get_mtimes(root))}
+    return dict(set(_get_mtimes(root)))
 
 
 def check_buildtree(

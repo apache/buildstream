@@ -221,12 +221,12 @@ class CasBasedDirectory(Directory):
             else:
                 if path == ".":
                     continue
-                elif path == "..":
+                if path == "..":
                     if current_dir.parent is not None:
                         current_dir = current_dir.parent
                     # In POSIX /.. == / so just stay at the root dir
                     continue
-                elif create:
+                if create:
                     current_dir = current_dir._add_directory(path)
                 else:
                     error = "'{}' not found in {}"
