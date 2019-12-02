@@ -779,8 +779,8 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
     tags = set(tags.splitlines())
     assert tags == set(["tag1", "tag2"])
 
-    p = subprocess.run(["git", "log", repo.rev_parse("uselesstag")], cwd=checkout)
-    assert p.returncode != 0
+    with pytest.raises(subprocess.CalledProcessError):
+        subprocess.run(["git", "log", repo.rev_parse("uselesstag")], cwd=checkout, check=True)
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -888,8 +888,8 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
 
     assert set(rev_list.splitlines()) == set([tagged_ref])
 
-    p = subprocess.run(["git", "log", repo.rev_parse("uselesstag")], cwd=checkout)
-    assert p.returncode != 0
+    with pytest.raises(subprocess.CalledProcessError):
+        subprocess.run(["git", "log", repo.rev_parse("uselesstag")], cwd=checkout, check=True)
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
