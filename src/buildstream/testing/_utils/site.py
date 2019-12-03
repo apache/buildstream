@@ -2,6 +2,7 @@
 # so we dont have to repeat this everywhere
 #
 import os
+import stat
 import subprocess
 import sys
 import platform
@@ -64,6 +65,10 @@ try:
     HAVE_ARPY = True
 except ImportError:
     HAVE_ARPY = False
+
+casd_path = utils.get_host_tool("buildbox-casd")
+CASD_SEPARATE_USER = bool(os.stat(casd_path).st_mode & stat.S_ISUID)
+del casd_path
 
 try:
     utils.get_host_tool("buildbox")
