@@ -10,7 +10,7 @@ import pytest
 
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
-from buildstream.testing._utils.site import IS_WINDOWS
+from buildstream.testing._utils.site import IS_WINDOWS, CASD_SEPARATE_USER
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream import utils
@@ -35,6 +35,9 @@ def strict_args(args, strict):
     [("strict", "copies"), ("strict", "hardlinks"), ("non-strict", "copies"), ("non-strict", "hardlinks"),],
 )
 def test_build_checkout(datafiles, cli, strict, hardlinks):
+    if CASD_SEPARATE_USER and hardlinks == "hardlinks":
+        pytest.xfail("Cannot hardlink with buildbox-casd running as a separate user")
+
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout")
 
@@ -580,6 +583,9 @@ def test_build_checkout_nonempty(datafiles, cli, hardlinks):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("hardlinks", [("copies"), ("hardlinks")])
 def test_build_checkout_force(datafiles, cli, hardlinks):
+    if CASD_SEPARATE_USER and hardlinks == "hardlinks":
+        pytest.xfail("Cannot hardlink with buildbox-casd running as a separate user")
+
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout")
     filename = os.path.join(checkout, "file.txt")

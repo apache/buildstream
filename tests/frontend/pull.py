@@ -414,7 +414,7 @@ def test_pull_access_rights(cli, tmpdir, datafiles):
 
         result = cli.run(
             project=project,
-            args=["artifact", "checkout", "--hardlinks", "--no-integrate", "compose-all.bst", "--directory", checkout],
+            args=["artifact", "checkout", "--no-integrate", "compose-all.bst", "--directory", checkout],
         )
         result.assert_success()
 
@@ -440,7 +440,7 @@ def test_pull_access_rights(cli, tmpdir, datafiles):
 
         result = cli.run(
             project=project,
-            args=["artifact", "checkout", "--hardlinks", "--no-integrate", "compose-all.bst", "--directory", checkout],
+            args=["artifact", "checkout", "--no-integrate", "compose-all.bst", "--directory", checkout],
         )
         result.assert_success()
 

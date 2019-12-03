@@ -326,7 +326,7 @@ def safe_link(src: str, dest: str, *, result: Optional[FileListResult] = None, _
         if e.errno == errno.EEXIST and not _unlink:
             # Target exists already, unlink and try again
             safe_link(src, dest, result=result, _unlink=True)
-        elif e.errno == errno.EXDEV:
+        elif e.errno == errno.EXDEV or e.errno == errno.EPERM:
             safe_copy(src, dest)
         else:
             raise UtilError("Failed to link '{} -> {}': {}".format(src, dest, e)) from e

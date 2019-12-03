@@ -29,7 +29,7 @@ def test_filter_pass_integration(datafiles, cli):
     checkout_dir = os.path.join(project, "filter")
     result = cli.run(
         project=project,
-        args=["artifact", "checkout", "--integrate", "--hardlinks", "--directory", checkout_dir, "filter/filter.bst"],
+        args=["artifact", "checkout", "--integrate", "--directory", checkout_dir, "filter/filter.bst"],
     )
     result.assert_success()
 
