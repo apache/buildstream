@@ -28,6 +28,7 @@ import grpc
 
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2_grpc
 from .._protos.build.buildgrid import local_cas_pb2_grpc
+from .._protos.google.bytestream import bytestream_pb2_grpc
 
 from .. import _signals, utils
 from .._exceptions import CASCacheError
@@ -177,6 +178,7 @@ class CASDChannel:
         self._connection_string = connection_string
         self._start_time = start_time
         self._casd_channel = None
+        self._bytestream = None
         self._casd_cas = None
         self._local_cas = None
 
@@ -192,6 +194,7 @@ class CASDChannel:
             time.sleep(0.01)
 
         self._casd_channel = grpc.insecure_channel(self._connection_string)
+        self._bytestream = bytestream_pb2_grpc.ByteStreamStub(self._casd_channel)
         self._casd_cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self._casd_channel)
         self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
 
@@ -212,6 +215,11 @@ class CASDChannel:
         if self._casd_channel is None:
             self._establish_connection()
         return self._local_cas
+
+    def get_bytestream(self):
+        if self._casd_channel is None:
+            self._establish_connection()
+        return self._bytestream
 
     # is_closed():
     #

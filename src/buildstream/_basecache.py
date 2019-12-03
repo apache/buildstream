@@ -25,7 +25,7 @@ from . import utils
 from . import _yaml
 from ._cas import CASRemote
 from ._message import Message, MessageType
-from ._exceptions import LoadError, RemoteError
+from ._exceptions import LoadError, RemoteError, CacheError
 from ._remote import RemoteSpec, RemoteType
 
 
@@ -61,6 +61,8 @@ class BaseCache:
 
         self._has_fetch_remotes = False
         self._has_push_remotes = False
+
+        self._basedir = None
 
     # has_open_grpc_channels():
     #
@@ -429,3 +431,25 @@ class BaseCache:
                 if not glob_expr or fnmatch(relative_path, glob_expr):
                     # Obtain the mtime (the time a file was last modified)
                     yield (os.path.getmtime(ref_path), relative_path)
+
+    # _remove_ref()
+    #
+    # Removes a ref.
+    #
+    # This also takes care of pruning away directories which can
+    # be removed after having removed the given ref.
+    #
+    # Args:
+    #    ref (str): The ref to remove
+    #
+    # Raises:
+    #    (CASCacheError): If the ref didnt exist, or a system error
+    #                     occurred while removing it
+    #
+    def _remove_ref(self, ref):
+        try:
+            utils._remove_path_with_parents(self._basedir, ref)
+        except FileNotFoundError as e:
+            raise CacheError("Could not find ref '{}'".format(ref)) from e
+        except OSError as e:
+            raise CacheError("System error while removing ref '{}': {}".format(ref, e)) from e

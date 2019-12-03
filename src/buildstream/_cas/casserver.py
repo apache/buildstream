@@ -18,21 +18,24 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
 from concurrent import futures
-from contextlib import contextmanager
+from enum import Enum
+import contextlib
+import logging
 import os
 import signal
 import sys
-import tempfile
 import uuid
-import errno
 
 import grpc
 from google.protobuf.message import DecodeError
 import click
 
-from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
-from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
-from .._protos.google.rpc import code_pb2
+from .._protos.build.bazel.remote.execution.v2 import (
+    remote_execution_pb2,
+    remote_execution_pb2_grpc,
+)
+from .._protos.google.bytestream import bytestream_pb2_grpc
+from .._protos.build.buildgrid import local_cas_pb2
 from .._protos.buildstream.v2 import (
     buildstream_pb2,
     buildstream_pb2_grpc,
@@ -42,15 +45,51 @@ from .._protos.buildstream.v2 import (
     source_pb2_grpc,
 )
 
-from .. import utils
-from .._exceptions import CASError, CASCacheError
-
-from .cascache import CASCache
+# Note: We'd ideally like to avoid imports from the core codebase as
+# much as possible, since we're expecting to eventually split this
+# module off into its own project.
+#
+# Not enough that we'd like to duplicate code, but enough that we want
+# to make it very obvious what we're using, so in this case we import
+# the specific methods we'll be using.
+from ..utils import save_file_atomic, _remove_path_with_parents
+from .casdprocessmanager import CASDProcessManager
 
 
 # The default limit for gRPC messages is 4 MiB.
 # Limit payload to 1 MiB to leave sufficient headroom for metadata.
 _MAX_PAYLOAD_BYTES = 1024 * 1024
+
+
+# LogLevel():
+#
+# Manage log level choices using click.
+#
+class LogLevel(click.Choice):
+    # Levels():
+    #
+    # Represents the actual buildbox-casd log level.
+    #
+    class Levels(Enum):
+        WARNING = "warning"
+        INFO = "info"
+        TRACE = "trace"
+
+    def __init__(self):
+        super().__init__([m.lower() for m in LogLevel.Levels._member_names_])  # pylint: disable=no-member
+
+    def convert(self, value, param, ctx) -> "LogLevel.Levels":
+        return LogLevel.Levels(super().convert(value, param, ctx))
+
+    @classmethod
+    def get_logging_equivalent(cls, level) -> int:
+        equivalents = {
+            cls.Levels.WARNING: logging.WARNING,
+            cls.Levels.INFO: logging.INFO,
+            cls.Levels.TRACE: logging.DEBUG,
+        }
+
+        return equivalents[level]
 
 
 # create_server():
@@ -62,13 +101,22 @@ _MAX_PAYLOAD_BYTES = 1024 * 1024
 #     enable_push (bool): Whether to allow blob uploads and artifact updates
 #     index_only (bool): Whether to store CAS blobs or only artifacts
 #
-@contextmanager
-def create_server(repo, *, enable_push, quota, index_only):
-    cas = CASCache(os.path.abspath(repo), cache_quota=quota, protect_session_blobs=False)
+@contextlib.contextmanager
+def create_server(repo, *, enable_push, quota, index_only, log_level=LogLevel.Levels.WARNING):
+    logger = logging.getLogger("buildstream._cas.casserver")
+    logger.setLevel(LogLevel.get_logging_equivalent(log_level))
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(logging.Formatter(fmt="%(levelname)s: %(funcName)s: %(message)s"))
+    logger.addHandler(handler)
+
+    casd_manager = CASDProcessManager(
+        os.path.abspath(repo), os.path.join(os.path.abspath(repo), "logs"), log_level, quota, False
+    )
+    casd_channel = casd_manager.create_channel()
 
     try:
-        artifactdir = os.path.join(os.path.abspath(repo), "artifacts", "refs")
-        sourcedir = os.path.join(os.path.abspath(repo), "source_protos")
+        root = os.path.abspath(repo)
+        sourcedir = os.path.join(root, "source_protos")
 
         # Use max_workers default from Python 3.5+
         max_workers = (os.cpu_count() or 1) * 5
@@ -76,21 +124,21 @@ def create_server(repo, *, enable_push, quota, index_only):
 
         if not index_only:
             bytestream_pb2_grpc.add_ByteStreamServicer_to_server(
-                _ByteStreamServicer(cas, enable_push=enable_push), server
+                _ByteStreamServicer(casd_channel, enable_push=enable_push), server
             )
 
             remote_execution_pb2_grpc.add_ContentAddressableStorageServicer_to_server(
-                _ContentAddressableStorageServicer(cas, enable_push=enable_push), server
+                _ContentAddressableStorageServicer(casd_channel, enable_push=enable_push), server
             )
 
         remote_execution_pb2_grpc.add_CapabilitiesServicer_to_server(_CapabilitiesServicer(), server)
 
         buildstream_pb2_grpc.add_ReferenceStorageServicer_to_server(
-            _ReferenceStorageServicer(cas, enable_push=enable_push), server
+            _ReferenceStorageServicer(casd_channel, root, enable_push=enable_push), server
         )
 
         artifact_pb2_grpc.add_ArtifactServiceServicer_to_server(
-            _ArtifactServicer(cas, artifactdir, update_cas=not index_only), server
+            _ArtifactServicer(casd_channel, root, update_cas=not index_only), server
         )
 
         source_pb2_grpc.add_SourceServiceServicer_to_server(_SourceServicer(sourcedir), server)
@@ -105,7 +153,8 @@ def create_server(repo, *, enable_push, quota, index_only):
         yield server
 
     finally:
-        cas.release_resources()
+        casd_channel.close()
+        casd_manager.release_resources()
 
 
 @click.command(short_help="CAS Artifact Server")
@@ -120,14 +169,17 @@ def create_server(repo, *, enable_push, quota, index_only):
     is_flag=True,
     help='Only provide the BuildStream artifact and source services ("index"), not the CAS ("storage")',
 )
+@click.option("--log-level", type=LogLevel(), help="The log level to launch with", default="warning")
 @click.argument("repo")
-def server_main(repo, port, server_key, server_cert, client_certs, enable_push, quota, index_only):
+def server_main(repo, port, server_key, server_cert, client_certs, enable_push, quota, index_only, log_level):
     # Handle SIGTERM by calling sys.exit(0), which will raise a SystemExit exception,
     # properly executing cleanup code in `finally` clauses and context managers.
     # This is required to terminate buildbox-casd on SIGTERM.
     signal.signal(signal.SIGTERM, lambda signalnum, frame: sys.exit(0))
 
-    with create_server(repo, quota=quota, enable_push=enable_push, index_only=index_only) as server:
+    with create_server(
+        repo, quota=quota, enable_push=enable_push, index_only=index_only, log_level=log_level
+    ) as server:
 
         use_tls = bool(server_key)
 
@@ -171,216 +223,49 @@ def server_main(repo, port, server_key, server_cert, client_certs, enable_push, 
 
 
 class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
-    def __init__(self, cas, *, enable_push):
+    def __init__(self, casd, *, enable_push):
         super().__init__()
-        self.cas = cas
+        self.bytestream = casd.get_bytestream()
         self.enable_push = enable_push
+        self.logger = logging.getLogger("buildstream._cas.casserver")
 
     def Read(self, request, context):
-        resource_name = request.resource_name
-        client_digest = _digest_from_download_resource_name(resource_name)
-        if client_digest is None:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-            return
-
-        if request.read_offset > client_digest.size_bytes:
-            context.set_code(grpc.StatusCode.OUT_OF_RANGE)
-            return
-
-        try:
-            with open(self.cas.objpath(client_digest), "rb") as f:
-                if os.fstat(f.fileno()).st_size != client_digest.size_bytes:
-                    context.set_code(grpc.StatusCode.NOT_FOUND)
-                    return
-
-                os.utime(f.fileno())
-
-                if request.read_offset > 0:
-                    f.seek(request.read_offset)
-
-                remaining = client_digest.size_bytes - request.read_offset
-                while remaining > 0:
-                    chunk_size = min(remaining, _MAX_PAYLOAD_BYTES)
-                    remaining -= chunk_size
-
-                    response = bytestream_pb2.ReadResponse()
-                    # max. 64 kB chunks
-                    response.data = f.read(chunk_size)
-                    yield response
-        except FileNotFoundError:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
+        self.logger.debug("Reading %s", request.resource_name)
+        return self.bytestream.Read(request)
 
     def Write(self, request_iterator, context):
-        response = bytestream_pb2.WriteResponse()
-
-        if not self.enable_push:
-            context.set_code(grpc.StatusCode.PERMISSION_DENIED)
-            return response
-
-        offset = 0
-        finished = False
-        resource_name = None
-        with tempfile.NamedTemporaryFile(dir=self.cas.tmpdir) as out:
-            for request in request_iterator:
-                if finished or request.write_offset != offset:
-                    context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
-                    return response
-
-                if resource_name is None:
-                    # First request
-                    resource_name = request.resource_name
-                    client_digest = _digest_from_upload_resource_name(resource_name)
-                    if client_digest is None:
-                        context.set_code(grpc.StatusCode.NOT_FOUND)
-                        return response
-
-                    while True:
-                        if client_digest.size_bytes == 0:
-                            break
-
-                        try:
-                            os.posix_fallocate(out.fileno(), 0, client_digest.size_bytes)
-                            break
-                        except OSError as e:
-                            # Multiple upload can happen in the same time
-                            if e.errno != errno.ENOSPC:
-                                raise
-
-                elif request.resource_name:
-                    # If it is set on subsequent calls, it **must** match the value of the first request.
-                    if request.resource_name != resource_name:
-                        context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
-                        return response
-
-                if (offset + len(request.data)) > client_digest.size_bytes:
-                    context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
-                    return response
-
-                out.write(request.data)
-                offset += len(request.data)
-                if request.finish_write:
-                    if client_digest.size_bytes != offset:
-                        context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
-                        return response
-                    out.flush()
-
-                    try:
-                        digest = self.cas.add_object(path=out.name, link_directly=True)
-                    except CASCacheError as e:
-                        if e.reason == "cache-too-full":
-                            context.set_code(grpc.StatusCode.RESOURCE_EXHAUSTED)
-                        else:
-                            context.set_code(grpc.StatusCode.INTERNAL)
-                        return response
-
-                    if digest.hash != client_digest.hash:
-                        context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
-                        return response
-
-                    finished = True
-
-        assert finished
-
-        response.committed_size = offset
-        return response
+        # Note that we can't easily give more information because the
+        # data is stuck in an iterator that will be consumed if read.
+        self.logger.debug("Writing data")
+        return self.bytestream.Write(request_iterator)
 
 
 class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddressableStorageServicer):
-    def __init__(self, cas, *, enable_push):
+    def __init__(self, casd, *, enable_push):
         super().__init__()
-        self.cas = cas
+        self.cas = casd.get_cas()
         self.enable_push = enable_push
+        self.logger = logging.getLogger("buildstream._cas.casserver")
 
     def FindMissingBlobs(self, request, context):
-        response = remote_execution_pb2.FindMissingBlobsResponse()
-        for digest in request.blob_digests:
-            objpath = self.cas.objpath(digest)
-            try:
-                os.utime(objpath)
-            except OSError as e:
-                if e.errno != errno.ENOENT:
-                    raise
-
-                d = response.missing_blob_digests.add()
-                d.hash = digest.hash
-                d.size_bytes = digest.size_bytes
-
-        return response
+        self.logger.info("Finding '%s'", request.blob_digests)
+        return self.cas.FindMissingBlobs(request)
 
     def BatchReadBlobs(self, request, context):
-        response = remote_execution_pb2.BatchReadBlobsResponse()
-        batch_size = 0
-
-        for digest in request.digests:
-            batch_size += digest.size_bytes
-            if batch_size > _MAX_PAYLOAD_BYTES:
-                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                return response
-
-            blob_response = response.responses.add()
-            blob_response.digest.hash = digest.hash
-            blob_response.digest.size_bytes = digest.size_bytes
-            try:
-                objpath = self.cas.objpath(digest)
-                with open(objpath, "rb") as f:
-                    if os.fstat(f.fileno()).st_size != digest.size_bytes:
-                        blob_response.status.code = code_pb2.NOT_FOUND
-                        continue
-
-                    os.utime(f.fileno())
-
-                    blob_response.data = f.read(digest.size_bytes)
-            except FileNotFoundError:
-                blob_response.status.code = code_pb2.NOT_FOUND
-
-        return response
+        self.logger.info("Reading '%s'", request.digests)
+        return self.cas.BatchReadBlobs(request)
 
     def BatchUpdateBlobs(self, request, context):
-        response = remote_execution_pb2.BatchUpdateBlobsResponse()
-
-        if not self.enable_push:
-            context.set_code(grpc.StatusCode.PERMISSION_DENIED)
-            return response
-
-        batch_size = 0
-
-        for blob_request in request.requests:
-            digest = blob_request.digest
-
-            batch_size += digest.size_bytes
-            if batch_size > _MAX_PAYLOAD_BYTES:
-                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                return response
-
-            blob_response = response.responses.add()
-            blob_response.digest.hash = digest.hash
-            blob_response.digest.size_bytes = digest.size_bytes
-
-            if len(blob_request.data) != digest.size_bytes:
-                blob_response.status.code = code_pb2.FAILED_PRECONDITION
-                continue
-
-            with tempfile.NamedTemporaryFile(dir=self.cas.tmpdir) as out:
-                out.write(blob_request.data)
-                out.flush()
-
-                try:
-                    server_digest = self.cas.add_object(path=out.name)
-                except CASCacheError as e:
-                    if e.reason == "cache-too-full":
-                        blob_response.status.code = code_pb2.RESOURCE_EXHAUSTED
-                    else:
-                        blob_response.status.code = code_pb2.INTERNAL
-                    continue
-
-                if server_digest.hash != digest.hash:
-                    blob_response.status.code = code_pb2.FAILED_PRECONDITION
-
-        return response
+        self.logger.info("Updating: '%s'", [request.digest for request in request.requests])
+        return self.cas.BatchUpdateBlobs(request)
 
 
 class _CapabilitiesServicer(remote_execution_pb2_grpc.CapabilitiesServicer):
+    def __init__(self):
+        self.logger = logging.getLogger("buildstream._cas.casserver")
+
     def GetCapabilities(self, request, context):
+        self.logger.info("Retrieving capabilities")
         response = remote_execution_pb2.ServerCapabilities()
 
         cache_capabilities = response.cache_capabilities
@@ -397,31 +282,85 @@ class _CapabilitiesServicer(remote_execution_pb2_grpc.CapabilitiesServicer):
 
 
 class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
-    def __init__(self, cas, *, enable_push):
+    def __init__(self, casd, cas_root, *, enable_push):
         super().__init__()
-        self.cas = cas
+        self.cas = casd.get_cas()
+        self.root = cas_root
         self.enable_push = enable_push
+        self.logger = logging.getLogger("buildstream._cas.casserver")
+        self.tmpdir = os.path.join(self.root, "tmp")
+        self.casdir = os.path.join(self.root, "cas")
+        self.refdir = os.path.join(self.casdir, "refs", "heads")
+        os.makedirs(self.tmpdir, exist_ok=True)
+
+    # ref_path():
+    #
+    # Get the path to a digest's file.
+    #
+    # Args:
+    #     ref - The ref of the digest.
+    #
+    # Returns:
+    #     str - The path to the digest's file.
+    #
+    def ref_path(self, ref: str) -> str:
+        return os.path.join(self.refdir, ref)
+
+    # set_ref():
+    #
+    # Create or update a ref with a new digest.
+    #
+    # Args:
+    #     ref - The ref of the digest.
+    #     tree - The digest to write.
+    #
+    def set_ref(self, ref: str, tree):
+        ref_path = self.ref_path(ref)
+
+        os.makedirs(os.path.dirname(ref_path), exist_ok=True)
+        with save_file_atomic(ref_path, "wb", tempdir=self.tmpdir) as f:
+            f.write(tree.SerializeToString())
+
+    # resolve_ref():
+    #
+    # Resolve a ref to a digest.
+    #
+    # Args:
+    #     ref (str): The name of the ref
+    #
+    # Returns:
+    #     (Digest): The digest stored in the ref
+    #
+    def resolve_ref(self, ref):
+        ref_path = self.ref_path(ref)
+
+        with open(ref_path, "rb") as f:
+            os.utime(ref_path)
+
+            digest = remote_execution_pb2.Digest()
+            digest.ParseFromString(f.read())
+            return digest
 
     def GetReference(self, request, context):
+        self.logger.debug("'%s'", request.key)
         response = buildstream_pb2.GetReferenceResponse()
 
         try:
-            tree = self.cas.resolve_ref(request.key, update_mtime=True)
-            try:
-                self.cas.update_tree_mtime(tree)
-            except FileNotFoundError:
-                self.cas.remove(request.key)
-                context.set_code(grpc.StatusCode.NOT_FOUND)
-                return response
+            digest = self.resolve_ref(request.key)
+        except FileNotFoundError:
+            with contextlib.suppress(FileNotFoundError):
+                _remove_path_with_parents(self.refdir, request.key)
 
-            response.digest.hash = tree.hash
-            response.digest.size_bytes = tree.size_bytes
-        except CASError:
             context.set_code(grpc.StatusCode.NOT_FOUND)
+            return response
+
+        response.digest.hash = digest.hash
+        response.digest.size_bytes = digest.size_bytes
 
         return response
 
     def UpdateReference(self, request, context):
+        self.logger.debug("%s -> %s", request.keys, request.digest)
         response = buildstream_pb2.UpdateReferenceResponse()
 
         if not self.enable_push:
@@ -429,11 +368,12 @@ class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
             return response
 
         for key in request.keys:
-            self.cas.set_ref(key, request.digest)
+            self.set_ref(key, request.digest)
 
         return response
 
     def Status(self, request, context):
+        self.logger.debug("Retrieving status")
         response = buildstream_pb2.StatusResponse()
 
         response.allow_updates = self.enable_push
@@ -442,14 +382,48 @@ class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
 
 
 class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
-    def __init__(self, cas, artifactdir, *, update_cas=True):
+    def __init__(self, casd, root, *, update_cas=True):
         super().__init__()
-        self.cas = cas
-        self.artifactdir = artifactdir
+        self.cas = casd.get_cas()
+        self.local_cas = casd.get_local_cas()
+        self.root = root
+        self.artifactdir = os.path.join(root, "artifacts", "refs")
         self.update_cas = update_cas
-        os.makedirs(artifactdir, exist_ok=True)
+        self.logger = logging.getLogger("buildstream._cas.casserver")
+
+    # object_path():
+    #
+    # Get the path to an object's file.
+    #
+    # Args:
+    #     digest - The digest of the object.
+    #
+    # Returns:
+    #     str - The path to the object's file.
+    #
+    def object_path(self, digest) -> str:
+        return os.path.join(self.root, "cas", "objects", digest.hash[:2], digest.hash[2:])
+
+    # resolve_digest():
+    #
+    # Read the directory corresponding to a digest.
+    #
+    # Args:
+    #     digest - The digest corresponding to a directory.
+    #
+    # Returns:
+    #     remote_execution_pb2.Directory - The directory.
+    #
+    # Raises:
+    #     FileNotFoundError - If the digest object doesn't exist.
+    def resolve_digest(self, digest):
+        directory = remote_execution_pb2.Directory()
+        with open(self.object_path(digest), "rb") as f:
+            directory.ParseFromString(f.read())
+        return directory
 
     def GetArtifact(self, request, context):
+        self.logger.info("'%s'", request.cache_key)
         artifact_path = os.path.join(self.artifactdir, request.cache_key)
         if not os.path.exists(artifact_path):
             context.abort(grpc.StatusCode.NOT_FOUND, "Artifact proto not found")
@@ -457,6 +431,8 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
         artifact = artifact_pb2.Artifact()
         with open(artifact_path, "rb") as f:
             artifact.ParseFromString(f.read())
+
+        os.utime(artifact_path)
 
         # Artifact-only servers will not have blobs on their system,
         # so we can't reasonably update their mtimes. Instead, we exit
@@ -476,30 +452,45 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
         try:
 
             if str(artifact.files):
-                self.cas.update_tree_mtime(artifact.files)
+                request = local_cas_pb2.FetchTreeRequest()
+                request.root_digest.CopyFrom(artifact.files)
+                request.fetch_file_blobs = True
+                self.local_cas.FetchTree(request)
 
             if str(artifact.buildtree):
-                # buildtrees might not be there
                 try:
-                    self.cas.update_tree_mtime(artifact.buildtree)
-                except FileNotFoundError:
-                    pass
+                    request = local_cas_pb2.FetchTreeRequest()
+                    request.root_digest.CopyFrom(artifact.buildtree)
+                    request.fetch_file_blobs = True
+                    self.local_cas.FetchTree(request)
+                except grpc.RpcError as err:
+                    # buildtrees might not be there
+                    if err.code() != grpc.StatusCode.NOT_FOUND:
+                        raise
 
             if str(artifact.public_data):
-                os.utime(self.cas.objpath(artifact.public_data))
+                request = remote_execution_pb2.FindMissingBlobsRequest()
+                d = request.blob_digests.add()
+                d.CopyFrom(artifact.public_data)
+                self.cas.FindMissingBlobs(request)
 
+            request = remote_execution_pb2.FindMissingBlobsRequest()
             for log_file in artifact.logs:
-                os.utime(self.cas.objpath(log_file.digest))
+                d = request.blob_digests.add()
+                d.CopyFrom(log_file.digest)
+            self.cas.FindMissingBlobs(request)
 
-        except FileNotFoundError:
-            os.unlink(artifact_path)
-            context.abort(grpc.StatusCode.NOT_FOUND, "Artifact files incomplete")
-        except DecodeError:
-            context.abort(grpc.StatusCode.NOT_FOUND, "Artifact files not valid")
+        except grpc.RpcError as err:
+            if err.code() == grpc.StatusCode.NOT_FOUND:
+                os.unlink(artifact_path)
+                context.abort(grpc.StatusCode.NOT_FOUND, "Artifact files incomplete")
+            else:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Artifact files not valid")
 
         return artifact
 
     def UpdateArtifact(self, request, context):
+        self.logger.info("'%s' -> '%s'", request.artifact, request.cache_key)
         artifact = request.artifact
 
         if self.update_cas:
@@ -518,28 +509,29 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
         # Add the artifact proto to the cas
         artifact_path = os.path.join(self.artifactdir, request.cache_key)
         os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
-        with utils.save_file_atomic(artifact_path, mode="wb") as f:
+        with save_file_atomic(artifact_path, mode="wb") as f:
             f.write(artifact.SerializeToString())
 
         return artifact
 
     def ArtifactStatus(self, request, context):
+        self.logger.info("Retrieving status")
         return artifact_pb2.ArtifactStatusResponse()
 
     def _check_directory(self, name, digest, context):
         try:
-            directory = remote_execution_pb2.Directory()
-            with open(self.cas.objpath(digest), "rb") as f:
-                directory.ParseFromString(f.read())
+            self.resolve_digest(digest)
         except FileNotFoundError:
+            self.logger.warning("Artifact %s specified but no files found", name)
             context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Artifact {} specified but no files found".format(name))
         except DecodeError:
+            self.logger.warning("Artifact %s specified but directory not found", name)
             context.abort(
                 grpc.StatusCode.FAILED_PRECONDITION, "Artifact {} specified but directory not found".format(name)
             )
 
     def _check_file(self, name, digest, context):
-        if not os.path.exists(self.cas.objpath(digest)):
+        if not os.path.exists(self.object_path(digest)):
             context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Artifact {} specified but not found".format(name))
 
 
@@ -558,8 +550,10 @@ class _BuildStreamCapabilitiesServicer(buildstream_pb2_grpc.CapabilitiesServicer
 class _SourceServicer(source_pb2_grpc.SourceServiceServicer):
     def __init__(self, sourcedir):
         self.sourcedir = sourcedir
+        self.logger = logging.getLogger("buildstream._cas.casserver")
 
     def GetSource(self, request, context):
+        self.logger.info("'%s'", request.cache_key)
         try:
             source_proto = self._get_source(request.cache_key)
         except FileNotFoundError:
@@ -570,6 +564,7 @@ class _SourceServicer(source_pb2_grpc.SourceServiceServicer):
         return source_proto
 
     def UpdateSource(self, request, context):
+        self.logger.info("'%s' -> '%s'", request.source, request.cache_key)
         self._set_source(request.cache_key, request.source)
         return request.source
 
@@ -584,7 +579,7 @@ class _SourceServicer(source_pb2_grpc.SourceServiceServicer):
     def _set_source(self, cache_key, source_proto):
         path = os.path.join(self.sourcedir, cache_key)
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with utils.save_file_atomic(path, "w+b") as f:
+        with save_file_atomic(path, "w+b") as f:
             f.write(source_proto.SerializeToString())
 
 

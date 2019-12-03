@@ -779,6 +779,44 @@ def _is_main_process():
     return os.getpid() == _MAIN_PID
 
 
+# Remove a path and any empty directories leading up to it.
+#
+# Args:
+#     basedir - The basedir at which to stop pruning even if
+#               it is empty.
+#     path - A path relative to basedir that should be pruned.
+#
+# Raises:
+#     FileNotFoundError - if the path itself doesn't exist.
+#     OSError - if something else goes wrong
+#
+def _remove_path_with_parents(basedir: Union[Path, str], path: Union[Path, str]):
+    assert not os.path.isabs(path), "The path ({}) should be relative to basedir ({})".format(path, basedir)
+    path = os.path.join(basedir, path)
+
+    # Start by removing the path itself
+    os.unlink(path)
+
+    # Now walk up the directory tree and delete any empty directories
+    path = os.path.dirname(path)
+    while path != basedir:
+        try:
+            os.rmdir(path)
+        except FileNotFoundError:
+            # The parent directory did not exist (race conditions can
+            # cause this), but it's parent directory might still be
+            # ready to prune
+            pass
+        except OSError as e:
+            if e.errno == errno.ENOTEMPTY:
+                # The parent directory was not empty, so we
+                # cannot prune directories beyond this point
+                break
+            raise
+
+        path = os.path.dirname(path)
+
+
 # Recursively remove directories, ignoring file permissions as much as
 # possible.
 def _force_rmtree(rootpath, **kwargs):
