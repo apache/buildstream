@@ -252,9 +252,8 @@ tests-win32:
   script:
   - tox -e win32
   rules:
-    - if: '$CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH'
-      when: on_success
-    - when: manual
+    - if: '$CI_COMMIT_REF_NAME != $CI_DEFAULT_BRANCH'
+      when: manual
 
 tests-wsl:
   stage: test
