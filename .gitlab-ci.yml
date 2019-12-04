@@ -16,8 +16,12 @@ stages:
   - publish
 
 variables:
+  # SAST related variables
   SAST_DISABLE_DIND: "true"
   SAST_GOSEC_LEVEL: 2
+  CI_PROJECT_REPOSITORY_LANGUAGES: "python"
+
+  # Our own variables
   # Version of the docker images we should use for all the images.
   # This is taken from buildstream/buildstream-docker-images
   DOCKER_IMAGE_VERSION: master-100413107
@@ -28,9 +32,6 @@ variables:
   EXTERNAL_TESTS_COMMAND: "tox -e py35-external,py36-external,py37-external -- ${PYTEST_ARGS}"
   COVERAGE_PREFIX: "${CI_JOB_NAME}."
 
-sast:
-  variables:
-    CI_PROJECT_REPOSITORY_LANGUAGES: "python"
 
 #####################################################
 #                    Test stage                     #
