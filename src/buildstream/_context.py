@@ -114,6 +114,9 @@ class Context:
         # Format string for printing message lines in the master log
         self.log_message_format = None
 
+        # Wether to rate limit the updating of the bst output where applicable
+        self.log_throttle_updates = None
+
         # Maximum number of fetch or refresh tasks
         self.sched_fetchers = None
 
@@ -337,7 +340,16 @@ class Context:
         # Load logging config
         logging = defaults.get_mapping("logging")
         logging.validate_keys(
-            ["key-length", "verbose", "error-lines", "message-lines", "debug", "element-format", "message-format"]
+            [
+                "key-length",
+                "verbose",
+                "error-lines",
+                "message-lines",
+                "debug",
+                "element-format",
+                "message-format",
+                "throttle-ui-updates",
+            ]
         )
         self.log_key_length = logging.get_int("key-length")
         self.log_debug = logging.get_bool("debug")
@@ -346,6 +358,7 @@ class Context:
         self.log_message_lines = logging.get_int("message-lines")
         self.log_element_format = logging.get_str("element-format")
         self.log_message_format = logging.get_str("message-format")
+        self.log_throttle_updates = logging.get_bool("throttle-ui-updates")
 
         # Load scheduler config
         scheduler = defaults.get_mapping("scheduler")

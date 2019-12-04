@@ -91,6 +91,7 @@ class App:
 
         # Cached messages
         self._message_text = ""
+        self._cache_messages = None
 
         #
         # Early initialization
@@ -238,6 +239,9 @@ class App:
 
             # Propagate pipeline feedback to the user
             self.context.messenger.set_message_handler(self._message_handler)
+
+            # Check if throttling frontend updates to tick rate
+            self._cache_messages = self.context.log_throttle_updates
 
             # Allow the Messenger to write status messages
             self.context.messenger.set_render_status_cb(self._render)
@@ -803,8 +807,8 @@ class App:
         text = self.logger.render(message)
         self._message_text += text
 
-        # If scheduler tick isn't active then render
-        if not self.stream.running:
+        # If we're not rate limiting messaging, or the scheduler tick isn't active then render
+        if not self._cache_messages or not self.stream.running:
             self._render(message_text=self._message_text)
 
         # Additionally log to a file
