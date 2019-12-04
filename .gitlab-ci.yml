@@ -366,6 +366,26 @@ overnight-tests-no-cache:
   tags:
   - overnight-tests
 
+# These tests might be a bit more flaky since they randomize the order
+# They will also take longer to run. Hence run them only nightly
+overnight-randomized:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+  <<: *tests
+
+  script:
+  - mkdir -p "${INTEGRATION_CACHE}"
+  - useradd -Um buildstream
+  - chown -R buildstream:buildstream .
+
+  # Don't run tests multiprocessed here, the randomized order doesn't like that
+  - su buildstream -c "tox -e py35-randomized,py36-randomized,py37-randomized -- --color=yes --integration"
+  - su buildstream -c "tox -e py35-randomized,py36-randomized,py37-randomized-external -- --color=yes --integration"
+
+  # We need to override the exclusion from the template in order to run on schedules
+  except: []
+  only:
+  - schedules
+
 #####################################################
 #                    Post stage                     #
 #####################################################
