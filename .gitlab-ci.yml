@@ -3,7 +3,7 @@ include:
   - template: License-Management.gitlab-ci.yml
   - template: SAST.gitlab-ci.yml
 
-image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-master-97554983
+image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-${DOCKER_IMAGE_VERSION}
 
 cache:
   key: "$CI_JOB_NAME-"
@@ -18,6 +18,9 @@ stages:
 variables:
   SAST_DISABLE_DIND: "true"
   SAST_GOSEC_LEVEL: 2
+  # Version of the docker images we should use for all the images.
+  # This is taken from buildstream/buildstream-docker-images
+  DOCKER_IMAGE_VERSION: master-100413107
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   PYTEST_ARGS: "--color=yes --integration -n 2"
@@ -61,31 +64,31 @@ sast:
     - .coverage-reports
 
 tests-debian-9:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-93453213
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
 tests-debian-10:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-master-97554983
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
 tests-fedora-30:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-93453213
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
 tests-fedora-31:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
 tests-ubuntu-18.04:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-master-93453213
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
 tests-centos-7.6:
   <<: *tests
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.6.1810-master-93453213
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.6.1810-${DOCKER_IMAGE_VERSION}
 
 overnight-fedora-30-aarch64:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:aarch64-30-master-59168197
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:aarch64-30-${DOCKER_IMAGE_VERSION}
   tags:
     - aarch64
   <<: *tests
@@ -98,7 +101,7 @@ overnight-fedora-30-aarch64:
 tests-unix:
   # Use fedora here, to a) run a test on fedora and b) ensure that we
   # can get rid of ostree - this is not possible with debian-8
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
   variables:
     BST_FORCE_SANDBOX: "chroot"
@@ -115,7 +118,7 @@ tests-unix:
     - ${TEST_COMMAND}
 
 tests-buildbox:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
   variables:
     BST_FORCE_SANDBOX: "buildbox"
@@ -145,7 +148,7 @@ tests-buildbox:
 
 tests-fedora-missing-deps:
   # Ensure that tests behave nicely while missing bwrap and ostree
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
   script:
@@ -164,7 +167,7 @@ tests-fedora-update-deps:
   # Check if the tests pass after updating requirements to their latest
   # allowed version.
   allow_failure: true
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
   script:
@@ -178,7 +181,7 @@ tests-fedora-update-deps:
 
 tests-remote-execution:
   allow_failure: true
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
   before_script:
     - dnf install -y docker docker-compose
@@ -201,7 +204,7 @@ tests-remote-execution:
     PYTEST_ARGS: "--color=yes --remote-execution"
 
 tests-spawn-multiprocessing-start-method:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
   variables:
     BST_FORCE_START_METHOD: "spawn"
@@ -225,7 +228,7 @@ mypy:
 lint:
   # We can't use the default debian:9 based image here since that comes with
   # Python 3.5, and Black requires Python >= 3.6.
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   stage: test
 
   before_script:
@@ -291,7 +294,7 @@ docs:
 
 .overnight-tests: &overnight-tests-template
   stage: test
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   variables:
     BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
     BST_EXT_REF: 0.12.0-173-gbe5ac19#egg=bst_plugins_experimental[ostree,cargo]
