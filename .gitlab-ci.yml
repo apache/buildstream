@@ -238,7 +238,7 @@ lint:
   - schedules
 
 # Catch regressions in native windows support
-tests-win32-master:
+tests-win32:
   stage: test
   variables:
     LC_ALL: C.UTF-8
@@ -247,24 +247,11 @@ tests-win32-master:
   - win32
   script:
   - tox -e win32
-  only:
-  - master
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH'
+    - when: manual
 
-# Optional test to catch regressions in native windows support on non-master branches
-tests-win32-non-master:
-  stage: test
-  variables:
-    LC_ALL: C.UTF-8
-    LANG: C.UTF-8
-  tags:
-  - win32
-  script:
-  - tox -e win32
-  except:
-  - master
-  when: manual
-
-tests-wsl-master:
+tests-wsl:
   stage: test
   variables:
     LC_ALL: C.UTF-8
@@ -281,29 +268,9 @@ tests-wsl-master:
   - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
 
   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
-  only:
-  - master
-
-tests-wsl-non-master:
-  stage: test
-  variables:
-    LC_ALL: C.UTF-8
-    LANG: C.UTF-8
-  tags:
-  - wsl
-  before_script:
-  - mount
-  - df -h
-  - PATH=/root/.local/bin:$PATH tox --version
-  script:
-  # Install static buildbox-casd binary
-  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
-  - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
-
-  - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
-  when: manual
-  except:
-  - master
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH'
+    - when: manual
 
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
