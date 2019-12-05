@@ -82,3 +82,12 @@ if HAVE_SANDBOX is not None:
     pass
 elif IS_LINUX and HAVE_BWRAP and (not IS_WSL):
     HAVE_SANDBOX = "bwrap"
+
+
+BUILDBOX_RUN = None
+if HAVE_SANDBOX == "buildbox-run":
+    try:
+        path = utils.get_host_tool("buildbox-run")
+        BUILDBOX_RUN = os.path.basename(os.readlink(path))
+    except (ProgramNotFoundError, OSError):
+        pass
