@@ -118,35 +118,6 @@ tests-unix:
     # Since the unix platform is required to run as root, no user change required
     - ${TEST_COMMAND}
 
-tests-buildbox:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
-  <<: *tests
-  variables:
-    BST_FORCE_SANDBOX: "buildbox"
-
-  script:
-
-    - dnf install -y fuse3
-
-    # Before buildbox is a first class citizen we need a good install story for users and this test
-    # should mirror that story, for now we build in the test as it is quick and easy.
-
-    # Build and install buildbox
-    - dnf install -y fuse3-devel glibc-static grpc-plugins grpc-devel protobuf-devel cmake gcc gcc-c++ libuuid-devel 
-    - git clone https://gitlab.com/BuildGrid/buildbox/buildbox-fuse.git
-    - cd buildbox-fuse
-    # Pin a specific commit so that any changes to buildbox do not result in unexpected/unannounced buildstream failures
-    - git checkout cdd2b00842c39a8f7162c2ae55bf2cefb925e339
-    - cmake -B build
-    - cmake --build build
-    - cmake --build build --target install
-    - cd ..
-
-    - useradd -Um buildstream
-    - chown -R buildstream:buildstream .
-
-    - su buildstream -c "${TEST_COMMAND}"
-
 tests-buildbox-run:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
