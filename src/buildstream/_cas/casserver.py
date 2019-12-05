@@ -514,10 +514,6 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
 
         return artifact
 
-    def ArtifactStatus(self, request, context):
-        self.logger.info("Retrieving status")
-        return artifact_pb2.ArtifactStatusResponse()
-
     def _check_directory(self, name, digest, context):
         try:
             self.resolve_digest(digest)
