@@ -103,9 +103,14 @@ class CasBasedDirectory(Directory):
         self.filename = filename
         self.common_name = common_name
         self.cas_cache = cas_cache
-        self.__digest = digest
+        self.__digest = None
         self.index = {}
         self.parent = parent
+        self._reset(digest=digest)
+
+    def _reset(self, *, digest=None):
+        self.__digest = digest
+        self.index = {}
         if digest:
             self._populate_index(digest)
 
