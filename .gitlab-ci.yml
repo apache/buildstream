@@ -147,6 +147,12 @@ tests-buildbox:
 
     - su buildstream -c "${TEST_COMMAND}"
 
+tests-buildbox-run:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
+  <<: *tests
+  variables:
+    BST_FORCE_SANDBOX: "buildbox-run"
+
 tests-fedora-missing-deps:
   # Ensure that tests behave nicely while missing bwrap and ostree
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
