@@ -338,44 +338,6 @@ class Workspace:
     def clear_running_files(self):
         self.running_files = {}
 
-    # get_key()
-    #
-    # Get a unique key for this workspace.
-    #
-    # Args:
-    #    recalculate (bool) - Whether to recalculate the key
-    #
-    # Returns:
-    #    (str) A unique key for this workspace
-    #
-    def get_key(self):
-        def unique_key(filename):
-            try:
-                stat = os.lstat(filename)
-            except OSError as e:
-                raise LoadError("Failed to stat file in workspace: {}".format(e), LoadErrorReason.MISSING_FILE)
-
-            # Use the mtime of any file with sub second precision
-            return stat.st_mtime_ns
-
-        if self._key is None:
-            fullpath = self.get_absolute_path()
-
-            excluded_files = (WORKSPACE_PROJECT_FILE,)
-
-            # Get a list of tuples of the the project relative paths and fullpaths
-            if os.path.isdir(fullpath):
-                filelist = utils.list_relative_paths(fullpath)
-                filelist = [
-                    (relpath, os.path.join(fullpath, relpath)) for relpath in filelist if relpath not in excluded_files
-                ]
-            else:
-                filelist = [(self.get_absolute_path(), fullpath)]
-
-            self._key = [(relpath, unique_key(fullpath)) for relpath, fullpath in filelist]
-
-        return self._key
-
     # get_absolute_path():
     #
     # Returns: The absolute path of the element's workspace.
