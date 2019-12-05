@@ -492,24 +492,6 @@ class ArtifactCache(BaseCache):
     #             Local Private Methods            #
     ################################################
 
-    # _reachable_digests()
-    #
-    # Returns:
-    #     (iter): Iterator over single file digests in artifacts
-    #
-    def _reachable_digests(self):
-        for root, _, files in os.walk(self._basedir):
-            for artifact_file in files:
-                artifact = artifact_pb2.Artifact()
-                with open(os.path.join(root, artifact_file), "r+b") as f:
-                    artifact.ParseFromString(f.read())
-
-                if str(artifact.public_data):
-                    yield artifact.public_data
-
-                for log_file in artifact.logs:
-                    yield log_file.digest
-
     # _push_artifact_blobs()
     #
     # Push the blobs that make up an artifact to the remote server.
