@@ -378,19 +378,6 @@ class Project:
         else:
             return self.config.element_factory.create(self._context, self, meta)
 
-    # create_artifact_element()
-    #
-    # Instantiate and return an ArtifactElement
-    #
-    # Args:
-    #    ref (str): A string of the artifact ref
-    #
-    # Returns:
-    #    (ArtifactElement): A newly created ArtifactElement object of the appropriate kind
-    #
-    def create_artifact_element(self, ref):
-        return ArtifactElement(self._context, ref)
-
     # create_source()
     #
     # Instantiate and return a Source
