@@ -299,14 +299,6 @@ class Workspace:
     def differs(self, other):
         return self.to_dict() != other.to_dict()
 
-    # invalidate_key()
-    #
-    # Invalidate the workspace key, forcing a recalculation next time
-    # it is accessed.
-    #
-    def invalidate_key(self):
-        self._key = None
-
     # stage()
     #
     # Stage the workspace to the given directory.
