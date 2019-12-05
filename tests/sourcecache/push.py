@@ -30,7 +30,6 @@ from buildstream._project import Project
 from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
-from buildstream.testing._utils.site import HAVE_SANDBOX
 from tests.testutils import create_artifact_share, dummy_context
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
@@ -225,7 +224,6 @@ def test_push_fail(cli, tmpdir, datafiles):
     assert "Pushed" not in res.stderr
 
 
-@pytest.mark.xfail(HAVE_SANDBOX == "buildbox", reason="Not working with BuildBox")
 @pytest.mark.datafiles(DATA_DIR)
 def test_source_push_build_fail(cli, tmpdir, datafiles):
     project_dir = str(datafiles)

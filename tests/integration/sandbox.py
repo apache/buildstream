@@ -32,7 +32,6 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
 
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
-@pytest.mark.xfail(HAVE_SANDBOX == "buildbox", reason="The buildbox sandbox doesn't support shm")
 @pytest.mark.xfail(HAVE_SANDBOX == "chroot", reason="The chroot sandbox doesn't support shm")
 @pytest.mark.datafiles(DATA_DIR)
 def test_sandbox_shm(cli, datafiles):
