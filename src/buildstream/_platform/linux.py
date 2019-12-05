@@ -32,6 +32,7 @@ class Linux(Platform):
         sandbox_setups = {
             "bwrap": self._setup_bwrap_sandbox,
             "buildbox": self._setup_buildbox_sandbox,
+            "buildbox-run": self.setup_buildboxrun_sandbox,
             "chroot": self._setup_chroot_sandbox,
             "dummy": self._setup_dummy_sandbox,
         }

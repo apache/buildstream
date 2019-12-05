@@ -45,7 +45,8 @@ class Platform:
         self._setup_sandbox(force_sandbox)
 
     def _setup_sandbox(self, force_sandbox):
-        sandbox_setups = {"dummy": self._setup_dummy_sandbox}
+        # The buildbox-run interface is not platform-specific
+        sandbox_setups = {"buildbox-run": self.setup_buildboxrun_sandbox, "dummy": self._setup_dummy_sandbox}
         preferred_sandboxes = []
         self._try_sandboxes(force_sandbox, sandbox_setups, preferred_sandboxes)
 
@@ -209,10 +210,10 @@ class Platform:
     # Returns:
     #     (Sandbox) A sandbox
     #
-    def create_sandbox(self, *args, **kwargs):
+    def create_sandbox(self, *args, **kwargs):  # pylint: disable=method-hidden
         raise ImplError("Platform {platform} does not implement create_sandbox()".format(platform=type(self).__name__))
 
-    def check_sandbox_config(self, config):
+    def check_sandbox_config(self, config):  # pylint: disable=method-hidden
         raise ImplError(
             "Platform {platform} does not implement check_sandbox_config()".format(platform=type(self).__name__)
         )
@@ -237,3 +238,23 @@ class Platform:
         raise ImplError(
             "Platform {platform} does not implement _setup_dummy_sandbox()".format(platform=type(self).__name__)
         )
+
+    # Buildbox run sandbox methods
+    def _check_sandbox_config_buildboxrun(self, config):
+        from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun
+
+        return SandboxBuildBoxRun.check_sandbox_config(self, config)
+
+    @staticmethod
+    def _create_buildboxrun_sandbox(*args, **kwargs):
+        from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun
+
+        return SandboxBuildBoxRun(*args, **kwargs)
+
+    def setup_buildboxrun_sandbox(self):
+        from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun
+
+        self._check_sandbox(SandboxBuildBoxRun)
+        self.check_sandbox_config = self._check_sandbox_config_buildboxrun
+        self.create_sandbox = self._create_buildboxrun_sandbox
+        return True
