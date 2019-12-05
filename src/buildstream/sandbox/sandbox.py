@@ -209,12 +209,6 @@ class Sandbox:
                 self._vdir = FileBasedDirectory(self._root)
         return self._vdir
 
-    def _set_virtual_directory(self, virtual_directory):
-        """ Sets virtual directory. Useful after remote execution
-        has rewritten the working directory.
-        """
-        self._vdir = virtual_directory
-
     def set_environment(self, environment: Dict[str, str]) -> None:
         """Sets the environment variables for the sandbox
 

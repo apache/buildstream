@@ -21,7 +21,6 @@ from .sandbox import Sandbox, SandboxCommandError, _SandboxBatch
 from .. import utils
 from .._exceptions import ImplError, SandboxError
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
-from ..storage._casbaseddirectory import CasBasedDirectory
 
 
 # SandboxREAPI()
@@ -143,8 +142,8 @@ class SandboxREAPI(Sandbox):
         # to replace the sandbox's virtual directory with that. Creating a new virtual directory object
         # from another hash will be interesting, though...
 
-        new_dir = CasBasedDirectory(cascache, digest=dir_digest)
-        self._set_virtual_directory(new_dir)
+        vdir = self.get_virtual_directory()
+        vdir._reset(digest=dir_digest)
 
     def _create_batch(self, main_group, flags, *, collect=None):
         return _SandboxREAPIBatch(self, main_group, flags, collect=collect)
