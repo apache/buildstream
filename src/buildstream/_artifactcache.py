@@ -492,24 +492,6 @@ class ArtifactCache(BaseCache):
     #             Local Private Methods            #
     ################################################
 
-    # _reachable_directories()
-    #
-    # Returns:
-    #     (iter): Iterator over directories digests available from artifacts.
-    #
-    def _reachable_directories(self):
-        for root, _, files in os.walk(self._basedir):
-            for artifact_file in files:
-                artifact = artifact_pb2.Artifact()
-                with open(os.path.join(root, artifact_file), "r+b") as f:
-                    artifact.ParseFromString(f.read())
-
-                if str(artifact.files):
-                    yield artifact.files
-
-                if str(artifact.buildtree):
-                    yield artifact.buildtree
-
     # _reachable_digests()
     #
     # Returns:
