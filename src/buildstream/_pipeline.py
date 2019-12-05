@@ -317,21 +317,6 @@ class Pipeline:
         # in before.
         return [element for element in elements if element in visited]
 
-    # subtract_elements()
-    #
-    # Subtract a subset of elements
-    #
-    # Args:
-    #    elements (list of Element): The element list
-    #    subtract (list of Element): List of elements to subtract from elements
-    #
-    # Returns:
-    #    (list): The original elements list, with elements in subtract removed
-    #
-    def subtract_elements(self, elements, subtract):
-        subtract_set = set(subtract)
-        return [e for e in elements if e not in subtract_set]
-
     # add_elements()
     #
     # Add to a list of elements all elements that are not already in it
