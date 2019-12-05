@@ -1,8 +1,8 @@
 # Basic toplevel package includes
 include BuildStream.doap
-include COPYING
+include COMMITTERS.rst
 include CONTRIBUTING.rst
-include MAINTAINERS
+include COPYING
 include NEWS
 include README.rst
 
@@ -12,7 +12,7 @@ recursive-include src/buildstream *.pxd
 recursive-include src/buildstream *.c
 
 # Data files required by BuildStream's generic source tests
-recursive-include src/buildstream/testing/_sourcetests/project *
+graft src/buildstream/testing/_sourcetests/project
 
 # Documentation package includes
 include doc/Makefile
@@ -30,7 +30,7 @@ recursive-include doc/examples *
 recursive-include doc/sessions *.run
 
 # Tests
-recursive-include tests *
+graft tests
 include tox.ini
 include .coveragerc
 include .pylintrc
@@ -39,12 +39,8 @@ include .pylintrc
 recursive-include src/buildstream/_protos *.proto
 
 # Requirements files
-include requirements/requirements.in
-include requirements/requirements.txt
-include requirements/dev-requirements.in
-include requirements/dev-requirements.txt
-include requirements/plugin-requirements.in
-include requirements/plugin-requirements.txt
+recursive-include requirements *.in
+recursive-include requirements *.txt
 
 # Versioneer
 include versioneer.py
