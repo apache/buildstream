@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2019 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -141,6 +142,8 @@ class Scheduler:
         self._queue_jobs = True  # Whether we should continue to queue jobs
         self._state = state
         self._casd_process = None  # handle to the casd process for monitoring purpose
+
+        self._sched_handle = None  # Whether a scheduling job is already scheduled or not
 
         # Bidirectional queue to send notifications back to the Scheduler's owner
         self._notification_queue = notification_queue
@@ -431,20 +434,26 @@ class Scheduler:
     # going back to sleep.
     #
     def _sched(self):
+        def real_schedule():
+            if not self.terminated:
 
-        if not self.terminated:
+                #
+                # Run as many jobs as the queues can handle for the
+                # available resources
+                #
+                self._sched_queue_jobs()
+
+            # Reset the scheduling hand
+            self._sched_handle = None
 
             #
-            # Run as many jobs as the queues can handle for the
-            # available resources
+            # If nothing is ticking then bail out
             #
-            self._sched_queue_jobs()
+            if not self._active_jobs:
+                self.loop.stop()
 
-        #
-        # If nothing is ticking then bail out
-        #
-        if not self._active_jobs:
-            self.loop.stop()
+        if self._sched_handle is None:
+            self._sched_handle = self.loop.call_soon(real_schedule)
 
     # _suspend_jobs()
     #
