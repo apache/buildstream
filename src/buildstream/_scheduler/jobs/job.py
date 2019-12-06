@@ -188,7 +188,13 @@ class Job:
             with asyncio.get_child_watcher() as watcher:
                 self._process.start()
                 # Register the process to call `_parent_child_completed` once it is done
-                watcher.add_child_handler(self._process.pid, self._parent_child_completed)
+
+                # Here we delay the call to the next loop tick. This is in order to be running
+                # in the main thread, as the callback itself must be thread safe.
+                def on_completion(pid, returncode):
+                    asyncio.get_event_loop().call_soon(self._parent_child_completed, pid, returncode)
+
+                watcher.add_child_handler(self._process.pid, on_completion)
 
     # terminate()
     #
