@@ -9,6 +9,17 @@ CLI
     of `buildable` for the state of junction elements, as they can't
     be built.
 
+API
+---
+
+  o External plugins can now register a `buildstream.tests.source_plugins` entrypoint.
+    The entry point can have an arbitrary name, but its value should point to a module
+    containing a `register_sources()` method.
+    This method should call `register_repo_kind` for all sources you want to have
+    tested in BuildStream.
+    Plugins authors that do this and believe BuildStream should be testing that
+    part of their plugins should open an issue on BuildStream.
+
 
 ==================
 buildstream 1.91.3

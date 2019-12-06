@@ -21,6 +21,8 @@
 #
 import os
 import multiprocessing
+
+import pkg_resources
 import pytest
 
 from buildstream.testing import register_repo_kind, sourcetests_collection_hook
@@ -46,7 +48,7 @@ from tests.testutils.repo.zip import Zip
 #################################################
 def pytest_addoption(parser):
     parser.addoption("--integration", action="store_true", default=False, help="Run integration tests")
-
+    parser.addoption("--plugins", action="store_true", default=False, help="Run only plugins tests")
     parser.addoption("--remote-execution", action="store_true", default=False, help="Run remote-execution tests only")
 
 
@@ -65,6 +67,11 @@ def pytest_runtest_setup(item):
     else:
         if item.get_closest_marker("remoteexecution"):
             pytest.skip("skipping remote-execution test")
+
+    # With --plugins only run plugins tests
+    if item.config.getvalue("plugins"):
+        if not item.get_closest_marker("generic_source_test"):
+            pytest.skip("Skipping not generic source test")
 
 
 #################################################
@@ -112,6 +119,12 @@ register_repo_kind("zip", Zip, None)
 # This hook enables pytest to collect the templated source tests from
 # buildstream.testing
 def pytest_sessionstart(session):
+    if session.config.getvalue("plugins"):
+        # Enable all plugins that implement the 'buildstream.tests.source_plugins' hook
+        for entrypoint in pkg_resources.iter_entry_points("buildstream.tests.source_plugins"):
+            module = entrypoint.load()
+            module.register_sources()
+
     sourcetests_collection_hook(session)
 
 
