@@ -131,7 +131,6 @@ class Job:
         self._scheduler = scheduler  # The scheduler
         self._queue = None  # A message passing queue
         self._process = None  # The Process object
-        self._watcher = None  # Child process watcher
         self._listening = False  # Whether the parent is currently listening
         self._suspended = False  # Whether this job is currently suspended
         self._max_retries = max_retries  # Maximum number of automatic retries
@@ -209,8 +208,8 @@ class Job:
         # an event loop callback. Otherwise, if the job completes too fast, then
         # the callback is called immediately.
         #
-        self._watcher = asyncio.get_child_watcher()
-        self._watcher.add_child_handler(self._process.pid, self._parent_child_completed)
+        watcher = asyncio.get_child_watcher()
+        watcher.add_child_handler(self._process.pid, self._parent_child_completed)
 
     # terminate()
     #
