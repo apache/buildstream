@@ -56,7 +56,8 @@ _ALIAS_SEPARATOR = ":"
 _URI_SCHEMES = ["http", "https", "ftp", "file", "git", "sftp", "ssh"]
 
 # Main process pid
-_MAIN_PID = os.getpid()
+# This is expected to be set by bst `cli()`
+_MAIN_PID = None
 
 # The number of threads in the main process at startup.
 # This is 1 except for certain test environments (xdist/execnet).
@@ -768,6 +769,15 @@ def _pretty_size(size, dec_places=0):
         if unit != units[-1]:
             psize /= 1024
     return "{size:g}{unit}".format(size=round(psize, dec_places), unit=unit)
+
+
+# _set_as_main_process()
+#
+# Mark the current process at the
+#
+def _set_as_main_process():
+    global _MAIN_PID
+    _MAIN_PID = os.getpid()
 
 
 # _is_main_process()

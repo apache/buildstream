@@ -10,7 +10,7 @@ from .._exceptions import BstError, LoadError, AppError
 from .._versions import BST_FORMAT_VERSION
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 from ..types import _CacheBuildTrees, _SchedulerErrorAction
-from ..utils import _get_compression, UtilError
+from ..utils import _get_compression, _set_as_main_process, UtilError
 
 
 ##################################################################
@@ -365,6 +365,8 @@ def cli(context, **kwargs):
     """
 
     from .app import App
+
+    _set_as_main_process()
 
     # Create the App, giving it the main arguments
     context.obj = App.create(dict(kwargs))
