@@ -268,7 +268,6 @@ class Element(Plugin):
         # Location where Element.stage_sources() was called
         self.__staged_sources_directory = None  # type: Optional[str]
         self.__tainted = None  # Whether the artifact is tainted and should not be shared
-        self.__required = False  # Whether the artifact is required in the current session
         self.__artifact_files_required = False  # Whether artifact files are required in the local cache
         self.__build_result = None  # The result of assembling this Element (success, description, detail)
         self._build_log_path = None  # The path of the build log for this Element
@@ -1482,13 +1481,6 @@ class Element(Plugin):
         vdirectory.set_deterministic_mtime()
         # Ensure deterministic owners of sources at build time
         vdirectory.set_deterministic_user()
-
-    # _is_required():
-    #
-    # Returns whether this element has been marked as required.
-    #
-    def _is_required(self):
-        return self.__required
 
     # _set_artifact_files_required():
     #
