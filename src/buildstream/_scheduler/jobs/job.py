@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2018 Codethink Limited
+#  Copyright (C) 2019 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -131,7 +132,6 @@ class Job:
         self._scheduler = scheduler  # The scheduler
         self._queue = None  # A message passing queue
         self._process = None  # The Process object
-        self._watcher = None  # Child process watcher
         self._listening = False  # Whether the parent is currently listening
         self._suspended = False  # Whether this job is currently suspended
         self._max_retries = max_retries  # Maximum number of automatic retries
@@ -185,32 +185,16 @@ class Job:
         # process will be notified of any signal after we launch the child.
         #
         with _signals.blocked([signal.SIGINT, signal.SIGTSTP, signal.SIGTERM], ignore=False):
-            self._process.start()
+            with asyncio.get_child_watcher() as watcher:
+                self._process.start()
+                # Register the process to call `_parent_child_completed` once it is done
 
-        # Wait for the child task to complete.
-        #
-        # This is a tricky part of python which doesnt seem to
-        # make it to the online docs:
-        #
-        #  o asyncio.get_child_watcher() will return a SafeChildWatcher() instance
-        #    which is the default type of watcher, and the instance belongs to the
-        #    "event loop policy" in use (so there is only one in the main process).
-        #
-        #  o SafeChildWatcher() will register a SIGCHLD handler with the asyncio
-        #    loop, and will selectively reap any child pids which have been
-        #    terminated.
-        #
-        #  o At registration time, the process will immediately be checked with
-        #    `os.waitpid()` and will be reaped immediately, before add_child_handler()
-        #    returns.
-        #
-        # The self._parent_child_completed callback passed here will normally
-        # be called after the child task has been reaped with `os.waitpid()`, in
-        # an event loop callback. Otherwise, if the job completes too fast, then
-        # the callback is called immediately.
-        #
-        self._watcher = asyncio.get_child_watcher()
-        self._watcher.add_child_handler(self._process.pid, self._parent_child_completed)
+                # Here we delay the call to the next loop tick. This is in order to be running
+                # in the main thread, as the callback itself must be thread safe.
+                def on_completion(pid, returncode):
+                    asyncio.get_event_loop().call_soon(self._parent_child_completed, pid, returncode)
+
+                watcher.add_child_handler(self._process.pid, on_completion)
 
     # terminate()
     #

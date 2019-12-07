@@ -188,7 +188,11 @@ class Scheduler:
         # Watch casd while running to ensure it doesn't die
         self._casd_process = casd_process_manager.process
         _watcher = asyncio.get_child_watcher()
-        _watcher.add_child_handler(self._casd_process.pid, self._abort_on_casd_failure)
+
+        def abort_casd(pid, returncode):
+            asyncio.get_event_loop().call_soon(self._abort_on_casd_failure, pid, returncode)
+
+        _watcher.add_child_handler(self._casd_process.pid, abort_casd)
 
         # Start the profiler
         with PROFILER.profile(Topics.SCHEDULER, "_".join(queue.action_name for queue in self.queues)):
