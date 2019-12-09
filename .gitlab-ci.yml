@@ -307,7 +307,7 @@ docs:
   variables:
     BST_EXT_URL: git+https://gitlab.com/BuildStream/bst-plugins-experimental.git
     BST_EXT_REF: 0.12.0-173-gbe5ac19#egg=bst_plugins_experimental[ostree,cargo]
-    FD_SDK_REF: freedesktop-sdk-19.08.3-buildstream2-0-gb66129f8e86acb1b6f35b825607b8e60362773a2
+    FD_SDK_REF: freedesktop-sdk-19.08.5-buildstream2-0-g22588e2f41acecbcfc555942eb3086296bc14c6c
   before_script:
   - |
     mkdir -p "${HOME}/.config"
