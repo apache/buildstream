@@ -100,7 +100,7 @@ from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import Consistency, CoreWarnings, Scope, _CacheBuildTrees, _KeyStrength
+from .types import CoreWarnings, Scope, _CacheBuildTrees, _KeyStrength
 from ._artifact import Artifact
 
 from .storage.directory import Directory
@@ -257,7 +257,7 @@ class Element(Plugin):
         self.__strict_cache_key = None  # Our cached cache key for strict builds
         self.__artifacts = context.artifactcache  # Artifact cache
         self.__sourcecache = context.sourcecache  # Source cache
-        self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
+        self.__is_resolved = False  # Whether the source is fully resolved or not
         self.__assemble_scheduled = False  # Element is scheduled to be assembled
         self.__assemble_done = False  # Element is assembled
         self.__pull_done = False  # Whether pull was attempted
@@ -1224,7 +1224,7 @@ class Element(Plugin):
     # notably jobs executed in sub-processes. Changes are performed by
     # invocations of the following methods:
     #
-    # - __update_source_state()
+    # - __update_resolved_state()
     #   - Computes the state of all sources of the element.
     # - __update_cache_keys()
     #   - Computes the strong and weak cache keys.
@@ -1246,7 +1246,7 @@ class Element(Plugin):
     # side effects.
     #
     # *This* method starts the process by invoking
-    # `__update_source_state()`, which will cause all necessary state
+    # `__update_resolved_state()`, which will cause all necessary state
     # changes. Other functions should use the appropriate methods and
     # only update what they expect to change - this will ensure that
     # the minimum amount of work is done.
@@ -1267,7 +1267,7 @@ class Element(Plugin):
         # pull/build, however should not occur during initialization
         # (since we will eventualyl visit reverse dependencies during
         # our initialization anyway).
-        self.__update_source_state()
+        self.__update_resolved_state()
 
     # _get_display_key():
     #
@@ -1316,7 +1316,7 @@ class Element(Plugin):
     def _tracking_done(self):
         # Tracking may change the sources' refs, and therefore the
         # source state. We need to update source state.
-        self.__update_source_state()
+        self.__update_resolved_state()
 
         # Check whether sources are now cached.
         # This is done here so that we don't throw an exception trying to show the pipeline at the end
@@ -1749,7 +1749,7 @@ class Element(Plugin):
         # Fetching cannot change the source state from INCONSISTENT to CACHED because
         # we prevent fetching when it's INCONSISTENT.
         # Therefore, only the source state will change.
-        self.__update_source_state()
+        self.__update_resolved_state()
 
     # _pull_pending()
     #
@@ -2190,7 +2190,7 @@ class Element(Plugin):
     # Get whether all sources of the element are resolved
     #
     def _has_all_sources_resolved(self):
-        return self.__consistency >= Consistency.RESOLVED
+        return self.__is_resolved
 
     # _has_all_sources_cached()
     #
@@ -2350,21 +2350,20 @@ class Element(Plugin):
     #                   Private Local Methods                   #
     #############################################################
 
-    # __update_source_state()
+    # __update_resolved_state()
     #
-    # Updates source consistency state
+    # Updates source's resolved state
     #
     # An element's source state must be resolved before it may compute
     # cache keys, because the source's ref, whether defined in yaml or
     # from the workspace, is a component of the element's cache keys.
     #
-    def __update_source_state(self):
-        # Determine overall consistency of the element
+    def __update_resolved_state(self):
         for source in self.__sources:
             if not source.is_resolved():
                 break
         else:
-            self.__consistency = Consistency.RESOLVED
+            self.__is_resolved = True
             self.__update_cache_keys()
 
     # __can_build_incrementally()
@@ -3010,7 +3009,7 @@ class Element(Plugin):
     # Note that it does not update *all* cache keys - In non-strict mode, the
     # strong cache key is updated in __update_cache_key_non_strict()
     #
-    # If the element's consistency is Consistency.INCONSISTENT this is
+    # If the element's is not resolved, this is
     # a no-op (since inconsistent elements cannot have cache keys).
     #
     # The weak and strict cache keys will be calculated if not already

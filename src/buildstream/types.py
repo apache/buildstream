@@ -116,35 +116,6 @@ class Scope(FastEnum):
     """
 
 
-class Consistency(FastEnum):
-    """Defines the various consistency states of a :class:`.Source`.
-    """
-
-    INCONSISTENT = 0
-    """Inconsistent
-
-    Inconsistent sources have no explicit reference set. They cannot
-    produce a cache key, be fetched or staged. They can only be tracked.
-    """
-
-    RESOLVED = 1
-    """Resolved
-
-    Resolved sources have a reference and can produce a cache key and
-    be fetched, however they cannot be staged.
-    """
-
-    def __ge__(self, other):
-        if self.__class__ is not other.__class__:
-            raise ValueError("Unexpected comparison between {} and {}".format(self, repr(other)))
-        return self.value >= other.value
-
-    def __lt__(self, other):
-        if self.__class__ is not other.__class__:
-            raise ValueError("Unexpected comparison between {} and {}".format(self, repr(other)))
-        return self.value < other.value
-
-
 class CoreWarnings:
     """CoreWarnings()
 
