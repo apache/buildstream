@@ -378,11 +378,6 @@ overnight-isolated:
   - su buildstream -c "${TEST_COMMAND} --forked"
   - su buildstream -c "${TEST_COMMAND} --forked"
 
-  # We need to override the exclusion from the template in order to run on schedules
-  except: []
-  only:
-  - schedules
-
 
 #####################################################
 #                    Post stage                     #
