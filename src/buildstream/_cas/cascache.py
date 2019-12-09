@@ -368,10 +368,6 @@ class CASCache:
 
         return utils._message_digest(root_directory)
 
-    def update_tree_mtime(self, tree):
-        reachable = set()
-        self._reachable_refs_dir(reachable, tree, update_mtime=True)
-
     # remote_missing_blobs_for_directory():
     #
     # Determine which blobs of a directory tree are missing on the remote.

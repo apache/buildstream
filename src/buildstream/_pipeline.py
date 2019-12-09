@@ -317,38 +317,6 @@ class Pipeline:
         # in before.
         return [element for element in elements if element in visited]
 
-    # targets_include()
-    #
-    # Checks whether the given targets are, or depend on some elements
-    #
-    # Args:
-    #    targets (list of Element): A list of targets
-    #    elements (list of Element): List of elements to check
-    #
-    # Returns:
-    #    (bool): True if all of `elements` are the `targets`, or are
-    #            somehow depended on by `targets`.
-    #
-    def targets_include(self, targets, elements):
-        target_element_set = set(self.dependencies(targets, Scope.ALL))
-        element_set = set(elements)
-        return element_set.issubset(target_element_set)
-
-    # subtract_elements()
-    #
-    # Subtract a subset of elements
-    #
-    # Args:
-    #    elements (list of Element): The element list
-    #    subtract (list of Element): List of elements to subtract from elements
-    #
-    # Returns:
-    #    (list): The original elements list, with elements in subtract removed
-    #
-    def subtract_elements(self, elements, subtract):
-        subtract_set = set(subtract)
-        return [e for e in elements if e not in subtract_set]
-
     # add_elements()
     #
     # Add to a list of elements all elements that are not already in it

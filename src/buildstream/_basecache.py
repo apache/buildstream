@@ -64,18 +64,6 @@ class BaseCache:
 
         self._basedir = None
 
-    # has_open_grpc_channels():
-    #
-    # Return whether there are gRPC channel instances. This is used to safeguard
-    # against fork() with open gRPC channels.
-    #
-    def has_open_grpc_channels(self):
-        for project_remotes in chain(self._index_remotes.values(), self._storage_remotes.values()):
-            for remote in project_remotes:
-                if remote.channel:
-                    return True
-        return False
-
     # close_grpc_channels():
     #
     # Close open gRPC channels.

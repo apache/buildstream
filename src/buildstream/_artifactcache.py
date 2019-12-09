@@ -26,7 +26,6 @@ from ._exceptions import ArtifactError, CASError, CacheError, CASRemoteError, Re
 from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, artifact_pb2, artifact_pb2_grpc
 
 from ._remote import BaseRemote
-from .storage._casbaseddirectory import CasBasedDirectory
 from ._artifact import Artifact
 from . import utils
 
@@ -413,21 +412,6 @@ class ArtifactCache(BaseCache):
         if not os.path.exists(os.path.join(self._basedir, newref)):
             os.link(os.path.join(self._basedir, oldref), os.path.join(self._basedir, newref))
 
-    # get_artifact_logs():
-    #
-    # Get the logs of an existing artifact
-    #
-    # Args:
-    #     ref (str): The ref of the artifact
-    #
-    # Returns:
-    #     logsdir (CasBasedDirectory): A CasBasedDirectory containing the artifact's logs
-    #
-    def get_artifact_logs(self, ref):
-        cache_id = self.cas.resolve_ref(ref, update_mtime=True)
-        vdir = CasBasedDirectory(self.cas, digest=cache_id).descend("logs")
-        return vdir
-
     # fetch_missing_blobs():
     #
     # Fetch missing blobs from configured remote repositories.
@@ -507,42 +491,6 @@ class ArtifactCache(BaseCache):
     ################################################
     #             Local Private Methods            #
     ################################################
-
-    # _reachable_directories()
-    #
-    # Returns:
-    #     (iter): Iterator over directories digests available from artifacts.
-    #
-    def _reachable_directories(self):
-        for root, _, files in os.walk(self._basedir):
-            for artifact_file in files:
-                artifact = artifact_pb2.Artifact()
-                with open(os.path.join(root, artifact_file), "r+b") as f:
-                    artifact.ParseFromString(f.read())
-
-                if str(artifact.files):
-                    yield artifact.files
-
-                if str(artifact.buildtree):
-                    yield artifact.buildtree
-
-    # _reachable_digests()
-    #
-    # Returns:
-    #     (iter): Iterator over single file digests in artifacts
-    #
-    def _reachable_digests(self):
-        for root, _, files in os.walk(self._basedir):
-            for artifact_file in files:
-                artifact = artifact_pb2.Artifact()
-                with open(os.path.join(root, artifact_file), "r+b") as f:
-                    artifact.ParseFromString(f.read())
-
-                if str(artifact.public_data):
-                    yield artifact.public_data
-
-                for log_file in artifact.logs:
-                    yield log_file.digest
 
     # _push_artifact_blobs()
     #

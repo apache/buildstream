@@ -488,16 +488,6 @@ class Context:
         # value which we cache here too.
         return self._strict_build_plan
 
-    # set_artifact_directories_optional()
-    #
-    # This indicates that the current context (command or configuration)
-    # does not require directory trees of all artifacts to be available in the
-    # local cache.
-    #
-    def set_artifact_directories_optional(self):
-        self.require_artifact_directories = False
-        self.require_artifact_files = False
-
     # set_artifact_files_optional()
     #
     # This indicates that the current context (command or configuration)
