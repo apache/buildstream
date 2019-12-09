@@ -73,7 +73,7 @@ class _Profile:
     def __enter__(self):
         self.start()
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, _exc_type, _exc_value, traceback):
         self.stop()
         self.save()
 

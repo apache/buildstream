@@ -24,7 +24,6 @@ import logging
 import os
 import signal
 import sys
-import uuid
 
 import grpc
 from google.protobuf.message import DecodeError
@@ -514,10 +513,6 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
 
         return artifact
 
-    def ArtifactStatus(self, request, context):
-        self.logger.info("Retrieving status")
-        return artifact_pb2.ArtifactStatusResponse()
-
     def _check_directory(self, name, digest, context):
         try:
             self.resolve_digest(digest)
@@ -581,47 +576,3 @@ class _SourceServicer(source_pb2_grpc.SourceServiceServicer):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with save_file_atomic(path, "w+b") as f:
             f.write(source_proto.SerializeToString())
-
-
-def _digest_from_download_resource_name(resource_name):
-    parts = resource_name.split("/")
-
-    # Accept requests from non-conforming BuildStream 1.1.x clients
-    if len(parts) == 2:
-        parts.insert(0, "blobs")
-
-    if len(parts) != 3 or parts[0] != "blobs":
-        return None
-
-    try:
-        digest = remote_execution_pb2.Digest()
-        digest.hash = parts[1]
-        digest.size_bytes = int(parts[2])
-        return digest
-    except ValueError:
-        return None
-
-
-def _digest_from_upload_resource_name(resource_name):
-    parts = resource_name.split("/")
-
-    # Accept requests from non-conforming BuildStream 1.1.x clients
-    if len(parts) == 2:
-        parts.insert(0, "uploads")
-        parts.insert(1, str(uuid.uuid4()))
-        parts.insert(2, "blobs")
-
-    if len(parts) < 5 or parts[0] != "uploads" or parts[2] != "blobs":
-        return None
-
-    try:
-        uuid_ = uuid.UUID(hex=parts[1])
-        if uuid_.version != 4:
-            return None
-
-        digest = remote_execution_pb2.Digest()
-        digest.hash = parts[3]
-        digest.size_bytes = int(parts[4])
-        return digest
-    except ValueError:
-        return None
