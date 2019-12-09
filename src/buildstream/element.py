@@ -2208,12 +2208,9 @@ class Element(Plugin):
         Args:
             fetch_original (bool): whether we need to original unstaged source
         """
-        if (self._has_all_sources_cached() and fetch_original) or (
-            self._has_all_sources_in_source_cache() and not fetch_original
-        ):
-            return False
-        else:
-            return True
+        if fetch_original:
+            return not self._has_all_sources_cached()
+        return not self._has_all_sources_in_source_cache()
 
     # _set_can_query_cache_callback()
     #
