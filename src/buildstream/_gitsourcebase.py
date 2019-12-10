@@ -48,9 +48,20 @@ class _RefFormat(FastEnum):
     GIT_DESCRIBE = "git-describe"
 
 
-# Because of handling of submodules, we maintain a _GitMirror
-# for the primary git source and also for each submodule it
-# might have at a given time
+# This class represents a single Git repository. The Git source needs to account for
+# submodules, but we don't want to cache them all under the umbrella of the
+# superproject - so we use this class which caches them independently, according
+# to their URL. Instances keep reference to their "parent" GitSourceBase,
+# and if applicable, where in the superproject they are found.
+#
+# Args:
+#    source (_GitSourceBase or subclass): The parent source
+#    path (str): The relative location of the submodule in the superproject;
+#                the empty string for the superproject itself
+#    url (str): Where to clone the repo from
+#    ref (str): Specified 'ref' from the source configuration
+#    primary (bool): Whether this is the primary URL for the source
+#    tags (list): Tag configuration; see _GitSourceBase._load_tags
 #
 class _GitMirror(SourceFetcher):
     def __init__(self, source, path, url, ref, *, primary=False, tags=[]):
