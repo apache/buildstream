@@ -2,7 +2,7 @@
 # pylint: disable=redefined-outer-name
 
 import os
-from shutil import copyfile, rmtree
+from shutil import copyfile
 import subprocess
 import tarfile
 import tempfile
@@ -10,6 +10,7 @@ import urllib.parse
 
 import pytest
 
+from buildstream import utils
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
@@ -303,16 +304,7 @@ def test_read_only_dir(cli, tmpdir, datafiles, tar_name, base_dir):
         result.assert_success()
 
     finally:
-
-        # Make tmpdir deletable no matter what happens
-        def make_dir_writable(_fn, path, _excinfo):
-            os.chmod(os.path.dirname(path), 0o777)
-            if os.path.isdir(path):
-                os.rmdir(path)
-            else:
-                os.remove(path)
-
-        rmtree(str(tmpdir), onerror=make_dir_writable)
+        utils._force_rmtree(str(tmpdir))
 
 
 @pytest.mark.parametrize("server_type", ("FTP", "HTTP"))
