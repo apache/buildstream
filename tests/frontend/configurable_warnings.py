@@ -9,7 +9,6 @@ from buildstream.plugin import CoreWarnings
 from buildstream._exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_SANDBOX
 
 TOP_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "configuredwarning")
 
@@ -50,8 +49,6 @@ def build_project(datafiles, fatal_warnings):
     ],
 )
 def test_fatal_warnings(cli, datafiles, element_name, fatal_warnings, expect_fatal, error_domain):
-    if HAVE_SANDBOX == "buildbox" and error_domain != ErrorDomain.STREAM:
-        pytest.xfail()
     project_path = build_project(datafiles, fatal_warnings)
 
     result = cli.run(project=project_path, args=["build", element_name])
