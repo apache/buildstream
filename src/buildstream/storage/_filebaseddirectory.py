@@ -79,7 +79,14 @@ class FileBasedDirectory(Directory):
         return current_dir
 
     def import_files(
-        self, external_pathspec, *, filter_callback=None, report_written=True, update_mtime=False, can_link=False
+        self,
+        external_pathspec,
+        *,
+        filter_callback=None,
+        report_written=True,
+        update_mtime=False,
+        can_link=False,
+        properties=None
     ):
         """ See superclass Directory for arguments """
 

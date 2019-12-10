@@ -356,7 +356,7 @@ class CasBasedDirectory(Directory):
             # content into this CasBasedDirectory using CAS-to-CAS import
             # to write the report, handle possible conflicts (if the target
             # directory is not empty) and apply the optional filter.
-            digest = self.cas_cache.import_directory(external_pathspec)
+            digest = self.cas_cache.import_directory(external_pathspec, properties=properties)
             external_pathspec = CasBasedDirectory(self.cas_cache, digest=digest)
 
         assert isinstance(external_pathspec, CasBasedDirectory)
