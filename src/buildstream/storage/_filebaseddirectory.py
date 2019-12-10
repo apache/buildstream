@@ -123,7 +123,9 @@ class FileBasedDirectory(Directory):
                     report_written=report_written,
                 )
 
-        if update_mtime:
+        # do not update times if these were set via nodes
+        properties = properties or []
+        if update_mtime and "MTime" not in properties:
             cur_time = time.time()
 
             for f in import_result.files_written:
@@ -296,7 +298,21 @@ class FileBasedDirectory(Directory):
 
                 if entry.type == _FileType.REGULAR_FILE:
                     src_path = source_directory.cas_cache.objpath(entry.digest)
-                    actionfunc(src_path, dest_path, result=result)
+
+                    # fallback to copying if we require mtime support on this file
+                    if entry.node_properties:
+                        utils.safe_copy(src_path, dest_path, result=result)
+                        mtime = None
+                        for prop in entry.node_properties:
+                            if prop.name == "MTime" and prop.value:
+                                mtime = prop.value
+                            else:
+                                raise ImplError("{} is not a supported node property.".format(prop.name))
+                        if mtime:
+                            utils._set_file_mtime(dest_path, mtime)
+                    else:
+                        utils.safe_link(src_path, dest_path, result=result)
+
                     if entry.is_executable:
                         os.chmod(
                             dest_path,
@@ -308,6 +324,7 @@ class FileBasedDirectory(Directory):
                             | stat.S_IROTH
                             | stat.S_IXOTH,
                         )
+
                 else:
                     assert entry.type == _FileType.SYMLINK
                     os.symlink(entry.target, dest_path)
