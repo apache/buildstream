@@ -74,7 +74,6 @@ class _GitMirror(SourceFetcher):
         self.tags = tags
         self.primary = primary
         self.mirror = os.path.join(source.get_mirror_directory(), utils.url_directory_name(url))
-        self.mark_download_url(url)
 
     # Ensures that the mirror exists
     def ensure(self, alias_override=None):
@@ -254,6 +253,19 @@ class _GitMirror(SourceFetcher):
             fail="Failed to checkout git ref {}".format(self.ref),
             cwd=fullpath,
         )
+
+    # get_submodule_mirrors():
+    #
+    # Returns:
+    #     An iterator through new instances of this class, one of each submodule
+    #     in the repo
+    #
+    def get_submodule_mirrors(self):
+        for path, url in self.submodule_list():
+            ref = self.submodule_ref(path)
+            if ref is not None:
+                mirror = self.__class__(self.source, os.path.join(self.path, path), url, ref)
+                yield mirror
 
     # List the submodules (path/url tuples) present at the given ref of this repo
     def submodule_list(self):
@@ -456,7 +468,6 @@ class _GitSourceBase(Source):
             )
 
         self.checkout_submodules = node.get_bool("checkout-submodules", default=True)
-        self.submodules = []
 
         # Parse a dict of submodule overrides, stored in the submodule_overrides
         # and submodule_checkout_overrides dictionaries.
@@ -565,34 +576,27 @@ class _GitSourceBase(Source):
         return ret
 
     def init_workspace(self, directory):
-        # XXX: may wish to refactor this as some code dupe with stage()
-        self._refresh_submodules()
-
         with self.timed_activity('Setting up workspace "{}"'.format(directory), silent_nested=True):
             self.mirror.init_workspace(directory)
-            for mirror in self.submodules:
+            for mirror in self._recurse_submodules(configure=True):
                 mirror.init_workspace(directory)
 
     def stage(self, directory):
-
-        # Need to refresh submodule list here again, because
-        # it's possible that we did not load in the main process
-        # with submodules present (source needed fetching) and
-        # we may not know about the submodule yet come time to build.
-        #
-        self._refresh_submodules()
-
         # Stage the main repo in the specified directory
         #
         with self.timed_activity("Staging {}".format(self.mirror.url), silent_nested=True):
             self.mirror.stage(directory)
-            for mirror in self.submodules:
+            for mirror in self._recurse_submodules(configure=True):
                 mirror.stage(directory)
 
     def get_source_fetchers(self):
+        self.mirror.mark_download_url(self.mirror.url)
         yield self.mirror
-        self._refresh_submodules()
-        for submodule in self.submodules:
+        # _recurse_submodules only iterates those which are known at the current
+        # cached state - but fetch is called on each result as we go, so this will
+        # yield all configured submodules
+        for submodule in self._recurse_submodules(configure=True):
+            submodule.mark_download_url(submodule.url)
             yield submodule
 
     def validate_cache(self):
@@ -600,14 +604,13 @@ class _GitSourceBase(Source):
         unlisted_submodules = []
         invalid_submodules = []
 
-        for path, url in self.mirror.submodule_list():
-            discovered_submodules[path] = url
-            if self._ignore_submodule(path):
+        for submodule in self._recurse_submodules(configure=False):
+            discovered_submodules[submodule.path] = submodule.url
+            if self._ignore_submodule(submodule.path):
                 continue
 
-            override_url = self.submodule_overrides.get(path)
-            if not override_url:
-                unlisted_submodules.append((path, url))
+            if submodule.path not in self.submodule_overrides:
+                unlisted_submodules.append((submodule.path, submodule.url))
 
         # Warn about submodules which are explicitly configured but do not exist
         for path, url in self.submodule_overrides.items():
@@ -679,44 +682,50 @@ class _GitSourceBase(Source):
     ###########################################################
 
     def _have_all_refs(self):
-        if not self.mirror.has_ref():
-            return False
+        return self.mirror.has_ref() and all(
+            submodule.has_ref() for submodule in self._recurse_submodules(configure=True)
+        )
 
-        self._refresh_submodules()
-        for mirror in self.submodules:
-            if not os.path.exists(mirror.mirror):
-                return False
-            if not mirror.has_ref():
-                return False
-
-        return True
-
-    # Refreshes the BST_MIRROR_CLASS objects for submodules
+    # _configure_submodules():
     #
-    # Assumes that we have our mirror and we have the ref which we point to
+    # Args:
+    #     submodules: An iterator of _GitMirror (or similar) objects for submodules
     #
-    def _refresh_submodules(self):
-        self.mirror.ensure()
-        submodules = []
-
-        for path, url in self.mirror.submodule_list():
-
-            # Completely ignore submodules which are disabled for checkout
-            if self._ignore_submodule(path):
+    # Returns:
+    #     An iterator through `submodules` but filtered of any ignored submodules
+    #     and modified to use any custom URLs configured in the source
+    #
+    def _configure_submodules(self, submodules):
+        for submodule in submodules:
+            if self._ignore_submodule(submodule.path):
                 continue
+            # Allow configuration to override the upstream location of the submodules.
+            submodule.url = self.submodule_overrides.get(submodule.path, submodule.url)
+            yield submodule
 
-            # Allow configuration to override the upstream
-            # location of the submodules.
-            override_url = self.submodule_overrides.get(path)
-            if override_url:
-                url = override_url
+    # _recurse_submodules():
+    #
+    # Recursively iterates through GitMirrors for submodules of the main repo. Only
+    # submodules that are cached are recursed into - but this is decided at
+    # iteration time, so you can fetch in a for loop over this function to fetch
+    # all submodules.
+    #
+    # Args:
+    #     configure (bool): Whether to apply the 'submodule' config while recursing
+    #                       (URL changing and 'checkout' overrides)
+    #
+    def _recurse_submodules(self, configure):
+        def recurse(mirror):
+            submodules = mirror.get_submodule_mirrors()
+            if configure:
+                submodules = self._configure_submodules(submodules)
 
-            ref = self.mirror.submodule_ref(path)
-            if ref is not None:
-                mirror = self.BST_MIRROR_CLASS(self, path, url, ref)
-                submodules.append(mirror)
+            for submodule in submodules:
+                yield submodule
+                if submodule.has_ref():
+                    yield from recurse(submodule)
 
-        self.submodules = submodules
+        yield from recurse(self.mirror)
 
     def _load_tags(self, node):
         tags = []
