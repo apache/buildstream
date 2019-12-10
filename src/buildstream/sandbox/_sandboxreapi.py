@@ -70,7 +70,7 @@ class SandboxREAPI(Sandbox):
         command_digest = cascache.add_object(buffer=command_proto.SerializeToString())
         action = remote_execution_pb2.Action(command_digest=command_digest, input_root_digest=input_root_digest)
 
-        action_result = self._execute_action(action)  # pylint: disable=assignment-from-no-return
+        action_result = self._execute_action(action, flags)  # pylint: disable=assignment-from-no-return
 
         # Get output of build
         self._process_job_output(
@@ -148,7 +148,7 @@ class SandboxREAPI(Sandbox):
     def _create_batch(self, main_group, flags, *, collect=None):
         return _SandboxREAPIBatch(self, main_group, flags, collect=collect)
 
-    def _execute_action(self, action):
+    def _execute_action(self, action, flags):
         raise ImplError("Sandbox of type '{}' does not implement _execute_action()".format(type(self).__name__))
 
 

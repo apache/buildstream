@@ -55,13 +55,3 @@ def test_sandbox_bwrap_return_subprocess(cli, datafiles):
     result = cli.run(project=project, args=["build", element_name])
     result.assert_task_error(error_domain=ErrorDomain.SANDBOX, error_reason="command-failed")
     assert "sandbox-bwrap/command-exit-42.bst|Command failed with exitcode 42" in result.stderr
-
-
-@pytest.mark.skipif(HAVE_SANDBOX != "bwrap", reason="Only available with bubblewrap")
-@pytest.mark.datafiles(DATA_DIR)
-def test_sandbox_bwrap_dev_shm(cli, datafiles):
-    project = str(datafiles)
-    element_name = "sandbox-bwrap/test-dev-shm.bst"
-
-    result = cli.run(project=project, args=["build", element_name])
-    assert result.exit_code == 0
