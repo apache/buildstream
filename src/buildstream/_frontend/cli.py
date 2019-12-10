@@ -565,7 +565,7 @@ def show(app, elements, deps, except_, order, format_):
         %{name}           The element name
         %{key}            The abbreviated cache key (if all sources are consistent)
         %{full-key}       The full cache key (if all sources are consistent)
-        %{state}          cached, buildable, waiting or inconsistent
+        %{state}          cached, buildable, waiting, inconsistent or junction
         %{config}         The element configuration
         %{vars}           Variable configuration
         %{env}            Environment settings
