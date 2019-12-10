@@ -133,7 +133,6 @@ def test_compose_include(cli, datafiles, include_domains, exclude_domains, expec
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
-@pytest.mark.xfail(HAVE_SANDBOX == "buildbox", reason="Not working with BuildBox")
 def test_compose_run_integration(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout")

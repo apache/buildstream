@@ -62,7 +62,6 @@ def test_workspace_mount_on_read_only_directory(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
-@pytest.mark.xfail(HAVE_SANDBOX == "buildbox", reason="Not working with BuildBox")
 @pytest.mark.xfail(reason="Incremental builds are currently incompatible with workspace source plugin.")
 def test_workspace_commanddir(cli, datafiles):
     project = str(datafiles)
@@ -318,7 +317,6 @@ def test_incremental_configure_commands_run_only_once(cli, datafiles):
 #
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
-@pytest.mark.xfail(HAVE_SANDBOX == "buildbox", reason="Not working with BuildBox")
 def test_workspace_missing_last_successful(cli, datafiles):
     project = str(datafiles)
     workspace = os.path.join(cli.directory, "workspace")

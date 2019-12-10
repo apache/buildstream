@@ -70,12 +70,6 @@ casd_path = utils.get_host_tool("buildbox-casd")
 CASD_SEPARATE_USER = bool(os.stat(casd_path).st_mode & stat.S_ISUID)
 del casd_path
 
-try:
-    utils.get_host_tool("buildbox")
-    HAVE_BUILDBOX = True
-except ProgramNotFoundError:
-    HAVE_BUILDBOX = False
-
 IS_LINUX = os.getenv("BST_FORCE_BACKEND", sys.platform).startswith("linux")
 IS_WSL = IS_LINUX and "Microsoft" in platform.uname().release
 IS_WINDOWS = os.name == "nt"

@@ -53,7 +53,7 @@ def test_failed_build_quit(element_name, build_session, choice):
 
 
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
-@pytest.mark.xfail(HAVE_SANDBOX in ["buildbox", "buildbox-run"], reason="Not working with BuildBox")
+@pytest.mark.xfail(HAVE_SANDBOX == "buildbox-run", reason="Not working with BuildBox")
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("element_name", ["interactive/failed-build.bst"])
 def test_failed_build_log(element_name, build_session):
@@ -93,7 +93,7 @@ def test_failed_build_shell(element_name, build_session):
     # Quit the shell
     build_session.sendline("exit")
     # Quit the session
-    build_session.expect_exact("Choice: [continue]:")
+    build_session.expect_exact("Choice: [continue]:", timeout=PEXPECT_TIMEOUT_LONG)
     build_session.sendline("quit")
 
     build_session.expect_exact(pexpect.EOF)
