@@ -606,7 +606,7 @@ class _GitSourceBase(Source):
 
         for submodule in self._recurse_submodules(configure=False):
             discovered_submodules[submodule.path] = submodule.url
-            if self._ignore_submodule(submodule.path):
+            if self._ignoring_submodule(submodule.path):
                 continue
 
             if submodule.path not in self.submodule_overrides:
@@ -697,7 +697,7 @@ class _GitSourceBase(Source):
     #
     def _configure_submodules(self, submodules):
         for submodule in submodules:
-            if self._ignore_submodule(submodule.path):
+            if self._ignoring_submodule(submodule.path):
                 continue
             # Allow configuration to override the upstream location of the submodules.
             submodule.url = self.submodule_overrides.get(submodule.path, submodule.url)
@@ -737,12 +737,13 @@ class _GitSourceBase(Source):
             tags.append((tag, commit_ref, annotated))
         return tags
 
-    # Checks whether the plugin configuration has explicitly
-    # configured this submodule to be ignored
-    def _ignore_submodule(self, path):
-        try:
-            checkout = self.submodule_checkout_overrides[path]
-        except KeyError:
-            checkout = self.checkout_submodules
-
-        return not checkout
+    # _ignoring_submodule():
+    #
+    # Args:
+    #     path (str): The path of a submodule in the superproject
+    #
+    # Returns:
+    #     (bool): Whether to not clone/checkout this submodule
+    #
+    def _ignoring_submodule(self, path):
+        return not self.submodule_checkout_overrides.get(path, self.checkout_submodules)
