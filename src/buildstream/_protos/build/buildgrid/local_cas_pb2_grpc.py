@@ -113,10 +113,10 @@ class LocalContentAddressableStorageServicer(object):
     in the local cache. Optionally, this will also fetch all blobs referenced
     by the `Directory` objects, equivalent to `FetchMissingBlobs`.
 
-    If part of the tree is missing from the CAS, the server will return the
-    portion present and omit the rest.
+    If no remote CAS is available, this will check presence of the entire
+    directory tree (and optionally also file blobs) in the local cache.
 
-    * `NOT_FOUND`: The requested tree root is not present in the CAS.
+    * `NOT_FOUND`: The requested tree is not present in the CAS or incomplete.
     """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
