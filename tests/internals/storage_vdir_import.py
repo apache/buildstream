@@ -23,6 +23,7 @@ from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
 from buildstream._cas import CASCache
 from buildstream.storage.directory import VirtualDirectoryError
+from buildstream.utils import _set_file_mtime, _parse_timestamp
 
 
 # These are comparitive tests that check that FileBasedDirectory and
@@ -48,6 +49,8 @@ root_filesets = [
 empty_hash_ref = sha256().hexdigest()
 RANDOM_SEED = 69105
 NUM_RANDOM_TESTS = 4
+TIMESTAMP = "2019-12-16T08:49:04.012Z"
+MTIME = 1576486144.0120000
 
 
 def generate_import_roots(rootno, directory):
@@ -63,8 +66,11 @@ def generate_import_root(rootdir, filelist):
         if typesymbol == "F":
             (dirnames, filename) = os.path.split(path)
             os.makedirs(os.path.join(rootdir, dirnames), exist_ok=True)
-            with open(os.path.join(rootdir, dirnames, filename), "wt") as f:
+            fullpath = os.path.join(rootdir, dirnames, filename)
+            with open(fullpath, "wt") as f:
                 f.write(content)
+            # set file mtime to arbitrary
+            _set_file_mtime(fullpath, _parse_timestamp(TIMESTAMP))
         elif typesymbol == "D":
             os.makedirs(os.path.join(rootdir, path), exist_ok=True)
         elif typesymbol == "S":
@@ -98,6 +104,7 @@ def generate_random_root(rootno, directory):
         elif thing == "file":
             with open(target, "wt") as f:
                 f.write("This is node {}\n".format(i))
+            _set_file_mtime(target, _parse_timestamp(TIMESTAMP))
         elif thing == "link":
             symlink_type = random.choice(["absolute", "relative", "broken"])
             if symlink_type == "broken" or not things:
@@ -124,7 +131,7 @@ def file_contents_are(path, contents):
 
 def create_new_casdir(root_number, cas_cache, tmpdir):
     d = CasBasedDirectory(cas_cache)
-    d.import_files(os.path.join(tmpdir, "content", "root{}".format(root_number)))
+    d.import_files(os.path.join(tmpdir, "content", "root{}".format(root_number)), properties=["MTime"])
     digest = d._get_digest()
     assert digest.hash != empty_hash_ref
     return d
@@ -192,7 +199,7 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
         assert duplicate_cas._get_digest().hash == d._get_digest().hash
 
         d2 = create_new_casdir(overlay, cas_cache, tmpdir)
-        d.import_files(d2)
+        d.import_files(d2, properties=["MTime"])
         export_dir = os.path.join(tmpdir, "output-{}-{}".format(original, overlay))
         roundtrip_dir = os.path.join(tmpdir, "roundtrip-{}-{}".format(original, overlay))
         d2.export_files(roundtrip_dir)
@@ -211,6 +218,10 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
                             path
                         )
                         assert file_contents_are(realpath, content)
+                        roundtrip = os.path.join(roundtrip_dir, path)
+                        assert os.path.getmtime(roundtrip) == MTIME
+                        assert os.path.getmtime(realpath) == MTIME
+
                 elif typename == "S":
                     if os.path.isdir(realpath) and directory_not_empty(realpath):
                         # The symlink should not have overwritten the directory in this case.
@@ -227,7 +238,7 @@ def _import_test(tmpdir, original, overlay, generator_function, verify_contents=
 
         # Now do the same thing with filebaseddirectories and check the contents match
 
-        duplicate_cas.import_files(roundtrip_dir)
+        duplicate_cas.import_files(roundtrip_dir, properties=["MTime"])
 
         assert duplicate_cas._get_digest().hash == d._get_digest().hash
     finally:
