@@ -2096,9 +2096,9 @@ class Element(Plugin):
     #
     def _fetch(self, fetch_original=False):
         previous_sources = []
-        sources = self.__sources
         fetch_needed = False
-        if sources and not fetch_original:
+
+        if self.__sources and not fetch_original:
             for source in self.__sources:
                 if self.__sourcecache.contains(source):
                     continue
