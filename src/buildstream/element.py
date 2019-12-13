@@ -2118,7 +2118,7 @@ class Element(Plugin):
                     source._fetch(previous_sources)
                 previous_sources.append(source)
 
-        self.__cache_sources()
+            self.__cache_sources()
 
     # _calculate_cache_key():
     #
