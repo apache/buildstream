@@ -1739,17 +1739,12 @@ class Element(Plugin):
     #   fetched_original (bool): Whether the original sources had been asked (and fetched) or not
     #
     def _fetch_done(self, fetched_original):
+        self.__has_all_sources_in_source_cache = True
+        if fetched_original:
+            self.__has_all_sources_cached = True
+
         for source in self.__sources:
             source._fetch_done(fetched_original)
-
-        # We are not updating the state recursively here since fetching can
-        # never end up in updating them.
-
-        # Fetching changes the source state from RESOLVED to CACHED
-        # Fetching cannot change the source state from INCONSISTENT to CACHED because
-        # we prevent fetching when it's INCONSISTENT.
-        # Therefore, only the source state will change.
-        self.__update_resolved_state()
 
     # _pull_pending()
     #
