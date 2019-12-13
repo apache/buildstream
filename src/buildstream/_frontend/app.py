@@ -22,6 +22,7 @@ import os
 import sys
 import traceback
 import datetime
+import time
 from textwrap import TextWrapper
 import click
 from click import UsageError
@@ -59,7 +60,7 @@ INDENT = 4
 #
 class App:
     def __init__(self, main_options):
-
+        time.sleep(5)
         #
         # Public members
         #
