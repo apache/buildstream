@@ -1,6 +1,7 @@
 import multiprocessing
 import os
 import sys
+import time
 from functools import partial
 
 import shutil
@@ -182,6 +183,7 @@ def override_completions(orig_args, cmd, cmd_param, args, incomplete):
     """
 
     if cmd.name == "help":
+        time.sleep(10)
         return complete_commands(cmd, args, incomplete)
 
     # We can't easily extend click's data structures without
@@ -296,6 +298,7 @@ def print_version(ctx, param, value):
 
     from .. import __version__
 
+    time.sleep(10)
     click.echo(__version__)
     ctx.exit()
 
@@ -394,6 +397,7 @@ def cli(context, **kwargs):
 def help_command(ctx, command):
     """Print usage information about a given command
     """
+    time.sleep(10)
     command_ctx = search_command(command, context=ctx.parent)
     if not command_ctx:
         click.echo("Not a valid command: '{} {}'".format(ctx.parent.info_name, " ".join(command)), err=True)
