@@ -89,8 +89,8 @@ tests-centos-7.6:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.6.1810-${DOCKER_IMAGE_VERSION}
 
 tests-python-3.8-buster:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-python:3.8-buster-chandan-python3-8-89265968
   <<: *tests
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-python:3.8-buster-tlater-improve-artifact-cache-102956389
   variables:
     TOXENV: py38
 
