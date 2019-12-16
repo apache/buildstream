@@ -1,6 +1,7 @@
 [run]
 concurrency = multiprocessing
 plugins = Cython.Coverage
+parallel = True
 
 omit =
   # Omit some internals
