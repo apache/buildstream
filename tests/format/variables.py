@@ -61,7 +61,7 @@ def test_missing_variable(cli, datafiles, element):
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNRESOLVED_VARIABLE)
 
 
-@pytest.mark.timeout(3, method="signal")
+@pytest.mark.timeout(30, method="signal")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "cyclic_variables"))
 def test_cyclic_variables(cli, datafiles):
     print_warning("Performing cyclic test, if this test times out it will " + "exit the test sequence")
