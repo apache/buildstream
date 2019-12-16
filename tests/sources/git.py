@@ -94,6 +94,46 @@ def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "template"))
+def test_recursive_submodule_fetch_checkout(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Create a submodule from the 'othersubrepofiles' subdir
+    subsubrepo = create_repo("git", str(tmpdir), "subsubrepo")
+    subsubrepo.create(os.path.join(project, "othersubrepofiles"))
+
+    # Create another submodule from the 'subrepofiles' subdir
+    subrepo = create_repo("git", str(tmpdir), "subrepo")
+    subrepo.create(os.path.join(project, "subrepofiles"))
+
+    # Create the repo from 'repofiles' subdir
+    repo = create_repo("git", str(tmpdir))
+    repo.create(os.path.join(project, "repofiles"))
+
+    # Configure submodules
+    subrepo.add_submodule("subdir", "file://" + subsubrepo.repo)
+    ref = repo.add_submodule("subdir", "file://" + subrepo.repo)
+
+    # Write out our test target
+    element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
+    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+
+    # Fetch, build, checkout
+    result = cli.run(project=project, args=["source", "fetch", "target.bst"])
+    result.assert_success()
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+    result = cli.run(project=project, args=["artifact", "checkout", "target.bst", "--directory", checkoutdir])
+    result.assert_success()
+
+    # Assert we checked out all files at their expected location
+    assert os.path.exists(os.path.join(checkoutdir, "file.txt"))
+    assert os.path.exists(os.path.join(checkoutdir, "subdir", "ponyfile.txt"))
+    assert os.path.exists(os.path.join(checkoutdir, "subdir", "subdir", "unicornfile.txt"))
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "template"))
 def test_submodule_fetch_source_enable_explicit(cli, tmpdir, datafiles):
     project = str(datafiles)
     checkoutdir = os.path.join(str(tmpdir), "checkout")

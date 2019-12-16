@@ -57,6 +57,7 @@ git - stage files from a git repository
    ref: d63cbb6fdc0bbdadc4a1b92284826a6d63a7ebcd
 
    # Optionally specify whether submodules should be checked-out.
+   # This is done recursively, as with `git clone --recurse-submodules`.
    # If not set, this will default to 'True'
    checkout-submodules: True
 
@@ -66,12 +67,15 @@ git - stage files from a git repository
    # especially handy when used with project defined aliases which
    # can be redefined at a later time.
    # You may also explicitly specify whether to check out this
-   # submodule. If 'checkout' is set, it will override
-   # 'checkout-submodules' with the value set below.
+   # submodule. If 'checkout' is set, it will control whether to
+   # checkout that submodule and recurse into it. It defaults to the
+   # value of 'checkout-submodules'.
    submodules:
      plugins/bar:
        url: upstream:bar.git
        checkout: True
+     plugins/bar/quux:
+       checkout: False
      plugins/baz:
        url: upstream:baz.git
        checkout: False
