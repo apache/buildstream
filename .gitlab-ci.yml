@@ -405,6 +405,7 @@ coverage:
     - tox -e coverage
     - cp -a .coverage-reports/ ./coverage-report
   dependencies:
+  - tests-buildbox-run
   - tests-centos-7.6
   - tests-debian-9
   - tests-debian-10
