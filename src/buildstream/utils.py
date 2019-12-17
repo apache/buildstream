@@ -819,20 +819,25 @@ def _remove_path_with_parents(basedir: Union[Path, str], path: Union[Path, str])
 
 # Recursively remove directories, ignoring file permissions as much as
 # possible.
-def _force_rmtree(rootpath, **kwargs):
+def _force_rmtree(rootpath):
+    def fix_permissions(function, path, info):
+        parent = os.path.dirname(path)
 
-    os.chmod(rootpath, 0o755)
-    for root, dirs, _ in os.walk(rootpath):
-        for d in dirs:
-            path = os.path.join(root, d.lstrip("/"))
-            if os.path.exists(path) and not os.path.islink(path):
-                try:
-                    os.chmod(path, 0o755)
-                except OSError as e:
-                    raise UtilError("Failed to ensure write permission on file '{}': {}".format(path, e))
+        try:
+            os.chmod(parent, 0o755)
+        except OSError as e:
+            raise UtilError("Failed to ensure write permission on directory '{}': {}".format(parent, e))
+
+        # Directories need to be removed with `rmdir`, though
+        # `os.path.isdir` will follow symlinks, so make sure it's
+        # not a symlink first
+        if not os.path.islink(path) and os.path.isdir(path):
+            os.rmdir(path)
+        else:
+            os.remove(path)
 
     try:
-        shutil.rmtree(rootpath, **kwargs)
+        shutil.rmtree(rootpath, onerror=fix_permissions)
     except OSError as e:
         raise UtilError("Failed to remove cache directory '{}': {}".format(rootpath, e))
 

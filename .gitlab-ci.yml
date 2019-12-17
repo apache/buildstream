@@ -24,7 +24,7 @@ variables:
   # Our own variables
   # Version of the docker images we should use for all the images.
   # This is taken from buildstream/buildstream-docker-images
-  DOCKER_IMAGE_VERSION: master-101787517
+  DOCKER_IMAGE_VERSION: master-103717922
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   PYTEST_ARGS: "--color=yes --integration -n 2"
@@ -123,6 +123,40 @@ tests-buildbox-run:
   <<: *tests
   variables:
     BST_FORCE_SANDBOX: "buildbox-run"
+
+tests-userchroot:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
+  <<: *tests
+  variables:
+    BST_FORCE_SANDBOX: "buildbox-run"
+    BST_CAS_STAGING_ROOT: "/builds/userchroot"
+
+  script:
+    - mkdir -p "${INTEGRATION_CACHE}"
+    - useradd -Um buildstream
+
+    # Use buildbox-run-userchroot and hardlinking
+    - ln -svf buildbox-run-userchroot /usr/local/bin/buildbox-run
+    - rm -vf /usr/local/bin/buildbox-fuse
+
+    # When using userchroot, buildbox-casd must run as a separate user
+    - useradd -g buildstream buildbox-casd
+    - chown buildbox-casd:buildstream /usr/local/bin/buildbox-casd
+    - chmod u+s /usr/local/bin/buildbox-casd
+
+    # Set up staging root with permissions required by userchroot,
+    # must be on same filesystem as current directory to support hardlinks
+    - mkdir -p "${BST_CAS_STAGING_ROOT}"
+    - chown -R buildbox-casd:buildstream "${BST_CAS_STAGING_ROOT}"
+    # userchroot doesn't allow group/world-writable base directory
+    - chmod go-w /builds
+    - echo buildbox-casd:${BST_CAS_STAGING_ROOT} > /etc/userchroot.conf
+
+    - chown -R buildstream:buildstream .
+
+    # Run the tests as a simple user to test for permission issues
+    - su buildstream -c "umask 002 && ${TEST_COMMAND}"
+    - su buildstream -c "umask 002 && ${EXTERNAL_TESTS_COMMAND}"
 
 tests-fedora-missing-deps:
   # Ensure that tests behave nicely while missing bwrap and ostree
@@ -405,6 +439,7 @@ coverage:
     - tox -e coverage
     - cp -a .coverage-reports/ ./coverage-report
   dependencies:
+  - tests-buildbox-run
   - tests-centos-7.6
   - tests-debian-9
   - tests-debian-10
@@ -415,6 +450,7 @@ coverage:
   - tests-remote-execution
   - tests-ubuntu-18.04
   - tests-unix
+  - tests-userchroot
   except:
   - schedules
   artifacts:
