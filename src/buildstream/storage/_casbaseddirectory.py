@@ -158,19 +158,26 @@ class CasBasedDirectory(Directory):
         return newdir
 
     def _add_file(self, basename, filename, modified=False, can_link=False, properties=None):
-        entry = IndexEntry(filename, _FileType.REGULAR_FILE, modified=modified or filename in self.index)
         path = os.path.join(basename, filename)
-        entry.digest = self.cas_cache.add_object(path=path, link_directly=can_link)
-        entry.is_executable = os.access(path, os.X_OK)
-        properties = properties or []
+        digest = self.cas_cache.add_object(path=path, link_directly=can_link)
+        is_executable = os.access(path, os.X_OK)
+        node_properties = []
         # see https://github.com/bazelbuild/remote-apis/blob/master/build/bazel/remote/execution/v2/nodeproperties.md
         # for supported node property specifications
-        entry.node_properties = []
-        if "MTime" in properties:
+        if properties and "MTime" in properties:
             node_property = remote_execution_pb2.NodeProperty()
             node_property.name = "MTime"
             node_property.value = _get_file_mtimestamp(path)
-            entry.node_properties.append(node_property)
+            node_properties.append(node_property)
+
+        entry = IndexEntry(
+            filename,
+            _FileType.REGULAR_FILE,
+            digest=digest,
+            is_executable=is_executable,
+            modified=modified or filename in self.index,
+            node_properties=node_properties,
+        )
         self.index[filename] = entry
 
         self.__invalidate_digest()
