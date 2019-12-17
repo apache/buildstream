@@ -28,6 +28,7 @@ if "_BST_COMPLETION" not in os.environ:
     __version__ = get_versions()["version"]
     del get_versions
 
+    from . import _compat
     from .utils import UtilError, ProgramNotFoundError
     from .sandbox import Sandbox, SandboxFlags, SandboxCommandError
     from .types import Scope, Consistency, CoreWarnings
