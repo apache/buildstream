@@ -155,6 +155,8 @@ class Platform:
             "i686": "x86-32",
             "power-isa-be": "power-isa-be",
             "power-isa-le": "power-isa-le",
+            "powerpc64": "power-isa-be",  # Used in GCC/LLVM
+            "powerpc64le": "power-isa-le",  # Used in GCC/LLVM
             "ppc64": "power-isa-be",
             "ppc64le": "power-isa-le",
             "sparc": "sparc-v9",
