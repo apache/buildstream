@@ -75,25 +75,16 @@ class _GitMirror(SourceFetcher):
         self.primary = primary
         self.mirror = os.path.join(source.get_mirror_directory(), utils.url_directory_name(url))
 
-    # Ensures that the mirror exists
-    def ensure(self, alias_override=None):
-
-        # Unfortunately, git does not know how to only clone just a specific ref,
-        # so we have to download all of those gigs even if we only need a couple
-        # of bytes.
+    # _ensure_repo():
+    #
+    # Ensures that the Git repository exists at the mirror location and is configured
+    # to fetch from the given URL
+    #
+    def _ensure_repo(self):
         if not os.path.exists(self.mirror):
-
-            # Do the initial clone in a tmpdir just because we want an atomic move
-            # after a long standing clone which could fail overtime, for now do
-            # this directly in our git directory, eliminating the chances that the
-            # system configured tmpdir is not on the same partition.
-            #
             with self.source.tempdir() as tmpdir:
-                url = self.source.translate_url(self.url, alias_override=alias_override, primary=self.primary)
                 self.source.call(
-                    [self.source.host_git, "clone", "--mirror", "-n", url, tmpdir],
-                    fail="Failed to clone git repository {}".format(url),
-                    fail_temporarily=True,
+                    [self.source.host_git, "init", "--bare", tmpdir], fail="Failed to initialise repository",
                 )
 
                 try:
@@ -101,39 +92,23 @@ class _GitMirror(SourceFetcher):
                 except DirectoryExistsError:
                     # Another process was quicker to download this repository.
                     # Let's discard our own
-                    self.source.status("{}: Discarding duplicate clone of {}".format(self.source, url))
+                    self.source.status("{}: Discarding duplicate repository".format(self.source))
                 except OSError as e:
                     raise SourceError(
-                        "{}: Failed to move cloned git repository {} from '{}' to '{}': {}".format(
-                            self.source, url, tmpdir, self.mirror, e
+                        "{}: Failed to move created repository from '{}' to '{}': {}".format(
+                            self.source, tmpdir, self.mirror, e
                         )
                     ) from e
 
-    def _fetch(self, alias_override=None):
-        url = self.source.translate_url(self.url, alias_override=alias_override, primary=self.primary)
-
-        if alias_override:
-            remote_name = utils.url_directory_name(alias_override)
-            _, remotes = self.source.check_output(
-                [self.source.host_git, "remote"],
-                fail="Failed to retrieve list of remotes in {}".format(self.mirror),
-                cwd=self.mirror,
-            )
-            if remote_name not in remotes:
-                self.source.call(
-                    [self.source.host_git, "remote", "add", remote_name, url],
-                    fail="Failed to add remote {} with url {}".format(remote_name, url),
-                    cwd=self.mirror,
-                )
-        else:
-            remote_name = "origin"
+    def _fetch(self, url):
+        self._ensure_repo()
 
         self.source.call(
             [
                 self.source.host_git,
                 "fetch",
-                remote_name,
                 "--prune",
+                url,
                 "+refs/heads/*:refs/heads/*",
                 "+refs/tags/*:refs/tags/*",
             ],
@@ -143,13 +118,11 @@ class _GitMirror(SourceFetcher):
         )
 
     def fetch(self, alias_override=None):  # pylint: disable=arguments-differ
-        # Resolve the URL for the message
         resolved_url = self.source.translate_url(self.url, alias_override=alias_override, primary=self.primary)
 
         with self.source.timed_activity("Fetching from {}".format(resolved_url), silent_nested=True):
-            self.ensure(alias_override)
             if not self.has_ref():
-                self._fetch(alias_override)
+                self._fetch(resolved_url)
             self.assert_ref()
 
     def has_ref(self):
@@ -567,9 +540,7 @@ class _GitSourceBase(Source):
         # Resolve the URL for the message
         resolved_url = self.translate_url(self.mirror.url)
         with self.timed_activity("Tracking {} from {}".format(self.tracking, resolved_url), silent_nested=True):
-            self.mirror.ensure()
-            self.mirror._fetch()
-
+            self.mirror._fetch(resolved_url)
             # Update self.mirror.ref and node.ref from the self.tracking branch
             ret = self.mirror.latest_commit_with_tags(self.tracking, self.track_tags)
 
