@@ -178,12 +178,7 @@ def get_timemark(cli, project, element_name, marker):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
-    "modification",
-    [
-        pytest.param("none"),
-        pytest.param("content"),
-        pytest.param("time", marks=pytest.mark.xfail(reason="mtimes are set to a magic value and not stored in CAS")),
-    ],
+    "modification", [pytest.param("none"), pytest.param("content"), pytest.param("time"),],
 )
 @pytest.mark.parametrize(
     "buildtype",
