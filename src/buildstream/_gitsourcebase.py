@@ -48,6 +48,21 @@ class _RefFormat(FastEnum):
     GIT_DESCRIBE = "git-describe"
 
 
+# _has_matching_ref():
+#
+# Args:
+#     refs: Iterable of string (ref id, ref name) pairs
+#     tag (str): Tag name
+#     commit (str): Commit ID
+#
+# Returns:
+#     (bool): Whether the given tag is found in `refs` and points to ID `commit`
+#
+def _has_matching_ref(refs, tag, commit):
+    names = ("refs/tags/{tag}^{{}}".format(tag=tag), "refs/tags/{tag}".format(tag=tag))
+    return any(ref_commit == commit and ref_name in names for ref_commit, ref_name in refs)
+
+
 # This class represents a single Git repository. The Git source needs to account for
 # submodules, but we don't want to cache them all under the umbrella of the
 # superproject - so we use this class which caches them independently, according
@@ -103,19 +118,67 @@ class _GitMirror(SourceFetcher):
     def _fetch(self, url):
         self._ensure_repo()
 
-        self.source.call(
-            [
-                self.source.host_git,
-                "fetch",
-                "--prune",
-                url,
-                "+refs/heads/*:refs/heads/*",
-                "+refs/tags/*:refs/tags/*",
-            ],
-            fail="Failed to fetch from remote git repository: {}".format(url),
-            fail_temporarily=True,
-            cwd=self.mirror,
-        )
+        fetch_all = False
+
+        # Work out whether we can fetch a specific tag: are we given a ref which
+        # 1. is in git-describe format
+        # 2. refers to an exact tag (is "...-0-g...")
+        # 3. is available on the remote and tags the specified commit?
+        if not self.ref:
+            fetch_all = True
+        else:
+            m = re.match(r"(?P<tag>.*)-0-g(?P<commit>.*)", self.ref)
+            if m is None:
+                fetch_all = True
+            else:
+                tag = m.group("tag")
+                commit = m.group("commit")
+
+                _, ls_remote = self.source.check_output(
+                    [self.source.host_git, "ls-remote", url],
+                    cwd=self.mirror,
+                    fail="Failed to list advertised remote refs from git repository {}".format(url),
+                )
+
+                refs = [line.split("\t", 1) for line in ls_remote.splitlines()]
+                has_ref = _has_matching_ref(refs, tag, commit)
+
+                if not has_ref:
+                    self.source.status(
+                        "{}: {} is not advertised on {}. Fetching all Git refs".format(self.source, self.ref, url)
+                    )
+                    fetch_all = True
+                else:
+                    exit_code = self.source.call(
+                        [
+                            self.source.host_git,
+                            "fetch",
+                            "--depth=1",
+                            url,
+                            "+refs/tags/{tag}:refs/tags/{tag}".format(tag=tag),
+                        ],
+                        cwd=self.mirror,
+                    )
+                    if exit_code != 0:
+                        self.source.status(
+                            "{}: Failed to fetch tag '{}' from {}. Fetching all Git refs".format(self.source, tag, url)
+                        )
+                        fetch_all = True
+
+        if fetch_all:
+            self.source.call(
+                [
+                    self.source.host_git,
+                    "fetch",
+                    "--prune",
+                    url,
+                    "+refs/heads/*:refs/heads/*",
+                    "+refs/tags/*:refs/tags/*",
+                ],
+                fail="Failed to fetch from remote git repository: {}".format(url),
+                fail_temporarily=True,
+                cwd=self.mirror,
+            )
 
     def fetch(self, alias_override=None):  # pylint: disable=arguments-differ
         resolved_url = self.source.translate_url(self.url, alias_override=alias_override, primary=self.primary)
