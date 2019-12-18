@@ -84,13 +84,20 @@ class Repo:
             src (str): The source directory
             dest (str): The destination directory
         """
-        for filename in os.listdir(src):
-            src_path = os.path.join(src, filename)
-            dest_path = os.path.join(dest, filename)
-            if os.path.isdir(src_path):
-                shutil.copytree(src_path, dest_path)
-            else:
-                shutil.copy2(src_path, dest_path)
+
+        # Try to use copytree new api in 3.8
+        import sys
+
+        if sys.version_info[:2] < (3, 8):
+            for filename in os.listdir(src):
+                src_path = os.path.join(src, filename)
+                dest_path = os.path.join(dest, filename)
+                if os.path.isdir(src_path):
+                    shutil.copytree(src_path, dest_path)
+                else:
+                    shutil.copy2(src_path, dest_path)
+        else:
+            shutil.copytree(src, dest, dirs_exist_ok=True)  # pylint: disable=unexpected-keyword-arg
 
     def copy(self, dest):
         """Creates a copy of this repository in the specified destination.
