@@ -36,6 +36,7 @@ from .types import FastEnum
 from .utils import move_atomic, DirectoryExistsError
 
 GIT_MODULES = ".gitmodules"
+EXACT_TAG_PATTERN = r"(?P<tag>.*)-0-g(?P<commit>.*)"
 
 # Warnings
 WARN_INCONSISTENT_SUBMODULE = "inconsistent-submodule"
@@ -100,22 +101,63 @@ class _GitMirror(SourceFetcher):
                         )
                     ) from e
 
-    def _fetch(self, url):
+    def _fetch(self, url, fetch_all=False):
         self._ensure_repo()
 
-        self.source.call(
-            [
-                self.source.host_git,
-                "fetch",
-                "--prune",
-                url,
-                "+refs/heads/*:refs/heads/*",
-                "+refs/tags/*:refs/tags/*",
-            ],
-            fail="Failed to fetch from remote git repository: {}".format(url),
-            fail_temporarily=True,
-            cwd=self.mirror,
-        )
+        # Work out whether we can fetch a specific tag: are we given a ref which
+        # 1. is in git-describe format
+        # 2. refers to an exact tag (is "...-0-g...")
+        # 3. is available on the remote and tags the specified commit?
+        # And lastly: are we on a new-enough Git which allows cloning from our potentially shallow cache?
+        if fetch_all:
+            pass
+        # Fetching from a shallow-cloned repo was first supported in v1.9.0
+        elif not self.ref or self.source.host_git_version is not None and self.source.host_git_version < (1, 9, 0):
+            fetch_all = True
+        else:
+            m = re.match(EXACT_TAG_PATTERN, self.ref)
+            if m is None:
+                fetch_all = True
+            else:
+                tag = m.group("tag")
+                commit = m.group("commit")
+
+                if not self.remote_has_tag(url, tag, commit):
+                    self.source.status(
+                        "{}: {} is not advertised on {}. Fetching all Git refs".format(self.source, self.ref, url)
+                    )
+                    fetch_all = True
+                else:
+                    exit_code = self.source.call(
+                        [
+                            self.source.host_git,
+                            "fetch",
+                            "--depth=1",
+                            url,
+                            "+refs/tags/{tag}:refs/tags/{tag}".format(tag=tag),
+                        ],
+                        cwd=self.mirror,
+                    )
+                    if exit_code != 0:
+                        self.source.status(
+                            "{}: Failed to fetch tag '{}' from {}. Fetching all Git refs".format(self.source, tag, url)
+                        )
+                        fetch_all = True
+
+        if fetch_all:
+            self.source.call(
+                [
+                    self.source.host_git,
+                    "fetch",
+                    "--prune",
+                    url,
+                    "+refs/heads/*:refs/heads/*",
+                    "+refs/tags/*:refs/tags/*",
+                ],
+                fail="Failed to fetch from remote git repository: {}".format(url),
+                fail_temporarily=True,
+                cwd=self.mirror,
+            )
 
     def fetch(self, alias_override=None):  # pylint: disable=arguments-differ
         resolved_url = self.source.translate_url(self.url, alias_override=alias_override, primary=self.primary)
@@ -142,6 +184,26 @@ class _GitMirror(SourceFetcher):
             raise SourceError(
                 "{}: expected ref '{}' was not found in git repository: '{}'".format(self.source, self.ref, self.url)
             )
+
+    # remote_has_tag():
+    #
+    # Args:
+    #     url (str)
+    #     tag (str)
+    #     commit (str)
+    #
+    # Returns:
+    #     (bool): Whether the remote at `url` has the tag `tag` attached to `commit`
+    #
+    def remote_has_tag(self, url, tag, commit):
+        _, ls_remote = self.source.check_output(
+            [self.source.host_git, "ls-remote", url],
+            cwd=self.mirror,
+            fail="Failed to list advertised remote refs from git repository {}".format(url),
+        )
+
+        line = "{commit}\trefs/tags/{tag}".format(commit=commit, tag=tag)
+        return line in ls_remote or line + "^{}" in ls_remote
 
     def latest_commit_with_tags(self, tracking, track_tags=False):
         _, output = self.source.check_output(
@@ -466,6 +528,14 @@ class _GitSourceBase(Source):
         # Check if git is installed, get the binary at the same time
         self.host_git = utils.get_host_tool("git")
 
+        rc, version_str = self.check_output([self.host_git, "--version"])
+        # e.g. on Git for Windows we get "git version 2.21.0.windows.1".
+        # e.g. on Mac via Homebrew we get "git version 2.19.0".
+        if rc == 0:
+            self.host_git_version = tuple(int(x) for x in version_str.split(" ")[2].split(".")[:3])
+        else:
+            self.host_git_version = None
+
     def get_unique_key(self):
         # Here we want to encode the local name of the repository and
         # the ref, if the user changes the alias to fetch the same sources
@@ -539,7 +609,7 @@ class _GitSourceBase(Source):
         # Resolve the URL for the message
         resolved_url = self.translate_url(self.mirror.url)
         with self.timed_activity("Tracking {} from {}".format(self.tracking, resolved_url), silent_nested=True):
-            self.mirror._fetch(resolved_url)
+            self.mirror._fetch(resolved_url, fetch_all=True)
             # Update self.mirror.ref and node.ref from the self.tracking branch
             ret = self.mirror.latest_commit_with_tags(self.tracking, self.track_tags)
 
@@ -614,8 +684,10 @@ class _GitSourceBase(Source):
             )
 
         # Assert that the ref exists in the track tag/branch, if track has been specified.
+        # Also don't do this check if an exact tag ref is given, as we probably didn't fetch
+        # any branch refs
         ref_in_track = False
-        if self.tracking:
+        if not re.match(EXACT_TAG_PATTERN, self.mirror.ref) and self.tracking:
             _, branch = self.check_output(
                 [self.host_git, "branch", "--list", self.tracking, "--contains", self.mirror.ref],
                 cwd=self.mirror.mirror,
