@@ -430,6 +430,10 @@ class SandboxRemote(SandboxREAPI):
             if execution_response.status.message:
                 raise SandboxError(execution_response.status.message)
             # Otherwise, report the failure in a more general manner
-            raise SandboxError("Remote server failed at executing the build request.")
+            raise SandboxError(
+                "Remote server failed at executing the build request. gRPC status code: {}".format(
+                    execution_response.status.code
+                )
+            )
 
         return execution_response.result
