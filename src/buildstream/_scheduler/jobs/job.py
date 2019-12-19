@@ -452,7 +452,6 @@ class Job:
 
         # Force the deletion of the pipe and process objects to try and clean up FDs
         self._pipe_r.close()
-        self._process.close()
         self._pipe_r = self._process = None
 
     # _parent_process_envelope()
