@@ -499,7 +499,8 @@ class Element(Plugin):
 
             if visited is None:
                 # Visited is of the form (Visited for Scope.BUILD, Visited for Scope.RUN)
-                visited = (BitMap(), BitMap())
+                # visited = (BitMap(), BitMap())
+                visited = set(), set()
             else:
                 # We have already a visited set passed. we might be able to short-circuit
                 if scope in (Scope.BUILD, Scope.ALL) and self._unique_id in visited[0]:

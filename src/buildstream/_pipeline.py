@@ -186,7 +186,8 @@ class Pipeline:
     def dependencies(self, targets, scope, *, recurse=True):
         # Keep track of 'visited' in this scope, so that all targets
         # share the same context.
-        visited = (BitMap(), BitMap())
+        # visited = (BitMap(), BitMap())
+        visited = set(), set()
 
         for target in targets:
             for element in target.dependencies(scope, recurse=recurse, visited=visited):
