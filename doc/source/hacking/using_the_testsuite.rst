@@ -120,21 +120,27 @@ can run ``tox`` with ``-r`` or  ``--recreate`` option.
    execute the test suite against a specific installation environment
    using pytest directly::
 
-     ./setup.py test
-
-   Specific options can be passed to ``pytest`` using the ``--addopts``
-   option::
-
-     ./setup.py test --addopts 'tests/frontend/buildtrack.py::test_build_track'
+     pytest
 
    If you want to run coverage, you will need need to add ``BST_CYTHON_TRACE=1``
    to your environment if you also want coverage on cython files. You could then
    get coverage by running::
 
-     BST_CYTHON_TRACE=1 coverage run ./setup.py test
+     BST_CYTHON_TRACE=1 coverage run pytest
 
-   Note that to be able to run ``./setup.py test``, you will need to have ``Cython``
-   installed.
+   Note that you will have to have all dependencies installed already, when
+   running tests directly via ``pytest``. This includes the following:
+
+   * Cython and Setuptools, as build dependencies
+   * Runtime dependencies and test dependencies are specified in requirements
+     files, present in the ``requirements`` subdirectory. Refer to the ``.in``
+     files for loose dependencies and ``.txt`` files for fixed version of all
+     dependencies that are known to work.
+   * Additionally, if you are running tests that involve external plugins, you
+     will need to have those installed as well.
+
+   You can also have a look at our tox configuration in ``tox.ini`` file if you
+   are unsure about dependencies.
 
 .. tip::
 
