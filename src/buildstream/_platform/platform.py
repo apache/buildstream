@@ -162,6 +162,7 @@ class Platform:
             "sparc": "sparc-v9",
             "sparc64": "sparc-v9",
             "sparc-v9": "sparc-v9",
+            "sun4v": "sparc-v9",
             "x86-32": "x86-32",
             "x86-64": "x86-64",
         }
