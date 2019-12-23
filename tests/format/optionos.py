@@ -26,7 +26,7 @@ DATA_DIR = os.path.dirname(os.path.realpath(__file__))
         ("Darwin", None, "Darwiny"),
         # Test that explicitly provided arches dont error out
         # when the `uname` reported arch is not supported
-        ("AIX", "Linux", "Linuxy"),
+        ("ULTRIX", "Linux", "Linuxy"),
         ("HaikuOS", "SunOS", "SunOSy"),
     ],
 )
@@ -49,7 +49,7 @@ def test_conditionals(cli, datafiles, system, value, expected):
 @pytest.mark.datafiles(DATA_DIR)
 def test_unsupported_arch(cli, datafiles):
 
-    with override_platform_uname(system="AIX"):
+    with override_platform_uname(system="ULTRIX"):
         project = os.path.join(datafiles.dirname, datafiles.basename, "option-os")
         result = cli.run(
             project=project, silent=True, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"]

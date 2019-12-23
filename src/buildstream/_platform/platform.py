@@ -155,6 +155,7 @@ class Platform:
             "i686": "x86-32",
             "power-isa-be": "power-isa-be",
             "power-isa-le": "power-isa-le",
+            "powerpc": "power-isa-be",
             "powerpc64": "power-isa-be",  # Used in GCC/LLVM
             "powerpc64le": "power-isa-le",  # Used in GCC/LLVM
             "ppc64": "power-isa-be",
@@ -181,9 +182,16 @@ class Platform:
     #    (string): String representing the architecture
     @staticmethod
     def get_host_arch():
-        # get the hardware identifier from uname
-        uname_machine = platform.uname().machine
-        return Platform.canonicalize_arch(uname_machine)
+        uname = platform.uname()
+
+        if uname.system.lower() == "aix":
+            # IBM AIX systems reports their serial number as the machine
+            # hardware identifier. So, we need to look at the reported processor
+            # in this case.
+            return Platform.canonicalize_arch(uname.processor)
+        else:
+            # Otherwise, use the hardware identifier from uname
+            return Platform.canonicalize_arch(uname.machine)
 
     # does_multiprocessing_start_require_pickling():
     #
