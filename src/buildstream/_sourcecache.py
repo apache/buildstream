@@ -132,16 +132,6 @@ class SourceCache(BaseCache):
         self._basedir = os.path.join(context.cachedir, "source_protos")
         os.makedirs(self._basedir, exist_ok=True)
 
-    # list_sources()
-    #
-    # Get list of all sources in the `sources_protos/` folder
-    #
-    # Returns:
-    #     ([str]): iterable over all source refs
-    #
-    def list_sources(self):
-        return [ref for _, ref in self._list_refs_mtimes(self._basedir)]
-
     # contains()
     #
     # Given a source, gets the ref name and checks whether the local CAS
