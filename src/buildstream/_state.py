@@ -409,6 +409,3 @@ class _Task:
         else:
             new_progress = self.current_progress + 1
         self.set_current_progress(new_progress)
-
-    def add_maximum_progress(self):
-        self.set_maximum_progress(self.maximum_progress or 0 + 1)
