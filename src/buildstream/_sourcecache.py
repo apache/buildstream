@@ -315,9 +315,6 @@ class SourceCache(BaseCache):
 
         return pushed_index and pushed_storage
 
-    def _remove_source(self, ref, *, defer_prune=False):
-        return self.cas.remove(ref, basedir=self._basedir, defer_prune=defer_prune)
-
     def _store_source(self, ref, digest):
         source_proto = source_pb2.Source()
         source_proto.files.CopyFrom(digest)
