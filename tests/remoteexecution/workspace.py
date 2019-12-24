@@ -2,6 +2,7 @@
 # pylint: disable=redefined-outer-name
 
 import os
+import re
 import shutil
 import pytest
 
@@ -11,10 +12,15 @@ from buildstream.testing.integration import assert_contains
 pytestmark = pytest.mark.remoteexecution
 
 
+# subdirectories of the buildtree
+SRC = "src"
+DEPS = os.path.join(SRC, ".deps")
+AUTO = "autom4te.cache"
+DIRS = [os.sep + SRC, os.sep + DEPS, os.sep + AUTO]
+
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
-MKFILEAM = os.path.join("src", "Makefile.am")
-MKFILE = os.path.join("src", "Makefile")
-MAIN = os.path.join("src", "main.o")
+MAIN = os.path.join(SRC, "main.c")
+MAINO = os.path.join(SRC, "main.o")
 CFGMARK = "config-time"
 BLDMARK = "build-time"
 
@@ -29,9 +35,9 @@ def files():
         "depcomp",
         "configure.ac",
         "compile",
-        "src",
-        os.path.join("src", "main.c"),
-        MKFILEAM,
+        SRC,
+        MAIN,
+        os.path.join(SRC, "Makefile.am"),
         "Makefile.am",
     ]
     input_files = [os.sep + fname for fname in _input_files]
@@ -39,26 +45,26 @@ def files():
     _generated_files = [
         "Makefile",
         "Makefile.in",
-        "autom4te.cache",
-        os.path.join("autom4te.cache", "traces.1"),
-        os.path.join("autom4te.cache", "traces.0"),
-        os.path.join("autom4te.cache", "requests"),
-        os.path.join("autom4te.cache", "output.0"),
-        os.path.join("autom4te.cache", "output.1"),
+        AUTO,
+        os.path.join(AUTO, "traces.1"),
+        os.path.join(AUTO, "traces.0"),
+        os.path.join(AUTO, "requests"),
+        os.path.join(AUTO, "output.0"),
+        os.path.join(AUTO, "output.1"),
         "config.h",
         "config.h.in",
         "config.log",
         "config.status",
         "configure",
         "configure.lineno",
-        os.path.join("src", "hello"),
-        os.path.join("src", ".deps"),
-        os.path.join("src", ".deps", "main.Po"),
-        MKFILE,
-        MAIN,
+        os.path.join(SRC, "hello"),
+        DEPS,
+        os.path.join(DEPS, "main.Po"),
+        os.path.join(SRC, "Makefile"),
+        MAINO,
         CFGMARK,
         BLDMARK,
-        os.path.join("src", "Makefile.in"),
+        os.path.join(SRC, "Makefile.in"),
         "stamp-h1",
     ]
     generated_files = [os.sep + fname for fname in _generated_files]
@@ -79,12 +85,9 @@ def files():
 
 def _get_mtimes(root):
     assert os.path.exists(root)
-    for dirname, dirnames, filenames in os.walk(root):
-        dirnames.sort()
+    # timestamps on subdirs are not currently semantically meaningful
+    for dirname, _, filenames in os.walk(root):
         filenames.sort()
-        for subdirname in dirnames:
-            fname = os.path.join(dirname, subdirname)
-            yield fname[len(root) :], os.stat(fname).st_mtime
         for filename in filenames:
             fname = os.path.join(dirname, filename)
             yield fname[len(root) :], os.stat(fname).st_mtime
@@ -129,8 +132,6 @@ def check_buildtree(
     result.assert_success()
 
     buildtree = {}
-    inp_times = []
-    gen_times = []
     output = result.output.splitlines()
 
     for line in output:
@@ -141,28 +142,34 @@ def check_buildtree(
         mtime = int(mtime)
         buildtree[fname] = mtime
 
+        typ_inptime = None
+        typ_gentime = None
+
         if incremental:
+            # directory timestamps are not meaningful
+            if fname in DIRS:
+                continue
             if fname in input_files:
-                inp_times.append(mtime)
-            else:
-                gen_times.append(mtime)
+                if fname != os.sep + MAIN and not typ_inptime:
+                    typ_inptime = mtime
+            if fname in generated_files:
+                if fname != os.sep + MAINO and not typ_gentime:
+                    typ_gentime = mtime
 
     # all expected files should have been found
     for filename in input_files + generated_files:
         assert filename in buildtree
 
     if incremental:
-        # at least inputs should be older than generated files
-        assert not any([inp_time > gen_time for inp_time in inp_times for gen_time in gen_times])
+        # the source file was changed so should be more recent than other input files
+        # it should be older than the main object.
+        # The main object should be more recent than generated files.
+        assert buildtree[os.sep + MAIN] > typ_inptime
+        assert buildtree[os.sep + MAINO] > buildtree[os.sep + MAIN]
+        assert buildtree[os.sep + MAINO] > typ_gentime
 
-        makefile = os.sep + "Makefile"
-        makefile_am = os.sep + "Makefile.am"
-        mainc = os.sep + os.path.join("src", "main.c")
-        maino = os.sep + os.path.join("src", "hello")
-        testfiles = [makefile, makefile_am, mainc, maino]
-        if all([testfile in buildtree for testfile in testfiles]):
-            assert buildtree[makefile] < buildtree[makefile_am]
-            assert buildtree[mainc] < buildtree[maino]
+    for fname in DIRS:
+        del buildtree[fname]
 
     return buildtree
 
@@ -178,7 +185,7 @@ def get_timemark(cli, project, element_name, marker):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
-    "modification", [pytest.param("none"), pytest.param("content"), pytest.param("time"),],
+    "modification", [pytest.param("content"), pytest.param("time"),],
 )
 @pytest.mark.parametrize(
     "buildtype",
@@ -190,10 +197,7 @@ def get_timemark(cli, project, element_name, marker):
     ],
 )
 def test_workspace_build(cli, tmpdir, datafiles, modification, buildtype):
-    incremental = False
-    if buildtype == "incremental":
-        incremental = True
-
+    incremental = buildtype == "incremental"
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout")
     workspace = os.path.join(cli.directory, "workspace")
@@ -229,14 +233,17 @@ def test_workspace_build(cli, tmpdir, datafiles, modification, buildtype):
     # build the element and cache the buildtree
     result = cli.run(project=project, args=build)
     result.assert_success()
+    assert cli.get_element_state(project, element_name) == "cached"
+    build_key = cli.get_element_key(project, element_name)
 
     # check that the local workspace is unchanged
     assert_contains(workspace, input_files, strict=True)
     assert ws_times == get_mtimes(workspace)
 
     # check modified workspace dir was cached and save the time
-    # build was run
-    build_mtimes = check_buildtree(cli, project, element_name, input_files, generated_files, incremental=incremental)
+    # build was run. Incremental build conditions do not apply since the workspace
+    # was initially opened using magic timestamps.
+    build_times = check_buildtree(cli, project, element_name, input_files, generated_files, incremental=False)
     build_timemark = get_timemark(cli, project, element_name, (os.sep + BLDMARK))
 
     # check that the artifacts are available
@@ -248,45 +255,55 @@ def test_workspace_build(cli, tmpdir, datafiles, modification, buildtype):
     # rebuild the element
     result = cli.run(project=project, args=build)
     result.assert_success()
-    # this should all be cached
-    # so the buildmark time should be the same
-    rebuild_mtimes = check_buildtree(cli, project, element_name, input_files, generated_files, incremental=incremental)
+    assert cli.get_element_state(project, element_name) == "cached"
+    rebuild_key = cli.get_element_key(project, element_name)
+    assert rebuild_key == build_key
+    rebuild_times = check_buildtree(cli, project, element_name, input_files, generated_files, incremental=False)
     rebuild_timemark = get_timemark(cli, project, element_name, (os.sep + BLDMARK))
 
+    # buildmark time should be the same
     assert build_timemark == rebuild_timemark
-    assert build_mtimes == rebuild_mtimes
+    assert all([rebuild_times[fname] == build_times[fname] for fname in rebuild_times]), "{}\n{}".format(
+        rebuild_times, build_times
+    )
 
     # modify the open workspace and rebuild
-    if modification != "none":
-        assert os.path.exists(newfile_path)
+    main_path = os.path.join(workspace, MAIN)
+    assert os.path.exists(main_path)
 
-        if modification == "time":
-            # touch a file in the workspace and save the mtime
-            os.utime(newfile_path)
+    if modification == "time":
+        # touch a file in the workspace and save the mtime
+        os.utime(main_path)
+        touched_time = os.stat(main_path).st_mtime
 
-        elif modification == "content":
-            # change a source file
-            with open(newfile_path, "w") as fdata:
-                fdata.write("anotherstring")
+    elif modification == "content":
+        # change a source file (there's a race here but it's not serious)
+        with open(main_path, "r") as fdata:
+            data = fdata.readlines()
+        with open(main_path, "w") as fdata:
+            for line in data:
+                fdata.write(re.sub(r"Hello", "Goodbye", line))
+        touched_time = os.stat(main_path).st_mtime
 
-        # refresh input times
-        ws_times = get_mtimes(workspace)
+    # refresh input times
+    ws_times = get_mtimes(workspace)
 
-        # rebuild the element
-        result = cli.run(project=project, args=build)
-        result.assert_success()
+    # rebuild the element
+    result = cli.run(project=project, args=build)
+    result.assert_success()
 
-        rebuild_mtimes = check_buildtree(
-            cli, project, element_name, input_files, generated_files, incremental=incremental
-        )
-        rebuild_timemark = get_timemark(cli, project, element_name, (os.sep + BLDMARK))
-        assert build_timemark != rebuild_timemark
+    rebuild_times = check_buildtree(cli, project, element_name, input_files, generated_files, incremental=incremental)
+    rebuild_timemark = get_timemark(cli, project, element_name, (os.sep + BLDMARK))
+    assert rebuild_timemark > build_timemark
 
-        # check the times of the changed files
-        if incremental:
-            touched_time = os.stat(newfile_path).st_mtime
-            assert rebuild_mtimes[newfile] == touched_time
+    # check the times of the changed files
+    if incremental:
+        assert rebuild_times[os.sep + MAIN] == touched_time
+        del rebuild_times[os.sep + MAIN]
+    assert all([rebuild_times[fname] == build_times[fname] for fname in rebuild_times]), "{}\n{}".format(
+        rebuild_times, build_times
+    )
 
-        # Check workspace is unchanged
-        assert_contains(workspace, input_files, strict=True)
-        assert ws_times == get_mtimes(workspace)
+    # Check workspace is unchanged
+    assert_contains(workspace, input_files, strict=True)
+    assert ws_times == get_mtimes(workspace)
