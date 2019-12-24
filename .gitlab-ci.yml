@@ -227,6 +227,14 @@ tests-spawn-multiprocessing-start-method:
     - chown -R buildstream:buildstream .
     - su buildstream -c "tox -- ${PYTEST_ARGS} tests/{artifactcache,cachekey,elements,format,frontend,internals,plugins,sourcecache}"
 
+tests-no-usedevelop:
+  # Ensure that tests also pass without `--develop` flag.
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
+  <<: *tests
+  variables:
+    TOXENV: py35-nocover,py36-nocover,py37-nocover,py38-nocover
+
+
 # Run type checkers
 mypy:
   stage: test
