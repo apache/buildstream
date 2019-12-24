@@ -96,7 +96,7 @@ class WorkspaceSource(Source):
     def stage(self, directory: Directory) -> None:
         assert isinstance(directory, Directory)
         with self.timed_activity("Staging local files"):
-            result = directory.import_files(self.path)
+            result = directory.import_files(self.path, properties=["MTime"])
 
             if result.overwritten or result.ignored:
                 raise SourceError(
