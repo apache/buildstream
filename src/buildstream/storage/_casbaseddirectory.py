@@ -159,9 +159,6 @@ class CasBasedDirectory(Directory):
 
         self.__invalidate_digest()
 
-    def _copy_link_from_filesystem(self, basename, filename):
-        self._add_new_link_direct(filename, os.readlink(os.path.join(basename, filename)))
-
     def _add_new_link_direct(self, name, target):
         self.index[name] = IndexEntry(name, _FileType.SYMLINK, target=target, modified=name in self.index)
 
