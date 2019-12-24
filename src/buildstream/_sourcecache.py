@@ -340,15 +340,6 @@ class SourceCache(BaseCache):
     def _source_path(self, ref):
         return os.path.join(self._basedir, ref)
 
-    def _reachable_directories(self):
-        for root, _, files in os.walk(self._basedir):
-            for source_file in files:
-                source = source_pb2.Source()
-                with open(os.path.join(root, source_file), "r+b") as f:
-                    source.ParseFromString(f.read())
-
-                yield source.files
-
     def _update_mtime(self, ref):
         try:
             os.utime(self._source_path(ref))
