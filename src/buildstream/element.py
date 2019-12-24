@@ -75,6 +75,7 @@ Class Reference
 import os
 import re
 import stat
+import time
 import copy
 from collections import OrderedDict
 import contextlib
@@ -90,7 +91,7 @@ from . import _yaml
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, ErrorDomain, SourceCacheError
-from .utils import FileListResult
+from .utils import FileListResult, BST_ARBITRARY_TIMESTAMP
 from . import utils
 from . import _cachekey
 from . import _site
@@ -705,7 +706,7 @@ class Element(Plugin):
 
             if update_mtimes:
                 copy_result = vstagedir.import_files(
-                    files_vdir, filter_callback=copy_filter, report_written=True, update_mtime=True
+                    files_vdir, filter_callback=copy_filter, report_written=True, update_mtime=time.time()
                 )
                 result = result.combine(copy_result)
 
@@ -1417,7 +1418,6 @@ class Element(Plugin):
     def _stage_sources_at(self, vdirectory, usebuildtree=False):
 
         context = self._get_context()
-        set_deterministic_mtimes = True
 
         # It's advantageous to have this temporary directory on
         # the same file system as the rest of our cache.
@@ -1456,8 +1456,6 @@ class Element(Plugin):
                         for source in self.__sources[last_required_previous_ix:]:
                             source_dir = sourcecache.export(source)
                             import_dir.import_files(source_dir)
-                            if source.BST_STAGE_VIRTUAL_DIRECTORY:
-                                set_deterministic_mtimes = False
 
                     except SourceCacheError as e:
                         raise ElementError("Error trying to export source for {}: {}".format(self.name, e))
@@ -1467,12 +1465,9 @@ class Element(Plugin):
                             reason="import-source-files-fail",
                         )
 
+            # Ensure deterministic mtime of sources at build time
             with utils._deterministic_umask():
-                vdirectory.import_files(import_dir)
-
-        # Ensure deterministic mtime of sources at build time
-        if set_deterministic_mtimes:
-            vdirectory.set_deterministic_mtime()
+                vdirectory.import_files(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP)
         # Ensure deterministic owners of sources at build time
         vdirectory.set_deterministic_user()
 
