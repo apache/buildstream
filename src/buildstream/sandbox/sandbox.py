@@ -587,26 +587,6 @@ class Sandbox:
     def _get_element_name(self):
         return self.__element_name
 
-    # _callback()
-    #
-    # If this is called outside a batch context, the specified function is
-    # invoked immediately.
-    #
-    # If this is called in a batch context, the function is added to the batch
-    # for later invocation.
-    #
-    # Args:
-    #    callback (callable): The function to invoke
-    #
-    def _callback(self, callback):
-        if self.__batch:
-            batch_call = _SandboxBatchCall(callback)
-
-            current_group = self.__batch.current_group
-            current_group.append(batch_call)
-        else:
-            callback()
-
     # _disable_run()
     #
     # Raise exception if `Sandbox.run()` is called. This enables use of
