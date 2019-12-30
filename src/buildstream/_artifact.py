@@ -153,11 +153,12 @@ class Artifact:
         artifact.weak_key = self._weak_cache_key
 
         artifact.was_workspaced = bool(element._get_workspace())
+        properties = ["MTime"] if artifact.was_workspaced else []
 
         # Store files
         if collectvdir:
             filesvdir = CasBasedDirectory(cas_cache=self._cas)
-            filesvdir.import_files(collectvdir)
+            filesvdir.import_files(collectvdir, properties=properties)
             artifact.files.CopyFrom(filesvdir._get_digest())
             size += filesvdir.get_size()
 
@@ -189,7 +190,7 @@ class Artifact:
         # Store build tree
         if sandbox_build_dir:
             buildtreevdir = CasBasedDirectory(cas_cache=self._cas)
-            buildtreevdir.import_files(sandbox_build_dir)
+            buildtreevdir.import_files(sandbox_build_dir, properties=properties)
             artifact.buildtree.CopyFrom(buildtreevdir._get_digest())
             size += buildtreevdir.get_size()
 
