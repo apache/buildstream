@@ -5,6 +5,7 @@ pluginbase
 protobuf >= 3.6
 psutil
 ruamel.yaml >= 0.16
+ruamel.yaml.clib >= 0.1.2
 setuptools
 pyroaring
 ujson
