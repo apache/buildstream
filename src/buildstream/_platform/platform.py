@@ -122,7 +122,15 @@ class Platform:
         return PlatformImpl(force_sandbox=force_sandbox)
 
     def get_cpu_count(self, cap=None):
-        cpu_count = len(psutil.Process().cpu_affinity())
+        # `psutil.Process.cpu_affinity()` is not available on all platforms.
+        # So, fallback to getting the total cpu count in cases where it is not
+        # available.
+        dummy_process = psutil.Process()
+        if hasattr(dummy_process, "cpu_affinity"):
+            cpu_count = len(dummy_process.cpu_affinity())
+        else:
+            cpu_count = os.cpu_count()
+
         if cap is None:
             return cpu_count
         else:

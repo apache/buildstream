@@ -15,7 +15,6 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import resource
 
 from ..sandbox import SandboxDummy
@@ -27,13 +26,6 @@ class Darwin(Platform):
 
     # This value comes from OPEN_MAX in syslimits.h
     OPEN_MAX = 10240
-
-    def get_cpu_count(self, cap=None):
-        cpu_count = os.cpu_count()
-        if cap is None:
-            return cpu_count
-        else:
-            return min(cpu_count, cap)
 
     def maximize_open_file_limit(self):
         # Note that on Mac OSX, you may not be able to simply set the soft
