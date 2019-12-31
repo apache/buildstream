@@ -321,6 +321,7 @@ class CASCache:
                 path = tmp.name
 
             request = local_cas_pb2.CaptureFilesRequest()
+            request.node_properties.append("MTime")
             if instance_name:
                 request.instance_name = instance_name
 
