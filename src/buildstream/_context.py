@@ -18,7 +18,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
-import shutil
 from . import utils
 from . import _site
 from . import _yaml
@@ -286,7 +285,7 @@ class Context:
         old_extractdirs = [os.path.join(self.cachedir, "artifacts", "extract"), os.path.join(self.cachedir, "extract")]
         for old_extractdir in old_extractdirs:
             if os.path.isdir(old_extractdir):
-                shutil.rmtree(old_extractdir, ignore_errors=True)
+                utils._force_rmtree(old_extractdir)
 
         # Load quota configuration
         # We need to find the first existing directory in the path of our

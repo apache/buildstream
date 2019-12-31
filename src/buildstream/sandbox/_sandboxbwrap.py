@@ -28,7 +28,6 @@ import time
 import errno
 import signal
 import subprocess
-import shutil
 from contextlib import ExitStack, suppress
 from tempfile import TemporaryFile
 
@@ -309,7 +308,10 @@ class SandboxBwrap(Sandbox):
                     #       cleanup any debris it creates at startup time, and do
                     #       the same ourselves for any directories we explicitly create.
                     #
-                    shutil.rmtree(base_directory, ignore_errors=True)
+                    try:
+                        utils._force_rmtree(base_directory)
+                    except utils.UtilError:
+                        pass
                 else:
                     try:
                         os.rmdir(base_directory)

@@ -23,7 +23,6 @@ import os
 import sys
 import stat
 import shlex
-import shutil
 import tarfile
 import tempfile
 from contextlib import contextmanager, suppress
@@ -889,10 +888,7 @@ class Stream:
             with self._context.messenger.timed_activity(
                 "Removing workspace directory {}".format(workspace.get_absolute_path())
             ):
-                try:
-                    shutil.rmtree(workspace.get_absolute_path())
-                except OSError as e:
-                    raise StreamError("Could not remove  '{}': {}".format(workspace.get_absolute_path(), e)) from e
+                utils._force_rmtree(workspace.get_absolute_path())
 
         # Delete the workspace and save the configuration
         workspaces.delete_workspace(element_name)

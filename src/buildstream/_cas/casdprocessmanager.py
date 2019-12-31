@@ -19,7 +19,6 @@
 import contextlib
 import os
 import random
-import shutil
 import signal
 import stat
 import subprocess
@@ -162,7 +161,26 @@ class CASDProcessManager:
     def release_resources(self, messenger=None):
         self._terminate(messenger)
         self.process = None
-        shutil.rmtree(self._socket_tempdir)
+        try:
+            utils._force_rmtree(self._socket_tempdir)
+        except utils.UtilError as e:
+            if messenger:
+                messenger.message(
+                    Message(
+                        MessageType.BUG,
+                        "Could not remove the CASD socket from {}. Error: {}".format(self._socket_tempdir, e),
+                        detail="This should not cause any immediate problems, but should be removed manually",
+                    )
+                )
+            # If no messenger is active, it should be ok to just
+            # ignore the error; the user is likely either already
+            # aware of the problem (since the drive is experiencing
+            # catastrophic failure) or somehow deliberately caused it
+            # (by making our socket tempdir immutable).
+            #
+            # We could consider falling back to the logging module in
+            # the future, but this would need to be done throughout
+            # this file.
 
     # _terminate()
     #
