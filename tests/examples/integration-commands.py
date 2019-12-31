@@ -16,7 +16,6 @@ DATA_DIR = os.path.join(
 
 @pytest.mark.skipif(MACHINE_ARCH != "x86-64", reason="Examples are written for x86-64")
 @pytest.mark.skipif(not IS_LINUX or not HAVE_SANDBOX, reason="Only available on linux with sandbox")
-@pytest.mark.skipif(HAVE_SANDBOX == "chroot", reason="This test is not meant to work with chroot sandbox")
 @pytest.mark.datafiles(DATA_DIR)
 def test_integration_commands_build(cli, datafiles):
     project = str(datafiles)
@@ -28,7 +27,6 @@ def test_integration_commands_build(cli, datafiles):
 # Test running the executable
 @pytest.mark.skipif(MACHINE_ARCH != "x86-64", reason="Examples are written for x86-64")
 @pytest.mark.skipif(not IS_LINUX or not HAVE_SANDBOX, reason="Only available on linux with sandbox")
-@pytest.mark.skipif(HAVE_SANDBOX == "chroot", reason="This test is not meant to work with chroot sandbox")
 @pytest.mark.datafiles(DATA_DIR)
 def test_integration_commands_run(cli, datafiles):
     project = str(datafiles)
