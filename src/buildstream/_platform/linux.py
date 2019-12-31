@@ -31,7 +31,6 @@ class Linux(Platform):
         sandbox_setups = {
             "bwrap": self._setup_bwrap_sandbox,
             "buildbox-run": self.setup_buildboxrun_sandbox,
-            "chroot": self._setup_chroot_sandbox,
             "dummy": self._setup_dummy_sandbox,
         }
 
@@ -106,24 +105,4 @@ class Linux(Platform):
         self._check_sandbox(SandboxBwrap)
         self.check_sandbox_config = self._check_sandbox_config_bwrap
         self.create_sandbox = self._create_bwrap_sandbox
-        return True
-
-    # Chroot sandbox methods
-    def _check_sandbox_config_chroot(self, config):
-        from ..sandbox._sandboxchroot import SandboxChroot
-
-        return SandboxChroot.check_sandbox_config(self, config)
-
-    @staticmethod
-    def _create_chroot_sandbox(*args, **kwargs):
-        from ..sandbox._sandboxchroot import SandboxChroot
-
-        return SandboxChroot(*args, **kwargs)
-
-    def _setup_chroot_sandbox(self):
-        from ..sandbox._sandboxchroot import SandboxChroot
-
-        self._check_sandbox(SandboxChroot)
-        self.check_sandbox_config = self._check_sandbox_config_chroot
-        self.create_sandbox = Linux._create_chroot_sandbox
         return True
