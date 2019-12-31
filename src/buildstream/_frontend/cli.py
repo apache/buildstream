@@ -9,7 +9,7 @@ from .. import _yaml
 from .._exceptions import BstError, LoadError, AppError
 from .._versions import BST_FORMAT_VERSION
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
-from ..types import _CacheBuildTrees, _SchedulerErrorAction
+from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection
 from ..utils import _get_compression, UtilError
 
 
@@ -19,11 +19,22 @@ from ..utils import _get_compression, UtilError
 
 
 class FastEnumType(click.Choice):
-    def __init__(self, enum):
+    def __init__(self, enum, options=None):
         self._enum = enum
-        super().__init__(enum.values())
+
+        if options is None:
+            options = enum.values()
+        else:
+            options = [option.value for option in options]
+
+        super().__init__(options)
 
     def convert(self, value, param, ctx):
+        # This allows specifying default values as instances of the
+        # enum
+        if isinstance(value, self._enum):
+            value = value.value
+
         return self._enum(super().convert(value, param, ctx))
 
 
@@ -438,7 +449,13 @@ def init(app, project_name, format_version, element_path, force, target_director
 #                          Build Command                         #
 ##################################################################
 @cli.command(short_help="Build elements in a pipeline")
-@click.option("--deps", "-d", default=None, type=click.Choice(["plan", "all"]), help="The dependencies to build")
+@click.option(
+    "--deps",
+    "-d",
+    default=None,
+    type=FastEnumType(_PipelineSelection, [_PipelineSelection.PLAN, _PipelineSelection.ALL]),
+    help="The dependencies to build",
+)
 @click.option(
     "--remote", "-r", default=None, help="The URL of the remote cache (defaults to the first configured cache)"
 )
@@ -484,9 +501,18 @@ def build(app, elements, deps, remote):
 @click.option(
     "--deps",
     "-d",
-    default="all",
+    default=_PipelineSelection.ALL,
     show_default=True,
-    type=click.Choice(["none", "plan", "run", "build", "all"]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.PLAN,
+            _PipelineSelection.RUN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.ALL,
+        ],
+    ),
     help="The dependencies to show",
 )
 @click.option(
@@ -641,12 +667,11 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, pull_, c
     """
     from ..element import Scope
     from .._project import HostMount
-    from .._pipeline import PipelineSelection
 
     scope = Scope.BUILD if build_ else Scope.RUN
 
     # We may need to fetch dependency artifacts if we're pulling the artifact
-    selection = PipelineSelection.ALL if pull_ else PipelineSelection.NONE
+    selection = _PipelineSelection.ALL if pull_ else _PipelineSelection.NONE
     use_buildtree = None
 
     with app.initialized():
@@ -750,9 +775,9 @@ def source():
 @click.option(
     "--deps",
     "-d",
-    default="plan",
+    default=_PipelineSelection.PLAN,
     show_default=True,
-    type=click.Choice(["none", "plan", "all"]),
+    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.PLAN, _PipelineSelection.ALL]),
     help="The dependencies to fetch",
 )
 @click.option(
@@ -803,9 +828,9 @@ def source_fetch(app, elements, deps, except_, remote):
 @click.option(
     "--deps",
     "-d",
-    default="none",
+    default=_PipelineSelection.NONE,
     show_default=True,
-    type=click.Choice(["none", "all"]),
+    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
     help="The dependencies to track",
 )
 @click.option("--cross-junctions", "-J", is_flag=True, help="Allow crossing junction boundaries")
@@ -839,8 +864,8 @@ def source_track(app, elements, deps, except_, cross_junctions):
 
         # Substitute 'none' for 'redirect' so that element redirections
         # will be done
-        if deps == "none":
-            deps = "redirect"
+        if deps == _PipelineSelection.NONE:
+            deps = _PipelineSelection.REDIRECT
         app.stream.track(elements, selection=deps, except_targets=except_, cross_junctions=cross_junctions)
 
 
@@ -855,9 +880,12 @@ def source_track(app, elements, deps, except_, cross_junctions):
 @click.option(
     "--deps",
     "-d",
-    default="none",
+    default=_PipelineSelection.NONE,
     show_default=True,
-    type=click.Choice(["build", "none", "run", "all"]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [_PipelineSelection.BUILD, _PipelineSelection.NONE, _PipelineSelection.RUN, _PipelineSelection.ALL],
+    ),
     help="The dependencies whose sources to checkout",
 )
 @click.option(
@@ -1097,9 +1125,12 @@ def artifact():
 @click.option(
     "--deps",
     "-d",
-    default="none",
+    default=_PipelineSelection.NONE,
     show_default=True,
-    type=click.Choice(["build", "run", "all", "none"]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [_PipelineSelection.BUILD, _PipelineSelection.RUN, _PipelineSelection.ALL, _PipelineSelection.NONE],
+    ),
     help="The dependencies we also want to show",
 )
 @click.argument("artifacts", type=click.Path(), nargs=-1)
@@ -1120,9 +1151,12 @@ def artifact_show(app, deps, artifacts):
 @click.option(
     "--deps",
     "-d",
-    default="run",
+    default=_PipelineSelection.RUN,
     show_default=True,
-    type=click.Choice(["run", "build", "none", "all"]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [_PipelineSelection.RUN, _PipelineSelection.BUILD, _PipelineSelection.NONE, _PipelineSelection.ALL],
+    ),
     help="The dependencies to checkout",
 )
 @click.option("--integrate/--no-integrate", default=None, is_flag=True, help="Whether to run integration commands")
@@ -1216,9 +1250,9 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
 @click.option(
     "--deps",
     "-d",
-    default="none",
+    default=_PipelineSelection.NONE,
     show_default=True,
-    type=click.Choice(["none", "all"]),
+    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
     help="The dependency artifacts to pull",
 )
 @click.option(
@@ -1265,9 +1299,9 @@ def artifact_pull(app, artifacts, deps, remote):
 @click.option(
     "--deps",
     "-d",
-    default="none",
+    default=_PipelineSelection.NONE,
     show_default=True,
-    type=click.Choice(["none", "all"]),
+    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
     help="The dependencies to push",
 )
 @click.option(
@@ -1389,9 +1423,12 @@ def artifact_list_contents(app, artifacts, long_):
 @click.option(
     "--deps",
     "-d",
-    default="none",
+    default=_PipelineSelection.NONE,
     show_default=True,
-    type=click.Choice(["none", "run", "build", "all"]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [_PipelineSelection.NONE, _PipelineSelection.RUN, _PipelineSelection.BUILD, _PipelineSelection.ALL],
+    ),
     help="The dependencies to delete",
 )
 @click.argument("artifacts", type=click.Path(), nargs=-1)
@@ -1425,9 +1462,9 @@ def artifact_delete(app, artifacts, deps):
 @click.option(
     "--deps",
     "-d",
-    default="plan",
+    default=_PipelineSelection.PLAN,
     show_default=True,
-    type=click.Choice(["none", "plan", "all"]),
+    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.PLAN, _PipelineSelection.ALL]),
     help="The dependencies to fetch",
 )
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
@@ -1451,9 +1488,9 @@ def fetch(app, elements, deps, except_):
 @click.option(
     "--deps",
     "-d",
-    default="none",
+    default=_PipelineSelection.NONE,
     show_default=True,
-    type=click.Choice(["none", "all"]),
+    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
     help="The dependencies to track",
 )
 @click.option("--cross-junctions", "-J", is_flag=True, help="Allow crossing junction boundaries")
@@ -1472,9 +1509,9 @@ def track(app, elements, deps, except_, cross_junctions):
 @click.option(
     "--deps",
     "-d",
-    default="run",
+    default=_PipelineSelection.RUN,
     show_default=True,
-    type=click.Choice(["run", "build", "none"]),
+    type=FastEnumType(_PipelineSelection, [_PipelineSelection.RUN, _PipelineSelection.BUILD, _PipelineSelection.NONE]),
     help="The dependencies to checkout",
 )
 @click.option("--integrate/--no-integrate", default=True, help="Run integration commands (default is to run commands)")
@@ -1505,9 +1542,9 @@ def checkout(app, element, location, force, deps, integrate, hardlinks, tar):
 @click.option(
     "--deps",
     "-d",
-    default="none",
+    default=_PipelineSelection.NONE,
     show_default=True,
-    type=click.Choice(["none", "all"]),
+    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
     help="The dependency artifacts to pull",
 )
 @click.option("--remote", "-r", help="The URL of the remote cache (defaults to the first configured cache)")
@@ -1525,9 +1562,9 @@ def pull(app, elements, deps, remote):
 @click.option(
     "--deps",
     "-d",
-    default="none",
+    default=_PipelineSelection.NONE,
     show_default=True,
-    type=click.Choice(["none", "all"]),
+    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
     help="The dependencies to push",
 )
 @click.option(

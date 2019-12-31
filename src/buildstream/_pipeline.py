@@ -31,36 +31,7 @@ from ._message import Message, MessageType
 from ._profile import Topics, PROFILER
 from . import Scope, Consistency
 from ._project import ProjectRefStorage
-
-
-# PipelineSelection()
-#
-# Defines the kind of pipeline selection to make when the pipeline
-# is provided a list of targets, for whichever purpose.
-#
-# These values correspond to the CLI `--deps` arguments for convenience.
-#
-class PipelineSelection:
-
-    # Select only the target elements in the associated targets
-    NONE = "none"
-
-    # As NONE, but redirect elements that are capable of it
-    REDIRECT = "redirect"
-
-    # Select elements which must be built for the associated targets to be built
-    PLAN = "plan"
-
-    # All dependencies of all targets, including the targets
-    ALL = "all"
-
-    # All direct build dependencies and their recursive runtime dependencies,
-    # excluding the targets
-    BUILD = "build"
-
-    # All direct runtime dependencies and their recursive runtime dependencies,
-    # including the targets
-    RUN = "run"
+from .types import _PipelineSelection
 
 
 # Pipeline()
@@ -219,7 +190,7 @@ class Pipeline:
     #
     # Args:
     #    targets (list of Element): The target Elements
-    #    mode (PipelineSelection): The PipelineSelection mode
+    #    mode (_PipelineSelection): The PipelineSelection mode
     #
     # Various commands define a --deps option to specify what elements to
     # use in the result, this function reports a list that is appropriate for
@@ -227,10 +198,9 @@ class Pipeline:
     #
     def get_selection(self, targets, mode, *, silent=True):
 
-        elements = None
-        if mode == PipelineSelection.NONE:
+        if mode == _PipelineSelection.NONE:
             elements = targets
-        elif mode == PipelineSelection.REDIRECT:
+        elif mode == _PipelineSelection.REDIRECT:
             # Redirect and log if permitted
             elements = []
             for t in targets:
@@ -239,14 +209,14 @@ class Pipeline:
                     self._message(MessageType.INFO, "Element '{}' redirected to '{}'".format(t.name, new_elm.name))
                 if new_elm not in elements:
                     elements.append(new_elm)
-        elif mode == PipelineSelection.PLAN:
+        elif mode == _PipelineSelection.PLAN:
             elements = self.plan(targets)
         else:
-            if mode == PipelineSelection.ALL:
+            if mode == _PipelineSelection.ALL:
                 scope = Scope.ALL
-            elif mode == PipelineSelection.BUILD:
+            elif mode == _PipelineSelection.BUILD:
                 scope = Scope.BUILD
-            elif mode == PipelineSelection.RUN:
+            elif mode == _PipelineSelection.RUN:
                 scope = Scope.RUN
 
             elements = list(self.dependencies(targets, scope))
