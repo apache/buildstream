@@ -2,6 +2,11 @@
 (unreleased)
 ============
 
+
+==================
+buildstream 1.91.3
+==================
+
 CLI
 ---
 
@@ -26,6 +31,19 @@ API
   o Sources may force early staging to cache by advertising
     `BST_KEY_REQUIRES_STAGE`. Sources setting this are staged to the cache to
     generate unique keys. `WorkspaceSource` and `LocalSource` set this.
+
+Core
+----
+
+  o BuildStream now supports Python 3.8. Note that due to a bug in the 3.8.0
+    series, BuildStream requires Python >= 3.8.1 when running on Python 3.8.
+
+  o BuildStream now also supports the following machine architectures:
+
+    * powerpc
+    * powerpc64
+    * powerpc64le
+    * sun4v
 
 
 ==================
