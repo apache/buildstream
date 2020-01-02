@@ -25,6 +25,7 @@ import asyncio
 from itertools import chain
 import signal
 import datetime
+import sys
 
 # Local imports
 from .resources import Resources
@@ -187,6 +188,9 @@ class Scheduler:
 
         # Add timeouts
         self.loop.call_later(1, self._tick)
+
+        # Add exception handler
+        self.loop.set_exception_handler(self._handle_exception)
 
         # Handle unix signals while running
         self._connect_signals()
@@ -595,6 +599,22 @@ class Scheduler:
             # Do not raise exception once scheduler process is separated
             # as we don't want to pickle exceptions between processes
             raise ValueError("Unrecognised notification type received")
+
+    def _handle_exception(self, loop, context: dict) -> None:
+        e = context.get("exception")
+        exc = bool(e)
+        if e is None:
+            # https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.call_exception_handler
+            # If no optional Exception generate a generic exception with message value.
+            # exc will be False, instructing the global handler to skip formatting the
+            # assumed exception & related traceback.
+            e = Exception(str(context.get("message")) + " asyncio exception handler called, but no Exception() given")
+
+        # Call the sys global exception handler directly, as to avoid the default
+        # async handler raising an unhandled exception here. App will treat this
+        # as a 'BUG', format it appropriately & exit. mypy needs to ignore parameter
+        # types here as we're overriding sys globally in App._global_exception_handler()
+        sys.excepthook(type(e), e, e.__traceback__, exc)  # type: ignore
 
     def __getstate__(self):
         # The only use-cases for pickling in BuildStream at the time of writing

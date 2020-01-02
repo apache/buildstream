@@ -507,10 +507,13 @@ class App:
 
     # Exception handler
     #
-    def _global_exception_handler(self, etype, value, tb):
+    def _global_exception_handler(self, etype, value, tb, exc=True):
 
         # Print the regular BUG message
-        formatted = "".join(traceback.format_exception(etype, value, tb))
+        formatted = None
+        if exc:
+            # Format the exception & traceback by default
+            formatted = "".join(traceback.format_exception(etype, value, tb))
         self._message(MessageType.BUG, str(value), detail=formatted)
 
         # If the scheduler has started, try to terminate all jobs gracefully,
