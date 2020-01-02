@@ -197,10 +197,7 @@ class Pipeline:
     # the selected option.
     #
     def get_selection(self, targets, mode, *, silent=True):
-
-        if mode == _PipelineSelection.NONE:
-            elements = targets
-        elif mode == _PipelineSelection.REDIRECT:
+        def redirect_and_log():
             # Redirect and log if permitted
             elements = []
             for t in targets:
@@ -209,19 +206,21 @@ class Pipeline:
                     self._message(MessageType.INFO, "Element '{}' redirected to '{}'".format(t.name, new_elm.name))
                 if new_elm not in elements:
                     elements.append(new_elm)
-        elif mode == _PipelineSelection.PLAN:
-            elements = self.plan(targets)
-        else:
-            if mode == _PipelineSelection.ALL:
-                scope = Scope.ALL
-            elif mode == _PipelineSelection.BUILD:
-                scope = Scope.BUILD
-            elif mode == _PipelineSelection.RUN:
-                scope = Scope.RUN
+            return elements
 
-            elements = list(self.dependencies(targets, scope))
-
-        return elements
+        # Work around python not having a switch statement; this is
+        # much clearer than the if/elif/else block we used to have.
+        #
+        # Note that the lambda is necessary so that we don't evaluate
+        # all possible values at run time; that would be slow.
+        return {
+            _PipelineSelection.NONE: lambda: targets,
+            _PipelineSelection.REDIRECT: redirect_and_log,
+            _PipelineSelection.PLAN: lambda: self.plan(targets),
+            _PipelineSelection.ALL: lambda: list(self.dependencies(targets, Scope.ALL)),
+            _PipelineSelection.BUILD: lambda: list(self.dependencies(targets, Scope.BUILD)),
+            _PipelineSelection.RUN: lambda: list(self.dependencies(targets, Scope.RUN)),
+        }[mode]()
 
     # except_elements():
     #
