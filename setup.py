@@ -51,56 +51,6 @@ except ImportError:
     sys.exit(1)
 
 
-##################################################################
-# Bubblewrap requirements
-##################################################################
-REQUIRED_BWRAP_MAJOR = 0
-REQUIRED_BWRAP_MINOR = 1
-REQUIRED_BWRAP_PATCH = 2
-
-
-def warn_bwrap(reason):
-    print(reason +
-          "\nBuildStream requires Bubblewrap (bwrap {}.{}.{} or better),"
-          " during local builds, for"
-          " sandboxing the build environment.\nInstall it using your package manager"
-          " (usually bwrap or bubblewrap) otherwise you will be limited to"
-          " remote builds only.".format(REQUIRED_BWRAP_MAJOR, REQUIRED_BWRAP_MINOR, REQUIRED_BWRAP_PATCH))
-
-
-def bwrap_too_old(major, minor, patch):
-    if major < REQUIRED_BWRAP_MAJOR:
-        return True
-    elif major == REQUIRED_BWRAP_MAJOR:
-        if minor < REQUIRED_BWRAP_MINOR:
-            return True
-        elif minor == REQUIRED_BWRAP_MINOR:
-            return patch < REQUIRED_BWRAP_PATCH
-        else:
-            return False
-    else:
-        return False
-
-
-def check_for_bwrap():
-    platform = sys.platform
-
-    if platform.startswith('linux'):
-        sandbox = os.environ.get('BST_FORCE_SANDBOX', "bwrap")
-        if sandbox != 'bwrap':
-            return
-        bwrap_path = shutil.which('bwrap')
-        if not bwrap_path:
-            warn_bwrap("Bubblewrap not found")
-            return
-
-        version_bytes = subprocess.check_output([bwrap_path, "--version"]).split()[1]
-        version_string = str(version_bytes, "utf-8")
-        major, minor, patch = map(int, version_string.split("."))
-        if bwrap_too_old(major, minor, patch):
-            warn_bwrap("Bubblewrap too old")
-
-
 ###########################################
 # List the pre-built man pages to install #
 ###########################################
@@ -153,7 +103,6 @@ bst_install_entry_points = {
 }
 
 if not os.environ.get('BST_ARTIFACTS_ONLY', ''):
-    check_for_bwrap()
     bst_install_entry_points['console_scripts'] += [
         'bst = buildstream._frontend:cli'
     ]
