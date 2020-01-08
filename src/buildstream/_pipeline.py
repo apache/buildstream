@@ -31,36 +31,7 @@ from ._message import Message, MessageType
 from ._profile import Topics, PROFILER
 from . import Scope, Consistency
 from ._project import ProjectRefStorage
-
-
-# PipelineSelection()
-#
-# Defines the kind of pipeline selection to make when the pipeline
-# is provided a list of targets, for whichever purpose.
-#
-# These values correspond to the CLI `--deps` arguments for convenience.
-#
-class PipelineSelection:
-
-    # Select only the target elements in the associated targets
-    NONE = "none"
-
-    # As NONE, but redirect elements that are capable of it
-    REDIRECT = "redirect"
-
-    # Select elements which must be built for the associated targets to be built
-    PLAN = "plan"
-
-    # All dependencies of all targets, including the targets
-    ALL = "all"
-
-    # All direct build dependencies and their recursive runtime dependencies,
-    # excluding the targets
-    BUILD = "build"
-
-    # All direct runtime dependencies and their recursive runtime dependencies,
-    # including the targets
-    RUN = "run"
+from .types import _PipelineSelection
 
 
 # Pipeline()
@@ -219,18 +190,14 @@ class Pipeline:
     #
     # Args:
     #    targets (list of Element): The target Elements
-    #    mode (PipelineSelection): The PipelineSelection mode
+    #    mode (_PipelineSelection): The PipelineSelection mode
     #
     # Various commands define a --deps option to specify what elements to
     # use in the result, this function reports a list that is appropriate for
     # the selected option.
     #
     def get_selection(self, targets, mode, *, silent=True):
-
-        elements = None
-        if mode == PipelineSelection.NONE:
-            elements = targets
-        elif mode == PipelineSelection.REDIRECT:
+        def redirect_and_log():
             # Redirect and log if permitted
             elements = []
             for t in targets:
@@ -239,19 +206,21 @@ class Pipeline:
                     self._message(MessageType.INFO, "Element '{}' redirected to '{}'".format(t.name, new_elm.name))
                 if new_elm not in elements:
                     elements.append(new_elm)
-        elif mode == PipelineSelection.PLAN:
-            elements = self.plan(targets)
-        else:
-            if mode == PipelineSelection.ALL:
-                scope = Scope.ALL
-            elif mode == PipelineSelection.BUILD:
-                scope = Scope.BUILD
-            elif mode == PipelineSelection.RUN:
-                scope = Scope.RUN
+            return elements
 
-            elements = list(self.dependencies(targets, scope))
-
-        return elements
+        # Work around python not having a switch statement; this is
+        # much clearer than the if/elif/else block we used to have.
+        #
+        # Note that the lambda is necessary so that we don't evaluate
+        # all possible values at run time; that would be slow.
+        return {
+            _PipelineSelection.NONE: lambda: targets,
+            _PipelineSelection.REDIRECT: redirect_and_log,
+            _PipelineSelection.PLAN: lambda: self.plan(targets),
+            _PipelineSelection.ALL: lambda: list(self.dependencies(targets, Scope.ALL)),
+            _PipelineSelection.BUILD: lambda: list(self.dependencies(targets, Scope.BUILD)),
+            _PipelineSelection.RUN: lambda: list(self.dependencies(targets, Scope.RUN)),
+        }[mode]()
 
     # except_elements():
     #

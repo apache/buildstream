@@ -48,10 +48,10 @@ from ._scheduler import (
     JobStatus,
 )
 from .element import Element
-from ._pipeline import Pipeline, PipelineSelection
+from ._pipeline import Pipeline
 from ._profile import Topics, PROFILER
 from ._state import State
-from .types import _KeyStrength, _SchedulerErrorAction
+from .types import _KeyStrength, _PipelineSelection, _SchedulerErrorAction
 from .plugin import Plugin
 from . import utils, _yaml, _site
 from . import Scope
@@ -143,7 +143,7 @@ class Stream:
     #
     # Args:
     #    targets (list of str): Targets to pull
-    #    selection (PipelineSelection): The selection mode for the specified targets
+    #    selection (_PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from fetching
     #    use_artifact_config (bool): If artifact remote configs should be loaded
     #
@@ -153,7 +153,7 @@ class Stream:
         self,
         targets,
         *,
-        selection=PipelineSelection.NONE,
+        selection=_PipelineSelection.NONE,
         except_targets=(),
         use_artifact_config=False,
         load_refs=False
@@ -267,14 +267,14 @@ class Stream:
     #
     # Args:
     #    targets (list of str): Targets to build
-    #    selection (PipelineSelection): The selection mode for the specified targets
+    #    selection (_PipelineSelection): The selection mode for the specified targets
     #    ignore_junction_targets (bool): Whether junction targets should be filtered out
     #    remote (str): The URL of a specific remote server to push to, or None
     #
     # If `remote` specified as None, then regular configuration will be used
     # to determine where to push artifacts to.
     #
-    def build(self, targets, *, selection=PipelineSelection.PLAN, ignore_junction_targets=False, remote=None):
+    def build(self, targets, *, selection=_PipelineSelection.PLAN, ignore_junction_targets=False, remote=None):
 
         use_config = True
         if remote:
@@ -300,7 +300,7 @@ class Stream:
 
             # fetch blobs of targets if options set
             if self._context.pull_artifact_files:
-                scope = Scope.ALL if selection == PipelineSelection.ALL else Scope.RUN
+                scope = Scope.ALL if selection == _PipelineSelection.ALL else Scope.RUN
                 for element in self.targets:
                     element._set_artifact_files_required(scope=scope)
 
@@ -331,11 +331,11 @@ class Stream:
     #
     # Args:
     #    targets (list of str): Targets to fetch
-    #    selection (PipelineSelection): The selection mode for the specified targets
+    #    selection (_PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from fetching
     #    remote (str|None): The URL of a specific remote server to pull from.
     #
-    def fetch(self, targets, *, selection=PipelineSelection.PLAN, except_targets=None, remote=None):
+    def fetch(self, targets, *, selection=_PipelineSelection.PLAN, except_targets=None, remote=None):
 
         use_source_config = True
         if remote:
@@ -358,14 +358,14 @@ class Stream:
     #
     # Args:
     #    targets (list of str): Targets to track
-    #    selection (PipelineSelection): The selection mode for the specified targets
+    #    selection (_PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from tracking
     #    cross_junctions (bool): Whether tracking should cross junction boundaries
     #
     # If no error is encountered while tracking, then the project files
     # are rewritten inline.
     #
-    def track(self, targets, *, selection=PipelineSelection.REDIRECT, except_targets=None, cross_junctions=False):
+    def track(self, targets, *, selection=_PipelineSelection.REDIRECT, except_targets=None, cross_junctions=False):
 
         elements = self._load_tracking(
             targets, selection=selection, except_targets=except_targets, cross_junctions=cross_junctions
@@ -389,14 +389,14 @@ class Stream:
     #
     # Args:
     #    targets (list of str): Targets to pull
-    #    selection (PipelineSelection): The selection mode for the specified targets
+    #    selection (_PipelineSelection): The selection mode for the specified targets
     #    ignore_junction_targets (bool): Whether junction targets should be filtered out
     #    remote (str): The URL of a specific remote server to pull from, or None
     #
     # If `remote` specified as None, then regular configuration will be used
     # to determine where to pull artifacts from.
     #
-    def pull(self, targets, *, selection=PipelineSelection.NONE, ignore_junction_targets=False, remote=None):
+    def pull(self, targets, *, selection=_PipelineSelection.NONE, ignore_junction_targets=False, remote=None):
 
         use_config = True
         if remote:
@@ -426,7 +426,7 @@ class Stream:
     #
     # Args:
     #    targets (list of str): Targets to push
-    #    selection (PipelineSelection): The selection mode for the specified targets
+    #    selection (_PipelineSelection): The selection mode for the specified targets
     #    ignore_junction_targets (bool): Whether junction targets should be filtered out
     #    remote (str): The URL of a specific remote server to push to, or None
     #
@@ -437,7 +437,7 @@ class Stream:
     # a pull queue will be created if user context and available remotes allow for
     # attempting to fetch them.
     #
-    def push(self, targets, *, selection=PipelineSelection.NONE, ignore_junction_targets=False, remote=None):
+    def push(self, targets, *, selection=_PipelineSelection.NONE, ignore_junction_targets=False, remote=None):
 
         use_config = True
         if remote:
@@ -509,7 +509,7 @@ class Stream:
     #    target (str): Target to checkout
     #    location (str): Location to checkout the artifact to
     #    force (bool): Whether files can be overwritten if necessary
-    #    selection (PipelineSelection): The selection mode for the specified targets
+    #    selection (_PipelineSelection): The selection mode for the specified targets
     #    integrate (bool): Whether to run integration commands
     #    hardlinks (bool): Whether checking out files hardlinked to
     #                      their artifacts is acceptable
@@ -527,7 +527,7 @@ class Stream:
         *,
         location=None,
         force=False,
-        selection=PipelineSelection.RUN,
+        selection=_PipelineSelection.RUN,
         integrate=True,
         hardlinks=False,
         compression="",
@@ -554,7 +554,12 @@ class Stream:
             self._run()
 
         try:
-            scope = {"run": Scope.RUN, "build": Scope.BUILD, "none": Scope.NONE, "all": Scope.ALL}
+            scope = {
+                _PipelineSelection.RUN: Scope.RUN,
+                _PipelineSelection.BUILD: Scope.BUILD,
+                _PipelineSelection.NONE: Scope.NONE,
+                _PipelineSelection.ALL: Scope.ALL,
+            }
             with target._prepare_sandbox(scope=scope[selection], directory=None, integrate=integrate) as sandbox:
                 # Copy or move the sandbox to the target directory
                 virdir = sandbox.get_virtual_directory()
@@ -612,7 +617,7 @@ class Stream:
     # Args:
     #    targets (str): Targets to show the cached state of
     #
-    def artifact_show(self, targets, *, selection=PipelineSelection.NONE):
+    def artifact_show(self, targets, *, selection=_PipelineSelection.NONE):
         # Obtain list of Element and/or ArtifactElement objects
         target_objects = self.load_selection(targets, selection=selection, use_artifact_config=True, load_refs=True)
 
@@ -639,7 +644,7 @@ class Stream:
     #
     def artifact_log(self, targets):
         # Return list of Element and/or ArtifactElement objects
-        target_objects = self.load_selection(targets, selection=PipelineSelection.NONE, load_refs=True)
+        target_objects = self.load_selection(targets, selection=_PipelineSelection.NONE, load_refs=True)
 
         artifact_logs = {}
         for obj in target_objects:
@@ -667,7 +672,7 @@ class Stream:
     #
     def artifact_list_contents(self, targets):
         # Return list of Element and/or ArtifactElement objects
-        target_objects = self.load_selection(targets, selection=PipelineSelection.NONE, load_refs=True)
+        target_objects = self.load_selection(targets, selection=_PipelineSelection.NONE, load_refs=True)
 
         elements_to_files = {}
         for obj in target_objects:
@@ -689,7 +694,7 @@ class Stream:
     # Args:
     #    targets (str): Targets to remove
     #
-    def artifact_delete(self, targets, *, selection=PipelineSelection.NONE):
+    def artifact_delete(self, targets, *, selection=_PipelineSelection.NONE):
         # Return list of Element and/or ArtifactElement objects
         target_objects = self.load_selection(targets, selection=selection, load_refs=True)
 
@@ -773,7 +778,7 @@ class Stream:
     def workspace_open(self, targets, *, no_checkout, force, custom_dir):
         # This function is a little funny but it is trying to be as atomic as possible.
 
-        elements = self._load(targets, selection=PipelineSelection.REDIRECT)
+        elements = self._load(targets, selection=_PipelineSelection.REDIRECT)
 
         workspaces = self._context.get_workspaces()
 
@@ -910,7 +915,7 @@ class Stream:
     #
     def workspace_reset(self, targets, *, soft):
 
-        elements = self._load(targets, selection=PipelineSelection.REDIRECT)
+        elements = self._load(targets, selection=_PipelineSelection.REDIRECT)
 
         nonexisting = []
         for element in elements:
@@ -1013,7 +1018,7 @@ class Stream:
             else:
                 output_elements.add(e)
         if load_elements:
-            loaded_elements = self._load(load_elements, selection=PipelineSelection.REDIRECT)
+            loaded_elements = self._load(load_elements, selection=_PipelineSelection.REDIRECT)
 
             for e in loaded_elements:
                 output_elements.add(e.name)
@@ -1183,16 +1188,16 @@ class Stream:
     #
     # Args:
     #    targets (list of str): Targets to load
-    #    selection (PipelineSelection): The selection mode for the specified targets
+    #    selection (_PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except
     #    cross_junctions (bool): Whether tracking should cross junction boundaries
     #
     # Returns:
     #    (list of Element): The tracking element selection
     #
-    def _load_tracking(self, targets, *, selection=PipelineSelection.NONE, except_targets=(), cross_junctions=False):
+    def _load_tracking(self, targets, *, selection=_PipelineSelection.NONE, except_targets=(), cross_junctions=False):
         # We never want to use a PLAN selection when tracking elements
-        assert selection != PipelineSelection.PLAN
+        assert selection != _PipelineSelection.PLAN
 
         elements, except_elements, artifacts = self.__load_elements_from_targets(
             targets, except_targets, rewritable=True
@@ -1234,7 +1239,7 @@ class Stream:
     #
     # Args:
     #    targets (list of str): Main targets to load
-    #    selection (PipelineSelection): The selection mode for the specified targets
+    #    selection (_PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from fetching
     #    ignore_junction_targets (bool): Whether junction targets should be filtered out
     #    use_artifact_config (bool): Whether to initialize artifacts with the config
@@ -1249,7 +1254,7 @@ class Stream:
         self,
         targets,
         *,
-        selection=PipelineSelection.NONE,
+        selection=_PipelineSelection.NONE,
         except_targets=(),
         ignore_junction_targets=False,
         use_artifact_config=False,
@@ -1267,8 +1272,8 @@ class Stream:
             if not load_refs:
                 detail = "\n".join(artifact.get_artifact_name() for artifact in artifacts)
                 raise ArtifactElementError("Cannot perform this operation with artifact refs:", detail=detail)
-            if selection in (PipelineSelection.ALL, PipelineSelection.RUN):
-                raise StreamError("Error: '--deps {}' is not supported for artifact refs".format(selection))
+            if selection in (_PipelineSelection.ALL, _PipelineSelection.RUN):
+                raise StreamError("Error: '--deps {}' is not supported for artifact refs".format(selection.value))
 
         if ignore_junction_targets:
             elements = [e for e in elements if e.get_kind() != "junction"]
@@ -1285,7 +1290,7 @@ class Stream:
         selected = self._pipeline.get_selection(self.targets, selection, silent=False)
         selected = self._pipeline.except_elements(self.targets, selected, except_elements)
 
-        if selection == PipelineSelection.PLAN and dynamic_plan:
+        if selection == _PipelineSelection.PLAN and dynamic_plan:
             # We use a dynamic build plan, only request artifacts of top-level targets,
             # others are requested dynamically as needed.
             # This avoids pulling, fetching, or building unneeded build-only dependencies.

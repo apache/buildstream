@@ -230,6 +230,36 @@ class _CacheBuildTrees(FastEnum):
     NEVER = "never"
 
 
+# _PipelineSelection()
+#
+# Defines the kind of pipeline selection to make when the pipeline
+# is provided a list of targets, for whichever purpose.
+#
+# These values correspond to the CLI `--deps` arguments for convenience.
+#
+class _PipelineSelection(FastEnum):
+
+    # Select only the target elements in the associated targets
+    NONE = "none"
+
+    # As NONE, but redirect elements that are capable of it
+    REDIRECT = "redirect"
+
+    # Select elements which must be built for the associated targets to be built
+    PLAN = "plan"
+
+    # All dependencies of all targets, including the targets
+    ALL = "all"
+
+    # All direct build dependencies and their recursive runtime dependencies,
+    # excluding the targets
+    BUILD = "build"
+
+    # All direct runtime dependencies and their recursive runtime dependencies,
+    # including the targets
+    RUN = "run"
+
+
 ########################################
 #           Type aliases               #
 ########################################

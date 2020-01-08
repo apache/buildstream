@@ -29,7 +29,7 @@ from ._platform import Platform
 from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASLogLevel
-from .types import _CacheBuildTrees, _SchedulerErrorAction
+from .types import _CacheBuildTrees, _PipelineSelection, _SchedulerErrorAction
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .node import Node
 from .sandbox import SandboxRemote
@@ -361,13 +361,14 @@ class Context:
         build.validate_keys(["max-jobs", "dependencies"])
         self.build_max_jobs = build.get_int("max-jobs")
 
-        self.build_dependencies = build.get_str("dependencies")
-        if self.build_dependencies not in ["plan", "all"]:
+        dependencies = build.get_str("dependencies")
+        if dependencies not in ["plan", "all"]:
             provenance = build.get_scalar("dependencies").get_provenance()
             raise LoadError(
                 "{}: Invalid value for 'dependencies'. Choose 'plan' or 'all'.".format(provenance),
                 LoadErrorReason.INVALID_DATA,
             )
+        self.build_dependencies = _PipelineSelection(dependencies)
 
         # Load per-projects overrides
         self._project_overrides = defaults.get_mapping("projects", default={})
