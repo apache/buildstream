@@ -49,6 +49,10 @@ class _RefFormat(FastEnum):
     GIT_DESCRIBE = "git-describe"
 
 
+def _strip_tag(rev):
+    return rev.split("-g")[-1]
+
+
 # This class represents a single Git repository. The Git source needs to account for
 # submodules, but we don't want to cache them all under the umbrella of the
 # superproject - so we use this class which caches them independently, according
@@ -537,10 +541,15 @@ class _GitSourceBase(Source):
             self.host_git_version = None
 
     def get_unique_key(self):
+        ref = self.mirror.ref
+        if ref is not None:
+            # Strip any (arbitary) tag information, leaving just the commit ID
+            ref = _strip_tag(ref)
+
         # Here we want to encode the local name of the repository and
         # the ref, if the user changes the alias to fetch the same sources
         # from another location, it should not affect the cache key.
-        key = [self.original_url, self.mirror.ref]
+        key = [self.original_url, ref]
         if self.mirror.tags:
             tags = {tag: (commit, annotated) for tag, commit, annotated in self.mirror.tags}
             key.append({"tags": tags})
