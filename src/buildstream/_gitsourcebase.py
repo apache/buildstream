@@ -530,10 +530,16 @@ class _GitSourceBase(Source):
         self.host_git = utils.get_host_tool("git")
 
     def get_unique_key(self):
+        ref = self.mirror.ref
+        if ref is not None:
+            # If the ref contains "-g" (is in git-describe format),
+            # only choose the part after, which is the commit ID
+            ref = ref.split("-g")[-1]
+
         # Here we want to encode the local name of the repository and
         # the ref, if the user changes the alias to fetch the same sources
         # from another location, it should not affect the cache key.
-        key = [self.original_url, self.mirror.ref]
+        key = [self.original_url, ref]
         if self.mirror.tags:
             tags = {tag: (commit, annotated) for tag, commit, annotated in self.mirror.tags}
             key.append({"tags": tags})
