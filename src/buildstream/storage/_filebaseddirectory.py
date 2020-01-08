@@ -30,7 +30,6 @@ See also: :ref:`sandboxing`.
 import os
 import shutil
 import stat
-import time
 
 from .directory import Directory, VirtualDirectoryError, _FileType
 from .. import utils
@@ -84,7 +83,7 @@ class FileBasedDirectory(Directory):
         *,
         filter_callback=None,
         report_written=True,
-        update_mtime=False,
+        update_mtime=None,
         can_link=False,
         properties=None
     ):
@@ -93,13 +92,15 @@ class FileBasedDirectory(Directory):
         from ._casbaseddirectory import CasBasedDirectory  # pylint: disable=cyclic-import
 
         if isinstance(external_pathspec, CasBasedDirectory):
-            if can_link and not update_mtime:
+            if can_link:
                 actionfunc = utils.safe_link
             else:
                 actionfunc = utils.safe_copy
 
             import_result = FileListResult()
-            self._import_files_from_cas(external_pathspec, actionfunc, filter_callback, result=import_result)
+            self._import_files_from_cas(
+                external_pathspec, actionfunc, filter_callback, update_mtime=update_mtime, result=import_result,
+            )
         else:
             if isinstance(external_pathspec, Directory):
                 source_directory = external_pathspec.external_directory
@@ -122,14 +123,10 @@ class FileBasedDirectory(Directory):
                     ignore_missing=False,
                     report_written=report_written,
                 )
+                if update_mtime:
+                    for f in import_result.files_written:
+                        os.utime(os.path.join(self.external_directory, f), times=(update_mtime, update_mtime))
 
-        # do not update times if these were set via nodes
-        properties = properties or []
-        if update_mtime and "MTime" not in properties:
-            cur_time = time.time()
-
-            for f in import_result.files_written:
-                os.utime(os.path.join(self.external_directory, f), times=(cur_time, cur_time))
         return import_result
 
     def import_single_file(self, external_pathspec, properties=None):
@@ -250,7 +247,9 @@ class FileBasedDirectory(Directory):
         else:
             return _FileType.SPECIAL_FILE
 
-    def _import_files_from_cas(self, source_directory, actionfunc, filter_callback, *, path_prefix="", result):
+    def _import_files_from_cas(
+        self, source_directory, actionfunc, filter_callback, *, path_prefix="", update_mtime=None, result
+    ):
         """ Import files from a CAS-based directory. """
 
         for name, entry in source_directory.index.items():
@@ -275,7 +274,12 @@ class FileBasedDirectory(Directory):
                     )
 
                 dest_subdir._import_files_from_cas(
-                    src_subdir, actionfunc, filter_callback, path_prefix=relative_pathname, result=result
+                    src_subdir,
+                    actionfunc,
+                    filter_callback,
+                    path_prefix=relative_pathname,
+                    result=result,
+                    update_mtime=update_mtime,
                 )
 
             if filter_callback and not filter_callback(relative_pathname):
@@ -300,18 +304,20 @@ class FileBasedDirectory(Directory):
                     src_path = source_directory.cas_cache.objpath(entry.digest)
 
                     # fallback to copying if we require mtime support on this file
-                    if entry.node_properties:
+                    if update_mtime or entry.node_properties:
                         utils.safe_copy(src_path, dest_path, result=result)
-                        mtime = None
-                        for prop in entry.node_properties:
-                            if prop.name == "MTime" and prop.value:
-                                mtime = prop.value
-                            else:
-                                raise ImplError("{} is not a supported node property.".format(prop.name))
+                        mtime = update_mtime
+                        # XXX mtime property will override specified mtime
+                        if entry.node_properties:
+                            for prop in entry.node_properties:
+                                if prop.name == "MTime" and prop.value:
+                                    mtime = utils._parse_timestamp(prop.value)
+                                else:
+                                    raise ImplError("{} is not a supported node property.".format(prop.name))
                         if mtime:
                             utils._set_file_mtime(dest_path, mtime)
                     else:
-                        utils.safe_link(src_path, dest_path, result=result)
+                        actionfunc(src_path, dest_path, result=result)
 
                     if entry.is_executable:
                         os.chmod(

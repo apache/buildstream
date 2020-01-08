@@ -361,7 +361,7 @@ class CasBasedDirectory(Directory):
         *,
         filter_callback=None,
         report_written=True,
-        update_mtime=False,
+        update_mtime=None,
         can_link=False,
         properties=None
     ):
