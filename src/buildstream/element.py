@@ -75,6 +75,7 @@ Class Reference
 import os
 import re
 import stat
+import time
 import copy
 from collections import OrderedDict
 import contextlib
@@ -707,7 +708,7 @@ class Element(Plugin):
 
             if update_mtimes:
                 copy_result = vstagedir.import_files(
-                    files_vdir, filter_callback=copy_filter, report_written=True, update_mtime=True
+                    files_vdir, filter_callback=copy_filter, report_written=True, update_mtime=time.time()
                 )
                 result = result.combine(copy_result)
 

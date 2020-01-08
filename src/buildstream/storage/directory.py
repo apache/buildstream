@@ -82,7 +82,7 @@ class Directory:
         *,
         filter_callback: Optional[Callable[[str], bool]] = None,
         report_written: bool = True,
-        update_mtime: bool = False,
+        update_mtime: Optional[float] = None,
         can_link: bool = False
     ) -> FileListResult:
         """Imports some or all files from external_path into this directory.
@@ -98,12 +98,11 @@ class Directory:
             written. Defaults to true. If false, only a list of
             overwritten files is returned.
           update_mtime: Update the access and modification time
-            of each file copied to the current time.
+            of each file copied to the time specified in seconds.
           can_link: Whether it's OK to create a hard link to the
             original content, meaning the stored copy will change when the
             original files change. Setting this doesn't guarantee hard
-            links will be made. can_link will never be used if
-            update_mtime is set.
+            links will be made.
 
         Yields:
           A report of files imported and overwritten.

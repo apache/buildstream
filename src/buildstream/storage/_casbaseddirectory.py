@@ -341,7 +341,7 @@ class CasBasedDirectory(Directory):
                     result.files_written.append(relative_pathname)
 
     def import_files(
-        self, external_pathspec, *, filter_callback=None, report_written=True, update_mtime=False, can_link=False
+        self, external_pathspec, *, filter_callback=None, report_written=True, update_mtime=None, can_link=False
     ):
         """ See superclass Directory for arguments """
 

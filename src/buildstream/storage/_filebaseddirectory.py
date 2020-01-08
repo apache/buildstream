@@ -30,7 +30,6 @@ See also: :ref:`sandboxing`.
 import os
 import shutil
 import stat
-import time
 
 from .directory import Directory, VirtualDirectoryError, _FileType
 from .. import utils
@@ -79,7 +78,7 @@ class FileBasedDirectory(Directory):
         return current_dir
 
     def import_files(
-        self, external_pathspec, *, filter_callback=None, report_written=True, update_mtime=False, can_link=False
+        self, external_pathspec, *, filter_callback=None, report_written=True, update_mtime=None, can_link=False
     ):
         """ See superclass Directory for arguments """
 
@@ -117,10 +116,8 @@ class FileBasedDirectory(Directory):
                 )
 
         if update_mtime:
-            cur_time = time.time()
-
             for f in import_result.files_written:
-                os.utime(os.path.join(self.external_directory, f), times=(cur_time, cur_time))
+                os.utime(os.path.join(self.external_directory, f), times=(update_mtime, update_mtime))
         return import_result
 
     def import_single_file(self, external_pathspec):
