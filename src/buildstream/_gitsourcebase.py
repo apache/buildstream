@@ -209,30 +209,56 @@ class _GitMirror(SourceFetcher):
         line = "{commit}\trefs/tags/{tag}".format(commit=commit, tag=tag)
         return line in ls_remote or line + "^{}" in ls_remote
 
-    def latest_commit_with_tags(self, tracking, track_tags=False):
+    # to_commit():
+    #
+    # Args:
+    #     rev (str): A Git "commit-ish" rev
+    #
+    # Returns:
+    #     (str): The full revision ID of the commit
+    #
+    def to_commit(self, rev):
         _, output = self.source.check_output(
-            [self.source.host_git, "rev-parse", tracking],
-            fail="Unable to find commit for specified branch name '{}'".format(tracking),
+            [self.source.host_git, "rev-list", "-n", "1", rev],
+            fail="Unable to find revision {}".format(rev),
             cwd=self.mirror,
         )
-        ref = output.rstrip("\n")
 
-        if self.source.ref_format == _RefFormat.GIT_DESCRIBE:
-            # Prefix the ref with the closest tag, if available,
-            # to make the ref human readable
-            exit_code, output = self.source.check_output(
-                [self.source.host_git, "describe", "--tags", "--abbrev=40", "--long", ref], cwd=self.mirror
-            )
-            if exit_code == 0:
-                ref = output.rstrip("\n")
+        return output.strip()
 
-        if not track_tags:
-            return ref, []
+    # describe():
+    #
+    # Args:
+    #     rev (str): A Git "commit-ish" rev
+    #
+    # Returns:
+    #     (str): The full revision ID of the commit given by rev, prepended
+    #            with tag information as given by git-describe (where available)
+    #
+    def describe(self, rev):
+        _, output = self.source.check_output(
+            [self.source.host_git, "describe", "--tags", "--abbrev=40", "--long", "--always", rev],
+            fail="Unable to find revision {}".format(rev),
+            cwd=self.mirror,
+        )
 
+        return output.strip()
+
+    # reachable_tags():
+    #
+    # Args:
+    #     rev (str): A Git "commit-ish" rev
+    #
+    # Returns:
+    #     (list): A list of tags in the ancestry of rev. Each entry is a triple of the form
+    #             (tag name (str), commit ref (str), annotated (bool)) describing a tag,
+    #             its tagged commit and whether it's annotated
+    #
+    def reachable_tags(self, rev):
         tags = set()
         for options in [[], ["--first-parent"], ["--tags"], ["--tags", "--first-parent"]]:
             exit_code, output = self.source.check_output(
-                [self.source.host_git, "describe", "--abbrev=0", ref, *options], cwd=self.mirror
+                [self.source.host_git, "describe", "--abbrev=0", rev, *options], cwd=self.mirror
             )
             if exit_code == 0:
                 tag = output.strip()
@@ -246,7 +272,7 @@ class _GitMirror(SourceFetcher):
 
                 tags.add((tag, commit_ref.strip(), annotated))
 
-        return ref, list(tags)
+        return list(tags)
 
     def stage(self, directory):
         fullpath = os.path.join(directory, self.path)
@@ -619,10 +645,14 @@ class _GitSourceBase(Source):
         resolved_url = self.translate_url(self.mirror.url)
         with self.timed_activity("Tracking {} from {}".format(self.tracking, resolved_url), silent_nested=True):
             self.mirror._fetch(resolved_url, fetch_all=True)
-            # Update self.mirror.ref and node.ref from the self.tracking branch
-            ret = self.mirror.latest_commit_with_tags(self.tracking, self.track_tags)
 
-        return ret
+            ref = self.mirror.to_commit(self.tracking)
+            tags = self.mirror.reachable_tags(ref) if self.track_tags else []
+
+            if self.ref_format == _RefFormat.GIT_DESCRIBE:
+                ref = self.mirror.describe(ref)
+
+            return ref, tags
 
     def init_workspace(self, directory):
         with self.timed_activity('Setting up workspace "{}"'.format(directory), silent_nested=True):
