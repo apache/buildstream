@@ -459,15 +459,8 @@ class CasBasedDirectory(Directory):
             if not is_dir:
                 if self._check_replacement(name, relative_pathname, result):
                     if entry.type == _FileType.REGULAR_FILE:
-                        self.index[name] = IndexEntry(
-                            name,
-                            _FileType.REGULAR_FILE,
-                            digest=entry.digest,
-                            is_executable=entry.is_executable,
-                            modified=True,
-                            node_properties=entry.node_properties,
-                        )
-                        self.__invalidate_digest()
+                        self._add_entry(entry)
+                        self.index[entry.name].modified = True
                     else:
                         assert entry.type == _FileType.SYMLINK
                         self._add_new_link_direct(name=name, target=entry.target)
