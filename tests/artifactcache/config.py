@@ -224,7 +224,7 @@ def test_paths_for_artifact_config_are_expanded(tmpdir, monkeypatch, artifacts_c
     # user_config, project_config = configure_remote_caches(override_caches, project_caches, user_caches)
     # project_config['name'] = 'test'
 
-    monkeypatch.setenv("HOME", tmpdir.join("homedir"))
+    monkeypatch.setenv("HOME", str(tmpdir.join("homedir")))
 
     if in_user_config:
         user_config = {"artifacts": artifacts_config}
