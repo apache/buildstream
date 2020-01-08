@@ -307,7 +307,9 @@ class FileBasedDirectory(Directory):
                     if update_mtime or entry.node_properties:
                         utils.safe_copy(src_path, dest_path, result=result)
                         mtime = update_mtime
-                        # XXX mtime property will override specified mtime
+                        # mtime property will override specified mtime
+                        # see https://github.com/bazelbuild/remote-apis/blob/master/build/bazel/remote/execution/v2/nodeproperties.md
+                        # for supported node property specifications
                         if entry.node_properties:
                             for prop in entry.node_properties:
                                 if prop.name == "MTime" and prop.value:

@@ -163,6 +163,8 @@ class CasBasedDirectory(Directory):
         entry.digest = self.cas_cache.add_object(path=path, link_directly=can_link)
         entry.is_executable = os.access(path, os.X_OK)
         properties = properties or []
+        # see https://github.com/bazelbuild/remote-apis/blob/master/build/bazel/remote/execution/v2/nodeproperties.md
+        # for supported node property specifications
         entry.node_properties = []
         if "MTime" in properties:
             node_property = remote_execution_pb2.NodeProperty()

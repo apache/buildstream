@@ -224,7 +224,7 @@ class CASCache:
             else:
                 utils.safe_copy(self.objpath(filenode.digest), fullpath)
                 if filenode.node_properties:
-                    # XXX: see https://github.com/bazelbuild/remote-apis/blob/master/build/bazel/remote/execution/v2/nodeproperties.md
+                    # see https://github.com/bazelbuild/remote-apis/blob/master/build/bazel/remote/execution/v2/nodeproperties.md
                     # for supported node property specifications
                     for prop in filenode.node_properties:
                         if prop.name == "MTime" and prop.value:
