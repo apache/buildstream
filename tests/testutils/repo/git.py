@@ -42,8 +42,11 @@ class Git(Repo):
     def add_annotated_tag(self, tag, message):
         self._run_git("tag", "-a", tag, "-m", message)
 
-    def add_commit(self):
-        self._run_git("commit", "--allow-empty", "-m", "Additional commit")
+    def add_commit(self, date=None):
+        env = self.env
+        if date is not None:
+            env["GIT_AUTHOR_DATE"] = env["GIT_COMMITTER_DATE"] = str(date)
+        self._run_git("commit", "--allow-empty", "-m", "Additional commit", env=env)
         return self.latest_commit()
 
     def add_file(self, filename):
