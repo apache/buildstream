@@ -33,6 +33,10 @@ provide helper methods to validate configuration on access.
 Using node methods when reading configuration will ensure that errors
 are always coherently notified to the user.
 
+.. note:: Plugins are not expected to handle exceptions thrown by node
+          methods for the above reason; They are private. There should
+          always be a way to acquire information without resorting to
+          exception handling.
 
 Node types
 ----------
