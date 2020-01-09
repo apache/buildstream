@@ -31,6 +31,7 @@ from configparser import RawConfigParser
 
 from .source import Source, SourceError, SourceFetcher
 from .types import Consistency, CoreWarnings
+from .node import ScalarNode, SequenceNode
 from . import utils
 from .types import FastEnum
 from .utils import move_atomic, DirectoryExistsError
@@ -221,6 +222,18 @@ class _GitMirror(SourceFetcher):
             cwd=self.mirror,
         )
         return output.strip()
+
+    # date_of_commit():
+    #
+    # Args:
+    #     rev (str): A Git "commit-ish" rev
+    #
+    # Returns:
+    #     (int): The commit creation date and time, as seconds since the UNIX epoch
+    #
+    def date_of_commit(self, rev):
+        _, time = self.source.check_output([self.source.host_git, "show", "-s", "--format=%ct", rev], cwd=self.mirror)
+        return int(time.strip())
 
     # describe():
     #
@@ -517,13 +530,20 @@ class _GitSourceBase(Source):
 
         self.original_url = node.get_str("url")
         self.mirror = self.BST_MIRROR_CLASS(self, "", self.original_url, ref, tags=tags, primary=True)
-        self.tracking = node.get_str("track", None)
+
+        track = node.get_node("track", [ScalarNode, SequenceNode], allow_none=True)
+        if isinstance(track, SequenceNode):
+            self.tracking = track.as_str_list()
+        elif track is not None:
+            self.tracking = [track.as_str()]
+        else:
+            self.tracking = []
 
         self.ref_format = node.get_enum("ref-format", _RefFormat, _RefFormat.SHA1)
 
         # At this point we now know if the source has a ref and/or a track.
         # If it is missing both then we will be unable to track or build.
-        if self.mirror.ref is None and self.tracking is None:
+        if self.mirror.ref is None and not self.tracking:
             raise SourceError(
                 "{}: Git sources require a ref and/or track".format(self), reason="missing-track-and-ref"
             )
@@ -636,8 +656,10 @@ class _GitSourceBase(Source):
         with self.timed_activity("Tracking {} from {}".format(self.tracking, resolved_url), silent_nested=True):
             self.mirror._fetch(resolved_url)
 
-            ref = self.mirror.latest_commit(self.tracking)
+            refs = [self.mirror.latest_commit(branch) for branch in self.tracking]
+            ref = max(refs, key=self.mirror.date_of_commit)
             tags = self.mirror.reachable_tags(ref) if self.track_tags else []
+
             if self.ref_format == _RefFormat.GIT_DESCRIBE:
                 ref = self.mirror.describe(ref)
 
@@ -715,31 +737,27 @@ class _GitSourceBase(Source):
         ref_in_track = False
         if self.tracking:
             _, branch = self.check_output(
-                [self.host_git, "branch", "--list", self.tracking, "--contains", self.mirror.ref],
+                [self.host_git, "branch", "--contains", self.mirror.ref, "--list", *self.tracking],
                 cwd=self.mirror.mirror,
             )
             if branch:
                 ref_in_track = True
             else:
                 _, tag = self.check_output(
-                    [self.host_git, "tag", "--list", self.tracking, "--contains", self.mirror.ref],
+                    [self.host_git, "tag", "--contains", self.mirror.ref, "--list", *self.tracking],
                     cwd=self.mirror.mirror,
                 )
                 if tag:
                     ref_in_track = True
 
             if not ref_in_track:
-                detail = (
-                    "The ref provided for the element does not exist locally "
-                    + "in the provided track branch / tag '{}'.\n".format(self.tracking)
-                    + "You may wish to track the element to update the ref from '{}' ".format(self.tracking)
-                    + "with `bst source track`,\n"
-                    + "or examine the upstream at '{}' for the specific ref.".format(self.mirror.url)
-                )
+                detail = """The ref provided for the element does not exist locally in any of the provided
+                tracking branches or tags. You may wish to track the element to update the ref
+                with `bst source track` or examine the upstream for a specific ref."""
 
                 self.warn(
-                    "{}: expected ref '{}' was not found in given track '{}' for staged repository: '{}'\n".format(
-                        self, self.mirror.ref, self.tracking, self.mirror.url
+                    "{}: expected ref '{}' was not found in given branches/tags for staged repository: '{}'\n".format(
+                        self, self.mirror.ref, self.mirror.url
                     ),
                     detail=detail,
                     warning_token=CoreWarnings.REF_NOT_IN_TRACK,
