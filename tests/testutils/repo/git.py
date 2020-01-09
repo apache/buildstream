@@ -23,8 +23,7 @@ class Git(Repo):
     def _run_git(self, *args, **kwargs):
         argv = [GIT]
         argv.extend(args)
-        if "env" not in kwargs:
-            kwargs["env"] = dict(self.env, PWD=self.repo)
+        kwargs.setdefault("env", self.env)
         kwargs.setdefault("cwd", self.repo)
         kwargs.setdefault("check", True)
         return subprocess.run(argv, **kwargs)  # pylint: disable=subprocess-run-check
