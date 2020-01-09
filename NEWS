@@ -2,6 +2,13 @@
 (unreleased)
 ============
 
+CLI
+---
+
+  o BREAKING CHANGE: `bst show` will now output `junction` instead
+    of `buildable` for the state of junction elements, as they can't
+    be built.
+
 
 ==================
 buildstream 1.91.3

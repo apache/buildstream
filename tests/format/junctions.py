@@ -465,3 +465,12 @@ def test_invalid_target_format(cli, tmpdir, datafiles, target):
     result.assert_main_error(ErrorDomain.ELEMENT, None)
 
     assert "'target' option must be in format '{junction-name}:{element-name}'" in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_junction_show(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "foo")
+    copy_subprojects(project, datafiles, ["base"])
+
+    # Show, assert that it says junction
+    assert cli.get_element_state(project, "base.bst") == "junction"
