@@ -713,6 +713,37 @@ def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "template"))
+def test_track_multiple_branches(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    now = 1320966000  # arbitrary, but taken from testing/_utils/site.py GIT_ENV
+
+    # Create the repo from 'repofiles' subdir
+    repo = create_repo("git", str(tmpdir))
+    repo.create(os.path.join(project, "repofiles"))
+    repo.add_commit(date=now)
+    repo.branch("branch")
+    repo.add_commit(date=now + 100)
+    expected_ref = repo.latest_commit()  # store the commit we expect to track
+
+    # Write out our test target
+    config = repo.source_config()
+    config["track"] = [config["track"], "branch"]
+    element = {"kind": "import", "sources": [config]}
+    element_path = os.path.join(project, "target.bst")
+    _yaml.roundtrip_dump(element, element_path)
+
+    # Track it
+    result = cli.run(project=project, args=["source", "track", "target.bst"])
+    result.assert_success()
+
+    element = _yaml.load(element_path)
+    new_ref = element.get_sequence("sources").mapping_at(0).get_str("ref")
+
+    assert new_ref == expected_ref
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.skipif(HAVE_OLD_GIT, reason="old git describe lacks --first-parent")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "template"))
 @pytest.mark.parametrize("ref_storage", [("inline"), ("project.refs")])
