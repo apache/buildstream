@@ -20,6 +20,27 @@ API
     Plugins authors that do this and believe BuildStream should be testing that
     part of their plugins should open an issue on BuildStream.
 
+  o BREAKING CHANGE: `Consistency` has been removed and
+    `Source.get_consistency()` has been replaced by `Source.is_resolved()`
+    and `Source.is_cached()`.
+
+    `Source.is_resolved()` has a default of `self.get_ref() is not None`,
+    so if the only thing your plugin requires for being resolved is to
+    have a valid ref, you don't need to do anything there.
+
+    `Source.is_cached()` is there to replace a `Consistency.CACHED`
+    implementation and will need to be implemented by plugin authors.
+
+Core
+----
+
+  o BREAKING CHANGE: Once a source has been put in the internal BuildStream
+    cache, its content will not get checked for validity unless a workspace
+    is opened on it. If you see a warning that was not fatal as you fetch
+    your source and want to re-test it to make sure it's gone without changing
+    its ref (most plugins would handle that correctly), you will need to delete
+    the internal source cache first.
+
 Miscellaneous
 -------------
 
