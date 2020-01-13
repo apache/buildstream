@@ -456,7 +456,7 @@ class Loader:
         if workspace:
             workspace_node = {"kind": "workspace"}
             workspace_node["path"] = workspace.get_absolute_path()
-            workspace_node["last_successful"] = str(workspace.to_dict().get("last_successful", ""))
+            workspace_node["last_build"] = str(workspace.to_dict().get("last_build", ""))
             node[Symbol.SOURCES] = [workspace_node]
             skip_workspace = False
 

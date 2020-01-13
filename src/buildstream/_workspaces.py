@@ -232,22 +232,34 @@ class WorkspaceProjectCache:
 # An object to contain various helper functions and data required for
 # workspaces.
 #
-# last_successful, path and running_files are intended to be public
+# last_build, path and running_files are intended to be public
 # properties, but may be best accessed using this classes' helper
 # methods.
 #
 # Args:
 #    toplevel_project (Project): Top project. Will be used for resolving relative workspace paths.
 #    path (str): The path that should host this workspace
-#    last_successful (str): The key of the last successful build of this workspace
+#    last_build (str): The key of the last attempted build of this workspace
 #    running_files (dict): A dict mapping dependency elements to files
 #                          changed between failed builds. Should be
 #                          made obsolete with failed build artifacts.
 #
 class Workspace:
-    def __init__(self, toplevel_project, *, last_successful=None, path=None, prepared=False, running_files=None):
+    def __init__(
+        self,
+        toplevel_project,
+        *,
+        last_build=None,
+        last_dep=None,
+        path=None,
+        built_incrementally=False,
+        prepared=False,
+        running_files=None
+    ):
         self.prepared = prepared
-        self.last_successful = last_successful
+        self.built_incrementally = built_incrementally
+        self.last_build = last_build
+        self.last_dep = last_dep
         self._path = path
         self.running_files = running_files if running_files is not None else {}
 
@@ -262,9 +274,16 @@ class Workspace:
     #     (dict) A dict representation of the workspace
     #
     def to_dict(self):
-        ret = {"prepared": self.prepared, "path": self._path, "running_files": self.running_files}
-        if self.last_successful is not None:
-            ret["last_successful"] = self.last_successful
+        ret = {
+            "built_incrementally": self.built_incrementally,
+            "prepared": self.prepared,
+            "path": self._path,
+            "running_files": self.running_files,
+        }
+        if self.last_build is not None:
+            ret["last_build"] = self.last_build
+        if self.last_dep is not None:
+            ret["last_dep"] = self.last_dep
         return ret
 
     # from_dict():
@@ -585,8 +604,10 @@ class Workspaces:
 
         dictionary = {
             "prepared": node.get_bool("prepared", default=False),
+            "built_incrementally": node.get_bool("built_incrementally", default=False),
             "path": node.get_str("path"),
-            "last_successful": node.get_str("last_successful", default=None),
+            "last_build": node.get_str("last_build", default=None),
+            "last_dep": node.get_str("last_dep", default=None),
             "running_files": running_files,
         }
         return Workspace.from_dict(self._toplevel_project, dictionary)
