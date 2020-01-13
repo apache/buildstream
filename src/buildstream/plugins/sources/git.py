@@ -41,8 +41,13 @@ git - stage files from a git repository
    # in your project configuration is recommended.
    url: upstream:foo.git
 
-   # Optionally specify a symbolic tracking branch or tag, this
-   # will be used to update the 'ref' when refreshing the pipeline.
+   # Optionally specify a symbolic tracking branch, tag, or other Git
+   # revision. When tracking, the rev is checked and the 'ref' config option
+   # is updated to the commit it points to.
+   #
+   # 'track' can also be a list, in which case all the revs are checked and
+   # the overall latest commit is used.
+   #
    track: master
 
    # Optionally specify the ref format used for tracking.
