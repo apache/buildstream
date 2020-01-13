@@ -2390,7 +2390,7 @@ class Element(Plugin):
             # like to get the saved old_ref and apply the new workspace on top
             # to support incremental builds.
             if [s._key for s in self.__sources] == [workspace.last_successful]:
-                prepared = False
+                prepared = True
 
         if not prepared:
             self.prepare(sandbox)
