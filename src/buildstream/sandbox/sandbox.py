@@ -667,6 +667,9 @@ class _SandboxBatchItem:
     def __init__(self, *, label=None):
         self.label = label
 
+    def combined_label(self):
+        return self.label
+
 
 # _SandboxBatchCommand()
 #
@@ -703,6 +706,9 @@ class _SandboxBatchGroup(_SandboxBatchItem):
     def execute_children(self, batch):
         for item in self.children:
             item.execute(batch)
+
+    def combined_label(self):
+        return "\n".join(item.combined_label() for item in self.children)
 
 
 # _SandboxBatchCall()

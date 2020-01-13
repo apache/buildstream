@@ -171,8 +171,15 @@ class _SandboxREAPIBatch(_SandboxBatch):
         self.main_group.execute(self)
 
         first = self.first_command
-        if first and self.sandbox.run(["sh", "-c", "-e", self.script], self.flags, cwd=first.cwd, env=first.env) != 0:
-            raise SandboxCommandError("Command execution failed", collect=self.collect)
+        if first:
+            context = self.sandbox._get_context()
+            with context.messenger.timed_activity(
+                "Running commands",
+                detail=self.main_group.combined_label(),
+                element_name=self.sandbox._get_element_name(),
+            ):
+                if self.sandbox.run(["sh", "-c", "-e", self.script], self.flags, cwd=first.cwd, env=first.env) != 0:
+                    raise SandboxCommandError("Command failed", collect=self.collect)
 
     def execute_group(self, group):
         group.execute_children(self)
