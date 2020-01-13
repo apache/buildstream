@@ -232,18 +232,18 @@ class WorkspaceProjectCache:
 # An object to contain various helper functions and data required for
 # workspaces.
 #
-# last_successful and path are intended to be public
+# last_build and path are intended to be public
 # properties, but may be best accessed using this classes' helper
 # methods.
 #
 # Args:
 #    toplevel_project (Project): Top project. Will be used for resolving relative workspace paths.
 #    path (str): The path that should host this workspace
-#    last_successful (str): The key of the last successful build of this workspace
+#    last_build (str): The key of the last attempted build of this workspace
 #
 class Workspace:
-    def __init__(self, toplevel_project, *, last_successful=None, path=None):
-        self.last_successful = last_successful
+    def __init__(self, toplevel_project, *, last_build=None, path=None):
+        self.last_build = last_build
         self._path = path
 
         self._toplevel_project = toplevel_project
@@ -258,8 +258,8 @@ class Workspace:
     #
     def to_dict(self):
         ret = {"path": self._path}
-        if self.last_successful is not None:
-            ret["last_successful"] = self.last_successful
+        if self.last_build is not None:
+            ret["last_build"] = self.last_build
         return ret
 
     # from_dict():
@@ -516,7 +516,7 @@ class Workspaces:
     def _load_workspace(self, node):
         dictionary = {
             "path": node.get_str("path"),
-            "last_successful": node.get_str("last_successful", default=None),
+            "last_build": node.get_str("last_build", default=None),
         }
         return Workspace.from_dict(self._toplevel_project, dictionary)
 
