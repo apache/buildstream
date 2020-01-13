@@ -342,7 +342,6 @@ def test_workspace_missing_last_successful(cli, datafiles):
 # Check that we can still read failed workspace logs
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
-@pytest.mark.xfail(HAVE_SANDBOX == "buildbox-run", reason="Individual commands are not logged with command batching")
 def test_workspace_failed_logs(cli, datafiles):
     project = str(datafiles)
     workspace = os.path.join(cli.directory, "failing_amhello")
@@ -364,4 +363,5 @@ def test_workspace_failed_logs(cli, datafiles):
     # Assert that we can get the log
     assert log != ""
     fail_str = "FAILURE {}: Running build-commands".format(element_name)
-    assert fail_str in log
+    batch_fail_str = "FAILURE {}: Running commands".format(element_name)
+    assert fail_str in log or batch_fail_str in log
