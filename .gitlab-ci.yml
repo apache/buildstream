@@ -29,7 +29,7 @@ variables:
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   PYTEST_ARGS: "--color=yes --integration -n 2"
   TEST_COMMAND: "tox -- ${PYTEST_ARGS}"
-  EXTERNAL_TESTS_COMMAND: "tox -e py35-external,py36-external,py37-external,py38-external -- ${PYTEST_ARGS}"
+  PLUGINS_TESTS_COMMAND: "tox -e py35-plugins,py36-plugins,py37-plugins -- ${PYTEST_ARGS}"
   COVERAGE_PREFIX: "${CI_JOB_NAME}."
 
 
@@ -55,7 +55,7 @@ variables:
 
   # Run the tests as a simple user to test for permission issues
   - su buildstream -c "${TEST_COMMAND}"
-  - su buildstream -c "${EXTERNAL_TESTS_COMMAND}"
+  - su buildstream -c "${PLUGINS_TESTS_COMMAND}"
 
   after_script:
   except:
@@ -92,16 +92,23 @@ tests-python-3.8-buster:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-python:3.8-buster-${DOCKER_IMAGE_VERSION}
   <<: *tests
   variables:
+    # This particular testsuite image has both Python 3.7 and Python 3.8 so we
+    # need to explicitly force the 3.8 environment.
+    # Once Python 3.8 is available in distros, we should switch to such an
+
     # Our testsuite has issues with coverage on Python 3.8 so disable coverage
     # in the meantime. For more details, see
     # https://gitlab.com/BuildStream/buildstream/issues/1173.
     TEST_COMMAND: "tox -e py38-nocover -- ${PYTEST_ARGS}"
+    PLUGINS_TESTS_COMMAND: "tox -e py38-plugins-nocover -- ${PYTEST_ARGS}"
 
-    # This particular testsuite image has both Python 3.7 and Python 3.8 so we
-    # need to explicitly force the 3.8 environment.
-    # Once Python 3.8 is available in distros, we should switch to such an
-    # image, and remove the following override.
-    EXTERNAL_TESTS_COMMAND: "tox -e py38-external -- ${PYTEST_ARGS}"
+# Test the master version of some external plugins
+tests-plugins-master:
+  <<: *tests
+  allow_failure: true
+
+  variables:
+    BST_PLUGINS_EXPERIMENTAL_VERSION: master
 
 overnight-fedora-30-aarch64:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:aarch64-30-${DOCKER_IMAGE_VERSION}
@@ -152,7 +159,7 @@ tests-userchroot:
 
     # Run the tests as a simple user to test for permission issues
     - su buildstream -c "umask 002 && ${TEST_COMMAND}"
-    - su buildstream -c "umask 002 && ${EXTERNAL_TESTS_COMMAND}"
+    - su buildstream -c "umask 002 && ${PLUGINS_TESTS_COMMAND}"
 
 tests-fedora-missing-deps:
   # Ensure that tests behave nicely while missing bwrap and ostree
@@ -170,6 +177,8 @@ tests-fedora-missing-deps:
     - chown -R buildstream:buildstream .
 
     - ${TEST_COMMAND}
+    - ${PLUGINS_TESTS_COMMAND}
+
 
 tests-fedora-update-deps:
   # Check if the tests pass after updating requirements to their latest
@@ -186,6 +195,7 @@ tests-fedora-update-deps:
     - cat requirements/*.txt
 
     - su buildstream -c "${TEST_COMMAND}"
+    - su buildstream -c "${PLUGINS_TESTS_COMMAND}"
 
 tests-remote-execution:
   allow_failure: true
