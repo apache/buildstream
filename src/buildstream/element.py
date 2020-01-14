@@ -1097,9 +1097,14 @@ class Element(Plugin):
     #
     def _cached(self):
         if not self.__artifact:
+            self.__cached_successfully = None
             return False
 
-        return self.__artifact.cached()
+        if self.__artifact.cached():
+            self.__cached_successfully = True
+            return True
+        self.__cached_successfully = None
+        return False
 
     # _cached_remotely():
     #
@@ -1121,6 +1126,9 @@ class Element(Plugin):
     def _get_build_result(self):
         if self.__build_result is None:
             self.__load_build_result()
+        success, _, _ = self.__build_result
+        if success:
+            self._cached_successfully = True
 
         return self.__build_result
 
@@ -1153,12 +1161,8 @@ class Element(Plugin):
         if not self._cached():
             return False
 
-        success, _, _ = self._get_build_result()
-        if success:
-            self.__cached_successfully = True
-            return True
-        else:
-            return False
+        _, _, _ = self._get_build_result()
+        return bool(self.__cached_successfully)
 
     # _cached_failure():
     #
@@ -1170,8 +1174,8 @@ class Element(Plugin):
         if not self._cached():
             return False
 
-        success, _, _ = self._get_build_result()
-        return not success
+        _, _, _ = self._get_build_result()
+        return not bool(self.__cached_successfully)
 
     # _buildable():
     #
