@@ -31,7 +31,7 @@ from configparser import RawConfigParser
 
 from .source import Source, SourceError, SourceFetcher
 from .types import Consistency, CoreWarnings
-from .node import ScalarNode, SequenceNode
+from .node import MappingNode, ScalarNode, SequenceNode
 from . import utils
 from .types import FastEnum
 from .utils import move_atomic, DirectoryExistsError
@@ -39,6 +39,7 @@ from .utils import move_atomic, DirectoryExistsError
 GIT_MODULES = ".gitmodules"
 
 # Warnings
+WARN_TAG_NOT_FOUND = "tag-not-found"
 WARN_INCONSISTENT_SUBMODULE = "inconsistent-submodule"
 WARN_UNLISTED_SUBMODULE = "unlisted-submodule"
 WARN_INVALID_SUBMODULE = "invalid-submodule"
@@ -62,6 +63,10 @@ class _RefFormat(FastEnum):
 def _has_matching_ref(refs, tag, commit):
     names = ("refs/tags/{tag}^{{}}".format(tag=tag), "refs/tags/{tag}".format(tag=tag))
     return any(ref_commit == commit and ref_name in names for ref_commit, ref_name in refs)
+
+
+def _undescribe(rev):
+    return rev.split("-g")[-1]
 
 
 # This class represents a single Git repository. The Git source needs to account for
@@ -222,6 +227,35 @@ class _GitMirror(SourceFetcher):
             cwd=self.mirror,
         )
         return output.strip()
+
+    # latest_tagged():
+    #
+    # Args:
+    #     branch (str)
+    #     match (list): Optional list of glob pattern strings
+    #     exclude (list): Optional list of glob pattern strings
+    #
+    # For the behaviour of match and exclude, see the corresponding flags of `git describe`.
+    #
+    # Returns:
+    #     (str or None): A Git revision of the latest tagged commit on the given branch.
+    #                    Only tags with names meeting the criteria of `match` and `exclude` are considered.
+    #                    If no matching tags are found, None is returned.
+    #
+    def latest_tagged(self, branch, match=None, exclude=None):
+        pattern_args = []
+        if match:
+            for pat in match:
+                pattern_args += ["--match", pat]
+        if exclude:
+            for pat in exclude:
+                pattern_args += ["--exclude", pat]
+
+        exit_code, output = self.source.check_output(
+            [self.source.host_git, "describe", "--tags", "--abbrev=0", *pattern_args, branch], cwd=self.mirror
+        )
+
+        return output.strip() + "^{commit}" if exit_code == 0 else None
 
     # date_of_commit():
     #
@@ -518,7 +552,17 @@ class _GitSourceBase(Source):
     def configure(self, node):
         ref = node.get_str("ref", None)
 
-        config_keys = ["url", "track", "ref", "submodules", "checkout-submodules", "ref-format", "track-tags", "tags"]
+        config_keys = [
+            "url",
+            "track",
+            "ref",
+            "submodules",
+            "checkout-submodules",
+            "ref-format",
+            "track-latest-tag",
+            "track-tags",
+            "tags",
+        ]
         node.validate_keys(config_keys + Source.COMMON_CONFIG_KEYS)
 
         tags_node = node.get_sequence("tags", [])
@@ -527,6 +571,20 @@ class _GitSourceBase(Source):
 
         tags = self._load_tags(node)
         self.track_tags = node.get_bool("track-tags", default=False)
+
+        self.match_tags = []
+        self.exclude_tags = []
+        # Allow 'track-latest-tag' to be either a bool or a mapping configuring its sub-options
+        latest_tag = node.get_node("track-latest-tag", [ScalarNode, MappingNode], allow_none=True)
+        if isinstance(latest_tag, MappingNode):
+            latest_tag.validate_keys(["match", "exclude"])
+            self.match_tags += latest_tag.get_str_list("match", [])
+            self.exclude_tags += latest_tag.get_str_list("exclude", [])
+            self.track_latest_tag = True
+        elif latest_tag is not None:
+            self.track_latest_tag = latest_tag.as_bool()
+        else:
+            self.track_latest_tag = False
 
         self.original_url = node.get_str("url")
         self.mirror = self.BST_MIRROR_CLASS(self, "", self.original_url, ref, tags=tags, primary=True)
@@ -579,7 +637,7 @@ class _GitSourceBase(Source):
         if ref is not None:
             # If the ref contains "-g" (is in git-describe format),
             # only choose the part after, which is the commit ID
-            ref = ref.split("-g")[-1]
+            ref = _undescribe(ref)
 
         # Here we want to encode the local name of the repository and
         # the ref, if the user changes the alias to fetch the same sources
@@ -656,13 +714,37 @@ class _GitSourceBase(Source):
         with self.timed_activity("Tracking {} from {}".format(self.tracking, resolved_url), silent_nested=True):
             self.mirror._fetch(resolved_url)
 
-            refs = [self.mirror.latest_commit(branch) for branch in self.tracking]
-            ref = max(refs, key=self.mirror.date_of_commit)
+            if self.track_latest_tag:
+                revs = []
+                without_tags = []
+                for branch in self.tracking:
+                    rev = self.mirror.latest_tagged(branch, match=self.match_tags, exclude=self.exclude_tags)
+                    if rev is None:
+                        without_tags.append(branch)
+                    else:
+                        revs.append(rev)
+
+                if without_tags:
+                    self.warn(
+                        "{}: Cannot find tags on all track targets".format(self),
+                        warning_token=WARN_TAG_NOT_FOUND,
+                        detail="No matching tags were found on the following track targets:\n\n"
+                        + "\n".join(without_tags),
+                    )
+
+                if not revs:
+                    raise SourceError("{}: Failed to find any revisions to track".format(self))
+
+            else:
+                revs = [self.mirror.latest_commit(branch) for branch in self.tracking]
+
+            ref = max(revs, key=self.mirror.date_of_commit)
+
+            ref = self.mirror.describe(ref)  # normalise our potential mixture of rev formats
+            if self.ref_format == _RefFormat.SHA1:
+                ref = _undescribe(ref)
+
             tags = self.mirror.reachable_tags(ref) if self.track_tags else []
-
-            if self.ref_format == _RefFormat.GIT_DESCRIBE:
-                ref = self.mirror.describe(ref)
-
             return ref, tags
 
     def init_workspace(self, directory):
