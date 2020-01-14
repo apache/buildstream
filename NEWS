@@ -9,6 +9,15 @@ CLI
     of `buildable` for the state of junction elements, as they can't
     be built.
 
+Plugins
+-------
+
+  o The 'git' source can now track multiple branches/revisions. The overall
+    latest commit is chosen as the new ref.
+
+  o The 'git' source now has the 'track-latest-tag' option. When enabled,
+    tracking will choose the latest tagged commit for the new ref.
+
 API
 ---
 
@@ -42,6 +51,12 @@ CLI
       * `bst source fetch --track-cross-junctions` / `bst source fetch -J`
       * `bst workspace open --track`
       * `bst workspace reset --track`
+
+Plugins
+-------
+
+  o The 'git' source will now fetch submodules recursively when
+    its 'checkout-submodules' option is enabled.
 
 API
 ---
