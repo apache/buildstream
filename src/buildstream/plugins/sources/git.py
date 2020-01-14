@@ -50,6 +50,20 @@ git - stage files from a git repository
    #
    track: master
 
+   # Optionally specify whether to instead choose the latest tagged commit
+   # when tracking. If a tracking revision has no tags, it is ignored.
+   #
+   # This option can either be True/False or a mapping with the optional keys
+   # 'match' and 'exclude'. These sub-options provide a list of glob expressions
+   # to filter which tags are considered when tracking. All tags matching one
+   # or more 'match' patterns and zero 'exclude' patterns are considered.
+   #
+   track-latest-tag:
+      match:
+         - v1.*
+      exclude:
+         - v1.4-pre*
+
    # Optionally specify the ref format used for tracking.
    # The default is 'sha1' for the raw commit hash.
    # If you specify 'git-describe', the commit hash will be prefixed
@@ -141,6 +155,9 @@ details on common configuration options for sources.
 **Configurable Warnings:**
 
 This plugin provides the following :ref:`configurable warnings <configurable_warnings>`:
+
+- ``git:tag-not-found`` - 'track-latest-tag' is enabled but one or more
+  tracking targets has no matching tags in its history.
 
 - ``git:inconsistent-submodule`` - A submodule present in the git repository's .gitmodules was never
   added with `git submodule add`.
