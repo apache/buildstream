@@ -18,6 +18,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Chandan Singh <csingh43@bloomberg.net>
+#        Tom Mewett <tom.mewett@codethink.co.uk>
 
 """Abstract base class for source implementations that work with a Git repository"""
 
