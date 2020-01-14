@@ -36,6 +36,7 @@ class ElementFactory(PluginContext):
             plugin_base,
             Element,
             [_site.element_plugins],
+            "buildstream.plugins.elements",
             plugin_origins=plugin_origins,
             format_versions=format_versions,
         )
