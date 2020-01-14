@@ -744,6 +744,87 @@ def test_track_multiple_branches(cli, tmpdir, datafiles):
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "template"))
+def test_track_latest_tag(cli, tmpdir, datafiles):
+    project = str(datafiles)
+
+    # Create the repo from 'repofiles' subdir
+    repo = create_repo("git", str(tmpdir))
+    repo.create(os.path.join(project, "repofiles"))
+    repo.add_tag("tag")
+    expected_ref = repo.latest_commit()  # store the commit we expect to track
+    repo.add_commit()
+
+    # Write out our test target
+    config = repo.source_config()
+    config["track-latest-tag"] = True
+    element = {"kind": "import", "sources": [config]}
+    element_path = os.path.join(project, "target.bst")
+    _yaml.roundtrip_dump(element, element_path)
+
+    # Track it
+    result = cli.run(project=project, args=["source", "track", "target.bst"])
+    result.assert_success()
+
+    element = _yaml.load(element_path)
+    new_ref = element.get_sequence("sources").mapping_at(0).get_str("ref")
+
+    assert new_ref == expected_ref
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "template"))
+def test_track_latest_matching_tag(cli, tmpdir, datafiles):
+    project = str(datafiles)
+
+    # Create the repo from 'repofiles' subdir
+    repo = create_repo("git", str(tmpdir))
+    repo.create(os.path.join(project, "repofiles"))
+    repo.add_tag("A")
+    expected_ref = repo.latest_commit()  # store the commit we expect to track
+    repo.add_commit()
+    repo.add_tag("B")
+
+    # Write out our test target
+    config = repo.source_config()
+    config["track-latest-tag"] = {"match": ["A"]}
+    element = {"kind": "import", "sources": [config]}
+    element_path = os.path.join(project, "target.bst")
+    _yaml.roundtrip_dump(element, element_path)
+
+    # Track it
+    result = cli.run(project=project, args=["source", "track", "target.bst"])
+    result.assert_success()
+
+    element = _yaml.load(element_path)
+    new_ref = element.get_sequence("sources").mapping_at(0).get_str("ref")
+
+    assert new_ref == expected_ref
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "template"))
+def test_track_no_tag(cli, tmpdir, datafiles):
+    project = str(datafiles)
+
+    # Create the repo from 'repofiles' subdir
+    repo = create_repo("git", str(tmpdir))
+    repo.create(os.path.join(project, "repofiles"))
+    repo.add_tag("B")
+
+    # Write out our test target
+    config = repo.source_config()
+    config["track-latest-tag"] = {"match": ["A"]}
+    element = {"kind": "import", "sources": [config]}
+    element_path = os.path.join(project, "target.bst")
+    _yaml.roundtrip_dump(element, element_path)
+
+    # Track it
+    result = cli.run(project=project, args=["source", "track", "target.bst"])
+    result.assert_task_error(ErrorDomain.SOURCE, None)
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.skipif(HAVE_OLD_GIT, reason="old git describe lacks --first-parent")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "template"))
 @pytest.mark.parametrize("ref_storage", [("inline"), ("project.refs")])
