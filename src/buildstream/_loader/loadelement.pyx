@@ -212,11 +212,20 @@ def _dependency_cmp(Dependency dep_a, Dependency dep_b):
 #
 # Args:
 #    element (LoadElement): The element to sort
+#    visited (set): a list of elements that should not be treated because
+#                   because they already have been treated.
+#                   This is useful when wanting to sort dependencies of
+#                   multiple top level elements that might have a common
+#                   part.
 #
-def sort_dependencies(LoadElement element):
+def sort_dependencies(LoadElement element, set visited):
     cdef list working_elements = [element]
-    cdef set visited = set(working_elements)
     cdef Dependency dep
+
+    if element in visited:
+        return
+
+    visited.add(element)
 
     # Now dependency sort, we ensure that if any direct dependency
     # directly or indirectly depends on another direct dependency,

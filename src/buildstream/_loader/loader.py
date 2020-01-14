@@ -141,10 +141,14 @@ class Loader:
         #
         # Sort direct dependencies of elements by their dependency ordering
         #
+
+        # Keep a list of all visited elements, to not sort twice the same
+        visited_elements = set()
+
         for element in target_elements:
             loader = element._loader
             with PROFILER.profile(Topics.SORT_DEPENDENCIES, element.name):
-                loadelement.sort_dependencies(element)
+                loadelement.sort_dependencies(element, visited_elements)
 
             # Finally, wrap what we have into LoadElements and return the target
             #
