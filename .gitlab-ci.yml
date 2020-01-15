@@ -94,11 +94,7 @@ tests-python-3.8-buster:
     # This particular testsuite image has both Python 3.7 and Python 3.8 so we
     # need to explicitly force the 3.8 environment.
     # Once Python 3.8 is available in distros, we should switch to such an
-
-    # Our testsuite has issues with coverage on Python 3.8 so disable coverage
-    # in the meantime. For more details, see
-    # https://gitlab.com/BuildStream/buildstream/issues/1173.
-    TOXENV: py38-nocover,py38-plugins-nocover
+    TOXENV: py38,py38-plugins
 
 # Test the master version of some external plugins
 tests-plugins-master:
