@@ -89,6 +89,10 @@ class App:
         self._error_profile = Profile(fg="red", dim=True)
         self._detail_profile = Profile(dim=True)
 
+        # Cached messages
+        self._message_text = ""
+        self._cache_messages = None
+
         #
         # Early initialization
         #
@@ -236,8 +240,11 @@ class App:
             # Propagate pipeline feedback to the user
             self.context.messenger.set_message_handler(self._message_handler)
 
+            # Check if throttling frontend updates to tick rate
+            self._cache_messages = self.context.log_throttle_updates
+
             # Allow the Messenger to write status messages
-            self.context.messenger.set_render_status_cb(self._maybe_render_status)
+            self.context.messenger.set_render_status_cb(self._render)
 
             # Preflight the artifact cache after initializing logging,
             # this can cause messages to be emitted.
@@ -315,15 +322,19 @@ class App:
 
                     if self._started:
                         self._print_summary()
+                else:
+                    # Check that any cached messages are printed
+                    self._render(message_text=self._message_text)
 
                 # Exit with the error
                 self._error_exit(e)
             except RecursionError:
+                # Check that any cached messages are printed
+                self._render(message_text=self._message_text)
                 click.echo(
                     "RecursionError: Dependency depth is too large. Maximum recursion depth exceeded.", err=True
                 )
                 sys.exit(-1)
-
             else:
                 # No exceptions occurred, print session time and summary
                 if session_name:
@@ -333,6 +344,9 @@ class App:
 
                     # Notify session success
                     self._notify("{} succeeded".format(session_name), "")
+                else:
+                    # Check that any cached messages are printed
+                    self._render(message_text=self._message_text)
 
     # init_project()
     #
@@ -524,9 +538,17 @@ class App:
             sys.exit(-1)
 
     #
-    # Render the status area, conditional on some internal state
+    # Render message & status area, conditional on some internal state. This
+    # is driven by the tick rate by default if applicable. Internal tasks
+    # using the simple_task context manager, i.e resolving pipeline elements, that
+    # use this as callback should not drive the message printing by default.
     #
-    def _maybe_render_status(self):
+    def _render(self, message_text=None):
+
+        if self._status and message_text:
+            self._status.clear()
+            click.echo(message_text, nl=False, err=True)
+            self._message_text = ""
 
         # If we're suspended or terminating, then dont render the status area
         if self._status and self.stream and not (self.stream.suspended or self.stream.terminated):
@@ -585,7 +607,7 @@ class App:
                     click.echo("\nContinuing\n", err=True)
 
     def _tick(self):
-        self._maybe_render_status()
+        self._render(message_text=self._message_text)
 
     # Callback that a job has failed
     #
@@ -723,6 +745,8 @@ class App:
     # Print a summary of the queues
     #
     def _print_summary(self):
+        # Ensure all status & messages have been processed
+        self._render(message_text=self._message_text)
         click.echo("", err=True)
         self.logger.print_summary(self.stream, self._main_options["log_file"])
 
@@ -779,14 +803,13 @@ class App:
         if is_silenced and (message.message_type not in unconditional_messages):
             return
 
-        if self._status:
-            self._status.clear()
-
+        # Format the message & cache it
         text = self.logger.render(message)
-        click.echo(text, nl=False, err=True)
+        self._message_text += text
 
-        # Maybe render the status area
-        self._maybe_render_status()
+        # If we're not rate limiting messaging, or the scheduler tick isn't active then render
+        if not self._cache_messages or not self.stream.running:
+            self._render(message_text=self._message_text)
 
         # Additionally log to a file
         if self._main_options["log_file"]:
@@ -799,7 +822,7 @@ class App:
             with self.stream.suspend():
                 yield
         finally:
-            self._maybe_render_status()
+            self._render(message_text=self._message_text)
 
     # Some validation routines for project initialization
     #

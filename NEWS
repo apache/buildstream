@@ -20,6 +20,16 @@ API
     Plugins authors that do this and believe BuildStream should be testing that
     part of their plugins should open an issue on BuildStream.
 
+Miscellaneous
+-------------
+
+  o By default the update rate of builstream console output
+    (e.g. messages & status updates) when executing a scheduler driven task is
+    restricted to once per second, known as the tick, with messages being batched
+    in the intervening periods if necessary. This restriction can be lifted with
+    `throttle-ui-updates: False` in user configuration. Logging behaviour remains
+    unaffected by this configuration.
+
 
 ==================
 buildstream 1.91.3

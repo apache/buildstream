@@ -133,3 +133,6 @@ logging:
   message-format: |
 
     [%{elapsed}][%{key}][%{element}] %{action} %{message}
+
+  # Limit bst console output update rate to 1Hz where applicable
+  throttle-ui-updates: True
