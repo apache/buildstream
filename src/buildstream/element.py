@@ -275,6 +275,7 @@ class Element(Plugin):
         self.__artifact = None  # type: Optional[Artifact]
         self.__strict_artifact = None  # Artifact for strict cache key
         self.__meta_kind = meta.kind  # The kind of this source, required for unpickling
+        self.__previously_shelled = False  # If the element has already been 'shelled'
 
         # the index of the last source in this element that requires previous
         # sources for staging
@@ -877,7 +878,12 @@ class Element(Plugin):
         # this will be used to reconstruct the failed sysroot properly
         # after a failed build.
         #
-        assert self.__staged_sources_directory is None
+        if not self.__previously_shelled:
+            assert self.__staged_sources_directory is None
+            self.__previously_shelled = True
+        else:
+            assert self.__staged_sources_directory
+
         self.__staged_sources_directory = directory
 
         self._stage_sources_in_sandbox(sandbox, directory)
