@@ -265,8 +265,6 @@ class Element(Plugin):
         self.__source_cached = None  # If the sources are known to be successfully cached
         self.__splits = None  # Resolved regex objects for computing split domains
         self.__whitelist_regex = None  # Resolved regex object to check if file is allowed to overlap
-        # Location where Element.stage_sources() was called
-        self.__staged_sources_directory = None  # type: Optional[str]
         self.__tainted = None  # Whether the artifact is tainted and should not be shared
         self.__artifact_files_required = False  # Whether artifact files are required in the local cache
         self.__build_result = None  # The result of assembling this Element (success, description, detail)
@@ -872,14 +870,6 @@ class Element(Plugin):
            sandbox: The build sandbox
            directory: An absolute path within the sandbox to stage the sources at
         """
-
-        # Hold on to the location where a plugin decided to stage sources,
-        # this will be used to reconstruct the failed sysroot properly
-        # after a failed build.
-        #
-        assert self.__staged_sources_directory is None
-        self.__staged_sources_directory = directory
-
         self._stage_sources_in_sandbox(sandbox, directory)
 
     def get_public_data(self, domain: str) -> "MappingNode[Any, Any]":
