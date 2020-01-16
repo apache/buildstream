@@ -59,7 +59,7 @@ import shutil
 import fcntl
 from contextlib import contextmanager
 
-from buildstream import Source, SourceError, Consistency
+from buildstream import Source, SourceError
 from buildstream import utils
 
 
@@ -81,16 +81,9 @@ class BzrSource(Source):
     def get_unique_key(self):
         return [self.original_url, self.tracking, self.ref]
 
-    def get_consistency(self):
-        if self.ref is None or self.tracking is None:
-            return Consistency.INCONSISTENT
-
-        # Lock for the _check_ref()
+    def is_cached(self):
         with self._locked():
-            if self._check_ref():
-                return Consistency.CACHED
-            else:
-                return Consistency.RESOLVED
+            return self._check_ref()
 
     def load_ref(self, node):
         self.ref = node.get_str("ref", None)

@@ -38,7 +38,7 @@ workspace. The node constructed would be specified as follows:
 import os
 
 from buildstream.storage.directory import Directory
-from buildstream import Source, SourceError, Consistency
+from buildstream import Source, SourceError
 from buildstream.types import SourceRef
 from buildstream.node import MappingNode
 
@@ -69,6 +69,12 @@ class WorkspaceSource(Source):
     def preflight(self) -> None:
         pass  # pragma: nocover
 
+    def is_cached(self):
+        return True
+
+    def is_resolved(self):
+        return os.path.exists(self._get_local_path())
+
     def get_ref(self) -> None:
         return None
 
@@ -83,14 +89,6 @@ class WorkspaceSource(Source):
     # Raises AssertionError: existing workspaces should not be reinitialized
     def init_workspace(self, directory: Directory) -> None:
         raise AssertionError("Attempting to re-open an existing workspace")
-
-    def get_consistency(self) -> Consistency:
-        if not os.path.exists(self._get_local_path()):
-            # A workspace is considered inconsistent in the case that
-            # its directory went missing
-            return Consistency.INCONSISTENT
-        else:
-            return Consistency.CACHED
 
     def fetch(self) -> None:  # pylint: disable=arguments-differ
         pass  # pragma: nocover

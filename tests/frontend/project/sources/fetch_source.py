@@ -1,6 +1,6 @@
 import os
 
-from buildstream import Source, Consistency, SourceError, SourceFetcher
+from buildstream import Source, SourceError, SourceFetcher
 
 # Expected config
 # sources:
@@ -66,17 +66,20 @@ class FetchSource(Source):
     def get_unique_key(self):
         return {"urls": self.original_urls, "output_file": self.output_file}
 
-    def get_consistency(self):
+    def is_resolved(self):
+        return True
+
+    def is_cached(self) -> bool:
         if not os.path.exists(self.output_file):
-            return Consistency.RESOLVED
+            return False
 
         with open(self.output_file, "r") as f:
             contents = f.read()
             for url in self.original_urls:
                 if url not in contents:
-                    return Consistency.RESOLVED
+                    return False
 
-        return Consistency.CACHED
+        return True
 
     # We dont have a ref, we're a local file...
     def load_ref(self, node):

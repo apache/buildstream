@@ -59,10 +59,6 @@ For loading and configuration purposes, Sources must implement the
 Sources expose the following abstract methods. Unless explicitly mentioned,
 these methods are mandatory to implement.
 
-* :func:`Source.get_consistency() <buildstream.source.Source.get_consistency>`
-
-  Report the sources consistency state.
-
 * :func:`Source.load_ref() <buildstream.source.Source.load_ref>`
 
   Load the ref from a specific YAML node
@@ -169,7 +165,7 @@ from typing import Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
 from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
-from .types import Consistency, SourceRef, Union, List
+from .types import SourceRef, Union, List
 from ._exceptions import BstError, ImplError, PluginError, ErrorDomain
 from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage
@@ -356,7 +352,6 @@ class Source(Plugin):
         self.__element_index = meta.element_index  # The index of the source in the owning element's source list
         self.__element_kind = meta.element_kind  # The kind of the element owning this source
         self.__directory = meta.directory  # Staging relative directory
-        self.__consistency = Consistency.INCONSISTENT  # Cached consistency state
         self.__meta_kind = meta.kind  # The kind of this source, required for unpickling
 
         self.__key = None  # Cache key for source
@@ -379,6 +374,8 @@ class Source(Plugin):
         self._configure(self.__config)
         self.__digest = None
 
+        self.__is_cached = None
+
     COMMON_CONFIG_KEYS = ["kind", "directory"]
     """Common source config keys
 
@@ -389,13 +386,6 @@ class Source(Plugin):
     #############################################################
     #                      Abstract Methods                     #
     #############################################################
-    def get_consistency(self) -> int:
-        """Report whether the source has a resolved reference
-
-        Returns:
-           (:class:`.Consistency`): The source consistency
-        """
-        raise ImplError("Source plugin '{}' does not implement get_consistency()".format(self.get_kind()))
 
     def load_ref(self, node: MappingNode) -> None:
         """Loads the *ref* for this Source from the specified *node*.
@@ -560,14 +550,26 @@ class Source(Plugin):
         """Implement any validations once we know the sources are cached
 
         This is guaranteed to be called only once for a given session
-        once the sources are known to be
-        :attr:`Consistency.CACHED <buildstream.types.Consistency.CACHED>`,
-        if source tracking is enabled in the session for this source,
+        once the sources are known to be cached.
+        If source tracking is enabled in the session for this source,
         then this will only be called if the sources become cached after
         tracking completes.
 
         *Since: 1.4*
         """
+
+    def is_cached(self) -> bool:
+        """Get whether the source has a local copy of its data.
+
+        This method is guaranteed to only be called whenever
+        :func:`Source.is_resolved() <buildstream.source.Source.is_resolved>`
+        returns `True`.
+
+        Returns: whether the source is cached locally or not.
+
+        *Since: 1.93.0*
+        """
+        raise ImplError("Source plugin '{}' does not implement is_cached()".format(self.get_kind()))
 
     #############################################################
     #                       Public Methods                      #
@@ -705,6 +707,22 @@ class Source(Plugin):
         with utils._tempdir(dir=mirrordir) as tempdir:
             yield tempdir
 
+    def is_resolved(self) -> bool:
+        """Get whether the source is resolved.
+
+        This has a default implementation that checks whether the source
+        has a ref or not. If it has a ref, it is assumed to be resolved.
+
+        Sources that never have a ref or have uncommon requirements can
+        override this method to specify when they should be considered
+        resolved
+
+        Returns: whether the source is fully resolved or not
+
+        *Since: 1.93.0*
+        """
+        return self.get_ref() is not None
+
     #############################################################
     #       Private Abstract Methods used in BuildStream        #
     #############################################################
@@ -752,41 +770,39 @@ class Source(Plugin):
             # Prepend provenance to the error
             raise SourceError("{}: {}".format(self, e), reason=e.reason) from e
 
-    # Update cached consistency for a source
+    # Get whether the source is cached by the source plugin
     #
-    # This must be called whenever the state of a source may have changed.
-    #
-    def _update_state(self):
+    def _is_cached(self):
+        if self.__is_cached is None:
+            # We guarantee we only ever call this when we are resolved.
+            assert self.is_resolved()
 
-        if self.__consistency < Consistency.CACHED:
+            # Set to 'False' on the first call, this prevents throwing multiple errors if the
+            # plugin throws exception when we display the end result pipeline.
+            # Otherwise, the summary would throw a second exception and we would not
+            # have a nice error reporting.
+            self.__is_cached = False
 
-            # Source consistency interrogations are silent.
-            context = self._get_context()
-            with context.messenger.silence():
-                try:
-                    self.__consistency = self.get_consistency()  # pylint: disable=assignment-from-no-return
-                except SourceError:
-                    # SourceErrors should be preserved so that the
-                    # plugin can communicate real error cases.
-                    raise
-                except Exception as err:  # pylint: disable=broad-except
-                    # Generic errors point to bugs in the plugin, so
-                    # we need to catch them and make sure they do not
-                    # cause stacktraces
-                    raise PluginError(
-                        "Source plugin '{}' failed to compute source consistency: {}".format(self.get_kind(), err),
-                        reason="source-bug",
-                    )
+            try:
+                self.__is_cached = self.is_cached()  # pylint: disable=assignment-from-no-return
+            except SourceError:
+                # SourceErrors should be preserved so that the
+                # plugin can communicate real error cases.
+                raise
+            except Exception as err:  # pylint: broad-except
+                # Generic errors point to bugs in the plugin, so
+                # we need to catch them and make sure they do not
+                # cause stacktraces
 
-                # Give the Source an opportunity to validate the cached
-                # sources as soon as the Source becomes Consistency.CACHED.
-                if self.__consistency == Consistency.CACHED:
-                    self.validate_cache()
+                raise PluginError(
+                    "Source plugin '{}' failed to check its cached state: {}".format(self.get_kind(), err),
+                    reason="source-bug",
+                )
 
-    # Return cached consistency
-    #
-    def _get_consistency(self):
-        return self.__consistency
+            if self.__is_cached:
+                self.validate_cache()
+
+        return self.__is_cached
 
     # Wrapper function around plugin provided fetch method
     #
@@ -802,6 +818,24 @@ class Source(Plugin):
                 self.__do_fetch(previous_sources_dir=self.__ensure_directory(staging_directory))
         else:
             self.__do_fetch()
+
+        self.validate_cache()
+
+    # _fetch_done()
+    #
+    # Indicates that fetching the source has been done.
+    #
+    # Args:
+    #   fetched_original (bool): Whether the original sources had been asked (and fetched) or not
+    #
+    def _fetch_done(self, fetched_original):
+        if fetched_original:
+            # The original was fetched, we know we are cached
+            self.__is_cached = True
+        else:
+            # The original was not requested, we might or might not be cached
+            # Don't recompute, but allow recomputation later if needed
+            self.__is_cached = None
 
     # Wrapper for stage() api which gives the source
     # plugin a fully constructed path considering the
@@ -1234,7 +1268,6 @@ class Source(Plugin):
         #
         clone._preflight()
         clone._load_ref()
-        clone._update_state()
 
         return clone
 
@@ -1411,9 +1444,9 @@ class Source(Plugin):
         for index, src in enumerate(previous_sources):
             # BuildStream should track sources in the order they appear so
             # previous sources should never be in an inconsistent state
-            assert src.get_consistency() != Consistency.INCONSISTENT
+            assert src.is_resolved()
 
-            if src.get_consistency() == Consistency.RESOLVED:
+            if not src._is_cached():
                 src._fetch(previous_sources[0:index])
 
 

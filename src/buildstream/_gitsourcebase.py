@@ -30,7 +30,7 @@ from tempfile import TemporaryFile
 from configparser import RawConfigParser
 
 from .source import Source, SourceError, SourceFetcher
-from .types import Consistency, CoreWarnings
+from .types import CoreWarnings
 from . import utils
 from .types import FastEnum
 from .utils import move_atomic, DirectoryExistsError
@@ -517,12 +517,11 @@ class _GitSourceBase(Source):
 
         return key
 
-    def get_consistency(self):
-        if self._have_all_refs():
-            return Consistency.CACHED
-        elif self.mirror.ref is not None:
-            return Consistency.RESOLVED
-        return Consistency.INCONSISTENT
+    def is_resolved(self):
+        return self.mirror.ref is not None
+
+    def is_cached(self):
+        return self._have_all_refs()
 
     def load_ref(self, node):
         self.mirror.ref = node.get_str("ref", None)

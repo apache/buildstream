@@ -20,7 +20,6 @@
 import os
 
 from .._exceptions import LoadError, LoadErrorReason
-from .. import Consistency
 from .. import _yaml
 from ..element import Element
 from ..node import Node
@@ -651,22 +650,22 @@ class Loader:
             self._loaders[filename] = loader
             return loader
 
-        # Handle the case where a subproject needs to be fetched
-        #
-        if element._get_consistency() >= Consistency.RESOLVED and not element._source_cached():
-            if ticker:
-                ticker(filename, "Fetching subproject")
-            self._fetch_subprojects([element])
-
         # Handle the case where a subproject has no ref
         #
-        elif element._get_consistency() == Consistency.INCONSISTENT:
+        if not element._has_all_sources_resolved():
             detail = "Try tracking the junction element with `bst source track {}`".format(filename)
             raise LoadError(
                 "{}Subproject has no ref for junction: {}".format(provenance_str, filename),
                 LoadErrorReason.SUBPROJECT_INCONSISTENT,
                 detail=detail,
             )
+
+        # Handle the case where a subproject needs to be fetched
+        #
+        if not element._has_all_sources_in_source_cache():
+            if ticker:
+                ticker(filename, "Fetching subproject")
+            self._fetch_subprojects([element])
 
         sources = list(element.sources())
         if len(sources) == 1 and sources[0]._get_local_path():

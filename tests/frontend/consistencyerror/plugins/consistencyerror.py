@@ -11,7 +11,10 @@ class ConsistencyErrorSource(Source):
     def get_unique_key(self):
         return {}
 
-    def get_consistency(self):
+    def is_resolved(self):
+        return True
+
+    def is_cached(self):
 
         # Raise an error unconditionally
         raise SourceError("Something went terribly wrong", reason="the-consistency-error")

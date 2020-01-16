@@ -1,4 +1,4 @@
-from buildstream import Source, Consistency
+from buildstream import Source
 
 
 class FooSource(Source):
@@ -10,9 +10,6 @@ class FooSource(Source):
 
     def get_unique_key(self):
         pass
-
-    def get_consistency(self):
-        return Consistency.INCONSISTENT
 
 
 def setup():

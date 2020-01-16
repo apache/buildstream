@@ -65,7 +65,7 @@ def test_source_staged(tmpdir, cli, datafiles):
         # seems to be the only way to get the sources?
         element = project.load_elements(["import-bin.bst"])[0]
         source = list(element.sources())[0]
-        assert element._source_cached()
+        assert element._has_all_sources_in_source_cache()
         assert sourcecache.contains(source)
 
         # Extract the file and check it's the same as the one we imported
@@ -99,7 +99,7 @@ def test_source_fetch(tmpdir, cli, datafiles):
 
         element = project.load_elements(["import-dev.bst"])[0]
         source = list(element.sources())[0]
-        assert element._source_cached()
+        assert element._has_all_sources_in_source_cache()
 
         # check that the directory structures are identical
         digest = sourcecache.export(source)._get_digest()
@@ -132,7 +132,7 @@ def test_staged_source_build(tmpdir, datafiles, cli):
         element = project.load_elements(["import-dev.bst"])[0]
 
         # check consistency of the source
-        assert not element._source_cached()
+        assert not element._has_all_sources_in_source_cache()
 
     res = cli.run(project=project_dir, args=["build", "target.bst"])
     res.assert_success()

@@ -38,7 +38,7 @@ details on common configuration options for sources.
 
 import os
 from buildstream.storage.directory import Directory
-from buildstream import Source, SourceError, Consistency
+from buildstream import Source, SourceError
 
 
 class LocalSource(Source):
@@ -61,8 +61,11 @@ class LocalSource(Source):
     def preflight(self):
         pass
 
-    def get_consistency(self):
-        return Consistency.CACHED
+    def is_resolved(self):
+        return True
+
+    def is_cached(self):
+        return True
 
     # We dont have a ref, we're a local file...
     def load_ref(self, node):

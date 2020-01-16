@@ -100,7 +100,7 @@ from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import Consistency, CoreWarnings, Scope, _CacheBuildTrees, _KeyStrength
+from .types import CoreWarnings, Scope, _CacheBuildTrees, _KeyStrength
 from ._artifact import Artifact
 
 from .storage.directory import Directory
@@ -257,12 +257,13 @@ class Element(Plugin):
         self.__strict_cache_key = None  # Our cached cache key for strict builds
         self.__artifacts = context.artifactcache  # Artifact cache
         self.__sourcecache = context.sourcecache  # Source cache
-        self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
+        self.__is_resolved = False  # Whether the source is fully resolved or not
         self.__assemble_scheduled = False  # Element is scheduled to be assembled
         self.__assemble_done = False  # Element is assembled
         self.__pull_done = False  # Whether pull was attempted
         self.__cached_successfully = None  # If the Element is known to be successfully cached
-        self.__source_cached = None  # If the sources are known to be successfully cached
+        self.__has_all_sources_in_source_cache = None  # If the sources are known to be successfully cached
+        self.__has_all_sources_cached = False  # Whether all sources have a local copy of their respective sources
         self.__splits = None  # Resolved regex objects for computing split domains
         self.__whitelist_regex = None  # Resolved regex object to check if file is allowed to overlap
         self.__tainted = None  # Whether the artifact is tainted and should not be shared
@@ -1072,13 +1073,6 @@ class Element(Plugin):
         cls.__instantiated_elements = {}
         cls.__redundant_source_refs = []
 
-    # _get_consistency()
-    #
-    # Returns cached consistency state
-    #
-    def _get_consistency(self):
-        return self.__consistency
-
     # _cached():
     #
     # Returns:
@@ -1169,7 +1163,7 @@ class Element(Plugin):
     #    (bool): Whether this element can currently be built
     #
     def _buildable(self):
-        if self._get_consistency() < Consistency.CACHED and not self._source_cached():
+        if not (self._has_all_sources_in_source_cache() or self._has_all_sources_cached()):
             return False
 
         if not self.__assemble_scheduled:
@@ -1230,7 +1224,7 @@ class Element(Plugin):
     # notably jobs executed in sub-processes. Changes are performed by
     # invocations of the following methods:
     #
-    # - __update_source_state()
+    # - __update_resolved_state()
     #   - Computes the state of all sources of the element.
     # - __update_cache_keys()
     #   - Computes the strong and weak cache keys.
@@ -1252,7 +1246,7 @@ class Element(Plugin):
     # side effects.
     #
     # *This* method starts the process by invoking
-    # `__update_source_state()`, which will cause all necessary state
+    # `__update_resolved_state()`, which will cause all necessary state
     # changes. Other functions should use the appropriate methods and
     # only update what they expect to change - this will ensure that
     # the minimum amount of work is done.
@@ -1273,7 +1267,7 @@ class Element(Plugin):
         # pull/build, however should not occur during initialization
         # (since we will eventualyl visit reverse dependencies during
         # our initialization anyway).
-        self.__update_source_state()
+        self.__update_resolved_state()
 
     # _get_display_key():
     #
@@ -1322,7 +1316,14 @@ class Element(Plugin):
     def _tracking_done(self):
         # Tracking may change the sources' refs, and therefore the
         # source state. We need to update source state.
-        self.__update_source_state()
+        self.__update_resolved_state()
+
+        # Check whether sources are now cached.
+        # This is done here so that we don't throw an exception trying to show the pipeline at the end
+        # This has for side-effect to cache this fact too, which will change the object's state.
+        # This is done here rather than later so we can validate that the sources are valid locally
+        self._has_all_sources_in_source_cache()
+        self._has_all_sources_cached()
 
     # _track():
     #
@@ -1442,7 +1443,7 @@ class Element(Plugin):
             else:
 
                 # Assert sources are cached
-                assert self._source_cached()
+                assert self._has_all_sources_in_source_cache()
 
                 if self.__sources:
 
@@ -1734,15 +1735,16 @@ class Element(Plugin):
     #
     # Indicates that fetching the sources for this element has been done.
     #
-    def _fetch_done(self):
-        # We are not updating the state recursively here since fetching can
-        # never end up in updating them.
+    # Args:
+    #   fetched_original (bool): Whether the original sources had been asked (and fetched) or not
+    #
+    def _fetch_done(self, fetched_original):
+        self.__has_all_sources_in_source_cache = True
+        if fetched_original:
+            self.__has_all_sources_cached = True
 
-        # Fetching changes the source state from RESOLVED to CACHED
-        # Fetching cannot change the source state from INCONSISTENT to CACHED because
-        # we prevent fetching when it's INCONSISTENT.
-        # Therefore, only the source state will change.
-        self.__update_source_state()
+        for source in self.__sources:
+            source._fetch_done(fetched_original)
 
     # _pull_pending()
     #
@@ -1830,11 +1832,11 @@ class Element(Plugin):
     def _skip_source_push(self):
         if not self.__sources or self._get_workspace():
             return True
-        return not (self.__sourcecache.has_push_remotes(plugin=self) and self._source_cached())
+        return not (self.__sourcecache.has_push_remotes(plugin=self) and self._has_all_sources_in_source_cache())
 
     def _source_push(self):
         # try and push sources if we've got them
-        if self.__sourcecache.has_push_remotes(plugin=self) and self._source_cached():
+        if self.__sourcecache.has_push_remotes(plugin=self) and self._has_all_sources_in_source_cache():
             for source in self.sources():
                 if not self.__sourcecache.push(source):
                     return False
@@ -2094,7 +2096,7 @@ class Element(Plugin):
                     continue
 
                 # try and fetch from source cache
-                if source._get_consistency() < Consistency.CACHED and self.__sourcecache.has_fetch_remotes():
+                if not source._is_cached() and self.__sourcecache.has_fetch_remotes():
                     if self.__sourcecache.pull(source):
                         continue
 
@@ -2103,8 +2105,7 @@ class Element(Plugin):
         # We need to fetch original sources
         if fetch_needed or fetch_original:
             for source in self.sources():
-                source_consistency = source._get_consistency()
-                if source_consistency != Consistency.CACHED:
+                if not source._is_cached():
                     source._fetch(previous_sources)
                 previous_sources.append(source)
 
@@ -2156,9 +2157,9 @@ class Element(Plugin):
         return _cachekey.generate_key(cache_key_dict)
 
     # Check if sources are cached, generating the source key if it hasn't been
-    def _source_cached(self):
-        if self.__source_cached is not None:
-            return self.__source_cached
+    def _has_all_sources_in_source_cache(self):
+        if self.__has_all_sources_in_source_cache is not None:
+            return self.__has_all_sources_in_source_cache
 
         if self.__sources:
             sourcecache = self._get_context().sourcecache
@@ -2176,8 +2177,25 @@ class Element(Plugin):
                 if not sourcecache.contains(source):
                     return False
 
-        self.__source_cached = True
+        self.__has_all_sources_in_source_cache = True
         return True
+
+    # _has_all_sources_resolved()
+    #
+    # Get whether all sources of the element are resolved
+    #
+    def _has_all_sources_resolved(self):
+        return self.__is_resolved
+
+    # _has_all_sources_cached()
+    #
+    # Get whether all the sources of the element have their own cached
+    # copy of their sources.
+    #
+    def _has_all_sources_cached(self):
+        if not self.__has_all_sources_cached:
+            self.__has_all_sources_cached = all(source._is_cached() for source in self.__sources)
+        return self.__has_all_sources_cached
 
     def _should_fetch(self, fetch_original=False):
         """ return bool of if we need to run the fetch stage for this element
@@ -2185,12 +2203,9 @@ class Element(Plugin):
         Args:
             fetch_original (bool): whether we need to original unstaged source
         """
-        if (self._get_consistency() == Consistency.CACHED and fetch_original) or (
-            self._source_cached() and not fetch_original
-        ):
-            return False
-        else:
-            return True
+        if fetch_original:
+            return not self._has_all_sources_cached()
+        return not self._has_all_sources_in_source_cache()
 
     # _set_can_query_cache_callback()
     #
@@ -2330,28 +2345,20 @@ class Element(Plugin):
     #                   Private Local Methods                   #
     #############################################################
 
-    # __update_source_state()
+    # __update_resolved_state()
     #
-    # Updates source consistency state
+    # Updates source's resolved state
     #
     # An element's source state must be resolved before it may compute
     # cache keys, because the source's ref, whether defined in yaml or
     # from the workspace, is a component of the element's cache keys.
     #
-    def __update_source_state(self):
-
-        old_consistency = self.__consistency
-        self.__consistency = Consistency.CACHED
-
-        # Determine overall consistency of the element
+    def __update_resolved_state(self):
         for source in self.__sources:
-            # FIXME: It'd be nice to remove this eventually
-            source._update_state()
-            self.__consistency = min(self.__consistency, source._get_consistency())
-
-        # If the source state changes, our cache key must also change,
-        # since it contains the source's key.
-        if old_consistency != self.__consistency:
+            if not source.is_resolved():
+                break
+        else:
+            self.__is_resolved = True
             self.__update_cache_keys()
 
     # __can_build_incrementally()
@@ -2963,7 +2970,7 @@ class Element(Plugin):
     # Caches the sources into the local CAS
     #
     def __cache_sources(self):
-        if self.__sources and not self._source_cached():
+        if self.__sources and not self._has_all_sources_in_source_cache():
             last_requires_previous = 0
             # commit all other sources by themselves
             for ix, source in enumerate(self.__sources):
@@ -2997,7 +3004,7 @@ class Element(Plugin):
     # Note that it does not update *all* cache keys - In non-strict mode, the
     # strong cache key is updated in __update_cache_key_non_strict()
     #
-    # If the element's consistency is Consistency.INCONSISTENT this is
+    # If the element's is not resolved, this is
     # a no-op (since inconsistent elements cannot have cache keys).
     #
     # The weak and strict cache keys will be calculated if not already
@@ -3013,7 +3020,7 @@ class Element(Plugin):
     # dependency has changed.
     #
     def __update_cache_keys(self):
-        if self._get_consistency() == Consistency.INCONSISTENT:
+        if not self._has_all_sources_resolved():
             # Tracking may still be pending
             return
 

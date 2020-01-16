@@ -11,7 +11,10 @@ class ConsistencyBugSource(Source):
     def get_unique_key(self):
         return {}
 
-    def get_consistency(self):
+    def is_resolved(self):
+        return True
+
+    def is_cached(self):
 
         # Raise an unhandled exception (not a BstError)
         raise Exception("Something went terribly wrong")

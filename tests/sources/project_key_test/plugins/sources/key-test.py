@@ -1,6 +1,6 @@
 import os
 
-from buildstream import Source, Consistency
+from buildstream import Source
 
 
 class KeyTest(Source):
@@ -11,17 +11,17 @@ class KeyTest(Source):
         pass
 
     def configure(self, node):
-        self.ref = node.get_bool("ref", False)
+        if node.get_scalar("ref", None).is_none():
+            self.ref = None
+        else:
+            self.ref = True
 
     def get_unique_key(self):
         assert self.ref
         return "abcdefg"
 
-    def get_consistency(self):
-        if self.ref:
-            return Consistency.RESOLVED
-        else:
-            return Consistency.INCONSISTENT
+    def is_cached(self):
+        return False
 
     def load_ref(self, node):
         pass

@@ -45,7 +45,7 @@ details on common configuration options for sources.
 """
 
 import os
-from buildstream import Source, SourceError, Consistency
+from buildstream import Source, SourceError
 from buildstream import utils
 
 
@@ -67,8 +67,11 @@ class PatchSource(Source):
     def get_unique_key(self):
         return [self.path, utils.sha256sum(self.fullpath), self.strip_level]
 
-    def get_consistency(self):
-        return Consistency.CACHED
+    def is_resolved(self):
+        return True
+
+    def is_cached(self):
+        return True
 
     def load_ref(self, node):
         pass

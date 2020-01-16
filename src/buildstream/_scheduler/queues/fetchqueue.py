@@ -18,9 +18,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-# BuildStream toplevel imports
-from ... import Consistency
-
 # Local imports
 from . import Queue, QueueStatus
 from ..resources import ResourceType
@@ -69,13 +66,7 @@ class FetchQueue(Queue):
         if status is JobStatus.FAIL:
             return
 
-        element._fetch_done()
-
-        # Successful fetch, we must be CACHED or in the sourcecache
-        if self._should_fetch_original:
-            assert element._get_consistency() == Consistency.CACHED
-        else:
-            assert element._source_cached()
+        element._fetch_done(self._should_fetch_original)
 
     def register_pending_element(self, element):
         # Set a "can_query_cache" callback for an element not yet ready

@@ -499,7 +499,9 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
         result.assert_main_error(ErrorDomain.PLUGIN, "git:unlisted-submodule")
     else:
         result.assert_success()
-        assert "git:unlisted-submodule" in result.stderr
+        # We have cached things internally and successfully. Therefore, the plugin
+        # is not involved in checking whether the cache is correct or not.
+        assert "git:unlisted-submodule" not in result.stderr
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -541,7 +543,7 @@ def test_track_unlisted_submodule(cli, tmpdir, datafiles, fail):
     assert "git:unlisted-submodule" not in result.stderr
 
     # We won't get a warning/error when tracking either, the source
-    # has not become Consistency.CACHED so the opportunity to check
+    # has not become cached so the opportunity to check
     # for the warning has not yet arisen.
     result = cli.run(project=project, args=["source", "track", "target.bst"])
     result.assert_success()
@@ -613,7 +615,9 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
         result.assert_main_error(ErrorDomain.PLUGIN, "git:invalid-submodule")
     else:
         result.assert_success()
-        assert "git:invalid-submodule" in result.stderr
+        # We have cached things internally and successfully. Therefore, the plugin
+        # is not involved in checking whether the cache is correct or not.
+        assert "git:invalid-submodule" not in result.stderr
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")

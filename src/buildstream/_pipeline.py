@@ -29,7 +29,7 @@ from pyroaring import BitMap  # pylint: disable=no-name-in-module
 from ._exceptions import PipelineError
 from ._message import Message, MessageType
 from ._profile import Topics, PROFILER
-from . import Scope, Consistency
+from . import Scope
 from ._project import ProjectRefStorage
 from .types import _PipelineSelection
 
@@ -340,7 +340,7 @@ class Pipeline:
         inconsistent_workspaced = []
         with self._context.messenger.timed_activity("Checking sources"):
             for element in elements:
-                if element._get_consistency() == Consistency.INCONSISTENT:
+                if not element._has_all_sources_resolved():
                     if element._get_workspace():
                         inconsistent_workspaced.append(element)
                     else:
@@ -351,7 +351,7 @@ class Pipeline:
             for element in inconsistent:
                 detail += "  Element: {} is inconsistent\n".format(element._get_full_name())
                 for source in element.sources():
-                    if source._get_consistency() == Consistency.INCONSISTENT:
+                    if not source.is_resolved():
                         detail += "    {} is missing ref\n".format(source)
                 detail += "\n"
             detail += "Try tracking these elements first with `bst source track`\n"
@@ -375,7 +375,7 @@ class Pipeline:
         uncached = []
         with self._context.messenger.timed_activity("Checking sources"):
             for element in elements:
-                if element._get_consistency() < Consistency.CACHED and not element._source_cached():
+                if not element._has_all_sources_in_source_cache() and not element._has_all_sources_cached():
                     uncached.append(element)
 
         if uncached:
@@ -383,7 +383,7 @@ class Pipeline:
             for element in uncached:
                 detail += "  Following sources for element: {} are not cached:\n".format(element._get_full_name())
                 for source in element.sources():
-                    if source._get_consistency() < Consistency.CACHED:
+                    if not source._is_cached():
                         detail += "    {}\n".format(source)
                 detail += "\n"
             detail += (
