@@ -41,7 +41,7 @@ class BuildQueue(Queue):
         to_queue = []
 
         for element in elts:
-            if not element._cached_failure() or element in self._tried:
+            if element._cached_success() or element in self._tried:
                 to_queue.append(element)
                 continue
 
