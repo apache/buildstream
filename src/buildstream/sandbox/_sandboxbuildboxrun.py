@@ -24,6 +24,7 @@ import psutil
 from .. import utils, _signals
 from . import SandboxFlags
 from .._exceptions import SandboxError
+from .._message import Message, MessageType
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from ._sandboxreapi import SandboxREAPI
 
@@ -45,7 +46,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
             cls._dummy_reasons += ["buildbox-run not found"]
             raise SandboxError(" and ".join(cls._dummy_reasons), reason="unavailable-local-sandbox") from Error
 
-        exit_code, output = utils._call([path, "--capabilities"])
+        exit_code, output = utils._call([path, "--capabilities"], stdout=subprocess.PIPE)
         if exit_code == 0:
             # buildbox-run --capabilities prints one capability per line
             cls._capabilities = set(output.split("\n"))
@@ -85,6 +86,21 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 "--action={}".format(action_file.name),
                 "--action-result={}".format(result_file.name),
             ]
+
+            marked_directories = self._get_marked_directories()
+            mount_sources = self._get_mount_sources()
+            for mark in marked_directories:
+                mount_point = mark["directory"]
+                mount_source = mount_sources.get(mount_point)
+                if not mount_source:
+                    # Handled by the input tree in the action
+                    continue
+
+                if "bind-mount" not in self._capabilities:
+                    self._warn("buildbox-run does not support host-files")
+                    break
+
+                buildbox_command.append("--bind-mount={}:{}".format(mount_source, mount_point))
 
             # If we're interactive, we want to inherit our stdin,
             # otherwise redirect to /dev/null, ensuring process
@@ -154,3 +170,6 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
             if returncode != 0:
                 raise SandboxError("buildbox-run failed with returncode {}".format(returncode))
+
+    def _warn(self, msg):
+        self._get_context().messenger.message(Message(MessageType.WARN, msg))
