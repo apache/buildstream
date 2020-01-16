@@ -504,7 +504,10 @@ class App():
                 choice = click.prompt("Choice:",
                                       value_proc=_prefix_choice_value_proc(['continue', 'quit', 'terminate']),
                                       default='continue', err=True)
-            except click.Abort:
+            except (click.Abort, SystemError):
+                # In some cases, the readline buffer underlying the prompt gets corrupted on the second CTRL+C
+                # This throws a SystemError, which doesn't seem to be problematic for the rest of the program
+
                 # Ensure a newline after automatically printed '^C'
                 click.echo("", err=True)
                 choice = 'terminate'
@@ -599,7 +602,10 @@ class App():
                 try:
                     choice = click.prompt("Choice:", default='continue', err=True,
                                           value_proc=_prefix_choice_value_proc(choices))
-                except click.Abort:
+                except (click.Abort, SystemError):
+                    # In some cases, the readline buffer underlying the prompt gets corrupted on the second CTRL+C
+                    # This throws a SystemError, which doesn't seem to be problematic for the rest of the program
+
                     # Ensure a newline after automatically printed '^C'
                     click.echo("", err=True)
                     choice = 'terminate'
