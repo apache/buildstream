@@ -1146,22 +1146,7 @@ class Element(Plugin):
         success, _, _ = self._get_build_result()
         if success:
             self.__cached_successfully = True
-            return True
-        else:
-            return False
-
-    # _cached_failure():
-    #
-    # Returns:
-    #    (bool): Whether this element is already present in
-    #            the artifact cache and the element did not assemble successfully
-    #
-    def _cached_failure(self):
-        if not self._cached():
-            return False
-
-        success, _, _ = self._get_build_result()
-        return not success
+        return bool(success)
 
     # _buildable():
     #
