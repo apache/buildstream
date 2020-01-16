@@ -261,7 +261,8 @@ class Element(Plugin):
         self.__assemble_scheduled = False  # Element is scheduled to be assembled
         self.__assemble_done = False  # Element is assembled
         self.__pull_done = False  # Whether pull was attempted
-        self.__cached_successfully = None  # If the Element is known to be successfully cached
+        self.__cached_successfully = None  # If the Element is known to be cached in a build-sucessful state
+        self.__cached_failure = None  # If the Element is known to be cached in a build-failure state
         self.__source_cached = None  # If the sources are known to be successfully cached
         self.__splits = None  # Resolved regex objects for computing split domains
         self.__whitelist_regex = None  # Resolved regex object to check if file is allowed to overlap
@@ -1132,21 +1133,19 @@ class Element(Plugin):
     #    (bool): Whether this element is already present in
     #            the artifact cache and the element assembled successfully
     #
-    def _cached_success(self):
+    def _cached_result(self):
         # FIXME:  _cache() and _cached_success() should be converted to
         # push based functions where we only update __cached_successfully
         # once we know this has changed. This will allow us to cheaply check
         # __cached_successfully instead of calling _cached_success()
-        if self.__cached_successfully:
+        if self.__cached_successfully or self.__cached_failure:
             return True
-
         if not self._cached():
             return False
-
         success, _, _ = self._get_build_result()
-        if success:
-            self.__cached_successfully = True
-        return bool(success)
+        self.__cached_successfully = bool(success)
+        self.__cached_failure = not bool(success)
+        return True
 
     # _buildable():
     #
