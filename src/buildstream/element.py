@@ -1570,7 +1570,7 @@ class Element(Plugin):
         self.__update_cache_key_non_strict()
         self._update_ready_for_runtime_and_cached()
 
-        if self._get_workspace() and self._cached_success():
+        if self._get_workspace() and self._cached():
             assert utils._is_main_process(), "Attempted to save workspace configuration from child process"
             #
             # Note that this block can only happen in the
