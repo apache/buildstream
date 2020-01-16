@@ -1157,7 +1157,7 @@ class Element(Plugin):
     #            the artifact cache and the element did not assemble successfully
     #
     def _cached_failure(self):
-        if not self._cached():
+        if self._cached():
             return False
 
         success, _, _ = self._get_build_result()
