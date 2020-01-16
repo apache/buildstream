@@ -53,7 +53,6 @@ def test_failed_build_quit(element_name, build_session, choice):
 
 
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
-@pytest.mark.xfail(HAVE_SANDBOX == "buildbox-run", reason="Not working with BuildBox")
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("element_name", ["interactive/failed-build.bst"])
 def test_failed_build_log(element_name, build_session):
@@ -64,7 +63,7 @@ def test_failed_build_log(element_name, build_session):
     build_session.sendline(os.linesep * 20)
 
     # Assert that we got something from the logs
-    build_session.expect_exact("FAILURE interactive/failed-build.bst: Running build-commands")
+    build_session.expect("FAILURE interactive/failed-build.bst: Running (build-)?commands")
 
     # Quit the pager
     build_session.send("q")
