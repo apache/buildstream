@@ -361,7 +361,7 @@ docs:
       fetchers: 2
     EOF
   - dnf install -y ostree python3-gobject-base
-  - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
+  - pip3 install -r requirements/requirements.txt
   - pip3 wheel --wheel-dir wheels/ --no-deps .
   - pip3 install --no-index wheels/*
   - pip3 install --user -e ${BST_EXT_URL}@${BST_EXT_REF}

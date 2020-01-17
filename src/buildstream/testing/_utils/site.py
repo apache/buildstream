@@ -59,13 +59,6 @@ try:
 except ProgramNotFoundError:
     HAVE_LZIP = False
 
-try:
-    import arpy  # pylint: disable=unused-import
-
-    HAVE_ARPY = True
-except ImportError:
-    HAVE_ARPY = False
-
 casd_path = utils.get_host_tool("buildbox-casd")
 CASD_SEPARATE_USER = bool(os.stat(casd_path).st_mode & stat.S_ISUID)
 del casd_path

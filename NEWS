@@ -41,6 +41,12 @@ Core
     its ref (most plugins would handle that correctly), you will need to delete
     the internal source cache first.
 
+Plugins
+-------
+
+  o BREAKING CHANGE: deb plugin have been moved to the bst-plugins-experimental
+    repository.
+
 Miscellaneous
 -------------
 
