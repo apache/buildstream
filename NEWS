@@ -12,6 +12,10 @@ CLI
 API
 ---
 
+  o BREAKING CHANGE: The entry point groups used for element and source plugins
+    are now separate. Elements must be defined in `buildstream.plugins.elements`
+    group, and sources in `buildstream.plugins.sources`.
+
   o External plugins can now register a `buildstream.tests.source_plugins` entrypoint.
     The entry point can have an arbitrary name, but its value should point to a module
     containing a `register_sources()` method.
