@@ -26,7 +26,7 @@ import time
 import pytest
 
 from buildstream._cas import CASCache
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
+from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream.testing import cli  # pylint: disable=unused-import
 
 from tests.testutils import create_element_size, wait_for_cache_granularity

@@ -4,7 +4,7 @@
 import os
 import pytest
 
-from buildstream._exceptions import ErrorDomain
+from buildstream.exceptions import ErrorDomain
 from buildstream.testing import cli_remote_execution as cli  # pylint: disable=unused-import
 from buildstream.testing.integration import assert_contains
 

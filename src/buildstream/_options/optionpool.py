@@ -20,7 +20,8 @@
 
 import jinja2
 
-from .._exceptions import LoadError, LoadErrorReason
+from .._exceptions import LoadError
+from ..exceptions import LoadErrorReason
 from ..node import MappingNode, SequenceNode, _assert_symbol_name
 from ..types import FastEnum
 from .optionbool import OptionBool

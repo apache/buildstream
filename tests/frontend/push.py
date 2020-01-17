@@ -26,7 +26,7 @@
 import os
 import pytest
 
-from buildstream._exceptions import ErrorDomain
+from buildstream.exceptions import ErrorDomain
 from buildstream.testing import cli  # pylint: disable=unused-import
 from tests.testutils import (
     create_artifact_share,

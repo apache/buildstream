@@ -166,7 +166,8 @@ from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
 from .types import SourceRef, Union, List
-from ._exceptions import BstError, ImplError, PluginError, ErrorDomain
+from ._exceptions import BstError, ImplError, PluginError
+from .exceptions import ErrorDomain
 from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage
 from ._cachekey import generate_key

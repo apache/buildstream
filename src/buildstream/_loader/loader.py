@@ -19,7 +19,8 @@
 
 import os
 
-from .._exceptions import LoadError, LoadErrorReason
+from .._exceptions import LoadError
+from ..exceptions import LoadErrorReason
 from .. import _yaml
 from ..element import Element
 from ..node import Node

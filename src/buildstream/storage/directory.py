@@ -34,7 +34,8 @@ See also: :ref:`sandboxing`.
 
 from typing import Callable, Optional, Union
 
-from .._exceptions import BstError, ErrorDomain
+from .._exceptions import BstError
+from ..exceptions import ErrorDomain
 from ..types import FastEnum
 from ..utils import BST_ARBITRARY_TIMESTAMP, FileListResult
 

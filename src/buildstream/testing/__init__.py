@@ -21,6 +21,7 @@ This package contains various utilities which make it easier to test plugins.
 
 import os
 from collections import OrderedDict
+from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from .repo import Repo
 from .runcli import cli, cli_integration, cli_remote_execution
 from .integration import integration_cache

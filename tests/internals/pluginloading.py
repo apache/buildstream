@@ -3,7 +3,8 @@ import os
 import pytest
 
 from buildstream._project import Project
-from buildstream._exceptions import LoadError, LoadErrorReason
+from buildstream._exceptions import LoadError
+from buildstream.exceptions import LoadErrorReason
 from buildstream._pipeline import Pipeline
 
 from tests.testutils import dummy_context

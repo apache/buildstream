@@ -1,7 +1,8 @@
 import os
 from . import _yaml
 from .node import MappingNode, ScalarNode, SequenceNode
-from ._exceptions import LoadError, LoadErrorReason
+from ._exceptions import LoadError
+from .exceptions import LoadErrorReason
 
 
 # Includes()
