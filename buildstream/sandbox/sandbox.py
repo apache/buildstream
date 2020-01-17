@@ -68,6 +68,14 @@ class SandboxFlags():
     namespace where available.
     """
 
+    CREATE_DEV_SHM = 0x10
+    """Whether to create /dev/shm in the sandbox.
+
+    This allows plugins to create /dev/shm in the sandbox. This flag
+    was added to fix a bug in which /dev/shm was not added in, meaning our
+    sandbox was not POSIX compliant.
+    """
+
 
 class Sandbox():
     """Sandbox()
