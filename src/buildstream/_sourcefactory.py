@@ -33,7 +33,12 @@ class SourceFactory(PluginContext):
     def __init__(self, plugin_base, *, format_versions={}, plugin_origins=None):
 
         super().__init__(
-            plugin_base, Source, [_site.source_plugins], format_versions=format_versions, plugin_origins=plugin_origins
+            plugin_base,
+            Source,
+            [_site.source_plugins],
+            "buildstream.plugins.sources",
+            format_versions=format_versions,
+            plugin_origins=plugin_origins,
         )
 
     # create():

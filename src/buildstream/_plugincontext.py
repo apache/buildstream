@@ -30,6 +30,7 @@ from . import utils
 #     plugin_base (PluginBase): The main PluginBase object to work with
 #     base_type (type):         A base object type for this context
 #     site_plugin_path (str):   Path to where buildstream keeps plugins
+#     entrypoint_group (str):   Name of the entry point group that provides plugins
 #     plugin_origins (list):    Data used to search for plugins
 #     format_versions (dict):   A dict of meta.kind to the integer minimum
 #                               version number for each plugin to be loaded
@@ -42,7 +43,9 @@ from . import utils
 # Pipelines.
 #
 class PluginContext:
-    def __init__(self, plugin_base, base_type, site_plugin_path, *, plugin_origins=None, format_versions={}):
+    def __init__(
+        self, plugin_base, base_type, site_plugin_path, entrypoint_group, *, plugin_origins=None, format_versions={}
+    ):
 
         # For pickling across processes, make sure this context has a unique
         # identifier, which we prepend to the identifier of each PluginSource.
@@ -63,6 +66,7 @@ class PluginContext:
         # The PluginSource object
         self._plugin_base = plugin_base
         self._site_plugin_path = site_plugin_path
+        self._entrypoint_group = entrypoint_group
         self._alternate_sources = {}
         self._format_versions = format_versions
 
@@ -147,7 +151,7 @@ class PluginContext:
 
             # key by a tuple to avoid collision
             try:
-                package = pkg_resources.get_entry_info(package_name, "buildstream.plugins", kind)
+                package = pkg_resources.get_entry_info(package_name, self._entrypoint_group, kind)
             except pkg_resources.DistributionNotFound as e:
                 raise PluginError("Failed to load {} plugin '{}': {}".format(self._base_type.__name__, kind, e)) from e
 
