@@ -1546,21 +1546,27 @@ class Element(Plugin):
 
     # _assemble_done():
     #
-    # This is called in the main process after the element has been assembled
-    # and in the a subprocess after assembly completes.
+    # This is called in the main process after the element has been assembled.
     #
     # This will result in updating the element state.
     #
-    def _assemble_done(self):
+    # Args:
+    #     successful (bool): Whether the build was successful
+    #
+    def _assemble_done(self, successful):
         assert self.__assemble_scheduled
 
         self.__assemble_scheduled = False
         self.__assemble_done = True
 
-        # Artifact may have a cached success now.
-        if self.__strict_artifact:
-            self.__strict_artifact.reset_cached()
-        if self.__artifact:
+        self.__strict_artifact.reset_cached()
+
+        if successful:
+            # Directly set known cached status as optimization to avoid
+            # querying buildbox-casd and the filesystem.
+            self.__artifact.set_cached()
+            self.__cached_successfully = True
+        else:
             self.__artifact.reset_cached()
 
         # When we're building in non-strict mode, we may have
@@ -1715,7 +1721,7 @@ class Element(Plugin):
                 pass
 
         # ensure we have cache keys
-        self._assemble_done()
+        self.__update_cache_key_non_strict()
 
         with self.timed_activity("Caching artifact"):
             artifact_size = self.__artifact.cache(rootdir, sandbox_build_dir, collectvdir, buildresult, publicdata)
