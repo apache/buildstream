@@ -11,8 +11,8 @@ import urllib.parse
 import pytest
 
 from buildstream import utils
-from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain
+from buildstream.testing import generate_project, generate_element
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing._utils.site import HAVE_LZIP
 from tests.testutils.file_server import create_file_server
@@ -41,21 +41,11 @@ def _assemble_tar_lz(workingdir, srcdir, dstfile):
     os.chdir(old_dir)
 
 
-def generate_project(project_dir, tmpdir):
-    project_file = os.path.join(project_dir, "project.conf")
-    _yaml.roundtrip_dump({"name": "foo", "aliases": {"tmpdir": "file:///" + str(tmpdir)}}, project_file)
-
-
-def generate_project_file_server(base_url, project_dir):
-    project_file = os.path.join(project_dir, "project.conf")
-    _yaml.roundtrip_dump({"name": "foo", "aliases": {"tmpdir": base_url}}, project_file)
-
-
 # Test that without ref, consistency is set appropriately.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "no-ref"))
 def test_no_ref(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
     assert cli.get_element_state(project, "target.bst") == "no reference"
 
 
@@ -63,7 +53,7 @@ def test_no_ref(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "fetch"))
 def test_fetch_bad_url(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
 
     # Try to fetch it
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
@@ -76,7 +66,7 @@ def test_fetch_bad_url(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "fetch"))
 def test_fetch_bad_ref(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
 
     # Create a local tar
     src_tar = os.path.join(str(tmpdir), "a.tar.gz")
@@ -92,7 +82,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "fetch"))
 def test_track_warning(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
 
     # Create a local tar
     src_tar = os.path.join(str(tmpdir), "a.tar.gz")
@@ -109,7 +99,7 @@ def test_track_warning(cli, tmpdir, datafiles):
 @pytest.mark.parametrize("srcdir", ["a", "./a"])
 def test_stage_default_basedir(cli, tmpdir, datafiles, srcdir):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create a local tar
@@ -138,7 +128,7 @@ def test_stage_default_basedir(cli, tmpdir, datafiles, srcdir):
 @pytest.mark.parametrize("srcdir", ["a", "./a"])
 def test_stage_no_basedir(cli, tmpdir, datafiles, srcdir):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create a local tar
@@ -167,7 +157,7 @@ def test_stage_no_basedir(cli, tmpdir, datafiles, srcdir):
 @pytest.mark.parametrize("srcdir", ["a", "./a"])
 def test_stage_explicit_basedir(cli, tmpdir, datafiles, srcdir):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create a local tar
@@ -196,7 +186,7 @@ def test_stage_explicit_basedir(cli, tmpdir, datafiles, srcdir):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "contains-links"))
 def test_stage_contains_links(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create a local tar
@@ -232,7 +222,7 @@ def test_stage_contains_links(cli, tmpdir, datafiles):
 @pytest.mark.parametrize("srcdir", ["a", "./a"])
 def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create a local tar
@@ -265,17 +255,17 @@ def test_stage_default_basedir_lzip(cli, tmpdir, datafiles, srcdir):
 def test_read_only_dir(cli, tmpdir, datafiles, tar_name, base_dir):
     try:
         project = str(datafiles)
-        generate_project(project, tmpdir)
+        generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
 
-        bst_path = os.path.join(project, "target.bst")
         tar_file = "{}.tar.gz".format(tar_name)
 
-        _yaml.roundtrip_dump(
+        generate_element(
+            project,
+            "target.bst",
             {
                 "kind": "import",
                 "sources": [{"kind": "tar", "url": "tmpdir:/{}".format(tar_file), "ref": "foo", "base-dir": base_dir}],
             },
-            bst_path,
         )
 
         # Get the tarball in tests/sources/tar/read-only/content
@@ -326,7 +316,7 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
 
     with create_file_server(server_type) as server:
         server.add_user("testuser", "12345", file_server_files)
-        generate_project_file_server(server.base_url(), project)
+        generate_project(project, config={"aliases": {"tmpdir": server.base_url()}})
 
         src_tar = os.path.join(file_server_files, "a.tar.gz")
         _assemble_tar(os.path.join(str(datafiles), "content"), "a", src_tar)
@@ -368,7 +358,7 @@ def test_netrc_already_specified_user(cli, datafiles, server_type, tmpdir):
         server.add_user("otheruser", "12345", file_server_files)
         parts = urllib.parse.urlsplit(server.base_url())
         base_url = urllib.parse.urlunsplit([parts[0], "otheruser@{}".format(parts[1]), *parts[2:]])
-        generate_project_file_server(base_url, project)
+        generate_project(project, config={"aliases": {"tmpdir": base_url}})
 
         src_tar = os.path.join(file_server_files, "a.tar.gz")
         _assemble_tar(os.path.join(str(datafiles), "content"), "a", src_tar)
@@ -385,7 +375,7 @@ def test_netrc_already_specified_user(cli, datafiles, server_type, tmpdir):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "fetch"))
 def test_homeless_environment(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
 
     # Create a local tar
     src_tar = os.path.join(str(tmpdir), "a.tar.gz")
@@ -407,7 +397,7 @@ def test_out_of_basedir_hardlinks(cli, tmpdir, datafiles):
         return member
 
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create a tarball with an odd hardlink
@@ -445,7 +435,7 @@ def test_out_of_basedir_hardlinks(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "out-of-basedir-hardlinks"))
 def test_malicious_out_of_basedir_hardlinks(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
 
     # Create a maliciously-hardlinked tarball
     def ensure_link(member):

@@ -29,10 +29,11 @@ import shutil
 
 import pytest
 
-from buildstream import _yaml, Node
+from buildstream import Node
 from buildstream.exceptions import ErrorDomain
 from buildstream.plugin import CoreWarnings
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing import generate_project, generate_element, load_yaml
 from buildstream.testing import create_repo
 from buildstream.testing._utils.site import HAVE_GIT, HAVE_OLD_GIT
 
@@ -50,7 +51,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
 
     # Write out our test target with a bad ref
     element = {"kind": "import", "sources": [repo.source_config(ref="5")]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Assert that fetch raises an error here
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
@@ -77,7 +78,7 @@ def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
 
     # Write out our test target
     element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
@@ -116,7 +117,7 @@ def test_recursive_submodule_fetch_checkout(cli, tmpdir, datafiles):
 
     # Write out our test target
     element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
@@ -151,7 +152,7 @@ def test_submodule_fetch_source_enable_explicit(cli, tmpdir, datafiles):
 
     # Write out our test target
     element = {"kind": "import", "sources": [repo.source_config_extra(ref=ref, checkout_submodules=True)]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
@@ -185,7 +186,7 @@ def test_submodule_fetch_source_disable(cli, tmpdir, datafiles):
 
     # Write out our test target
     element = {"kind": "import", "sources": [repo.source_config_extra(ref=ref, checkout_submodules=False)]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
@@ -219,7 +220,7 @@ def test_submodule_fetch_submodule_does_override(cli, tmpdir, datafiles):
 
     # Write out our test target
     element = {"kind": "import", "sources": [repo.source_config_extra(ref=ref, checkout_submodules=False)]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
@@ -258,7 +259,7 @@ def test_submodule_fetch_submodule_individual_checkout(cli, tmpdir, datafiles):
 
     # Write out our test target
     element = {"kind": "import", "sources": [repo.source_config_extra(ref=ref, checkout_submodules=True)]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
@@ -298,7 +299,7 @@ def test_submodule_fetch_submodule_individual_checkout_explicit(cli, tmpdir, dat
 
     # Write out our test target
     element = {"kind": "import", "sources": [repo.source_config_extra(ref=ref, checkout_submodules=True)]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
@@ -333,7 +334,7 @@ def test_submodule_fetch_project_override(cli, tmpdir, datafiles):
 
     # Write out our test target
     element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
@@ -359,7 +360,7 @@ def test_submodule_track_ignore_inconsistent(cli, tmpdir, datafiles):
 
     # Write out our test target
     element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Now add a .gitmodules file with an inconsistent submodule,
     # we are calling this inconsistent because the file was created
@@ -393,8 +394,7 @@ def test_submodule_track_no_ref_or_track(cli, tmpdir, datafiles):
     gitsource = repo.source_config(ref=None)
     gitsource.pop("track")
     element = {"kind": "import", "sources": [gitsource]}
-
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Track will encounter an inconsistent submodule without any ref
     result = cli.run(project=project, args=["show", "target.bst"])
@@ -410,8 +410,7 @@ def test_ref_not_in_track(cli, tmpdir, datafiles, fail):
 
     # Make the warning an error if we're testing errors
     if fail == "error":
-        project_template = {"name": "foo", "fatal-warnings": [CoreWarnings.REF_NOT_IN_TRACK]}
-        _yaml.roundtrip_dump(project_template, os.path.join(project, "project.conf"))
+        generate_project(project, config={"fatal-warnings": [CoreWarnings.REF_NOT_IN_TRACK]})
 
     # Create the repo from 'repofiles', create a branch without latest commit
     repo = create_repo("git", str(tmpdir))
@@ -424,7 +423,7 @@ def test_ref_not_in_track(cli, tmpdir, datafiles, fail):
 
     # Write out our test target
     element = {"kind": "import", "sources": [gitsource]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     result = cli.run(project=project, args=["build", "target.bst"])
 
@@ -445,8 +444,7 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
 
     # Make the warning an error if we're testing errors
     if fail == "error":
-        project_template = {"name": "foo", "fatal-warnings": ["git:unlisted-submodule"]}
-        _yaml.roundtrip_dump(project_template, os.path.join(project, "project.conf"))
+        generate_project(project, config={"fatal-warnings": ["git:unlisted-submodule"]})
 
     # Create the submodule first from the 'subrepofiles' subdir
     subrepo = create_repo("git", str(tmpdir), "subrepo")
@@ -470,7 +468,7 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
 
     # Write out our test target
     element = {"kind": "import", "sources": [gitsource]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # We will not see the warning or error before the first fetch, because
     # we don't have the repository yet and so we have no knowledge of
@@ -512,8 +510,7 @@ def test_track_unlisted_submodule(cli, tmpdir, datafiles, fail):
 
     # Make the warning an error if we're testing errors
     if fail == "error":
-        project_template = {"name": "foo", "fatal-warnings": ["git:unlisted-submodule"]}
-        _yaml.roundtrip_dump(project_template, os.path.join(project, "project.conf"))
+        generate_project(project, config={"fatal-warnings": ["git:unlisted-submodule"]})
 
     # Create the submodule first from the 'subrepofiles' subdir
     subrepo = create_repo("git", str(tmpdir), "subrepo")
@@ -534,7 +531,7 @@ def test_track_unlisted_submodule(cli, tmpdir, datafiles, fail):
 
     # Write out our test target
     element = {"kind": "import", "sources": [gitsource]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Fetch the repo, we will not see the warning because we
     # are still pointing to a ref which predates the submodules
@@ -567,8 +564,7 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
 
     # Make the warning an error if we're testing errors
     if fail == "error":
-        project_template = {"name": "foo", "fatal-warnings": ["git:invalid-submodule"]}
-        _yaml.roundtrip_dump(project_template, os.path.join(project, "project.conf"))
+        generate_project(project, config={"fatal-warnings": ["git:invalid-submodule"]})
 
     # Create the repo from 'repofiles' subdir
     repo = create_repo("git", str(tmpdir))
@@ -586,7 +582,7 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
 
     # Write out our test target
     element = {"kind": "import", "sources": [gitsource]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # We will not see the warning or error before the first fetch, because
     # we don't have the repository yet and so we have no knowledge of
@@ -629,8 +625,7 @@ def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
 
     # Make the warning an error if we're testing errors
     if fail == "error":
-        project_template = {"name": "foo", "fatal-warnings": ["git:invalid-submodule"]}
-        _yaml.roundtrip_dump(project_template, os.path.join(project, "project.conf"))
+        generate_project(project, config={"fatal-warnings": ["git:invalid-submodule"]})
 
     # Create the submodule first from the 'subrepofiles' subdir
     subrepo = create_repo("git", str(tmpdir), "subrepo")
@@ -652,7 +647,7 @@ def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
 
     # Write out our test target
     element = {"kind": "import", "sources": [gitsource]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Fetch the repo, we will not see the warning because we
     # are still pointing to a ref which predates the submodules
@@ -692,14 +687,14 @@ def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
     # Write out our test target
     element = {"kind": "import", "sources": [repo.source_config()]}
     element["sources"][0]["ref-format"] = ref_format
+    generate_element(project, "target.bst", element)
     element_path = os.path.join(project, "target.bst")
-    _yaml.roundtrip_dump(element, element_path)
 
     # Track it
     result = cli.run(project=project, args=["source", "track", "target.bst"])
     result.assert_success()
 
-    element = _yaml.load(element_path)
+    element = load_yaml(element_path)
     new_ref = element.get_sequence("sources").mapping_at(0).get_str("ref")
 
     if ref_format == "git-describe" and tag:
@@ -724,9 +719,9 @@ def test_track_fetch(cli, tmpdir, datafiles, ref_format, tag, extra_commit):
 def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
     project = str(datafiles)
 
-    project_config = _yaml.load(os.path.join(project, "project.conf"))
+    project_config = load_yaml(os.path.join(project, "project.conf"))
     project_config["ref-storage"] = ref_storage
-    _yaml.roundtrip_dump(project_config, os.path.join(project, "project.conf"))
+    generate_project(project, config=project_config)
 
     repofiles = os.path.join(str(tmpdir), "repofiles")
     os.makedirs(repofiles, exist_ok=True)
@@ -775,8 +770,8 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
         "kind": "import",
         "sources": [config],
     }
+    generate_element(project, "target.bst", element)
     element_path = os.path.join(project, "target.bst")
-    _yaml.roundtrip_dump(element, element_path)
 
     if ref_storage == "inline":
         result = cli.run(project=project, args=["source", "track", "target.bst"])
@@ -786,7 +781,7 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
         result.assert_success()
 
     if ref_storage == "inline":
-        element = _yaml.load(element_path)
+        element = load_yaml(element_path)
         tags = element.get_sequence("sources").mapping_at(0).get_sequence("tags")
         assert len(tags) == 2
         for tag in tags:
@@ -834,9 +829,9 @@ def test_git_describe(cli, tmpdir, datafiles, ref_storage, tag_type):
 def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_type):
     project = str(datafiles)
 
-    project_config = _yaml.load(os.path.join(project, "project.conf"))
+    project_config = load_yaml(os.path.join(project, "project.conf"))
     project_config["ref-storage"] = ref_storage
-    _yaml.roundtrip_dump(project_config, os.path.join(project, "project.conf"))
+    generate_project(project, config=project_config)
 
     repofiles = os.path.join(str(tmpdir), "repofiles")
     os.makedirs(repofiles, exist_ok=True)
@@ -884,8 +879,8 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
         "kind": "import",
         "sources": [config],
     }
+    generate_element(project, "target.bst", element)
     element_path = os.path.join(project, "target.bst")
-    _yaml.roundtrip_dump(element, element_path)
 
     if ref_storage == "inline":
         result = cli.run(project=project, args=["source", "track", "target.bst"])
@@ -895,7 +890,7 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
         result.assert_success()
 
     if ref_storage == "inline":
-        element = _yaml.load(element_path)
+        element = load_yaml(element_path)
         source = element.get_sequence("sources").mapping_at(0)
         tags = source.get_sequence("tags")
         assert len(tags) == 1
@@ -941,9 +936,9 @@ def test_git_describe_head_is_tagged(cli, tmpdir, datafiles, ref_storage, tag_ty
 def test_git_describe_relevant_history(cli, tmpdir, datafiles):
     project = str(datafiles)
 
-    project_config = _yaml.load(os.path.join(project, "project.conf"))
+    project_config = load_yaml(os.path.join(project, "project.conf"))
     project_config["ref-storage"] = "project.refs"
-    _yaml.roundtrip_dump(project_config, os.path.join(project, "project.conf"))
+    generate_project(project, config=project_config)
 
     repofiles = os.path.join(str(tmpdir), "repofiles")
     os.makedirs(repofiles, exist_ok=True)
@@ -989,8 +984,7 @@ def test_git_describe_relevant_history(cli, tmpdir, datafiles):
         "kind": "import",
         "sources": [config],
     }
-    element_path = os.path.join(project, "target.bst")
-    _yaml.roundtrip_dump(element, element_path)
+    generate_element(project, "target.bst", element)
 
     result = cli.run(project=project, args=["source", "track", "target.bst", "--deps", "all"])
     result.assert_success()
@@ -1015,9 +1009,9 @@ def test_git_describe_relevant_history(cli, tmpdir, datafiles):
 def test_default_do_not_track_tags(cli, tmpdir, datafiles):
     project = str(datafiles)
 
-    project_config = _yaml.load(os.path.join(project, "project.conf"))
+    project_config = load_yaml(os.path.join(project, "project.conf"))
     project_config["ref-storage"] = "inline"
-    _yaml.roundtrip_dump(project_config, os.path.join(project, "project.conf"))
+    generate_project(project, config=project_config)
 
     repofiles = os.path.join(str(tmpdir), "repofiles")
     os.makedirs(repofiles, exist_ok=True)
@@ -1038,13 +1032,13 @@ def test_default_do_not_track_tags(cli, tmpdir, datafiles):
         "kind": "import",
         "sources": [config],
     }
+    generate_element(project, "target.bst", element)
     element_path = os.path.join(project, "target.bst")
-    _yaml.roundtrip_dump(element, element_path)
 
     result = cli.run(project=project, args=["source", "track", "target.bst"])
     result.assert_success()
 
-    element = _yaml.load(element_path)
+    element = load_yaml(element_path)
     source = element.get_sequence("sources").mapping_at(0)
     assert "tags" not in source
 
@@ -1070,10 +1064,10 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
     top_commit = repo.create(repofiles)
 
     repodir, reponame = os.path.split(repo.repo)
-    project_config = _yaml.load(os.path.join(project, "project.conf"))
+    project_config = load_yaml(os.path.join(project, "project.conf"))
     project_config["aliases"] = Node.from_dict({"repo": "http://example.com/"})
     project_config["mirrors"] = [{"name": "middle-earth", "aliases": {"repo": ["file://{}/".format(repodir)]}}]
-    _yaml.roundtrip_dump(project_config, os.path.join(project, "project.conf"))
+    generate_project(project, config=project_config)
 
     repo.add_annotated_tag("tag", "tag")
 
@@ -1092,8 +1086,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
         "kind": "import",
         "sources": [config],
     }
-    element_path = os.path.join(project, "target.bst")
-    _yaml.roundtrip_dump(element, element_path)
+    generate_element(project, "target.bst", element)
 
     result = cli.run(project=project, args=["build", "target.bst"])
     result.assert_success()
@@ -1116,7 +1109,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
 
     repodir, reponame = os.path.split(repo.repo)
 
-    _yaml.roundtrip_dump(project_config, os.path.join(project, "project.conf"))
+    generate_project(project, config=project_config)
 
     config = repo.source_config(ref=new_ref)
     del config["track"]
@@ -1126,7 +1119,7 @@ def test_overwrite_rogue_tag_multiple_remotes(cli, tmpdir, datafiles):
         "kind": "import",
         "sources": [config],
     }
-    _yaml.roundtrip_dump(element, element_path)
+    generate_element(project, "target.bst", element)
 
     result = cli.run(project=project, args=["build", "target.bst"])
     result.assert_success()

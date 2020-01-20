@@ -4,17 +4,11 @@
 import os
 import pytest
 
-from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain
 from buildstream.plugins.sources.pip import _match_package_name
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing import cli, generate_project  # pylint: disable=unused-import
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pip",)
-
-
-def generate_project(project_dir):
-    project_file = os.path.join(project_dir, "project.conf")
-    _yaml.roundtrip_dump({"name": "foo"}, project_file)
 
 
 # Test that without ref, consistency is set appropriately.
