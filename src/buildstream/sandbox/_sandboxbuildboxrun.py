@@ -40,10 +40,18 @@ class SandboxBuildBoxRun(SandboxREAPI):
     @classmethod
     def check_available(cls):
         try:
-            utils.get_host_tool("buildbox-run")
+            path = utils.get_host_tool("buildbox-run")
         except utils.ProgramNotFoundError as Error:
             cls._dummy_reasons += ["buildbox-run not found"]
             raise SandboxError(" and ".join(cls._dummy_reasons), reason="unavailable-local-sandbox") from Error
+
+        exit_code, output = utils._call([path, "--capabilities"])
+        if exit_code == 0:
+            # buildbox-run --capabilities prints one capability per line
+            cls._capabilities = set(output.split("\n"))
+        else:
+            # buildbox-run is too old to support extra capabilities
+            cls._capabilities = set()
 
     @classmethod
     def check_sandbox_config(cls, platform, config):
