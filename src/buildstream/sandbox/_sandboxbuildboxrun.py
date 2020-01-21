@@ -107,6 +107,11 @@ class SandboxBuildBoxRun(SandboxREAPI):
             # disconnected from terminal.
             if flags & SandboxFlags.INTERACTIVE:
                 stdin = sys.stdin
+
+                if "bind-mount" in self._capabilities:
+                    # In interactive mode, we want a complete devpts inside
+                    # the container, so there is a /dev/console and such.
+                    buildbox_command.append("--bind-mount=/dev:/dev")
             else:
                 stdin = subprocess.DEVNULL
 
