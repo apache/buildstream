@@ -747,59 +747,9 @@ class Element(Plugin):
         ignored = {}
         overlaps = OrderedDict()  # type: OrderedDict[str, List[str]]
         files_written = {}  # type: Dict[str, List[str]]
-        old_dep_keys = None
-        workspace = self._get_workspace()
-        context = self._get_context()
-
-        if self.__can_build_incrementally() and workspace.last_successful:
-
-            # Try to perform an incremental build if the last successful
-            # build is still in the artifact cache
-            #
-            if self.__artifacts.contains(self, workspace.last_successful):
-                last_successful = Artifact(self, context, strong_key=workspace.last_successful)
-                # Get a dict of dependency strong keys
-                old_dep_keys = last_successful.get_metadata_dependencies()
-            else:
-                # Last successful build is no longer in the artifact cache,
-                # so let's reset it and perform a full build now.
-                workspace.prepared = False
-                workspace.last_successful = None
-
-                self.info("Resetting workspace state, last successful build is no longer in the cache")
-
-                # In case we are staging in the main process
-                if utils._is_main_process():
-                    context.get_workspaces().save_config()
 
         for dep in self.dependencies(scope):
-            # If we are workspaced, and we therefore perform an
-            # incremental build, we must ensure that we update the mtimes
-            # of any files created by our dependencies since the last
-            # successful build.
-            to_update = None
-            if workspace and old_dep_keys:
-                dep.__assert_cached()
-
-                if dep.name in old_dep_keys:
-                    key_new = dep._get_cache_key()
-                    key_old = old_dep_keys[dep.name]
-
-                    # We only need to worry about modified and added
-                    # files, since removed files will be picked up by
-                    # build systems anyway.
-                    to_update, _, added = self.__artifacts.diff(dep, key_old, key_new)
-                    workspace.add_running_files(dep.name, to_update + added)
-                    to_update.extend(workspace.running_files[dep.name])
-
-                    # In case we are running `bst shell`, this happens in the
-                    # main process and we need to update the workspace config
-                    if utils._is_main_process():
-                        context.get_workspaces().save_config()
-
-            result = dep.stage_artifact(
-                sandbox, path=path, include=include, exclude=exclude, orphans=orphans, update_mtimes=to_update
-            )
+            result = dep.stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans)
             if result.overwritten:
                 for overwrite in result.overwritten:
                     # Completely new overwrite
@@ -1590,7 +1540,6 @@ class Element(Plugin):
             key = self._get_cache_key()
             workspace = self._get_workspace()
             workspace.last_successful = key
-            workspace.clear_running_files()
             self._get_context().get_workspaces().save_config()
 
     # _assemble():
