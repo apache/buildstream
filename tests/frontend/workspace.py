@@ -846,10 +846,10 @@ def test_list_unsupported_workspace(cli, datafiles, workspace_cfg):
     [
         # Test loading version 4
         (
-            {"format-version": 4, "workspaces": {"alpha.bst": {"prepared": True, "path": "/workspaces/bravo"}},},
+            {"format-version": 4, "workspaces": {"alpha.bst": {"path": "/workspaces/bravo"}},},
             {
                 "format-version": BST_WORKSPACE_FORMAT_VERSION,
-                "workspaces": {"alpha.bst": {"prepared": True, "path": "/workspaces/bravo"}},
+                "workspaces": {"alpha.bst": {"path": "/workspaces/bravo"}},
             },
         ),
     ],

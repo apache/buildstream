@@ -242,8 +242,7 @@ class WorkspaceProjectCache:
 #    last_successful (str): The key of the last successful build of this workspace
 #
 class Workspace:
-    def __init__(self, toplevel_project, *, last_successful=None, path=None, prepared=False):
-        self.prepared = prepared
+    def __init__(self, toplevel_project, *, last_successful=None, path=None):
         self.last_successful = last_successful
         self._path = path
 
@@ -258,7 +257,7 @@ class Workspace:
     #     (dict) A dict representation of the workspace
     #
     def to_dict(self):
-        ret = {"prepared": self.prepared, "path": self._path}
+        ret = {"path": self._path}
         if self.last_successful is not None:
             ret["last_successful"] = self.last_successful
         return ret
@@ -516,7 +515,6 @@ class Workspaces:
     #
     def _load_workspace(self, node):
         dictionary = {
-            "prepared": node.get_bool("prepared", default=False),
             "path": node.get_str("path"),
             "last_successful": node.get_str("last_successful", default=None),
         }
