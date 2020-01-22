@@ -16,6 +16,9 @@ API
 Plugins
 -------
 
+  o BREAKING CHANGE: pip source plugin has been moved to the
+    bst-plugins-experimental repository.
+
   o BREAKING CHANGE: pip element plugin has been moved to the
     bst-plugins-experimental repository.
 
