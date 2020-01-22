@@ -655,9 +655,6 @@ class _SandboxBatch:
                 "Command failed with exitcode {}".format(exitcode), detail=label, collect=self.collect
             )
 
-    def execute_call(self, call):
-        call.callback()
-
 
 # _SandboxBatchItem()
 #
@@ -709,17 +706,3 @@ class _SandboxBatchGroup(_SandboxBatchItem):
 
     def combined_label(self):
         return "\n".join(item.combined_label() for item in self.children)
-
-
-# _SandboxBatchCall()
-#
-# A call item in a command batch.
-#
-class _SandboxBatchCall(_SandboxBatchItem):
-    def __init__(self, callback):
-        super().__init__()
-
-        self.callback = callback
-
-    def execute(self, batch):
-        batch.execute_call(self)

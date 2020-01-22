@@ -220,6 +220,3 @@ class _SandboxREAPIBatch(_SandboxBatch):
         label = command.label or cmdline
         quoted_label = shlex.quote("'{}'".format(label))
         self.script += " || (echo Command {} failed with exitcode $? >&2 ; exit 1)\n".format(quoted_label)
-
-    def execute_call(self, call):
-        raise SandboxError("SandboxRemote does not support callbacks in command batches")
