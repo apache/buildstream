@@ -580,6 +580,30 @@ class Sandbox:
 
         return False
 
+    # _create_empty_file()
+    #
+    # Creates an empty file in the current working directory.
+    #
+    # If this is called outside a batch context, the file is created
+    # immediately.
+    #
+    # If this is called in a batch context, creating the file is deferred.
+    #
+    # Args:
+    #    path (str): The path of the file to be created
+    #
+    def _create_empty_file(self, name):
+        if self.__batch:
+            batch_file = _SandboxBatchFile(name)
+
+            current_group = self.__batch.current_group
+            current_group.append(batch_file)
+        else:
+            vdir = self.get_virtual_directory()
+            cwd = self._get_work_directory()
+            cwd_vdir = vdir.descend(*cwd.lstrip(os.sep).split(os.sep), create=True)
+            cwd_vdir._create_empty_file(name)
+
     # _get_element_name()
     #
     # Get the plugin's element full name
@@ -655,6 +679,12 @@ class _SandboxBatch:
                 "Command failed with exitcode {}".format(exitcode), detail=label, collect=self.collect
             )
 
+    def create_empty_file(self, name):
+        vdir = self.sandbox.get_virtual_directory()
+        cwd = self.sandbox._get_work_directory()
+        cwd_vdir = vdir.descend(*cwd.lstrip(os.sep).split(os.sep), create=True)
+        cwd_vdir._create_empty_file(name)
+
 
 # _SandboxBatchItem()
 #
@@ -705,4 +735,18 @@ class _SandboxBatchGroup(_SandboxBatchItem):
             item.execute(batch)
 
     def combined_label(self):
-        return "\n".join(item.combined_label() for item in self.children)
+        return "\n".join(filter(None, (item.combined_label() for item in self.children)))
+
+
+# _SandboxBatchFile()
+#
+# A file creation item in a command batch.
+#
+class _SandboxBatchFile(_SandboxBatchItem):
+    def __init__(self, name):
+        super().__init__()
+
+        self.name = name
+
+    def execute(self, batch):
+        batch.create_empty_file(self.name)

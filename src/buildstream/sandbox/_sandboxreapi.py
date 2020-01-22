@@ -227,3 +227,6 @@ class _SandboxREAPIBatch(_SandboxBatch):
         label = command.label or cmdline
         quoted_label = shlex.quote("'{}'".format(label))
         self.script += " || (echo Command {} failed with exitcode $? >&2 ; exit 1)\n".format(quoted_label)
+
+    def create_empty_file(self, name):
+        self.script += "touch -- {}\n".format(shlex.quote(name))
