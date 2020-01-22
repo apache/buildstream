@@ -75,7 +75,6 @@ Class Reference
 import os
 import re
 import stat
-import time
 import copy
 from collections import OrderedDict
 import contextlib
@@ -626,8 +625,7 @@ class Element(Plugin):
         path: str = None,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
-        orphans: bool = True,
-        update_mtimes: Optional[List[str]] = None
+        orphans: bool = True
     ) -> FileListResult:
         """Stage this element's output artifact in the sandbox
 
@@ -642,7 +640,6 @@ class Element(Plugin):
            include: An optional list of domains to include files from
            exclude: An optional list of domains to exclude files from
            orphans: Whether to include files not spoken for by split domains
-           update_mtimes: An optional list of files whose mtimes to set to the current time.
 
         Raises:
            (:class:`.ElementError`): If the element has not yet produced an artifact.
@@ -672,9 +669,6 @@ class Element(Plugin):
             )
             raise ElementError("No artifacts to stage", detail=detail, reason="uncached-checkout-attempt")
 
-        if update_mtimes is None:
-            update_mtimes = []
-
         # Time to use the artifact, check once more that it's there
         self.__assert_cached()
 
@@ -690,27 +684,9 @@ class Element(Plugin):
 
             split_filter = self.__split_filter_func(include, exclude, orphans)
 
-            # We must not hardlink files whose mtimes we want to update
-            if update_mtimes:
-
-                def link_filter(path):
-                    return (split_filter is None or split_filter(path)) and path not in update_mtimes
-
-                def copy_filter(path):
-                    return (split_filter is None or split_filter(path)) and path in update_mtimes
-
-            else:
-                link_filter = split_filter
-
             result = vstagedir.import_files(
-                files_vdir, filter_callback=link_filter, report_written=True, can_link=True
+                files_vdir, filter_callback=split_filter, report_written=True, can_link=True
             )
-
-            if update_mtimes:
-                copy_result = vstagedir.import_files(
-                    files_vdir, filter_callback=copy_filter, report_written=True, update_mtime=time.time()
-                )
-                result = result.combine(copy_result)
 
             return result
 
