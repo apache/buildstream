@@ -2324,11 +2324,6 @@ class Element(Plugin):
     # Internal method for calling public abstract prepare() method.
     #
     def __prepare(self, sandbox):
-        # FIXME:
-        # We need to ensure that the prepare() method is only called
-        # once in workspaces, because the changes will persist across
-        # incremental builds - not desirable, for example, in the case
-        # of autotools' `./configure`.
         self.prepare(sandbox)
 
     # __preflight():
