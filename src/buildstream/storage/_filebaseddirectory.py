@@ -343,3 +343,7 @@ class FileBasedDirectory(Directory):
             # and incorrectly thinks they are broken the new casbaseddirectory dose not have this bug.
             return os.path.lexists(os.path.join(self.external_directory, *path))
         raise ImplError("_exists can only follow symlinks in filebaseddirectory")
+
+    def _create_empty_file(self, name):
+        with open(os.path.join(self.external_directory, name), "w"):
+            pass
