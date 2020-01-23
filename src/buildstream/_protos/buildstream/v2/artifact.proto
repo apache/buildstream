@@ -75,6 +75,9 @@ message Artifact {
 
   // digest of a directory
   build.bazel.remote.execution.v2.Digest buildtree = 12;  // optional
+
+  // digest of a directory
+  build.bazel.remote.execution.v2.Digest sources = 13;  // optional
 }
 
 message GetArtifactRequest {
