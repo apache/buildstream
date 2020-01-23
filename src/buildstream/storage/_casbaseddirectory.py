@@ -65,6 +65,7 @@ class IndexEntry:
 
     def get_directory(self, parent):
         if not self.buildstream_object:
+            assert self.type == _FileType.DIRECTORY
             self.buildstream_object = CasBasedDirectory(
                 parent.cas_cache, digest=self.digest, parent=parent, filename=self.name
             )
