@@ -1701,7 +1701,7 @@ class Element(Plugin):
         # with an empty buildtreedir regardless of this configuration.
 
         if cache_buildtrees == _CacheBuildTrees.ALWAYS or (
-            cache_buildtrees == _CacheBuildTrees.AUTO and not build_success
+            cache_buildtrees == _CacheBuildTrees.AUTO and (not build_success or self._get_workspace())
         ):
             try:
                 sandbox_build_dir = sandbox_vroot.descend(
