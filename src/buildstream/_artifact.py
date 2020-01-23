@@ -90,6 +90,18 @@ class Artifact:
 
         return CasBasedDirectory(self._cas, digest=buildtree_digest)
 
+    # get_sources():
+    #
+    # Get a virtual directory for the artifact sources
+    #
+    # Returns:
+    #    (Directory): The virtual directory object
+    #
+    def get_sources(self):
+        sources_digest = self._get_field_digest("sources")
+
+        return CasBasedDirectory(self._cas, digest=sources_digest)
+
     # get_logs():
     #
     # Get the paths of the artifact's logs
@@ -232,6 +244,22 @@ class Artifact:
 
         artifact = self._get_proto()
         return bool(str(artifact.buildtree))
+
+    # cached_sources()
+    #
+    # Check if artifact is cached with sources.
+    #
+    # Returns:
+    #     (bool): True if artifact is cached with sources, False if sources
+    #             are not available.
+    #
+    def cached_sources(self):
+
+        sources_digest = self._get_field_digest("sources")
+        if sources_digest:
+            return self._cas.contains_directory(sources_digest, with_files=True)
+        else:
+            return False
 
     # load_public_data():
     #
