@@ -135,13 +135,14 @@ class Artifact:
     # Args:
     #    sandbox_build_dir (Directory): Virtual Directory object for the sandbox build-root
     #    collectvdir (Directory): Virtual Directoy object from within the sandbox for collection
+    #    sourcesvdir (Directory): Virtual Directoy object for the staged sources
     #    buildresult (tuple): bool, short desc and detailed desc of result
     #    publicdata (dict): dict of public data to commit to artifact metadata
     #
     # Returns:
     #    (int): The size of the newly cached artifact
     #
-    def cache(self, sandbox_build_dir, collectvdir, buildresult, publicdata):
+    def cache(self, sandbox_build_dir, collectvdir, sourcesvdir, buildresult, publicdata):
 
         context = self._context
         element = self._element
@@ -203,6 +204,11 @@ class Artifact:
             buildtreevdir.import_files(sandbox_build_dir)
             artifact.buildtree.CopyFrom(buildtreevdir._get_digest())
             size += buildtreevdir.get_size()
+
+        # Store sources
+        if sourcesvdir:
+            artifact.sources.CopyFrom(sourcesvdir._get_digest())
+            size += sourcesvdir.get_size()
 
         os.makedirs(os.path.dirname(os.path.join(self._artifactdir, element.get_artifact_name())), exist_ok=True)
         keys = utils._deduplicate([self._cache_key, self._weak_cache_key])

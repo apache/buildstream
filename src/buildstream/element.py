@@ -254,6 +254,7 @@ class Element(Plugin):
         self.__cached_remotely = None  # Whether the element is cached remotely
         # List of Sources
         self.__sources = []  # type: List[Source]
+        self.__sources_vdir = None  # Directory with staged sources
         self.__weak_cache_key = None  # Our cached weak cache key
         self.__strict_cache_key = None  # Our cached cache key for strict builds
         self.__artifacts = context.artifactcache  # Artifact cache
@@ -1393,6 +1394,8 @@ class Element(Plugin):
                             reason="import-source-files-fail",
                         )
 
+                    self.__sources_vdir = import_dir
+
             # Set update_mtime to ensure deterministic mtime of sources at build time
             with utils._deterministic_umask():
                 vdirectory.import_files(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP)
@@ -1615,6 +1618,7 @@ class Element(Plugin):
         sandbox_vroot = sandbox.get_virtual_directory()
         collectvdir = None
         sandbox_build_dir = None
+        sourcesvdir = None
 
         cache_buildtrees = context.cache_buildtrees
         build_success = buildresult[0]
@@ -1639,6 +1643,8 @@ class Element(Plugin):
                 # if the directory could not be found.
                 pass
 
+            sourcesvdir = self.__sources_vdir
+
         if collect is not None:
             try:
                 collectvdir = sandbox_vroot.descend(*collect.lstrip(os.sep).split(os.sep))
@@ -1650,7 +1656,7 @@ class Element(Plugin):
         self.__update_cache_key_non_strict()
 
         with self.timed_activity("Caching artifact"):
-            artifact_size = self.__artifact.cache(sandbox_build_dir, collectvdir, buildresult, publicdata)
+            artifact_size = self.__artifact.cache(sandbox_build_dir, collectvdir, sourcesvdir, buildresult, publicdata)
 
         if collect is not None and collectvdir is None:
             raise ElementError(
