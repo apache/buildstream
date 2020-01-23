@@ -1326,11 +1326,6 @@ class Element(Plugin):
     #
     def _stage_sources_in_sandbox(self, sandbox, directory):
 
-        # Only artifact caches that implement diff() are allowed to
-        # perform incremental builds.
-        if self.__can_build_incrementally():
-            sandbox.mark_directory(directory)
-
         # Stage all sources that need to be copied
         sandbox_vroot = sandbox.get_virtual_directory()
         host_vdirectory = sandbox_vroot.descend(*directory.lstrip(os.sep).split(os.sep), create=True)
@@ -1395,6 +1390,14 @@ class Element(Plugin):
                         )
 
                     self.__sources_vdir = import_dir
+
+                    # incremental builds should merge the source into the last artifact before staging
+                    last_build_artifact = self.__get_last_build_artifact()
+                    if last_build_artifact:
+                        self.info("Incremental build")
+                        last_sources = last_build_artifact.get_sources()
+                        import_dir = last_build_artifact.get_buildtree()
+                        import_dir._apply_changes(last_sources, self.__sources_vdir)
 
             # Set update_mtime to ensure deterministic mtime of sources at build time
             with utils._deterministic_umask():
@@ -2299,16 +2302,58 @@ class Element(Plugin):
             self.__is_resolved = True
             self.__update_cache_keys()
 
-    # __can_build_incrementally()
+    # __get_dependency_refs()
     #
-    # Check if the element can be built incrementally, this
-    # is used to decide how to stage things
+    # Retrieve the artifact refs of the element's dependencies
+    #
+    # Args:
+    #    scope (Scope): The scope of dependencies
     #
     # Returns:
-    #    (bool): Whether this element can be built incrementally
+    #    (list [str]): A list of refs of all dependencies in staging order.
     #
-    def __can_build_incrementally(self):
-        return bool(self._get_workspace())
+    def __get_dependency_refs(self, scope):
+        return [
+            os.path.join(dep.project_name, _get_normal_name(dep.name), dep._get_cache_key())
+            for dep in self.dependencies(scope)
+        ]
+
+    # __get_last_build_artifact()
+    #
+    # Return the Artifact of the previous build of this element,
+    # if incremental build is available.
+    #
+    # Returns:
+    #    (Artifact): The Artifact of the previous build or None
+    #
+    def __get_last_build_artifact(self):
+        workspace = self._get_workspace()
+        if not workspace:
+            # Currently incremental builds are only supported for workspaces
+            return None
+
+        if not workspace.last_build:
+            return None
+
+        artifact = Artifact(self, self._get_context(), strong_key=workspace.last_build)
+
+        if not artifact.cached():
+            return None
+
+        if not artifact.cached_buildtree():
+            return None
+
+        if not artifact.cached_sources():
+            return None
+
+        # Don't perform an incremental build if there has been a change in
+        # build dependencies.
+        old_dep_refs = artifact.get_dependency_refs(Scope.BUILD)
+        new_dep_refs = self.__get_dependency_refs(Scope.BUILD)
+        if old_dep_refs != new_dep_refs:
+            return None
+
+        return artifact
 
     # __configure_sandbox():
     #
