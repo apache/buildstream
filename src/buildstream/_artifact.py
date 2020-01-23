@@ -121,7 +121,6 @@ class Artifact:
     # Create the artifact and commit to cache
     #
     # Args:
-    #    rootdir (str): An absolute path to the temp rootdir for artifact construct
     #    sandbox_build_dir (Directory): Virtual Directory object for the sandbox build-root
     #    collectvdir (Directory): Virtual Directoy object from within the sandbox for collection
     #    buildresult (tuple): bool, short desc and detailed desc of result
@@ -130,7 +129,7 @@ class Artifact:
     # Returns:
     #    (int): The size of the newly cached artifact
     #
-    def cache(self, rootdir, sandbox_build_dir, collectvdir, buildresult, publicdata):
+    def cache(self, sandbox_build_dir, collectvdir, buildresult, publicdata):
 
         context = self._context
         element = self._element

@@ -1601,13 +1601,13 @@ class Element(Plugin):
                     e.sandbox = True
 
                     self.__set_build_result(success=False, description=str(e), detail=e.detail)
-                    self._cache_artifact(rootdir, sandbox, e.collect)
+                    self._cache_artifact(sandbox, e.collect)
 
                     raise
                 else:
-                    return self._cache_artifact(rootdir, sandbox, collect)
+                    return self._cache_artifact(sandbox, collect)
 
-    def _cache_artifact(self, rootdir, sandbox, collect):
+    def _cache_artifact(self, sandbox, collect):
 
         context = self._get_context()
         buildresult = self.__build_result
@@ -1650,7 +1650,7 @@ class Element(Plugin):
         self.__update_cache_key_non_strict()
 
         with self.timed_activity("Caching artifact"):
-            artifact_size = self.__artifact.cache(rootdir, sandbox_build_dir, collectvdir, buildresult, publicdata)
+            artifact_size = self.__artifact.cache(sandbox_build_dir, collectvdir, buildresult, publicdata)
 
         if collect is not None and collectvdir is None:
             raise ElementError(
