@@ -29,7 +29,8 @@ from collections.abc import Mapping
 
 from ruamel import yaml
 
-from ._exceptions import LoadError, LoadErrorReason
+from ._exceptions import LoadError
+from .exceptions import LoadErrorReason
 from . cimport node
 from .node cimport MappingNode, ScalarNode, SequenceNode
 

@@ -4,10 +4,9 @@
 import os
 import pytest
 
-from buildstream import _yaml
-
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
+from buildstream.testing import generate_element
 from buildstream.testing._utils.site import HAVE_BZR
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "bzr")
@@ -24,7 +23,7 @@ def test_fetch_checkout(cli, tmpdir, datafiles):
 
     # Write out our test target
     element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Fetch, build, checkout
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])

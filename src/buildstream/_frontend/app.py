@@ -32,7 +32,8 @@ from .. import Scope
 # Import various buildstream internals
 from .._context import Context
 from .._project import Project
-from .._exceptions import BstError, StreamError, LoadError, LoadErrorReason, AppError
+from .._exceptions import BstError, StreamError, LoadError, AppError
+from ..exceptions import LoadErrorReason
 from .._message import Message, MessageType, unconditional_messages
 from .._stream import Stream
 from .._versions import BST_FORMAT_VERSION

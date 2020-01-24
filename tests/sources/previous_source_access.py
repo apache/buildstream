@@ -4,7 +4,7 @@
 import os
 import pytest
 
-from buildstream import _yaml
+from buildstream.testing import generate_project, load_yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "previous_source_access")
@@ -20,10 +20,10 @@ def test_custom_transform_source(cli, datafiles):
 
     # Set the project_dir alias in project.conf to the path to the tested project
     project_config_path = os.path.join(project, "project.conf")
-    project_config = _yaml.load(project_config_path)
+    project_config = load_yaml(project_config_path)
     aliases = project_config.get_mapping("aliases")
     aliases["project_dir"] = "file://{}".format(project)
-    _yaml.roundtrip_dump(project_config, project_config_path)
+    generate_project(project, project_config)
 
     # Ensure we can track
     result = cli.run(project=project, args=["source", "track", "target.bst"])

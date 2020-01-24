@@ -20,7 +20,8 @@ import os
 
 from . import _yaml
 from .node import _new_synthetic_file
-from ._exceptions import LoadError, LoadErrorReason
+from ._exceptions import LoadError
+from .exceptions import LoadErrorReason
 
 
 # ProjectRefStorage()

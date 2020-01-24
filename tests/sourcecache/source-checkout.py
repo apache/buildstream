@@ -26,7 +26,7 @@ import shutil
 
 import pytest
 
-from buildstream._exceptions import ErrorDomain
+from buildstream.exceptions import ErrorDomain
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 
 from tests.testutils.element_generators import create_element_size

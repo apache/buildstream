@@ -2,7 +2,8 @@ from contextlib import contextmanager
 import os
 import pytest
 
-from buildstream._exceptions import LoadError, LoadErrorReason
+from buildstream.exceptions import LoadErrorReason
+from buildstream._exceptions import LoadError
 from buildstream._project import Project
 from buildstream._loader import MetaElement
 from buildstream._loader.loader import _NO_PROGRESS

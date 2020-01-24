@@ -20,7 +20,7 @@ import os
 import pytest
 
 from buildstream import utils, _yaml
-from buildstream._exceptions import ErrorDomain
+from buildstream.exceptions import ErrorDomain
 from buildstream.testing import cli  # pylint: disable=unused-import
 
 pytestmark = pytest.mark.integration

@@ -7,7 +7,7 @@ import shutil
 import pytest
 
 from buildstream.testing import cli, cli_integration  # pylint: disable=unused-import
-from buildstream._exceptions import ErrorDomain
+from buildstream.exceptions import ErrorDomain
 from buildstream.testing._utils.site import HAVE_SANDBOX
 
 from tests.testutils import create_artifact_share

@@ -21,6 +21,9 @@ This package contains various utilities which make it easier to test plugins.
 
 import os
 from collections import OrderedDict
+from buildstream.exceptions import ErrorDomain, LoadErrorReason
+from buildstream._yaml import load as load_yaml  # type: ignore
+from ._yaml import generate_project, generate_element
 from .repo import Repo
 from .runcli import cli, cli_integration, cli_remote_execution
 from .integration import integration_cache

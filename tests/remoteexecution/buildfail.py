@@ -21,7 +21,7 @@
 import os
 import pytest
 
-from buildstream._exceptions import ErrorDomain
+from buildstream.exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream.testing import cli_remote_execution as cli  # pylint: disable=unused-import
 

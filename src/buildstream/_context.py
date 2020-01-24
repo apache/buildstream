@@ -22,7 +22,8 @@ import shutil
 from . import utils
 from . import _site
 from . import _yaml
-from ._exceptions import LoadError, LoadErrorReason
+from ._exceptions import LoadError
+from .exceptions import LoadErrorReason
 from ._messenger import Messenger
 from ._profile import Topics, PROFILER
 from ._platform import Platform

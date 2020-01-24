@@ -5,29 +5,19 @@ import os
 import stat
 import pytest
 
-from buildstream._exceptions import ErrorDomain
-from buildstream import _yaml
+from buildstream.testing import ErrorDomain
+from buildstream.testing import generate_project
 from buildstream.testing import cli  # pylint: disable=unused-import
 from tests.testutils.file_server import create_file_server
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "remote",)
 
 
-def generate_project(project_dir, tmpdir):
-    project_file = os.path.join(project_dir, "project.conf")
-    _yaml.roundtrip_dump({"name": "foo", "aliases": {"tmpdir": "file:///" + str(tmpdir)}}, project_file)
-
-
-def generate_project_file_server(server, project_dir):
-    project_file = os.path.join(project_dir, "project.conf")
-    _yaml.roundtrip_dump({"name": "foo", "aliases": {"tmpdir": server.base_url()}}, project_file)
-
-
 # Test that without ref, consistency is set appropriately.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "no-ref"))
 def test_no_ref(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, {"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
     assert cli.get_element_state(project, "target.bst") == "no reference"
 
 
@@ -36,7 +26,7 @@ def test_no_ref(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "missing-file"))
 def test_missing_file(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, {"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
 
     # Try to fetch it
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
@@ -48,7 +38,7 @@ def test_missing_file(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "path-in-filename"))
 def test_path_in_filename(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, {"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
 
     # Try to fetch it
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
@@ -60,7 +50,8 @@ def test_path_in_filename(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "single-file"))
 def test_simple_file_build(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, {"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
+
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Try to fetch it
@@ -87,7 +78,8 @@ def test_simple_file_build(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "single-file-custom-name"))
 def test_simple_file_custom_name_build(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, {"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
+
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Try to fetch it
@@ -109,7 +101,8 @@ def test_unique_key(cli, tmpdir, datafiles):
     to generating a cache key for the source.
     """
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, {"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
+
     states = cli.get_element_states(project, ["target.bst", "target-custom.bst", "target-custom-executable.bst"])
     assert states["target.bst"] == "fetch needed"
     assert states["target-custom.bst"] == "fetch needed"
@@ -118,7 +111,7 @@ def test_unique_key(cli, tmpdir, datafiles):
     # Try to fetch it
     cli.run(project=project, args=["source", "fetch", "target.bst"])
 
-    # We should download the file only once
+    # We should download_yaml the file only once
     states = cli.get_element_states(project, ["target.bst", "target-custom.bst", "target-custom-executable.bst"])
     assert states["target.bst"] == "buildable"
     assert states["target-custom.bst"] == "buildable"
@@ -137,7 +130,8 @@ def test_executable(cli, tmpdir, datafiles):
     """This test confirms that the 'ecxecutable' parameter is honoured.
     """
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, {"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
+
     checkoutdir = os.path.join(str(tmpdir), "checkout")
     assert cli.get_element_state(project, "target-custom-executable.bst") == "fetch needed"
     # Try to fetch it
@@ -167,7 +161,7 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
 
     with create_file_server(server_type) as server:
         server.add_user("testuser", "12345", project)
-        generate_project_file_server(server, project)
+        generate_project(project, {"aliases": {"tmpdir": server.base_url()}})
 
         server.start()
 

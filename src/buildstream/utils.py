@@ -41,7 +41,8 @@ from typing import Callable, IO, Iterable, Iterator, Optional, Tuple, Union
 import psutil
 
 from . import _signals
-from ._exceptions import BstError, ErrorDomain
+from ._exceptions import BstError
+from .exceptions import ErrorDomain
 from ._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 
 # Contains utils that have been rewritten in Cython for speed benefits

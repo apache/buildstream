@@ -6,7 +6,7 @@ import os
 import pytest
 
 from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
+from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 
 from tests.testutils import override_platform_uname

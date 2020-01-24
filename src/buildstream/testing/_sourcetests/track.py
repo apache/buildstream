@@ -23,7 +23,7 @@ import os
 import pytest
 
 from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain
+from buildstream.exceptions import ErrorDomain
 from .._utils import generate_junction
 from .. import create_repo
 from .. import cli  # pylint: disable=unused-import

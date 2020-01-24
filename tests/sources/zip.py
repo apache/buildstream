@@ -6,8 +6,8 @@ import zipfile
 
 import pytest
 
-from buildstream._exceptions import ErrorDomain
-from buildstream import _yaml
+from buildstream.exceptions import ErrorDomain
+from buildstream.testing import generate_project
 from buildstream.testing import cli  # pylint: disable=unused-import
 from tests.testutils.file_server import create_file_server
 from . import list_dir_contents
@@ -27,21 +27,11 @@ def _assemble_zip(workingdir, dstfile):
     os.chdir(old_dir)
 
 
-def generate_project(project_dir, tmpdir):
-    project_file = os.path.join(project_dir, "project.conf")
-    _yaml.roundtrip_dump({"name": "foo", "aliases": {"tmpdir": "file:///" + str(tmpdir)}}, project_file)
-
-
-def generate_project_file_server(server, project_dir):
-    project_file = os.path.join(project_dir, "project.conf")
-    _yaml.roundtrip_dump({"name": "foo", "aliases": {"tmpdir": server.base_url()}}, project_file)
-
-
 # Test that without ref, consistency is set appropriately.
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "no-ref"))
 def test_no_ref(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
     assert cli.get_element_state(project, "target.bst") == "no reference"
 
 
@@ -49,7 +39,7 @@ def test_no_ref(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "fetch"))
 def test_fetch_bad_url(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
 
     # Try to fetch it
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
@@ -62,7 +52,7 @@ def test_fetch_bad_url(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "fetch"))
 def test_fetch_bad_ref(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
 
     # Create a local tar
     src_zip = os.path.join(str(tmpdir), "a.zip")
@@ -78,7 +68,7 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "fetch"))
 def test_track_warning(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
 
     # Create a local tar
     src_zip = os.path.join(str(tmpdir), "a.zip")
@@ -94,7 +84,7 @@ def test_track_warning(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "fetch"))
 def test_stage_default_basedir(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create a local tar
@@ -122,7 +112,7 @@ def test_stage_default_basedir(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "no-basedir"))
 def test_stage_no_basedir(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create a local tar
@@ -150,7 +140,7 @@ def test_stage_no_basedir(cli, tmpdir, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "explicit-basedir"))
 def test_stage_explicit_basedir(cli, tmpdir, datafiles):
     project = str(datafiles)
-    generate_project(project, tmpdir)
+    generate_project(project, config={"aliases": {"tmpdir": "file:///" + str(tmpdir)}})
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Create a local tar
@@ -193,7 +183,7 @@ def test_use_netrc(cli, datafiles, server_type, tmpdir):
 
     with create_file_server(server_type) as server:
         server.add_user("testuser", "12345", file_server_files)
-        generate_project_file_server(server, project)
+        generate_project(project, config={"aliases": {"tmpdir": server.base_url()}})
 
         src_zip = os.path.join(file_server_files, "a.zip")
         _assemble_zip(os.path.join(str(datafiles), "content"), src_zip)

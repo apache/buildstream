@@ -4,7 +4,7 @@
 import os
 import pytest
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
-from buildstream._exceptions import ErrorDomain
+from buildstream.exceptions import ErrorDomain
 from buildstream import _yaml
 from buildstream.plugin import CoreWarnings
 from tests.testutils import generate_junction
