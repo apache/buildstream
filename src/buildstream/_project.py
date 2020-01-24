@@ -28,7 +28,8 @@ from . import _site
 from . import _yaml
 from ._artifactelement import ArtifactElement
 from ._profile import Topics, PROFILER
-from ._exceptions import LoadError, LoadErrorReason
+from ._exceptions import LoadError
+from .exceptions import LoadErrorReason
 from ._options import OptionPool
 from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache

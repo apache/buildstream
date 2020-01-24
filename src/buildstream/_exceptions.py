@@ -18,8 +18,9 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
-from enum import Enum, unique
 import os
+
+from .exceptions import ErrorDomain
 
 # Disable pylint warnings for whole file here:
 # pylint: disable=global-statement
@@ -79,27 +80,6 @@ def set_last_task_error(domain, reason):
         _last_task_error_reason = reason
 
 
-@unique
-class ErrorDomain(Enum):
-    PLUGIN = 1
-    LOAD = 2
-    IMPL = 3
-    PLATFORM = 4
-    SANDBOX = 5
-    ARTIFACT = 6
-    PIPELINE = 7
-    UTIL = 8
-    SOURCE = 9
-    ELEMENT = 10
-    APP = 11
-    STREAM = 12
-    VIRTUAL_FS = 13
-    CAS = 14
-    PROG_NOT_FOUND = 15
-    REMOTE = 16
-    PROFILE = 17
-
-
 # BstError is an internal base exception class for BuildStream
 # exceptions.
 #
@@ -146,88 +126,6 @@ class BstError(Exception):
 class PluginError(BstError):
     def __init__(self, message, reason=None, temporary=False):
         super().__init__(message, domain=ErrorDomain.PLUGIN, reason=reason, temporary=False)
-
-
-# LoadErrorReason
-#
-# Describes the reason why a :class:`.LoadError` was raised.
-#
-class LoadErrorReason(Enum):
-
-    # A file was not found.
-    MISSING_FILE = 1
-
-    # The parsed data was not valid YAML.
-    INVALID_YAML = 2
-
-    # Data was malformed, a value was not of the expected type, etc
-    INVALID_DATA = 3
-
-    # An error occurred during YAML dictionary composition.
-    #
-    # This can happen by overriding a value with a new differently typed
-    # value, or by overwriting some named value when that was not allowed.
-    ILLEGAL_COMPOSITE = 4
-
-    # An circular dependency chain was detected
-    CIRCULAR_DEPENDENCY = 5
-
-    # A variable could not be resolved. This can happen if your project
-    # has cyclic dependencies in variable declarations, or, when substituting
-    # a string which refers to an undefined variable.
-    UNRESOLVED_VARIABLE = 6
-
-    # BuildStream does not support the required project format version
-    UNSUPPORTED_PROJECT = 7
-
-    # Project requires a newer version of a plugin than the one which was loaded
-    UNSUPPORTED_PLUGIN = 8
-
-    # A conditional expression failed to resolve
-    EXPRESSION_FAILED = 9
-
-    # An assertion was intentionally encoded into project YAML
-    USER_ASSERTION = 10
-
-    # A list composition directive did not apply to any underlying list
-    TRAILING_LIST_DIRECTIVE = 11
-
-    # Conflicting junctions in subprojects
-    CONFLICTING_JUNCTION = 12
-
-    # Failure to load a project from a specified junction
-    INVALID_JUNCTION = 13
-
-    # Subproject has no ref
-    SUBPROJECT_INCONSISTENT = 15
-
-    # An invalid symbol name was encountered
-    INVALID_SYMBOL_NAME = 16
-
-    # A project.conf file was missing
-    MISSING_PROJECT_CONF = 17
-
-    # Try to load a directory not a yaml file
-    LOADING_DIRECTORY = 18
-
-    # A project path leads outside of the project directory
-    PROJ_PATH_INVALID = 19
-
-    # A project path points to a file of the not right kind (e.g. a
-    # socket)
-    PROJ_PATH_INVALID_KIND = 20
-
-    # A recursive include has been encountered.
-    RECURSIVE_INCLUDE = 21
-
-    # A recursive variable has been encountered
-    RECURSIVE_VARIABLE = 22
-
-    # An attempt so set the value of a protected variable
-    PROTECTED_VARIABLE_REDEFINED = 23
-
-    # A duplicate dependency was detected
-    DUPLICATE_DEPENDENCY = 24
 
 
 # LoadError

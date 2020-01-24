@@ -25,7 +25,7 @@ from contextlib import contextmanager, ExitStack
 
 import pytest
 
-from buildstream._exceptions import ErrorDomain
+from buildstream.exceptions import ErrorDomain
 from buildstream._project import Project
 from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import

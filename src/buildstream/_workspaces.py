@@ -22,7 +22,8 @@ from . import utils
 from . import _yaml
 
 from .node import MappingNode, ScalarNode
-from ._exceptions import LoadError, LoadErrorReason
+from ._exceptions import LoadError
+from .exceptions import LoadErrorReason
 
 
 BST_WORKSPACE_FORMAT_VERSION = 3

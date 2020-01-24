@@ -12,7 +12,7 @@ from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
 from buildstream.testing._utils.site import IS_WINDOWS, CASD_SEPARATE_USER
 from buildstream import _yaml
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
+from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream import utils
 
 from tests.testutils import generate_junction, create_artifact_share

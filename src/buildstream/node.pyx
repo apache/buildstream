@@ -50,7 +50,8 @@ Class Reference
 
 import string
 
-from ._exceptions import LoadError, LoadErrorReason
+from ._exceptions import LoadError
+from .exceptions import LoadErrorReason
 
 
 # A sentinel to be used as a default argument for functions that need

@@ -6,7 +6,7 @@ import os
 import pytest
 
 from buildstream import utils, _yaml
-from buildstream._exceptions import ErrorDomain
+from buildstream.exceptions import ErrorDomain
 from buildstream.testing._utils.site import IS_LINUX
 from buildstream.testing import cli  # pylint: disable=unused-import
 

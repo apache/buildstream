@@ -17,7 +17,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .._exceptions import LoadError, LoadErrorReason
+from .._exceptions import LoadError
+from ..exceptions import LoadErrorReason
 from ..node cimport MappingNode, Node, ProvenanceInformation, ScalarNode, SequenceNode
 
 

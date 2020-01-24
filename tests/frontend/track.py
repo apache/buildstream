@@ -7,7 +7,7 @@ import pytest
 
 from buildstream.testing import create_repo
 from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream._exceptions import ErrorDomain, LoadErrorReason
+from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
 from tests.testutils import generate_junction
 from . import configure_project

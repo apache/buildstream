@@ -23,7 +23,8 @@
 import re
 import sys
 
-from ._exceptions import LoadError, LoadErrorReason
+from ._exceptions import LoadError
+from .exceptions import LoadErrorReason
 from .node cimport MappingNode
 
 # Variables are allowed to have dashes here

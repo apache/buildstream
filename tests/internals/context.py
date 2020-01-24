@@ -5,7 +5,8 @@ import os
 import pytest
 
 from buildstream._context import Context
-from buildstream._exceptions import LoadError, LoadErrorReason
+from buildstream._exceptions import LoadError
+from buildstream.exceptions import LoadErrorReason
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "context",)
 

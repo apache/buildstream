@@ -4,10 +4,9 @@
 import os
 import pytest
 
-from buildstream import _yaml
-
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
+from buildstream.testing import generate_element
 from buildstream.testing._utils.site import HAVE_GIT
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "no-fetch-cached")
@@ -28,7 +27,7 @@ def test_no_fetch_cached(cli, tmpdir, datafiles):
 
     # Write out test target with a cached and a non-cached source
     element = {"kind": "import", "sources": [repo.source_config(ref=ref), {"kind": "always_cached"}]}
-    _yaml.roundtrip_dump(element, os.path.join(project, "target.bst"))
+    generate_element(project, "target.bst", element)
 
     # Test fetch of target with a cached and a non-cached source
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])

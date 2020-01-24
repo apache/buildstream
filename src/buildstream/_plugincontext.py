@@ -20,7 +20,8 @@
 import os
 import inspect
 
-from ._exceptions import PluginError, LoadError, LoadErrorReason
+from ._exceptions import PluginError, LoadError
+from .exceptions import LoadErrorReason
 from . import utils
 
 

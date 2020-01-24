@@ -89,7 +89,8 @@ from pyroaring import BitMap  # pylint: disable=no-name-in-module
 from . import _yaml
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
-from ._exceptions import BstError, LoadError, LoadErrorReason, ImplError, ErrorDomain, SourceCacheError
+from ._exceptions import BstError, LoadError, ImplError, SourceCacheError
+from .exceptions import ErrorDomain, LoadErrorReason
 from .utils import FileListResult
 from . import utils
 from . import _cachekey

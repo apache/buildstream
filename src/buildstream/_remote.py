@@ -21,7 +21,8 @@ from urllib.parse import urlparse
 
 import grpc
 
-from ._exceptions import LoadError, LoadErrorReason, ImplError, RemoteError
+from ._exceptions import LoadError, ImplError, RemoteError
+from .exceptions import LoadErrorReason
 from .types import FastEnum
 
 
