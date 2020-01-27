@@ -62,7 +62,6 @@ def test_workspace_mount_on_read_only_directory(cli, datafiles):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
-@pytest.mark.xfail(reason="Incremental builds are currently incompatible with workspace source plugin.")
 def test_workspace_commanddir(cli, datafiles):
     project = str(datafiles)
     workspace = os.path.join(cli.directory, "workspace")
@@ -74,8 +73,16 @@ def test_workspace_commanddir(cli, datafiles):
     res = cli.run(project=project, args=["build", element_name])
     assert res.exit_code == 0
 
-    assert os.path.exists(os.path.join(cli.directory, "workspace"))
-    assert os.path.exists(os.path.join(cli.directory, "workspace", "build"))
+    # Check that the object file was created in the command-subdir `build`
+    # using the cached buildtree.
+    res = cli.run(
+        project=project,
+        args=["shell", "--build", element_name, "--use-buildtree", "always", "--", "find", "..", "-mindepth", "1",],
+    )
+    res.assert_success()
+
+    files = res.output.splitlines()
+    assert "../build/hello.o" in files
 
 
 @pytest.mark.datafiles(DATA_DIR)
