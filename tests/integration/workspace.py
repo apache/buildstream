@@ -281,7 +281,7 @@ def test_incremental_configure_commands_run_only_once(cli, datafiles):
     # Then we build, and check whether the configure step succeeded
     res = cli.run(project=project, args=["--cache-buildtrees", "always", "build", element_name])
     res.assert_success()
-    # check that the workspace was not configured
+    # check that the workspace was not configured outside the sandbox
     assert not os.path.exists(os.path.join(workspace, "prepared"))
 
     # the configure should have been run in the sandbox, so check the buildtree
@@ -294,6 +294,10 @@ def test_incremental_configure_commands_run_only_once(cli, datafiles):
     files = res.output.splitlines()
     assert "./prepared" in files
     assert not "./prepared-again" in files
+
+    # Add file to workspace to trigger an (incremental) build
+    with open(os.path.join(workspace, "newfile"), "w"):
+        pass
 
     # When we build again, the configure commands should not be
     # called, and we should therefore exit cleanly (the configure
