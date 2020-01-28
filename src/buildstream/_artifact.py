@@ -288,25 +288,6 @@ class Artifact:
 
         return self._metadata_keys
 
-    # get_metadata_dependencies():
-    #
-    # Retrieve the hash of dependency keys from the given artifact.
-    #
-    # Returns:
-    #    (dict): A dictionary of element names and their keys
-    #
-    def get_metadata_dependencies(self):
-
-        if self._metadata_dependencies is not None:
-            return self._metadata_dependencies
-
-        # Extract proto
-        artifact = self._get_proto()
-
-        self._metadata_dependencies = {dep.element_name: dep.cache_key for dep in artifact.build_deps}
-
-        return self._metadata_dependencies
-
     # get_metadata_workspaced():
     #
     # Retrieve the hash of dependency from the given artifact.
