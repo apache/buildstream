@@ -2,6 +2,16 @@
 (unreleased)
 ============
 
+Plugins
+-------
+
+  o The 'git' source will now only fetch a single revision when its ref is set
+    to an exact tag in git-describe format (...-0-g...).
+
+  o When a 'git' source has a ref in git-describe format, only the commit
+    ID is used when calculating the element's cache key. This means you can
+    change between ref formats without having to rebuild the element.
+
 
 ==================
 buildstream 1.93.0
@@ -88,6 +98,12 @@ CLI
       * `bst source fetch --track-cross-junctions` / `bst source fetch -J`
       * `bst workspace open --track`
       * `bst workspace reset --track`
+
+Plugins
+-------
+
+  o The 'git' source will now fetch submodules recursively when
+    its 'checkout-submodules' option is enabled.
 
 API
 ---

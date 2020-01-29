@@ -60,6 +60,34 @@ def test_fetch_bad_ref(cli, tmpdir, datafiles):
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
+@pytest.mark.skipif(HAVE_OLD_GIT, reason="old git cannot clone a shallow repo to stage the source")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "template"))
+def test_fetch_shallow(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    workspacedir = os.path.join(str(tmpdir), "workspace")
+
+    # Create the repo from 'repofiles' subdir
+    repo = create_repo("git", str(tmpdir))
+    repo.create(os.path.join(project, "repofiles"))
+    first_commit = repo.latest_commit()
+    repo.add_commit()
+    repo.add_tag("tag")
+
+    ref = "tag-0-g" + repo.latest_commit()
+
+    element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
+    generate_element(project, "target.bst", element)
+
+    result = cli.run(project=project, args=["source", "fetch", "target.bst"])
+    result.assert_success()
+    result = cli.run(project=project, args=["workspace", "open", "--directory", workspacedir, "target.bst"])
+    result.assert_success()
+
+    assert subprocess.call(["git", "show", "tag"], cwd=workspacedir) == 0
+    assert subprocess.call(["git", "show", first_commit], cwd=workspacedir) != 0
+
+
+@pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "template"))
 def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
     project = str(datafiles)
