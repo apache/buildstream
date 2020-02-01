@@ -363,7 +363,7 @@ docs:
   - pip3 install -r requirements/requirements.txt
   - pip3 wheel --wheel-dir wheels/ --no-deps .
   - pip3 install --no-index wheels/*
-  - pip3 install --user bst-plugins-experimental==${BST_EXT_REF}
+  - pip3 install --user bst-plugins-experimental[cargo]==${BST_EXT_REF}
   - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
   - git -C freedesktop-sdk checkout ${FD_SDK_REF}
   artifacts:
