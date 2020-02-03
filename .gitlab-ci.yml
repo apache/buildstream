@@ -24,7 +24,7 @@ variables:
   # Our own variables
   # Version of the docker images we should use for all the images.
   # This is taken from buildstream/buildstream-docker-images
-  DOCKER_IMAGE_VERSION: master-105004115
+  DOCKER_IMAGE_VERSION: master-114538533
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   PYTEST_ARGS: "--color=yes --integration -n 2"
@@ -302,9 +302,9 @@ tests-wsl-master:
   - df -h
   - PATH=/root/.local/bin:$PATH tox --version
   script:
-  # Install static buildbox-casd binary
-  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
-  - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
+  # Install static buildbox binaries
+  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-x86_64-linux-20200203-48361da7.tar.xz
+  - tar -C /root/.local/bin -xf buildbox-x86_64-linux-20200203-48361da7.tar.xz
 
   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
   only:
@@ -322,9 +322,9 @@ tests-wsl-non-master:
   - df -h
   - PATH=/root/.local/bin:$PATH tox --version
   script:
-  # Install static buildbox-casd binary
-  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
-  - tar -C /root/.local/bin -xf buildbox-casd-x86_64-linux-20191104-598100dd.tar.xz
+  # Install static buildbox binaries
+  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-x86_64-linux-20200203-48361da7.tar.xz
+  - tar -C /root/.local/bin -xf buildbox-x86_64-linux-20200203-48361da7.tar.xz
 
   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
   when: manual
