@@ -59,8 +59,11 @@ class SandboxREAPI(Sandbox):
         # Create directories for all marked directories. This emulates
         # some of the behaviour of other sandboxes, which create these
         # to use as mount points.
+        mount_sources = self._get_mount_sources()
         for mark in self._get_marked_directories():
             directory = mark["directory"]
+            if directory in mount_sources:
+                continue
             # Create each marked directory
             vdir.descend(*directory.split(os.path.sep), create=True)
 
