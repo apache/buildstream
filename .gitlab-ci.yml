@@ -351,7 +351,7 @@ docs:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   variables:
     FD_SDK_REF: freedesktop-sdk-19.08.5-buildstream2-0-g22588e2f41acecbcfc555942eb3086296bc14c6c
-    BST_EXT_REF: 1.93.0
+    BST_EXT_REF: 1.93.1.1
   before_script:
   - |
     mkdir -p "${HOME}/.config"
