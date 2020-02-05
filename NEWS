@@ -2,6 +2,12 @@
 (unreleased)
 ============
 
+API
+---
+
+  o `ErrorDomain` and `LoadErrorReason` are now available in the public
+    `buildstream.exceptions` module for use in test suites of external plugins.
+
 Plugins
 -------
 
