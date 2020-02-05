@@ -73,10 +73,40 @@ class IndexEntry:
         return self.buildstream_object
 
     def get_digest(self):
-        if self.digest:
-            return self.digest
-        else:
+        if self.buildstream_object:
+            # directory with buildstream object
             return self.buildstream_object._get_digest()
+        else:
+            # regular file, symlink or directory without buildstream object
+            return self.digest
+
+    # clone():
+    #
+    # Create a deep copy of this object. If this is a directory, a
+    # CasBasedDirectory can also be passed to assign an appropriate
+    # parent directory.
+    #
+    def clone(self) -> "IndexEntry":
+        return IndexEntry(
+            self.name,
+            self.type,
+            # If this is a directory, the digest will be converted
+            # later if necessary. For other non-file types, digests
+            # are always None.
+            digest=self.get_digest(),
+            target=self.target,
+            is_executable=self.is_executable,
+            node_properties=self.node_properties,
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, IndexEntry):
+            return NotImplemented
+
+        def get_equivalency_properties(e: IndexEntry):
+            return (e.name, e.type, e.target, e.is_executable, e.node_properties, e.get_digest())
+
+        return get_equivalency_properties(self) == get_equivalency_properties(other)
 
 
 # CasBasedDirectory intentionally doesn't call its superclass constuctor,
@@ -158,22 +188,108 @@ class CasBasedDirectory(Directory):
         return newdir
 
     def _add_file(self, basename, filename, modified=False, can_link=False, properties=None):
-        entry = IndexEntry(filename, _FileType.REGULAR_FILE, modified=modified or filename in self.index)
         path = os.path.join(basename, filename)
-        entry.digest = self.cas_cache.add_object(path=path, link_directly=can_link)
-        entry.is_executable = os.access(path, os.X_OK)
-        properties = properties or []
+        digest = self.cas_cache.add_object(path=path, link_directly=can_link)
+        is_executable = os.access(path, os.X_OK)
+        node_properties = []
         # see https://github.com/bazelbuild/remote-apis/blob/master/build/bazel/remote/execution/v2/nodeproperties.md
         # for supported node property specifications
-        entry.node_properties = []
-        if "MTime" in properties:
+        if properties and "MTime" in properties:
             node_property = remote_execution_pb2.NodeProperty()
             node_property.name = "MTime"
             node_property.value = _get_file_mtimestamp(path)
-            entry.node_properties.append(node_property)
+            node_properties.append(node_property)
+
+        entry = IndexEntry(
+            filename,
+            _FileType.REGULAR_FILE,
+            digest=digest,
+            is_executable=is_executable,
+            modified=modified or filename in self.index,
+            node_properties=node_properties,
+        )
         self.index[filename] = entry
 
         self.__invalidate_digest()
+
+    def _add_entry(self, entry: IndexEntry):
+        self.index[entry.name] = entry.clone()
+        self.__invalidate_digest()
+
+    def _contains_entry(self, entry: IndexEntry) -> bool:
+        return entry == self.index.get(entry.name)
+
+    # _apply_changes():
+    #
+    # Apply changes from dir_a to dir_b to this directory. The use
+    # case for this is to merge changes between different workspace
+    # versions into a buildtree.
+    #
+    # If a change was made both to this directory, as well as between
+    # the given directories, it is applied, overwriting any changes to
+    # this directory. This is desirable because we want to keep user
+    # changes, however it may need to be re-considered for other use
+    # cases.
+    #
+    # We perform this computation this way, instead of with a _diff
+    # method and a subsequent _apply_diff, because it prevents leaking
+    # IndexEntry objects, which contain mutable references and may
+    # therefore cause problems if used outside of this class.
+    #
+    # Args:
+    #     dir_a: The directory from which to start computing differences.
+    #     dir_b: The directory whose changes to apply
+    #
+    def _apply_changes(self, dir_a: "CasBasedDirectory", dir_b: "CasBasedDirectory"):
+        # If the digests are the same, the directories are the same
+        # (child properties affect the digest). We can skip any work
+        # in such a case.
+        if dir_a._get_digest() == dir_b._get_digest():
+            return
+
+        def get_subdir(entry: IndexEntry, directory: CasBasedDirectory) -> CasBasedDirectory:
+            return directory.index[entry.name].get_directory(directory)
+
+        def is_dir_in(entry: IndexEntry, directory: CasBasedDirectory) -> bool:
+            return directory.index[entry.name].type == _FileType.DIRECTORY
+
+        # We first check which files were added, and add them to our
+        # directory.
+        for entry in dir_b.index.values():
+            if self._contains_entry(entry):
+                # We can short-circuit checking entries from b that
+                # already exist in our index.
+                continue
+
+            if not dir_a._contains_entry(entry):
+                if entry.name in self.index and is_dir_in(entry, self) and is_dir_in(entry, dir_b):
+                    # If the entry changed, and is a directory in both
+                    # the current and to-merge-into tree, we need to
+                    # merge recursively.
+
+                    # If the entry is not a directory in dir_a, we
+                    # want to overwrite the file, but we need an empty
+                    # directory for recursion.
+                    if entry.name in dir_a.index and is_dir_in(entry, dir_a):
+                        sub_a = get_subdir(entry, dir_a)
+                    else:
+                        sub_a = CasBasedDirectory(dir_a.cas_cache)
+
+                    subdir = get_subdir(entry, self)
+                    subdir._apply_changes(sub_a, get_subdir(entry, dir_b))
+                else:
+                    # In any other case, we just add/overwrite the file/directory
+                    self._add_entry(entry)
+
+        # We can't iterate and remove entries at the same time
+        to_remove = [entry for entry in dir_a.index.values() if entry.name not in dir_b.index]
+        for entry in to_remove:
+            self.delete_entry(entry.name)
+
+        self.__invalidate_digest()
+
+    def _copy_link_from_filesystem(self, basename, filename):
+        self._add_new_link_direct(filename, os.readlink(os.path.join(basename, filename)))
 
     def _add_new_link_direct(self, name, target):
         self.index[name] = IndexEntry(name, _FileType.SYMLINK, target=target, modified=name in self.index)
@@ -343,15 +459,8 @@ class CasBasedDirectory(Directory):
             if not is_dir:
                 if self._check_replacement(name, relative_pathname, result):
                     if entry.type == _FileType.REGULAR_FILE:
-                        self.index[name] = IndexEntry(
-                            name,
-                            _FileType.REGULAR_FILE,
-                            digest=entry.digest,
-                            is_executable=entry.is_executable,
-                            modified=True,
-                            node_properties=entry.node_properties,
-                        )
-                        self.__invalidate_digest()
+                        self._add_entry(entry)
+                        self.index[entry.name].modified = True
                     else:
                         assert entry.type == _FileType.SYMLINK
                         self._add_new_link_direct(name=name, target=entry.target)
