@@ -32,7 +32,7 @@ See also: :ref:`sandboxing`.
 """
 
 
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, List
 
 from .._exceptions import BstError
 from ..exceptions import ErrorDomain
@@ -82,8 +82,9 @@ class Directory:
         *,
         filter_callback: Optional[Callable[[str], bool]] = None,
         report_written: bool = True,
-        update_mtime: bool = False,
-        can_link: bool = False
+        update_mtime: Optional[float] = None,
+        can_link: bool = False,
+        properties: Optional[List[str]] = None
     ) -> FileListResult:
         """Imports some or all files from external_path into this directory.
 
@@ -98,12 +99,13 @@ class Directory:
             written. Defaults to true. If false, only a list of
             overwritten files is returned.
           update_mtime: Update the access and modification time
-            of each file copied to the current time.
+            of each file copied to the time specified in seconds.
           can_link: Whether it's OK to create a hard link to the
             original content, meaning the stored copy will change when the
             original files change. Setting this doesn't guarantee hard
-            links will be made. can_link will never be used if
-            update_mtime is set.
+            links will be made.
+          properties: Optional list of strings representing file properties
+            to capture when importing.
 
         Yields:
           A report of files imported and overwritten.
@@ -112,7 +114,7 @@ class Directory:
 
         raise NotImplementedError()
 
-    def import_single_file(self, external_pathspec):
+    def import_single_file(self, external_pathspec, properties=None):
         """Imports a single file from an external path"""
         raise NotImplementedError()
 

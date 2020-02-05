@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='build.buildgrid',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x1f\x62uild/buildgrid/local_cas.proto\x12\x0f\x62uild.buildgrid\x1a\x36\x62uild/bazel/remote/execution/v2/remote_execution.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/rpc/status.proto\"p\n\x18\x46\x65tchMissingBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12=\n\x0c\x62lob_digests\x18\x02 \x03(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\xcc\x01\n\x19\x46\x65tchMissingBlobsResponse\x12\x46\n\tresponses\x18\x01 \x03(\x0b\x32\x33.build.buildgrid.FetchMissingBlobsResponse.Response\x1ag\n\x08Response\x12\x37\n\x06\x64igest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x02 \x01(\x0b\x32\x12.google.rpc.Status\"q\n\x19UploadMissingBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12=\n\x0c\x62lob_digests\x18\x02 \x03(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\xce\x01\n\x1aUploadMissingBlobsResponse\x12G\n\tresponses\x18\x01 \x03(\x0b\x32\x34.build.buildgrid.UploadMissingBlobsResponse.Response\x1ag\n\x08Response\x12\x37\n\x06\x64igest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x02 \x01(\x0b\x32\x12.google.rpc.Status\"\x81\x01\n\x10\x46\x65tchTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x18\n\x10\x66\x65tch_file_blobs\x18\x03 \x01(\x08\"\x13\n\x11\x46\x65tchTreeResponse\"h\n\x11UploadTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\x14\n\x12UploadTreeResponse\"u\n\x10StageTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x0c\n\x04path\x18\x03 \x01(\t\"!\n\x11StageTreeResponse\x12\x0c\n\x04path\x18\x01 \x01(\t\"U\n\x12\x43\x61ptureTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x03(\t\x12\x1a\n\x12\x62ypass_local_cache\x18\x03 \x01(\x08\"\xd3\x01\n\x13\x43\x61ptureTreeResponse\x12@\n\tresponses\x18\x01 \x03(\x0b\x32-.build.buildgrid.CaptureTreeResponse.Response\x1az\n\x08Response\x12\x0c\n\x04path\x18\x01 \x01(\t\x12<\n\x0btree_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x03 \x01(\x0b\x32\x12.google.rpc.Status\"V\n\x13\x43\x61ptureFilesRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x03(\t\x12\x1a\n\x12\x62ypass_local_cache\x18\x03 \x01(\x08\"\xd0\x01\n\x14\x43\x61ptureFilesResponse\x12\x41\n\tresponses\x18\x01 \x03(\x0b\x32..build.buildgrid.CaptureFilesResponse.Response\x1au\n\x08Response\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x03 \x01(\x0b\x32\x12.google.rpc.Status\"\x83\x01\n\x1fGetInstanceNameForRemoteRequest\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x15\n\rinstance_name\x18\x02 \x01(\t\x12\x13\n\x0bserver_cert\x18\x03 \x01(\x0c\x12\x12\n\nclient_key\x18\x04 \x01(\x0c\x12\x13\n\x0b\x63lient_cert\x18\x05 \x01(\x0c\"9\n GetInstanceNameForRemoteResponse\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"\x1a\n\x18GetLocalDiskUsageRequest\"D\n\x19GetLocalDiskUsageResponse\x12\x12\n\nsize_bytes\x18\x01 \x01(\x03\x12\x13\n\x0bquota_bytes\x18\x02 \x01(\x03\x32\xb5\x07\n\x1eLocalContentAddressableStorage\x12l\n\x11\x46\x65tchMissingBlobs\x12).build.buildgrid.FetchMissingBlobsRequest\x1a*.build.buildgrid.FetchMissingBlobsResponse\"\x00\x12o\n\x12UploadMissingBlobs\x12*.build.buildgrid.UploadMissingBlobsRequest\x1a+.build.buildgrid.UploadMissingBlobsResponse\"\x00\x12T\n\tFetchTree\x12!.build.buildgrid.FetchTreeRequest\x1a\".build.buildgrid.FetchTreeResponse\"\x00\x12W\n\nUploadTree\x12\".build.buildgrid.UploadTreeRequest\x1a#.build.buildgrid.UploadTreeResponse\"\x00\x12X\n\tStageTree\x12!.build.buildgrid.StageTreeRequest\x1a\".build.buildgrid.StageTreeResponse\"\x00(\x01\x30\x01\x12Z\n\x0b\x43\x61ptureTree\x12#.build.buildgrid.CaptureTreeRequest\x1a$.build.buildgrid.CaptureTreeResponse\"\x00\x12]\n\x0c\x43\x61ptureFiles\x12$.build.buildgrid.CaptureFilesRequest\x1a%.build.buildgrid.CaptureFilesResponse\"\x00\x12\x81\x01\n\x18GetInstanceNameForRemote\x12\x30.build.buildgrid.GetInstanceNameForRemoteRequest\x1a\x31.build.buildgrid.GetInstanceNameForRemoteResponse\"\x00\x12l\n\x11GetLocalDiskUsage\x12).build.buildgrid.GetLocalDiskUsageRequest\x1a*.build.buildgrid.GetLocalDiskUsageResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x1f\x62uild/buildgrid/local_cas.proto\x12\x0f\x62uild.buildgrid\x1a\x36\x62uild/bazel/remote/execution/v2/remote_execution.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/rpc/status.proto\"p\n\x18\x46\x65tchMissingBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12=\n\x0c\x62lob_digests\x18\x02 \x03(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\xcc\x01\n\x19\x46\x65tchMissingBlobsResponse\x12\x46\n\tresponses\x18\x01 \x03(\x0b\x32\x33.build.buildgrid.FetchMissingBlobsResponse.Response\x1ag\n\x08Response\x12\x37\n\x06\x64igest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x02 \x01(\x0b\x32\x12.google.rpc.Status\"q\n\x19UploadMissingBlobsRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12=\n\x0c\x62lob_digests\x18\x02 \x03(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\xce\x01\n\x1aUploadMissingBlobsResponse\x12G\n\tresponses\x18\x01 \x03(\x0b\x32\x34.build.buildgrid.UploadMissingBlobsResponse.Response\x1ag\n\x08Response\x12\x37\n\x06\x64igest\x18\x01 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x02 \x01(\x0b\x32\x12.google.rpc.Status\"\x81\x01\n\x10\x46\x65tchTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x18\n\x10\x66\x65tch_file_blobs\x18\x03 \x01(\x08\"\x13\n\x11\x46\x65tchTreeResponse\"h\n\x11UploadTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\"\x14\n\x12UploadTreeResponse\"u\n\x10StageTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12<\n\x0broot_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\x0c\n\x04path\x18\x03 \x01(\t\"!\n\x11StageTreeResponse\x12\x0c\n\x04path\x18\x01 \x01(\t\"n\n\x12\x43\x61ptureTreeRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x03(\t\x12\x1a\n\x12\x62ypass_local_cache\x18\x03 \x01(\x08\x12\x17\n\x0fnode_properties\x18\x04 \x03(\t\"\xd3\x01\n\x13\x43\x61ptureTreeResponse\x12@\n\tresponses\x18\x01 \x03(\x0b\x32-.build.buildgrid.CaptureTreeResponse.Response\x1az\n\x08Response\x12\x0c\n\x04path\x18\x01 \x01(\t\x12<\n\x0btree_digest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x03 \x01(\x0b\x32\x12.google.rpc.Status\"o\n\x13\x43\x61ptureFilesRequest\x12\x15\n\rinstance_name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x03(\t\x12\x1a\n\x12\x62ypass_local_cache\x18\x03 \x01(\x08\x12\x17\n\x0fnode_properties\x18\x04 \x03(\t\"\xb0\x02\n\x14\x43\x61ptureFilesResponse\x12\x41\n\tresponses\x18\x01 \x03(\x0b\x32..build.buildgrid.CaptureFilesResponse.Response\x1a\xd4\x01\n\x08Response\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x37\n\x06\x64igest\x18\x02 \x01(\x0b\x32\'.build.bazel.remote.execution.v2.Digest\x12\"\n\x06status\x18\x03 \x01(\x0b\x32\x12.google.rpc.Status\x12\x15\n\ris_executable\x18\x04 \x01(\x08\x12\x46\n\x0fnode_properties\x18\x05 \x03(\x0b\x32-.build.bazel.remote.execution.v2.NodeProperty\"\x83\x01\n\x1fGetInstanceNameForRemoteRequest\x12\x0b\n\x03url\x18\x01 \x01(\t\x12\x15\n\rinstance_name\x18\x02 \x01(\t\x12\x13\n\x0bserver_cert\x18\x03 \x01(\x0c\x12\x12\n\nclient_key\x18\x04 \x01(\x0c\x12\x13\n\x0b\x63lient_cert\x18\x05 \x01(\x0c\"9\n GetInstanceNameForRemoteResponse\x12\x15\n\rinstance_name\x18\x01 \x01(\t\"\x1a\n\x18GetLocalDiskUsageRequest\"D\n\x19GetLocalDiskUsageResponse\x12\x12\n\nsize_bytes\x18\x01 \x01(\x03\x12\x13\n\x0bquota_bytes\x18\x02 \x01(\x03\x32\xb5\x07\n\x1eLocalContentAddressableStorage\x12l\n\x11\x46\x65tchMissingBlobs\x12).build.buildgrid.FetchMissingBlobsRequest\x1a*.build.buildgrid.FetchMissingBlobsResponse\"\x00\x12o\n\x12UploadMissingBlobs\x12*.build.buildgrid.UploadMissingBlobsRequest\x1a+.build.buildgrid.UploadMissingBlobsResponse\"\x00\x12T\n\tFetchTree\x12!.build.buildgrid.FetchTreeRequest\x1a\".build.buildgrid.FetchTreeResponse\"\x00\x12W\n\nUploadTree\x12\".build.buildgrid.UploadTreeRequest\x1a#.build.buildgrid.UploadTreeResponse\"\x00\x12X\n\tStageTree\x12!.build.buildgrid.StageTreeRequest\x1a\".build.buildgrid.StageTreeResponse\"\x00(\x01\x30\x01\x12Z\n\x0b\x43\x61ptureTree\x12#.build.buildgrid.CaptureTreeRequest\x1a$.build.buildgrid.CaptureTreeResponse\"\x00\x12]\n\x0c\x43\x61ptureFiles\x12$.build.buildgrid.CaptureFilesRequest\x1a%.build.buildgrid.CaptureFilesResponse\"\x00\x12\x81\x01\n\x18GetInstanceNameForRemote\x12\x30.build.buildgrid.GetInstanceNameForRemoteRequest\x1a\x31.build.buildgrid.GetInstanceNameForRemoteResponse\"\x00\x12l\n\x11GetLocalDiskUsage\x12).build.buildgrid.GetLocalDiskUsageRequest\x1a*.build.buildgrid.GetLocalDiskUsageResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[build_dot_bazel_dot_remote_dot_execution_dot_v2_dot_remote__execution__pb2.DESCRIPTOR,google_dot_api_dot_annotations__pb2.DESCRIPTOR,google_dot_rpc_dot_status__pb2.DESCRIPTOR,])
 
@@ -477,6 +477,13 @@ _CAPTURETREEREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='node_properties', full_name='build.buildgrid.CaptureTreeRequest.node_properties', index=3,
+      number=4, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -490,7 +497,7 @@ _CAPTURETREEREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=1243,
-  serialized_end=1328,
+  serialized_end=1353,
 )
 
 
@@ -534,8 +541,8 @@ _CAPTURETREERESPONSE_RESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1420,
-  serialized_end=1542,
+  serialized_start=1445,
+  serialized_end=1567,
 )
 
 _CAPTURETREERESPONSE = _descriptor.Descriptor(
@@ -564,8 +571,8 @@ _CAPTURETREERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1331,
-  serialized_end=1542,
+  serialized_start=1356,
+  serialized_end=1567,
 )
 
 
@@ -597,6 +604,13 @@ _CAPTUREFILESREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='node_properties', full_name='build.buildgrid.CaptureFilesRequest.node_properties', index=3,
+      number=4, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -609,8 +623,8 @@ _CAPTUREFILESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1544,
-  serialized_end=1630,
+  serialized_start=1569,
+  serialized_end=1680,
 )
 
 
@@ -642,6 +656,20 @@ _CAPTUREFILESRESPONSE_RESPONSE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='is_executable', full_name='build.buildgrid.CaptureFilesResponse.Response.is_executable', index=3,
+      number=4, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='node_properties', full_name='build.buildgrid.CaptureFilesResponse.Response.node_properties', index=4,
+      number=5, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -654,8 +682,8 @@ _CAPTUREFILESRESPONSE_RESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1724,
-  serialized_end=1841,
+  serialized_start=1775,
+  serialized_end=1987,
 )
 
 _CAPTUREFILESRESPONSE = _descriptor.Descriptor(
@@ -684,8 +712,8 @@ _CAPTUREFILESRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1633,
-  serialized_end=1841,
+  serialized_start=1683,
+  serialized_end=1987,
 )
 
 
@@ -743,8 +771,8 @@ _GETINSTANCENAMEFORREMOTEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1844,
-  serialized_end=1975,
+  serialized_start=1990,
+  serialized_end=2121,
 )
 
 
@@ -774,8 +802,8 @@ _GETINSTANCENAMEFORREMOTERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1977,
-  serialized_end=2034,
+  serialized_start=2123,
+  serialized_end=2180,
 )
 
 
@@ -798,8 +826,8 @@ _GETLOCALDISKUSAGEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2036,
-  serialized_end=2062,
+  serialized_start=2182,
+  serialized_end=2208,
 )
 
 
@@ -836,8 +864,8 @@ _GETLOCALDISKUSAGERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2064,
-  serialized_end=2132,
+  serialized_start=2210,
+  serialized_end=2278,
 )
 
 _FETCHMISSINGBLOBSREQUEST.fields_by_name['blob_digests'].message_type = build_dot_bazel_dot_remote_dot_execution_dot_v2_dot_remote__execution__pb2._DIGEST
@@ -859,6 +887,7 @@ _CAPTURETREERESPONSE_RESPONSE.containing_type = _CAPTURETREERESPONSE
 _CAPTURETREERESPONSE.fields_by_name['responses'].message_type = _CAPTURETREERESPONSE_RESPONSE
 _CAPTUREFILESRESPONSE_RESPONSE.fields_by_name['digest'].message_type = build_dot_bazel_dot_remote_dot_execution_dot_v2_dot_remote__execution__pb2._DIGEST
 _CAPTUREFILESRESPONSE_RESPONSE.fields_by_name['status'].message_type = google_dot_rpc_dot_status__pb2._STATUS
+_CAPTUREFILESRESPONSE_RESPONSE.fields_by_name['node_properties'].message_type = build_dot_bazel_dot_remote_dot_execution_dot_v2_dot_remote__execution__pb2._NODEPROPERTY
 _CAPTUREFILESRESPONSE_RESPONSE.containing_type = _CAPTUREFILESRESPONSE
 _CAPTUREFILESRESPONSE.fields_by_name['responses'].message_type = _CAPTUREFILESRESPONSE_RESPONSE
 DESCRIPTOR.message_types_by_name['FetchMissingBlobsRequest'] = _FETCHMISSINGBLOBSREQUEST
@@ -881,162 +910,162 @@ DESCRIPTOR.message_types_by_name['GetLocalDiskUsageRequest'] = _GETLOCALDISKUSAG
 DESCRIPTOR.message_types_by_name['GetLocalDiskUsageResponse'] = _GETLOCALDISKUSAGERESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-FetchMissingBlobsRequest = _reflection.GeneratedProtocolMessageType('FetchMissingBlobsRequest', (_message.Message,), dict(
-  DESCRIPTOR = _FETCHMISSINGBLOBSREQUEST,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+FetchMissingBlobsRequest = _reflection.GeneratedProtocolMessageType('FetchMissingBlobsRequest', (_message.Message,), {
+  'DESCRIPTOR' : _FETCHMISSINGBLOBSREQUEST,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.FetchMissingBlobsRequest)
-  ))
+  })
 _sym_db.RegisterMessage(FetchMissingBlobsRequest)
 
-FetchMissingBlobsResponse = _reflection.GeneratedProtocolMessageType('FetchMissingBlobsResponse', (_message.Message,), dict(
+FetchMissingBlobsResponse = _reflection.GeneratedProtocolMessageType('FetchMissingBlobsResponse', (_message.Message,), {
 
-  Response = _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), dict(
-    DESCRIPTOR = _FETCHMISSINGBLOBSRESPONSE_RESPONSE,
-    __module__ = 'build.buildgrid.local_cas_pb2'
+  'Response' : _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), {
+    'DESCRIPTOR' : _FETCHMISSINGBLOBSRESPONSE_RESPONSE,
+    '__module__' : 'build.buildgrid.local_cas_pb2'
     # @@protoc_insertion_point(class_scope:build.buildgrid.FetchMissingBlobsResponse.Response)
-    ))
+    })
   ,
-  DESCRIPTOR = _FETCHMISSINGBLOBSRESPONSE,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+  'DESCRIPTOR' : _FETCHMISSINGBLOBSRESPONSE,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.FetchMissingBlobsResponse)
-  ))
+  })
 _sym_db.RegisterMessage(FetchMissingBlobsResponse)
 _sym_db.RegisterMessage(FetchMissingBlobsResponse.Response)
 
-UploadMissingBlobsRequest = _reflection.GeneratedProtocolMessageType('UploadMissingBlobsRequest', (_message.Message,), dict(
-  DESCRIPTOR = _UPLOADMISSINGBLOBSREQUEST,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+UploadMissingBlobsRequest = _reflection.GeneratedProtocolMessageType('UploadMissingBlobsRequest', (_message.Message,), {
+  'DESCRIPTOR' : _UPLOADMISSINGBLOBSREQUEST,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.UploadMissingBlobsRequest)
-  ))
+  })
 _sym_db.RegisterMessage(UploadMissingBlobsRequest)
 
-UploadMissingBlobsResponse = _reflection.GeneratedProtocolMessageType('UploadMissingBlobsResponse', (_message.Message,), dict(
+UploadMissingBlobsResponse = _reflection.GeneratedProtocolMessageType('UploadMissingBlobsResponse', (_message.Message,), {
 
-  Response = _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), dict(
-    DESCRIPTOR = _UPLOADMISSINGBLOBSRESPONSE_RESPONSE,
-    __module__ = 'build.buildgrid.local_cas_pb2'
+  'Response' : _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), {
+    'DESCRIPTOR' : _UPLOADMISSINGBLOBSRESPONSE_RESPONSE,
+    '__module__' : 'build.buildgrid.local_cas_pb2'
     # @@protoc_insertion_point(class_scope:build.buildgrid.UploadMissingBlobsResponse.Response)
-    ))
+    })
   ,
-  DESCRIPTOR = _UPLOADMISSINGBLOBSRESPONSE,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+  'DESCRIPTOR' : _UPLOADMISSINGBLOBSRESPONSE,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.UploadMissingBlobsResponse)
-  ))
+  })
 _sym_db.RegisterMessage(UploadMissingBlobsResponse)
 _sym_db.RegisterMessage(UploadMissingBlobsResponse.Response)
 
-FetchTreeRequest = _reflection.GeneratedProtocolMessageType('FetchTreeRequest', (_message.Message,), dict(
-  DESCRIPTOR = _FETCHTREEREQUEST,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+FetchTreeRequest = _reflection.GeneratedProtocolMessageType('FetchTreeRequest', (_message.Message,), {
+  'DESCRIPTOR' : _FETCHTREEREQUEST,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.FetchTreeRequest)
-  ))
+  })
 _sym_db.RegisterMessage(FetchTreeRequest)
 
-FetchTreeResponse = _reflection.GeneratedProtocolMessageType('FetchTreeResponse', (_message.Message,), dict(
-  DESCRIPTOR = _FETCHTREERESPONSE,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+FetchTreeResponse = _reflection.GeneratedProtocolMessageType('FetchTreeResponse', (_message.Message,), {
+  'DESCRIPTOR' : _FETCHTREERESPONSE,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.FetchTreeResponse)
-  ))
+  })
 _sym_db.RegisterMessage(FetchTreeResponse)
 
-UploadTreeRequest = _reflection.GeneratedProtocolMessageType('UploadTreeRequest', (_message.Message,), dict(
-  DESCRIPTOR = _UPLOADTREEREQUEST,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+UploadTreeRequest = _reflection.GeneratedProtocolMessageType('UploadTreeRequest', (_message.Message,), {
+  'DESCRIPTOR' : _UPLOADTREEREQUEST,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.UploadTreeRequest)
-  ))
+  })
 _sym_db.RegisterMessage(UploadTreeRequest)
 
-UploadTreeResponse = _reflection.GeneratedProtocolMessageType('UploadTreeResponse', (_message.Message,), dict(
-  DESCRIPTOR = _UPLOADTREERESPONSE,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+UploadTreeResponse = _reflection.GeneratedProtocolMessageType('UploadTreeResponse', (_message.Message,), {
+  'DESCRIPTOR' : _UPLOADTREERESPONSE,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.UploadTreeResponse)
-  ))
+  })
 _sym_db.RegisterMessage(UploadTreeResponse)
 
-StageTreeRequest = _reflection.GeneratedProtocolMessageType('StageTreeRequest', (_message.Message,), dict(
-  DESCRIPTOR = _STAGETREEREQUEST,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+StageTreeRequest = _reflection.GeneratedProtocolMessageType('StageTreeRequest', (_message.Message,), {
+  'DESCRIPTOR' : _STAGETREEREQUEST,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.StageTreeRequest)
-  ))
+  })
 _sym_db.RegisterMessage(StageTreeRequest)
 
-StageTreeResponse = _reflection.GeneratedProtocolMessageType('StageTreeResponse', (_message.Message,), dict(
-  DESCRIPTOR = _STAGETREERESPONSE,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+StageTreeResponse = _reflection.GeneratedProtocolMessageType('StageTreeResponse', (_message.Message,), {
+  'DESCRIPTOR' : _STAGETREERESPONSE,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.StageTreeResponse)
-  ))
+  })
 _sym_db.RegisterMessage(StageTreeResponse)
 
-CaptureTreeRequest = _reflection.GeneratedProtocolMessageType('CaptureTreeRequest', (_message.Message,), dict(
-  DESCRIPTOR = _CAPTURETREEREQUEST,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+CaptureTreeRequest = _reflection.GeneratedProtocolMessageType('CaptureTreeRequest', (_message.Message,), {
+  'DESCRIPTOR' : _CAPTURETREEREQUEST,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.CaptureTreeRequest)
-  ))
+  })
 _sym_db.RegisterMessage(CaptureTreeRequest)
 
-CaptureTreeResponse = _reflection.GeneratedProtocolMessageType('CaptureTreeResponse', (_message.Message,), dict(
+CaptureTreeResponse = _reflection.GeneratedProtocolMessageType('CaptureTreeResponse', (_message.Message,), {
 
-  Response = _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), dict(
-    DESCRIPTOR = _CAPTURETREERESPONSE_RESPONSE,
-    __module__ = 'build.buildgrid.local_cas_pb2'
+  'Response' : _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), {
+    'DESCRIPTOR' : _CAPTURETREERESPONSE_RESPONSE,
+    '__module__' : 'build.buildgrid.local_cas_pb2'
     # @@protoc_insertion_point(class_scope:build.buildgrid.CaptureTreeResponse.Response)
-    ))
+    })
   ,
-  DESCRIPTOR = _CAPTURETREERESPONSE,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+  'DESCRIPTOR' : _CAPTURETREERESPONSE,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.CaptureTreeResponse)
-  ))
+  })
 _sym_db.RegisterMessage(CaptureTreeResponse)
 _sym_db.RegisterMessage(CaptureTreeResponse.Response)
 
-CaptureFilesRequest = _reflection.GeneratedProtocolMessageType('CaptureFilesRequest', (_message.Message,), dict(
-  DESCRIPTOR = _CAPTUREFILESREQUEST,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+CaptureFilesRequest = _reflection.GeneratedProtocolMessageType('CaptureFilesRequest', (_message.Message,), {
+  'DESCRIPTOR' : _CAPTUREFILESREQUEST,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.CaptureFilesRequest)
-  ))
+  })
 _sym_db.RegisterMessage(CaptureFilesRequest)
 
-CaptureFilesResponse = _reflection.GeneratedProtocolMessageType('CaptureFilesResponse', (_message.Message,), dict(
+CaptureFilesResponse = _reflection.GeneratedProtocolMessageType('CaptureFilesResponse', (_message.Message,), {
 
-  Response = _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), dict(
-    DESCRIPTOR = _CAPTUREFILESRESPONSE_RESPONSE,
-    __module__ = 'build.buildgrid.local_cas_pb2'
+  'Response' : _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), {
+    'DESCRIPTOR' : _CAPTUREFILESRESPONSE_RESPONSE,
+    '__module__' : 'build.buildgrid.local_cas_pb2'
     # @@protoc_insertion_point(class_scope:build.buildgrid.CaptureFilesResponse.Response)
-    ))
+    })
   ,
-  DESCRIPTOR = _CAPTUREFILESRESPONSE,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+  'DESCRIPTOR' : _CAPTUREFILESRESPONSE,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.CaptureFilesResponse)
-  ))
+  })
 _sym_db.RegisterMessage(CaptureFilesResponse)
 _sym_db.RegisterMessage(CaptureFilesResponse.Response)
 
-GetInstanceNameForRemoteRequest = _reflection.GeneratedProtocolMessageType('GetInstanceNameForRemoteRequest', (_message.Message,), dict(
-  DESCRIPTOR = _GETINSTANCENAMEFORREMOTEREQUEST,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+GetInstanceNameForRemoteRequest = _reflection.GeneratedProtocolMessageType('GetInstanceNameForRemoteRequest', (_message.Message,), {
+  'DESCRIPTOR' : _GETINSTANCENAMEFORREMOTEREQUEST,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.GetInstanceNameForRemoteRequest)
-  ))
+  })
 _sym_db.RegisterMessage(GetInstanceNameForRemoteRequest)
 
-GetInstanceNameForRemoteResponse = _reflection.GeneratedProtocolMessageType('GetInstanceNameForRemoteResponse', (_message.Message,), dict(
-  DESCRIPTOR = _GETINSTANCENAMEFORREMOTERESPONSE,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+GetInstanceNameForRemoteResponse = _reflection.GeneratedProtocolMessageType('GetInstanceNameForRemoteResponse', (_message.Message,), {
+  'DESCRIPTOR' : _GETINSTANCENAMEFORREMOTERESPONSE,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.GetInstanceNameForRemoteResponse)
-  ))
+  })
 _sym_db.RegisterMessage(GetInstanceNameForRemoteResponse)
 
-GetLocalDiskUsageRequest = _reflection.GeneratedProtocolMessageType('GetLocalDiskUsageRequest', (_message.Message,), dict(
-  DESCRIPTOR = _GETLOCALDISKUSAGEREQUEST,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+GetLocalDiskUsageRequest = _reflection.GeneratedProtocolMessageType('GetLocalDiskUsageRequest', (_message.Message,), {
+  'DESCRIPTOR' : _GETLOCALDISKUSAGEREQUEST,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.GetLocalDiskUsageRequest)
-  ))
+  })
 _sym_db.RegisterMessage(GetLocalDiskUsageRequest)
 
-GetLocalDiskUsageResponse = _reflection.GeneratedProtocolMessageType('GetLocalDiskUsageResponse', (_message.Message,), dict(
-  DESCRIPTOR = _GETLOCALDISKUSAGERESPONSE,
-  __module__ = 'build.buildgrid.local_cas_pb2'
+GetLocalDiskUsageResponse = _reflection.GeneratedProtocolMessageType('GetLocalDiskUsageResponse', (_message.Message,), {
+  'DESCRIPTOR' : _GETLOCALDISKUSAGERESPONSE,
+  '__module__' : 'build.buildgrid.local_cas_pb2'
   # @@protoc_insertion_point(class_scope:build.buildgrid.GetLocalDiskUsageResponse)
-  ))
+  })
 _sym_db.RegisterMessage(GetLocalDiskUsageResponse)
 
 
@@ -1047,8 +1076,8 @@ _LOCALCONTENTADDRESSABLESTORAGE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=2135,
-  serialized_end=3084,
+  serialized_start=2281,
+  serialized_end=3230,
   methods=[
   _descriptor.MethodDescriptor(
     name='FetchMissingBlobs',

@@ -60,10 +60,10 @@ service LocalContentAddressableStorage {
   // in the local cache. Optionally, this will also fetch all blobs referenced
   // by the `Directory` objects, equivalent to `FetchMissingBlobs`.
   //
-  // If part of the tree is missing from the CAS, the server will return the
-  // portion present and omit the rest.
+  // If no remote CAS is available, this will check presence of the entire
+  // directory tree (and optionally also file blobs) in the local cache.
   //
-  // * `NOT_FOUND`: The requested tree root is not present in the CAS.
+  // * `NOT_FOUND`: The requested tree is not present in the CAS or incomplete.
   rpc FetchTree(FetchTreeRequest) returns (FetchTreeResponse) {}
 
   // Upload the entire directory tree from the local cache to a remote CAS.
@@ -139,7 +139,7 @@ message FetchMissingBlobsRequest {
 // A response message for
 // [LocalContentAddressableStorage.FetchMissingBlobs][build.buildgrid.v2.LocalContentAddressableStorage.FetchMissingBlobs].
 message FetchMissingBlobsResponse {
-  // A response corresponding to a single blob that the client tried to upload.
+  // A response corresponding to a single blob that the client tried to download.
   message Response {
     // The digest to which this response corresponds.
     build.bazel.remote.execution.v2.Digest digest = 1;
@@ -281,6 +281,9 @@ message CaptureTreeRequest {
   // This is a hint whether the blobs shall be uploaded to the remote CAS
   // without first storing them in the local cache.
   bool bypass_local_cache = 3;
+
+  // The properties of path(s) in the local filesystem to capture.
+  repeated string node_properties = 4;
 }
 
 // A response message for
@@ -320,6 +323,9 @@ message CaptureFilesRequest {
   // This is a hint whether the blobs shall be uploaded to the remote CAS
   // without first storing them in the local cache.
   bool bypass_local_cache = 3;
+
+  // The properties of path(s) in the local filesystem to capture.
+  repeated string node_properties = 4;
 }
 
 // A response message for
@@ -335,6 +341,12 @@ message CaptureFilesResponse {
 
     // The result of attempting to capture and upload the file.
     google.rpc.Status status = 3;
+
+    // True if the captured file was executable, false otherwise.
+    bool is_executable = 4;
+
+    // The node properties of the captured file.
+    repeated build.bazel.remote.execution.v2.NodeProperty node_properties = 5;
   }
 
   // The responses to the requests.
