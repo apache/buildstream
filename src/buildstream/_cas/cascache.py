@@ -26,6 +26,7 @@ import ctypes
 import multiprocessing
 import signal
 import time
+from typing import Optional, List
 
 import grpc
 
@@ -34,7 +35,7 @@ from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .._protos.build.buildgrid import local_cas_pb2
 
 from .. import _signals, utils
-from ..types import FastEnum
+from ..types import FastEnum, SourceRef
 from .._exceptions import CASCacheError
 
 from .casdprocessmanager import CASDProcessManager
@@ -216,10 +217,18 @@ class CASCache:
         for filenode in directory.files:
             # regular file, create hardlink
             fullpath = os.path.join(dest, filenode.name)
-            if can_link:
+            # generally, if the node holds properties we will fallback
+            # to copying instead of hardlinking
+            if can_link and not filenode.node_properties:
                 utils.safe_link(self.objpath(filenode.digest), fullpath)
             else:
                 utils.safe_copy(self.objpath(filenode.digest), fullpath)
+                if filenode.node_properties:
+                    # see https://github.com/bazelbuild/remote-apis/blob/master/build/bazel/remote/execution/v2/nodeproperties.md
+                    # for supported node property specifications
+                    for prop in filenode.node_properties:
+                        if prop.name == "MTime" and prop.value:
+                            utils._set_file_mtime(fullpath, utils._parse_timestamp(prop.value))
 
             if filenode.is_executable:
                 os.chmod(
@@ -339,15 +348,21 @@ class CASCache:
     #
     # Args:
     #     path (str): Path to directory to import
+    #     properties Optional[List[str]]: List of properties to request
     #
     # Returns:
     #     (Digest): The digest of the imported directory
     #
-    def import_directory(self, path):
+    def import_directory(self, path: str, properties: Optional[List[str]] = None) -> SourceRef:
         local_cas = self.get_local_cas()
 
         request = local_cas_pb2.CaptureTreeRequest()
         request.path.append(path)
+
+        if properties:
+            for _property in properties:
+                request.node_properties.append(_property)
+
         response = local_cas.CaptureTree(request)
 
         if len(response.responses) != 1:

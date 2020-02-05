@@ -29,10 +29,6 @@ def create_test_directory(*path, mode=0o644):
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
-@pytest.mark.skipif(
-    HAVE_SANDBOX == "buildbox-run" and CASD_SEPARATE_USER,
-    reason="Flaky due to timestamps: https://gitlab.com/BuildStream/buildstream/issues/1218",
-)
 def test_deterministic_source_local(cli, tmpdir, datafiles):
     """Only user rights should be considered for local source.
     """
@@ -62,6 +58,7 @@ def test_deterministic_source_local(cli, tmpdir, datafiles):
         create_test_directory(sourcedir, "dir-c", mode=0o2755 & mask)
         create_test_directory(sourcedir, "dir-d", mode=0o1755 & mask)
         try:
+            test_values = []
             result = cli.run(project=project, args=["build", element_name])
             result.assert_success()
 
@@ -69,7 +66,9 @@ def test_deterministic_source_local(cli, tmpdir, datafiles):
             result.assert_success()
 
             with open(os.path.join(checkoutdir, "ls-l"), "r") as f:
-                return f.read()
+                for line in f.readlines():
+                    test_values.append(line.split()[0] + " " + line.split()[-1])
+                return test_values
         finally:
             cli.remove_artifact_from_cache(project, element_name)
 

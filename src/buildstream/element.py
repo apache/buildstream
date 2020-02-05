@@ -75,6 +75,7 @@ Class Reference
 import os
 import re
 import stat
+import time
 import copy
 from collections import OrderedDict
 import contextlib
@@ -91,7 +92,7 @@ from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
 from ._exceptions import BstError, LoadError, ImplError, SourceCacheError
 from .exceptions import ErrorDomain, LoadErrorReason
-from .utils import FileListResult
+from .utils import FileListResult, BST_ARBITRARY_TIMESTAMP
 from . import utils
 from . import _cachekey
 from . import _site
@@ -707,7 +708,7 @@ class Element(Plugin):
 
             if update_mtimes:
                 copy_result = vstagedir.import_files(
-                    files_vdir, filter_callback=copy_filter, report_written=True, update_mtime=True
+                    files_vdir, filter_callback=copy_filter, report_written=True, update_mtime=time.time()
                 )
                 result = result.combine(copy_result)
 
@@ -1466,11 +1467,10 @@ class Element(Plugin):
                             reason="import-source-files-fail",
                         )
 
+            # Set update_mtime to ensure deterministic mtime of sources at build time
             with utils._deterministic_umask():
-                vdirectory.import_files(import_dir)
+                vdirectory.import_files(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP)
 
-        # Ensure deterministic mtime of sources at build time
-        vdirectory.set_deterministic_mtime()
         # Ensure deterministic owners of sources at build time
         vdirectory.set_deterministic_user()
 

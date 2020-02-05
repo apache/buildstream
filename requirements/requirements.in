@@ -9,3 +9,4 @@ ruamel.yaml.clib >= 0.1.2
 setuptools
 pyroaring
 ujson
+python-dateutil >= 2.7.0

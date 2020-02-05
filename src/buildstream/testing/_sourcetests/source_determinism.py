@@ -50,11 +50,10 @@ def create_test_directory(*path, mode=0o644):
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
-@pytest.mark.skipif(
-    HAVE_SANDBOX == "buildbox-run" and CASD_SEPARATE_USER,
-    reason="Flaky due to timestamps: https://gitlab.com/BuildStream/buildstream/issues/1218",
-)
 def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
+    if CASD_SEPARATE_USER and kind == "ostree":
+        pytest.xfail("The ostree plugin ignores the umask")
+
     project = str(datafiles)
     element_name = "list.bst"
     element_path = os.path.join(project, "elements", element_name)
@@ -92,6 +91,7 @@ def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
         old_umask = os.umask(umask)
 
         try:
+            test_values = []
             result = cli.run(project=project, args=["build", element_name])
             result.assert_success()
 
@@ -99,7 +99,9 @@ def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
             result.assert_success()
 
             with open(os.path.join(checkoutdir, "ls-l"), "r") as f:
-                return f.read()
+                for line in f.readlines():
+                    test_values.append(line.split()[0] + " " + line.split()[-1])
+                return test_values
         finally:
             os.umask(old_umask)
             cli.remove_artifact_from_cache(project, element_name)
