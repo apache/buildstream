@@ -149,12 +149,6 @@ class Directory:
         """
         raise NotImplementedError()
 
-    def set_deterministic_mtime(self):
-        """ Sets a static modification time for all regular files in this directory.
-        The magic number for timestamps is 2011-11-11 11:11:11.
-        """
-        raise NotImplementedError()
-
     def set_deterministic_user(self):
         """ Sets all files in this directory to the current user's euid/egid.
         """

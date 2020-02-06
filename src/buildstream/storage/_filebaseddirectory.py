@@ -141,9 +141,6 @@ class FileBasedDirectory(Directory):
     def _mark_changed(self):
         pass
 
-    def set_deterministic_mtime(self):
-        _set_deterministic_mtime(self.external_directory)
-
     def set_deterministic_user(self):
         _set_deterministic_user(self.external_directory)
 

@@ -513,11 +513,6 @@ class CasBasedDirectory(Directory):
             result.files_written.append(external_pathspec)
         return result
 
-    def set_deterministic_mtime(self):
-        """ Sets a static modification time for all regular files in this directory.
-        Since we don't store any modification time, we don't need to do anything.
-        """
-
     def set_deterministic_user(self):
         """ Sets all files in this directory to the current user's euid/egid.
         We also don't store user data, so this can be ignored.
