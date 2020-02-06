@@ -134,6 +134,9 @@ def check_buildtree(
     buildtree = {}
     output = result.output.splitlines()
 
+    typ_inptime = None
+    typ_gentime = None
+
     for line in output:
         assert "::" in line
         fname, mtime = line.split("::")
@@ -141,9 +144,6 @@ def check_buildtree(
         fname = fname[1:]
         mtime = int(mtime)
         buildtree[fname] = mtime
-
-        typ_inptime = None
-        typ_gentime = None
 
         if incremental:
             # directory timestamps are not meaningful
@@ -184,15 +184,10 @@ def get_timemark(cli, project, element_name, marker):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.xfail(reason="incremental workspace builds are not yet supported")
 @pytest.mark.parametrize(
     "modification", [pytest.param("content"), pytest.param("time"),],
 )
-@pytest.mark.parametrize(
-    "buildtype", [pytest.param("non-incremental"), pytest.param("incremental"),],
-)
-def test_workspace_build(cli, tmpdir, datafiles, modification, buildtype):
-    incremental = buildtype == "incremental"
+def test_workspace_build(cli, tmpdir, datafiles, modification):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout")
     workspace = os.path.join(cli.directory, "workspace")
@@ -269,7 +264,7 @@ def test_workspace_build(cli, tmpdir, datafiles, modification, buildtype):
     if modification == "time":
         # touch a file in the workspace and save the mtime
         os.utime(main_path)
-        touched_time = os.stat(main_path).st_mtime
+        touched_time = int(os.stat(main_path).st_mtime)
 
     elif modification == "content":
         # change a source file (there's a race here but it's not serious)
@@ -278,7 +273,7 @@ def test_workspace_build(cli, tmpdir, datafiles, modification, buildtype):
         with open(main_path, "w") as fdata:
             for line in data:
                 fdata.write(re.sub(r"Hello", "Goodbye", line))
-        touched_time = os.stat(main_path).st_mtime
+        touched_time = int(os.stat(main_path).st_mtime)
 
     # refresh input times
     ws_times = get_mtimes(workspace)
@@ -287,14 +282,19 @@ def test_workspace_build(cli, tmpdir, datafiles, modification, buildtype):
     result = cli.run(project=project, args=build)
     result.assert_success()
 
-    rebuild_times = check_buildtree(cli, project, element_name, input_files, generated_files, incremental=incremental)
+    rebuild_times = check_buildtree(cli, project, element_name, input_files, generated_files, incremental=True)
     rebuild_timemark = get_timemark(cli, project, element_name, (os.sep + BLDMARK))
     assert rebuild_timemark > build_timemark
 
     # check the times of the changed files
-    if incremental:
-        assert rebuild_times[os.sep + MAIN] == touched_time
-        del rebuild_times[os.sep + MAIN]
+    assert rebuild_times[os.sep + MAIN] == touched_time
+    del rebuild_times[os.sep + MAIN]
+    del rebuild_times[os.sep + MAINO]
+    del rebuild_times[os.sep + SRC + os.sep + "hello"]
+    del rebuild_times[os.sep + DEPS + os.sep + "main.Po"]
+    del rebuild_times[os.sep + BLDMARK]
+
+    # check the times of the unmodified files
     assert all([rebuild_times[fname] == build_times[fname] for fname in rebuild_times]), "{}\n{}".format(
         rebuild_times, build_times
     )
