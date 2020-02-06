@@ -2450,6 +2450,11 @@ class Element(Plugin):
         project = self._get_project()
         platform = context.platform
 
+        if self._get_workspace():
+            output_node_properties = ["MTime"]
+        else:
+            output_node_properties = None
+
         if directory is not None and allow_remote and self.__use_remote_execution():
 
             if not self.BST_VIRTUAL_DIRECTORY:
@@ -2476,6 +2481,7 @@ class Element(Plugin):
                 bare_directory=bare_directory,
                 allow_real_directory=False,
                 output_files_required=output_files_required,
+                output_node_properties=output_node_properties,
             )
             yield sandbox
 
@@ -2491,6 +2497,7 @@ class Element(Plugin):
                 config=config,
                 bare_directory=bare_directory,
                 allow_real_directory=not self.BST_VIRTUAL_DIRECTORY,
+                output_node_properties=output_node_properties,
             )
             yield sandbox
 
