@@ -452,3 +452,65 @@ def test_incremental(cli, datafiles):
 
     # Verify that the output file still matches the previous content '2'
     assert get_buildtree_file_contents(cli, project, element_name, "copy") == "2"
+
+
+# Test incremental build after partial build / build failure
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_incremental_partial(cli, datafiles):
+    project = str(datafiles)
+    workspace = os.path.join(cli.directory, "workspace")
+    element_path = os.path.join(project, "elements")
+    element_name = "workspace/incremental.bst"
+
+    element = {
+        "kind": "manual",
+        "depends": [{"filename": "base.bst", "type": "build"}],
+        "sources": [{"kind": "local", "path": "files/workspace-partial"}],
+        "config": {"build-commands": ["make random", "make copy1", "make copy2"]},
+    }
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
+
+    # We open a workspace on the above element
+    res = cli.run(project=project, args=["workspace", "open", "--directory", workspace, element_name])
+    res.assert_success()
+
+    # Initial (non-incremental) build of the workspace
+    res = cli.run(project=project, args=["build", element_name])
+    res.assert_success()
+
+    # Save the random hash
+    random_hash = get_buildtree_file_contents(cli, project, element_name, "random")
+
+    # Verify the expected output files of the initial build
+    assert get_buildtree_file_contents(cli, project, element_name, "copy1") == "1"
+    assert get_buildtree_file_contents(cli, project, element_name, "copy2") == "1"
+
+    wait_for_cache_granularity()
+
+    # Delete source1 and replace source2 file contents with '2'
+    os.unlink(os.path.join(workspace, "source1"))
+    with open(os.path.join(workspace, "source2"), "w") as f:
+        f.write("2")
+
+    # Perform incremental build of the workspace
+    # This should fail because of the missing source1 file.
+    res = cli.run(project=project, args=["build", element_name])
+    res.assert_main_error(ErrorDomain.STREAM, None)
+
+    wait_for_cache_granularity()
+
+    # Recreate source1 file
+    with open(os.path.join(workspace, "source1"), "w") as f:
+        f.write("2")
+
+    # Perform incremental build of the workspace
+    res = cli.run(project=project, args=["build", element_name])
+    res.assert_success()
+
+    # Verify that this was an incremental build by comparing the random hash
+    assert get_buildtree_file_contents(cli, project, element_name, "random") == random_hash
+
+    # Verify that both files got rebuilt
+    assert get_buildtree_file_contents(cli, project, element_name, "copy1") == "2"
+    assert get_buildtree_file_contents(cli, project, element_name, "copy2") == "2"
