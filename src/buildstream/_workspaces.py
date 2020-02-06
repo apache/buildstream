@@ -21,12 +21,11 @@ import os
 from . import utils
 from . import _yaml
 
-from .node import MappingNode, ScalarNode
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
 
 
-BST_WORKSPACE_FORMAT_VERSION = 3
+BST_WORKSPACE_FORMAT_VERSION = 4
 BST_WORKSPACE_PROJECT_FORMAT_VERSION = 1
 WORKSPACE_PROJECT_FILE = ".bstproject.yaml"
 
@@ -511,38 +510,17 @@ class Workspaces:
                 "Format version is not an integer in workspace configuration", LoadErrorReason.INVALID_DATA
             )
 
-        if version == 0:
-            # Pre-versioning format can be of two forms
-            for element, config in workspaces.items():
-                config_type = type(config)
+        if version < 4:
+            # bst 1.x workspaces do not separate source and build files.
+            raise LoadError(
+                "Workspace configuration format version {} not supported."
+                "Please recreate this workspace.".format(version),
+                LoadErrorReason.INVALID_DATA,
+            )
 
-                if config_type is ScalarNode:
-                    pass
-
-                elif config_type is MappingNode:
-                    sources = list(config.values())
-                    if len(sources) > 1:
-                        detail = (
-                            "There are multiple workspaces open for '{}'.\n"
-                            + "This is not supported anymore.\n"
-                            + "Please remove this element from '{}'."
-                        )
-                        raise LoadError(detail.format(element, self._get_filename()), LoadErrorReason.INVALID_DATA)
-
-                    workspaces[element] = sources[0]
-
-                else:
-                    raise LoadError("Workspace config is in unexpected format.", LoadErrorReason.INVALID_DATA)
-
-            res = {
-                element: Workspace(self._toplevel_project, path=config.as_str())
-                for element, config in workspaces.items()
-            }
-
-        elif 1 <= version <= BST_WORKSPACE_FORMAT_VERSION:
+        if 4 <= version <= BST_WORKSPACE_FORMAT_VERSION:
             workspaces = workspaces.get_mapping("workspaces", default={})
             res = {element: self._load_workspace(node) for element, node in workspaces.items()}
-
         else:
             raise LoadError(
                 "Workspace configuration format version {} not supported."
