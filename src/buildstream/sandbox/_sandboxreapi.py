@@ -29,6 +29,11 @@ from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 # the Remote Execution API.
 #
 class SandboxREAPI(Sandbox):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._output_node_properties = kwargs.get("output_node_properties")
+
     def _use_cas_based_directory(self):
         # Always use CasBasedDirectory for REAPI
         return True
@@ -78,6 +83,8 @@ class SandboxREAPI(Sandbox):
         command_proto = self._create_command(command, cwd, env, read_write_directories)
         command_digest = cascache.add_object(buffer=command_proto.SerializeToString())
         action = remote_execution_pb2.Action(command_digest=command_digest, input_root_digest=input_root_digest)
+        if self._output_node_properties:
+            action.output_node_properties.extend(self._output_node_properties)
 
         action_result = self._execute_action(action, flags)  # pylint: disable=assignment-from-no-return
 
