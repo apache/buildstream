@@ -26,7 +26,6 @@ from ._exceptions import ArtifactError, CASError, CacheError, CASRemoteError, Re
 from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, artifact_pb2, artifact_pb2_grpc
 
 from ._remote import BaseRemote
-from ._artifact import Artifact
 from . import utils
 
 
@@ -204,32 +203,6 @@ class ArtifactCache(BaseCache):
             self._remove_ref(ref)
         except CacheError as e:
             raise ArtifactError("{}".format(e)) from e
-
-    # diff():
-    #
-    # Return a list of files that have been added or modified between
-    # the artifacts described by key_a and key_b. This expects the
-    # provided keys to be strong cache keys
-    #
-    # Args:
-    #     element (Element): The element whose artifacts to compare
-    #     key_a (str): The first artifact strong key
-    #     key_b (str): The second artifact strong key
-    #
-    def diff(self, element, key_a, key_b):
-        context = self.context
-        artifact_a = Artifact(element, context, strong_key=key_a)
-        artifact_b = Artifact(element, context, strong_key=key_b)
-        digest_a = artifact_a._get_proto().files
-        digest_b = artifact_b._get_proto().files
-
-        added = []
-        removed = []
-        modified = []
-
-        self.cas.diff_trees(digest_a, digest_b, added=added, removed=removed, modified=modified)
-
-        return modified, removed, added
 
     # push():
     #
