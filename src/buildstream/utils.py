@@ -122,18 +122,6 @@ class FileListResult:
         self.files_written = []
         """List of files that were written."""
 
-    def combine(self, other: "FileListResult") -> "FileListResult":
-        """Create a new FileListResult that contains the results of both.
-        """
-        ret = FileListResult()
-
-        ret.overwritten = self.overwritten + other.overwritten
-        ret.ignored = self.ignored + other.ignored
-        ret.failed_attributes = self.failed_attributes + other.failed_attributes
-        ret.files_written = self.files_written + other.files_written
-
-        return ret
-
 
 def _make_timestamp(timepoint: float) -> str:
     """Obtain the ISO 8601 timestamp represented by the time given in seconds.
