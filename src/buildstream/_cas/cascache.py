@@ -547,22 +547,6 @@ class CASCache:
     #             Local Private Methods            #
     ################################################
 
-    def _get_subdir(self, tree, subdir):
-        head, name = os.path.split(subdir)
-        if head:
-            tree = self._get_subdir(tree, head)
-
-        directory = remote_execution_pb2.Directory()
-
-        with open(self.objpath(tree), "rb") as f:
-            directory.ParseFromString(f.read())
-
-        for dirnode in directory.directories:
-            if dirnode.name == name:
-                return dirnode.digest
-
-        raise CASCacheError("Subdirectory {} not found".format(name))
-
     def _reachable_refs_dir(self, reachable, tree, update_mtime=False, check_exists=False):
         if tree.hash in reachable:
             return
