@@ -1059,17 +1059,6 @@ def _process_list(
 
             actionfunc(srcpath, destpath, result=result)
 
-        elif stat.S_ISCHR(mode) or stat.S_ISBLK(mode):
-            # Block or character device. Put contents of st_dev in a mknod.
-            if not safe_remove(destpath):
-                result.ignored.append(path)
-                continue
-
-            if os.path.lexists(destpath):
-                os.remove(destpath)
-            os.mknod(destpath, file_stat.st_mode, file_stat.st_rdev)
-            os.chmod(destpath, file_stat.st_mode)
-
         elif stat.S_ISFIFO(mode):
             os.mkfifo(destpath, mode)
 
