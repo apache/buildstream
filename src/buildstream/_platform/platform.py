@@ -47,7 +47,11 @@ class Platform:
     def _setup_sandbox(self, force_sandbox):
         # The buildbox-run interface is not platform-specific
         sandbox_setups = {"buildbox-run": self.setup_buildboxrun_sandbox, "dummy": self._setup_dummy_sandbox}
-        preferred_sandboxes = []
+
+        preferred_sandboxes = [
+            "buildbox-run",
+        ]
+
         self._try_sandboxes(force_sandbox, sandbox_setups, preferred_sandboxes)
 
     def _try_sandboxes(self, force_sandbox, sandbox_setups, preferred_sandboxes):
