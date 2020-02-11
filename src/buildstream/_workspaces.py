@@ -300,21 +300,6 @@ class Workspace:
     def differs(self, other):
         return self.to_dict() != other.to_dict()
 
-    # stage()
-    #
-    # Stage the workspace to the given directory.
-    #
-    # Args:
-    #    directory (str) - The directory into which to stage this workspace
-    #
-    def stage(self, directory):
-        fullpath = self.get_absolute_path()
-        if os.path.isdir(fullpath):
-            utils.copy_files(fullpath, directory)
-        else:
-            destfile = os.path.join(directory, os.path.basename(self.get_absolute_path()))
-            utils.safe_copy(fullpath, destfile)
-
     # add_running_files()
     #
     # Append a list of files to the running_files for the given
