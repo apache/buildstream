@@ -38,7 +38,6 @@ from typing import Dict, Generator, List, Optional, TYPE_CHECKING
 from .._exceptions import ImplError, BstError, SandboxError
 from .._message import Message, MessageType
 from ..storage.directory import Directory
-from ..storage._filebaseddirectory import FileBasedDirectory
 from ..storage._casbaseddirectory import CasBasedDirectory
 
 if TYPE_CHECKING:
@@ -167,11 +166,8 @@ class Sandbox:
 
         """
         if self._vdir is None:
-            if self._use_cas_based_directory():
-                cascache = self.__context.get_cascache()
-                self._vdir = CasBasedDirectory(cascache)
-            else:
-                self._vdir = FileBasedDirectory(self._root)
+            cascache = self.__context.get_cascache()
+            self._vdir = CasBasedDirectory(cascache)
         return self._vdir
 
     def set_environment(self, environment: Dict[str, str]) -> None:
@@ -362,22 +358,6 @@ class Sandbox:
     #
     def _create_batch(self, main_group, flags, *, collect=None):
         return _SandboxBatch(self, main_group, flags, collect=collect)
-
-    # _use_cas_based_directory()
-    #
-    # Whether to use CasBasedDirectory as sandbox root. If this returns `False`,
-    # FileBasedDirectory will be used.
-    #
-    # Returns:
-    #    (bool): Whether to use CasBasedDirectory
-    #
-    def _use_cas_based_directory(self):
-        # Use CasBasedDirectory as sandbox root if Sandbox.run() is not used.
-        # This allows faster staging.
-        if not self.__allow_run:
-            return True
-
-        return "BST_CAS_DIRECTORIES" in os.environ
 
     # _fetch_missing_blobs()
     #
