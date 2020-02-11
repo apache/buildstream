@@ -115,17 +115,10 @@ overnight-fedora-30-aarch64:
   only:
   - schedules
 
-tests-buildbox-run:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
-  <<: *tests
-  variables:
-    BST_FORCE_SANDBOX: "buildbox-run"
-
 tests-userchroot:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
   variables:
-    BST_FORCE_SANDBOX: "buildbox-run"
     BST_CAS_STAGING_ROOT: "/builds/userchroot"
 
   script:
@@ -450,7 +443,6 @@ coverage:
     - tox -e coverage
     - cp -a .coverage-reports/ ./coverage-report
   dependencies:
-  - tests-buildbox-run
   - tests-centos-7.7
   - tests-debian-10
   - tests-fedora-30
