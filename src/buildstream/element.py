@@ -75,7 +75,6 @@ Class Reference
 import os
 import re
 import stat
-import time
 import copy
 from collections import OrderedDict
 import contextlib
@@ -255,6 +254,7 @@ class Element(Plugin):
         self.__cached_remotely = None  # Whether the element is cached remotely
         # List of Sources
         self.__sources = []  # type: List[Source]
+        self.__sources_vdir = None  # Directory with staged sources
         self.__weak_cache_key = None  # Our cached weak cache key
         self.__strict_cache_key = None  # Our cached cache key for strict builds
         self.__artifacts = context.artifactcache  # Artifact cache
@@ -626,8 +626,7 @@ class Element(Plugin):
         path: str = None,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
-        orphans: bool = True,
-        update_mtimes: Optional[List[str]] = None
+        orphans: bool = True
     ) -> FileListResult:
         """Stage this element's output artifact in the sandbox
 
@@ -642,7 +641,6 @@ class Element(Plugin):
            include: An optional list of domains to include files from
            exclude: An optional list of domains to exclude files from
            orphans: Whether to include files not spoken for by split domains
-           update_mtimes: An optional list of files whose mtimes to set to the current time.
 
         Raises:
            (:class:`.ElementError`): If the element has not yet produced an artifact.
@@ -672,9 +670,6 @@ class Element(Plugin):
             )
             raise ElementError("No artifacts to stage", detail=detail, reason="uncached-checkout-attempt")
 
-        if update_mtimes is None:
-            update_mtimes = []
-
         # Time to use the artifact, check once more that it's there
         self.__assert_cached()
 
@@ -690,27 +685,9 @@ class Element(Plugin):
 
             split_filter = self.__split_filter_func(include, exclude, orphans)
 
-            # We must not hardlink files whose mtimes we want to update
-            if update_mtimes:
-
-                def link_filter(path):
-                    return (split_filter is None or split_filter(path)) and path not in update_mtimes
-
-                def copy_filter(path):
-                    return (split_filter is None or split_filter(path)) and path in update_mtimes
-
-            else:
-                link_filter = split_filter
-
             result = vstagedir.import_files(
-                files_vdir, filter_callback=link_filter, report_written=True, can_link=True
+                files_vdir, filter_callback=split_filter, report_written=True, can_link=True
             )
-
-            if update_mtimes:
-                copy_result = vstagedir.import_files(
-                    files_vdir, filter_callback=copy_filter, report_written=True, update_mtime=time.time()
-                )
-                result = result.combine(copy_result)
 
             return result
 
@@ -747,59 +724,9 @@ class Element(Plugin):
         ignored = {}
         overlaps = OrderedDict()  # type: OrderedDict[str, List[str]]
         files_written = {}  # type: Dict[str, List[str]]
-        old_dep_keys = None
-        workspace = self._get_workspace()
-        context = self._get_context()
-
-        if self.__can_build_incrementally() and workspace.last_successful:
-
-            # Try to perform an incremental build if the last successful
-            # build is still in the artifact cache
-            #
-            if self.__artifacts.contains(self, workspace.last_successful):
-                last_successful = Artifact(self, context, strong_key=workspace.last_successful)
-                # Get a dict of dependency strong keys
-                old_dep_keys = last_successful.get_metadata_dependencies()
-            else:
-                # Last successful build is no longer in the artifact cache,
-                # so let's reset it and perform a full build now.
-                workspace.prepared = False
-                workspace.last_successful = None
-
-                self.info("Resetting workspace state, last successful build is no longer in the cache")
-
-                # In case we are staging in the main process
-                if utils._is_main_process():
-                    context.get_workspaces().save_config()
 
         for dep in self.dependencies(scope):
-            # If we are workspaced, and we therefore perform an
-            # incremental build, we must ensure that we update the mtimes
-            # of any files created by our dependencies since the last
-            # successful build.
-            to_update = None
-            if workspace and old_dep_keys:
-                dep.__assert_cached()
-
-                if dep.name in old_dep_keys:
-                    key_new = dep._get_cache_key()
-                    key_old = old_dep_keys[dep.name]
-
-                    # We only need to worry about modified and added
-                    # files, since removed files will be picked up by
-                    # build systems anyway.
-                    to_update, _, added = self.__artifacts.diff(dep, key_old, key_new)
-                    workspace.add_running_files(dep.name, to_update + added)
-                    to_update.extend(workspace.running_files[dep.name])
-
-                    # In case we are running `bst shell`, this happens in the
-                    # main process and we need to update the workspace config
-                    if utils._is_main_process():
-                        context.get_workspaces().save_config()
-
-            result = dep.stage_artifact(
-                sandbox, path=path, include=include, exclude=exclude, orphans=orphans, update_mtimes=to_update
-            )
+            result = dep.stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans)
             if result.overwritten:
                 for overwrite in result.overwritten:
                     # Completely new overwrite
@@ -1399,11 +1326,6 @@ class Element(Plugin):
     #
     def _stage_sources_in_sandbox(self, sandbox, directory):
 
-        # Only artifact caches that implement diff() are allowed to
-        # perform incremental builds.
-        if self.__can_build_incrementally():
-            sandbox.mark_directory(directory)
-
         # Stage all sources that need to be copied
         sandbox_vroot = sandbox.get_virtual_directory()
         host_vdirectory = sandbox_vroot.descend(*directory.lstrip(os.sep).split(os.sep), create=True)
@@ -1466,6 +1388,16 @@ class Element(Plugin):
                             "Error trying to import sources together for {}: {}".format(self.name, e),
                             reason="import-source-files-fail",
                         )
+
+                    self.__sources_vdir = import_dir
+
+                    # incremental builds should merge the source into the last artifact before staging
+                    last_build_artifact = self.__get_last_build_artifact()
+                    if last_build_artifact:
+                        self.info("Incremental build")
+                        last_sources = last_build_artifact.get_sources()
+                        import_dir = last_build_artifact.get_buildtree()
+                        import_dir._apply_changes(last_sources, self.__sources_vdir)
 
             # Set update_mtime to ensure deterministic mtime of sources at build time
             with utils._deterministic_umask():
@@ -1577,7 +1509,7 @@ class Element(Plugin):
         self.__update_cache_key_non_strict()
         self._update_ready_for_runtime_and_cached()
 
-        if self._get_workspace() and self._cached_success():
+        if self._get_workspace() and self._cached():
             assert utils._is_main_process(), "Attempted to save workspace configuration from child process"
             #
             # Note that this block can only happen in the
@@ -1589,8 +1521,7 @@ class Element(Plugin):
             #
             key = self._get_cache_key()
             workspace = self._get_workspace()
-            workspace.last_successful = key
-            workspace.clear_running_files()
+            workspace.last_build = key
             self._get_context().get_workspaces().save_config()
 
     # _assemble():
@@ -1676,13 +1607,13 @@ class Element(Plugin):
                     e.sandbox = True
 
                     self.__set_build_result(success=False, description=str(e), detail=e.detail)
-                    self._cache_artifact(rootdir, sandbox, e.collect)
+                    self._cache_artifact(sandbox, e.collect)
 
                     raise
                 else:
-                    return self._cache_artifact(rootdir, sandbox, collect)
+                    return self._cache_artifact(sandbox, collect)
 
-    def _cache_artifact(self, rootdir, sandbox, collect):
+    def _cache_artifact(self, sandbox, collect):
 
         context = self._get_context()
         buildresult = self.__build_result
@@ -1690,6 +1621,7 @@ class Element(Plugin):
         sandbox_vroot = sandbox.get_virtual_directory()
         collectvdir = None
         sandbox_build_dir = None
+        sourcesvdir = None
 
         cache_buildtrees = context.cache_buildtrees
         build_success = buildresult[0]
@@ -1701,7 +1633,7 @@ class Element(Plugin):
         # with an empty buildtreedir regardless of this configuration.
 
         if cache_buildtrees == _CacheBuildTrees.ALWAYS or (
-            cache_buildtrees == _CacheBuildTrees.AUTO and not build_success
+            cache_buildtrees == _CacheBuildTrees.AUTO and (not build_success or self._get_workspace())
         ):
             try:
                 sandbox_build_dir = sandbox_vroot.descend(
@@ -1714,6 +1646,8 @@ class Element(Plugin):
                 # if the directory could not be found.
                 pass
 
+            sourcesvdir = self.__sources_vdir
+
         if collect is not None:
             try:
                 collectvdir = sandbox_vroot.descend(*collect.lstrip(os.sep).split(os.sep))
@@ -1725,7 +1659,7 @@ class Element(Plugin):
         self.__update_cache_key_non_strict()
 
         with self.timed_activity("Caching artifact"):
-            artifact_size = self.__artifact.cache(rootdir, sandbox_build_dir, collectvdir, buildresult, publicdata)
+            artifact_size = self.__artifact.cache(sandbox_build_dir, collectvdir, sourcesvdir, buildresult, publicdata)
 
         if collect is not None and collectvdir is None:
             raise ElementError(
@@ -2368,16 +2302,58 @@ class Element(Plugin):
             self.__is_resolved = True
             self.__update_cache_keys()
 
-    # __can_build_incrementally()
+    # __get_dependency_refs()
     #
-    # Check if the element can be built incrementally, this
-    # is used to decide how to stage things
+    # Retrieve the artifact refs of the element's dependencies
+    #
+    # Args:
+    #    scope (Scope): The scope of dependencies
     #
     # Returns:
-    #    (bool): Whether this element can be built incrementally
+    #    (list [str]): A list of refs of all dependencies in staging order.
     #
-    def __can_build_incrementally(self):
-        return bool(self._get_workspace())
+    def __get_dependency_refs(self, scope):
+        return [
+            os.path.join(dep.project_name, _get_normal_name(dep.name), dep._get_cache_key())
+            for dep in self.dependencies(scope)
+        ]
+
+    # __get_last_build_artifact()
+    #
+    # Return the Artifact of the previous build of this element,
+    # if incremental build is available.
+    #
+    # Returns:
+    #    (Artifact): The Artifact of the previous build or None
+    #
+    def __get_last_build_artifact(self):
+        workspace = self._get_workspace()
+        if not workspace:
+            # Currently incremental builds are only supported for workspaces
+            return None
+
+        if not workspace.last_build:
+            return None
+
+        artifact = Artifact(self, self._get_context(), strong_key=workspace.last_build)
+
+        if not artifact.cached():
+            return None
+
+        if not artifact.cached_buildtree():
+            return None
+
+        if not artifact.cached_sources():
+            return None
+
+        # Don't perform an incremental build if there has been a change in
+        # build dependencies.
+        old_dep_refs = artifact.get_dependency_refs(Scope.BUILD)
+        new_dep_refs = self.__get_dependency_refs(Scope.BUILD)
+        if old_dep_refs != new_dep_refs:
+            return None
+
+        return artifact
 
     # __configure_sandbox():
     #
@@ -2393,11 +2369,6 @@ class Element(Plugin):
     # Internal method for calling public abstract prepare() method.
     #
     def __prepare(self, sandbox):
-        # FIXME:
-        # We need to ensure that the prepare() method is only called
-        # once in workspaces, because the changes will persist across
-        # incremental builds - not desirable, for example, in the case
-        # of autotools' `./configure`.
         self.prepare(sandbox)
 
     # __preflight():
@@ -2519,6 +2490,11 @@ class Element(Plugin):
         project = self._get_project()
         platform = context.platform
 
+        if self._get_workspace():
+            output_node_properties = ["MTime"]
+        else:
+            output_node_properties = None
+
         if directory is not None and allow_remote and self.__use_remote_execution():
 
             if not self.BST_VIRTUAL_DIRECTORY:
@@ -2545,6 +2521,7 @@ class Element(Plugin):
                 bare_directory=bare_directory,
                 allow_real_directory=False,
                 output_files_required=output_files_required,
+                output_node_properties=output_node_properties,
             )
             yield sandbox
 
@@ -2560,6 +2537,7 @@ class Element(Plugin):
                 config=config,
                 bare_directory=bare_directory,
                 allow_real_directory=not self.BST_VIRTUAL_DIRECTORY,
+                output_node_properties=output_node_properties,
             )
             yield sandbox
 

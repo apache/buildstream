@@ -90,6 +90,18 @@ class Artifact:
 
         return CasBasedDirectory(self._cas, digest=buildtree_digest)
 
+    # get_sources():
+    #
+    # Get a virtual directory for the artifact sources
+    #
+    # Returns:
+    #    (Directory): The virtual directory object
+    #
+    def get_sources(self):
+        sources_digest = self._get_field_digest("sources")
+
+        return CasBasedDirectory(self._cas, digest=sources_digest)
+
     # get_logs():
     #
     # Get the paths of the artifact's logs
@@ -121,16 +133,16 @@ class Artifact:
     # Create the artifact and commit to cache
     #
     # Args:
-    #    rootdir (str): An absolute path to the temp rootdir for artifact construct
     #    sandbox_build_dir (Directory): Virtual Directory object for the sandbox build-root
     #    collectvdir (Directory): Virtual Directoy object from within the sandbox for collection
+    #    sourcesvdir (Directory): Virtual Directoy object for the staged sources
     #    buildresult (tuple): bool, short desc and detailed desc of result
     #    publicdata (dict): dict of public data to commit to artifact metadata
     #
     # Returns:
     #    (int): The size of the newly cached artifact
     #
-    def cache(self, rootdir, sandbox_build_dir, collectvdir, buildresult, publicdata):
+    def cache(self, sandbox_build_dir, collectvdir, sourcesvdir, buildresult, publicdata):
 
         context = self._context
         element = self._element
@@ -153,11 +165,12 @@ class Artifact:
         artifact.weak_key = self._weak_cache_key
 
         artifact.was_workspaced = bool(element._get_workspace())
+        properties = ["MTime"] if artifact.was_workspaced else []
 
         # Store files
         if collectvdir:
             filesvdir = CasBasedDirectory(cas_cache=self._cas)
-            filesvdir.import_files(collectvdir)
+            filesvdir.import_files(collectvdir, properties=properties)
             artifact.files.CopyFrom(filesvdir._get_digest())
             size += filesvdir.get_size()
 
@@ -189,9 +202,14 @@ class Artifact:
         # Store build tree
         if sandbox_build_dir:
             buildtreevdir = CasBasedDirectory(cas_cache=self._cas)
-            buildtreevdir.import_files(sandbox_build_dir)
+            buildtreevdir.import_files(sandbox_build_dir, properties=properties)
             artifact.buildtree.CopyFrom(buildtreevdir._get_digest())
             size += buildtreevdir.get_size()
+
+        # Store sources
+        if sourcesvdir:
+            artifact.sources.CopyFrom(sourcesvdir._get_digest())
+            size += sourcesvdir.get_size()
 
         os.makedirs(os.path.dirname(os.path.join(self._artifactdir, element.get_artifact_name())), exist_ok=True)
         keys = utils._deduplicate([self._cache_key, self._weak_cache_key])
@@ -233,6 +251,22 @@ class Artifact:
 
         artifact = self._get_proto()
         return bool(str(artifact.buildtree))
+
+    # cached_sources()
+    #
+    # Check if artifact is cached with sources.
+    #
+    # Returns:
+    #     (bool): True if artifact is cached with sources, False if sources
+    #             are not available.
+    #
+    def cached_sources(self):
+
+        sources_digest = self._get_field_digest("sources")
+        if sources_digest:
+            return self._cas.contains_directory(sources_digest, with_files=True)
+        else:
+            return False
 
     # load_public_data():
     #
@@ -288,25 +322,6 @@ class Artifact:
         self._metadata_keys = (strong_key, weak_key)
 
         return self._metadata_keys
-
-    # get_metadata_dependencies():
-    #
-    # Retrieve the hash of dependency keys from the given artifact.
-    #
-    # Returns:
-    #    (dict): A dictionary of element names and their keys
-    #
-    def get_metadata_dependencies(self):
-
-        if self._metadata_dependencies is not None:
-            return self._metadata_dependencies
-
-        # Extract proto
-        artifact = self._get_proto()
-
-        self._metadata_dependencies = {dep.element_name: dep.cache_key for dep in artifact.build_deps}
-
-        return self._metadata_dependencies
 
     # get_metadata_workspaced():
     #

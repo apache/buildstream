@@ -21,12 +21,11 @@ import os
 from . import utils
 from . import _yaml
 
-from .node import MappingNode, ScalarNode
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
 
 
-BST_WORKSPACE_FORMAT_VERSION = 3
+BST_WORKSPACE_FORMAT_VERSION = 4
 BST_WORKSPACE_PROJECT_FORMAT_VERSION = 1
 WORKSPACE_PROJECT_FILE = ".bstproject.yaml"
 
@@ -233,24 +232,19 @@ class WorkspaceProjectCache:
 # An object to contain various helper functions and data required for
 # workspaces.
 #
-# last_successful, path and running_files are intended to be public
+# last_build and path are intended to be public
 # properties, but may be best accessed using this classes' helper
 # methods.
 #
 # Args:
 #    toplevel_project (Project): Top project. Will be used for resolving relative workspace paths.
 #    path (str): The path that should host this workspace
-#    last_successful (str): The key of the last successful build of this workspace
-#    running_files (dict): A dict mapping dependency elements to files
-#                          changed between failed builds. Should be
-#                          made obsolete with failed build artifacts.
+#    last_build (str): The key of the last attempted build of this workspace
 #
 class Workspace:
-    def __init__(self, toplevel_project, *, last_successful=None, path=None, prepared=False, running_files=None):
-        self.prepared = prepared
-        self.last_successful = last_successful
+    def __init__(self, toplevel_project, *, last_build=None, path=None):
+        self.last_build = last_build
         self._path = path
-        self.running_files = running_files if running_files is not None else {}
 
         self._toplevel_project = toplevel_project
         self._key = None
@@ -263,9 +257,9 @@ class Workspace:
     #     (dict) A dict representation of the workspace
     #
     def to_dict(self):
-        ret = {"prepared": self.prepared, "path": self._path, "running_files": self.running_files}
-        if self.last_successful is not None:
-            ret["last_successful"] = self.last_successful
+        ret = {"path": self._path}
+        if self.last_build is not None:
+            ret["last_build"] = self.last_build
         return ret
 
     # from_dict():
@@ -299,45 +293,6 @@ class Workspace:
     #
     def differs(self, other):
         return self.to_dict() != other.to_dict()
-
-    # stage()
-    #
-    # Stage the workspace to the given directory.
-    #
-    # Args:
-    #    directory (str) - The directory into which to stage this workspace
-    #
-    def stage(self, directory):
-        fullpath = self.get_absolute_path()
-        if os.path.isdir(fullpath):
-            utils.copy_files(fullpath, directory)
-        else:
-            destfile = os.path.join(directory, os.path.basename(self.get_absolute_path()))
-            utils.safe_copy(fullpath, destfile)
-
-    # add_running_files()
-    #
-    # Append a list of files to the running_files for the given
-    # dependency. Duplicate files will be ignored.
-    #
-    # Args:
-    #     dep_name (str) - The dependency name whose files to append to
-    #     files (str) - A list of files to append
-    #
-    def add_running_files(self, dep_name, files):
-        if dep_name in self.running_files:
-            # ruamel.py cannot serialize sets in python3.4
-            to_add = set(files) - set(self.running_files[dep_name])
-            self.running_files[dep_name].extend(to_add)
-        else:
-            self.running_files[dep_name] = list(files)
-
-    # clear_running_files()
-    #
-    # Clear all running files associated with this workspace.
-    #
-    def clear_running_files(self):
-        self.running_files = {}
 
     # get_absolute_path():
     #
@@ -526,38 +481,17 @@ class Workspaces:
                 "Format version is not an integer in workspace configuration", LoadErrorReason.INVALID_DATA
             )
 
-        if version == 0:
-            # Pre-versioning format can be of two forms
-            for element, config in workspaces.items():
-                config_type = type(config)
+        if version < 4:
+            # bst 1.x workspaces do not separate source and build files.
+            raise LoadError(
+                "Workspace configuration format version {} not supported."
+                "Please recreate this workspace.".format(version),
+                LoadErrorReason.INVALID_DATA,
+            )
 
-                if config_type is ScalarNode:
-                    pass
-
-                elif config_type is MappingNode:
-                    sources = list(config.values())
-                    if len(sources) > 1:
-                        detail = (
-                            "There are multiple workspaces open for '{}'.\n"
-                            + "This is not supported anymore.\n"
-                            + "Please remove this element from '{}'."
-                        )
-                        raise LoadError(detail.format(element, self._get_filename()), LoadErrorReason.INVALID_DATA)
-
-                    workspaces[element] = sources[0]
-
-                else:
-                    raise LoadError("Workspace config is in unexpected format.", LoadErrorReason.INVALID_DATA)
-
-            res = {
-                element: Workspace(self._toplevel_project, path=config.as_str())
-                for element, config in workspaces.items()
-            }
-
-        elif 1 <= version <= BST_WORKSPACE_FORMAT_VERSION:
+        if 4 <= version <= BST_WORKSPACE_FORMAT_VERSION:
             workspaces = workspaces.get_mapping("workspaces", default={})
             res = {element: self._load_workspace(node) for element, node in workspaces.items()}
-
         else:
             raise LoadError(
                 "Workspace configuration format version {} not supported."
@@ -580,15 +514,9 @@ class Workspaces:
     #    (Workspace): A newly instantiated Workspace
     #
     def _load_workspace(self, node):
-        running_files = node.get_mapping("running_files", default=None)
-        if running_files:
-            running_files = running_files.strip_node_info()
-
         dictionary = {
-            "prepared": node.get_bool("prepared", default=False),
             "path": node.get_str("path"),
-            "last_successful": node.get_str("last_successful", default=None),
-            "running_files": running_files,
+            "last_build": node.get_str("last_build", default=None),
         }
         return Workspace.from_dict(self._toplevel_project, dictionary)
 

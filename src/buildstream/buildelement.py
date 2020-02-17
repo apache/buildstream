@@ -262,10 +262,34 @@ class BuildElement(Element):
 
     def prepare(self, sandbox):
         commands = self.__commands["configure-commands"]
-        if commands:
-            with sandbox.batch(SandboxFlags.ROOT_READ_ONLY, label="Running configure-commands"):
-                for cmd in commands:
-                    self.__run_command(sandbox, cmd)
+        if not commands:
+            # No configure commands, nothing to do.
+            return
+
+        # We need to ensure that the prepare() method is only called
+        # once in workspaces, because the changes will persist across
+        # incremental builds - not desirable, for example, in the case
+        # of autotools' `./configure`.
+        marker_filename = ".bst-prepared"
+
+        if self._get_workspace():
+            # We use an empty file as a marker whether prepare() has already
+            # been called in a previous build.
+
+            vdir = sandbox.get_virtual_directory()
+            buildroot = self.get_variable("build-root")
+            buildroot_vdir = vdir.descend(*buildroot.lstrip(os.sep).split(os.sep))
+
+            if buildroot_vdir._exists(marker_filename, follow_symlinks=True):
+                # Already prepared
+                return
+
+        with sandbox.batch(SandboxFlags.ROOT_READ_ONLY, label="Running configure-commands"):
+            for cmd in commands:
+                self.__run_command(sandbox, cmd)
+
+        if self._get_workspace():
+            sandbox._create_empty_file(marker_filename)
 
     def generate_script(self):
         script = ""

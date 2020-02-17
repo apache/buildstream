@@ -930,8 +930,7 @@ class Stream:
             workspace_path = workspace.get_absolute_path()
 
             if soft:
-                workspace.prepared = False
-                workspace.last_successful = None
+                workspace.last_build = None
                 self._message(
                     MessageType.INFO, "Reset workspace state for {} at: {}".format(element.name, workspace_path)
                 )

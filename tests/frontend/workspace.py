@@ -821,6 +821,8 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
         {"format-version": 0, "alpha.bst": {0: "/workspaces/bravo", 1: "/workspaces/charlie",}},
         # Test loading a version with decimals
         {"format-version": 0.5},
+        # Test loading an unsupported old version
+        {"format-version": 3},
         # Test loading a future version
         {"format-version": BST_WORKSPACE_FORMAT_VERSION + 1},
     ],
@@ -842,63 +844,12 @@ def test_list_unsupported_workspace(cli, datafiles, workspace_cfg):
 @pytest.mark.parametrize(
     "workspace_cfg,expected",
     [
-        # Test loading version 0 without a dict
+        # Test loading version 4
         (
-            {"alpha.bst": "/workspaces/bravo"},
+            {"format-version": 4, "workspaces": {"alpha.bst": {"path": "/workspaces/bravo"}},},
             {
                 "format-version": BST_WORKSPACE_FORMAT_VERSION,
-                "workspaces": {"alpha.bst": {"prepared": False, "path": "/workspaces/bravo", "running_files": {}}},
-            },
-        ),
-        # Test loading version 0 with only one source
-        (
-            {"alpha.bst": {0: "/workspaces/bravo"}},
-            {
-                "format-version": BST_WORKSPACE_FORMAT_VERSION,
-                "workspaces": {"alpha.bst": {"prepared": False, "path": "/workspaces/bravo", "running_files": {}}},
-            },
-        ),
-        # Test loading version 1
-        (
-            {"format-version": 1, "workspaces": {"alpha.bst": {"path": "/workspaces/bravo"}}},
-            {
-                "format-version": BST_WORKSPACE_FORMAT_VERSION,
-                "workspaces": {"alpha.bst": {"prepared": False, "path": "/workspaces/bravo", "running_files": {}}},
-            },
-        ),
-        # Test loading version 2
-        (
-            {
-                "format-version": 2,
-                "workspaces": {
-                    "alpha.bst": {
-                        "path": "/workspaces/bravo",
-                        "last_successful": "some_key",
-                        "running_files": {"beta.bst": ["some_file"]},
-                    }
-                },
-            },
-            {
-                "format-version": BST_WORKSPACE_FORMAT_VERSION,
-                "workspaces": {
-                    "alpha.bst": {
-                        "prepared": False,
-                        "path": "/workspaces/bravo",
-                        "last_successful": "some_key",
-                        "running_files": {"beta.bst": ["some_file"]},
-                    }
-                },
-            },
-        ),
-        # Test loading version 3
-        (
-            {
-                "format-version": 3,
-                "workspaces": {"alpha.bst": {"prepared": True, "path": "/workspaces/bravo", "running_files": {}}},
-            },
-            {
-                "format-version": BST_WORKSPACE_FORMAT_VERSION,
-                "workspaces": {"alpha.bst": {"prepared": True, "path": "/workspaces/bravo", "running_files": {}}},
+                "workspaces": {"alpha.bst": {"path": "/workspaces/bravo"}},
             },
         ),
     ],

@@ -65,6 +65,7 @@ class IndexEntry:
 
     def get_directory(self, parent):
         if not self.buildstream_object:
+            assert self.type == _FileType.DIRECTORY
             self.buildstream_object = CasBasedDirectory(
                 parent.cas_cache, digest=self.digest, parent=parent, filename=self.name
             )
@@ -209,6 +210,14 @@ class CasBasedDirectory(Directory):
             node_properties=node_properties,
         )
         self.index[filename] = entry
+
+        self.__invalidate_digest()
+
+    def _create_empty_file(self, name):
+        digest = self.cas_cache.add_object(buffer="")
+
+        entry = IndexEntry(name, _FileType.REGULAR_FILE, digest=digest)
+        self.index[name] = entry
 
         self.__invalidate_digest()
 
@@ -512,11 +521,6 @@ class CasBasedDirectory(Directory):
             )
             result.files_written.append(external_pathspec)
         return result
-
-    def set_deterministic_mtime(self):
-        """ Sets a static modification time for all regular files in this directory.
-        Since we don't store any modification time, we don't need to do anything.
-        """
 
     def set_deterministic_user(self):
         """ Sets all files in this directory to the current user's euid/egid.
