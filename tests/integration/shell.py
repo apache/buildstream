@@ -159,7 +159,7 @@ def test_no_shell(cli, datafiles):
 
 
 # Test that bind mounts defined in project.conf work
-@pytest.mark.parametrize("path", [("/etc/pony.conf"), ("/usr/share/pony/pony.txt")])
+@pytest.mark.parametrize("path", [("/etc/pony.conf"), ("/usr/share/pony/pony.txt"), (None)])
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
 @pytest.mark.xfail(
@@ -169,9 +169,12 @@ def test_no_shell(cli, datafiles):
 def test_host_files(cli, datafiles, path):
     project = str(datafiles)
     ponyfile = os.path.join(project, "files", "shell-mount", "pony.txt")
-    result = execute_shell(
-        cli, project, ["cat", path], config={"shell": {"host-files": [{"host_path": ponyfile, "path": path}]}}
-    )
+    if path is None:
+        result = execute_shell(cli, project, ["cat", ponyfile], config={"shell": {"host-files": [ponyfile]}})
+    else:
+        result = execute_shell(
+            cli, project, ["cat", path], config={"shell": {"host-files": [{"host_path": ponyfile, "path": path}]}}
+        )
     assert result.exit_code == 0
     assert result.output == "pony\n"
 
