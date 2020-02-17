@@ -57,7 +57,9 @@ class SandboxREAPI(Sandbox):
 
         # Ensure directories required for sandboxed execution exist
         for directory in ["dev", "proc", "tmp"]:
-            vdir.descend(directory, create=True)
+            vsubdir = vdir.descend(directory, create=True)
+            if flags & SandboxFlags.ROOT_READ_ONLY:
+                vsubdir._set_subtree_read_only(False)
 
         # Create directories for all marked directories. This emulates
         # some of the behaviour of other sandboxes, which create these
@@ -66,6 +68,7 @@ class SandboxREAPI(Sandbox):
         mount_sources = self._get_mount_sources()
         for mark in self._get_marked_directories():
             directory = mark["directory"]
+
             if directory in mount_sources:
                 # Bind mount
                 mount_point = directory
@@ -83,10 +86,14 @@ class SandboxREAPI(Sandbox):
                         parent_vdir._create_empty_file(mount_point_components[-1])
             else:
                 # Read-write directory
-                vdir.descend(*directory.split(os.path.sep), create=True)
+                marked_vdir = vdir.descend(*directory.split(os.path.sep), create=True)
                 read_write_directories.append(directory)
+                if flags & SandboxFlags.ROOT_READ_ONLY:
+                    marked_vdir._set_subtree_read_only(False)
 
-        if not flags & SandboxFlags.ROOT_READ_ONLY:
+        if flags & SandboxFlags.ROOT_READ_ONLY:
+            vdir._set_subtree_read_only(True)
+        else:
             # The whole sandbox is writable
             read_write_directories = [os.path.sep]
 
