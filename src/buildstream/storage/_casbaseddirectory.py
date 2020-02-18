@@ -813,6 +813,15 @@ class CasBasedDirectory(Directory):
         except VirtualDirectoryError:
             return False
 
+    def _set_subtree_read_only(self, read_only):
+        self.__node_properties = list(filter(lambda prop: prop.name != "SubtreeReadOnly", self.__node_properties))
+        node_property = remote_execution_pb2.NodeProperty()
+        node_property.name = "SubtreeReadOnly"
+        node_property.value = "true" if read_only else "false"
+        self.__node_properties.append(node_property)
+
+        self.__invalidate_digest()
+
     def __invalidate_digest(self):
         if self.__digest:
             self.__digest = None
