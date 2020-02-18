@@ -140,6 +140,7 @@ class CasBasedDirectory(Directory):
         self.__digest = None
         self.index = {}
         self.parent = parent
+        self.__node_properties = []
         self._reset(digest=digest)
 
     def _reset(self, *, digest=None):
@@ -155,6 +156,8 @@ class CasBasedDirectory(Directory):
                 pb2_directory.ParseFromString(f.read())
         except FileNotFoundError as e:
             raise VirtualDirectoryError("Directory not found in local cache: {}".format(e)) from e
+
+        self.__node_properties = list(pb2_directory.node_properties)
 
         for entry in pb2_directory.directories:
             self.index[entry.name] = IndexEntry(entry.name, _FileType.DIRECTORY, digest=entry.digest)
@@ -758,6 +761,10 @@ class CasBasedDirectory(Directory):
         if not self.__digest:
             # Create updated Directory proto
             pb2_directory = remote_execution_pb2.Directory()
+
+            if self.__node_properties:
+                node_properties = sorted(self.__node_properties, key=lambda prop: prop.name)
+                pb2_directory.node_properties.extend(node_properties)
 
             for name, entry in sorted(self.index.items()):
                 if entry.type == _FileType.DIRECTORY:
