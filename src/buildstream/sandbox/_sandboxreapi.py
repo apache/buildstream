@@ -67,10 +67,24 @@ class SandboxREAPI(Sandbox):
         for mark in self._get_marked_directories():
             directory = mark["directory"]
             if directory in mount_sources:
-                continue
-            # Create each marked directory
-            vdir.descend(*directory.split(os.path.sep), create=True)
-            read_write_directories.append(directory)
+                # Bind mount
+                mount_point = directory
+                mount_source = mount_sources[mount_point]
+
+                # Ensure mount point exists in sandbox
+                mount_point_components = mount_point.split(os.path.sep)
+                if not vdir._exists(*mount_point_components):
+                    if os.path.isdir(mount_source):
+                        # Mounting a directory, mount point must be a directory
+                        vdir.descend(*mount_point_components, create=True)
+                    else:
+                        # Mounting a file or device node, mount point must be a file
+                        parent_vdir = vdir.descend(*mount_point_components[:-1], create=True)
+                        parent_vdir._create_empty_file(mount_point_components[-1])
+            else:
+                # Read-write directory
+                vdir.descend(*directory.split(os.path.sep), create=True)
+                read_write_directories.append(directory)
 
         if not flags & SandboxFlags.ROOT_READ_ONLY:
             # The whole sandbox is writable
