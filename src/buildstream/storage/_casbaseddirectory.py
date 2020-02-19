@@ -794,14 +794,14 @@ class CasBasedDirectory(Directory):
             subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
             target = subdir.index.get(path[-1])
             if target is not None:
-                if target.type == _FileType.REGULAR_FILE:
-                    return True
-                elif follow_symlinks and target.type == _FileType.SYMLINK:
+                if follow_symlinks and target.type == _FileType.SYMLINK:
                     linklocation = target.target
                     newpath = linklocation.split(os.path.sep)
                     if os.path.isabs(linklocation):
                         return subdir.find_root()._exists(*newpath, follow_symlinks=True)
                     return subdir._exists(*newpath, follow_symlinks=True)
+                else:
+                    return True
             return False
         except VirtualDirectoryError:
             return False
