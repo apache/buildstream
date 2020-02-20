@@ -78,7 +78,7 @@ class SandboxREAPI(Sandbox):
 
         # Generate Action proto
         input_root_digest = vdir._get_digest()
-        command_proto = self._create_command(command, cwd, env, read_write_directories)
+        command_proto = self._create_command(command, cwd, env, read_write_directories, flags)
         command_digest = cascache.add_object(buffer=command_proto.SerializeToString())
         action = remote_execution_pb2.Action(command_digest=command_digest, input_root_digest=input_root_digest)
         if self._output_node_properties:
@@ -95,7 +95,7 @@ class SandboxREAPI(Sandbox):
         # the remote execution system has worked correctly but the command failed.
         return action_result.exit_code
 
-    def _create_command(self, command, working_directory, environment, read_write_directories):
+    def _create_command(self, command, working_directory, environment, read_write_directories, flags):
         # Creates a command proto
         environment_variables = [
             remote_execution_pb2.Command.EnvironmentVariable(name=k, value=v) for (k, v) in environment.items()
@@ -105,9 +105,21 @@ class SandboxREAPI(Sandbox):
         output_directories = [os.path.relpath(dir, start=working_directory) for dir in read_write_directories]
 
         config = self._get_config()
+        supported_properties = self._supported_platform_properties()
         platform = remote_execution_pb2.Platform()
         platform.properties.add(name="OSFamily", value=config.build_os)
         platform.properties.add(name="ISA", value=config.build_arch)
+
+        if flags & SandboxFlags.INHERIT_UID:
+            uid = os.geteuid()
+            gid = os.getegid()
+        else:
+            uid = config.build_uid
+            gid = config.build_gid
+        if "unixUID" in supported_properties:
+            platform.properties.add(name="unixUID", value=str(uid))
+        if "unixGID" in supported_properties:
+            platform.properties.add(name="unixGID", value=str(gid))
 
         return remote_execution_pb2.Command(
             arguments=command,
@@ -157,6 +169,9 @@ class SandboxREAPI(Sandbox):
 
     def _execute_action(self, action, flags):
         raise ImplError("Sandbox of type '{}' does not implement _execute_action()".format(type(self).__name__))
+
+    def _supported_platform_properties(self):
+        return set()
 
 
 # _SandboxREAPIBatch()

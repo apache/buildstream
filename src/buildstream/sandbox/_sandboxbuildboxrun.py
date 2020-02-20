@@ -56,10 +56,6 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
     @classmethod
     def check_sandbox_config(cls, platform, config):
-        # Report error for elements requiring non-0 UID/GID
-        if config.build_uid != 0 or config.build_gid != 0:
-            return False
-
         # Check host os and architecture match
         if config.build_os != platform.get_host_os():
             raise SandboxError("Configured and host OS don't match.")
@@ -175,6 +171,9 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
             if returncode != 0:
                 raise SandboxError("buildbox-run failed with returncode {}".format(returncode))
+
+    def _supported_platform_properties(self):
+        return {"unixUID", "unixGID"}
 
     def _warn(self, msg):
         self._get_context().messenger.message(Message(MessageType.WARN, msg))
