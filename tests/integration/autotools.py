@@ -44,6 +44,14 @@ def test_autotools_build(cli, datafiles):
         ],
     )
 
+    # Check the log
+    result = cli.run(project=project, args=["artifact", "log", element_name])
+    assert result.exit_code == 0
+    log = result.output
+
+    # Verify we get expected output exactly once
+    assert log.count("Making all in src") == 1
+
 
 # Test that an autotools build 'works' - we use the autotools sample
 # amhello project for this.

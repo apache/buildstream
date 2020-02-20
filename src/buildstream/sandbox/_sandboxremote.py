@@ -19,6 +19,7 @@
 #        Jim MacArthur <jim.macarthur@codethink.co.uk>
 
 import os
+import shutil
 from collections import namedtuple
 from urllib.parse import urlparse
 from functools import partial
@@ -298,6 +299,8 @@ class SandboxRemote(SandboxREAPI):
                     )
 
     def _execute_action(self, action, flags):
+        stdout, stderr = self._get_output()
+
         context = self._get_context()
         project = self._get_project()
         cascache = context.get_cascache()
@@ -374,6 +377,23 @@ class SandboxRemote(SandboxREAPI):
 
                 # Now do a pull to ensure we have the full directory structure.
                 cascache.pull_tree(casremote, tree_digest)
+
+            # Fetch stdout and stderr blobs
+            cascache.fetch_blobs(casremote, [action_result.stdout_digest, action_result.stderr_digest])
+
+        # Forward remote stdout and stderr
+        if stdout:
+            if action_result.stdout_digest.hash:
+                with open(cascache.objpath(action_result.stdout_digest), "r") as f:
+                    shutil.copyfileobj(f, stdout)
+            elif action_result.stdout_raw:
+                stdout.write(str(action_result.stdout_raw, "utf-8", errors="ignore"))
+        if stderr:
+            if action_result.stderr_digest.hash:
+                with open(cascache.objpath(action_result.stderr_digest), "r") as f:
+                    shutil.copyfileobj(f, stderr)
+            elif action_result.stderr_raw:
+                stderr.write(str(action_result.stderr_raw, "utf-8", errors="ignore"))
 
         return action_result
 
