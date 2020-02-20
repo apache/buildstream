@@ -104,13 +104,18 @@ class SandboxREAPI(Sandbox):
         # Request read-write directories as output
         output_directories = [os.path.relpath(dir, start=working_directory) for dir in read_write_directories]
 
+        config = self._get_config()
+        platform = remote_execution_pb2.Platform()
+        platform.properties.add(name="OSFamily", value=config.build_os)
+        platform.properties.add(name="ISA", value=config.build_arch)
+
         return remote_execution_pb2.Command(
             arguments=command,
             working_directory=working_directory[1:],
             environment_variables=environment_variables,
             output_files=[],
             output_directories=output_directories,
-            platform=None,
+            platform=platform,
         )
 
     def _process_job_output(self, working_directory, output_directories, output_files, *, failure):
