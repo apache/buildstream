@@ -764,7 +764,7 @@ class Project:
         host_files = shell_options.get_sequence("host-files", default=[])
         for host_file in host_files:
             if isinstance(host_file, ScalarNode):
-                mount = HostMount(host_file)
+                mount = HostMount(host_file.as_str())
             else:
                 # Some validation
                 host_file.validate_keys(["path", "host_path", "optional"])
