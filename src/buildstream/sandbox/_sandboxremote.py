@@ -298,6 +298,8 @@ class SandboxRemote(SandboxREAPI):
                     )
 
     def _execute_action(self, action, flags):
+        stdout, stderr = self._get_output()
+
         context = self._get_context()
         project = self._get_project()
         cascache = context.get_cascache()
@@ -374,6 +376,14 @@ class SandboxRemote(SandboxREAPI):
 
                 # Now do a pull to ensure we have the full directory structure.
                 cascache.pull_tree(casremote, tree_digest)
+
+        # Forward remote stdout and stderr
+        if stdout:
+            if action_result.stdout_raw:
+                stdout.write(str(action_result.stdout_raw, "utf-8", errors="ignore"))
+        if stderr:
+            if action_result.stderr_raw:
+                stderr.write(str(action_result.stderr_raw, "utf-8", errors="ignore"))
 
         return action_result
 

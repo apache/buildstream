@@ -39,8 +39,6 @@ class SandboxREAPI(Sandbox):
         return True
 
     def _run(self, command, flags, *, cwd, env):
-        stdout, stderr = self._get_output()
-
         context = self._get_context()
         cascache = context.get_cascache()
 
@@ -92,13 +90,6 @@ class SandboxREAPI(Sandbox):
         self._process_job_output(
             cwd, action_result.output_directories, action_result.output_files, failure=action_result.exit_code != 0
         )
-
-        if stdout:
-            if action_result.stdout_raw:
-                stdout.write(str(action_result.stdout_raw, "utf-8", errors="ignore"))
-        if stderr:
-            if action_result.stderr_raw:
-                stderr.write(str(action_result.stderr_raw, "utf-8", errors="ignore"))
 
         # Non-zero exit code means a normal error during the build:
         # the remote execution system has worked correctly but the command failed.
