@@ -39,6 +39,12 @@ Build elements
 
 Sources
 -------
+
+All source plugins can be staged into an arbitrary directory within the build
+sandbox with the ``directory`` option.
+See :ref:`Source class built-in functionality <core_source_builtins>` for more
+information.
+
 .. toctree::
    :maxdepth: 1
 
