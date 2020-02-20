@@ -649,7 +649,8 @@ class CASCache:
         batch = _CASBatchRead(remote)
 
         for digest in digests:
-            batch.add(digest)
+            if digest.hash:
+                batch.add(digest)
 
         batch.send(missing_blobs=missing_blobs)
 
