@@ -546,7 +546,7 @@ def show(app, elements, deps, except_, order, format_):
     By default this will show all of the dependencies of the
     specified target element.
 
-    Specify `--deps` to control which elements to show:
+    Specify ``--deps`` to control which elements to show:
 
     \b
         none:  No dependencies, just the element itself
@@ -555,10 +555,9 @@ def show(app, elements, deps, except_, order, format_):
         build: Build time dependencies, excluding the element itself
         all:   All dependencies
 
-    \b
-    FORMAT
-    ~~~~~~
-    The --format option controls what should be printed for each element,
+    **FORMAT**
+
+    The ``--format`` option controls what should be printed for each element,
     the following symbols can be used in the format string:
 
     \b
@@ -578,7 +577,7 @@ def show(app, elements, deps, except_, order, format_):
 
     The value of the %{symbol} without the leading '%' character is understood
     as a pythonic formatting string, so python formatting features apply,
-    examle:
+    example:
 
     \b
         bst show target.bst --format \\
