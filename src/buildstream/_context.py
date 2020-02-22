@@ -410,6 +410,10 @@ class Context:
         return self._artifactcache
 
     @property
+    def assetcache(self):
+        return self.get_assetcache()
+
+    @property
     def sourcecache(self):
         if not self._sourcecache:
             self._sourcecache = SourceCache(self)
@@ -536,6 +540,12 @@ class Context:
             self._cascache = CASCache(
                 self.cachedir, casd=self.use_casd, cache_quota=self.config_cache_quota, log_level=log_level
             )
+        return self._cascache
+
+    def get_assetcache(self):
+        if self._assetcache is None:
+            self._assetcache = AssetCache(self)
+
         return self._cascache
 
     # prepare_fork():

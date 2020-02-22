@@ -180,6 +180,15 @@ class CacheError(BstError):
         super().__init__(message, detail=detail, domain=ErrorDomain.SANDBOX, reason=reason)
 
 
+# AssetCacheError
+#
+# Raised when errors are encountered in the asset caches
+#
+class AssetCacheError(BstError):
+    def __init__(self, message, detail=None, reason=None):
+        super().__init__(message, detail=detail, domain=ErrorDomain.SANDBOX, reason=reason)
+
+
 # SourceCacheError
 #
 # Raised when errors are encountered in the source caches

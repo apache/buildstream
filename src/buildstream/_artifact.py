@@ -37,6 +37,8 @@ from . import utils
 from .types import Scope
 from .storage._casbaseddirectory import CasBasedDirectory
 
+REMOTE_ASSET_ARTIFACT_URN_TEMPLATE = \
+    "urn:fdn:buildstream.build:20200223:artifact:{}"
 
 # An Artifact class to abstract artifact operations
 # from the Element class
@@ -58,6 +60,7 @@ class Artifact:
         self._weak_cache_key = weak_key
         self._artifactdir = context.artifactdir
         self._cas = context.get_cascache()
+        self._assetcache = context.get_assetcache()
         self._tmpdir = context.tmpdir
         self._proto = None
 
@@ -193,6 +196,24 @@ class Artifact:
             artifact.buildtree.CopyFrom(buildtreevdir._get_digest())
             size += buildtreevdir.get_size()
 
+        # Store artifact in CAS
+        artifact_digest = self._cas.add_object(buffer=artifact.SerializeToString())
+
+        # Add artifact to AssetCache
+        keys = utils._deduplicate([artifact.strong_key, artifact.weak_key])
+        uris = [REMOTE_ASSET_ARTIFACT_URN_TEMPLATE.format(key) for key in keys]
+        referenced_directories = []
+        if artifact.files:
+            referenced_directories.append(artifact.files)
+        if artifact.buildtree:
+            referenced_directories.append(artifact.buildtree)
+        referenced_blobs = artifact.logs
+        self._assetcache.push_blob(
+            artifact_digest, uris,
+            references_blobs=referenced_blobs,
+            references_directories=referenced_directories)
+
+        # TODO: remove non-CAS artifact logic
         os.makedirs(os.path.dirname(os.path.join(self._artifactdir, element.get_artifact_name())), exist_ok=True)
         keys = utils._deduplicate([self._cache_key, self._weak_cache_key])
         for key in keys:
