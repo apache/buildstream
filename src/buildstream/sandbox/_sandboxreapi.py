@@ -121,6 +121,9 @@ class SandboxREAPI(Sandbox):
         if "unixGID" in supported_properties:
             platform.properties.add(name="unixGID", value=str(gid))
 
+        if flags & SandboxFlags.NETWORK_ENABLED and "network" in supported_properties:
+            platform.properties.add(name="network", value="on")
+
         return remote_execution_pb2.Command(
             arguments=command,
             working_directory=working_directory[1:],
