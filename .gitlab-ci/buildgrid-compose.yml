@@ -38,7 +38,7 @@ services:
   bot:
     image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:nightly
     command: [
-      "sh", "-c", "sleep 15 && ( buildbox-casd --cas-remote=http://controller:50051 /var/lib/buildgrid/cache & buildbox-worker --bots-remote=http://controller:50051 --cas-remote=unix:/var/lib/buildgrid/cache/casd.sock --buildbox-run=buildbox-run-bubblewrap --runner-arg=--use-localcas --verbose )"]
+      "sh", "-c", "sleep 15 && ( buildbox-casd --cas-remote=http://controller:50051 /var/lib/buildgrid/cache & buildbox-worker --bots-remote=http://controller:50051 --cas-remote=unix:/var/lib/buildgrid/cache/casd.sock --buildbox-run=buildbox-run-bubblewrap --runner-arg=--use-localcas --platform OSFamily=linux --platform ISA=x86-64 --verbose )"]
     privileged: true
     volumes:
       - type: volume
