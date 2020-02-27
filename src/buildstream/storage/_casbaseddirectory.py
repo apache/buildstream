@@ -140,6 +140,7 @@ class CasBasedDirectory(Directory):
         self.__digest = None
         self.index = {}
         self.parent = parent
+        self.__node_properties = []
         self._reset(digest=digest)
 
     def _reset(self, *, digest=None):
@@ -155,6 +156,8 @@ class CasBasedDirectory(Directory):
                 pb2_directory.ParseFromString(f.read())
         except FileNotFoundError as e:
             raise VirtualDirectoryError("Directory not found in local cache: {}".format(e)) from e
+
+        self.__node_properties = list(pb2_directory.node_properties)
 
         for entry in pb2_directory.directories:
             self.index[entry.name] = IndexEntry(entry.name, _FileType.DIRECTORY, digest=entry.digest)
@@ -214,7 +217,7 @@ class CasBasedDirectory(Directory):
         self.__invalidate_digest()
 
     def _create_empty_file(self, name):
-        digest = self.cas_cache.add_object(buffer="")
+        digest = self.cas_cache.add_object(buffer=b"")
 
         entry = IndexEntry(name, _FileType.REGULAR_FILE, digest=digest)
         self.index[name] = entry
@@ -759,6 +762,10 @@ class CasBasedDirectory(Directory):
             # Create updated Directory proto
             pb2_directory = remote_execution_pb2.Directory()
 
+            if self.__node_properties:
+                node_properties = sorted(self.__node_properties, key=lambda prop: prop.name)
+                pb2_directory.node_properties.extend(node_properties)
+
             for name, entry in sorted(self.index.items()):
                 if entry.type == _FileType.DIRECTORY:
                     dirnode = pb2_directory.directories.add()
@@ -794,17 +801,26 @@ class CasBasedDirectory(Directory):
             subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
             target = subdir.index.get(path[-1])
             if target is not None:
-                if target.type == _FileType.REGULAR_FILE:
-                    return True
-                elif follow_symlinks and target.type == _FileType.SYMLINK:
+                if follow_symlinks and target.type == _FileType.SYMLINK:
                     linklocation = target.target
                     newpath = linklocation.split(os.path.sep)
                     if os.path.isabs(linklocation):
                         return subdir.find_root()._exists(*newpath, follow_symlinks=True)
                     return subdir._exists(*newpath, follow_symlinks=True)
+                else:
+                    return True
             return False
         except VirtualDirectoryError:
             return False
+
+    def _set_subtree_read_only(self, read_only):
+        self.__node_properties = list(filter(lambda prop: prop.name != "SubtreeReadOnly", self.__node_properties))
+        node_property = remote_execution_pb2.NodeProperty()
+        node_property.name = "SubtreeReadOnly"
+        node_property.value = "true" if read_only else "false"
+        self.__node_properties.append(node_property)
+
+        self.__invalidate_digest()
 
     def __invalidate_digest(self):
         if self.__digest:
