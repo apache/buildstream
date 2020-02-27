@@ -138,7 +138,13 @@ class Platform:
 
     @staticmethod
     def get_host_os():
-        return platform.uname().system
+        system = platform.uname().system.lower()
+
+        if system == "darwin" and platform.mac_ver()[0]:
+            # mac_ver() returns a non-empty release string on macOS.
+            return "macos"
+        else:
+            return system
 
     # canonicalize_arch():
     #

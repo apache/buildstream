@@ -2721,6 +2721,12 @@ class Element(Plugin):
         # Sandbox config, unlike others, has fixed members so we should validate them
         sandbox_config.validate_keys(["build-uid", "build-gid", "build-os", "build-arch"])
 
+        build_os = sandbox_config.get_str("build-os", default=None)
+        if build_os:
+            build_os = build_os.lower()
+        else:
+            build_os = host_os
+
         build_arch = sandbox_config.get_str("build-arch", default=None)
         if build_arch:
             build_arch = Platform.canonicalize_arch(build_arch)
@@ -2728,10 +2734,7 @@ class Element(Plugin):
             build_arch = host_arch
 
         return SandboxConfig(
-            sandbox_config.get_int("build-uid"),
-            sandbox_config.get_int("build-gid"),
-            sandbox_config.get_str("build-os", default=host_os),
-            build_arch,
+            sandbox_config.get_int("build-uid"), sandbox_config.get_int("build-gid"), build_os, build_arch,
         )
 
     # This makes a special exception for the split rules, which
