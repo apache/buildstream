@@ -42,10 +42,6 @@ class ArtifactElement(Element):
     # A hash of ArtifactElement by ref
     __instantiated_artifacts = {}  # type: Dict[str, ArtifactElement]
 
-    # ArtifactElement's require this as the sandbox will use a normal
-    # directory when we checkout
-    BST_VIRTUAL_DIRECTORY = True
-
     def __init__(self, context, ref):
         _, element, key = verify_artifact_ref(ref)
 

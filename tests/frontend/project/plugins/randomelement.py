@@ -4,8 +4,6 @@ from buildstream import Element
 
 
 class RandomElement(Element):
-    BST_VIRTUAL_DIRECTORY = True
-
     def configure(self, node):
         pass
 
