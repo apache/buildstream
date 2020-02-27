@@ -125,7 +125,6 @@ class Sandbox:
         self.__cwd = None  # type: Optional[str]
         self.__env = None  # type: Optional[Dict[str, str]]
         self.__mount_sources = {}  # type: Dict[str, str]
-        self.__allow_real_directory = kwargs["allow_real_directory"]
         self.__allow_run = True
 
         # Plugin element full name for logging
@@ -154,29 +153,8 @@ class Sandbox:
         self._vdir = None  # type: Optional[Directory]
         self._usebuildtree = False
 
-        # This is set if anyone requests access to the underlying
-        # directory via get_directory.
-        self._never_cache_vdirs = False
-
         # Pending command batch
         self.__batch = None
-
-    def get_directory(self) -> str:
-        """Fetches the sandbox root directory
-
-        The root directory is where artifacts for the base
-        runtime environment should be staged. Only works if
-        BST_VIRTUAL_DIRECTORY is not set.
-
-        Returns:
-           The sandbox root directory
-
-        """
-        if self.__allow_real_directory:
-            self._never_cache_vdirs = True
-            return self._root
-        else:
-            raise BstError("You can't use get_directory")
 
     def get_virtual_directory(self) -> Directory:
         """Fetches the sandbox root directory as a virtual Directory.
@@ -184,17 +162,11 @@ class Sandbox:
         The root directory is where artifacts for the base
         runtime environment should be staged.
 
-        Use caution if you use get_directory and
-        get_virtual_directory.  If you alter the contents of the
-        directory returned by get_directory, all objects returned by
-        get_virtual_directory or derived from them are invalid and you
-        must call get_virtual_directory again to get a new copy.
-
         Returns:
            The sandbox root directory
 
         """
-        if self._vdir is None or self._never_cache_vdirs:
+        if self._vdir is None:
             if self._use_cas_based_directory():
                 cascache = self.__context.get_cascache()
                 self._vdir = CasBasedDirectory(cascache)
@@ -400,9 +372,9 @@ class Sandbox:
     #    (bool): Whether to use CasBasedDirectory
     #
     def _use_cas_based_directory(self):
-        # Use CasBasedDirectory as sandbox root if neither Sandbox.get_directory()
-        # nor Sandbox.run() are required. This allows faster staging.
-        if not self.__allow_real_directory and not self.__allow_run:
+        # Use CasBasedDirectory as sandbox root if Sandbox.run() is not used.
+        # This allows faster staging.
+        if not self.__allow_run:
             return True
 
         return "BST_CAS_DIRECTORIES" in os.environ
