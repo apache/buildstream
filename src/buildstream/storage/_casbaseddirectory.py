@@ -31,8 +31,10 @@ import os
 import stat
 import copy
 import tarfile as tarfilelib
+from contextlib import contextmanager
 from io import StringIO
 
+from .. import utils
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .directory import Directory, VirtualDirectoryError, _FileType
 from ._filebaseddirectory import FileBasedDirectory
@@ -730,6 +732,34 @@ class CasBasedDirectory(Directory):
         else:
             path += "/" + self.common_name
         return path
+
+    @contextmanager
+    def open_file(self, *path: str, mode: str = "r"):
+        subdir = self.descend(*path[:-1])
+        entry = subdir.index.get(path[-1])
+
+        if entry and entry.type != _FileType.REGULAR_FILE:
+            raise VirtualDirectoryError("{} in {} is not a file".format(path[-1], str(subdir)))
+
+        if mode not in ["r", "rb", "w", "wb", "x", "xb"]:
+            raise ValueError("Unsupported mode: `{}`".format(mode))
+
+        if "r" in mode:
+            if not entry:
+                raise FileNotFoundError("{} not found in {}".format(path[-1], str(subdir)))
+
+            # Read-only access, allow direct access to CAS object
+            with open(self.cas_cache.objpath(entry.digest), mode, encoding="utf-8") as f:
+                yield f
+        else:
+            if "x" in mode and entry:
+                raise FileExistsError("{} already exists in {}".format(path[-1], str(subdir)))
+
+            with utils._tempnamedfile(mode, encoding="utf-8", dir=self.cas_cache.tmpdir) as f:
+                yield f
+                # Import written temporary file into CAS
+                f.flush()
+                subdir._add_file(path[-1], f.name, modified=True)
 
     def __str__(self):
         return "[CAS:{}]".format(self._get_identifier())

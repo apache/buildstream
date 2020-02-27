@@ -248,6 +248,19 @@ class FileBasedDirectory(Directory):
         except (VirtualDirectoryError, FileNotFoundError):
             return False
 
+    def open_file(self, *path: str, mode: str = "r"):
+        # Use descend() to avoid following symlinks (potentially escaping the sandbox)
+        subdir = self.descend(*path[:-1])
+        newpath = os.path.join(subdir.external_directory, path[-1])
+
+        if mode not in ["r", "rb", "w", "wb", "x", "xb"]:
+            raise ValueError("Unsupported mode: `{}`".format(mode))
+
+        if "r" in mode:
+            return open(newpath, mode=mode, encoding="utf-8")
+        else:
+            return utils.save_file_atomic(newpath, mode=mode, encoding="utf-8")
+
     def __str__(self):
         # This returns the whole path (since we don't know where the directory started)
         # which exposes the sandbox directory; we will have to assume for the time being

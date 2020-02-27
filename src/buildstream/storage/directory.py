@@ -208,6 +208,16 @@ class Directory:
         """
         raise NotImplementedError()
 
+    def open_file(self, *paths: str, mode: str = "r"):
+        """ Open file and return a corresponding file object. In text mode,
+        UTF-8 is used as encoding.
+
+        Args:
+          *paths: A list of strings which are all path components.
+          mode (str): An optional string that specifies the mode in which the file is opened.
+        """
+        raise NotImplementedError()
+
 
 # FileType:
 #
