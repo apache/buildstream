@@ -280,7 +280,7 @@ class BuildElement(Element):
             buildroot = self.get_variable("build-root")
             buildroot_vdir = vdir.descend(*buildroot.lstrip(os.sep).split(os.sep))
 
-            if buildroot_vdir._exists(marker_filename):
+            if buildroot_vdir.exists(marker_filename):
                 # Already prepared
                 return
 

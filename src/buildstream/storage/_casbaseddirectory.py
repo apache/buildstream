@@ -795,7 +795,7 @@ class CasBasedDirectory(Directory):
 
         return self.__digest
 
-    def _exists(self, *path, follow_symlinks=False):
+    def exists(self, *path, follow_symlinks=False):
         try:
             subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
             target = subdir.index.get(path[-1])
@@ -804,8 +804,8 @@ class CasBasedDirectory(Directory):
                     linklocation = target.target
                     newpath = linklocation.split(os.path.sep)
                     if os.path.isabs(linklocation):
-                        return subdir._find_root()._exists(*newpath, follow_symlinks=True)
-                    return subdir._exists(*newpath, follow_symlinks=True)
+                        return subdir._find_root().exists(*newpath, follow_symlinks=True)
+                    return subdir.exists(*newpath, follow_symlinks=True)
                 else:
                     return True
             return False

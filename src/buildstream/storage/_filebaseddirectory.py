@@ -232,6 +232,22 @@ class FileBasedDirectory(Directory):
     def get_size(self):
         return utils._get_dir_size(self.external_directory)
 
+    def exists(self, *path, follow_symlinks=False):
+        try:
+            subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
+            newpath = os.path.join(subdir.external_directory, path[-1])
+            st = os.lstat(newpath)
+            if follow_symlinks and stat.S_ISLNK(st.st_mode):
+                linklocation = os.readlink(newpath)
+                newpath = linklocation.split(os.path.sep)
+                if os.path.isabs(linklocation):
+                    return subdir._find_root().exists(*newpath, follow_symlinks=True)
+                return subdir.exists(*newpath, follow_symlinks=True)
+            else:
+                return True
+        except (VirtualDirectoryError, FileNotFoundError):
+            return False
+
     def __str__(self):
         # This returns the whole path (since we don't know where the directory started)
         # which exposes the sandbox directory; we will have to assume for the time being
@@ -357,22 +373,6 @@ class FileBasedDirectory(Directory):
                     assert entry.type == _FileType.SYMLINK
                     os.symlink(entry.target, dest_path)
                 result.files_written.append(relative_pathname)
-
-    def _exists(self, *path, follow_symlinks=False):
-        try:
-            subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
-            newpath = os.path.join(subdir.external_directory, path[-1])
-            st = os.lstat(newpath)
-            if follow_symlinks and stat.S_ISLNK(st.st_mode):
-                linklocation = os.readlink(newpath)
-                newpath = linklocation.split(os.path.sep)
-                if os.path.isabs(linklocation):
-                    return subdir._find_root()._exists(*newpath, follow_symlinks=True)
-                return subdir._exists(*newpath, follow_symlinks=True)
-            else:
-                return True
-        except (VirtualDirectoryError, FileNotFoundError):
-            return False
 
     def _create_empty_file(self, name):
         with open(os.path.join(self.external_directory, name), "w"):
