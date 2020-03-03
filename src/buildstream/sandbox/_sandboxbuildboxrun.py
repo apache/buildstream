@@ -18,6 +18,7 @@ import os
 import signal
 import subprocess
 import sys
+from contextlib import ExitStack
 
 import psutil
 
@@ -137,9 +138,23 @@ class SandboxBuildBoxRun(SandboxREAPI):
             group_id = os.getpgid(process.pid)
             os.killpg(group_id, signal.SIGCONT)
 
-        with _signals.suspendable(suspend_proc, resume_proc), _signals.terminator(kill_proc):
+        with ExitStack() as stack:
+
+            # We want to launch buildbox-run in a new session in non-interactive
+            # mode so that we handle the SIGTERM and SIGTSTP signals separately
+            # from the nested process, but in interactive mode this causes
+            # launched shells to lack job control as the signals don't reach
+            # the shell process.
+            #
+            if interactive:
+                new_session = False
+            else:
+                new_session = True
+                stack.enter_context(_signals.suspendable(suspend_proc, resume_proc))
+                stack.enter_context(_signals.terminator(kill_proc))
+
             process = subprocess.Popen(
-                argv, close_fds=True, stdin=stdin, stdout=stdout, stderr=stderr, start_new_session=interactive,
+                argv, close_fds=True, stdin=stdin, stdout=stdout, stderr=stderr, start_new_session=new_session,
             )
 
             # Wait for the child process to finish, ensuring that
