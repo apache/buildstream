@@ -44,14 +44,12 @@ from .._exceptions import ImplError
 
 
 class FileBasedDirectory(Directory):
-    def __init__(self, external_directory=None):
+    def __init__(self, external_directory=None, *, parent=None):
         self.external_directory = external_directory
+        self.parent = parent
 
     def descend(self, *paths, create=False, follow_symlinks=False):
         """ See superclass Directory for arguments """
-
-        if follow_symlinks:
-            ImplError("FileBasedDirectory.Decend dose not implement follow_symlinks=True")
 
         current_dir = self
 
@@ -60,20 +58,37 @@ class FileBasedDirectory(Directory):
             if not path:
                 continue
 
+            if path == ".":
+                continue
+            if path == "..":
+                if current_dir.parent is not None:
+                    current_dir = current_dir.parent
+                # In POSIX /.. == / so just stay at the root dir
+                continue
+
             new_path = os.path.join(current_dir.external_directory, path)
             try:
                 st = os.lstat(new_path)
-                if not stat.S_ISDIR(st.st_mode):
+                if stat.S_ISDIR(st.st_mode):
+                    current_dir = FileBasedDirectory(new_path, parent=current_dir)
+                elif follow_symlinks and stat.S_ISLNK(st.st_mode):
+                    linklocation = os.readlink(new_path)
+                    newpaths = linklocation.split(os.path.sep)
+                    if os.path.isabs(linklocation):
+                        current_dir = current_dir._find_root().descend(*newpaths, follow_symlinks=True)
+                    else:
+                        current_dir = current_dir.descend(*newpaths, follow_symlinks=True)
+                else:
                     raise VirtualDirectoryError(
-                        "Cannot descend into '{}': '{}' is not a directory".format(path, new_path)
+                        "Cannot descend into '{}': '{}' is not a directory".format(path, new_path),
+                        reason="not-a-directory",
                     )
             except FileNotFoundError:
                 if create:
                     os.mkdir(new_path)
+                    current_dir = FileBasedDirectory(new_path, parent=current_dir)
                 else:
                     raise VirtualDirectoryError("Cannot descend into '{}': '{}' does not exist".format(path, new_path))
-
-            current_dir = FileBasedDirectory(new_path)
 
         return current_dir
 
@@ -227,6 +242,14 @@ class FileBasedDirectory(Directory):
         """ Returns the underlying (real) file system directory this
         object refers to. """
         return self.external_directory
+
+    def _find_root(self):
+        """ Finds the root of this directory tree by following 'parent' until there is
+        no parent. """
+        if self.parent:
+            return self.parent._find_root()
+        else:
+            return self
 
     def _get_filetype(self, name=None):
         path = self.external_directory
