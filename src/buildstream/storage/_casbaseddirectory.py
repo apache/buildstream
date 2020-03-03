@@ -313,14 +313,6 @@ class CasBasedDirectory(Directory):
 
         self.__invalidate_digest()
 
-    def find_root(self):
-        """ Finds the root of this directory tree by following 'parent' until there is
-        no parent. """
-        if self.parent:
-            return self.parent.find_root()
-        else:
-            return self
-
     def descend(self, *paths, create=False, follow_symlinks=False):
         """Descend one or more levels of directory hierarchy and return a new
         Directory object for that directory.
@@ -355,7 +347,7 @@ class CasBasedDirectory(Directory):
                     linklocation = entry.target
                     newpaths = linklocation.split(os.path.sep)
                     if os.path.isabs(linklocation):
-                        current_dir = current_dir.find_root().descend(*newpaths, follow_symlinks=True)
+                        current_dir = current_dir._find_root().descend(*newpaths, follow_symlinks=True)
                     else:
                         current_dir = current_dir.descend(*newpaths, follow_symlinks=True)
                 else:
@@ -749,6 +741,14 @@ class CasBasedDirectory(Directory):
             "_get_underlying_directory was called on a CAS-backed directory," + " which has no underlying directory."
         )
 
+    def _find_root(self):
+        """ Finds the root of this directory tree by following 'parent' until there is
+        no parent. """
+        if self.parent:
+            return self.parent._find_root()
+        else:
+            return self
+
     # _get_digest():
     #
     # Return the Digest for this directory.
@@ -804,7 +804,7 @@ class CasBasedDirectory(Directory):
                     linklocation = target.target
                     newpath = linklocation.split(os.path.sep)
                     if os.path.isabs(linklocation):
-                        return subdir.find_root()._exists(*newpath, follow_symlinks=True)
+                        return subdir._find_root()._exists(*newpath, follow_symlinks=True)
                     return subdir._exists(*newpath, follow_symlinks=True)
                 else:
                     return True
