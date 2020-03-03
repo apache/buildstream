@@ -191,8 +191,7 @@ class CasBasedDirectory(Directory):
 
         return newdir
 
-    def _add_file(self, basename, filename, modified=False, can_link=False, properties=None):
-        path = os.path.join(basename, filename)
+    def _add_file(self, name, path, modified=False, can_link=False, properties=None):
         digest = self.cas_cache.add_object(path=path, link_directly=can_link)
         is_executable = os.access(path, os.X_OK)
         node_properties = []
@@ -205,14 +204,14 @@ class CasBasedDirectory(Directory):
             node_properties.append(node_property)
 
         entry = IndexEntry(
-            filename,
+            name,
             _FileType.REGULAR_FILE,
             digest=digest,
             is_executable=is_executable,
-            modified=modified or filename in self.index,
+            modified=modified or name in self.index,
             node_properties=node_properties,
         )
-        self.index[filename] = entry
+        self.index[name] = entry
 
         self.__invalidate_digest()
 
@@ -517,8 +516,8 @@ class CasBasedDirectory(Directory):
         result = FileListResult()
         if self._check_replacement(os.path.basename(external_pathspec), os.path.dirname(external_pathspec), result):
             self._add_file(
-                os.path.dirname(external_pathspec),
                 os.path.basename(external_pathspec),
+                external_pathspec,
                 modified=os.path.basename(external_pathspec) in result.overwritten,
                 properties=properties,
             )
