@@ -359,13 +359,20 @@ class FileBasedDirectory(Directory):
                 result.files_written.append(relative_pathname)
 
     def _exists(self, *path, follow_symlinks=False):
-        """This is very simple but mirrors the cas based storage were it is less trivial"""
-        if follow_symlinks:
-            # The lexists is not ideal as it cant spot broken symlinks but this is a long
-            # standing bug in buildstream as exists follow absolute syslinks to real root
-            # and incorrectly thinks they are broken the new casbaseddirectory dose not have this bug.
-            return os.path.lexists(os.path.join(self.external_directory, *path))
-        raise ImplError("_exists can only follow symlinks in filebaseddirectory")
+        try:
+            subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
+            newpath = os.path.join(subdir.external_directory, path[-1])
+            st = os.lstat(newpath)
+            if follow_symlinks and stat.S_ISLNK(st.st_mode):
+                linklocation = os.readlink(newpath)
+                newpath = linklocation.split(os.path.sep)
+                if os.path.isabs(linklocation):
+                    return subdir._find_root()._exists(*newpath, follow_symlinks=True)
+                return subdir._exists(*newpath, follow_symlinks=True)
+            else:
+                return True
+        except (VirtualDirectoryError, FileNotFoundError):
+            return False
 
     def _create_empty_file(self, name):
         with open(os.path.join(self.external_directory, name), "w"):
