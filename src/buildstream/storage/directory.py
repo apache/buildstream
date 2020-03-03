@@ -218,6 +218,10 @@ class Directory:
         """
         raise NotImplementedError()
 
+    def _create_empty_file(self, *paths):
+        with self.open_file(*paths, mode="w"):
+            pass
+
 
 # FileType:
 #

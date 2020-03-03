@@ -386,7 +386,3 @@ class FileBasedDirectory(Directory):
                     assert entry.type == _FileType.SYMLINK
                     os.symlink(entry.target, dest_path)
                 result.files_written.append(relative_pathname)
-
-    def _create_empty_file(self, name):
-        with open(os.path.join(self.external_directory, name), "w"):
-            pass

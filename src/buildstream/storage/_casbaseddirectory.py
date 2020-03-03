@@ -217,14 +217,6 @@ class CasBasedDirectory(Directory):
 
         self.__invalidate_digest()
 
-    def _create_empty_file(self, name):
-        digest = self.cas_cache.add_object(buffer=b"")
-
-        entry = IndexEntry(name, _FileType.REGULAR_FILE, digest=digest)
-        self.index[name] = entry
-
-        self.__invalidate_digest()
-
     def _add_entry(self, entry: IndexEntry):
         self.index[entry.name] = entry.clone()
         self.__invalidate_digest()
