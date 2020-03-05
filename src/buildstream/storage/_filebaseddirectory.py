@@ -236,19 +236,23 @@ class FileBasedDirectory(Directory):
     def get_size(self):
         return utils._get_dir_size(self.external_directory)
 
+    def stat(self, *path, follow_symlinks=False):
+        subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
+        newpath = os.path.join(subdir.external_directory, path[-1])
+        st = os.lstat(newpath)
+        if follow_symlinks and stat.S_ISLNK(st.st_mode):
+            linklocation = os.readlink(newpath)
+            newpath = linklocation.split(os.path.sep)
+            if os.path.isabs(linklocation):
+                return subdir._find_root().stat(*newpath, follow_symlinks=True)
+            return subdir.stat(*newpath, follow_symlinks=True)
+        else:
+            return st
+
     def exists(self, *path, follow_symlinks=False):
         try:
-            subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
-            newpath = os.path.join(subdir.external_directory, path[-1])
-            st = os.lstat(newpath)
-            if follow_symlinks and stat.S_ISLNK(st.st_mode):
-                linklocation = os.readlink(newpath)
-                newpath = linklocation.split(os.path.sep)
-                if os.path.isabs(linklocation):
-                    return subdir._find_root().exists(*newpath, follow_symlinks=True)
-                return subdir.exists(*newpath, follow_symlinks=True)
-            else:
-                return True
+            self.stat(*path, follow_symlinks=follow_symlinks)
+            return True
         except (VirtualDirectoryError, FileNotFoundError):
             return False
 

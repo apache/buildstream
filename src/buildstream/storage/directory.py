@@ -32,6 +32,7 @@ See also: :ref:`sandboxing`.
 """
 
 
+import os
 from typing import Callable, Optional, Union, List
 
 from .._exceptions import BstError
@@ -205,6 +206,18 @@ class Directory:
 
         Returns:
           True if the path exists, False otherwise.
+        """
+        raise NotImplementedError()
+
+    def stat(self, *paths: str, follow_symlinks: bool = False) -> os.stat_result:
+        """ Get the status of a file.
+
+        Args:
+          *paths: A list of strings which are all path components.
+          follow_symlinks: True to follow symlinks.
+
+        Returns:
+          A `os.stat_result` object.
         """
         raise NotImplementedError()
 

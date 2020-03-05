@@ -825,23 +825,57 @@ class CasBasedDirectory(Directory):
 
         return self.__digest
 
+    def _entry_from_path(self, *path, follow_symlinks=False):
+        subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
+        self.__validate_path_component(path[-1])
+        target = subdir.index.get(path[-1])
+        if target is None:
+            raise FileNotFoundError("{} not found in {}".format(path[-1], str(subdir)))
+
+        if follow_symlinks and target.type == _FileType.SYMLINK:
+            linklocation = target.target
+            newpath = linklocation.split(os.path.sep)
+            if os.path.isabs(linklocation):
+                return subdir._find_root()._entry_from_path(*newpath, follow_symlinks=True)
+            return subdir._entry_from_path(*newpath, follow_symlinks=True)
+        else:
+            return target
+
     def exists(self, *path, follow_symlinks=False):
         try:
-            subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
-            self.__validate_path_component(path[-1])
-            target = subdir.index.get(path[-1])
-            if target is not None:
-                if follow_symlinks and target.type == _FileType.SYMLINK:
-                    linklocation = target.target
-                    newpath = linklocation.split(os.path.sep)
-                    if os.path.isabs(linklocation):
-                        return subdir._find_root().exists(*newpath, follow_symlinks=True)
-                    return subdir.exists(*newpath, follow_symlinks=True)
-                else:
-                    return True
+            self._entry_from_path(*path, follow_symlinks=follow_symlinks)
+            return True
+        except (VirtualDirectoryError, FileNotFoundError):
             return False
-        except VirtualDirectoryError:
-            return False
+
+    def stat(self, *path, follow_symlinks=False):
+        entry = self._entry_from_path(*path, follow_symlinks=follow_symlinks)
+
+        st_mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+        st_nlink = 1
+        st_mtime = BST_ARBITRARY_TIMESTAMP
+
+        if entry.type == _FileType.REGULAR_FILE:
+            st_mode |= stat.S_IFREG
+            st_size = entry.get_digest().size_bytes
+        elif entry.type == _FileType.DIRECTORY:
+            st_mode |= stat.S_IFDIR
+            st_size = 0
+        elif entry.type == _FileType.SYMLINK:
+            st_mode |= stat.S_IFLNK
+            st_size = len(entry.target)
+        else:
+            raise VirtualDirectoryError("Unsupported file type {}".format(entry.type))
+
+        if entry.type == _FileType.DIRECTORY or entry.is_executable:
+            st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+
+        if entry.node_properties:
+            for prop in entry.node_properties:
+                if prop.name == "MTime" and prop.value:
+                    st_mtime = utils._parse_timestamp(prop.value)
+
+        return os.stat_result((st_mode, 0, 0, st_nlink, 0, 0, st_size, st_mtime, st_mtime, st_mtime))
 
     def __iter__(self):
         yield from self.index.keys()
