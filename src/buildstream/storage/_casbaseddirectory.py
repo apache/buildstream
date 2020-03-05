@@ -843,6 +843,9 @@ class CasBasedDirectory(Directory):
         except VirtualDirectoryError:
             return False
 
+    def __iter__(self):
+        yield from self.index.keys()
+
     def _set_subtree_read_only(self, read_only):
         self.__node_properties = list(filter(lambda prop: prop.name != "SubtreeReadOnly", self.__node_properties))
         node_property = remote_execution_pb2.NodeProperty()

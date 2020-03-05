@@ -277,6 +277,9 @@ class FileBasedDirectory(Directory):
 
             return utils.save_file_atomic(newpath, mode=mode, encoding=encoding)
 
+    def __iter__(self):
+        yield from os.listdir(self.external_directory)
+
     def __str__(self):
         # This returns the whole path (since we don't know where the directory started)
         # which exposes the sandbox directory; we will have to assume for the time being
