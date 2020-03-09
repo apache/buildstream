@@ -126,10 +126,11 @@ class SandboxREAPI(Sandbox):
         output_directories = [os.path.relpath(dir, start=working_directory) for dir in read_write_directories]
 
         config = self._get_config()
-        supported_properties = self._supported_platform_properties()
-        platform = remote_execution_pb2.Platform()
-        platform.properties.add(name="OSFamily", value=config.build_os)
-        platform.properties.add(name="ISA", value=config.build_arch)
+
+        platform_dict = {}
+
+        platform_dict["OSFamily"] = config.build_os
+        platform_dict["ISA"] = config.build_arch
 
         if flags & SandboxFlags.INHERIT_UID:
             uid = os.geteuid()
@@ -137,13 +138,20 @@ class SandboxREAPI(Sandbox):
         else:
             uid = config.build_uid
             gid = config.build_gid
-        if "unixUID" in supported_properties:
-            platform.properties.add(name="unixUID", value=str(uid))
-        if "unixGID" in supported_properties:
-            platform.properties.add(name="unixGID", value=str(gid))
+        platform_dict["unixUID"] = str(uid)
+        platform_dict["unixGID"] = str(gid)
 
-        if flags & SandboxFlags.NETWORK_ENABLED and "network" in supported_properties:
-            platform.properties.add(name="network", value="on")
+        if flags & SandboxFlags.NETWORK_ENABLED:
+            platform_dict["network"] = "on"
+
+        # Remove unsupported platform properties from the dict
+        supported_properties = self._supported_platform_properties()
+        platform_dict = {key: value for (key, value) in platform_dict.items() if key in supported_properties}
+
+        # Create Platform message with properties sorted by name in code point order
+        platform = remote_execution_pb2.Platform()
+        for key, value in sorted(platform_dict.items()):
+            platform.properties.add(name=key, value=value)
 
         return remote_execution_pb2.Command(
             arguments=command,
@@ -195,7 +203,7 @@ class SandboxREAPI(Sandbox):
         raise ImplError("Sandbox of type '{}' does not implement _execute_action()".format(type(self).__name__))
 
     def _supported_platform_properties(self):
-        return set()
+        return {"OSFamily", "ISA"}
 
 
 # _SandboxREAPIBatch()
