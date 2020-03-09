@@ -188,7 +188,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 raise SandboxError("buildbox-run failed with returncode {}".format(returncode))
 
     def _supported_platform_properties(self):
-        return {"unixUID", "unixGID", "network"}
+        return {"OSFamily", "ISA", "unixUID", "unixGID", "network"}
 
     def _warn(self, msg):
         self._get_context().messenger.message(Message(MessageType.WARN, msg))
