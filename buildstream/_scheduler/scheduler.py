@@ -183,6 +183,9 @@ class Scheduler():
     #
     def terminate_jobs(self):
 
+        if self.terminated:
+            return
+
         # Set this right away, the frontend will check this
         # attribute to decide whether or not to print status info
         # etc and the following code block will trigger some callbacks.
@@ -515,22 +518,22 @@ class Scheduler():
         self.loop.remove_signal_handler(signal.SIGTSTP)
         self.loop.remove_signal_handler(signal.SIGTERM)
 
-    def _terminate_jobs_real(self):
-        # 20 seconds is a long time, it can take a while and sometimes
-        # we still fail, need to look deeper into this again.
-        wait_start = datetime.datetime.now()
-        wait_limit = 20.0
+    def _kill_job(self, job):
+        if job in self._active_jobs:
+            job.kill()
 
+    def _kill_jobs(self):
+        for job in self._active_jobs:
+            self.loop.call_soon(self._kill_job, job)
+
+    def _terminate_jobs_real(self):
         # First tell all jobs to terminate
         for job in self._active_jobs:
             job.terminate()
 
-        # Now wait for them to really terminate
-        for job in self._active_jobs:
-            elapsed = datetime.datetime.now() - wait_start
-            timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
-            if not job.terminate_wait(timeout):
-                job.kill()
+        # 20 seconds is a long time, it can take a while and sometimes
+        # we still fail, need to look deeper into this again.
+        self.loop.call_later(20.0, self._kill_jobs)
 
     # Regular timeout for driving status in the UI
     def _tick(self):
