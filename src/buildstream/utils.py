@@ -1168,6 +1168,8 @@ def _tempdir(*, suffix="", prefix="tmp", dir):  # pylint: disable=redefined-buil
 # which is guaranteed to be named and have an entry in the filesystem.
 #
 # Args:
+#    mode (str): The mode in which the file is opened
+#    encoding (str): The name of the encoding used to decode or encode the file
 #    dir (str): A path to a parent directory for the temporary file
 #    suffix (str): A suffix for the temproary file name
 #    prefix (str): A prefix for the temporary file name
@@ -1180,7 +1182,7 @@ def _tempdir(*, suffix="", prefix="tmp", dir):  # pylint: disable=redefined-buil
 # on SIGTERM.
 #
 @contextmanager
-def _tempnamedfile(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefined-builtin
+def _tempnamedfile(mode="w+b", encoding=None, suffix="", prefix="tmp", dir=None):  # pylint: disable=redefined-builtin
     temp = None
 
     def close_tempfile():
@@ -1188,7 +1190,7 @@ def _tempnamedfile(suffix="", prefix="tmp", dir=None):  # pylint: disable=redefi
             temp.close()
 
     with _signals.terminator(close_tempfile), tempfile.NamedTemporaryFile(
-        suffix=suffix, prefix=prefix, dir=dir
+        mode=mode, encoding=encoding, suffix=suffix, prefix=prefix, dir=dir
     ) as temp:
         yield temp
 

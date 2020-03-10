@@ -31,8 +31,10 @@ import os
 import stat
 import copy
 import tarfile as tarfilelib
+from contextlib import contextmanager
 from io import StringIO
 
+from .. import utils
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .directory import Directory, VirtualDirectoryError, _FileType
 from ._filebaseddirectory import FileBasedDirectory
@@ -191,8 +193,7 @@ class CasBasedDirectory(Directory):
 
         return newdir
 
-    def _add_file(self, basename, filename, modified=False, can_link=False, properties=None):
-        path = os.path.join(basename, filename)
+    def _add_file(self, name, path, modified=False, can_link=False, properties=None):
         digest = self.cas_cache.add_object(path=path, link_directly=can_link)
         is_executable = os.access(path, os.X_OK)
         node_properties = []
@@ -205,21 +206,13 @@ class CasBasedDirectory(Directory):
             node_properties.append(node_property)
 
         entry = IndexEntry(
-            filename,
+            name,
             _FileType.REGULAR_FILE,
             digest=digest,
             is_executable=is_executable,
-            modified=modified or filename in self.index,
+            modified=modified or name in self.index,
             node_properties=node_properties,
         )
-        self.index[filename] = entry
-
-        self.__invalidate_digest()
-
-    def _create_empty_file(self, name):
-        digest = self.cas_cache.add_object(buffer=b"")
-
-        entry = IndexEntry(name, _FileType.REGULAR_FILE, digest=digest)
         self.index[name] = entry
 
         self.__invalidate_digest()
@@ -314,14 +307,6 @@ class CasBasedDirectory(Directory):
 
         self.__invalidate_digest()
 
-    def find_root(self):
-        """ Finds the root of this directory tree by following 'parent' until there is
-        no parent. """
-        if self.parent:
-            return self.parent.find_root()
-        else:
-            return self
-
     def descend(self, *paths, create=False, follow_symlinks=False):
         """Descend one or more levels of directory hierarchy and return a new
         Directory object for that directory.
@@ -356,7 +341,7 @@ class CasBasedDirectory(Directory):
                     linklocation = entry.target
                     newpaths = linklocation.split(os.path.sep)
                     if os.path.isabs(linklocation):
-                        current_dir = current_dir.find_root().descend(*newpaths, follow_symlinks=True)
+                        current_dir = current_dir._find_root().descend(*newpaths, follow_symlinks=True)
                     else:
                         current_dir = current_dir.descend(*newpaths, follow_symlinks=True)
                 else:
@@ -517,8 +502,8 @@ class CasBasedDirectory(Directory):
         result = FileListResult()
         if self._check_replacement(os.path.basename(external_pathspec), os.path.dirname(external_pathspec), result):
             self._add_file(
-                os.path.dirname(external_pathspec),
                 os.path.basename(external_pathspec),
+                external_pathspec,
                 modified=os.path.basename(external_pathspec) in result.overwritten,
                 properties=properties,
             )
@@ -740,6 +725,34 @@ class CasBasedDirectory(Directory):
             path += "/" + self.common_name
         return path
 
+    @contextmanager
+    def open_file(self, *path: str, mode: str = "r"):
+        subdir = self.descend(*path[:-1])
+        entry = subdir.index.get(path[-1])
+
+        if entry and entry.type != _FileType.REGULAR_FILE:
+            raise VirtualDirectoryError("{} in {} is not a file".format(path[-1], str(subdir)))
+
+        if mode not in ["r", "rb", "w", "wb", "x", "xb"]:
+            raise ValueError("Unsupported mode: `{}`".format(mode))
+
+        if "r" in mode:
+            if not entry:
+                raise FileNotFoundError("{} not found in {}".format(path[-1], str(subdir)))
+
+            # Read-only access, allow direct access to CAS object
+            with open(self.cas_cache.objpath(entry.digest), mode, encoding="utf-8") as f:
+                yield f
+        else:
+            if "x" in mode and entry:
+                raise FileExistsError("{} already exists in {}".format(path[-1], str(subdir)))
+
+            with utils._tempnamedfile(mode, encoding="utf-8", dir=self.cas_cache.tmpdir) as f:
+                yield f
+                # Import written temporary file into CAS
+                f.flush()
+                subdir._add_file(path[-1], f.name, modified=True)
+
     def __str__(self):
         return "[CAS:{}]".format(self._get_identifier())
 
@@ -749,6 +762,14 @@ class CasBasedDirectory(Directory):
         raise VirtualDirectoryError(
             "_get_underlying_directory was called on a CAS-backed directory," + " which has no underlying directory."
         )
+
+    def _find_root(self):
+        """ Finds the root of this directory tree by following 'parent' until there is
+        no parent. """
+        if self.parent:
+            return self.parent._find_root()
+        else:
+            return self
 
     # _get_digest():
     #
@@ -796,7 +817,7 @@ class CasBasedDirectory(Directory):
 
         return self.__digest
 
-    def _exists(self, *path, follow_symlinks=False):
+    def exists(self, *path, follow_symlinks=False):
         try:
             subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
             target = subdir.index.get(path[-1])
@@ -805,8 +826,8 @@ class CasBasedDirectory(Directory):
                     linklocation = target.target
                     newpath = linklocation.split(os.path.sep)
                     if os.path.isabs(linklocation):
-                        return subdir.find_root()._exists(*newpath, follow_symlinks=True)
-                    return subdir._exists(*newpath, follow_symlinks=True)
+                        return subdir._find_root().exists(*newpath, follow_symlinks=True)
+                    return subdir.exists(*newpath, follow_symlinks=True)
                 else:
                     return True
             return False
