@@ -159,7 +159,9 @@ class Job():
         # the callback is called immediately.
         #
         self._watcher = asyncio.get_child_watcher()
-        self._watcher.add_child_handler(self._process.pid, self._parent_child_completed)
+        self._scheduler.loop.call_soon(self._watcher.add_child_handler,
+                                       self._process.pid,
+                                       self._parent_child_completed)
 
     # terminate()
     #
