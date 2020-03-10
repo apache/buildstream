@@ -137,6 +137,12 @@ class Scheduler():
         # Hold on to the queues to process
         self.queues = queues
 
+        # NOTE: Enforce use of `SafeChildWatcher` as we generally don't want
+        # background threads.
+        # In Python 3.8+, `ThreadedChildWatcher` is the default watcher, and
+        # not `SafeChildWatcher`.
+        asyncio.set_child_watcher(asyncio.SafeChildWatcher())
+
         # Ensure that we have a fresh new event loop, in case we want
         # to run another test in this thread.
         self.loop = asyncio.new_event_loop()
@@ -516,21 +522,15 @@ class Scheduler():
         self.loop.remove_signal_handler(signal.SIGTERM)
 
     def _terminate_jobs_real(self):
-        # 20 seconds is a long time, it can take a while and sometimes
-        # we still fail, need to look deeper into this again.
-        wait_start = datetime.datetime.now()
-        wait_limit = 20.0
+        def kill_jobs():
+            for job_ in self._active_jobs:
+                job_.kill()
 
-        # First tell all jobs to terminate
+        # Schedule all jobs to be killed if they have not exited in 20 sec
+        self.loop.call_later(20, kill_jobs)
+
         for job in self._active_jobs:
             job.terminate()
-
-        # Now wait for them to really terminate
-        for job in self._active_jobs:
-            elapsed = datetime.datetime.now() - wait_start
-            timeout = max(wait_limit - elapsed.total_seconds(), 0.0)
-            if not job.terminate_wait(timeout):
-                job.kill()
 
     # Regular timeout for driving status in the UI
     def _tick(self):
