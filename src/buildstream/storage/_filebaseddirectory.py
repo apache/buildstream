@@ -44,14 +44,12 @@ from .._exceptions import ImplError
 
 
 class FileBasedDirectory(Directory):
-    def __init__(self, external_directory=None):
+    def __init__(self, external_directory=None, *, parent=None):
         self.external_directory = external_directory
+        self.parent = parent
 
     def descend(self, *paths, create=False, follow_symlinks=False):
         """ See superclass Directory for arguments """
-
-        if follow_symlinks:
-            ImplError("FileBasedDirectory.Decend dose not implement follow_symlinks=True")
 
         current_dir = self
 
@@ -60,20 +58,37 @@ class FileBasedDirectory(Directory):
             if not path:
                 continue
 
+            if path == ".":
+                continue
+            if path == "..":
+                if current_dir.parent is not None:
+                    current_dir = current_dir.parent
+                # In POSIX /.. == / so just stay at the root dir
+                continue
+
             new_path = os.path.join(current_dir.external_directory, path)
             try:
                 st = os.lstat(new_path)
-                if not stat.S_ISDIR(st.st_mode):
+                if stat.S_ISDIR(st.st_mode):
+                    current_dir = FileBasedDirectory(new_path, parent=current_dir)
+                elif follow_symlinks and stat.S_ISLNK(st.st_mode):
+                    linklocation = os.readlink(new_path)
+                    newpaths = linklocation.split(os.path.sep)
+                    if os.path.isabs(linklocation):
+                        current_dir = current_dir._find_root().descend(*newpaths, follow_symlinks=True)
+                    else:
+                        current_dir = current_dir.descend(*newpaths, follow_symlinks=True)
+                else:
                     raise VirtualDirectoryError(
-                        "Cannot descend into '{}': '{}' is not a directory".format(path, new_path)
+                        "Cannot descend into '{}': '{}' is not a directory".format(path, new_path),
+                        reason="not-a-directory",
                     )
             except FileNotFoundError:
                 if create:
                     os.mkdir(new_path)
+                    current_dir = FileBasedDirectory(new_path, parent=current_dir)
                 else:
                     raise VirtualDirectoryError("Cannot descend into '{}': '{}' does not exist".format(path, new_path))
-
-            current_dir = FileBasedDirectory(new_path)
 
         return current_dir
 
@@ -217,6 +232,35 @@ class FileBasedDirectory(Directory):
     def get_size(self):
         return utils._get_dir_size(self.external_directory)
 
+    def exists(self, *path, follow_symlinks=False):
+        try:
+            subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
+            newpath = os.path.join(subdir.external_directory, path[-1])
+            st = os.lstat(newpath)
+            if follow_symlinks and stat.S_ISLNK(st.st_mode):
+                linklocation = os.readlink(newpath)
+                newpath = linklocation.split(os.path.sep)
+                if os.path.isabs(linklocation):
+                    return subdir._find_root().exists(*newpath, follow_symlinks=True)
+                return subdir.exists(*newpath, follow_symlinks=True)
+            else:
+                return True
+        except (VirtualDirectoryError, FileNotFoundError):
+            return False
+
+    def open_file(self, *path: str, mode: str = "r"):
+        # Use descend() to avoid following symlinks (potentially escaping the sandbox)
+        subdir = self.descend(*path[:-1])
+        newpath = os.path.join(subdir.external_directory, path[-1])
+
+        if mode not in ["r", "rb", "w", "wb", "x", "xb"]:
+            raise ValueError("Unsupported mode: `{}`".format(mode))
+
+        if "r" in mode:
+            return open(newpath, mode=mode, encoding="utf-8")
+        else:
+            return utils.save_file_atomic(newpath, mode=mode, encoding="utf-8")
+
     def __str__(self):
         # This returns the whole path (since we don't know where the directory started)
         # which exposes the sandbox directory; we will have to assume for the time being
@@ -227,6 +271,14 @@ class FileBasedDirectory(Directory):
         """ Returns the underlying (real) file system directory this
         object refers to. """
         return self.external_directory
+
+    def _find_root(self):
+        """ Finds the root of this directory tree by following 'parent' until there is
+        no parent. """
+        if self.parent:
+            return self.parent._find_root()
+        else:
+            return self
 
     def _get_filetype(self, name=None):
         path = self.external_directory
@@ -334,16 +386,3 @@ class FileBasedDirectory(Directory):
                     assert entry.type == _FileType.SYMLINK
                     os.symlink(entry.target, dest_path)
                 result.files_written.append(relative_pathname)
-
-    def _exists(self, *path, follow_symlinks=False):
-        """This is very simple but mirrors the cas based storage were it is less trivial"""
-        if follow_symlinks:
-            # The lexists is not ideal as it cant spot broken symlinks but this is a long
-            # standing bug in buildstream as exists follow absolute syslinks to real root
-            # and incorrectly thinks they are broken the new casbaseddirectory dose not have this bug.
-            return os.path.lexists(os.path.join(self.external_directory, *path))
-        raise ImplError("_exists can only follow symlinks in filebaseddirectory")
-
-    def _create_empty_file(self, name):
-        with open(os.path.join(self.external_directory, name), "w"):
-            pass

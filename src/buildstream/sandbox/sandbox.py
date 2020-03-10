@@ -568,14 +568,14 @@ class Sandbox:
         vroot = self.get_virtual_directory()
         command_as_parts = command.lstrip(os.sep).split(os.sep)
         if os.path.isabs(command):
-            return vroot._exists(*command_as_parts, follow_symlinks=True)
+            return vroot.exists(*command_as_parts, follow_symlinks=True)
 
         if len(command_as_parts) > 1:
             return False
 
         for path in env.get("PATH").split(":"):
             path_as_parts = path.lstrip(os.sep).split(os.sep)
-            if vroot._exists(*path_as_parts, command, follow_symlinks=True):
+            if vroot.exists(*path_as_parts, command, follow_symlinks=True):
                 return True
 
         return False

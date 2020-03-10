@@ -76,7 +76,7 @@ class SandboxREAPI(Sandbox):
 
                 # Ensure mount point exists in sandbox
                 mount_point_components = mount_point.split(os.path.sep)
-                if not vdir._exists(*mount_point_components):
+                if not vdir.exists(*mount_point_components):
                     if os.path.isdir(mount_source):
                         # Mounting a directory, mount point must be a directory
                         vdir.descend(*mount_point_components, create=True)
