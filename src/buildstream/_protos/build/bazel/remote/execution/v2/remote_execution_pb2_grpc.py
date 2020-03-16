@@ -436,6 +436,9 @@ class ContentAddressableStorageServicer(object):
     Clients can use this API before uploading blobs to determine which ones are
     already present in the CAS and do not need to be uploaded again.
 
+    Servers SHOULD increase the TTLs of the referenced blobs if necessary and
+    applicable.
+
     There are no method-specific errors.
     """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
