@@ -102,8 +102,6 @@ class SandboxREAPI(Sandbox):
         command_proto = self._create_command(command, cwd, env, read_write_directories, flags)
         command_digest = cascache.add_object(buffer=command_proto.SerializeToString())
         action = remote_execution_pb2.Action(command_digest=command_digest, input_root_digest=input_root_digest)
-        if self._output_node_properties:
-            action.output_node_properties.extend(self._output_node_properties)
 
         action_result = self._execute_action(action, flags)  # pylint: disable=assignment-from-no-return
 
@@ -159,6 +157,7 @@ class SandboxREAPI(Sandbox):
             environment_variables=environment_variables,
             output_files=[],
             output_directories=output_directories,
+            output_node_properties=self._output_node_properties,
             platform=platform,
         )
 
