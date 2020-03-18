@@ -205,7 +205,7 @@ class Mount():
         # will handle SIGTERM and gracefully exit its own little main loop.
         #
         try:
-            FUSE(self.__operations, self.__mountpoint, nothreads=True, foreground=True, nonempty=True,
+            FUSE(self.__operations, self.__mountpoint, nothreads=True, foreground=True,
                  **self._fuse_mount_options)
         except RuntimeError as exc:
             # FUSE will throw a RuntimeError with the exit code of libfuse as args[0]
