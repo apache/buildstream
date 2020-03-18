@@ -121,7 +121,11 @@ class DownloadableFileSource(Source):
                 with contextlib.closing(urllib.request.urlopen(request)) as response:
                     info = response.info()
 
-                    etag = info['ETag'] if 'ETag' in info else None
+                    # some servers don't honor the 'If-None-Match' header
+                    if self.ref and etag and info["ETag"] == etag:
+                        return self.ref
+
+                    etag = info["ETag"]
 
                     filename = info.get_filename(default_name)
                     filename = os.path.basename(filename)
