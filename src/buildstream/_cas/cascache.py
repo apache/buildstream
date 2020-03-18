@@ -77,7 +77,6 @@ class CASCache:
     ):
         self.casdir = os.path.join(path, "cas")
         self.tmpdir = os.path.join(path, "tmp")
-        os.makedirs(os.path.join(self.casdir, "objects"), exist_ok=True)
         os.makedirs(self.tmpdir, exist_ok=True)
 
         self._cache_usage_monitor = None
