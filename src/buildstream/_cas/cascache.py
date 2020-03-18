@@ -62,10 +62,18 @@ class CASLogLevel(FastEnum):
 #     cache_quota (int): User configured cache quota
 #     protect_session_blobs (bool): Disable expiry for blobs used in the current session
 #     log_level (LogLevel): Log level to give to buildbox-casd for logging
+#     log_directory (str): the root of the directory in which to store logs
 #
 class CASCache:
     def __init__(
-        self, path, *, casd=True, cache_quota=None, protect_session_blobs=True, log_level=CASLogLevel.WARNING
+        self,
+        path,
+        *,
+        casd=True,
+        cache_quota=None,
+        protect_session_blobs=True,
+        log_level=CASLogLevel.WARNING,
+        log_directory=None
     ):
         self.casdir = os.path.join(path, "cas")
         self.tmpdir = os.path.join(path, "tmp")
@@ -78,7 +86,8 @@ class CASCache:
         self._casd_process_manager = None
         self._casd_channel = None
         if casd:
-            log_dir = os.path.join(self.casdir, "logs")
+            assert log_directory is not None, "log_directory is required when casd is True"
+            log_dir = os.path.join(log_directory, "_casd")
             self._casd_process_manager = CASDProcessManager(
                 path, log_dir, log_level, cache_quota, protect_session_blobs
             )

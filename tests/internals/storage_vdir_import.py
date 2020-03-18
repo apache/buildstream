@@ -185,7 +185,7 @@ def directory_not_empty(path):
 
 
 def _import_test(tmpdir, original, overlay, generator_function, verify_contents=False):
-    cas_cache = CASCache(tmpdir)
+    cas_cache = CASCache(tmpdir, log_directory=os.path.join(tmpdir, "logs"))
     try:
         # Create some fake content
         generator_function(original, tmpdir)
@@ -258,7 +258,7 @@ def test_random_cas_import(tmpdir, original, overlay):
 
 
 def _listing_test(tmpdir, root, generator_function):
-    cas_cache = CASCache(tmpdir)
+    cas_cache = CASCache(tmpdir, log_directory=os.path.join(tmpdir, "logs"))
     try:
         # Create some fake content
         generator_function(root, tmpdir)
@@ -287,7 +287,7 @@ def test_fixed_directory_listing(tmpdir, root):
 # Check that the vdir is decending and readable
 def test_descend(tmpdir):
     cas_dir = os.path.join(str(tmpdir), "cas")
-    cas_cache = CASCache(cas_dir)
+    cas_cache = CASCache(cas_dir, log_directory=os.path.join(str(tmpdir), "logs"))
     try:
         d = CasBasedDirectory(cas_cache)
 
@@ -309,7 +309,7 @@ def test_descend(tmpdir):
 # to decend in to files or links to files
 def test_bad_symlinks(tmpdir):
     cas_dir = os.path.join(str(tmpdir), "cas")
-    cas_cache = CASCache(cas_dir)
+    cas_cache = CASCache(cas_dir, log_directory=os.path.join(str(tmpdir), "logs"))
     try:
         d = CasBasedDirectory(cas_cache)
 
@@ -338,7 +338,7 @@ def test_bad_symlinks(tmpdir):
 # Check decend accross relitive link
 def test_relative_symlink(tmpdir):
     cas_dir = os.path.join(str(tmpdir), "cas")
-    cas_cache = CASCache(cas_dir)
+    cas_cache = CASCache(cas_dir, log_directory=os.path.join(str(tmpdir), "logs"))
     try:
         d = CasBasedDirectory(cas_cache)
 
@@ -363,7 +363,7 @@ def test_relative_symlink(tmpdir):
 # Check deccend accross abs link
 def test_abs_symlink(tmpdir):
     cas_dir = os.path.join(str(tmpdir), "cas")
-    cas_cache = CASCache(cas_dir)
+    cas_cache = CASCache(cas_dir, log_directory=os.path.join(str(tmpdir), "logs"))
     try:
         d = CasBasedDirectory(cas_cache)
 
@@ -389,7 +389,7 @@ def test_abs_symlink(tmpdir):
 # Check symlink can not escape root
 def test_bad_sym_escape(tmpdir):
     cas_dir = os.path.join(str(tmpdir), "cas")
-    cas_cache = CASCache(cas_dir)
+    cas_cache = CASCache(cas_dir, log_directory=os.path.join(str(tmpdir), "logs"))
     try:
         d = CasBasedDirectory(cas_cache)
 

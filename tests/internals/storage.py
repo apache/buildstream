@@ -21,7 +21,7 @@ def setup_backend(backend_class, tmpdir):
     if backend_class == FileBasedDirectory:
         yield backend_class(os.path.join(tmpdir, "vdir"))
     else:
-        cas_cache = CASCache(tmpdir)
+        cas_cache = CASCache(os.path.join(tmpdir, "cas"), log_directory=os.path.join(tmpdir, "logs"))
         try:
             yield backend_class(cas_cache)
         finally:

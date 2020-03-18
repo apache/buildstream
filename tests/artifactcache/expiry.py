@@ -36,7 +36,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "expiry")
 
 
 def get_cache_usage(directory):
-    cas_cache = CASCache(directory)
+    cas_cache = CASCache(directory, log_directory=os.path.dirname(directory))
     try:
         wait = 0.1
         for _ in range(0, int(5 / wait)):
