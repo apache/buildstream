@@ -48,9 +48,7 @@ def test_custom_logging(cli, tmpdir, datafiles):
     element_path = os.path.join(project, "elements")
     element_name = "fetch-test-git.bst"
 
-    custom_log_format = (
-        "%{elapsed},%{elapsed-us},%{wallclock},%{wallclock-us}," "%{key},%{element},%{action},%{message}"
-    )
+    custom_log_format = "%{elapsed},%{elapsed-us},%{wallclock},%{wallclock-us},%{key},%{element},%{action},%{message}"
     user_config = {"logging": {"message-format": custom_log_format}}
     cli.configure(user_config)
 

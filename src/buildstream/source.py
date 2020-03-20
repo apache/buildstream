@@ -765,7 +765,7 @@ class Source(Plugin):
                 # SourceErrors should be preserved so that the
                 # plugin can communicate real error cases.
                 raise
-            except Exception as err:  # pylint: broad-except
+            except Exception as err:
                 # Generic errors point to bugs in the plugin, so
                 # we need to catch them and make sure they do not
                 # cause stacktraces
