@@ -22,6 +22,7 @@ import os
 import shutil
 from collections import namedtuple
 from urllib.parse import urlparse
+from socket import gethostbyname
 from functools import partial
 
 import grpc
@@ -353,10 +354,13 @@ class SandboxRemote(SandboxREAPI):
                     "You must supply a protocol and port number in the execution-service url, "
                     "for example: http://buildservice:50051."
                 )
+
+            host = gethostbyname(url.hostname)
+
             if url.scheme == "http":
-                channel = grpc.insecure_channel("{}:{}".format(url.hostname, url.port))
+                channel = grpc.insecure_channel("{}:{}".format(host, url.port))
             elif url.scheme == "https":
-                channel = grpc.secure_channel("{}:{}".format(url.hostname, url.port), self.exec_credentials)
+                channel = grpc.secure_channel("{}:{}".format(host, url.port), self.exec_credentials)
             else:
                 raise SandboxError(
                     "Remote execution currently only supports the 'http' protocol "
@@ -410,10 +414,13 @@ class SandboxRemote(SandboxREAPI):
                 "You must supply a protocol and port number in the action-cache-service url, "
                 "for example: http://buildservice:50051."
             )
+
+        host = gethostbyname(url.hostname)
+
         if url.scheme == "http":
-            channel = grpc.insecure_channel("{}:{}".format(url.hostname, url.port))
+            channel = grpc.insecure_channel("{}:{}".format(host, url.port))
         elif url.scheme == "https":
-            channel = grpc.secure_channel("{}:{}".format(url.hostname, url.port), self.action_credentials)
+            channel = grpc.secure_channel("{}:{}".format(host, url.port), self.action_credentials)
 
         with channel:
             request = remote_execution_pb2.GetActionResultRequest(
