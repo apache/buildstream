@@ -17,6 +17,7 @@
 
 import os
 from collections import namedtuple
+from socket import gethostbyname
 from urllib.parse import urlparse
 
 import grpc
@@ -157,9 +158,11 @@ class BaseRemote:
 
         # Set up the communcation channel
         url = urlparse(self.spec.url)
+        host = gethostbyname(url.hostname)
+
         if url.scheme == "http":
             port = url.port or 80
-            self.channel = grpc.insecure_channel("{}:{}".format(url.hostname, port))
+            self.channel = grpc.insecure_channel("{}:{}".format(host, port))
         elif url.scheme == "https":
             port = url.port or 443
             try:
@@ -174,7 +177,7 @@ class BaseRemote:
             credentials = grpc.ssl_channel_credentials(
                 root_certificates=self.server_cert, private_key=self.client_key, certificate_chain=self.client_cert
             )
-            self.channel = grpc.secure_channel("{}:{}".format(url.hostname, port), credentials)
+            self.channel = grpc.secure_channel("{}:{}".format(host, port), credentials)
         else:
             raise RemoteError("Unsupported URL: {}".format(self.spec.url))
 
