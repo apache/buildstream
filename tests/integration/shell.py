@@ -366,7 +366,7 @@ def test_integration_devices(cli, datafiles):
 @pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
 def test_integration_external_workspace(cli, tmpdir_factory, datafiles, build_shell, guess_element):
-    tmpdir = tmpdir_factory.mktemp("")
+    tmpdir = tmpdir_factory.mktemp(os.path.basename(__file__))
     project = str(datafiles)
     element_name = "autotools/amhello.bst"
     workspace_dir = os.path.join(str(tmpdir), "workspace")
