@@ -534,7 +534,11 @@ class Context:
                 log_level = CASLogLevel.WARNING
 
             self._cascache = CASCache(
-                self.cachedir, casd=self.use_casd, cache_quota=self.config_cache_quota, log_level=log_level
+                self.cachedir,
+                casd=self.use_casd,
+                cache_quota=self.config_cache_quota,
+                log_level=log_level,
+                log_directory=self.logdir,
             )
         return self._cascache
 

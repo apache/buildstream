@@ -123,7 +123,9 @@ class ArtifactShare(BaseArtifactShare):
         self.sourcedir = os.path.join(self.repodir, "source_protos", "refs")
         os.makedirs(self.sourcedir)
 
-        self.cas = CASCache(self.repodir, casd=casd)
+        logdir = os.path.join(self.directory, "logs") if casd else None
+
+        self.cas = CASCache(self.repodir, casd=casd, log_directory=logdir)
 
         self.quota = quota
         self.index_only = index_only
