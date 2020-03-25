@@ -23,7 +23,7 @@ import os
 import pytest
 
 from buildstream import _yaml
-from .._utils.site import HAVE_SANDBOX, CASD_SEPARATE_USER
+from .._utils.site import HAVE_SANDBOX, CASD_SEPARATE_USER, HAVE_TAR
 from .. import create_repo
 from .. import cli  # pylint: disable=unused-import
 from .utils import kind  # pylint: disable=unused-import
@@ -50,6 +50,11 @@ def create_test_directory(*path, mode=0o644):
 @pytest.mark.integration
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.skipif(not HAVE_TAR, reason="WIP test for bst external")
+@pytest.mark.skipif(
+    HAVE_SANDBOX == "buildbox-run" and CASD_SEPARATE_USER,
+    reason="Flaky due to timestamps: https://gitlab.com/BuildStream/buildstream/issues/1218",
+)
 def test_deterministic_source_umask(cli, tmpdir, datafiles, kind):
     if CASD_SEPARATE_USER and kind == "ostree":
         pytest.xfail("The ostree plugin ignores the umask")

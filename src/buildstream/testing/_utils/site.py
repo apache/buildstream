@@ -78,3 +78,10 @@ if HAVE_SANDBOX == "buildbox-run":
         BUILDBOX_RUN = os.path.basename(os.readlink(path))
     except (ProgramNotFoundError, OSError):
         pass
+
+HAVE_TAR = None
+try:
+    import buildstream.plugins.elements.tar_element
+    HAVE_TAR = True
+except:
+    pass

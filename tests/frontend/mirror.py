@@ -7,6 +7,7 @@ import pytest
 from buildstream import _yaml
 from buildstream.testing import create_repo
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing._utils.site import HAVE_TAR
 
 
 # Project directory
@@ -56,6 +57,7 @@ def generate_project():
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [("inline"), ("project.refs")])
 @pytest.mark.parametrize("mirror", [("no-mirror"), ("mirror"), ("unrelated-mirror")])
+@pytest.mark.skipif(not HAVE_TAR, reason="WIP test for bst external")
 def test_mirror_fetch_ref_storage(cli, tmpdir, datafiles, ref_storage, mirror):
     bin_files_path = os.path.join(str(datafiles), "files", "bin-files", "usr")
     dev_files_path = os.path.join(str(datafiles), "files", "dev-files", "usr")
