@@ -360,10 +360,13 @@ docs:
       fetchers: 2
     EOF
   - dnf install -y ostree python3-gobject-base
-  - pip3 install -r requirements/requirements.txt
-  - pip3 wheel --wheel-dir wheels/ --no-deps .
-  - pip3 install --no-index wheels/*
-  - pip3 install --user bst-plugins-experimental[cargo]==${BST_EXT_REF}
+  # Install pinned BuildStream dependencies, BuildStream from the local repository
+  # and bst-plugins-expeirmental from its repository
+  - |
+    pip3 install \
+      -r requirements/requirements.txt . \
+      git+https://gitlab.com/buildstream/bst-plugins-experimental.git@${BST_EXT_REF}#egg=bst_plugins_experimental[cargo] \
+      .
   - git clone https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git
   - git -C freedesktop-sdk checkout ${FD_SDK_REF}
   artifacts:
