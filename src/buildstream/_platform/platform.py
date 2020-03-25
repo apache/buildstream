@@ -266,18 +266,18 @@ class Platform:
 
     # Buildbox run sandbox methods
     def _check_sandbox_config_buildboxrun(self, config):
-        from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun
+        from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun  # pylint: disable=cyclic-import
 
         SandboxBuildBoxRun.check_sandbox_config(self, config)
 
     @staticmethod
     def _create_buildboxrun_sandbox(*args, **kwargs):
-        from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun
+        from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun  # pylint: disable=cyclic-import
 
         return SandboxBuildBoxRun(*args, **kwargs)
 
     def setup_buildboxrun_sandbox(self):
-        from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun
+        from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun  # pylint: disable=cyclic-import
 
         self._check_sandbox(SandboxBuildBoxRun)
         self.check_sandbox_config = self._check_sandbox_config_buildboxrun

@@ -26,6 +26,7 @@ from .. import utils, _signals
 from . import SandboxFlags
 from .._exceptions import SandboxError
 from .._message import Message, MessageType
+from .._platform import Platform
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from ._sandboxreapi import SandboxREAPI
 
@@ -59,17 +60,30 @@ class SandboxBuildBoxRun(SandboxREAPI):
             cls._dummy_reasons += ["buildbox-run: {}".format(output)]
             raise SandboxError(" and ".join(cls._dummy_reasons), reason="unavailable-local-sandbox")
 
+        osfamily_prefix = "platform:OSFamily="
+        cls._osfamilies = {cap[len(osfamily_prefix) :] for cap in cls._capabilities if cap.startswith(osfamily_prefix)}
+        if not cls._osfamilies:
+            # buildbox-run is too old to list supported OS families,
+            # limit support to native building on the host OS.
+            cls._osfamilies.add(Platform.get_host_os())
+
+        isa_prefix = "platform:ISA="
+        cls._isas = {cap[len(isa_prefix) :] for cap in cls._capabilities if cap.startswith(isa_prefix)}
+        if not cls._isas:
+            # buildbox-run is too old to list supported ISAs,
+            # limit support to native building on the host ISA.
+            cls._isas.add(Platform.get_host_arch())
+
     @classmethod
     def check_sandbox_config(cls, platform, config):
         if platform.does_multiprocessing_start_require_pickling():
             # Reinitialize class as class data is not pickled.
             cls.check_available()
 
-        # Check host os and architecture match
-        if config.build_os != platform.get_host_os():
-            raise SandboxError("Configured and host OS don't match.")
-        if config.build_arch != platform.get_host_arch():
-            raise SandboxError("Configured and host architecture don't match.")
+        if config.build_os not in cls._osfamilies:
+            raise SandboxError("OS '{}' is not supported by buildbox-run.".format(config.build_os))
+        if config.build_arch not in cls._isas:
+            raise SandboxError("ISA '{}' is not supported by buildbox-run.".format(config.build_arch))
 
         if config.build_uid is not None and "platform:unixUID" not in cls._capabilities:
             raise SandboxError("Configuring sandbox UID is not supported by buildbox-run.")
