@@ -175,7 +175,13 @@ class CASCache:
     # Returns: True if the file is in the cache, False otherwise
     #
     def contains_file(self, digest):
-        return os.path.exists(self.objpath(digest))
+        cas = self.get_cas()
+
+        request = remote_execution_pb2.FindMissingBlobsRequest()
+        request.blob_digests.append(digest)
+
+        response = cas.FindMissingBlobs(request)
+        return len(response.missing_blob_digests) == 0
 
     # contains_directory():
     #
