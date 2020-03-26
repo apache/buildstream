@@ -174,13 +174,17 @@ class Queue:
     #
     # Args:
     #    elts (list): A list of Elements
+    #    task (Task): The task to add progress to for the UI, if any
     #
-    def enqueue(self, elts):
+    def enqueue(self, elts, task=None):
         if not elts:
             return
 
         # Obtain immediate element status
         for elt in elts:
+            if task:
+                task.add_current_progress()
+
             if self._required_element_check and not elt._is_required():
                 elt._set_required_callback(self._enqueue_element)
             else:
