@@ -22,6 +22,7 @@ import os
 import grpc
 
 from ._basecache import BaseCache
+from ._cas.casremote import BlobNotFound
 from ._exceptions import ArtifactError, CASError, CacheError, CASRemoteError, RemoteError
 from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, artifact_pb2, artifact_pb2_grpc
 
@@ -310,6 +311,10 @@ class ArtifactCache(BaseCache):
                     return True
 
                 element.info("Remote ({}) does not have artifact {} cached".format(remote, display_key))
+            except BlobNotFound as e:
+                # Not all blobs are available on this remote
+                element.info("Remote cas ({}) does not have blob {} cached".format(remote, e.blob))
+                continue
             except CASError as e:
                 element.warn("Could not pull from remote {}: {}".format(remote, e))
                 errors.append(e)
