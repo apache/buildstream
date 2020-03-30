@@ -8,7 +8,13 @@ import pytest
 from buildstream import utils, _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
-from tests.testutils import create_artifact_share, generate_junction, assert_shared, assert_not_shared
+from tests.testutils import (
+    create_artifact_share,
+    create_split_share,
+    generate_junction,
+    assert_shared,
+    assert_not_shared,
+)
 
 
 # Project directory
@@ -227,46 +233,74 @@ def test_push_pull_cross_junction(cli, tmpdir, datafiles):
         assert cli.get_element_state(project, "junction.bst:import-etc.bst") == "cached"
 
 
+def _test_pull_missing_blob(cli, project, index, storage):
+    # First build the target element and push to the remote.
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+    assert cli.get_element_state(project, "target.bst") == "cached"
+
+    # Assert that everything is now cached in the remote.
+    all_elements = ["target.bst", "import-bin.bst", "import-dev.bst", "compose-all.bst"]
+    for element_name in all_elements:
+        project_name = "test"
+        artifact_name = cli.get_artifact_name(project, project_name, element_name)
+        artifact_proto = index.get_artifact_proto(artifact_name)
+        assert artifact_proto
+        assert storage.get_cas_files(artifact_proto)
+
+    # Now we've pushed, delete the user's local artifact cache
+    # directory and try to redownload it from the share
+    #
+    casdir = os.path.join(cli.directory, "cas")
+    shutil.rmtree(casdir)
+    artifactdir = os.path.join(cli.directory, "artifacts")
+    shutil.rmtree(artifactdir)
+
+    # Assert that nothing is cached locally anymore
+    for element_name in all_elements:
+        assert cli.get_element_state(project, element_name) != "cached"
+
+    # Now delete blobs in the remote without deleting the artifact ref.
+    # This simulates scenarios with concurrent artifact expiry.
+    remote_objdir = os.path.join(storage.repodir, "cas", "objects")
+    shutil.rmtree(remote_objdir)
+
+    # Now try bst build
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+
+    # Assert that no artifacts were pulled
+    assert not result.get_pulled_elements()
+
+
 @pytest.mark.datafiles(DATA_DIR)
 def test_pull_missing_blob(cli, tmpdir, datafiles):
     project = str(datafiles)
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-
-        # First build the target element and push to the remote.
         cli.configure({"artifacts": {"url": share.repo, "push": True}})
-        result = cli.run(project=project, args=["build", "target.bst"])
-        result.assert_success()
-        assert cli.get_element_state(project, "target.bst") == "cached"
 
-        # Assert that everything is now cached in the remote.
-        all_elements = ["target.bst", "import-bin.bst", "import-dev.bst", "compose-all.bst"]
-        for element_name in all_elements:
-            assert_shared(cli, share, project, element_name)
+        _test_pull_missing_blob(cli, project, share, share)
 
-        # Now we've pushed, delete the user's local artifact cache
-        # directory and try to redownload it from the share
-        #
-        casdir = os.path.join(cli.directory, "cas")
-        shutil.rmtree(casdir)
-        artifactdir = os.path.join(cli.directory, "artifacts")
-        shutil.rmtree(artifactdir)
 
-        # Assert that nothing is cached locally anymore
-        for element_name in all_elements:
-            assert cli.get_element_state(project, element_name) != "cached"
+@pytest.mark.datafiles(DATA_DIR)
+def test_pull_missing_blob_split_share(cli, tmpdir, datafiles):
+    project = str(datafiles)
 
-        # Now delete blobs in the remote without deleting the artifact ref.
-        # This simulates scenarios with concurrent artifact expiry.
-        remote_objdir = os.path.join(share.repodir, "cas", "objects")
-        shutil.rmtree(remote_objdir)
+    indexshare = os.path.join(str(tmpdir), "indexshare")
+    storageshare = os.path.join(str(tmpdir), "storageshare")
 
-        # Now try bst build
-        result = cli.run(project=project, args=["build", "target.bst"])
-        result.assert_success()
+    with create_split_share(indexshare, storageshare) as (index, storage):
+        cli.configure(
+            {
+                "artifacts": [
+                    {"url": index.repo, "push": True, "type": "index"},
+                    {"url": storage.repo, "push": True, "type": "storage"},
+                ]
+            }
+        )
 
-        # Assert that no artifacts were pulled
-        assert not result.get_pulled_elements()
+        _test_pull_missing_blob(cli, project, index, storage)
 
 
 @pytest.mark.datafiles(DATA_DIR)
