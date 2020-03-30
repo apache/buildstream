@@ -47,20 +47,22 @@ def test_overlaps_error(cli, datafiles, use_fatal_warnings):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_overlaps_whitelist(cli, datafiles):
+@pytest.mark.parametrize("element", ["collect-whitelisted.bst", "collect-whitelisted-abs.bst"])
+def test_overlaps_whitelist(cli, datafiles, element):
     project_dir = str(datafiles)
     gen_project(project_dir, True)
     result = cli.run(project=project_dir, silent=True, args=[
-        'build', 'collect-whitelisted.bst'])
+        'build', element])
     result.assert_success()
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_overlaps_whitelist_ignored(cli, datafiles):
+@pytest.mark.parametrize("element", ["collect-whitelisted.bst", "collect-whitelisted-abs.bst"])
+def test_overlaps_whitelist_ignored(cli, datafiles, element):
     project_dir = str(datafiles)
     gen_project(project_dir, False)
     result = cli.run(project=project_dir, silent=True, args=[
-        'build', 'collect-whitelisted.bst'])
+        'build', element])
     result.assert_success()
 
 
