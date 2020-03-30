@@ -281,7 +281,6 @@ class ArtifactCache(BaseCache):
                 element.status("Pulling artifact {} <- {}".format(display_key, remote))
                 artifact = self._pull_artifact_proto(element, key, remote)
                 if artifact:
-                    element.info("Pulled artifact {} <- {}".format(display_key, remote))
                     break
 
                 element.info("Remote ({}) does not have artifact {} cached".format(remote, display_key))
@@ -307,7 +306,7 @@ class ArtifactCache(BaseCache):
                 element.status("Pulling data for artifact {} <- {}".format(display_key, remote))
 
                 if self._pull_artifact_storage(element, artifact, remote, pull_buildtrees=pull_buildtrees):
-                    element.info("Pulled data for artifact {} <- {}".format(display_key, remote))
+                    element.info("Pulled artifact {} <- {}".format(display_key, remote))
                     return True
 
                 element.info("Remote ({}) does not have artifact {} cached".format(remote, display_key))
