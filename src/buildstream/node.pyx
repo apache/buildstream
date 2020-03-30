@@ -593,7 +593,7 @@ cdef class MappingNode(Node):
 
         return (<ScalarNode> value).as_enum(constraint)
 
-    cpdef int get_int(self, str key, object default=_sentinel) except *:
+    cpdef object get_int(self, str key, object default=_sentinel):
         """get_int(key, default=sentinel)
 
         Get the value of the node for `key` as an integer.
@@ -602,7 +602,7 @@ cdef class MappingNode(Node):
 
         Args:
             key (str): key for which to get the value
-            default (int): default value to return if `key` is not in the mapping
+            default (int, None): default value to return if `key` is not in the mapping
 
         Raises:
            :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a
@@ -610,9 +610,11 @@ cdef class MappingNode(Node):
                                                        valid `integer`
 
         Returns:
-            :class:`int`: the value at `key` or the default
+            :class:`int` or :class:`None`: the value at `key` or the default
         """
         cdef ScalarNode scalar = self.get_scalar(key, default)
+        if default is None and scalar.is_none():
+            return None
         return scalar.as_int()
 
     cpdef MappingNode get_mapping(self, str key, object default=_sentinel):
