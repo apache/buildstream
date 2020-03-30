@@ -647,16 +647,19 @@ class CASCache:
 
     # fetch_blobs():
     #
-    # Fetch blobs from remote CAS. Returns missing blobs that could not be fetched.
+    # Fetch blobs from remote CAS. Optionally returns missing blobs that could
+    # not be fetched.
     #
     # Args:
     #    remote (CASRemote): The remote repository to fetch from
     #    digests (list): The Digests of blobs to fetch
+    #    allow_partial (bool): True to return missing blobs, False to raise a
+    #                          BlobNotFound error if a blob is missing
     #
     # Returns: The Digests of the blobs that were not available on the remote CAS
     #
-    def fetch_blobs(self, remote, digests):
-        missing_blobs = []
+    def fetch_blobs(self, remote, digests, *, allow_partial=False):
+        missing_blobs = [] if allow_partial else None
 
         remote.init()
 
