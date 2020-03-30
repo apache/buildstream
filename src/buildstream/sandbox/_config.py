@@ -39,21 +39,12 @@ class SandboxConfig:
     #
     def get_unique_key(self):
 
-        # Currently operating system and machine architecture
-        # are not configurable and we have no sandbox implementation
-        # which can conform to such configurations.
-        #
-        # However this should be the right place to support
-        # such configurations in the future.
-        #
         unique_key = {"os": self.build_os, "arch": self.build_arch}
 
-        # Avoid breaking cache key calculation with
-        # the addition of configurabuild build uid/gid
-        if self.build_uid != 0:
+        if self.build_uid is not None:
             unique_key["build-uid"] = self.build_uid
 
-        if self.build_gid != 0:
+        if self.build_gid is not None:
             unique_key["build-gid"] = self.build_gid
 
         return unique_key

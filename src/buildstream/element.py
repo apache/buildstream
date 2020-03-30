@@ -2701,7 +2701,7 @@ class Element(Plugin):
     @classmethod
     def __extract_sandbox_config(cls, context, project, meta):
         if meta.is_junction:
-            sandbox_config = Node.from_dict({"build-uid": 0, "build-gid": 0})
+            sandbox_config = Node.from_dict({})
         else:
             sandbox_config = project._sandbox.clone()
 
@@ -2734,7 +2734,7 @@ class Element(Plugin):
             build_arch = host_arch
 
         return SandboxConfig(
-            sandbox_config.get_int("build-uid"), sandbox_config.get_int("build-gid"), build_os, build_arch,
+            sandbox_config.get_int("build-uid", None), sandbox_config.get_int("build-gid", None), build_os, build_arch,
         )
 
     # This makes a special exception for the split rules, which

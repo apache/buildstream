@@ -67,6 +67,11 @@ class SandboxBuildBoxRun(SandboxREAPI):
         if config.build_arch != platform.get_host_arch():
             raise SandboxError("Configured and host architecture don't match.")
 
+        if config.build_uid is not None and "platform:unixUID" not in cls._capabilities:
+            raise SandboxError("Configuring sandbox UID is not supported by buildbox-run.")
+        if config.build_gid is not None and "platform:unixGID" not in cls._capabilities:
+            raise SandboxError("Configuring sandbox GID is not supported by buildbox-run.")
+
         return True
 
     def _execute_action(self, action, flags):
