@@ -405,7 +405,7 @@ class ArtifactCache(BaseCache):
             remote.init()
 
             # fetch_blobs() will return the blobs that are still missing
-            missing_blobs = self.cas.fetch_blobs(remote, missing_blobs)
+            missing_blobs = self.cas.fetch_blobs(remote, missing_blobs, allow_partial=True)
 
         if missing_blobs:
             raise ArtifactError("Blobs not found on configured artifact servers")
