@@ -21,7 +21,7 @@ from .platform import Platform
 
 class Fallback(Platform):
     def _check_dummy_sandbox_config(self, config):
-        return True
+        pass
 
     def _create_dummy_sandbox(self, *args, **kwargs):
         kwargs["dummy_reason"] = (

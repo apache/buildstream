@@ -45,7 +45,7 @@ class Win32(Platform):
 
     @staticmethod
     def _check_dummy_sandbox_config(config):
-        return True
+        pass
 
     @staticmethod
     def _create_dummy_sandbox(*args, **kwargs):

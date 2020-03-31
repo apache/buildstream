@@ -328,13 +328,9 @@ class Element(Plugin):
         # Extract Sandbox config
         self.__sandbox_config = self.__extract_sandbox_config(context, project, meta)
 
-        self.__sandbox_config_supported = True
         if not self.__use_remote_execution():
             platform = context.platform
-            if not platform.check_sandbox_config(self.__sandbox_config):
-                # Local sandbox does not fully support specified sandbox config.
-                # This will taint the artifact, disable pushing.
-                self.__sandbox_config_supported = False
+            platform.check_sandbox_config(self.__sandbox_config)
 
     def __lt__(self, other):
         return self.name < other.name
@@ -1544,14 +1540,6 @@ class Element(Plugin):
         context = self._get_context()
         with self._output_file() as output_file:
 
-            if not self.__sandbox_config_supported:
-                self.warn(
-                    "Sandbox configuration is not supported by the platform.",
-                    detail="Falling back to UID {} GID {}. Artifact will not be pushed.".format(
-                        self.__sandbox_config.build_uid, self.__sandbox_config.build_gid
-                    ),
-                )
-
             # Explicitly clean it up, keep the build dir around if exceptions are raised
             os.makedirs(context.builddir, exist_ok=True)
 
@@ -2454,7 +2442,7 @@ class Element(Plugin):
             workspaced_dependencies = self.__artifact.get_metadata_workspaced_dependencies()
 
             # Other conditions should be or-ed
-            self.__tainted = workspaced or workspaced_dependencies or not self.__sandbox_config_supported
+            self.__tainted = workspaced or workspaced_dependencies
 
         return self.__tainted
 

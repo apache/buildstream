@@ -268,7 +268,7 @@ class Platform:
     def _check_sandbox_config_buildboxrun(self, config):
         from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun
 
-        return SandboxBuildBoxRun.check_sandbox_config(self, config)
+        SandboxBuildBoxRun.check_sandbox_config(self, config)
 
     @staticmethod
     def _create_buildboxrun_sandbox(*args, **kwargs):

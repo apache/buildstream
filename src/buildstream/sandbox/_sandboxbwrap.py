@@ -122,8 +122,6 @@ class SandboxBwrap(Sandbox):
         if config.build_arch != host_arch and not local_platform.can_crossbuild(config):
             raise SandboxError("Configured architecture and host architecture don't match.")
 
-        return True
-
     def _run(self, command, flags, *, cwd, env):
         stdout, stderr = self._get_output()
 

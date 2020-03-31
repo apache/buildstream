@@ -72,8 +72,6 @@ class SandboxBuildBoxRun(SandboxREAPI):
         if config.build_gid is not None and "platform:unixGID" not in cls._capabilities:
             raise SandboxError("Configuring sandbox GID is not supported by buildbox-run.")
 
-        return True
-
     def _execute_action(self, action, flags):
         stdout, stderr = self._get_output()
 
