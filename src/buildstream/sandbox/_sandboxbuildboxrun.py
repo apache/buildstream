@@ -47,13 +47,17 @@ class SandboxBuildBoxRun(SandboxREAPI):
             cls._dummy_reasons += ["buildbox-run not found"]
             raise SandboxError(" and ".join(cls._dummy_reasons), reason="unavailable-local-sandbox") from Error
 
-        exit_code, output = utils._call([path, "--capabilities"], stdout=subprocess.PIPE)
+        exit_code, output = utils._call([path, "--capabilities"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if exit_code == 0:
             # buildbox-run --capabilities prints one capability per line
             cls._capabilities = set(output.split("\n"))
-        else:
+        elif "Invalid option --capabilities" in output:
             # buildbox-run is too old to support extra capabilities
             cls._capabilities = set()
+        else:
+            # buildbox-run is not functional
+            cls._dummy_reasons += ["buildbox-run: {}".format(output)]
+            raise SandboxError(" and ".join(cls._dummy_reasons), reason="unavailable-local-sandbox")
 
     @classmethod
     def check_sandbox_config(cls, platform, config):
