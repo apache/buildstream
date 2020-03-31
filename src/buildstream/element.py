@@ -328,10 +328,6 @@ class Element(Plugin):
         # Extract Sandbox config
         self.__sandbox_config = self.__extract_sandbox_config(context, project, meta)
 
-        if not self.__use_remote_execution():
-            platform = context.platform
-            platform.check_sandbox_config(self.__sandbox_config)
-
     def __lt__(self, other):
         return self.name < other.name
 
@@ -2514,6 +2510,8 @@ class Element(Plugin):
             yield sandbox
 
         elif directory is not None and os.path.exists(directory):
+            platform = context.platform
+            platform.check_sandbox_config(config)
 
             sandbox = platform.create_sandbox(
                 context,
