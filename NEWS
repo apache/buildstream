@@ -1,4 +1,20 @@
 =================
+buildstream 1.4.2
+=================
+
+  o Support for python 3.8
+
+  o Fix a stacktrace with a hang we can experience when we CTRL-C a job twice.
+
+  o Workaround some servers which do not honor the 'If-None-Match' HTTP header
+    and avoid downloading files redundantly in these cases.
+
+  o Allow specifying absolute paths in overlap-whitelist (issue #721)
+
+  o Support systems with fuse3 (avoid passing unsupported argument
+    to fusermount3)
+
+=================
 buildstream 1.4.1
 =================
 
