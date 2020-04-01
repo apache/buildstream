@@ -61,6 +61,10 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
     @classmethod
     def check_sandbox_config(cls, platform, config):
+        if platform.does_multiprocessing_start_require_pickling():
+            # Reinitialize class as class data is not pickled.
+            cls.check_available()
+
         # Check host os and architecture match
         if config.build_os != platform.get_host_os():
             raise SandboxError("Configured and host OS don't match.")

@@ -107,6 +107,10 @@ class SandboxBwrap(Sandbox):
 
     @classmethod
     def check_sandbox_config(cls, local_platform, config):
+        if local_platform.does_multiprocessing_start_require_pickling():
+            # Reinitialize class as class data is not pickled.
+            cls.check_available()
+
         if not cls.user_ns_available:
             # Without user namespace support, the UID/GID in the sandbox
             # will match the host UID/GID.
