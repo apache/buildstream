@@ -29,7 +29,7 @@ variables:
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   PYTEST_ARGS: "--color=yes --integration -n 2"
   TEST_COMMAND: "tox -- ${PYTEST_ARGS}"
-  TOXENV: py35, py36, py37, py38, py35-plugins, py36-plugins, py37-plugins, py38-plugins
+  TOXENV: py36, py37, py38, py36-plugins, py37-plugins, py38-plugins
   COVERAGE_PREFIX: "${CI_JOB_NAME}."
 
 
@@ -62,10 +62,6 @@ variables:
   artifacts:
     paths:
     - .coverage-reports
-
-tests-debian-9:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-${DOCKER_IMAGE_VERSION}
-  <<: *tests
 
 tests-debian-10:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-${DOCKER_IMAGE_VERSION}
@@ -235,7 +231,7 @@ tests-no-usedevelop:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
   variables:
-    TOXENV: py35-nocover,py36-nocover,py37-nocover,py38-nocover
+    TOXENV: py36-nocover,py37-nocover,py38-nocover
 
 
 # Run type checkers
@@ -249,8 +245,6 @@ mypy:
 
 # Lint separately from testing
 lint:
-  # We can't use the default debian:9 based image here since that comes with
-  # Python 3.5, and Black requires Python >= 3.6.
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   stage: test
 
@@ -402,8 +396,8 @@ overnight-randomized:
   - chown -R buildstream:buildstream .
 
   # Don't run tests multiprocessed here, the randomized order doesn't like that
-  - su buildstream -c "tox -e py35-randomized,py36-randomized,py37-randomized,py38-randomized -- --color=yes --integration"
-  - su buildstream -c "tox -e py35-randomized-external,py36-randomized-external,py37-randomized-external,py38-randomized-external -- --color=yes --integration"
+  - su buildstream -c "tox -e py36-randomized,py37-randomized,py38-randomized -- --color=yes --integration"
+  - su buildstream -c "tox -e py36-randomized-external,py37-randomized-external,py38-randomized-external -- --color=yes --integration"
 
   # We need to override the exclusion from the template in order to run on schedules
   except: []
@@ -454,7 +448,6 @@ coverage:
   dependencies:
   - tests-buildbox-run
   - tests-centos-7.6
-  - tests-debian-9
   - tests-debian-10
   - tests-fedora-30
   - tests-fedora-31

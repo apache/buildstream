@@ -35,10 +35,10 @@ import versioneer  # noqa
 # Python requirements
 ##################################################################
 REQUIRED_PYTHON_MAJOR = 3
-REQUIRED_PYTHON_MINOR = 5
+REQUIRED_PYTHON_MINOR = 6
 
 if sys.version_info[0] != REQUIRED_PYTHON_MAJOR or sys.version_info[1] < REQUIRED_PYTHON_MINOR:
-    print("BuildStream requires Python >= 3.5")
+    print("BuildStream requires Python >= 3.6")
     sys.exit(1)
 
 try:
@@ -333,9 +333,9 @@ setup(name='BuildStream',
           'License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)',
           'Operating System :: POSIX',
           'Programming Language :: Python :: 3',
-          'Programming Language :: Python :: 3.5',
           'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7',
+          'Programming Language :: Python :: 3.8',
           'Topic :: Software Development :: Build Tools'
       ],
       description='A framework for modelling build pipelines in YAML',
