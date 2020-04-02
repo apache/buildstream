@@ -252,3 +252,61 @@ def test_local_to_junction(cli, tmpdir, datafiles):
     result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert loaded.get_bool("included")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_option_from_junction(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "junction_options")
+
+    generate_junction(
+        tmpdir,
+        os.path.join(project, "subproject"),
+        os.path.join(project, "junction.bst"),
+        store_ref=True,
+        options={"local_option": "set"},
+    )
+
+    result = cli.run(project=project, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"])
+    result.assert_success()
+    loaded = _yaml.load_data(result.output)
+    assert not loaded.get_bool("is-default")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_option_from_junction_element(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "junction_options_element")
+
+    generate_junction(
+        tmpdir,
+        os.path.join(project, "subproject"),
+        os.path.join(project, "junction.bst"),
+        store_ref=True,
+        options={"local_option": "set"},
+    )
+
+    result = cli.run(project=project, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"])
+    result.assert_success()
+    loaded = _yaml.load_data(result.output)
+    assert not loaded.get_bool("is-default")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_option_from_deep_junction(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "junction_options_deep")
+
+    generate_junction(
+        tmpdir,
+        os.path.join(project, "subproject-2"),
+        os.path.join(project, "subproject-1", "junction-2.bst"),
+        store_ref=True,
+        options={"local_option": "set"},
+    )
+
+    generate_junction(
+        tmpdir, os.path.join(project, "subproject-1"), os.path.join(project, "junction-1.bst"), store_ref=True,
+    )
+
+    result = cli.run(project=project, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"])
+    result.assert_success()
+    loaded = _yaml.load_data(result.output)
+    assert not loaded.get_bool("is-default")
