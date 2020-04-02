@@ -56,8 +56,7 @@ def test_junction_missing_project_conf(cli, datafiles):
 
     # TODO: see if datafiles can tidy this concat up
 
-    # py3.5 requires this str conversion.
-    os.remove(str(project / "base" / "project.conf"))
+    os.remove(project / "base" / "project.conf")
 
     # Note that both 'foo' and 'base' projects have a 'target.bst'. The
     # 'app.bst' in 'foo' depends on the 'target.bst' in 'base', i.e.:
@@ -94,8 +93,7 @@ def test_workspaced_junction_missing_project_conf(cli, datafiles):
     print(result)
     result.assert_success()
 
-    # py3.5 requires this str conversion.
-    os.remove(str(workspace_dir / "project.conf"))
+    os.remove(workspace_dir / "project.conf")
 
     result = cli.run(project=project, args=["build", "app.bst"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_JUNCTION)
@@ -360,8 +358,7 @@ def test_git_missing_project_conf(cli, tmpdir, datafiles):
     project = datafiles / "foo"
 
     # See test_junction_missing_project_conf for some more background.
-    # py3.5 requires this str conversion.
-    os.remove(str(datafiles / "base" / "project.conf"))
+    os.remove(datafiles / "base" / "project.conf")
 
     # Create the repo from 'base' subdir
     repo = create_repo("git", str(tmpdir))
