@@ -63,10 +63,6 @@ variables:
     paths:
     - .coverage-reports
 
-tests-debian-9:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-${DOCKER_IMAGE_VERSION}
-  <<: *tests
-
 tests-debian-10:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-${DOCKER_IMAGE_VERSION}
   <<: *tests
@@ -249,8 +245,6 @@ mypy:
 
 # Lint separately from testing
 lint:
-  # We can't use the default debian:9 based image here since that comes with
-  # Python 3.5, and Black requires Python >= 3.6.
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   stage: test
 
@@ -454,7 +448,6 @@ coverage:
   dependencies:
   - tests-buildbox-run
   - tests-centos-7.6
-  - tests-debian-9
   - tests-debian-10
   - tests-fedora-30
   - tests-fedora-31
