@@ -271,6 +271,6 @@ def configure_remote(repo, remote, url, key_url=None):
         try:
             gfile = Gio.File.new_for_uri(key_url)
             stream = gfile.read()
-            repo.remote_gpg_import(remote, stream, None, 0, None)
+            repo.remote_gpg_import(remote, stream, None, None)
         except GLib.GError as e:
             raise OSTreeError("Failed to add gpg key from url '{}': {}".format(key_url, e.message)) from e
