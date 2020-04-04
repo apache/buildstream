@@ -1,7 +1,8 @@
 include:
   - template: Code-Quality.gitlab-ci.yml
 
-image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-46405991
+image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-${DOCKER_IMAGE_VERSION}
+
 
 cache:
   key: "$CI_JOB_NAME-"
@@ -13,6 +14,7 @@ stages:
   - post
 
 variables:
+  DOCKER_IMAGE_VERSION: master-132813612
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   TEST_COMMAND: "tox -- --color=yes --integration"
   COVERAGE_PREFIX: "${CI_JOB_NAME}."
@@ -48,6 +50,10 @@ variables:
 
 tests-debian-9:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:9-master-55318540
+  <<: *tests
+
+tests-debian-10:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
 tests-fedora-29:
@@ -183,6 +189,7 @@ coverage:
     - cp -a .coverage-reports/ ./coverage-report
   dependencies:
   - tests-debian-9
+  - tests-debian-10
   - tests-fedora-29
   - tests-fedora-30
   - tests-ubuntu-18.04
