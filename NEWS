@@ -2,6 +2,11 @@
 (unreleased)
 ============
 
+Core
+----
+
+  o BuildStream now requires Python >= 3.6.
+
 
 ==================
 buildstream 1.93.1
