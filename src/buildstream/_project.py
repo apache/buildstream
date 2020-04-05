@@ -789,15 +789,6 @@ class Project:
     #
     def _load_pass(self, config, output, *, ignore_unknown=False):
 
-        # Element and Source  type configurations will be composited later onto
-        # element/source types, so we delete it from here and run our final
-        # assertion after.
-        output.element_overrides = config.get_mapping("elements", default={})
-        output.source_overrides = config.get_mapping("sources", default={})
-        config.safe_del("elements")
-        config.safe_del("sources")
-        config._assert_fully_composited()
-
         self._load_plugin_factories(config, output)
 
         # Load project options
@@ -821,11 +812,16 @@ class Project:
         # Now resolve any conditionals in the remaining configuration,
         # any conditionals specified for project option declarations,
         # or conditionally specifying the project name; will be ignored.
-        #
-        # Don't forget to also resolve options in the element and source overrides.
         output.options.process_node(config)
-        output.options.process_node(output.element_overrides)
-        output.options.process_node(output.source_overrides)
+
+        # Element and Source  type configurations will be composited later onto
+        # element/source types, so we delete it from here and run our final
+        # assertion after.
+        output.element_overrides = config.get_mapping("elements", default={})
+        output.source_overrides = config.get_mapping("sources", default={})
+        config.safe_del("elements")
+        config.safe_del("sources")
+        config._assert_fully_composited()
 
         # Load base variables
         output.base_variables = config.get_mapping("variables")
