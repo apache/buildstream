@@ -303,6 +303,8 @@ tests-wsl-master:
   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
   only:
   - master
+  allow_failure: true
+
 
 tests-wsl-non-master:
   stage: test
@@ -324,6 +326,7 @@ tests-wsl-non-master:
   when: manual
   except:
   - master
+  allow_failure: true
 
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
