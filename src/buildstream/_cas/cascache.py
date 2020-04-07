@@ -211,6 +211,41 @@ class CASCache:
                 raise CASCacheError("Unsupported buildbox-casd version: FetchTree unimplemented") from e
             raise
 
+    def contains_directory_and_blobs(self, directory, blobs, *, with_files):
+        cas = self.get_cas()
+        local_cas = self.get_local_cas()
+
+        if str(directory):
+            request = local_cas_pb2.FetchTreeRequest()
+            request.root_digest.CopyFrom(directory)
+            request.fetch_file_blobs = with_files
+            directory_future = local_cas.FetchTree.future(request)
+        else:
+            directory_future = None
+
+        if blobs:
+            request = remote_execution_pb2.FindMissingBlobsRequest()
+            request.blob_digests.extend(blobs)
+            blobs_future = cas.FindMissingBlobs.future(request)
+        else:
+            blobs_future = None
+
+        try:
+            if directory_future:
+                directory_future.result()
+
+            if blobs_future:
+                response = blobs_future.result()
+                return len(response.missing_blob_digests) == 0
+            else:
+                return True
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                return False
+            if e.code() == grpc.StatusCode.UNIMPLEMENTED:
+                raise CASCacheError("Unsupported buildbox-casd version: FetchTree unimplemented") from e
+            raise
+
     # checkout():
     #
     # Checkout the specified directory digest.
