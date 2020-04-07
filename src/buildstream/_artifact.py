@@ -433,12 +433,10 @@ class Artifact:
         require_files = context.require_artifact_files or self._element._artifact_files_required()
 
         # Check whether 'files' subdirectory is available, with or without file contents
-        if str(artifact.files) and not self._cas.contains_directory(artifact.files, with_files=require_files):
-            self._cached = False
-            return False
-
         # Check whether public data is available
-        if not self._cas.contains_file(artifact.public_data):
+        if not self._cas.contains_directory_and_blobs(
+            artifact.files, [artifact.public_data], with_files=require_files
+        ):
             self._cached = False
             return False
 
