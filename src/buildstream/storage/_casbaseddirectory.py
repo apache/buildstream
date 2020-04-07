@@ -549,14 +549,15 @@ class CasBasedDirectory(Directory):
                 source_name = self.cas_cache.objpath(entry.digest)
                 tarinfo = tarfilelib.TarInfo(arcname)
                 tarinfo.mtime = mtime
-                tarinfo.mode |= entry.is_executable & stat.S_IXUSR
+                if entry.is_executable:
+                    tarinfo.mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
                 tarinfo.size = os.path.getsize(source_name)
                 with open(source_name, "rb") as f:
                     tarfile.addfile(tarinfo, f)
             elif entry.type == _FileType.SYMLINK:
                 tarinfo = tarfilelib.TarInfo(arcname)
                 tarinfo.mtime = mtime
-                tarinfo.mode |= entry.is_executable & stat.S_IXUSR
+                tarinfo.mode = 0o777
                 tarinfo.linkname = entry.target
                 tarinfo.type = tarfilelib.SYMTYPE
                 f = StringIO(entry.target)
