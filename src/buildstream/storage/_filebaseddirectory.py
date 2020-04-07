@@ -190,6 +190,10 @@ class FileBasedDirectory(Directory):
             arcname = os.path.join(destination_dir, filename)
             tarinfo = tarfile.gettarinfo(source_name, arcname)
             tarinfo.mtime = mtime
+            tarinfo.uid = 0
+            tarinfo.gid = 0
+            tarinfo.uname = ""
+            tarinfo.gname = ""
 
             if tarinfo.isreg():
                 with open(source_name, "rb") as f:
