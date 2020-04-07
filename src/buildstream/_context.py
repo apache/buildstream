@@ -154,9 +154,6 @@ class Context:
         # Whether or not to cache build trees on artifact creation
         self.cache_buildtrees = None
 
-        # Whether directory trees are required for all artifacts in the local cache
-        self.require_artifact_directories = True
-
         # Whether file contents are required for all artifacts in the local cache
         self.require_artifact_files = True
 
