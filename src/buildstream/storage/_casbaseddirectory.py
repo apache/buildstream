@@ -536,7 +536,7 @@ class CasBasedDirectory(Directory):
         self.cas_cache.checkout(to_directory, self._get_digest(), can_link=can_link)
 
     def export_to_tar(self, tarfile, destination_dir, mtime=BST_ARBITRARY_TIMESTAMP):
-        for filename, entry in self.index.items():
+        for filename, entry in sorted(self.index.items()):
             arcname = os.path.join(destination_dir, filename)
             if entry.type == _FileType.DIRECTORY:
                 tarinfo = tarfilelib.TarInfo(arcname)
