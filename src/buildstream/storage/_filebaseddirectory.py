@@ -256,10 +256,15 @@ class FileBasedDirectory(Directory):
         if mode not in ["r", "rb", "w", "wb", "x", "xb"]:
             raise ValueError("Unsupported mode: `{}`".format(mode))
 
-        if "r" in mode:
-            return open(newpath, mode=mode, encoding="utf-8")
+        if "b" in mode:
+            encoding = None
         else:
-            return utils.save_file_atomic(newpath, mode=mode, encoding="utf-8")
+            encoding = "utf-8"
+
+        if "r" in mode:
+            return open(newpath, mode=mode, encoding=encoding)
+        else:
+            return utils.save_file_atomic(newpath, mode=mode, encoding=encoding)
 
     def __str__(self):
         # This returns the whole path (since we don't know where the directory started)
