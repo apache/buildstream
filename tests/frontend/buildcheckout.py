@@ -254,6 +254,9 @@ def test_build_checkout_tarball(datafiles, cli):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout.tar")
 
+    # Work-around datafiles not preserving mode
+    os.chmod(os.path.join(project, "files/bin-files/usr/bin/hello"), 0o0755)
+
     result = cli.run(project=project, args=["build", "target.bst"])
     result.assert_success()
 
@@ -267,8 +270,16 @@ def test_build_checkout_tarball(datafiles, cli):
     result.assert_success()
 
     tar = tarfile.TarFile(checkout)
-    assert os.path.join(".", "usr", "bin", "hello") in tar.getnames()
-    assert os.path.join(".", "usr", "include", "pony.h") in tar.getnames()
+
+    tarinfo = tar.getmember(os.path.join(".", "usr", "bin", "hello"))
+    assert tarinfo.mode == 0o755
+    assert tarinfo.uid == 0 and tarinfo.gid == 0
+    assert tarinfo.uname == "" and tarinfo.gname == ""
+
+    tarinfo = tar.getmember(os.path.join(".", "usr", "include", "pony.h"))
+    assert tarinfo.mode == 0o644
+    assert tarinfo.uid == 0 and tarinfo.gid == 0
+    assert tarinfo.uname == "" and tarinfo.gname == ""
 
 
 @pytest.mark.datafiles(DATA_DIR)
