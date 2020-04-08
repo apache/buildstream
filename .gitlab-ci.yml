@@ -269,6 +269,8 @@ tests-win32-master:
   - tox -e win32
   only:
   - master
+  except:
+  - schedules
 
 # Optional test to catch regressions in native windows support on non-master branches
 tests-win32-non-master:
@@ -303,6 +305,8 @@ tests-wsl-master:
   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
   only:
   - master
+  except:
+  - schedules
   allow_failure: true
 
 
