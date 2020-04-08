@@ -562,15 +562,6 @@ class Project():
     def _load_pass(self, config, output, *,
                    ignore_unknown=False):
 
-        # Element and Source  type configurations will be composited later onto
-        # element/source types, so we delete it from here and run our final
-        # assertion after.
-        output.element_overrides = _yaml.node_get(config, Mapping, 'elements', default_value={})
-        output.source_overrides = _yaml.node_get(config, Mapping, 'sources', default_value={})
-        config.pop('elements', None)
-        config.pop('sources', None)
-        _yaml.node_final_assertions(config)
-
         self._load_plugin_factories(config, output)
 
         # Load project options
@@ -594,11 +585,16 @@ class Project():
         # Now resolve any conditionals in the remaining configuration,
         # any conditionals specified for project option declarations,
         # or conditionally specifying the project name; will be ignored.
-        #
-        # Don't forget to also resolve options in the element and source overrides.
         output.options.process_node(config)
-        output.options.process_node(output.element_overrides)
-        output.options.process_node(output.source_overrides)
+
+        # Element and Source  type configurations will be composited later onto
+        # element/source types, so we delete it from here and run our final
+        # assertion after.
+        output.element_overrides = _yaml.node_get(config, Mapping, 'elements', default_value={})
+        output.source_overrides = _yaml.node_get(config, Mapping, 'sources', default_value={})
+        config.pop('elements', None)
+        config.pop('sources', None)
+        _yaml.node_final_assertions(config)
 
         # Load base variables
         output.base_variables = _yaml.node_get(config, Mapping, 'variables')
