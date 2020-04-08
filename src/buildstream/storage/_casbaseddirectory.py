@@ -536,7 +536,7 @@ class CasBasedDirectory(Directory):
         self.cas_cache.checkout(to_directory, self._get_digest(), can_link=can_link)
 
     def export_to_tar(self, tarfile, destination_dir, mtime=BST_ARBITRARY_TIMESTAMP):
-        for filename, entry in self.index.items():
+        for filename, entry in sorted(self.index.items()):
             arcname = os.path.join(destination_dir, filename)
             if entry.type == _FileType.DIRECTORY:
                 tarinfo = tarfilelib.TarInfo(arcname)
@@ -549,14 +549,15 @@ class CasBasedDirectory(Directory):
                 source_name = self.cas_cache.objpath(entry.digest)
                 tarinfo = tarfilelib.TarInfo(arcname)
                 tarinfo.mtime = mtime
-                tarinfo.mode |= entry.is_executable & stat.S_IXUSR
+                if entry.is_executable:
+                    tarinfo.mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
                 tarinfo.size = os.path.getsize(source_name)
                 with open(source_name, "rb") as f:
                     tarfile.addfile(tarinfo, f)
             elif entry.type == _FileType.SYMLINK:
                 tarinfo = tarfilelib.TarInfo(arcname)
                 tarinfo.mtime = mtime
-                tarinfo.mode |= entry.is_executable & stat.S_IXUSR
+                tarinfo.mode = 0o777
                 tarinfo.linkname = entry.target
                 tarinfo.type = tarfilelib.SYMTYPE
                 f = StringIO(entry.target)
@@ -736,18 +737,23 @@ class CasBasedDirectory(Directory):
         if mode not in ["r", "rb", "w", "wb", "x", "xb"]:
             raise ValueError("Unsupported mode: `{}`".format(mode))
 
+        if "b" in mode:
+            encoding = None
+        else:
+            encoding = "utf-8"
+
         if "r" in mode:
             if not entry:
                 raise FileNotFoundError("{} not found in {}".format(path[-1], str(subdir)))
 
             # Read-only access, allow direct access to CAS object
-            with open(self.cas_cache.objpath(entry.digest), mode, encoding="utf-8") as f:
+            with open(self.cas_cache.objpath(entry.digest), mode, encoding=encoding) as f:
                 yield f
         else:
             if "x" in mode and entry:
                 raise FileExistsError("{} already exists in {}".format(path[-1], str(subdir)))
 
-            with utils._tempnamedfile(mode, encoding="utf-8", dir=self.cas_cache.tmpdir) as f:
+            with utils._tempnamedfile(mode, encoding=encoding, dir=self.cas_cache.tmpdir) as f:
                 yield f
                 # Import written temporary file into CAS
                 f.flush()
