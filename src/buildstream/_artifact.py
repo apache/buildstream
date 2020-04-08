@@ -443,6 +443,11 @@ class Artifact:
             self._cached = False
             return False
 
+        # Check whether public data is available
+        if not self._cas.contains_file(artifact.public_data):
+            self._cached = False
+            return False
+
         self._cached = True
         return True
 
