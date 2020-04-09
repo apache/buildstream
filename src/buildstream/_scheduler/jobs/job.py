@@ -688,17 +688,15 @@ class ChildJob:
             nonlocal starttime
             starttime += datetime.datetime.now() - stopped_time
 
+        # Graciously handle sigterms.
+        def handle_sigterm():
+            self._child_shutdown(_ReturnCode.TERMINATED)
+
         # Time, log and and run the action function
         #
-        with _signals.suspendable(stop_time, resume_time), self._messenger.recorded_messages(
-            self._logfile, self._logdir
-        ) as filename:
-
-            # Graciously handle sigterms.
-            def handle_sigterm(_signum, _sigframe):
-                self._child_shutdown(_ReturnCode.TERMINATED)
-
-            signal.signal(signal.SIGTERM, handle_sigterm)
+        with _signals.terminator(handle_sigterm), _signals.suspendable(
+            stop_time, resume_time
+        ), self._messenger.recorded_messages(self._logfile, self._logdir) as filename:
 
             self.message(MessageType.START, self.action_name, logfile=filename)
 
