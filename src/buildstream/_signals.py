@@ -43,10 +43,14 @@ suspendable_stack = deque()  # type: MutableSequence[Callable]
 
 # Per process SIGTERM handler
 def terminator_handler(signal_, frame):
+    exit_code = -1
+
     while terminator_stack:
         terminator_ = terminator_stack.pop()
         try:
             terminator_()
+        except SystemExit as e:
+            exit_code = e.code or 0
         except:  # noqa pylint: disable=bare-except
             # Ensure we print something if there's an exception raised when
             # processing the handlers. Note that the default exception
@@ -62,7 +66,7 @@ def terminator_handler(signal_, frame):
 
     # Use special exit here, terminate immediately, recommended
     # for precisely this situation where child processes are teminated.
-    os._exit(-1)
+    os._exit(exit_code)
 
 
 # terminator()

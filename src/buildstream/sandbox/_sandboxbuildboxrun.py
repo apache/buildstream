@@ -130,7 +130,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 proc.terminate()
 
                 try:
-                    proc.wait(20)
+                    proc.wait(15)
                 except psutil.TimeoutExpired:
                     utils._kill_process_tree(process.pid)
 
