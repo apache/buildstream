@@ -120,8 +120,8 @@ docs:
   stage: test
   variables:
     bst_ext_url: git+https://gitlab.com/BuildStream/bst-external.git
-    bst_ext_ref: 0.16.0-0-gbe5683970abddbc4670592f79c473f4560b7be3a
-    fd_sdk_ref: freedesktop-sdk-18.08.34-0-g9282304d0d932032b8297fb049f44d6a079dc2ea
+    bst_ext_ref: 0.20.0-0-g88f90d93916853612cad0c965b724a1decbbc940
+    fd_sdk_ref: freedesktop-sdk-19.08.9-0-g076fe9d30f37224a1bd756a177e33399dad37e8d
   before_script:
   - pip3 install -r requirements/requirements.txt -r requirements/plugin-requirements.txt
   - pip3 install --no-index .
