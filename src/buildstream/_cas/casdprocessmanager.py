@@ -37,6 +37,7 @@ from .._exceptions import CASCacheError
 from .._message import Message, MessageType
 
 _CASD_MAX_LOGFILES = 10
+_CASD_TIMEOUT = 300  # in seconds
 
 
 # CASDProcessManager
@@ -240,8 +241,8 @@ class CASDChannel:
 
         while not os.path.exists(self._socket_path):
             # casd is not ready yet, try again after a 10ms delay,
-            # but don't wait for more than 15s
-            if time.time() > self._start_time + 15:
+            # but don't wait for more than specified timeout period
+            if time.time() > self._start_time + _CASD_TIMEOUT:
                 raise CASCacheError("Timed out waiting for buildbox-casd to become ready")
 
             time.sleep(0.01)
