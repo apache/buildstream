@@ -73,7 +73,8 @@ class CASCache:
         cache_quota=None,
         protect_session_blobs=True,
         log_level=CASLogLevel.WARNING,
-        log_directory=None
+        log_directory=None,
+        messenger=None,
     ):
         self.casdir = os.path.join(path, "cas")
         self.tmpdir = os.path.join(path, "tmp")
@@ -91,7 +92,7 @@ class CASCache:
                 path, log_dir, log_level, cache_quota, protect_session_blobs
             )
 
-            self._casd_channel = self._casd_process_manager.create_channel()
+            self._casd_channel = self._casd_process_manager.create_channel(messenger)
             self._cache_usage_monitor = _CASCacheUsageMonitor(self._casd_channel)
 
     def __getstate__(self):

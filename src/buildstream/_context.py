@@ -539,6 +539,7 @@ class Context:
                 cache_quota=self.config_cache_quota,
                 log_level=log_level,
                 log_directory=self.logdir,
+                messenger=self.messenger,
             )
         return self._cascache
 

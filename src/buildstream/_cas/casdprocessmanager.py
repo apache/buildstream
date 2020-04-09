@@ -223,12 +223,12 @@ class CASDProcessManager:
     # Return a CASDChannel, note that the actual connection is not necessarily
     # established until it is needed.
     #
-    def create_channel(self):
-        return CASDChannel(self._socket_path, self._connection_string, self._start_time, self.process.pid)
+    def create_channel(self, messenger=None):
+        return CASDChannel(self._socket_path, self._connection_string, self._start_time, self.process.pid, messenger)
 
 
 class CASDChannel:
-    def __init__(self, socket_path, connection_string, start_time, casd_pid):
+    def __init__(self, socket_path, connection_string, start_time, casd_pid, messenger):
         self._socket_path = socket_path
         self._connection_string = connection_string
         self._start_time = start_time
@@ -237,25 +237,41 @@ class CASDChannel:
         self._casd_cas = None
         self._local_cas = None
         self._casd_pid = casd_pid
+        self._messenger = messenger
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+
+        # Messenger is not pickle-able
+        assert "_messenger" in state
+        state["_messenger"] = None
+
+        return state
 
     def _establish_connection(self):
         assert self._casd_channel is None
 
-        while not os.path.exists(self._socket_path):
-            # casd is not ready yet, try again after a 10ms delay,
-            # but don't wait for more than specified timeout period
-            if time.time() > self._start_time + _CASD_TIMEOUT:
-                raise CASCacheError("Timed out waiting for buildbox-casd to become ready")
+        if self._messenger and not os.path.exists(self._socket_path):
+            cm = self._messenger.timed_activity("Waiting for buildbox-casd")
+        else:
+            cm = contextlib.suppress()
 
-            # check that process is still alive
-            try:
-                proc = psutil.Process(self._casd_pid)
-                if not proc.is_running():
-                    raise CASCacheError(f"buildbox-casd process died before connection could be established")
-            except psutil.NoSuchProcess:
-                raise CASCacheError("buildbox-casd process died before connection could be established")
+        with cm:
+            while not os.path.exists(self._socket_path):
+                # casd is not ready yet, try again after a 10ms delay,
+                # but don't wait for more than specified timeout period
+                if time.time() > self._start_time + _CASD_TIMEOUT:
+                    raise CASCacheError("Timed out waiting for buildbox-casd to become ready")
 
-            time.sleep(0.01)
+                # check that process is still alive
+                try:
+                    proc = psutil.Process(self._casd_pid)
+                    if not proc.is_running():
+                        raise CASCacheError(f"buildbox-casd process died before connection could be established")
+                except psutil.NoSuchProcess:
+                    raise CASCacheError("buildbox-casd process died before connection could be established")
+
+                time.sleep(0.01)
 
         self._casd_channel = grpc.insecure_channel(self._connection_string)
         self._bytestream = bytestream_pb2_grpc.ByteStreamStub(self._casd_channel)
