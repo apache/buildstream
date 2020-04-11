@@ -10,11 +10,19 @@ commands:
   output: ../source/sessions/junctions-shell.html
   command: shell callHello.bst -- /bin/sh callHello.sh
 
+# Open a workspace on the junction:
+- directory: ../examples/junctions
+  output: ../source/sessions/junctions-workspace-open-subproject.html
+  command: workspace open --directory workspace_subproject hello-junction.bst
+
 # Open a crossJunction workspace:
 - directory: ../examples/junctions
   output: ../source/sessions/junctions-workspace-open.html
   command: workspace open --directory workspace_hello hello-junction.bst:hello.bst
 
-# Remove the workspace 
+# Remove the workspaces
+- directory: ../examples/junctions
+  command: workspace close --remove-dir hello-junction.bst
+
 - directory: ../examples/junctions
   command: workspace close --remove-dir hello-junction.bst:hello.bst

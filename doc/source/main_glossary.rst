@@ -77,7 +77,7 @@ Glossary
        See :mod:`Junction reference <elements.junction>` for details on how to
        configure junction elements.
 
-       See :ref:`Junction guide <advanced_junction>` for details on how to use
+       See :ref:`Junction guide <junction_elements>` for details on how to use
        junction elements.
 
 
@@ -124,6 +124,11 @@ Glossary
 
        Sources are defined in the :ref:`Sources <format_sources>` section of
        :term:`Element <Element>` configuration.
+
+
+   Subproject
+       Subprojects are :term:`projects <Project>` which are referred
+       to by a :term:`Junction`.
 
 
    Workspace
