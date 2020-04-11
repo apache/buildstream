@@ -97,8 +97,8 @@ Glossary
        varities - Element Plugins and Source Plugins.
 
        BuildStream supports some plugins :term:`out of the box
-       <Core plugin>`. It also has support for :term:`third party
-       plugins <External plugin>`.
+       <Core Plugin>`. It also has support for :term:`third party
+       plugins <External Plugin>`.
 
 
    Project
