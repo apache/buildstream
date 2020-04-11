@@ -11,3 +11,4 @@ depend on eachother.
 
    junctions/junction-elements
    junctions/junction-workspaces
+   junctions/junction-includes

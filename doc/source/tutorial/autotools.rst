@@ -1,5 +1,7 @@
 
 
+.. _tutorial_autotools:
+
 Using the autotools element
 ===========================
 In :ref:`the last chapter <tutorial_running_commands>` we observed how the
