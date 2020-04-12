@@ -16,3 +16,4 @@ projects.
    tutorial/running-commands
    tutorial/autotools
    tutorial/integration-commands
+   tutorial/directives
