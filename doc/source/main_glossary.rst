@@ -27,7 +27,7 @@ Glossary
        cache <Local Cache>` or a :term:`Remote Cache <Remote Cache>`.
 
 
-   Core Plugin
+   Core plugin
        A :term:`Plugin <Plugin>` that is contained in the BuildStream
        package.  These are built-in and don't need to be defined in the
        project configuration.
@@ -97,7 +97,7 @@ Glossary
        varities - Element Plugins and Source Plugins.
 
        BuildStream supports some plugins :term:`out of the box
-       <Core Plugin>`. It also has support for :term:`third party
+       <Core plugin>`. It also has support for :term:`third party
        plugins <External Plugin>`.
 
 
