@@ -3013,7 +3013,7 @@ class Element(Plugin):
             # encode the dependency's weak cache key instead of it's name.
             #
             dependencies = [
-                e._get_cache_key(strength=_KeyStrength.WEAK)
+                [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
                 if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
                 else [e.project_name, e.name]
                 for e in self.dependencies(Scope.BUILD)
