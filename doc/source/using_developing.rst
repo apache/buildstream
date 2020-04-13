@@ -9,3 +9,4 @@ modules in the context of an integrated product.
    :maxdepth: 1
 
    developing/workspaces.rst
+   developing/strict-mode.rst
