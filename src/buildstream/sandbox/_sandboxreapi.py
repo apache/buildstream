@@ -136,8 +136,10 @@ class SandboxREAPI(Sandbox):
         else:
             uid = config.build_uid
             gid = config.build_gid
-        platform_dict["unixUID"] = str(uid)
-        platform_dict["unixGID"] = str(gid)
+        if uid is not None:
+            platform_dict["unixUID"] = str(uid)
+        if gid is not None:
+            platform_dict["unixGID"] = str(gid)
 
         if flags & SandboxFlags.NETWORK_ENABLED:
             platform_dict["network"] = "on"

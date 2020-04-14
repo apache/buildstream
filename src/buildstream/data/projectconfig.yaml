@@ -74,12 +74,8 @@ environment:
 environment-nocache: []
 
 # Configuration for the sandbox other than environment variables
-# should go in 'sandbox'. This just contains the UID and GID that
-# the user in the sandbox will have. Not all sandboxes will support
-# changing the values.
-sandbox:
-  build-uid: 0
-  build-gid: 0
+# should go in 'sandbox'.
+sandbox: {}
 
 # Defaults for the 'split-rules' public data found on elements
 # in the 'bst' domain.

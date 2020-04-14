@@ -107,13 +107,17 @@ class SandboxBwrap(Sandbox):
 
     @classmethod
     def check_sandbox_config(cls, local_platform, config):
-        if cls.user_ns_available:
-            # User namespace support allows arbitrary build UID/GID settings.
-            pass
-        elif config.build_uid != local_platform._uid or config.build_gid != local_platform._gid:
+        if local_platform.does_multiprocessing_start_require_pickling():
+            # Reinitialize class as class data is not pickled.
+            cls.check_available()
+
+        if not cls.user_ns_available:
             # Without user namespace support, the UID/GID in the sandbox
             # will match the host UID/GID.
-            return False
+            if config.build_uid is not None and config.build_uid != local_platform._uid:
+                raise SandboxError("Configured and host UID don't match and user namespace is not supported.")
+            if config.build_gid is not None and config.build_gid != local_platform._gid:
+                raise SandboxError("Configured and host UID don't match and user namespace is not supported.")
 
         host_os = local_platform.get_host_os()
         host_arch = local_platform.get_host_arch()
@@ -121,8 +125,6 @@ class SandboxBwrap(Sandbox):
             raise SandboxError("Configured and host OS don't match.")
         if config.build_arch != host_arch and not local_platform.can_crossbuild(config):
             raise SandboxError("Configured architecture and host architecture don't match.")
-
-        return True
 
     def _run(self, command, flags, *, cwd, env):
         stdout, stderr = self._get_output()
@@ -230,8 +232,8 @@ class SandboxBwrap(Sandbox):
         if self.user_ns_available:
             bwrap_command += ["--unshare-user"]
             if not flags & SandboxFlags.INHERIT_UID:
-                uid = self._get_config().build_uid
-                gid = self._get_config().build_gid
+                uid = self._get_config().build_uid or 0
+                gid = self._get_config().build_gid or 0
                 bwrap_command += ["--uid", str(uid), "--gid", str(gid)]
 
         with ExitStack() as stack:

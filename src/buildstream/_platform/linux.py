@@ -86,7 +86,7 @@ class Linux(Platform):
     def _check_sandbox_config_bwrap(self, config):
         from ..sandbox._sandboxbwrap import SandboxBwrap
 
-        return SandboxBwrap.check_sandbox_config(self, config)
+        SandboxBwrap.check_sandbox_config(self, config)
 
     def _create_bwrap_sandbox(self, *args, **kwargs):
         from ..sandbox._sandboxbwrap import SandboxBwrap

@@ -328,14 +328,6 @@ class Element(Plugin):
         # Extract Sandbox config
         self.__sandbox_config = self.__extract_sandbox_config(context, project, meta)
 
-        self.__sandbox_config_supported = True
-        if not self.__use_remote_execution():
-            platform = context.platform
-            if not platform.check_sandbox_config(self.__sandbox_config):
-                # Local sandbox does not fully support specified sandbox config.
-                # This will taint the artifact, disable pushing.
-                self.__sandbox_config_supported = False
-
     def __lt__(self, other):
         return self.name < other.name
 
@@ -1544,14 +1536,6 @@ class Element(Plugin):
         context = self._get_context()
         with self._output_file() as output_file:
 
-            if not self.__sandbox_config_supported:
-                self.warn(
-                    "Sandbox configuration is not supported by the platform.",
-                    detail="Falling back to UID {} GID {}. Artifact will not be pushed.".format(
-                        self.__sandbox_config.build_uid, self.__sandbox_config.build_gid
-                    ),
-                )
-
             # Explicitly clean it up, keep the build dir around if exceptions are raised
             os.makedirs(context.builddir, exist_ok=True)
 
@@ -2454,7 +2438,7 @@ class Element(Plugin):
             workspaced_dependencies = self.__artifact.get_metadata_workspaced_dependencies()
 
             # Other conditions should be or-ed
-            self.__tainted = workspaced or workspaced_dependencies or not self.__sandbox_config_supported
+            self.__tainted = workspaced or workspaced_dependencies
 
         return self.__tainted
 
@@ -2526,6 +2510,8 @@ class Element(Plugin):
             yield sandbox
 
         elif directory is not None and os.path.exists(directory):
+            platform = context.platform
+            platform.check_sandbox_config(config)
 
             sandbox = platform.create_sandbox(
                 context,
@@ -2701,7 +2687,7 @@ class Element(Plugin):
     @classmethod
     def __extract_sandbox_config(cls, context, project, meta):
         if meta.is_junction:
-            sandbox_config = Node.from_dict({"build-uid": 0, "build-gid": 0})
+            sandbox_config = Node.from_dict({})
         else:
             sandbox_config = project._sandbox.clone()
 
@@ -2734,7 +2720,7 @@ class Element(Plugin):
             build_arch = host_arch
 
         return SandboxConfig(
-            sandbox_config.get_int("build-uid"), sandbox_config.get_int("build-gid"), build_os, build_arch,
+            sandbox_config.get_int("build-uid", None), sandbox_config.get_int("build-gid", None), build_os, build_arch,
         )
 
     # This makes a special exception for the split rules, which
