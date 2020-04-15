@@ -443,8 +443,10 @@ class Artifact:
             self._cached = False
             return False
 
-        # Check whether public data is available
-        if not self._cas.contains_file(artifact.public_data):
+        # Check whether public data and logs are available
+        logfile_digests = [logfile.digest for logfile in artifact.logs]
+        digests = [artifact.public_data] + logfile_digests
+        if not self._cas.contains_files(digests):
             self._cached = False
             return False
 
@@ -460,16 +462,9 @@ class Artifact:
     #             element not cached or missing logs.
     #
     def cached_logs(self):
-        if not self._element._cached():
-            return False
-
-        artifact = self._get_proto()
-
-        for logfile in artifact.logs:
-            if not self._cas.contains_file(logfile.digest):
-                return False
-
-        return True
+        # Log files are currently considered an essential part of an artifact.
+        # If the artifact is cached, its log files are available as well.
+        return self._element._cached()
 
     # reset_cached()
     #
