@@ -183,18 +183,6 @@ class CASCache:
         response = cas.FindMissingBlobs(request)
         return len(response.missing_blob_digests) == 0
 
-    # contains_file():
-    #
-    # Check whether a digest corresponds to a file which exists in CAS
-    #
-    # Args:
-    #     digest (List[Digest]): The file digests to check
-    #
-    # Returns: True if the file is in the cache, False otherwise
-    #
-    def contains_file(self, digest):
-        return self.contains_files([digest])
-
     # contains_directory():
     #
     # Check whether the specified directory and subdirectories are in the cache,
