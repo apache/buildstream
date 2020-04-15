@@ -143,11 +143,12 @@ html devhelp: templates sessions badges
 	    $(SPHINXBUILD) -b $@ $(ALLSPHINXOPTS) "$(BUILDDIR)/$@" \
 	    $(wildcard source/*.rst) \
 	    $(wildcard source/tutorial/*.rst) \
+	    $(wildcard source/developing/*.rst) \
+	    $(wildcard source/handling-files/*.rst) \
             $(wildcard source/junctions/*.rst) \
 	    $(wildcard source/examples/*.rst) \
 	    $(wildcard source/elements/*.rst) \
 	    $(wildcard source/sources/*.rst) \
-	    $(wildcard source/developing/*.rst) \
 	    $(wildcard source/hacking/*.rst)
 	@echo
 	@echo "Build of $@ finished, output: $(CURDIR)/$(BUILDDIR)/$@"
