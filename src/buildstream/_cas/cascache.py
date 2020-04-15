@@ -165,23 +165,35 @@ class CASCache:
             self._casd_process_manager.release_resources(messenger)
             self._casd_process_manager = None
 
+    # contains_files():
+    #
+    # Check whether file digests exist in the local CAS cache
+    #
+    # Args:
+    #     digest (Digest): The file digest to check
+    #
+    # Returns: True if the files are in the cache, False otherwise
+    #
+    def contains_files(self, digests):
+        cas = self.get_cas()
+
+        request = remote_execution_pb2.FindMissingBlobsRequest()
+        request.blob_digests.extend(digests)
+
+        response = cas.FindMissingBlobs(request)
+        return len(response.missing_blob_digests) == 0
+
     # contains_file():
     #
     # Check whether a digest corresponds to a file which exists in CAS
     #
     # Args:
-    #     digest (Digest): The file digest to check
+    #     digest (List[Digest]): The file digests to check
     #
     # Returns: True if the file is in the cache, False otherwise
     #
     def contains_file(self, digest):
-        cas = self.get_cas()
-
-        request = remote_execution_pb2.FindMissingBlobsRequest()
-        request.blob_digests.append(digest)
-
-        response = cas.FindMissingBlobs(request)
-        return len(response.missing_blob_digests) == 0
+        return self.contains_files([digest])
 
     # contains_directory():
     #
