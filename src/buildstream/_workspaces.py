@@ -434,6 +434,17 @@ class Workspaces:
             "format-version": BST_WORKSPACE_FORMAT_VERSION,
             "workspaces": {element: workspace.to_dict() for element, workspace in self._workspaces.items()},
         }
+        self._save_config(config)
+
+    # _save_config()
+    # Dump a given workspace config to file.
+    #
+    #  Args:
+    #    config (dict) - The config to be saved to file.
+    #
+    def _save_config(self, config):
+        assert utils._is_main_process()
+
         os.makedirs(self._bst_directory, exist_ok=True)
         _yaml.roundtrip_dump(config, self._get_filename())
 
@@ -461,9 +472,9 @@ class Workspaces:
 
     # _parse_workspace_config_format()
     #
-    # If workspace config is in old-style format, i.e. it is using
-    # source-specific workspaces, try to convert it to element-specific
-    # workspaces.
+    # If workspace config is in bst1.4 format and there are no workspaces
+    # then prompt user for confirmation to update it. Other wise list the
+    # work spaces that need closing.
     #
     # Args:
     #    workspaces (dict): current workspace config, usually output of _load_workspace_config()
@@ -482,10 +493,28 @@ class Workspaces:
             )
 
         if version < 4:
+            if workspaces.get_node("workspaces").keys() == []:
+                # If a old workspace file exists but with no workspaces
+                # then silently update the version.
+                config = {
+                    "format-version": BST_WORKSPACE_FORMAT_VERSION,
+                    "workspaces": {},
+                }
+                self._save_config(config)
+                return {}
+            extra_error = (
+                "The following workspaces need removing before format can be updated:\n"
+                + "\n".join(
+                    [
+                        "{}: {}".format(element, node.get_str("path"))
+                        for element, node in workspaces.get_mapping("workspaces").items()
+                    ]
+                )
+                + "\nPlease use a older version of bst to remove these workspaces."
+            )
             # bst 1.x workspaces do not separate source and build files.
             raise LoadError(
-                "Workspace configuration format version {} not supported."
-                "Please recreate this workspace.".format(version),
+                "Workspace configuration format version {} not supported.\n".format(version) + extra_error,
                 LoadErrorReason.INVALID_DATA,
             )
 
