@@ -8,3 +8,4 @@ handling of files.
    :maxdepth: 1
 
    handling-files/composition.rst
+   handling-files/filtering.rst
