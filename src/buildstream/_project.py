@@ -654,7 +654,7 @@ class Project:
         self._project_includes = Includes(self.loader, copy_tree=False)
 
         project_conf_first_pass = self._project_conf.clone()
-        self._project_includes.process(project_conf_first_pass, only_local=True)
+        self._project_includes.process(project_conf_first_pass, only_local=True, process_project_options=False)
         config_no_include = self._default_config_node.clone()
         project_conf_first_pass._composite(config_no_include)
 
@@ -679,7 +679,7 @@ class Project:
     #
     def _load_second_pass(self):
         project_conf_second_pass = self._project_conf.clone()
-        self._project_includes.process(project_conf_second_pass)
+        self._project_includes.process(project_conf_second_pass, process_project_options=False)
         config = self._default_config_node.clone()
         project_conf_second_pass._composite(config)
 

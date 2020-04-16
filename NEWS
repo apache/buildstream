@@ -7,6 +7,9 @@ Core
 
   o BuildStream now requires Python >= 3.6.
 
+  o BREAKING CHANGE: Conditional directives `(?)` from files included
+    through junctions are evaluated with the options defined in the
+    sub project the file comes from.
 
 ==================
 buildstream 1.93.1
