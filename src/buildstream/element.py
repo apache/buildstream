@@ -3013,7 +3013,7 @@ class Element(Plugin):
             # encode the dependency's weak cache key instead of it's name.
             #
             dependencies = [
-                e._get_cache_key(strength=_KeyStrength.WEAK)
+                [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
                 if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
                 else [e.project_name, e.name]
                 for e in self.dependencies(Scope.BUILD)
@@ -3119,7 +3119,7 @@ class Element(Plugin):
                 self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
                 # Artifact will or has been built, not downloaded
-                dependencies = [e._get_cache_key() for e in self.dependencies(Scope.BUILD)]
+                dependencies = [[e.project_name, e.name, e._get_cache_key()] for e in self.dependencies(Scope.BUILD)]
                 self.__cache_key = self._calculate_cache_key(dependencies)
 
             if self.__cache_key is None:

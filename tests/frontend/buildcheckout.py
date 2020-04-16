@@ -69,6 +69,28 @@ def test_build_checkout(datafiles, cli, strict, hardlinks):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_non_strict_build_strict_checkout(datafiles, cli):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, "checkout")
+
+    # First build it in non-strict mode.
+    # As this is a clean build from scratch, the result and also the cache keys
+    # should be identical to a build in strict mode.
+    result = cli.run(project=project, args=["--no-strict", "build", "target.bst"])
+    result.assert_success()
+
+    # Now check it out in strict mode.
+    # This verifies that the clean build in non-strict mode produced an artifact
+    # matching the strict cache key.
+    result = cli.run(project=project, args=["artifact", "checkout", "target.bst", "--directory", checkout])
+    result.assert_success()
+
+    # Check that the executable hello file is found in the checkout
+    filename = os.path.join(checkout, "usr", "bin", "hello")
+    assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("strict,hardlinks", [("non-strict", "hardlinks"),])
 def test_build_invalid_suffix(datafiles, cli, strict, hardlinks):
     project = str(datafiles)
