@@ -70,8 +70,11 @@ def pytest_runtest_setup(item):
 
     # With --plugins only run plugins tests
     if item.config.getvalue("plugins"):
-        if not item.get_closest_marker("generic_source_test"):
-            pytest.skip("Skipping not generic source test")
+        if not item.get_closest_marker("plugins"):
+            pytest.skip("Skipping tests that are not marked as requiring external plugins")
+    else:
+        if item.get_closest_marker("plugins"):
+            pytest.skip("Skipping tests that are marked as requiring external plugins")
 
 
 #################################################
