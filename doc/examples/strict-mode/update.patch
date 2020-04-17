@@ -1,0 +1,9 @@
+--- libhello.c
++++ libhello.c
+@@ -5,5 +5,5 @@
+ 
+ void hello(const char *person)
+ {
+-  printf("Hello %s\n", person);
++  printf("Good morning %s\n", person);
+ }

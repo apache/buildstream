@@ -1,5 +1,7 @@
 
 
+.. _tutorial_integration_commands:
+
 Integration commands
 ====================
 Sometimes a software requires more configuration or processing than what is

@@ -2,8 +2,8 @@
 
 .. _tutorial:
 
-Tutorial
-========
+Getting started
+===============
 This is a step by step walkthrough meant help the user quickly get
 familiar with the fundamentals of creating and using BuildStream
 projects.
@@ -16,3 +16,4 @@ projects.
    tutorial/running-commands
    tutorial/autotools
    tutorial/integration-commands
+   tutorial/directives

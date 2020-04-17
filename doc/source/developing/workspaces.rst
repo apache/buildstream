@@ -4,8 +4,8 @@
 
 Workspaces
 ==========
-In this section we will cover the use of BuildStream's workspaces feature when devloping on a 
-BuildStream project.
+In this section we will cover the use of BuildStream's workspaces feature when
+devloping a BuildStream project.
 
 .. note::
 

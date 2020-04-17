@@ -779,6 +779,8 @@ the number of jobs for a given build without affecting the resulting
 cache key.
 
 
+.. _project_split_rules:
+
 Split rules
 ~~~~~~~~~~~
 The project wide :ref:`split rules <public_split_rules>` defaults can

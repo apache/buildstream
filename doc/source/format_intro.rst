@@ -194,6 +194,16 @@ Compound conditionals are also allowed.
      - (logging == True and debugging == True):
          enable-debug: True
 
+.. important::
+
+   Conditional statements are guaranteed to always be resolved in the
+   context of the project where the conditional statement is *declared*.
+
+   When :ref:`including a file <format_directives_include>` from a
+   subproject, any conditionals expressed in that file will already be
+   resolved in the context of the subproject which the file was included
+   from.
+
 
 .. _format_directives_assertion:
 
@@ -297,7 +307,7 @@ free form and not validated.
 ~~~~~~~~~~~
 Indicates that content should be loaded from files.
 
-This include directive expects a string, or a list of strings when
+The include directive expects a string, or a list of strings when
 including multiple files. Each of these strings represent a project
 relative filename to include. Files can be included from subprojects
 by prefixing the string with the locally defined :mod:`junction
@@ -305,7 +315,7 @@ element <elements.junction>` and colon (':').
 
 The include directive can be used in any dictionary declared in the
 :ref:`project.conf <projectconf>`, in any :ref:`.bst file
-<format_basics>`, or recursively included in a another include file.
+<format_basics>`, or recursively included in another include file.
 
 The including YAML fragment has priority over the files it includes,
 and overrides any values introduced by the includes. When including
@@ -313,25 +323,26 @@ multiple files, files are included in the order they are declared in
 the include list, and each subsequent include file takes priority over
 the previous one.
 
-.. important::
-
-   Cross junction include files are not processed when loading
-   :mod:`junction elements <elements.junction>`. Variables,
-   :ref:`element overrides <project_element_overrides>`, :ref:`source
-   overrides <project_source_overrides>` and :ref:`mirrors
-   <project_essentials_mirrors>` used in the declaration of a junction
-   must be declared in the :ref:`project.conf <projectconf>` or in
-   included files which are local to the project declaring the
-   junction itself.
-
-:mod:`Junction elements <elements.junction>` cannot use include directives.
-
 **Example:**
 
 .. code:: yaml
 
-   elements:
-     (@): junction.bst:includes/element-overrides.bst
+   environment:
+     (@): junction.bst:includes/environment.bst
+
+.. important::
+
+   Files included across a junction cannot be used to inform the
+   declaration of a :mod:`junction element <elements.junction>`, as
+   this can present a circular dependency.
+
+   Any :ref:`variables <format_variables>`, :ref:`element
+   overrides <project_element_overrides>`, :ref:`source
+   overrides <project_source_overrides>` or :ref:`mirrors
+   <project_essentials_mirrors>` used in the declaration of a junction
+   must be declared in the :ref:`project.conf <projectconf>` or in
+   included files which are local to the project declaring the
+   junction itself.
 
 .. note::
 

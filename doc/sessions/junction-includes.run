@@ -1,0 +1,25 @@
+
+commands:
+# Make it fetch first
+- directory: ../examples/junction-includes
+  command: source fetch hello.bst
+
+# Build hello.bst normally
+- directory: ../examples/junction-includes
+  output: ../source/sessions/junction-includes-build-normal.html
+  command: build hello.bst
+
+# Build hello.bst funky
+- directory: ../examples/junction-includes
+  output: ../source/sessions/junction-includes-build-funky.html
+  command: --option funky True build hello.bst
+
+# Run hello.bst in a shell
+- directory: ../examples/junction-includes
+  output: ../source/sessions/junction-includes-shell-normal.html
+  command: shell hello.bst -- /usr/bin/hello
+
+# Run hello.bst in a shell
+- directory: ../examples/junction-includes
+  output: ../source/sessions/junction-includes-shell-funky.html
+  command: --option funky True shell hello.bst -- /opt/bin/hello
