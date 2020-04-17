@@ -299,7 +299,9 @@ def test_descend(tmpdir):
         d.import_files(test_dir)
         digest = d.descend("a", "l").index["g"].get_digest()
 
-        assert Content_to_check == open(cas_cache.objpath(digest)).read()
+        with open(cas_cache.objpath(digest)) as fp:
+            content = fp.read()
+        assert Content_to_check == content
     finally:
         cas_cache.release_resources()
 
@@ -354,7 +356,9 @@ def test_relative_symlink(tmpdir):
         d.import_files(test_dir)
 
         digest = d.descend("a", "l", follow_symlinks=True).index["file"].get_digest()
-        assert Content_to_check == open(cas_cache.objpath(digest)).read()
+        with open(cas_cache.objpath(digest)) as fp:
+            content = fp.read()
+        assert Content_to_check == content
     finally:
         cas_cache.release_resources()
 
@@ -380,7 +384,9 @@ def test_abs_symlink(tmpdir):
 
         digest = d.descend("a", "l", follow_symlinks=True).index["file"].get_digest()
 
-        assert Content_to_check == open(cas_cache.objpath(digest)).read()
+        with open(cas_cache.objpath(digest)) as fp:
+            content = fp.read()
+        assert Content_to_check == content
     finally:
         cas_cache.release_resources()
 
