@@ -9,3 +9,4 @@ handling of files.
 
    handling-files/composition.rst
    handling-files/filtering.rst
+   handling-files/overlaps.rst
