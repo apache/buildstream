@@ -1,0 +1,33 @@
+
+commands:
+# Make it fetch first
+- directory: ../examples/filtering
+  command: source fetch hello.bst
+
+# Capture a build output
+- directory: ../examples/filtering
+  command: --option use_filter False build hello.bst
+
+# Capture a build output
+- directory: ../examples/filtering
+  command: --option use_filter True build hello.bst
+
+# Capture list-contents output
+- directory: ../examples/filtering
+  output: ../source/sessions/filtering-list-contents-libhello.html
+  command: artifact list-contents libhello.bst
+
+# Capture list-contents output
+- directory: ../examples/filtering
+  output: ../source/sessions/filtering-list-contents-libhello-filtered.html
+  command: artifact list-contents libhello-filtered.bst
+
+# Capture shell output
+- directory: ../examples/filtering
+  output: ../source/sessions/filtering-shell-without-filter.html
+  command: --option use_filter False shell hello.bst -- hello
+
+# Capture shell output
+- directory: ../examples/filtering
+  output: ../source/sessions/filtering-shell-with-filter.html
+  command: --option use_filter True shell hello.bst -- hello

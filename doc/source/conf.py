@@ -52,7 +52,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "BuildStream"
-copyright = "2017-2018, The BuildStream Contributors"  # pylint: disable=redefined-builtin
+copyright = "2017-2020, The BuildStream Contributors"  # pylint: disable=redefined-builtin
 author = "The BuildStream Contributors"
 
 # The version info for the project you're documenting, acts as replacement for

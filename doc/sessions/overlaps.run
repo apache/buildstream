@@ -1,0 +1,11 @@
+
+commands:
+
+# Build everything up to `hello.bst`
+- directory: ../examples/overlaps
+  command: build hello.bst
+
+# Capture the build output
+- directory: ../examples/overlaps
+  output: ../source/sessions/overlaps-build.html
+  command: build runtime-only.bst

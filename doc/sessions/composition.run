@@ -1,0 +1,20 @@
+
+commands:
+# Make it fetch first
+- directory: ../examples/composition
+  command: source fetch hello.bst
+
+# Capture the build output
+- directory: ../examples/composition
+  output: ../source/sessions/composition-build.html
+  command: build runtime-only.bst
+
+# List the contents
+- directory: ../examples/composition
+  output: ../source/sessions/composition-list-contents.html
+  command: artifact list-contents runtime-only.bst
+
+# Run hello world
+- directory: ../examples/composition
+  output: ../source/sessions/composition-shell.html
+  command: shell runtime-only.bst -- hello audience

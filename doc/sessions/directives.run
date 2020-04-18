@@ -1,0 +1,35 @@
+
+commands:
+# Make it fetch first
+- directory: ../examples/directives
+  command: source fetch hello.bst
+
+# Capture a build output
+- directory: ../examples/directives
+  output: ../source/sessions/directives-build-normal.html
+  command: build hello.bst
+
+# Capture a build output
+- directory: ../examples/directives
+  output: ../source/sessions/directives-build-somber.html
+  command: --option flavor somber build hello.bst
+
+# Capture a build output
+- directory: ../examples/directives
+  output: ../source/sessions/directives-build-excited.html
+  command: --option flavor excited build hello.bst
+
+# Capture a shell output
+- directory: ../examples/directives
+  output: ../source/sessions/directives-shell-normal.html
+  command: shell hello.bst -- hello
+
+# Capture a shell output
+- directory: ../examples/directives
+  output: ../source/sessions/directives-shell-somber.html
+  command: --option flavor somber shell hello.bst -- hello
+
+# Capture a shell output
+- directory: ../examples/directives
+  output: ../source/sessions/directives-shell-excited.html
+  command: --option flavor excited shell hello.bst -- hello

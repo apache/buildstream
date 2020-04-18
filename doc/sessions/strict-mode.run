@@ -1,0 +1,60 @@
+
+commands:
+
+# Build both static and dynamic versions
+- directory: ../examples/strict-mode
+  command: build hello-static.bst hello-dynamic.bst
+
+# Show all of the elements
+- directory: ../examples/strict-mode
+  output: ../source/sessions/strict-mode-show-initial.html
+  command: show hello-static.bst hello-dynamic.bst
+
+# Capture workspace open output 
+- directory: ../examples/strict-mode
+  output: ../source/sessions/strict-mode-workspace-open.html
+  command: workspace open --directory workspace_libhello libhello.bst
+
+# Apply a patch in the workspace
+- directory: ../examples/strict-mode
+  shell: True
+  command: patch workspace_libhello/libhello.c update.patch
+
+# Show hello-dynamic.bst with a modified library
+- directory: ../examples/strict-mode
+  output: ../source/sessions/strict-mode-show-dynamic-strict.html
+  command: show hello-dynamic.bst
+
+# Show hello-dynamic.bst with a modified library, without strict
+- directory: ../examples/strict-mode
+  output: ../source/sessions/strict-mode-show-dynamic-no-strict.html
+  command: --no-strict show hello-dynamic.bst
+
+# Show hello-static.bst with a modified library, without strict
+- directory: ../examples/strict-mode
+  output: ../source/sessions/strict-mode-show-static-no-strict.html
+  command: --no-strict show hello-static.bst
+
+# Build hello-dynamic.bst without strict
+- directory: ../examples/strict-mode
+  output: ../source/sessions/strict-mode-build-dynamic-no-strict.html
+  command: --no-strict build hello-dynamic.bst
+
+# Run hello-dynamic.bst without strict
+- directory: ../examples/strict-mode
+  output: ../source/sessions/strict-mode-run-dynamic-no-strict.html
+  command: --no-strict shell hello-dynamic.bst -- hello
+
+# Build hello-static.bst without strict
+- directory: ../examples/strict-mode
+  output: ../source/sessions/strict-mode-build-static-no-strict.html
+  command: --no-strict build hello-static.bst
+
+# Run hello-static.bst without strict
+- directory: ../examples/strict-mode
+  output: ../source/sessions/strict-mode-run-static-no-strict.html
+  command: --no-strict shell hello-static.bst -- hello
+
+# Discard workspace
+- directory: ../examples/strict-mode
+  command: workspace close --remove-dir libhello.bst 

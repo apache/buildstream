@@ -13,8 +13,9 @@ guides and information on user preferences and configuration.
 
    using_tutorial
    using_developing
-   using_advanced_features
-   using_examples
+   using_handling_files
+   using_junctions
    using_config
    using_commands
    using_configuring_cache_server
+   using_examples
