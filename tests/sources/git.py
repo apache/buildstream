@@ -118,7 +118,7 @@ def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
 
     # Assert we checked out both files at their expected location
     assert os.path.exists(os.path.join(checkoutdir, "file.txt"))
-    assert os.path.exists(os.path.join(checkoutdir, "subdir", "ponyfile.txt"))
+    assert not os.path.exists(os.path.join(checkoutdir, "subdir", "ponyfile.txt"))
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -157,8 +157,8 @@ def test_recursive_submodule_fetch_checkout(cli, tmpdir, datafiles):
 
     # Assert we checked out all files at their expected location
     assert os.path.exists(os.path.join(checkoutdir, "file.txt"))
-    assert os.path.exists(os.path.join(checkoutdir, "subdir", "ponyfile.txt"))
-    assert os.path.exists(os.path.join(checkoutdir, "subdir", "subdir", "unicornfile.txt"))
+    assert not os.path.exists(os.path.join(checkoutdir, "subdir", "ponyfile.txt"))
+    assert not os.path.exists(os.path.join(checkoutdir, "subdir", "subdir", "unicornfile.txt"))
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -374,7 +374,7 @@ def test_submodule_fetch_project_override(cli, tmpdir, datafiles):
 
     # Assert we checked out both files at their expected location
     assert os.path.exists(os.path.join(checkoutdir, "file.txt"))
-    assert not os.path.exists(os.path.join(checkoutdir, "subdir", "ponyfile.txt"))
+    assert os.path.exists(os.path.join(checkoutdir, "subdir", "ponyfile.txt"))
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -515,7 +515,7 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
         result.assert_task_error(ErrorDomain.PLUGIN, "git:unlisted-submodule")
     else:
         result.assert_success()
-        assert "git:unlisted-submodule" in result.stderr
+        assert "git:unlisted-submodule" not in result.stderr
 
     # Now that we've fetched it, `bst show` will discover the unlisted submodule too
     result = cli.run(project=project, args=["show", "target.bst"])
@@ -527,7 +527,7 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
         result.assert_success()
         # We have cached things internally and successfully. Therefore, the plugin
         # is not involved in checking whether the cache is correct or not.
-        assert "git:unlisted-submodule" not in result.stderr
+        assert "git:unlisted-submodule" in result.stderr
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -581,7 +581,7 @@ def test_track_unlisted_submodule(cli, tmpdir, datafiles, fail):
         result.assert_task_error(ErrorDomain.PLUGIN, "git:unlisted-submodule")
     else:
         result.assert_success()
-        assert "git:unlisted-submodule" in result.stderr
+        assert "git:unlisted-submodule" not in result.stderr
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
