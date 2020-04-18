@@ -118,7 +118,7 @@ def test_submodule_fetch_checkout(cli, tmpdir, datafiles):
 
     # Assert we checked out both files at their expected location
     assert os.path.exists(os.path.join(checkoutdir, "file.txt"))
-    assert os.path.exists(os.path.join(checkoutdir, "subdir", "ponyfile.txt"))
+    assert not os.path.exists(os.path.join(checkoutdir, "subdir", "ponyfile.txt"))
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -192,7 +192,7 @@ def test_submodule_fetch_source_enable_explicit(cli, tmpdir, datafiles):
 
     # Assert we checked out both files at their expected location
     assert os.path.exists(os.path.join(checkoutdir, "file.txt"))
-    assert os.path.exists(os.path.join(checkoutdir, "subdir", "ponyfile.txt"))
+    assert not os.path.exists(os.path.join(checkoutdir, "subdir", "ponyfile.txt"))
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")

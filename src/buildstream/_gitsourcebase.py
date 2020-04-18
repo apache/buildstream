@@ -533,7 +533,7 @@ class _GitSourceBase(Source):
                 "{}: Git sources require a ref and/or track".format(self), reason="missing-track-and-ref"
             )
 
-        self.checkout_submodules = node.get_bool("checkout-submodules", default=True)
+        self.checkout_submodules = node.get_bool("checkout-submodules", default=False)
 
         # Parse a dict of submodule overrides, stored in the submodule_overrides
         # and submodule_checkout_overrides dictionaries.

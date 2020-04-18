@@ -25,11 +25,6 @@ git - stage files from a git repository
 
   * git
 
-.. attention::
-
-    Note that this plugin **will checkout git submodules by default**; even if
-    they are not specified in the `.bst` file.
-
 **Usage:**
 
 .. code:: yaml
@@ -58,8 +53,8 @@ git - stage files from a git repository
 
    # Optionally specify whether submodules should be checked-out.
    # This is done recursively, as with `git clone --recurse-submodules`.
-   # If not set, this will default to 'True'
-   checkout-submodules: True
+   # If not set, this will default to 'False'
+   checkout-submodules: False
 
    # If your repository has submodules, explicitly specifying the
    # url from which they are to be fetched allows you to easily

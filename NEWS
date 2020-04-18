@@ -265,6 +265,8 @@ CLI
 Plugins
 -------
 
+  o BREAKING CHANGE: The git plugin does not checkout submodules by default anymore
+
   o BREAKING CHANGE: cmake, make, makemaker, meson, modulebuild and qmake
     plugins have been moved to the bst-plugins-experimental repository.
 
