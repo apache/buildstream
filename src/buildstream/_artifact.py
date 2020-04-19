@@ -423,8 +423,7 @@ class Artifact:
 
         context = self._context
 
-        artifact = self._get_proto()
-
+        artifact = self._load_proto()
         if not artifact:
             self._cached = False
             return False
@@ -450,6 +449,7 @@ class Artifact:
             self._cached = False
             return False
 
+        self._proto = artifact
         self._cached = True
         return True
 
@@ -472,6 +472,7 @@ class Artifact:
     # is cached or not.
     #
     def reset_cached(self):
+        self._proto = None
         self._cached = None
 
     # set_cached()
@@ -480,18 +481,15 @@ class Artifact:
     # This is used as optimization when we know the artifact is available.
     #
     def set_cached(self):
+        self._proto = self._load_proto()
         self._cached = True
 
-    # _get_proto()
+    #  load_proto()
     #
     # Returns:
     #     (Artifact): Artifact proto
     #
-    def _get_proto(self):
-        # Check if we've already cached the proto object
-        if self._proto is not None:
-            return self._proto
-
+    def _load_proto(self):
         key = self.get_extract_key()
 
         proto_path = os.path.join(self._artifactdir, self._element.get_artifact_name(key=key))
@@ -503,9 +501,15 @@ class Artifact:
             return None
 
         os.utime(proto_path)
-        # Cache the proto object
-        self._proto = artifact
 
+        return artifact
+
+    # _get_proto()
+    #
+    # Returns:
+    #     (Artifact): Artifact proto
+    #
+    def _get_proto(self):
         return self._proto
 
     # _get_field_digest()
