@@ -31,6 +31,7 @@ variables:
   TEST_COMMAND: "tox -- ${PYTEST_ARGS}"
   TOXENV: py36, py37, py38, py36-plugins, py37-plugins, py38-plugins
   COVERAGE_PREFIX: "${CI_JOB_NAME}."
+  KUBERNETES_CPU_REQUEST: 4
 
 
 #####################################################
