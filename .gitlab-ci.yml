@@ -41,6 +41,8 @@ variables:
 #
 .tests-template: &tests
   stage: test
+  tags:
+  - kubernetes
 
   before_script:
   # Diagnostics
