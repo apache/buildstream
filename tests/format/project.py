@@ -175,6 +175,7 @@ def test_plugin_no_load_ref(cli, datafiles, ref_storage):
     #
     config = {
         "name": "test",
+        "min-version": "2.0",
         "ref-storage": ref_storage,
         "plugins": [{"origin": "local", "path": "plugins", "sources": {"noloadref": 0}}],
     }

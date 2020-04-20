@@ -40,6 +40,7 @@ def test_default_target(cli, datafiles, operation, expected_state):
     # First, modify project configuration to set a default target
     project_conf = {
         "name": "test-default-target",
+        "min-version": "2.0",
         "element-path": "elements",
         "defaults": {"targets": ["dummy_stack.bst"]},
     }
@@ -102,6 +103,7 @@ def test_default_target_track(cli, tmpdir, datafiles):
     # Then, make it the default target
     project_conf = {
         "name": "test-default-target",
+        "min-version": "2.0",
         "element-path": "elements",
         "defaults": {"targets": [target]},
     }
@@ -131,6 +133,7 @@ def test_default_target_fetch(cli, tmpdir, datafiles):
     # Then, make it the default target
     project_conf = {
         "name": "test-default-target",
+        "min-version": "2.0",
         "element-path": "elements",
         "defaults": {"targets": [target]},
     }
@@ -157,6 +160,7 @@ def test_default_target_push_pull(cli, tmpdir, datafiles):
     # Set a default target
     project_conf = {
         "name": "test-default-target",
+        "min-version": "2.0",
         "element-path": "elements",
         "defaults": {"targets": [target]},
     }

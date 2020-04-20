@@ -156,7 +156,7 @@ def test_mirror_from_includes(cli, tmpdir, datafiles, kind):
 
     config_project_dir = str(tmpdir.join("config"))
     os.makedirs(config_project_dir, exist_ok=True)
-    config_project = {"name": "config"}
+    config_project = {"name": "config", "min-version": "2.0"}
     _yaml.roundtrip_dump(config_project, os.path.join(config_project_dir, "project.conf"))
     extra_mirrors = {"mirrors": [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"],}}]}
     _yaml.roundtrip_dump(extra_mirrors, os.path.join(config_project_dir, "mirrors.yml"))
@@ -199,7 +199,7 @@ def test_mirror_junction_from_includes(cli, tmpdir, datafiles, kind):
 
     config_project_dir = str(tmpdir.join("config"))
     os.makedirs(config_project_dir, exist_ok=True)
-    config_project = {"name": "config"}
+    config_project = {"name": "config", "min-version": "2.0"}
     _yaml.roundtrip_dump(config_project, os.path.join(config_project_dir, "project.conf"))
     extra_mirrors = {"mirrors": [{"name": "middle-earth", "aliases": {alias: [mirror_map + "/"],}}]}
     _yaml.roundtrip_dump(extra_mirrors, os.path.join(config_project_dir, "mirrors.yml"))

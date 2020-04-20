@@ -196,7 +196,7 @@ def test_cache_key_fatal_warnings(cli, tmpdir, first_warnings, second_warnings, 
 
     # Builds project, Runs bst show, gathers cache keys
     def run_get_cache_key(project_name, warnings):
-        config = {"name": project_name, "element-path": "elements", "fatal-warnings": warnings}
+        config = {"name": project_name, "min-version": "2.0", "element-path": "elements", "fatal-warnings": warnings}
 
         project_dir = tmpdir.mkdir(project_name)
         project_config_file = str(project_dir.join("project.conf"))

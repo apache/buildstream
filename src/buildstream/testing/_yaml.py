@@ -9,6 +9,8 @@ def generate_project(project_dir, config=None):
     project_file = os.path.join(project_dir, "project.conf")
     if "name" not in config:
         config["name"] = os.path.basename(project_dir)
+    if "min-version" not in config:
+        config["min-version"] = "2.0"
     roundtrip_dump(config, project_file)
 
 

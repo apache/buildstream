@@ -640,6 +640,7 @@ def test_push_after_rebuild(cli, tmpdir, datafiles):
         project,
         config={
             "element-path": "elements",
+            "min-version": "2.0",
             "plugins": [{"origin": "local", "path": "plugins", "elements": {"randomelement": 0}}],
         },
     )

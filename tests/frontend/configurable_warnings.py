@@ -16,6 +16,7 @@ TOP_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "configuredw
 def get_project(fatal_warnings):
     return {
         "name": "test",
+        "min-version": "2.0",
         "element-path": "elements",
         "plugins": [
             {"origin": "local", "path": "plugins", "elements": {"warninga": 0, "warningb": 0, "corewarn": 0,}}
