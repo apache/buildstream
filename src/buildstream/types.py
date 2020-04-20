@@ -111,8 +111,6 @@ class Scope(FastEnum):
 
     NONE = 4
     """Just the element itself, no dependencies.
-
-    *Since: 1.4*
     """
 
 
