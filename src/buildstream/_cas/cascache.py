@@ -165,20 +165,20 @@ class CASCache:
             self._casd_process_manager.release_resources(messenger)
             self._casd_process_manager = None
 
-    # contains_file():
+    # contains_files():
     #
-    # Check whether a digest corresponds to a file which exists in CAS
+    # Check whether file digests exist in the local CAS cache
     #
     # Args:
     #     digest (Digest): The file digest to check
     #
-    # Returns: True if the file is in the cache, False otherwise
+    # Returns: True if the files are in the cache, False otherwise
     #
-    def contains_file(self, digest):
+    def contains_files(self, digests):
         cas = self.get_cas()
 
         request = remote_execution_pb2.FindMissingBlobsRequest()
-        request.blob_digests.append(digest)
+        request.blob_digests.extend(digests)
 
         response = cas.FindMissingBlobs(request)
         return len(response.missing_blob_digests) == 0
@@ -647,16 +647,19 @@ class CASCache:
 
     # fetch_blobs():
     #
-    # Fetch blobs from remote CAS. Returns missing blobs that could not be fetched.
+    # Fetch blobs from remote CAS. Optionally returns missing blobs that could
+    # not be fetched.
     #
     # Args:
     #    remote (CASRemote): The remote repository to fetch from
     #    digests (list): The Digests of blobs to fetch
+    #    allow_partial (bool): True to return missing blobs, False to raise a
+    #                          BlobNotFound error if a blob is missing
     #
     # Returns: The Digests of the blobs that were not available on the remote CAS
     #
-    def fetch_blobs(self, remote, digests):
-        missing_blobs = []
+    def fetch_blobs(self, remote, digests, *, allow_partial=False):
+        missing_blobs = [] if allow_partial else None
 
         remote.init()
 

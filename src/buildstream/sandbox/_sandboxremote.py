@@ -291,12 +291,7 @@ class SandboxRemote(SandboxREAPI):
                     blobs_to_fetch = artifactcache.find_missing_blobs(project, local_missing_blobs)
 
                 with CASRemote(self.storage_remote_spec, cascache) as casremote:
-                    remote_missing_blobs = cascache.fetch_blobs(casremote, blobs_to_fetch)
-
-                if remote_missing_blobs:
-                    raise SandboxError(
-                        "{} output files are missing on the CAS server".format(len(remote_missing_blobs))
-                    )
+                    cascache.fetch_blobs(casremote, blobs_to_fetch)
 
     def _execute_action(self, action, flags):
         stdout, stderr = self._get_output()

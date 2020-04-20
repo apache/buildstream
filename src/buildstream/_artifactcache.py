@@ -22,6 +22,7 @@ import os
 import grpc
 
 from ._basecache import BaseCache
+from ._cas.casremote import BlobNotFound
 from ._exceptions import ArtifactError, CASError, CacheError, CASRemoteError, RemoteError
 from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, artifact_pb2, artifact_pb2_grpc
 
@@ -281,7 +282,6 @@ class ArtifactCache(BaseCache):
                 element.status("Pulling artifact {} <- {}".format(display_key, remote))
                 artifact = self._pull_artifact_proto(element, key, remote)
                 if artifact:
-                    element.info("Pulled artifact {} <- {}".format(display_key, remote))
                     break
 
                 element.info("Remote ({}) does not have artifact {} cached".format(remote, display_key))
@@ -307,10 +307,14 @@ class ArtifactCache(BaseCache):
                 element.status("Pulling data for artifact {} <- {}".format(display_key, remote))
 
                 if self._pull_artifact_storage(element, artifact, remote, pull_buildtrees=pull_buildtrees):
-                    element.info("Pulled data for artifact {} <- {}".format(display_key, remote))
+                    element.info("Pulled artifact {} <- {}".format(display_key, remote))
                     return True
 
                 element.info("Remote ({}) does not have artifact {} cached".format(remote, display_key))
+            except BlobNotFound as e:
+                # Not all blobs are available on this remote
+                element.info("Remote cas ({}) does not have blob {} cached".format(remote, e.blob))
+                continue
             except CASError as e:
                 element.warn("Could not pull from remote {}: {}".format(remote, e))
                 errors.append(e)
@@ -401,7 +405,7 @@ class ArtifactCache(BaseCache):
             remote.init()
 
             # fetch_blobs() will return the blobs that are still missing
-            missing_blobs = self.cas.fetch_blobs(remote, missing_blobs)
+            missing_blobs = self.cas.fetch_blobs(remote, missing_blobs, allow_partial=True)
 
         if missing_blobs:
             raise ArtifactError("Blobs not found on configured artifact servers")

@@ -24,10 +24,11 @@
 # pylint: disable=redefined-outer-name
 
 import os
+import shutil
 import pytest
 
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing import cli, generate_project  # pylint: disable=unused-import
 from tests.testutils import (
     create_artifact_share,
     create_element_size,
@@ -627,3 +628,38 @@ def test_push_no_strict(caplog, cli, tmpdir, datafiles, buildtrees):
         args += ["artifact", "push", "--deps", "all", "target.bst"]
         result = cli.run(project=project, args=args)
         result.assert_success()
+
+
+# Test that push works after rebuilding an incomplete artifact
+# of a non-reproducible element.
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_after_rebuild(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    generate_project(
+        project,
+        config={
+            "element-path": "elements",
+            "plugins": [{"origin": "local", "path": "plugins", "elements": {"randomelement": 0}}],
+        },
+    )
+
+    # First build the element
+    result = cli.run(project=project, args=["build", "random.bst"])
+    result.assert_success()
+    assert cli.get_element_state(project, "random.bst") == "cached"
+
+    # Delete the artifact blobs but keep the artifact proto,
+    # i.e., now we have an incomplete artifact
+    casdir = os.path.join(cli.directory, "cas")
+    shutil.rmtree(casdir)
+    assert cli.get_element_state(project, "random.bst") != "cached"
+
+    with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
+        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+
+        # Now rebuild the element and push it
+        result = cli.run(project=project, args=["build", "random.bst"])
+        result.assert_success()
+        assert result.get_pushed_elements() == ["random.bst"]
+        assert cli.get_element_state(project, "random.bst") == "cached"

@@ -423,8 +423,7 @@ class Artifact:
 
         context = self._context
 
-        artifact = self._get_proto()
-
+        artifact = self._load_proto()
         if not artifact:
             self._cached = False
             return False
@@ -443,11 +442,14 @@ class Artifact:
             self._cached = False
             return False
 
-        # Check whether public data is available
-        if not self._cas.contains_file(artifact.public_data):
+        # Check whether public data and logs are available
+        logfile_digests = [logfile.digest for logfile in artifact.logs]
+        digests = [artifact.public_data] + logfile_digests
+        if not self._cas.contains_files(digests):
             self._cached = False
             return False
 
+        self._proto = artifact
         self._cached = True
         return True
 
@@ -460,16 +462,9 @@ class Artifact:
     #             element not cached or missing logs.
     #
     def cached_logs(self):
-        if not self._element._cached():
-            return False
-
-        artifact = self._get_proto()
-
-        for logfile in artifact.logs:
-            if not self._cas.contains_file(logfile.digest):
-                return False
-
-        return True
+        # Log files are currently considered an essential part of an artifact.
+        # If the artifact is cached, its log files are available as well.
+        return self._element._cached()
 
     # reset_cached()
     #
@@ -477,6 +472,7 @@ class Artifact:
     # is cached or not.
     #
     def reset_cached(self):
+        self._proto = None
         self._cached = None
 
     # set_cached()
@@ -485,18 +481,15 @@ class Artifact:
     # This is used as optimization when we know the artifact is available.
     #
     def set_cached(self):
+        self._proto = self._load_proto()
         self._cached = True
 
-    # _get_proto()
+    #  load_proto()
     #
     # Returns:
     #     (Artifact): Artifact proto
     #
-    def _get_proto(self):
-        # Check if we've already cached the proto object
-        if self._proto is not None:
-            return self._proto
-
+    def _load_proto(self):
         key = self.get_extract_key()
 
         proto_path = os.path.join(self._artifactdir, self._element.get_artifact_name(key=key))
@@ -508,9 +501,15 @@ class Artifact:
             return None
 
         os.utime(proto_path)
-        # Cache the proto object
-        self._proto = artifact
 
+        return artifact
+
+    # _get_proto()
+    #
+    # Returns:
+    #     (Artifact): Artifact proto
+    #
+    def _get_proto(self):
         return self._proto
 
     # _get_field_digest()
