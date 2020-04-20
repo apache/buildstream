@@ -39,7 +39,7 @@ When documenting the public API surface which is rendered in the reference
 manual, we always mention the major version in which the API was introduced,
 as shown in the examples below. If a public API exists without the *Since*
 annotation, this is taken to mean that it was available since the first stable
-release 1.0.
+major point release (e.g: 2.0).
 
 Here are some examples to get the hang of the format of API documenting
 comments and docstrings.
@@ -57,7 +57,7 @@ comments and docstrings.
       Returns:
          (Element): The frobnicated version of this Element.
 
-      *Since: 1.2*
+      *Since: 2.2*
       """
       ...
 
@@ -85,7 +85,7 @@ comments and docstrings.
     self.name = self._compute_name(context, element)
     """The name of this foo
 
-    *Since: 1.2*
+    *Since: 2.2*
     """
 
 .. note::
@@ -121,7 +121,7 @@ comments and docstrings.
          context (Context): The invocation Context
          count (int): The number to count
 
-      *Since: 1.2*
+      *Since: 2.2*
       """
       ...
 
