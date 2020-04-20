@@ -405,7 +405,12 @@ def test_out_of_basedir_hardlinks(cli, tmpdir, datafiles):
     old_dir = os.getcwd()
     os.chdir(str(tmpdir))
     with tarfile.open(src_tar, "w:gz") as tar:
-        tar.add("contents", filter=ensure_link)
+        # Don't recursively add `contents` as the order is not guaranteed.
+        # We need to add `elsewhere` before `to_extract` as the latter
+        # references the former in `linkname`.
+        tar.add("contents", recursive=False)
+        tar.add("contents/elsewhere")
+        tar.add("contents/to_extract", filter=ensure_link)
     os.chdir(old_dir)
 
     # Make sure our tarfile is actually created with the desired
