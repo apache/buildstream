@@ -754,6 +754,8 @@ class CasBasedDirectory(Directory):
                 raise FileExistsError("{} already exists in {}".format(path[-1], str(subdir)))
 
             with utils._tempnamedfile(mode, encoding=encoding, dir=self.cas_cache.tmpdir) as f:
+                # Make sure the temporary file is readable by buildbox-casd
+                os.chmod(f.name, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
                 yield f
                 # Import written temporary file into CAS
                 f.flush()
