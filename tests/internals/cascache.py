@@ -82,7 +82,7 @@ def test_casd_redirects_stderr_to_file_and_rotate(tmp_path, monkeypatch):
     # Let's create the first `n_max_log_files` log files
     for i in range(1, n_max_log_files + 1):
         cache = CASCache(str(casd_files_path), casd=True, log_directory=str(casd_parent_logs_path))
-        time.sleep(0.05)
+        time.sleep(0.5)
         cache.release_resources()
 
         existing_log_files = sorted(casd_logs_path.iterdir())
@@ -94,7 +94,7 @@ def test_casd_redirects_stderr_to_file_and_rotate(tmp_path, monkeypatch):
         evicted_file = existing_log_files.pop(0)
 
         cache = CASCache(str(casd_files_path), casd=True, log_directory=str(casd_parent_logs_path))
-        time.sleep(0.05)
+        time.sleep(0.5)
         cache.release_resources()
 
         existing_log_files = sorted(casd_logs_path.iterdir())
