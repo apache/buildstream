@@ -133,7 +133,7 @@ class ElementError(BstError):
        detail: A possibly multiline, more detailed error message
        reason: An optional machine readable reason string, used for test cases
        collect: An optional directory containing partial install contents
-       temporary: An indicator to whether the error may occur if the operation was run again. (*Since: 1.2*)
+       temporary: An indicator to whether the error may occur if the operation was run again.
     """
 
     def __init__(
@@ -177,39 +177,27 @@ class Element(Plugin):
 
     BST_FORBID_RDEPENDS = False
     """Whether to raise exceptions if an element has runtime dependencies.
-
-    *Since: 1.2*
     """
 
     BST_FORBID_BDEPENDS = False
     """Whether to raise exceptions if an element has build dependencies.
-
-    *Since: 1.2*
     """
 
     BST_FORBID_SOURCES = False
     """Whether to raise exceptions if an element has sources.
-
-    *Since: 1.2*
     """
 
     BST_VIRTUAL_DIRECTORY = False
     """Whether to raise exceptions if an element uses Sandbox.get_directory
     instead of Sandbox.get_virtual_directory.
-
-    *Since: 1.4*
     """
 
     BST_RUN_COMMANDS = True
     """Whether the element may run commands using Sandbox.run.
-
-    *Since: 1.4*
     """
 
     BST_ELEMENT_HAS_ARTIFACT = True
     """Whether the element produces an artifact when built.
-
-    *Since: 1.90*
     """
 
     def __init__(self, context: "Context", project: "Project", meta: "MetaElement", plugin_conf: Dict[str, Any]):
@@ -380,8 +368,6 @@ class Element(Plugin):
 
         By default, this method does nothing, but may be overriden to
         allow configure-like commands.
-
-        *Since: 1.2*
         """
 
     def assemble(self, sandbox: "Sandbox") -> str:

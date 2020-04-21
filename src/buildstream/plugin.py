@@ -403,8 +403,6 @@ class Plugin:
            :class:`.LoadError`: In the case that the project path is not
                                 valid or does not exist
 
-        *Since: 1.2*
-
         **Example:**
 
         .. code:: python
@@ -459,7 +457,6 @@ class Plugin:
            detail: An optional detailed message, can be multiline output
            warning_token: An optional configurable warning assosciated with this warning,
                           this will cause PluginError to be raised if this warning is configured as fatal.
-                          (*Since 1.4*)
 
         Raises:
            (:class:`.PluginError`): When warning_token is considered fatal by the project configuration
@@ -525,7 +522,7 @@ class Plugin:
            fail: A message to display if the process returns
                  a non zero exit code
            fail_temporarily: Whether any exceptions should
-                             be raised as temporary. (*Since: 1.2*)
+                             be raised as temporary.
            rest_of_args (kwargs): Remaining arguments to subprocess.call()
 
         Returns:
@@ -559,7 +556,7 @@ class Plugin:
            fail (str): A message to display if the process returns
                        a non zero exit code
            fail_temporarily (bool): Whether any exceptions should
-                                    be raised as temporary. (*Since: 1.2*)
+                                    be raised as temporary.
            rest_of_args (kwargs): Remaining arguments to subprocess.call()
 
         Returns:

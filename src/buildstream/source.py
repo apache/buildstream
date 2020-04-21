@@ -105,10 +105,9 @@ these methods are mandatory to implement.
 
   **Optional**: This is completely optional and will do nothing if left unimplemented.
 
+
 Accessing previous sources
 --------------------------
-*Since: 1.4*
-
 In the general case, all sources are fetched and tracked independently of one
 another. In situations where a source needs to access previous source(s) in
 order to perform its own track and/or fetch, following attributes can be set to
@@ -193,7 +192,7 @@ class SourceError(BstError):
        message: The breif error description to report to the user
        detail: A possibly multiline, more detailed error message
        reason: An optional machine readable reason string, used for test cases
-       temporary: An indicator to whether the error may occur if the operation was run again. (*Since: 1.2*)
+       temporary: An indicator to whether the error may occur if the operation was run again.
     """
 
     def __init__(
@@ -208,8 +207,6 @@ class SourceFetcher:
     This interface exists so that a source that downloads from multiple
     places (e.g. a git source with submodules) has a consistent interface for
     fetching and substituting aliases.
-
-    *Since: 1.2*
 
     .. attention::
 
@@ -285,8 +282,6 @@ class Source(Plugin):
       * Source.track() will be called with an additional keyword argument
         `previous_sources_dir` where previous sources will be staged
       * this source can not be the first source for an element
-
-    *Since: 1.4*
     """
 
     BST_REQUIRES_PREVIOUS_SOURCES_FETCH = False
@@ -298,8 +293,6 @@ class Source(Plugin):
       * Source.fetch() will be called with an additional keyword argument
         `previous_sources_dir` where previous sources will be staged
       * this source can not be the first source for an element
-
-    *Since: 1.4*
     """
 
     BST_REQUIRES_PREVIOUS_SOURCES_STAGE = False
@@ -309,8 +302,6 @@ class Source(Plugin):
       * All sources listed before current source in the given element will be
         staged with the source when it's cached.
       * This source can not be the first source for an element.
-
-    *Since: 1.4*
     """
 
     BST_STAGE_VIRTUAL_DIRECTORY = False
@@ -318,15 +309,11 @@ class Source(Plugin):
 
     When set to true, virtual directories can be passed to the source to stage
     to.
-
-    *Since: 1.4*
     """
 
     BST_KEY_REQUIRES_STAGE = False
     """Whether the source will require staging in order to efficiently generate
     a unique key.
-
-    *Since: 1.91.2*
     """
 
     def __init__(
@@ -401,8 +388,6 @@ class Source(Plugin):
            this will only be used for loading refs from alternative locations
            than in the `element.bst` file where the given Source object has
            been declared.
-
-        *Since: 1.2*
         """
         raise ImplError("Source plugin '{}' does not implement load_ref()".format(self.get_kind()))
 
@@ -542,8 +527,6 @@ class Source(Plugin):
            The :func:`SourceFetcher.fetch() <buildstream.source.SourceFetcher.fetch>`
            method will be called on the returned fetchers one by one,
            before consuming the next fetcher in the list.
-
-        *Since: 1.2*
         """
         return []
 
@@ -555,8 +538,6 @@ class Source(Plugin):
         If source tracking is enabled in the session for this source,
         then this will only be called if the sources become cached after
         tracking completes.
-
-        *Since: 1.4*
         """
 
     def is_cached(self) -> bool:
@@ -567,8 +548,6 @@ class Source(Plugin):
         returns `True`.
 
         Returns: whether the source is cached locally or not.
-
-        *Since: 1.93.0*
         """
         raise ImplError("Source plugin '{}' does not implement is_cached()".format(self.get_kind()))
 
@@ -596,8 +575,8 @@ class Source(Plugin):
 
         Args:
            url: A URL, which may be using an alias
-           alias_override: Optionally, an URI to override the alias with. (*Since: 1.2*)
-           primary: Whether this is the primary URL for the source. (*Since: 1.2*)
+           alias_override: Optionally, an URI to override the alias with.
+           primary: Whether this is the primary URL for the source.
 
         Returns:
            The fully qualified URL, with aliases resolved
@@ -645,8 +624,6 @@ class Source(Plugin):
            :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>` if
            :func:`Source.translate_url() <buildstream.source.Source.translate_url>`
            is not called.
-
-        *Since: 1.2*
         """
         # Only mark the Source level aliases on the main instance, not in
         # a reinstantiated instance in mirroring.
@@ -719,8 +696,6 @@ class Source(Plugin):
         resolved
 
         Returns: whether the source is fully resolved or not
-
-        *Since: 1.93.0*
         """
         return self.get_ref() is not None
 

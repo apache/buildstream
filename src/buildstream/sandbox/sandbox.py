@@ -273,7 +273,7 @@ class Sandbox:
             cwd: The sandbox relative working directory in which to run the command.
             env: A dictionary of string key, value pairs to set as environment
                  variables inside the sandbox environment.
-            label: An optional label for the command, used for logging. (*Since: 1.4*)
+            label: An optional label for the command, used for logging.
 
         Returns:
             The program exit code, or None if running in batch context.
@@ -335,8 +335,6 @@ class Sandbox:
 
         Raises:
             (:class:`.SandboxCommandError`): If a command fails.
-
-        *Since: 1.4*
         """
 
         group = _SandboxBatchGroup(label=label)
