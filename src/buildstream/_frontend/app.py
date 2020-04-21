@@ -906,7 +906,7 @@ class App:
             self._detail_profile.fmt(
                 w.fill(
                     "The project name is a unique symbol for your project and will be used "
-                    "to distinguish your project from others in user preferences, namspaceing "
+                    "to distinguish your project from others in user preferences, namespacing "
                     "of your project's artifacts in shared artifact caches, and in any case where "
                     "BuildStream needs to distinguish between multiple projects."
                 )
