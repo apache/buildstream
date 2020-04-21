@@ -125,7 +125,7 @@ class BstError(Exception):
 #
 class PluginError(BstError):
     def __init__(self, message, reason=None, temporary=False):
-        super().__init__(message, domain=ErrorDomain.PLUGIN, reason=reason, temporary=False)
+        super().__init__(message, domain=ErrorDomain.PLUGIN, reason=reason, temporary=temporary)
 
 
 # LoadError
@@ -195,7 +195,7 @@ class SourceCacheError(BstError):
 #
 class ArtifactError(BstError):
     def __init__(self, message, *, detail=None, reason=None, temporary=False):
-        super().__init__(message, detail=detail, domain=ErrorDomain.ARTIFACT, reason=reason, temporary=True)
+        super().__init__(message, detail=detail, domain=ErrorDomain.ARTIFACT, reason=reason, temporary=temporary)
 
 
 # RemoteError
@@ -213,7 +213,7 @@ class RemoteError(BstError):
 #
 class CASError(BstError):
     def __init__(self, message, *, detail=None, reason=None, temporary=False):
-        super().__init__(message, detail=detail, domain=ErrorDomain.CAS, reason=reason, temporary=True)
+        super().__init__(message, detail=detail, domain=ErrorDomain.CAS, reason=reason, temporary=temporary)
 
 
 # CASRemoteError
