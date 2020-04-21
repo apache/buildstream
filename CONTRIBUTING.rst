@@ -12,10 +12,6 @@ to fix an issue, then you should first search the list of `open issues <https://
 to see if the issue is already filed, and `open an issue <https://gitlab.com/BuildStream/buildstream/issues/new>`_
 if no issue already exists.
 
-For policies on how to submit an issue and how to use our project labels,
-we recommend that you read the `policies guide
-<https://gitlab.com/BuildStream/nosoftware/alignment/blob/master/BuildStream_policies.md>`_.
-
 
 .. _contributing_fixing_bugs:
 
