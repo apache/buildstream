@@ -752,7 +752,6 @@ class Loader:
     #     brief (str): The brief message
     #     warning_token (str): An optional configurable warning assosciated with this warning,
     #                          this will cause PluginError to be raised if this warning is configured as fatal.
-    #                          (*Since 1.4*)
     #
     # Raises:
     #     (:class:`.LoadError`): When warning_token is considered fatal by the project configuration
