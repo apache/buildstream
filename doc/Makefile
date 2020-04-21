@@ -106,13 +106,20 @@ sessions-prep:
 	mkdir -p source/sessions
 	cp source/sessions-stored/*.html source/sessions
 
+# bst2html is called unconditionally for every session file in SESSION_FILES.
+#
 # By default, this will generate the html fragments of colorized BuildStream terminal
-# output only if they don't yet exist.
+# output only if the output html files don't yet exist.
 #
 # Specify BST_FORCE_SESSION_REBUILD=1 to force rebuild all session html files.
 #
-sessions: sessions-prep
-	$(foreach file,$(wildcard sessions/*.run),PYTHONPATH=$(PYTHONPATH) $(BST2HTML) $(BST2HTMLOPTS) $(file) ; )
+SESSION_FILES=$(wildcard sessions/*.run)
+$(SESSION_FILES): sessions-prep
+
+%.run:
+	PYTHONPATH=$(PYTHONPATH) $(BST2HTML) $(BST2HTMLOPTS) $@
+
+sessions: $(SESSION_FILES)
 
 sessions-clean:
 	rm -rf source/sessions
