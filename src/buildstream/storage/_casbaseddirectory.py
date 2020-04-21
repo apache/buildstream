@@ -332,6 +332,8 @@ class CasBasedDirectory(Directory):
             if not path:
                 continue
 
+            self.__validate_path_component(path)
+
             entry = current_dir.index.get(path)
 
             if entry:
@@ -729,6 +731,7 @@ class CasBasedDirectory(Directory):
     @contextmanager
     def open_file(self, *path: str, mode: str = "r"):
         subdir = self.descend(*path[:-1])
+        self.__validate_path_component(path[-1])
         entry = subdir.index.get(path[-1])
 
         if entry and entry.type != _FileType.REGULAR_FILE:
@@ -828,6 +831,7 @@ class CasBasedDirectory(Directory):
     def exists(self, *path, follow_symlinks=False):
         try:
             subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
+            self.__validate_path_component(path[-1])
             target = subdir.index.get(path[-1])
             if target is not None:
                 if follow_symlinks and target.type == _FileType.SYMLINK:
@@ -867,3 +871,7 @@ class CasBasedDirectory(Directory):
                 subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
             else:
                 result.files_written.append(relative_pathname)
+
+    def __validate_path_component(self, path):
+        if "/" in path:
+            raise VirtualDirectoryError("Invalid path component: '{}'".format(path))
