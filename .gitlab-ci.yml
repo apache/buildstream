@@ -24,7 +24,7 @@ variables:
   # Our own variables
   # Version of the docker images we should use for all the images.
   # This is taken from buildstream/buildstream-docker-images
-  DOCKER_IMAGE_VERSION: master-132813612
+  DOCKER_IMAGE_VERSION: master-138527946
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   PYTEST_ARGS: "--color=yes --integration -n 2"
@@ -79,9 +79,9 @@ tests-ubuntu-18.04:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
-tests-centos-7.6:
+tests-centos-7.7:
   <<: *tests
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.6.1810-${DOCKER_IMAGE_VERSION}
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.7.1908-${DOCKER_IMAGE_VERSION}
 
 tests-python-3.8-buster:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-python:3.8-buster-${DOCKER_IMAGE_VERSION}
@@ -451,7 +451,7 @@ coverage:
     - cp -a .coverage-reports/ ./coverage-report
   dependencies:
   - tests-buildbox-run
-  - tests-centos-7.6
+  - tests-centos-7.7
   - tests-debian-10
   - tests-fedora-30
   - tests-fedora-31
