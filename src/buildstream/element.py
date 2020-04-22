@@ -2706,7 +2706,7 @@ class Element(Plugin):
             build_arch = host_arch
 
         return SandboxConfig(
-            sandbox_config.get_int("build-uid", None), sandbox_config.get_int("build-gid", None), build_os, build_arch,
+            sandbox_config.get_int("build-uid", 0), sandbox_config.get_int("build-gid", 0), build_os, build_arch,
         )
 
     # This makes a special exception for the split rules, which
