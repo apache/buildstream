@@ -299,6 +299,19 @@ class FileBasedDirectory(Directory):
 
             return utils.save_file_atomic(newpath, mode=mode, encoding=encoding)
 
+    def remove(self, *path, recursive=False):
+        # Use descend() to avoid following symlinks (potentially escaping the sandbox)
+        subdir = self.descend(*path[:-1])
+        newpath = os.path.join(subdir.external_directory, path[-1])
+
+        if subdir._get_filetype(path[-1]) == _FileType.DIRECTORY:
+            if recursive:
+                shutil.rmtree(newpath)
+            else:
+                os.rmdir(newpath)
+        else:
+            os.unlink(newpath)
+
     def __iter__(self):
         yield from os.listdir(self.external_directory)
 

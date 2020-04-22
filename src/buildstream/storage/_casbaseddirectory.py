@@ -289,7 +289,7 @@ class CasBasedDirectory(Directory):
         # We can't iterate and remove entries at the same time
         to_remove = [entry for entry in dir_a.index.values() if entry.name not in dir_b.index]
         for entry in to_remove:
-            self.delete_entry(entry.name)
+            self.remove(entry.name, recursive=True)
 
         self.__invalidate_digest()
 
@@ -298,10 +298,25 @@ class CasBasedDirectory(Directory):
 
         self.__invalidate_digest()
 
-    def delete_entry(self, name):
-        if name in self.index:
-            del self.index[name]
+    def remove(self, *path, recursive=False):
+        if len(path) > 1:
+            # Delegate remove to subdirectory
+            subdir = self.descend(*path[:-1])
+            subdir.remove(path[-1], recursive=recursive)
+            return
 
+        name = path[0]
+        self.__validate_path_component(name)
+        entry = self.index.get(name)
+        if not entry:
+            raise FileNotFoundError("{} not found in {}".format(name, str(self)))
+
+        if entry.type == _FileType.DIRECTORY and not recursive:
+            subdir = entry.get_directory(self)
+            if not subdir.is_empty():
+                raise VirtualDirectoryError("{} is not empty".format(str(subdir)))
+
+        del self.index[name]
         self.__invalidate_digest()
 
     def descend(self, *paths, create=False, follow_symlinks=False):
@@ -378,7 +393,7 @@ class CasBasedDirectory(Directory):
             # pointing to another Directory.
             subdir = existing_entry.get_directory(self)
             if subdir.is_empty():
-                self.delete_entry(name)
+                self.remove(name)
                 fileListResult.overwritten.append(relative_pathname)
                 return True
             else:
@@ -386,7 +401,7 @@ class CasBasedDirectory(Directory):
                 fileListResult.ignored.append(relative_pathname)
                 return False
         else:
-            self.delete_entry(name)
+            self.remove(name)
             fileListResult.overwritten.append(relative_pathname)
             return True
 
@@ -447,7 +462,7 @@ class CasBasedDirectory(Directory):
             if filter_callback and not filter_callback(relative_pathname):
                 if is_dir and create_subdir and dest_subdir.is_empty():
                     # Complete subdirectory has been filtered out, remove it
-                    self.delete_entry(name)
+                    self.remove(name)
 
                 # Entry filtered out, move to next
                 continue

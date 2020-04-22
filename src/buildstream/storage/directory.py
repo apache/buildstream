@@ -297,6 +297,15 @@ class Directory:
         """
         raise NotImplementedError()
 
+    def remove(self, *paths: str, recursive: bool = False):
+        """ Remove a file, symlink or directory. Symlinks are not followed.
+
+        Args:
+          *paths: A list of strings which are all path components.
+          recursive: True to delete non-empty directories.
+        """
+        raise NotImplementedError()
+
     def _create_empty_file(self, *paths):
         with self.open_file(*paths, mode="w"):
             pass
