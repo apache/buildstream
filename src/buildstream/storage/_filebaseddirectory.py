@@ -312,6 +312,17 @@ class FileBasedDirectory(Directory):
         else:
             os.unlink(newpath)
 
+    def rename(self, src, dest):
+        # Use descend() to avoid following symlinks (potentially escaping the sandbox)
+        srcdir = self.descend(*src[:-1])
+        destdir = self.descend(*dest[:-1])
+        srcpath = os.path.join(srcdir.external_directory, src[-1])
+        destpath = os.path.join(destdir.external_directory, dest[-1])
+
+        if destdir.exists(dest[-1]):
+            destdir.remove(dest[-1])
+        os.rename(srcpath, destpath)
+
     def __iter__(self):
         yield from os.listdir(self.external_directory)
 

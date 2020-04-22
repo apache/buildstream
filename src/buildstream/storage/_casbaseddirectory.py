@@ -319,6 +319,17 @@ class CasBasedDirectory(Directory):
         del self.index[name]
         self.__invalidate_digest()
 
+    def rename(self, src, dest):
+        srcdir = self.descend(*src[:-1])
+        entry = srcdir._entry_from_path(src[-1])
+
+        destdir = self.descend(*dest[:-1])
+        self.__validate_path_component(dest[-1])
+
+        srcdir.remove(src[-1], recursive=True)
+        entry.name = dest[-1]
+        destdir._add_entry(entry)
+
     def descend(self, *paths, create=False, follow_symlinks=False):
         """Descend one or more levels of directory hierarchy and return a new
         Directory object for that directory.

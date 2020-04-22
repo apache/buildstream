@@ -306,6 +306,16 @@ class Directory:
         """
         raise NotImplementedError()
 
+    def rename(self, src: List[str], dest: List[str]):
+        """ Rename a file, symlink or directory. If destination path exists
+        already and is a file or empty directory, it will be replaced.
+
+        Args:
+          *src: Source path components.
+          *dest: Destination path components.
+        """
+        raise NotImplementedError()
+
     def _create_empty_file(self, *paths):
         with self.open_file(*paths, mode="w"):
             pass
