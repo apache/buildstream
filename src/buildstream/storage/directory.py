@@ -33,6 +33,7 @@ See also: :ref:`sandboxing`.
 
 
 import os
+import stat
 from typing import Callable, Optional, Union, List
 
 from .._exceptions import BstError
@@ -220,6 +221,54 @@ class Directory:
           A `os.stat_result` object.
         """
         raise NotImplementedError()
+
+    def isfile(self, *paths: str, follow_symlinks: bool = False) -> bool:
+        """ Check whether the specified path is an existing regular file.
+
+        Args:
+          *paths: A list of strings which are all path components.
+          follow_symlinks: True to follow symlinks.
+
+        Returns:
+          True if the path is an existing regular file, False otherwise.
+        """
+        try:
+            st = self.stat(*paths, follow_symlinks=follow_symlinks)
+            return stat.S_ISREG(st.st_mode)
+        except (VirtualDirectoryError, FileNotFoundError):
+            return False
+
+    def isdir(self, *paths: str, follow_symlinks: bool = False) -> bool:
+        """ Check whether the specified path is an existing directory.
+
+        Args:
+          *paths: A list of strings which are all path components.
+          follow_symlinks: True to follow symlinks.
+
+        Returns:
+          True if the path is an existing directory, False otherwise.
+        """
+        try:
+            st = self.stat(*paths, follow_symlinks=follow_symlinks)
+            return stat.S_ISDIR(st.st_mode)
+        except (VirtualDirectoryError, FileNotFoundError):
+            return False
+
+    def islink(self, *paths: str, follow_symlinks: bool = False) -> bool:
+        """ Check whether the specified path is an existing symlink.
+
+        Args:
+          *paths: A list of strings which are all path components.
+          follow_symlinks: True to follow symlinks.
+
+        Returns:
+          True if the path is an existing symlink, False otherwise.
+        """
+        try:
+            st = self.stat(*paths, follow_symlinks=follow_symlinks)
+            return stat.S_ISLNK(st.st_mode)
+        except (VirtualDirectoryError, FileNotFoundError):
+            return False
 
     def open_file(self, *paths: str, mode: str = "r"):
         """ Open file and return a corresponding file object. In text mode,
