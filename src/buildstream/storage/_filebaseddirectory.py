@@ -268,6 +268,13 @@ class FileBasedDirectory(Directory):
         if "r" in mode:
             return open(newpath, mode=mode, encoding=encoding)
         else:
+            if "x" in mode:
+                # This check is not atomic, however, we're operating with a
+                # single thread in a private directory tree.
+                if subdir.exists(path[-1]):
+                    raise FileExistsError("{} already exists in {}".format(path[-1], str(subdir)))
+                mode = "w" + mode[1:]
+
             return utils.save_file_atomic(newpath, mode=mode, encoding=encoding)
 
     def __str__(self):
