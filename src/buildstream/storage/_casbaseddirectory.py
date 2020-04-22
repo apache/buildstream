@@ -884,6 +884,13 @@ class CasBasedDirectory(Directory):
 
         return entry.digest.hash
 
+    def readlink(self, *path):
+        entry = self._entry_from_path(*path)
+        if entry.type != _FileType.SYMLINK:
+            raise VirtualDirectoryError("Unsupported file type for readlink: {}".format(entry.type))
+
+        return entry.target
+
     def __iter__(self):
         yield from self.index.keys()
 

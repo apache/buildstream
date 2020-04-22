@@ -289,6 +289,14 @@ class Directory:
         """
         raise NotImplementedError()
 
+    def readlink(self, *paths: str) -> str:
+        """ Return a string representing the path to which the symbolic link points.
+
+        Args:
+          *paths: A list of strings which are all path components.
+        """
+        raise NotImplementedError()
+
     def _create_empty_file(self, *paths):
         with self.open_file(*paths, mode="w"):
             pass

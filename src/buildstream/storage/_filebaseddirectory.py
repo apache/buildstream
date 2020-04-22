@@ -265,6 +265,15 @@ class FileBasedDirectory(Directory):
         newpath = os.path.join(subdir.external_directory, path[-1])
         return utils.sha256sum(newpath)
 
+    def readlink(self, *path):
+        # Use descend() to avoid following symlinks (potentially escaping the sandbox)
+        subdir = self.descend(*path[:-1])
+        if subdir.exists(path[-1]) and not subdir.islink(path[-1]):
+            raise VirtualDirectoryError("Unsupported file type for readlink")
+
+        newpath = os.path.join(subdir.external_directory, path[-1])
+        return os.readlink(newpath)
+
     def open_file(self, *path: str, mode: str = "r"):
         # Use descend() to avoid following symlinks (potentially escaping the sandbox)
         subdir = self.descend(*path[:-1])
