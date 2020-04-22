@@ -734,7 +734,7 @@ class CasBasedDirectory(Directory):
         if entry and entry.type != _FileType.REGULAR_FILE:
             raise VirtualDirectoryError("{} in {} is not a file".format(path[-1], str(subdir)))
 
-        if mode not in ["r", "rb", "w", "wb", "x", "xb"]:
+        if mode not in ["r", "rb", "w", "wb", "w+", "w+b", "x", "xb", "x+", "x+b"]:
             raise ValueError("Unsupported mode: `{}`".format(mode))
 
         if "b" in mode:

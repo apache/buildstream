@@ -257,7 +257,7 @@ class FileBasedDirectory(Directory):
         subdir = self.descend(*path[:-1])
         newpath = os.path.join(subdir.external_directory, path[-1])
 
-        if mode not in ["r", "rb", "w", "wb", "x", "xb"]:
+        if mode not in ["r", "rb", "w", "wb", "w+", "w+b", "x", "xb", "x+", "x+b"]:
             raise ValueError("Unsupported mode: `{}`".format(mode))
 
         if "b" in mode:
