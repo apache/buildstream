@@ -280,6 +280,15 @@ class Directory:
         """
         raise NotImplementedError()
 
+    def file_digest(self, *paths: str) -> str:
+        """ Return a digest of a file. The digest algorithm is implementation-
+        defined.
+
+        Args:
+          *paths: A list of strings which are all path components.
+        """
+        raise NotImplementedError()
+
     def _create_empty_file(self, *paths):
         with self.open_file(*paths, mode="w"):
             pass

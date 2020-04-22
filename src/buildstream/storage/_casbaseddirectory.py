@@ -877,6 +877,13 @@ class CasBasedDirectory(Directory):
 
         return os.stat_result((st_mode, 0, 0, st_nlink, 0, 0, st_size, st_mtime, st_mtime, st_mtime))
 
+    def file_digest(self, *path):
+        entry = self._entry_from_path(*path)
+        if entry.type != _FileType.REGULAR_FILE:
+            raise VirtualDirectoryError("Unsupported file type for digest: {}".format(entry.type))
+
+        return entry.digest.hash
+
     def __iter__(self):
         yield from self.index.keys()
 
