@@ -77,20 +77,13 @@ we can define the following filter, ``filter-foo.bst``:
    kind: filter
 
    # Declare the sole build-dependency of the filter element
-   depends:
-   - filename: import.bst
-     type: build
+   build-depends:
+   - import.bst
 
    # Declare a list of domains to include in the filter's artifact
    config:
      include:
      - foo
-
-.. note::
-
-   We can also specify build-dependencies with a 'build-depends' field which has been
-   available since :ref:`format version 14 <project_format_version>`. See the
-   :ref:`Build-Depends documentation <format_build_depends>` for more detail.
 
 It should be noted that an 'empty' ``include:`` list would, by default, include all
 split-rules specified in the parent element, which, in this example, would be the
@@ -104,9 +97,8 @@ only contains the file 'foo') by declaring the following element, ``exclude-bar.
    kind: filter
 
    # Declare the sole build-dependency of the filter element
-   depends:
-   - filename: import.bst
-     type: build
+   build-depends:
+   - import.bst
 
    # Declare a list of domains to exclude in the filter's artifact
    config:
@@ -123,9 +115,8 @@ which are not included as split rules we can define the following element, ``fil
    kind: filter
 
    # Declare the sole build-dependency of the filter element
-   depends:
-   - filename: import.bst
-     type: build
+   build-depends:
+   - import.bst
 
    # Filter out all files which are not declared as split rules
    config:
