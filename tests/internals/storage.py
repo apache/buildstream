@@ -2,7 +2,9 @@ from contextlib import contextmanager
 import os
 import pprint
 import shutil
+import stat
 import glob
+import hashlib
 from pathlib import Path
 from typing import List, Optional
 
@@ -11,7 +13,7 @@ import pytest
 from buildstream._cas import CASCache
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
-from buildstream.storage.directory import _FileType
+from buildstream.storage.directory import _FileType, VirtualDirectoryError
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "storage")
 
@@ -19,7 +21,9 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "storage")
 @contextmanager
 def setup_backend(backend_class, tmpdir):
     if backend_class == FileBasedDirectory:
-        yield backend_class(os.path.join(tmpdir, "vdir"))
+        path = os.path.join(tmpdir, "vdir")
+        os.mkdir(path)
+        yield backend_class(path)
     else:
         cas_cache = CASCache(os.path.join(tmpdir, "cas"), log_directory=os.path.join(tmpdir, "logs"))
         try:
@@ -214,6 +218,94 @@ def _test_merge_dirs(
         assert sorted(list(make_info(e) for e in combined), key=lambda x: x["name"]) == sorted(
             list(make_info(e) for e in list_paths_with_properties(c)), key=lambda x: x["name"]
         )
+
+
+@pytest.mark.parametrize("backend", [FileBasedDirectory, CasBasedDirectory])
+@pytest.mark.datafiles(DATA_DIR)
+def test_file_types(tmpdir, datafiles, backend):
+    with setup_backend(backend, str(tmpdir)) as c:
+        c.import_files(os.path.join(str(datafiles), "merge-link"))
+
+        # Test __iter__
+        assert set(c) == {"link", "root-file", "subdirectory"}
+
+        assert c.exists("root-file")
+        assert c.isfile("root-file")
+        assert not c.isdir("root-file")
+        assert not c.islink("root-file")
+
+        st = c.stat("root-file")
+        assert stat.S_ISREG(st.st_mode)
+
+        assert c.exists("link")
+        assert c.islink("link")
+        assert not c.isfile("link")
+        assert c.readlink("link") == "root-file"
+
+        st = c.stat("link")
+        assert stat.S_ISLNK(st.st_mode)
+
+        assert c.exists("subdirectory")
+        assert c.isdir("subdirectory")
+        assert not c.isfile("subdirectory")
+        subdir = c.descend("subdirectory")
+        assert set(subdir) == {"subdir-file"}
+
+        st = c.stat("subdirectory")
+        assert stat.S_ISDIR(st.st_mode)
+
+
+@pytest.mark.parametrize("backend", [FileBasedDirectory, CasBasedDirectory])
+@pytest.mark.datafiles(DATA_DIR)
+def test_open_file(tmpdir, datafiles, backend):
+    with setup_backend(backend, str(tmpdir)) as c:
+        assert not c.isfile("hello")
+
+        with c.open_file("hello", mode="w") as f:
+            f.write("world")
+        assert c.isfile("hello")
+
+        assert c.file_digest("hello") == hashlib.sha256(b"world").hexdigest()
+
+        with c.open_file("hello", mode="r") as f:
+            assert f.read() == "world"
+
+
+@pytest.mark.parametrize("backend", [FileBasedDirectory, CasBasedDirectory])
+@pytest.mark.datafiles(DATA_DIR)
+def test_remove(tmpdir, datafiles, backend):
+    with setup_backend(backend, str(tmpdir)) as c:
+        c.import_files(os.path.join(str(datafiles), "merge-link"))
+
+        with pytest.raises((OSError, VirtualDirectoryError)):
+            c.remove("subdirectory")
+
+        with pytest.raises(FileNotFoundError):
+            c.remove("subdirectory", "does-not-exist")
+
+        # Check that `remove()` doesn't follow symlinks
+        c.remove("link")
+        assert not c.exists("link")
+        assert c.exists("root-file")
+
+        c.remove("subdirectory", recursive=True)
+        assert not c.exists("subdirectory")
+
+        # Removing an empty directory does not require recursive=True
+        c.descend("empty-directory", create=True)
+        c.remove("empty-directory")
+
+
+@pytest.mark.parametrize("backend", [FileBasedDirectory, CasBasedDirectory])
+@pytest.mark.datafiles(DATA_DIR)
+def test_rename(tmpdir, datafiles, backend):
+    with setup_backend(backend, str(tmpdir)) as c:
+        c.import_files(os.path.join(str(datafiles), "original"))
+
+        c.rename(["bin", "hello"], ["bin", "hello2"])
+        c.rename(["bin"], ["bin2"])
+
+        assert c.isfile("bin2", "hello2")
 
 
 # This is purely for error output; lists relative paths and
