@@ -1,4 +1,4 @@
-.TH "BST SHOW" "1" "31-Oct-2019" "" "bst show Manual"
+.TH "BST SHOW" "1" "2020-04-23" "" "bst show Manual"
 .SH NAME
 bst\-show \- Show elements in the pipeline
 .SH SYNOPSIS
@@ -17,7 +17,7 @@ is to show the workspace element.
 By default this will show all of the dependencies of the
 specified target element.
 .PP
-Specify `--deps` to control which elements to show:
+Specify ``--deps`` to control which elements to show:
 .PP
 
     none:  No dependencies, just the element itself
@@ -26,17 +26,16 @@ Specify `--deps` to control which elements to show:
     build: Build time dependencies, excluding the element itself
     all:   All dependencies
 .PP
-
-FORMAT
-~~~~~~
-The --format option controls what should be printed for each element,
+**FORMAT**
+.PP
+The ``--format`` option controls what should be printed for each element,
 the following symbols can be used in the format string:
 .PP
 
     %{name}           The element name
     %{key}            The abbreviated cache key (if all sources are consistent)
     %{full-key}       The full cache key (if all sources are consistent)
-    %{state}          cached, buildable, waiting or inconsistent
+    %{state}          cached, buildable, waiting, inconsistent or junction
     %{config}         The element configuration
     %{vars}           Variable configuration
     %{env}            Environment settings
@@ -49,7 +48,7 @@ the following symbols can be used in the format string:
 .PP
 The value of the %{symbol} without the leading '%' character is understood
 as a pythonic formatting string, so python formatting features apply,
-examle:
+example:
 .PP
 
     bst show target.bst --format \
