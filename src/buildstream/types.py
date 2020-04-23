@@ -222,6 +222,9 @@ class _PipelineSelection(FastEnum):
     # including the targets
     RUN = "run"
 
+    def __str__(self):
+        return self.value
+
 
 ########################################
 #           Type aliases               #
