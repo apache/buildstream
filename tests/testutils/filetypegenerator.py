@@ -63,7 +63,12 @@ def generate_file_types(path):
     os.chdir(parent)
 
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    s.bind(child)
-    os.chdir(old_dir)
-    yield
+
+    try:
+        s.bind(child)
+        os.chdir(old_dir)
+        yield
+    finally:
+        s.close()
+
     clean()

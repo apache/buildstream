@@ -227,9 +227,9 @@ def test_build_checkout_tar_with_unconventional_name(datafiles, cli):
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
 
-    tar = tarfile.open(name=checkout, mode="r")
-    assert os.path.join(".", "usr", "bin", "hello") in tar.getnames()
-    assert os.path.join(".", "usr", "include", "pony.h") in tar.getnames()
+    with tarfile.open(name=checkout, mode="r") as tar:
+        assert os.path.join(".", "usr", "bin", "hello") in tar.getnames()
+        assert os.path.join(".", "usr", "include", "pony.h") in tar.getnames()
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -266,9 +266,9 @@ def test_build_checkout_tar_no_compression(datafiles, cli):
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
 
-    tar = tarfile.open(name=checkout, mode="r:gz")
-    assert os.path.join(".", "usr", "bin", "hello") in tar.getnames()
-    assert os.path.join(".", "usr", "include", "pony.h") in tar.getnames()
+    with tarfile.open(name=checkout, mode="r:gz") as tar:
+        assert os.path.join(".", "usr", "bin", "hello") in tar.getnames()
+        assert os.path.join(".", "usr", "include", "pony.h") in tar.getnames()
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -291,17 +291,16 @@ def test_build_checkout_tarball(datafiles, cli):
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
 
-    tar = tarfile.TarFile(checkout)
+    with tarfile.TarFile(checkout) as tar:
+        tarinfo = tar.getmember(os.path.join(".", "usr", "bin", "hello"))
+        assert tarinfo.mode == 0o755
+        assert tarinfo.uid == 0 and tarinfo.gid == 0
+        assert tarinfo.uname == "" and tarinfo.gname == ""
 
-    tarinfo = tar.getmember(os.path.join(".", "usr", "bin", "hello"))
-    assert tarinfo.mode == 0o755
-    assert tarinfo.uid == 0 and tarinfo.gid == 0
-    assert tarinfo.uname == "" and tarinfo.gname == ""
-
-    tarinfo = tar.getmember(os.path.join(".", "usr", "include", "pony.h"))
-    assert tarinfo.mode == 0o644
-    assert tarinfo.uid == 0 and tarinfo.gid == 0
-    assert tarinfo.uname == "" and tarinfo.gname == ""
+        tarinfo = tar.getmember(os.path.join(".", "usr", "include", "pony.h"))
+        assert tarinfo.mode == 0o644
+        assert tarinfo.uid == 0 and tarinfo.gid == 0
+        assert tarinfo.uname == "" and tarinfo.gname == ""
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -340,8 +339,8 @@ def test_build_checkout_tarball_using_ref(datafiles, cli):
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
 
-    tar = tarfile.TarFile(checkout)
-    assert os.path.join(".", "etc", "buildstream", "config") in tar.getnames()
+    with tarfile.TarFile(checkout) as tar:
+        assert os.path.join(".", "etc", "buildstream", "config") in tar.getnames()
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -436,11 +435,9 @@ def test_build_checkout_tarball_compression(datafiles, cli, compression):
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
 
-    # Docs say not to use TarFile class directly, using .open seems to work.
-    # https://docs.python.org/3/library/tarfile.html#tarfile.TarFile
-    tar = tarfile.open(name=checkout, mode="r:" + compression)
-    assert os.path.join(".", "usr", "bin", "hello") in tar.getnames()
-    assert os.path.join(".", "usr", "include", "pony.h") in tar.getnames()
+    with tarfile.open(name=checkout, mode="r:" + compression) as tar:
+        assert os.path.join(".", "usr", "bin", "hello") in tar.getnames()
+        assert os.path.join(".", "usr", "include", "pony.h") in tar.getnames()
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -463,9 +460,9 @@ def test_build_checkout_tarball_stdout(datafiles, cli):
     with open(tarball, "wb") as f:
         f.write(result.output)
 
-    tar = tarfile.TarFile(tarball)
-    assert os.path.join(".", "usr", "bin", "hello") in tar.getnames()
-    assert os.path.join(".", "usr", "include", "pony.h") in tar.getnames()
+    with tarfile.TarFile(tarball) as tar:
+        assert os.path.join(".", "usr", "bin", "hello") in tar.getnames()
+        assert os.path.join(".", "usr", "include", "pony.h") in tar.getnames()
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -480,12 +477,12 @@ def test_build_checkout_tarball_mtime_nonzero(datafiles, cli):
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
 
-    tar = tarfile.TarFile(tarpath)
-    for tarinfo in tar.getmembers():
-        # An mtime of zero can be confusing to other software,
-        # e.g. ninja build and template toolkit have both taken zero mtime to
-        # mean 'file does not exist'.
-        assert tarinfo.mtime > 0
+    with tarfile.TarFile(tarpath) as tar:
+        for tarinfo in tar.getmembers():
+            # An mtime of zero can be confusing to other software,
+            # e.g. ninja build and template toolkit have both taken zero mtime to
+            # mean 'file does not exist'.
+            assert tarinfo.mtime > 0
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -548,9 +545,12 @@ def test_build_checkout_tarball_links(datafiles, cli):
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
 
-    tar = tarfile.open(name=checkout, mode="r:")
-    tar.extractall(extract)
-    assert open(os.path.join(extract, "basicfolder", "basicsymlink")).read() == "file contents\n"
+    with tarfile.open(name=checkout, mode="r:") as tar:
+        tar.extractall(extract)
+
+    with open(os.path.join(extract, "basicfolder", "basicsymlink")) as fp:
+        data = fp.read()
+    assert data == "file contents\n"
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -578,7 +578,9 @@ def test_build_checkout_links(datafiles, cli):
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
 
-    assert open(os.path.join(checkout, "basicfolder", "basicsymlink")).read() == "file contents\n"
+    with open(os.path.join(checkout, "basicfolder", "basicsymlink")) as fp:
+        data = fp.read()
+    assert data == "file contents\n"
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -680,9 +682,9 @@ def test_build_checkout_force_tarball(datafiles, cli):
     result = cli.run(project=project, args=checkout_args)
     result.assert_success()
 
-    tar = tarfile.TarFile(tarball)
-    assert os.path.join(".", "usr", "bin", "hello") in tar.getnames()
-    assert os.path.join(".", "usr", "include", "pony.h") in tar.getnames()
+    with tarfile.TarFile(tarball) as tar:
+        assert os.path.join(".", "usr", "bin", "hello") in tar.getnames()
+        assert os.path.join(".", "usr", "include", "pony.h") in tar.getnames()
 
 
 @pytest.mark.datafiles(DATA_DIR)
