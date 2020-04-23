@@ -46,6 +46,7 @@ repo_kinds = ALL_REPO_KINDS
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+BASE_FILENAME = os.path.basename(__file__)
 
 
 class WorkspaceCreator:
@@ -658,7 +659,7 @@ def test_list(cli, tmpdir, datafiles):
     ids=["project-no-guess", "workspace-guess", "workspace-no-guess"],
 )
 def test_build(cli, tmpdir_factory, datafiles, kind, strict, from_workspace, guess_element):
-    tmpdir = tmpdir_factory.mktemp("")
+    tmpdir = tmpdir_factory.mktemp(BASE_FILENAME)
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, kind, False)
     checkout = os.path.join(str(tmpdir), "checkout")
     args_dir = ["-C", workspace] if from_workspace else []
@@ -989,7 +990,7 @@ def test_multiple_failed_builds(cli, tmpdir, datafiles):
 def test_external_fetch(cli, datafiles, tmpdir_factory, subdir, guess_element):
     # An element with an open workspace can't be fetched, but we still expect fetches
     # to fetch any dependencies
-    tmpdir = tmpdir_factory.mktemp("")
+    tmpdir = tmpdir_factory.mktemp(BASE_FILENAME)
     depend_element = "fetchable.bst"
 
     # Create an element to fetch (local sources do not need to fetch)
@@ -1021,7 +1022,7 @@ def test_external_fetch(cli, datafiles, tmpdir_factory, subdir, guess_element):
 @pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
 def test_external_push_pull(cli, datafiles, tmpdir_factory, guess_element):
     # Pushing and pulling to/from an artifact cache works from an external workspace
-    tmpdir = tmpdir_factory.mktemp("")
+    tmpdir = tmpdir_factory.mktemp(BASE_FILENAME)
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "git")
     arg_elm = [element_name] if not guess_element else []
 
@@ -1044,7 +1045,7 @@ def test_external_push_pull(cli, datafiles, tmpdir_factory, guess_element):
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
 def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
-    tmpdir = tmpdir_factory.mktemp("")
+    tmpdir = tmpdir_factory.mktemp(BASE_FILENAME)
     element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "git")
     element_file = os.path.join(str(datafiles), "elements", element_name)
     arg_elm = [element_name] if not guess_element else []
@@ -1080,8 +1081,8 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
 @pytest.mark.datafiles(DATA_DIR)
 def test_external_open_other(cli, datafiles, tmpdir_factory):
     # From inside an external workspace, open another workspace
-    tmpdir1 = tmpdir_factory.mktemp("")
-    tmpdir2 = tmpdir_factory.mktemp("")
+    tmpdir1 = tmpdir_factory.mktemp(BASE_FILENAME)
+    tmpdir2 = tmpdir_factory.mktemp(BASE_FILENAME)
     # Making use of the assumption that it's the same project in both invocations of open_workspace
     _, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", suffix="-alpha")
     beta_element, _, beta_workspace = open_workspace(cli, tmpdir2, datafiles, "git", suffix="-beta")
@@ -1101,8 +1102,8 @@ def test_external_open_other(cli, datafiles, tmpdir_factory):
 @pytest.mark.datafiles(DATA_DIR)
 def test_external_close_other(cli, datafiles, tmpdir_factory):
     # From inside an external workspace, close the other workspace
-    tmpdir1 = tmpdir_factory.mktemp("")
-    tmpdir2 = tmpdir_factory.mktemp("")
+    tmpdir1 = tmpdir_factory.mktemp(BASE_FILENAME)
+    tmpdir2 = tmpdir_factory.mktemp(BASE_FILENAME)
     # Making use of the assumption that it's the same project in both invocations of open_workspace
     _, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", suffix="-alpha")
     beta_element, _, _ = open_workspace(cli, tmpdir2, datafiles, "git", suffix="-beta")
@@ -1116,8 +1117,8 @@ def test_external_close_other(cli, datafiles, tmpdir_factory):
 @pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
 def test_external_close_self(cli, datafiles, tmpdir_factory, guess_element):
     # From inside an external workspace, close it
-    tmpdir1 = tmpdir_factory.mktemp("")
-    tmpdir2 = tmpdir_factory.mktemp("")
+    tmpdir1 = tmpdir_factory.mktemp(BASE_FILENAME)
+    tmpdir2 = tmpdir_factory.mktemp(BASE_FILENAME)
     # Making use of the assumption that it's the same project in both invocations of open_workspace
     alpha_element, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", suffix="-alpha")
     _, _, _ = open_workspace(cli, tmpdir2, datafiles, "git", suffix="-beta")
@@ -1130,8 +1131,8 @@ def test_external_close_self(cli, datafiles, tmpdir_factory, guess_element):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_external_reset_other(cli, datafiles, tmpdir_factory):
-    tmpdir1 = tmpdir_factory.mktemp("")
-    tmpdir2 = tmpdir_factory.mktemp("")
+    tmpdir1 = tmpdir_factory.mktemp(BASE_FILENAME)
+    tmpdir2 = tmpdir_factory.mktemp(BASE_FILENAME)
     # Making use of the assumption that it's the same project in both invocations of open_workspace
     _, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", suffix="-alpha")
     beta_element, _, _ = open_workspace(cli, tmpdir2, datafiles, "git", suffix="-beta")
@@ -1157,7 +1158,7 @@ def test_external_reset_self(cli, datafiles, tmpdir, guess_element):
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_external_list(cli, datafiles, tmpdir_factory):
-    tmpdir = tmpdir_factory.mktemp("")
+    tmpdir = tmpdir_factory.mktemp(BASE_FILENAME)
     # Making use of the assumption that it's the same project in both invocations of open_workspace
     _, project, workspace = open_workspace(cli, tmpdir, datafiles, "git")
 

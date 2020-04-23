@@ -35,7 +35,7 @@ def generate_remote_import_element(input_path, output_path):
     ids=["workspace-guess", "workspace-no-guess", "no-workspace-no-guess"],
 )
 def test_source_checkout(datafiles, cli, tmpdir_factory, with_workspace, guess_element):
-    tmpdir = tmpdir_factory.mktemp("")
+    tmpdir = tmpdir_factory.mktemp(os.path.basename(__file__))
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "source-checkout")
     target = "checkout-deps.bst"
