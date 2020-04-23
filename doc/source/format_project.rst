@@ -42,34 +42,41 @@ of your project.
    underscores, and may not start with a leading digit.
 
 
-.. _project_format_version:
+.. _project_min_version:
 
-Format version
-~~~~~~~~~~~~~~
+Minimum version
+~~~~~~~~~~~~~~~
 The BuildStream format is guaranteed to be backwards compatible
-with any earlier releases. The project's minimum required format
-version of BuildStream can be specified in ``project.conf`` with
-the ``format-version`` field, e.g.:
+with any earlier minor point releases, which is to say that
+BuildStream 1.4 can read projects written for BuildStream 1.0,
+and that BuildStream 2.2 can read projects written for BuildStream 2.0.
+
+Projects are required to specify the minimum version of BuildStream
+which it requires, this allows project authors to convey a useful
+error message to their users and peers, in the case that a user needs
+to get a newer version of BuildStream in order to work with a given
+project.
+
+The project's minimum required BuildStream version must be specified
+in ``project.conf`` using the ``min-version`` field, e.g.:
 
 .. code:: yaml
 
-  # The minimum base BuildStream format
-  format-version: 18
+  # This project uses features which were added in 2.2
+  min-version: 2.2
 
-BuildStream will increment its core YAML format version at least once
-in any given minor point release where the format has been extended
-to support a new feature.
+It is recommended that when using new features, always consult this
+documentation and observe which BuildStream version a feature you are
+using was added in. If a feature in the BuildStream YAML format is
+not documented with a specific *Since* version, you can assume that
+it has been there from the beginning.
+
 
 .. note::
 
    External :mod:`Element <buildstream.element>` and :mod:`Source <buildstream.source>`
    plugins also implement their own YAML configuration fragments and as
-   such are revisioned separately from the core format. See :ref:`project_plugins`
-   for details on specifying a minimum version of a specific plugin.
-
-   Core :mod:`Elements <buildstream.element>` and :mod:`Sources <buildstream.source>`
-   which are maintained and distributed as a part of BuildStream are revisioned
-   under the same global ``format-version`` described here.
+   such are revisioned separately from the core format.
 
 
 .. _project_element_path:
