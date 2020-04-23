@@ -177,7 +177,6 @@ class Stream:
     #    element (Element): An Element object to run the shell for
     #    scope (Scope): The scope for the shell (Scope.BUILD or Scope.RUN)
     #    prompt (str): The prompt to display in the shell
-    #    directory (str): A directory where an existing prestaged sysroot is expected, or None
     #    mounts (list of HostMount): Additional directories to mount into the sandbox
     #    isolate (bool): Whether to isolate the environment like we do in builds
     #    command (list): An argv to launch in the sandbox, or None
@@ -194,7 +193,6 @@ class Stream:
         scope,
         prompt,
         *,
-        directory=None,
         mounts=None,
         isolate=False,
         command=None,
@@ -207,30 +205,26 @@ class Stream:
         if unique_id and element is None:
             element = Plugin._lookup(unique_id)
 
-        # Assert we have everything we need built, unless the directory is specified
-        # in which case we just blindly trust the directory, using the element
+        # Assert we have everything we need built, using the element
         # definitions to control the execution environment only.
-        if directory is None:
+        if not element._has_all_sources_in_source_cache():
+            raise StreamError(
+                "Sources for element {} are not cached." "Element must be fetched.".format(element._get_full_name())
+            )
 
-            if not element._has_all_sources_in_source_cache():
+        missing_deps = [dep for dep in self._pipeline.dependencies([element], scope) if not dep._cached()]
+        if missing_deps:
+            if not pull_dependencies:
                 raise StreamError(
-                    "Sources for element {} are not cached."
-                    "Element must be fetched.".format(element._get_full_name())
+                    "Elements need to be built or downloaded before staging a shell environment",
+                    detail="\n".join(list(map(lambda x: x._get_full_name(), missing_deps))),
                 )
-
-            missing_deps = [dep for dep in self._pipeline.dependencies([element], scope) if not dep._cached()]
-            if missing_deps:
-                if not pull_dependencies:
-                    raise StreamError(
-                        "Elements need to be built or downloaded before staging a shell environment",
-                        detail="\n".join(list(map(lambda x: x._get_full_name(), missing_deps))),
-                    )
-                self._message(MessageType.INFO, "Attempting to fetch missing or incomplete artifacts")
-                self._scheduler.clear_queues()
-                self._add_queue(PullQueue(self._scheduler))
-                plan = self._pipeline.add_elements([element], missing_deps)
-                self._enqueue_plan(plan)
-                self._run()
+            self._message(MessageType.INFO, "Attempting to fetch missing or incomplete artifacts")
+            self._scheduler.clear_queues()
+            self._add_queue(PullQueue(self._scheduler))
+            plan = self._pipeline.add_elements([element], missing_deps)
+            self._enqueue_plan(plan)
+            self._run()
 
         buildtree = False
         # Check if we require a pull queue attempt, with given artifact state and context
@@ -258,7 +252,7 @@ class Stream:
                 buildtree = True
 
         return element._shell(
-            scope, directory, mounts=mounts, isolate=isolate, prompt=prompt, command=command, usebuildtree=buildtree
+            scope, mounts=mounts, isolate=isolate, prompt=prompt, command=command, usebuildtree=buildtree
         )
 
     # build()
@@ -560,7 +554,7 @@ class Stream:
                 _PipelineSelection.NONE: Scope.NONE,
                 _PipelineSelection.ALL: Scope.ALL,
             }
-            with target._prepare_sandbox(scope=scope[selection], directory=None, integrate=integrate) as sandbox:
+            with target._prepare_sandbox(scope=scope[selection], integrate=integrate) as sandbox:
                 # Copy or move the sandbox to the target directory
                 virdir = sandbox.get_virtual_directory()
                 self._export_artifact(tar, location, compression, target, hardlinks, virdir)
