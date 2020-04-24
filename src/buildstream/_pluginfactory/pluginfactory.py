@@ -20,9 +20,9 @@
 import os
 import inspect
 
-from ._exceptions import PluginError, LoadError
-from .exceptions import LoadErrorReason
-from . import utils
+from .._exceptions import PluginError
+
+from .pluginorigin import PluginOrigin, PluginOriginType
 
 
 # A Context for loading plugin types
@@ -32,9 +32,6 @@ from . import utils
 #     base_type (type):         A base object type for this context
 #     site_plugin_path (str):   Path to where buildstream keeps plugins
 #     entrypoint_group (str):   Name of the entry point group that provides plugins
-#     plugin_origins (list):    Data used to search for plugins
-#     format_versions (dict):   A dict of meta.kind to the integer minimum
-#                               version number for each plugin to be loaded
 #
 # Since multiple pipelines can be processed recursively
 # within the same interpretor, it's important that we have
@@ -43,16 +40,8 @@ from . import utils
 # a given BuildStream project are isolated to their respective
 # Pipelines.
 #
-class PluginContext:
-    def __init__(
-        self, plugin_base, base_type, site_plugin_path, entrypoint_group, *, plugin_origins=None, format_versions={}
-    ):
-
-        # For pickling across processes, make sure this context has a unique
-        # identifier, which we prepend to the identifier of each PluginSource.
-        # This keeps plugins loaded during the first and second pass distinct
-        # from eachother.
-        self._identifier = str(id(self))
+class PluginFactory:
+    def __init__(self, plugin_base, base_type, site_plugin_path, entrypoint_group):
 
         # The plugin kinds which were loaded
         self.loaded_dependencies = []
@@ -60,16 +49,22 @@ class PluginContext:
         #
         # Private members
         #
+
+        # For pickling across processes, make sure this context has a unique
+        # identifier, which we prepend to the identifier of each PluginSource.
+        # This keeps plugins loaded during the first and second pass distinct
+        # from eachother.
+        self._identifier = str(id(self))
+
         self._base_type = base_type  # The base class plugins derive from
         self._types = {}  # Plugin type lookup table by kind
-        self._plugin_origins = plugin_origins or []
+        self._origins = {}  # PluginOrigin lookup table by kind
 
         # The PluginSource object
         self._plugin_base = plugin_base
         self._site_plugin_path = site_plugin_path
         self._entrypoint_group = entrypoint_group
         self._alternate_sources = {}
-        self._format_versions = format_versions
 
         self._init_site_source()
 
@@ -126,6 +121,23 @@ class PluginContext:
     #
     def lookup(self, kind):
         return self._ensure_plugin(kind)
+
+    # register_plugin_origin():
+    #
+    # Registers the PluginOrigin to use for the given plugin kind
+    #
+    # Args:
+    #    kind (str): The kind identifier of the Plugin
+    #    origin (PluginOrigin): The PluginOrigin providing the plugin
+    #
+    def register_plugin_origin(self, kind: str, origin: PluginOrigin):
+        if kind in self._origins:
+            raise PluginError(
+                "More than one {} plugin registered as kind '{}'".format(self._base_type.__name__, kind),
+                reason="duplicate-plugin",
+            )
+
+        self._origins[kind] = origin
 
     # all_loaded_plugins():
     #
@@ -186,39 +198,27 @@ class PluginContext:
     def _ensure_plugin(self, kind):
 
         if kind not in self._types:
-            # Check whether the plugin is specified in plugins
             source = None
             defaults = None
-            loaded_dependency = False
 
-            for origin in self._plugin_origins:
-                if kind not in origin.get_str_list("plugins"):
-                    continue
-
-                if origin.get_str("origin") == "local":
-                    local_path = origin.get_str("path")
-                    source = self._get_local_plugin_source(local_path)
-                elif origin.get_str("origin") == "pip":
-                    package_name = origin.get_str("package-name")
-                    source, defaults = self._get_pip_plugin_source(package_name, kind)
+            origin = self._origins.get(kind, None)
+            if origin:
+                # Try getting the plugin source from a registered origin
+                if origin.origin_type == PluginOriginType.LOCAL:
+                    source = self._get_local_plugin_source(origin.path)
+                elif origin.origin_type == PluginOriginType.PIP:
+                    source, defaults = self._get_pip_plugin_source(origin.package_name, kind)
                 else:
-                    raise PluginError(
-                        "Failed to load plugin '{}': "
-                        "Unexpected plugin origin '{}'".format(kind, origin.get_str("origin"))
-                    )
-                loaded_dependency = True
-                break
-
-            # Fall back to getting the source from site
-            if not source:
+                    assert False, "Encountered invalid plugin origin type"
+            else:
+                # Try getting it from the core plugins
                 if kind not in self._site_source.list_plugins():
                     raise PluginError("No {} type registered for kind '{}'".format(self._base_type.__name__, kind))
 
                 source = self._site_source
 
             self._types[kind] = self._load_plugin(source, kind, defaults)
-            if loaded_dependency:
-                self.loaded_dependencies.append(kind)
+            self.loaded_dependencies.append(kind)
 
         return self._types[kind]
 
@@ -248,7 +248,6 @@ class PluginContext:
             ) from e
 
         self._assert_plugin(kind, plugin_type)
-        self._assert_version(kind, plugin_type)
         return (plugin_type, defaults)
 
     def _assert_plugin(self, kind, plugin_type):
@@ -270,37 +269,3 @@ class PluginContext:
                     self._base_type.__name__, kind, self._base_type.__name__
                 )
             ) from e
-
-    def _assert_version(self, kind, plugin_type):
-
-        # Now assert BuildStream version
-        bst_major, bst_minor = utils.get_bst_version()
-
-        req_major = plugin_type.BST_REQUIRED_VERSION_MAJOR
-        req_minor = plugin_type.BST_REQUIRED_VERSION_MINOR
-
-        if (bst_major, bst_minor) < (req_major, req_minor):
-            raise PluginError(
-                "BuildStream {}.{} is too old for {} plugin '{}' (requires {}.{})".format(
-                    bst_major,
-                    bst_minor,
-                    self._base_type.__name__,
-                    kind,
-                    plugin_type.BST_REQUIRED_VERSION_MAJOR,
-                    plugin_type.BST_REQUIRED_VERSION_MINOR,
-                )
-            )
-
-    # _assert_plugin_format()
-    #
-    # Helper to raise a PluginError if the loaded plugin is of a lesser version then
-    # the required version for this plugin
-    #
-    def _assert_plugin_format(self, plugin, version):
-        if plugin.BST_FORMAT_VERSION < version:
-            raise LoadError(
-                "{}: Format version {} is too old for requested version {}".format(
-                    plugin, plugin.BST_FORMAT_VERSION, version
-                ),
-                LoadErrorReason.UNSUPPORTED_PLUGIN,
-            )

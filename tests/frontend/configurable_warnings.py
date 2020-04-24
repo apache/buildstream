@@ -18,9 +18,7 @@ def get_project(fatal_warnings):
         "name": "test",
         "min-version": "2.0",
         "element-path": "elements",
-        "plugins": [
-            {"origin": "local", "path": "plugins", "elements": {"warninga": 0, "warningb": 0, "corewarn": 0,}}
-        ],
+        "plugins": [{"origin": "local", "path": "plugins", "elements": ["warninga", "warningb", "corewarn"]}],
         "fatal-warnings": fatal_warnings,
     }
 

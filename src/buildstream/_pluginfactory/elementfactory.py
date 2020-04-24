@@ -17,50 +17,42 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from . import _site
-from ._plugincontext import PluginContext
-from .source import Source
+from .. import _site
+from ..element import Element
+
+from .pluginfactory import PluginFactory
 
 
-# A SourceFactory creates Source instances
+# A ElementFactory creates Element instances
 # in the context of a given factory
 #
 # Args:
 #     plugin_base (PluginBase): The main PluginBase object to work with
-#     plugin_origins (list):    Data used to search for external Source plugins
 #
-class SourceFactory(PluginContext):
-    def __init__(self, plugin_base, *, format_versions={}, plugin_origins=None):
+class ElementFactory(PluginFactory):
+    def __init__(self, plugin_base):
 
         super().__init__(
-            plugin_base,
-            Source,
-            [_site.source_plugins],
-            "buildstream.plugins.sources",
-            format_versions=format_versions,
-            plugin_origins=plugin_origins,
+            plugin_base, Element, [_site.element_plugins], "buildstream.plugins.elements",
         )
 
     # create():
     #
-    # Create a Source object, the pipeline uses this to create Source
+    # Create an Element object, the pipeline uses this to create Element
     # objects on demand for a given pipeline.
     #
     # Args:
     #    context (object): The Context object for processing
     #    project (object): The project object
-    #    meta (object): The loaded MetaSource
+    #    meta (object): The loaded MetaElement
     #
-    # Returns:
-    #    A newly created Source object of the appropriate kind
+    # Returns: A newly created Element object of the appropriate kind
     #
     # Raises:
     #    PluginError (if the kind lookup failed)
-    #    LoadError (if the source itself took issue with the config)
+    #    LoadError (if the element itself took issue with the config)
     #
     def create(self, context, project, meta):
-        source_type, _ = self.lookup(meta.kind)
-        source = source_type(context, project, meta)
-        version = self._format_versions.get(meta.kind, 0)
-        self._assert_plugin_format(source, version)
-        return source
+        element_type, default_config = self.lookup(meta.kind)
+        element = element_type(context, project, meta, default_config)
+        return element

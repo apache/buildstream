@@ -148,27 +148,6 @@ class Plugin:
         which are included in the buildstream namespace.
     """
 
-    BST_REQUIRED_VERSION_MAJOR = 0
-    """Minimum required major version"""
-
-    BST_REQUIRED_VERSION_MINOR = 0
-    """Minimum required minor version"""
-
-    BST_FORMAT_VERSION = 0
-    """The plugin's YAML format version
-
-    This should be set to ``1`` the first time any new configuration
-    is understood by your :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
-    implementation and subsequently bumped every time your
-    configuration is enhanced.
-
-    .. note::
-
-       Plugins are expected to maintain backward compatibility
-       in the format and configurations they expose. The versioning
-       is intended to track availability of new features only.
-    """
-
     BST_PLUGIN_DEPRECATED = False
     """True if this element plugin has been deprecated.
 
