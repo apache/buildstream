@@ -11,6 +11,9 @@ Core
     through junctions are evaluated with the options defined in the
     sub project the file comes from.
 
+  o BREAKING CHANGE: "format-version" is removed and replaced with "min-version",
+    which is now required to be specified in project.conf.
+
 ==================
 buildstream 1.93.1
 ==================

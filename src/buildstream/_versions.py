@@ -17,21 +17,6 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-
-# The base BuildStream format version
-#
-# This version is bumped whenever enhancements are made
-# to the `project.conf` format or the core element format.
-#
-BST_FORMAT_VERSION = 25
-
-# The mimimum BuildStream format version supported
-#
-# This version is the minimum format version supported by the
-# current buildstream version
-#
-BST_FORMAT_VERSION_MIN = 18
-
 # The base BuildStream artifact version
 #
 # The artifact version changes whenever the cache key

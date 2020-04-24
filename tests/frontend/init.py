@@ -6,9 +6,24 @@ import pytest
 from buildstream.testing import cli  # pylint: disable=unused-import
 
 from buildstream import _yaml
+from buildstream import utils
 from buildstream._frontend.app import App
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
-from buildstream._versions import BST_FORMAT_VERSION
+
+
+def get_default_min_version():
+    bst_major, bst_minor = utils.get_bst_version()
+
+    # For the version check, artificially set the version to at least
+    # version 2.0
+    #
+    # TODO: Remove this code block after releasing 2.0
+    #
+    if bst_major < 2:
+        bst_major = 2
+        bst_minor = 0
+
+    return "{}.{}".format(bst_major, bst_minor)
 
 
 def test_defaults(cli, tmpdir):
@@ -20,7 +35,7 @@ def test_defaults(cli, tmpdir):
 
     project_conf = _yaml.load(project_path)
     assert project_conf.get_str("name") == "foo"
-    assert project_conf.get_str("format-version") == str(BST_FORMAT_VERSION)
+    assert project_conf.get_str("min-version") == get_default_min_version()
     assert project_conf.get_str("element-path") == "elements"
 
 
@@ -29,13 +44,13 @@ def test_all_options(cli, tmpdir):
     project_path = os.path.join(project, "project.conf")
 
     result = cli.run(
-        args=["init", "--project-name", "foo", "--format-version", "2", "--element-path", "ponies", project]
+        args=["init", "--project-name", "foo", "--min-version", "2.0", "--element-path", "ponies", project]
     )
     result.assert_success()
 
     project_conf = _yaml.load(project_path)
     assert project_conf.get_str("name") == "foo"
-    assert project_conf.get_str("format-version") == str(2)
+    assert project_conf.get_str("min-version") == "2.0"
     assert project_conf.get_str("element-path") == "ponies"
 
     elements_dir = os.path.join(project, "ponies")
@@ -68,7 +83,7 @@ def test_force_overwrite_project(cli, tmpdir):
 
     project_conf = _yaml.load(project_path)
     assert project_conf.get_str("name") == "foo"
-    assert project_conf.get_str("format-version") == str(BST_FORMAT_VERSION)
+    assert project_conf.get_str("min-version") == get_default_min_version()
 
 
 def test_relative_path_directory_as_argument(cli, tmpdir):
@@ -82,7 +97,7 @@ def test_relative_path_directory_as_argument(cli, tmpdir):
 
     project_conf = _yaml.load(project_path)
     assert project_conf.get_str("name") == "foo"
-    assert project_conf.get_int("format-version") == BST_FORMAT_VERSION
+    assert project_conf.get_str("min-version") == get_default_min_version()
     assert project_conf.get_str("element-path") == "elements"
 
 
@@ -97,10 +112,10 @@ def test_bad_project_name(cli, tmpdir, project_name):
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_SYMBOL_NAME)
 
 
-@pytest.mark.parametrize("format_version", [(str(-1)), (str(BST_FORMAT_VERSION + 1))])
-def test_bad_format_version(cli, tmpdir, format_version):
-    result = cli.run(args=["init", "--project-name", "foo", "--format-version", format_version, str(tmpdir)])
-    result.assert_main_error(ErrorDomain.APP, "invalid-format-version")
+@pytest.mark.parametrize("min_version", [("-1"), ("1.4"), ("2.900"), ("abc")])
+def test_bad_min_version(cli, tmpdir, min_version):
+    result = cli.run(args=["init", "--project-name", "foo", "--min-version", min_version, str(tmpdir)])
+    result.assert_main_error(ErrorDomain.APP, "invalid-min-version")
 
 
 @pytest.mark.parametrize("element_path", [("/absolute/path"), ("../outside/of/project")])
@@ -124,7 +139,7 @@ def test_element_path_interactive(cli, tmp_path, monkeypatch, element_path):
             return DummyInteractiveApp(*args, **kwargs)
 
         def _init_project_interactive(self, *args, **kwargs):  # pylint: disable=arguments-differ
-            return ("project_name", "0", element_path)
+            return ("project_name", "2.0", element_path)
 
     monkeypatch.setattr(App, "create", DummyInteractiveApp.create)
 
@@ -136,5 +151,5 @@ def test_element_path_interactive(cli, tmp_path, monkeypatch, element_path):
 
     project_conf = _yaml.load(str(project_conf_path))
     assert project_conf.get_str("name") == "project_name"
-    assert project_conf.get_str("format-version") == "0"
+    assert project_conf.get_str("min-version") == "2.0"
     assert project_conf.get_str("element-path") == element_path

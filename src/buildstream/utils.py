@@ -580,17 +580,9 @@ def get_bst_version() -> Tuple[int, int]:
         )
 
     try:
-        return (int(versions[0]), int(versions[1]))
-    except IndexError:
-        raise UtilError(
-            "Cannot detect Major and Minor parts of the version\n"
-            "Version: {} not in XX.YY.whatever format".format(__version__)
-        )
-    except ValueError:
-        raise UtilError(
-            "Cannot convert version to integer numbers\n"
-            "Version: {} not in Integer.Integer.whatever format".format(__version__)
-        )
+        return _parse_version(__version__)
+    except UtilError as e:
+        raise UtilError("Failed to detect BuildStream version: {}\n".format(e)) from e
 
 
 def move_atomic(source: Union[Path, str], destination: Union[Path, str], *, ensure_parents: bool = True) -> None:
@@ -1591,3 +1583,46 @@ def _is_single_threaded():
             return True
         time.sleep(wait)
     return False
+
+
+# _parse_version():
+#
+# Args:
+#    version (str): The file name from which to determine compression
+#
+# Returns:
+#    A 2-tuple of form (major version, minor version)
+#
+# Raises:
+#    UtilError: In the case of a malformed version string
+#
+def _parse_version(version: str) -> Tuple[int, int]:
+
+    versions = version.split(".")
+    try:
+        major = int(versions[0])
+        minor = int(versions[1])
+    except (IndexError, ValueError):
+        raise UtilError("Malformed version string: {}".format(version),)
+
+    return (major, minor)
+
+
+# _get_bst_api_version():
+#
+# Fetch the current BuildStream API version, this
+# ensures that we get "2.0" for example when we are
+# in a development stage leading up to 2.0.
+#
+# Returns:
+#    A 2-tuple of form (major version, minor version)
+#
+def _get_bst_api_version() -> Tuple[int, int]:
+
+    bst_major, bst_minor = get_bst_version()
+
+    if bst_major < 2:
+        bst_major = 2
+        bst_minor = 0
+
+    return (bst_major, bst_minor)

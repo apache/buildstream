@@ -312,6 +312,7 @@ def test_pull_missing_local_blob(cli, tmpdir, datafiles):
     project = str(tmpdir)
     project_config = {
         "name": "pull-missing-local-blob",
+        "min-version": "2.0",
         "element-path": "elements",
     }
     project_file = os.path.join(str(tmpdir), "project.conf")

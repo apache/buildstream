@@ -116,6 +116,7 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
     # Produce a fake user and project config with the cache configuration.
     user_config, project_config = configure_remote_caches(override_caches, project_caches, user_caches)
     project_config["name"] = "test"
+    project_config["min-version"] = "2.0"
 
     user_config_file = str(tmpdir.join("buildstream.conf"))
     _yaml.roundtrip_dump(user_config, file=user_config_file)
@@ -179,6 +180,7 @@ def test_only_one(cli, datafiles, override_caches, project_caches, user_caches):
     # Produce a fake user and project config with the cache configuration.
     user_config, project_config = configure_remote_caches(override_caches, project_caches, user_caches)
     project_config["name"] = "test"
+    project_config["min-version"] = "2.0"
 
     cli.configure(user_config)
 
@@ -226,15 +228,12 @@ def test_paths_for_artifact_config_are_expanded(tmpdir, monkeypatch, artifacts_c
 
     monkeypatch.setenv("HOME", str(tmpdir.join("homedir")))
 
+    project_config = {"name": "test", "min-version": "2.0"}
+    user_config = {}
     if in_user_config:
-        user_config = {"artifacts": artifacts_config}
-        project_config = {"name": "test"}
+        user_config["artifacts"] = artifacts_config
     else:
-        user_config = {}
-        project_config = {
-            "name": "test",
-            "artifacts": artifacts_config,
-        }
+        project_config["artifacts"] = artifacts_config
 
     user_config_file = str(tmpdir.join("buildstream.conf"))
     _yaml.roundtrip_dump(user_config, file=user_config_file)

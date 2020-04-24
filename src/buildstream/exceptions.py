@@ -86,7 +86,7 @@ class LoadErrorReason(Enum):
     """
 
     UNSUPPORTED_PROJECT = 7
-    """BuildStream does not support the required project format version"""
+    """The project requires an incompatible BuildStream version"""
 
     UNSUPPORTED_PLUGIN = 8
     """Project requires a newer version of a plugin than the one which was

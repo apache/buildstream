@@ -62,10 +62,6 @@ Downloaded tarballs will be stored in a directory called ".bst_pip_downloads".
 
 See :ref:`built-in functionality doumentation <core_source_builtins>` for
 details on common configuration options for sources.
-
-.. note::
-
-   The ``pip`` plugin is available since :ref:`format version 16 <project_format_version>`
 """
 
 import hashlib

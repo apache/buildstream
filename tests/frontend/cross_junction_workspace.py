@@ -13,8 +13,8 @@ def prepare_junction_project(cli, tmpdir):
     os.makedirs(str(main_project))
     os.makedirs(str(sub_project))
 
-    _yaml.roundtrip_dump({"name": "main"}, str(main_project.join("project.conf")))
-    _yaml.roundtrip_dump({"name": "sub"}, str(sub_project.join("project.conf")))
+    _yaml.roundtrip_dump({"name": "main", "min-version": "2.0"}, str(main_project.join("project.conf")))
+    _yaml.roundtrip_dump({"name": "sub", "min-version": "2.0"}, str(sub_project.join("project.conf")))
 
     import_dir = tmpdir.join("import")
     os.makedirs(str(import_dir))

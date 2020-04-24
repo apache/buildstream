@@ -25,7 +25,7 @@ def test_include_project_file(cli, datafiles):
 
 
 def test_include_missing_file(cli, tmpdir):
-    tmpdir.join("project.conf").write('{"name": "test"}')
+    tmpdir.join("project.conf").write('{"name": "test", "min-version": "2.0"}')
     element = tmpdir.join("include_missing_file.bst")
 
     # Normally we would use dicts and _yaml.roundtrip_dump to write such things, but here
@@ -48,7 +48,7 @@ def test_include_missing_file(cli, tmpdir):
 
 
 def test_include_dir(cli, tmpdir):
-    tmpdir.join("project.conf").write('{"name": "test"}')
+    tmpdir.join("project.conf").write('{"name": "test", "min-version": "2.0"}')
     tmpdir.mkdir("subdir")
     element = tmpdir.join("include_dir.bst")
 

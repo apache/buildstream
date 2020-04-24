@@ -1001,6 +1001,7 @@ def test_partial_artifact_checkout_fetch(cli, datafiles, tmpdir):
     project = str(tmpdir)
     project_config = {
         "name": "partial-artifact-checkout-fetch",
+        "min-version": "2.0",
         "element-path": "elements",
     }
     project_file = os.path.join(str(tmpdir), "project.conf")

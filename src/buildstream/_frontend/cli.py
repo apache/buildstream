@@ -7,10 +7,9 @@ import shutil
 import click
 from .. import _yaml
 from .._exceptions import BstError, LoadError, AppError
-from .._versions import BST_FORMAT_VERSION
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection
-from ..utils import _get_compression, UtilError
+from ..utils import UtilError
 
 
 ##################################################################
@@ -414,12 +413,20 @@ def help_command(ctx, command):
 ##################################################################
 #                           Init Command                         #
 ##################################################################
+def default_min_version():
+    from .. import utils
+
+    bst_major, bst_minor = utils._get_bst_api_version()
+
+    return "{}.{}".format(bst_major, bst_minor)
+
+
 @cli.command(short_help="Initialize a new BuildStream project")
 @click.option("--project-name", type=click.STRING, help="The project name to use")
 @click.option(
-    "--format-version",
-    type=click.INT,
-    default=BST_FORMAT_VERSION,
+    "--min-version",
+    type=click.STRING,
+    default=default_min_version(),
     show_default=True,
     help="The required format version",
 )
@@ -433,7 +440,7 @@ def help_command(ctx, command):
 @click.option("--force", "-f", is_flag=True, help="Allow overwriting an existing project.conf")
 @click.argument("target-directory", nargs=1, required=False, type=click.Path(file_okay=False, writable=True))
 @click.pass_obj
-def init(app, project_name, format_version, element_path, force, target_directory):
+def init(app, project_name, min_version, element_path, force, target_directory):
     """Initialize a new BuildStream project
 
     Creates a new BuildStream project.conf in the project
@@ -442,7 +449,7 @@ def init(app, project_name, format_version, element_path, force, target_director
     Unless `--project-name` is specified, this will be an
     interactive session.
     """
-    app.init_project(project_name, format_version, element_path, force, target_directory)
+    app.init_project(project_name, min_version, element_path, force, target_directory)
 
 
 ##################################################################
@@ -1226,6 +1233,8 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
     When this command is executed from a workspace directory, the default
     is to checkout the artifact of the workspace element.
     """
+    from .. import utils
+
     if hardlinks and tar:
         click.echo("ERROR: options --hardlinks and --tar conflict", err=True)
         sys.exit(-1)
@@ -1249,7 +1258,7 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
     else:
         location = tar
         try:
-            inferred_compression = _get_compression(tar)
+            inferred_compression = utils._get_compression(tar)
         except UtilError as e:
             click.echo("ERROR: Invalid file extension given with '--tar': {}".format(e), err=True)
             sys.exit(-1)

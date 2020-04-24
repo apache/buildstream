@@ -23,17 +23,18 @@ BuildElement - Abstract class for build elements
 The BuildElement class is a convenience element one can derive from for
 implementing the most common case of element.
 
+
 .. _core_buildelement_builtins:
 
 Built-in functionality
 ----------------------
-
 The BuildElement base class provides built in functionality that could be
 overridden by the individual plugins.
 
 This section will give a brief summary of how some of the common features work,
 some of them or the variables they use will be further detailed in the following
 sections.
+
 
 The `strip-binaries` variable
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,11 +44,13 @@ If you are targetting Linux, ones known to work are the ones used by the
 `freedesktop-sdk <https://freedesktop-sdk.io/>`_, you can take a look to them in their
 `project.conf <https://gitlab.com/freedesktop-sdk/freedesktop-sdk/blob/freedesktop-sdk-18.08.21/project.conf#L74>`_
 
+
 Location for running commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The ``command-subdir`` variable sets where the build commands will be executed,
 if the directory does not exist it will be created, it is defined relative to
 the buildroot.
+
 
 Location for configuring the project
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -66,20 +69,18 @@ The current working directory when your configuration command is run will still
 be wherever you set your ``command-subdir`` to be, regardless of where the
 configure scripts are set with ``conf-root``.
 
-.. note::
-
-   The ``conf-root`` variable is available since :ref:`format version 17 <project_format_version>`
 
 Install Location
 ~~~~~~~~~~~~~~~~
-
 You should not change the ``install-root`` variable as it is a special
 writeable location in the sandbox but it is useful when writing custom
 install instructions as it may need to be supplied as the ``DESTDIR``, please
 see the :mod:`cmake <elements.cmake>` build element for example.
 
+
 Abstract method implementations
 -------------------------------
+
 
 Element.configure_sandbox()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

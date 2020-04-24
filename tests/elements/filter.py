@@ -197,6 +197,7 @@ def test_filter_track(datafiles, cli, tmpdir):
 
     project_config = {
         "name": "filter-track-test",
+        "min-version": "2.0",
         "element-path": "elements",
     }
     project_file = os.path.join(str(tmpdir), "project.conf")
@@ -242,6 +243,7 @@ def test_filter_track_excepted(datafiles, cli, tmpdir):
 
     project_config = {
         "name": "filter-track-test",
+        "min-version": "2.0",
         "element-path": "elements",
     }
     project_file = os.path.join(str(tmpdir), "project.conf")
@@ -286,6 +288,7 @@ def test_filter_track_multi_to_one(datafiles, cli, tmpdir):
 
     project_config = {
         "name": "filter-track-test",
+        "min-version": "2.0",
         "element-path": "elements",
     }
     project_file = os.path.join(str(tmpdir), "project.conf")
@@ -332,6 +335,7 @@ def test_filter_track_multi(datafiles, cli, tmpdir):
 
     project_config = {
         "name": "filter-track-test",
+        "min-version": "2.0",
         "element-path": "elements",
     }
     project_file = os.path.join(str(tmpdir), "project.conf")
@@ -392,6 +396,7 @@ def test_filter_track_multi_exclude(datafiles, cli, tmpdir):
 
     project_config = {
         "name": "filter-track-test",
+        "min-version": "2.0",
         "element-path": "elements",
     }
     project_file = os.path.join(str(tmpdir), "project.conf")
