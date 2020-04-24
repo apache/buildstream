@@ -42,34 +42,41 @@ of your project.
    underscores, and may not start with a leading digit.
 
 
-.. _project_format_version:
+.. _project_min_version:
 
-Format version
-~~~~~~~~~~~~~~
+Minimum version
+~~~~~~~~~~~~~~~
 The BuildStream format is guaranteed to be backwards compatible
-with any earlier releases. The project's minimum required format
-version of BuildStream can be specified in ``project.conf`` with
-the ``format-version`` field, e.g.:
+with any earlier minor point releases, which is to say that
+BuildStream 1.4 can read projects written for BuildStream 1.0,
+and that BuildStream 2.2 can read projects written for BuildStream 2.0.
+
+Projects are required to specify the minimum version of BuildStream
+which it requires, this allows project authors to convey a useful
+error message to their users and peers, in the case that a user needs
+to get a newer version of BuildStream in order to work with a given
+project.
+
+The project's minimum required BuildStream version must be specified
+in ``project.conf`` using the ``min-version`` field, e.g.:
 
 .. code:: yaml
 
-  # The minimum base BuildStream format
-  format-version: 18
+  # This project uses features which were added in 2.2
+  min-version: 2.2
 
-BuildStream will increment its core YAML format version at least once
-in any given minor point release where the format has been extended
-to support a new feature.
+It is recommended that when using new features, always consult this
+documentation and observe which BuildStream version a feature you are
+using was added in. If a feature in the BuildStream YAML format is
+not documented with a specific *Since* version, you can assume that
+it has been there from the beginning.
+
 
 .. note::
 
    External :mod:`Element <buildstream.element>` and :mod:`Source <buildstream.source>`
    plugins also implement their own YAML configuration fragments and as
-   such are revisioned separately from the core format. See :ref:`project_plugins`
-   for details on specifying a minimum version of a specific plugin.
-
-   Core :mod:`Elements <buildstream.element>` and :mod:`Sources <buildstream.source>`
-   which are maintained and distributed as a part of BuildStream are revisioned
-   under the same global ``format-version`` described here.
+   such are revisioned separately from the core format.
 
 
 .. _project_element_path:
@@ -120,10 +127,6 @@ following to your ``project.conf``:
 
   ref-storage: project.refs
 
-.. note::
-
-   The ``ref-storage`` configuration is available since :ref:`format version 8 <project_format_version>`
-
 
 .. _configurable_warnings:
 
@@ -144,10 +147,6 @@ Individual warnings can be configured as fatal by setting ``fatal-warnings`` to 
 
 BuildStream provides a collection of :class:`Core Warnings <buildstream.types.CoreWarnings>` which may be raised
 by a variety of plugins. Other configurable warnings are plugin specific and should be noted within their individual documentation.
-
-.. note::
-
-  The ``fatal-warnings`` configuration is available since :ref:`format version 14 <project_format_version>`
 
 
 .. _project_source_aliases:
@@ -178,10 +177,6 @@ for more detail.
    sandbox:
      build-uid: 1003
      build-gid: 1001
-
-.. note::
-
-   The ``sandbox`` configuration is available since :ref:`format version 6 <project_format_version>`
 
 
 .. _project_essentials_artifacts:
@@ -372,10 +367,6 @@ they are defined when fetching, and in reverse-order when tracking.
 A default mirror to consult first can be defined via
 :ref:`user config <config_default_mirror>`, or the command-line argument
 :ref:`--default-mirror <invoking_bst>`.
-
-.. note::
-
-   The ``mirrors`` field is available since :ref:`format version 11 <project_format_version>`
 
 
 .. _project_plugins:
@@ -852,10 +843,6 @@ specific configuration data as shown below.
        config:
          checkout-submodules: False
 
-.. note::
-
-   The ``sources`` override is available since :ref:`format version 1 <project_format_version>`
-
 
 .. _project_shell:
 
@@ -866,10 +853,6 @@ the nature of the runtime and software that you are building, the shell
 environment for debugging and testing applications may need some help.
 
 The ``shell`` section allows some customization of the shell environment.
-
-.. note::
-
-   The ``shell`` section is available since :ref:`format version 1 <project_format_version>`
 
 
 Interactive shell command
@@ -903,10 +886,6 @@ which is expressed as a dictionary very similar to the
 :ref:`default environment <project_defaults_environment>`, except that it
 supports host side environment variable expansion in values.
 
-.. note::
-
-   The ``environment`` configuration is available since :ref:`format version 4 <project_format_version>`
-
 For example, to share your host ``DISPLAY`` and ``DBUS_SESSION_BUS_ADDRESS``
 environments with debugging shells for your project, specify the following:
 
@@ -938,10 +917,6 @@ it can integrate better with the host environment.
 
 The ``host-files`` configuration allows one to specify files and
 directories on the host to be bind mounted into the sandbox.
-
-.. note::
-
-   The ``host-files`` configuration is available since :ref:`format version 4 <project_format_version>`
 
 .. warning::
 
@@ -1051,10 +1026,6 @@ workspace element will be used as the default target instead.
 currently limited to a single target element and due to this, they currently
 do not use project default targets.  However, they still use the workspace
 element as default target when run from a workspace directory.
-
-.. note::
-
-   The ``targets`` configuration is available since :ref:`format version 21 <project_format_version>`
 
 
 .. _project_builtin_defaults:

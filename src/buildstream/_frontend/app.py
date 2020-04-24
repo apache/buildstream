@@ -36,9 +36,10 @@ from .._exceptions import BstError, StreamError, LoadError, AppError
 from ..exceptions import LoadErrorReason
 from .._message import Message, MessageType, unconditional_messages
 from .._stream import Stream
-from .._versions import BST_FORMAT_VERSION
 from ..types import _SchedulerErrorAction
 from .. import node
+from .. import utils
+from ..utils import UtilError
 
 # Import frontend assets
 from .profile import Profile
@@ -357,18 +358,13 @@ class App:
     #
     # Args:
     #    project_name (str): The project name, must be a valid symbol name
-    #    format_version (int): The project format version, default is the latest version
+    #    min_version (str): The minimum required version of BuildStream (default is current version)
     #    element_path (str): The subdirectory to store elements in, default is 'elements'
     #    force (bool): Allow overwriting an existing project.conf
     #    target_directory (str): The target directory the project should be initialized in
     #
     def init_project(
-        self,
-        project_name,
-        format_version=BST_FORMAT_VERSION,
-        element_path="elements",
-        force=False,
-        target_directory=None,
+        self, project_name, min_version=None, element_path="elements", force=False, target_directory=None,
     ):
         if target_directory:
             directory = os.path.abspath(target_directory)
@@ -377,6 +373,10 @@ class App:
             directory = os.path.abspath(directory)
 
         project_path = os.path.join(directory, "project.conf")
+
+        if min_version is None:
+            bst_major, bst_minor = utils.get_bst_version()
+            min_version = "{}.{}".format(bst_major, bst_minor)
 
         try:
             if self._set_project_dir:
@@ -394,7 +394,7 @@ class App:
                 # If project name was specified, user interaction is not desired, just
                 # perform some validation and write the project.conf
                 node._assert_symbol_name(project_name, "project name")
-                self._assert_format_version(format_version)
+                self._assert_min_version(min_version)
                 self._assert_element_path(element_path)
 
             elif not self.interactive:
@@ -404,8 +404,8 @@ class App:
                 )
             else:
                 # Collect the parameters using an interactive session
-                project_name, format_version, element_path = self._init_project_interactive(
-                    project_name, format_version, element_path
+                project_name, min_version, element_path = self._init_project_interactive(
+                    project_name, min_version, element_path
                 )
 
             # Create the directory if it doesnt exist
@@ -429,8 +429,8 @@ class App:
                     f.write(
                         "# Unique project name\n"
                         + "name: {}\n\n".format(project_name)
-                        + "# Required BuildStream format version\n"
-                        + "format-version: {}\n\n".format(format_version)
+                        + "# Required BuildStream version\n"
+                        + "min-version: {}\n\n".format(min_version)
                         + "# Subdirectory where elements are stored\n"
                         + "element-path: {}\n".format(element_path)
                     )
@@ -827,20 +827,19 @@ class App:
 
     # Some validation routines for project initialization
     #
-    def _assert_format_version(self, format_version):
-        message = "The version must be supported by this " + "version of buildstream (0 - {})\n".format(
-            BST_FORMAT_VERSION
-        )
+    def _assert_min_version(self, min_version):
+        bst_major, bst_minor = utils._get_bst_api_version()
+        message = "The minimum version must be a known version of BuildStream {}".format(bst_major)
 
-        # Validate that it is an integer
+        # Validate the version format
         try:
-            number = int(format_version)
-        except ValueError as e:
-            raise AppError(message, reason="invalid-format-version") from e
+            min_version_major, min_version_minor = utils._parse_version(min_version)
+        except UtilError as e:
+            raise AppError(str(e), reason="invalid-min-version") from e
 
-        # Validate that the specified version is supported
-        if number < 0 or number > BST_FORMAT_VERSION:
-            raise AppError(message, reason="invalid-format-version")
+        # Validate that this version can be loaded by the installed version of BuildStream
+        if min_version_major != bst_major or min_version_minor > bst_minor:
+            raise AppError(message, reason="invalid-min-version")
 
     def _assert_element_path(self, element_path):
         message = "The element path cannot be an absolute path or contain any '..' components\n"
@@ -864,15 +863,21 @@ class App:
     #
     # Args:
     #    project_name (str): The project name, must be a valid symbol name
-    #    format_version (int): The project format version, default is the latest version
+    #    min_version (str): The minimum BuildStream version, default is the latest version
     #    element_path (str): The subdirectory to store elements in, default is 'elements'
     #
     # Returns:
     #    project_name (str): The user selected project name
-    #    format_version (int): The user selected format version
+    #    min_version (int): The user selected minimum BuildStream version
     #    element_path (str): The user selected element path
     #
-    def _init_project_interactive(self, project_name, format_version=BST_FORMAT_VERSION, element_path="elements"):
+    def _init_project_interactive(self, project_name, min_version=None, element_path="elements"):
+
+        bst_major, bst_minor = utils._get_bst_api_version()
+
+        if min_version is None:
+            min_version = "{}.{}".format(bst_major, bst_minor)
+
         def project_name_proc(user_input):
             try:
                 node._assert_symbol_name(user_input, "project name")
@@ -881,9 +886,9 @@ class App:
                 raise UsageError(message) from e
             return user_input
 
-        def format_version_proc(user_input):
+        def min_version_proc(user_input):
             try:
-                self._assert_format_version(user_input)
+                self._assert_min_version(user_input)
             except AppError as e:
                 raise UsageError(str(e)) from e
             return user_input
@@ -927,17 +932,21 @@ class App:
         project_name = click.prompt(self._content_profile.fmt("Project name"), value_proc=project_name_proc, err=True)
         click.echo("", err=True)
 
-        # Collect format version
-        click.echo(self._content_profile.fmt("Select the minimum required format version for your project"), err=True)
-        click.echo(self._format_profile.fmt("-----------------------------------------------------------"), err=True)
+        # Collect minimum BuildStream version
+        click.echo(
+            self._content_profile.fmt("Select the minimum required BuildStream version for your project"), err=True
+        )
+        click.echo(
+            self._format_profile.fmt("----------------------------------------------------------------"), err=True
+        )
         click.echo("", err=True)
         click.echo(
             self._detail_profile.fmt(
                 w.fill(
-                    "The format version is used to provide users who build your project "
+                    "The minimum version is used to provide users who build your project "
                     "with a helpful error message in the case that they do not have a recent "
-                    "enough version of BuildStream supporting all the features which your "
-                    "project might use."
+                    "enough version of BuildStream to support all the features which your "
+                    "project uses."
                 )
             ),
             err=True,
@@ -946,19 +955,17 @@ class App:
         click.echo(
             self._detail_profile.fmt(
                 w.fill(
-                    "The lowest version allowed is 0, the currently installed version of BuildStream "
-                    "supports up to format version {}.".format(BST_FORMAT_VERSION)
+                    "The lowest version allowed is {major}.0, the currently installed version of BuildStream is {major}.{minor}".format(
+                        major=bst_major, minor=bst_minor
+                    )
                 )
             ),
             err=True,
         )
 
         click.echo("", err=True)
-        format_version = click.prompt(
-            self._content_profile.fmt("Format version"),
-            value_proc=format_version_proc,
-            default=format_version,
-            err=True,
+        min_version = click.prompt(
+            self._content_profile.fmt("Minimum version"), value_proc=min_version_proc, default=min_version, err=True,
         )
         click.echo("", err=True)
 
@@ -991,7 +998,7 @@ class App:
             self._content_profile.fmt("Element path"), value_proc=element_path_proc, default=element_path, err=True
         )
 
-        return (project_name, format_version, element_path)
+        return (project_name, min_version, element_path)
 
 
 #

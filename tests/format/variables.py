@@ -74,7 +74,7 @@ def test_cyclic_variables(cli, datafiles):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "protected-vars"))
 def test_use_of_protected_var_project_conf(cli, datafiles, protected_var):
     project = str(datafiles)
-    conf = {"name": "test", "variables": {protected_var: "some-value"}}
+    conf = {"name": "test", "min-version": "2.0", "variables": {protected_var: "some-value"}}
     _yaml.roundtrip_dump(conf, os.path.join(project, "project.conf"))
 
     element = {
@@ -91,7 +91,7 @@ def test_use_of_protected_var_project_conf(cli, datafiles, protected_var):
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "protected-vars"))
 def test_use_of_protected_var_element_overrides(cli, datafiles, protected_var):
     project = str(datafiles)
-    conf = {"name": "test", "elements": {"manual": {"variables": {protected_var: "some-value"}}}}
+    conf = {"name": "test", "min-version": "2.0", "elements": {"manual": {"variables": {protected_var: "some-value"}}}}
     _yaml.roundtrip_dump(conf, os.path.join(project, "project.conf"))
 
     element = {

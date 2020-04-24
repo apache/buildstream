@@ -66,14 +66,6 @@ Overview
 
 .. note::
 
-   The configuration option to allow specifying junction targets is available
-   since :ref:`format version 24 <project_format_version>` and the configuration
-   options allowing for junction project elements to interact with parent remotes
-   or to completely ignore junction project remotes are available since
-   :ref:`format version 25 <project_format_version>`.
-
-.. note::
-
    Junction elements may not specify any dependencies as they are simply
    links to other projects and are not in the dependency graph on their own.
 

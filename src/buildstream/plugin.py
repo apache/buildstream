@@ -167,10 +167,6 @@ class Plugin:
        Plugins are expected to maintain backward compatibility
        in the format and configurations they expose. The versioning
        is intended to track availability of new features only.
-
-       For convenience, the format version for plugins maintained and
-       distributed with BuildStream are revisioned with BuildStream's
-       core format version :ref:`core format version <project_format_version>`.
     """
 
     BST_PLUGIN_DEPRECATED = False

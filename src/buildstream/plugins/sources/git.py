@@ -143,16 +143,8 @@ This plugin provides the following :ref:`configurable warnings <configurable_war
 - ``git:unlisted-submodule`` - A submodule is present in the git repository but was not specified in
   the source configuration and was not disabled for checkout.
 
-  .. note::
-
-     The ``git:unlisted-submodule`` warning is available since :ref:`format version 20 <project_format_version>`
-
 - ``git:invalid-submodule`` - A submodule is specified in the source configuration but does not exist
   in the repository.
-
-  .. note::
-
-     The ``git:invalid-submodule`` warning is available since :ref:`format version 20 <project_format_version>`
 
 This plugin also utilises the following configurable :class:`core warnings <buildstream.types.CoreWarnings>`:
 

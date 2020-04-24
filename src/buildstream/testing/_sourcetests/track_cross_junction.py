@@ -68,7 +68,7 @@ def generate_project(tmpdir, name, kind, config=None):
     subproject_path = os.path.join(str(tmpdir.join(project_name)))
     os.makedirs(os.path.join(subproject_path, "elements"))
 
-    project_conf = {"name": name, "element-path": "elements"}
+    project_conf = {"name": name, "min-version": "2.0", "element-path": "elements"}
     project_conf.update(config)
     _yaml.roundtrip_dump(project_conf, os.path.join(subproject_path, "project.conf"))
     add_plugins_conf(subproject_path, kind)

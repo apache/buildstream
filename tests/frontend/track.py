@@ -144,7 +144,7 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
 
     # Generate project.conf
     #
-    project_conf = {"name": "test", "ref-storage": ref_storage}
+    project_conf = {"name": "test", "min-version": "2.0", "ref-storage": ref_storage}
     _yaml.roundtrip_dump(project_conf, os.path.join(project, "project.conf"))
 
     #

@@ -46,10 +46,6 @@ remote - stage files from remote urls
 
 See :ref:`built-in functionality doumentation <core_source_builtins>` for
 details on common configuration options for sources.
-
-.. note::
-
-   The ``remote`` plugin is available since :ref:`format version 10 <project_format_version>`
 """
 import os
 from buildstream import SourceError, utils

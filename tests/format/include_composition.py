@@ -11,7 +11,7 @@ from tests.testutils import dummy_context
 
 @contextmanager
 def make_includes(basedir):
-    _yaml.roundtrip_dump({"name": "test"}, os.path.join(basedir, "project.conf"))
+    _yaml.roundtrip_dump({"name": "test", "min-version": "2.0"}, os.path.join(basedir, "project.conf"))
     with dummy_context() as context:
         project = Project(basedir, context)
         loader = project.loader

@@ -17,21 +17,6 @@ documentation of your plugin automatically.
 Whenever adding a new plugin, you must add an entry for it in ``doc/source/core_plugins.rst``.
 
 
-Bump format version
-~~~~~~~~~~~~~~~~~~~
-In order for projects to assert that they have a new enough version
-of BuildStream to use the new plugin, the ``BST_FORMAT_VERSION`` must
-be incremented in the ``_versions.py`` file.
-
-Remember to include in your plugin's main documentation, the format
-version in which the plugin was introduced, using the standard annotation
-which we use throughout the documentation, e.g.::
-
-  .. note::
-
-     The ``foo`` plugin is available since :ref:`format version 16 <project_format_version>`
-
-
 Add tests
 ~~~~~~~~~
 Needless to say, all new feature additions need to be tested. For ``Element``

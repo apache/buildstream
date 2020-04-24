@@ -343,7 +343,3 @@ the previous one.
    must be declared in the :ref:`project.conf <projectconf>` or in
    included files which are local to the project declaring the
    junction itself.
-
-.. note::
-
-   The include directive is available since :ref:`format version 12 <project_format_version>`

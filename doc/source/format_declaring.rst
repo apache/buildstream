@@ -124,10 +124,6 @@ The above code snippet is equivalent to:
 
 See :ref:`format_dependencies` for more information on the dependency model.
 
-.. note::
-
-   The ``build-depends`` configuration is available since :ref:`format version 14 <project_format_version>`
-
 
 .. _format_runtime_depends:
 
@@ -154,10 +150,6 @@ The above code snippet is equivalent to:
      type: runtime
 
 See :ref:`format_dependencies` for more information on the dependency model.
-
-.. note::
-
-   The ``runtime-depends`` configuration is available since :ref:`format version 14 <project_format_version>`
 
 
 .. _format_sources:
@@ -331,10 +323,6 @@ field in the ``Command`` uploaded. Whether this actually results in a building
 the element for the desired OS and architecture is dependent on the server
 having implemented these options the same as buildstream.
 
-.. note::
-
-   The ``sandbox`` configuration is available since :ref:`format version 6 <project_format_version>`
-
 
 .. _format_dependencies:
 
@@ -397,10 +385,6 @@ Attributes:
 
   See :mod:`junction <elements.junction>`.
 
-  .. note::
-
-     The ``junction`` attribute is available since :ref:`format version 1 <project_format_version>`
-
 * ``strict``
 
   This attribute can be used to specify that this element should
@@ -441,10 +425,6 @@ attribute, like so:
    filename contains more than one ``:`` (colon) character, an error will be
    raised. See :ref:`nested junctions <core_junction_nested>` for more details
    on nested junctions.
-
-.. note::
-
-   This shorthand is available since :ref:`format version 23 <project_format_version>`
 
 
 .. _format_dependencies_types:

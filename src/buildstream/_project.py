@@ -26,6 +26,7 @@ from pluginbase import PluginBase
 from . import utils
 from . import _site
 from . import _yaml
+from .utils import UtilError
 from ._artifactelement import ArtifactElement
 from ._profile import Topics, PROFILER
 from ._exceptions import LoadError
@@ -39,8 +40,6 @@ from ._elementfactory import ElementFactory
 from ._sourcefactory import SourceFactory
 from .types import CoreWarnings
 from ._projectrefs import ProjectRefs, ProjectRefStorage
-from ._versions import BST_FORMAT_VERSION
-from ._versions import BST_FORMAT_VERSION_MIN
 from ._loader import Loader
 from .element import Element
 from .types import FastEnum
@@ -336,7 +335,7 @@ class Project:
     def _validate_node(self, node):
         node.validate_keys(
             [
-                "format-version",
+                "min-version",
                 "element-path",
                 "variables",
                 "environment",
@@ -579,6 +578,72 @@ class Project:
 
         return tuple(default_targets)
 
+    # _validate_version()
+    #
+    # Asserts that we have a BuildStream installation which is recent
+    # enough for the project required version
+    #
+    # Args:
+    #    config_node (dict) - YaML node of the configuration file.
+    #
+    # Raises: LoadError if there was a problem with the project.conf
+    #
+    def _validate_version(self, config_node):
+
+        bst_major, bst_minor = utils._get_bst_api_version()
+
+        # Use a custom error message for the absence of the required "min-version"
+        # as this may be an indication that we are trying to load a BuildStream 1 project.
+        #
+        min_version_node = config_node.get_scalar("min-version", None)
+        if min_version_node.is_none():
+            p = config_node.get_provenance()
+            raise LoadError(
+                "{}: Dictionary did not contain expected key 'min-version'".format(p),
+                LoadErrorReason.INVALID_DATA,
+                #
+                # TODO: Provide a link to documentation on how to install
+                #       BuildStream 1 in a venv
+                #
+                detail="If you are trying to use a BuildStream 1 project, "
+                + "please install BuildStream 1 to use this project.",
+            )
+
+        # Parse the project declared minimum required BuildStream version
+        min_version = min_version_node.as_str()
+        try:
+            min_version_major, min_version_minor = utils._parse_version(min_version)
+        except UtilError as e:
+            p = min_version_node.get_provenance()
+            raise LoadError(
+                "{}: {}\n".format(p, e),
+                LoadErrorReason.INVALID_DATA,
+                detail="The min-version must be specified as MAJOR.MINOR with "
+                + "numeric major and minor minimum required version numbers",
+            ) from e
+
+        # Future proofing, in case there is ever a BuildStream 3
+        if min_version_major != bst_major:
+            p = min_version_node.get_provenance()
+            raise LoadError(
+                "{}: Version mismatch".format(p),
+                LoadErrorReason.UNSUPPORTED_PROJECT,
+                detail="Project requires BuildStream {}, ".format(min_version_major)
+                + "but BuildStream {} is installed.\n".format(bst_major)
+                + "Please use BuildStream {} with this project.".format(min_version_major),
+            )
+
+        # Check minimal minor point requirement is satisfied
+        if min_version_minor > bst_minor:
+            p = min_version_node.get_provenance()
+            raise LoadError(
+                "{}: Version mismatch".format(p),
+                LoadErrorReason.UNSUPPORTED_PROJECT,
+                detail="Project requires at least BuildStream {}.{}, ".format(min_version_major, min_version_minor)
+                + "but BuildStream {}.{} is installed.\n".format(bst_major, bst_minor)
+                + "Please upgrade BuildStream.",
+            )
+
     # _load():
     #
     # Loads the project configuration file in the project
@@ -606,24 +671,8 @@ class Project:
         pre_config_node = self._default_config_node.clone()
         self._project_conf._composite(pre_config_node)
 
-        # Assert project's format version early, before validating toplevel keys
-        format_version = pre_config_node.get_int("format-version")
-        if format_version < BST_FORMAT_VERSION_MIN:
-            major, minor = utils.get_bst_version()
-            raise LoadError(
-                "Project requested format version {}, but BuildStream {}.{} only supports format version {} or above."
-                "Use latest 1.x release".format(format_version, major, minor, BST_FORMAT_VERSION_MIN),
-                LoadErrorReason.UNSUPPORTED_PROJECT,
-            )
-
-        if BST_FORMAT_VERSION < format_version:
-            major, minor = utils.get_bst_version()
-            raise LoadError(
-                "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}".format(
-                    format_version, major, minor, BST_FORMAT_VERSION
-                ),
-                LoadErrorReason.UNSUPPORTED_PROJECT,
-            )
+        # Assert project's minimum required version early, before validating toplevel keys
+        self._validate_version(pre_config_node)
 
         self._validate_node(pre_config_node)
 
