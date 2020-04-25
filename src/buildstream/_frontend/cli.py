@@ -618,13 +618,6 @@ def show(app, elements, deps, except_, order, format_):
 @cli.command(short_help="Shell into an element's sandbox environment")
 @click.option("--build", "-b", "build_", is_flag=True, help="Stage dependencies and sources to build")
 @click.option(
-    "--sysroot",
-    "-s",
-    default=None,
-    type=click.Path(exists=True, file_okay=False, readable=True),
-    help="An existing sysroot",
-)
-@click.option(
     "--mount",
     type=click.Tuple([click.Path(exists=True), str]),
     multiple=True,
@@ -650,7 +643,7 @@ def show(app, elements, deps, except_, order, format_):
 @click.argument("element", required=False, type=click.Path(readable=False))
 @click.argument("command", type=click.STRING, nargs=-1)
 @click.pass_obj
-def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, pull_, command):
+def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
     """Run a command in the target element's sandbox environment
 
     When this command is executed from a workspace directory, the default
@@ -668,10 +661,6 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, pull_, c
 
     Use the --build option to create a temporary sysroot for
     building the element instead.
-
-    Use the --sysroot option with an existing failed build
-    directory or with a checkout of the given target, in order
-    to use a specific sysroot.
 
     If no COMMAND is specified, the default is to attempt
     to run an interactive shell.
@@ -784,7 +773,6 @@ def shell(app, element, sysroot, mount, isolate, build_, cli_buildtree, pull_, c
                 element,
                 scope,
                 prompt,
-                directory=sysroot,
                 mounts=mounts,
                 isolate=isolate,
                 command=command,

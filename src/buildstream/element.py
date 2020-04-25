@@ -1265,32 +1265,28 @@ class Element(Plugin):
     # is used to stage things by the `bst artifact checkout` codepath
     #
     @contextmanager
-    def _prepare_sandbox(self, scope, directory, shell=False, integrate=True, usebuildtree=False):
+    def _prepare_sandbox(self, scope, shell=False, integrate=True, usebuildtree=False):
         # bst shell and bst artifact checkout require a local sandbox.
-        bare_directory = bool(directory)
-        with self.__sandbox(
-            directory, config=self.__sandbox_config, allow_remote=False, bare_directory=bare_directory
-        ) as sandbox:
+        with self.__sandbox(None, config=self.__sandbox_config, allow_remote=False) as sandbox:
             sandbox._usebuildtree = usebuildtree
 
             # Configure always comes first, and we need it.
             self.__configure_sandbox(sandbox)
 
-            # Stage something if we need it
-            if not directory:
-                if shell and scope == Scope.BUILD:
-                    self.stage(sandbox)
-                else:
-                    # Stage deps in the sandbox root
-                    with self.timed_activity("Staging dependencies", silent_nested=True):
-                        self.stage_dependency_artifacts(sandbox, scope)
+            # Stage what we need
+            if shell and scope == Scope.BUILD:
+                self.stage(sandbox)
+            else:
+                # Stage deps in the sandbox root
+                with self.timed_activity("Staging dependencies", silent_nested=True):
+                    self.stage_dependency_artifacts(sandbox, scope)
 
-                    # Run any integration commands provided by the dependencies
-                    # once they are all staged and ready
-                    if integrate:
-                        with self.timed_activity("Integrating sandbox"):
-                            for dep in self.dependencies(scope):
-                                dep.integrate(sandbox)
+                # Run any integration commands provided by the dependencies
+                # once they are all staged and ready
+                if integrate:
+                    with self.timed_activity("Integrating sandbox"):
+                        for dep in self.dependencies(scope):
+                            dep.integrate(sandbox)
 
             yield sandbox
 
@@ -1808,7 +1804,6 @@ class Element(Plugin):
     #
     # Args:
     #    scope (Scope): Either BUILD or RUN scopes are valid, or None
-    #    directory (str): A directory to an existing sandbox, or None
     #    mounts (list): A list of (str, str) tuples, representing host/target paths to mount
     #    isolate (bool): Whether to isolate the environment like we do in builds
     #    prompt (str): A suitable prompt string for PS1
@@ -1816,13 +1811,9 @@ class Element(Plugin):
     #    usebuildtree (bool): Use the buildtree as its source
     #
     # Returns: Exit code
-    #
-    # If directory is not specified, one will be staged using scope
-    def _shell(
-        self, scope=None, directory=None, *, mounts=None, isolate=False, prompt=None, command=None, usebuildtree=False
-    ):
+    def _shell(self, scope=None, *, mounts=None, isolate=False, prompt=None, command=None, usebuildtree=False):
 
-        with self._prepare_sandbox(scope, directory, shell=True, usebuildtree=usebuildtree) as sandbox:
+        with self._prepare_sandbox(scope, shell=True, usebuildtree=usebuildtree) as sandbox:
             environment = self.get_environment()
             environment = copy.copy(environment)
             flags = SandboxFlags.INTERACTIVE | SandboxFlags.ROOT_READ_ONLY
@@ -2448,14 +2439,12 @@ class Element(Plugin):
     #    stderr (fileobject): The stream for stderr for the sandbox
     #    config (SandboxConfig): The SandboxConfig object
     #    allow_remote (bool): Whether the sandbox is allowed to be remote
-    #    bare_directory (bool): Whether the directory is bare i.e. doesn't have
-    #                           a separate 'root' subdir
     #
     # Yields:
     #    (Sandbox): A usable sandbox
     #
     @contextmanager
-    def __sandbox(self, directory, stdout=None, stderr=None, config=None, allow_remote=True, bare_directory=False):
+    def __sandbox(self, directory, stdout=None, stderr=None, config=None, allow_remote=True):
         context = self._get_context()
         project = self._get_project()
         platform = context.platform
@@ -2488,7 +2477,6 @@ class Element(Plugin):
                 stderr=stderr,
                 config=config,
                 specs=self.__remote_execution_specs,
-                bare_directory=bare_directory,
                 allow_real_directory=False,
                 output_files_required=output_files_required,
                 output_node_properties=output_node_properties,
@@ -2507,7 +2495,6 @@ class Element(Plugin):
                 stdout=stdout,
                 stderr=stderr,
                 config=config,
-                bare_directory=bare_directory,
                 allow_real_directory=not self.BST_VIRTUAL_DIRECTORY,
                 output_node_properties=output_node_properties,
             )
@@ -2520,7 +2507,7 @@ class Element(Plugin):
             with utils._tempdir(
                 prefix="{}-".format(self.normal_name), dir=context.builddir
             ) as rootdir, self.__sandbox(
-                rootdir, stdout=stdout, stderr=stderr, config=config, allow_remote=allow_remote, bare_directory=False
+                rootdir, stdout=stdout, stderr=stderr, config=config, allow_remote=allow_remote
             ) as sandbox:
                 yield sandbox
 

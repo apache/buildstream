@@ -14,6 +14,13 @@ Core
   o BREAKING CHANGE: "format-version" is removed and replaced with "min-version",
     which is now required to be specified in project.conf.
 
+CLI
+---
+
+  o BREAKING CHANGE: `bst shell --sysroot` has been removed. This is no longer
+    needed now that we support caching buildtrees in CAS.
+
+
 ==================
 buildstream 1.93.1
 ==================
