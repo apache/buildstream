@@ -139,21 +139,14 @@ class Sandbox:
         self.__config = kwargs["config"]
         self.__stdout = kwargs["stdout"]
         self.__stderr = kwargs["stderr"]
-        self.__bare_directory = kwargs["bare_directory"]
 
         # Setup the directories. Root and output_directory should be
         # available to subclasses, hence being single-underscore. The
         # others are private to this class.
-        # If the directory is bare, it probably doesn't need scratch
-        if self.__bare_directory:
-            self._root = directory
-            self.__scratch = None
-            os.makedirs(self._root, exist_ok=True)
-        else:
-            self._root = os.path.join(directory, "root")
-            self.__scratch = os.path.join(directory, "scratch")
-            for directory_ in [self._root, self.__scratch]:
-                os.makedirs(directory_, exist_ok=True)
+        self._root = os.path.join(directory, "root")
+        self.__scratch = os.path.join(directory, "scratch")
+        for directory_ in [self._root, self.__scratch]:
+            os.makedirs(directory_, exist_ok=True)
 
         self._output_directory = None  # type: Optional[str]
         self._build_directory = None
@@ -529,7 +522,6 @@ class Sandbox:
     # Returns:
     #    (str): The sandbox scratch directory
     def _get_scratch_directory(self):
-        assert not self.__bare_directory, "Scratch is not going to work with bare directories"
         return self.__scratch
 
     # _get_output()
