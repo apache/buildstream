@@ -53,7 +53,6 @@ information.
    sources/tar
    sources/zip
    sources/git
-   sources/bzr
    sources/patch
    sources/pip
 

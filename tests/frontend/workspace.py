@@ -159,23 +159,6 @@ def open_workspace(
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_open_bzr_customize(cli, tmpdir, datafiles):
-    element_name, project, workspace = open_workspace(cli, tmpdir, datafiles, "bzr")
-
-    # Check that the .bzr dir exists
-    bzrdir = os.path.join(workspace, ".bzr")
-    assert os.path.isdir(bzrdir)
-
-    # Check that the correct origin branch is set
-    element_config = _yaml.load(os.path.join(project, "elements", element_name))
-    source_config = element_config.get_sequence("sources").mapping_at(0)
-    output = subprocess.check_output(["bzr", "info"], cwd=workspace)
-    stripped_url = source_config.get_str("url").lstrip("file:///")
-    expected_output_str = "checkout of branch: /{}/{}".format(stripped_url, source_config.get_str("track"))
-    assert expected_output_str in str(output)
-
-
-@pytest.mark.datafiles(DATA_DIR)
 def test_open_multi(cli, tmpdir, datafiles):
 
     workspace_object = WorkspaceCreator(cli, tmpdir, datafiles)
@@ -186,11 +169,8 @@ def test_open_multi(cli, tmpdir, datafiles):
         workspace_lsdir = os.listdir(workspace)
         if kind == "git":
             assert ".git" in workspace_lsdir
-        elif kind == "bzr":
-            assert ".bzr" in workspace_lsdir
         else:
             assert ".git" not in workspace_lsdir
-            assert ".bzr" not in workspace_lsdir
 
 
 @pytest.mark.skipif(os.geteuid() == 0, reason="root may have CAP_DAC_OVERRIDE and ignore permissions")

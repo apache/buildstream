@@ -37,15 +37,6 @@ except ProgramNotFoundError:
     GIT_ENV = dict()
 
 try:
-    BZR = utils.get_host_tool("bzr")  # type: Optional[str]
-    HAVE_BZR = True
-    BZR_ENV = {"BZR_EMAIL": "Testy McTesterson <testy.mctesterson@example.com>"}
-except ProgramNotFoundError:
-    BZR = None
-    HAVE_BZR = False
-    BZR_ENV = {}
-
-try:
     utils.get_host_tool("bwrap")
     HAVE_BWRAP = True
     HAVE_BWRAP_JSON_STATUS = _site.get_bwrap_version() >= (0, 3, 2)
