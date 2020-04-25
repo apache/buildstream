@@ -207,7 +207,7 @@ class Stream:
 
         # Assert we have everything we need built, using the element
         # definitions to control the execution environment only.
-        if not element._has_all_sources_in_source_cache():
+        if scope == Scope.BUILD and not element._has_all_sources_in_source_cache():
             raise StreamError(
                 "Sources for element {} are not cached." "Element must be fetched.".format(element._get_full_name())
             )
