@@ -289,23 +289,46 @@ class CasBasedDirectory(Directory):
         # We can't iterate and remove entries at the same time
         to_remove = [entry for entry in dir_a.index.values() if entry.name not in dir_b.index]
         for entry in to_remove:
-            self.delete_entry(entry.name)
+            self.remove(entry.name, recursive=True)
 
         self.__invalidate_digest()
-
-    def _copy_link_from_filesystem(self, basename, filename):
-        self._add_new_link_direct(filename, os.readlink(os.path.join(basename, filename)))
 
     def _add_new_link_direct(self, name, target):
         self.index[name] = IndexEntry(name, _FileType.SYMLINK, target=target, modified=name in self.index)
 
         self.__invalidate_digest()
 
-    def delete_entry(self, name):
-        if name in self.index:
-            del self.index[name]
+    def remove(self, *path, recursive=False):
+        if len(path) > 1:
+            # Delegate remove to subdirectory
+            subdir = self.descend(*path[:-1])
+            subdir.remove(path[-1], recursive=recursive)
+            return
 
+        name = path[0]
+        self.__validate_path_component(name)
+        entry = self.index.get(name)
+        if not entry:
+            raise FileNotFoundError("{} not found in {}".format(name, str(self)))
+
+        if entry.type == _FileType.DIRECTORY and not recursive:
+            subdir = entry.get_directory(self)
+            if not subdir.is_empty():
+                raise VirtualDirectoryError("{} is not empty".format(str(subdir)))
+
+        del self.index[name]
         self.__invalidate_digest()
+
+    def rename(self, src, dest):
+        srcdir = self.descend(*src[:-1])
+        entry = srcdir._entry_from_path(src[-1])
+
+        destdir = self.descend(*dest[:-1])
+        self.__validate_path_component(dest[-1])
+
+        srcdir.remove(src[-1], recursive=True)
+        entry.name = dest[-1]
+        destdir._add_entry(entry)
 
     def descend(self, *paths, create=False, follow_symlinks=False):
         """Descend one or more levels of directory hierarchy and return a new
@@ -331,6 +354,8 @@ class CasBasedDirectory(Directory):
             # Skip empty path segments
             if not path:
                 continue
+
+            self.__validate_path_component(path)
 
             entry = current_dir.index.get(path)
 
@@ -379,7 +404,7 @@ class CasBasedDirectory(Directory):
             # pointing to another Directory.
             subdir = existing_entry.get_directory(self)
             if subdir.is_empty():
-                self.delete_entry(name)
+                self.remove(name)
                 fileListResult.overwritten.append(relative_pathname)
                 return True
             else:
@@ -387,7 +412,7 @@ class CasBasedDirectory(Directory):
                 fileListResult.ignored.append(relative_pathname)
                 return False
         else:
-            self.delete_entry(name)
+            self.remove(name)
             fileListResult.overwritten.append(relative_pathname)
             return True
 
@@ -448,7 +473,7 @@ class CasBasedDirectory(Directory):
             if filter_callback and not filter_callback(relative_pathname):
                 if is_dir and create_subdir and dest_subdir.is_empty():
                     # Complete subdirectory has been filtered out, remove it
-                    self.delete_entry(name)
+                    self.remove(name)
 
                 # Entry filtered out, move to next
                 continue
@@ -729,12 +754,13 @@ class CasBasedDirectory(Directory):
     @contextmanager
     def open_file(self, *path: str, mode: str = "r"):
         subdir = self.descend(*path[:-1])
+        self.__validate_path_component(path[-1])
         entry = subdir.index.get(path[-1])
 
         if entry and entry.type != _FileType.REGULAR_FILE:
             raise VirtualDirectoryError("{} in {} is not a file".format(path[-1], str(subdir)))
 
-        if mode not in ["r", "rb", "w", "wb", "x", "xb"]:
+        if mode not in ["r", "rb", "w", "wb", "w+", "w+b", "x", "xb", "x+", "x+b"]:
             raise ValueError("Unsupported mode: `{}`".format(mode))
 
         if "b" in mode:
@@ -825,22 +851,74 @@ class CasBasedDirectory(Directory):
 
         return self.__digest
 
+    def _entry_from_path(self, *path, follow_symlinks=False):
+        subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
+        self.__validate_path_component(path[-1])
+        target = subdir.index.get(path[-1])
+        if target is None:
+            raise FileNotFoundError("{} not found in {}".format(path[-1], str(subdir)))
+
+        if follow_symlinks and target.type == _FileType.SYMLINK:
+            linklocation = target.target
+            newpath = linklocation.split(os.path.sep)
+            if os.path.isabs(linklocation):
+                return subdir._find_root()._entry_from_path(*newpath, follow_symlinks=True)
+            return subdir._entry_from_path(*newpath, follow_symlinks=True)
+        else:
+            return target
+
     def exists(self, *path, follow_symlinks=False):
         try:
-            subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
-            target = subdir.index.get(path[-1])
-            if target is not None:
-                if follow_symlinks and target.type == _FileType.SYMLINK:
-                    linklocation = target.target
-                    newpath = linklocation.split(os.path.sep)
-                    if os.path.isabs(linklocation):
-                        return subdir._find_root().exists(*newpath, follow_symlinks=True)
-                    return subdir.exists(*newpath, follow_symlinks=True)
-                else:
-                    return True
+            self._entry_from_path(*path, follow_symlinks=follow_symlinks)
+            return True
+        except (VirtualDirectoryError, FileNotFoundError):
             return False
-        except VirtualDirectoryError:
-            return False
+
+    def stat(self, *path, follow_symlinks=False):
+        entry = self._entry_from_path(*path, follow_symlinks=follow_symlinks)
+
+        st_mode = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
+        st_nlink = 1
+        st_mtime = BST_ARBITRARY_TIMESTAMP
+
+        if entry.type == _FileType.REGULAR_FILE:
+            st_mode |= stat.S_IFREG
+            st_size = entry.get_digest().size_bytes
+        elif entry.type == _FileType.DIRECTORY:
+            st_mode |= stat.S_IFDIR
+            st_size = 0
+        elif entry.type == _FileType.SYMLINK:
+            st_mode |= stat.S_IFLNK
+            st_size = len(entry.target)
+        else:
+            raise VirtualDirectoryError("Unsupported file type {}".format(entry.type))
+
+        if entry.type == _FileType.DIRECTORY or entry.is_executable:
+            st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+
+        if entry.node_properties:
+            for prop in entry.node_properties:
+                if prop.name == "MTime" and prop.value:
+                    st_mtime = utils._parse_timestamp(prop.value)
+
+        return os.stat_result((st_mode, 0, 0, st_nlink, 0, 0, st_size, st_mtime, st_mtime, st_mtime))
+
+    def file_digest(self, *path):
+        entry = self._entry_from_path(*path)
+        if entry.type != _FileType.REGULAR_FILE:
+            raise VirtualDirectoryError("Unsupported file type for digest: {}".format(entry.type))
+
+        return entry.digest.hash
+
+    def readlink(self, *path):
+        entry = self._entry_from_path(*path)
+        if entry.type != _FileType.SYMLINK:
+            raise VirtualDirectoryError("Unsupported file type for readlink: {}".format(entry.type))
+
+        return entry.target
+
+    def __iter__(self):
+        yield from self.index.keys()
 
     def _set_subtree_read_only(self, read_only):
         self.__node_properties = list(filter(lambda prop: prop.name != "SubtreeReadOnly", self.__node_properties))
@@ -867,3 +945,7 @@ class CasBasedDirectory(Directory):
                 subdir.__add_files_to_result(path_prefix=relative_pathname, result=result)
             else:
                 result.files_written.append(relative_pathname)
+
+    def __validate_path_component(self, path):
+        if "/" in path:
+            raise VirtualDirectoryError("Invalid path component: '{}'".format(path))

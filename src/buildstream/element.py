@@ -659,7 +659,7 @@ class Element(Plugin):
             # Hard link it into the staging area
             #
             vbasedir = sandbox.get_virtual_directory()
-            vstagedir = vbasedir if path is None else vbasedir.descend(*path.lstrip(os.sep).split(os.sep))
+            vstagedir = vbasedir if path is None else vbasedir.descend(*path.lstrip(os.sep).split(os.sep), create=True)
 
             split_filter = self.__split_filter_func(include, exclude, orphans)
 
