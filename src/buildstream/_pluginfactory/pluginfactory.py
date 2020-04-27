@@ -240,11 +240,13 @@ class PluginFactory:
             plugin_type = plugin.setup()
         except AttributeError as e:
             raise PluginError(
-                "{} plugin '{}' did not provide a setup() function".format(self._base_type.__name__, kind)
+                "{} plugin '{}' did not provide a setup() function".format(self._base_type.__name__, kind),
+                reason="missing-setup-function",
             ) from e
         except TypeError as e:
             raise PluginError(
-                "setup symbol in {} plugin '{}' is not a function".format(self._base_type.__name__, kind)
+                "setup symbol in {} plugin '{}' is not a function".format(self._base_type.__name__, kind),
+                reason="setup-is-not-function",
             ) from e
 
         self._assert_plugin(kind, plugin_type)
@@ -261,11 +263,13 @@ class PluginFactory:
                 raise PluginError(
                     "{} plugin '{}' returned type '{}', which is not a subclass of {}".format(
                         self._base_type.__name__, kind, plugin_type.__name__, self._base_type.__name__
-                    )
+                    ),
+                    reason="setup-returns-bad-type",
                 )
         except TypeError as e:
             raise PluginError(
                 "{} plugin '{}' returned something that is not a type (expected subclass of {})".format(
                     self._base_type.__name__, kind, self._base_type.__name__
-                )
+                ),
+                reason="setup-returns-not-type",
             ) from e
