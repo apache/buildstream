@@ -8,7 +8,7 @@ import pytest
 from buildstream.testing import cli  # pylint: disable=unused-import
 
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
+DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "deprecationwarnings")
 
 _DEPRECATION_MESSAGE = "Here is some detail."
 _DEPRECATION_WARNING = "Using deprecated plugin deprecated_plugin: {}".format(_DEPRECATION_MESSAGE)
