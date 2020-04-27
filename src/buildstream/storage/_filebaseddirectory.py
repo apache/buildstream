@@ -236,28 +236,50 @@ class FileBasedDirectory(Directory):
     def get_size(self):
         return utils._get_dir_size(self.external_directory)
 
+    def stat(self, *path, follow_symlinks=False):
+        subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
+        newpath = os.path.join(subdir.external_directory, path[-1])
+        st = os.lstat(newpath)
+        if follow_symlinks and stat.S_ISLNK(st.st_mode):
+            linklocation = os.readlink(newpath)
+            newpath = linklocation.split(os.path.sep)
+            if os.path.isabs(linklocation):
+                return subdir._find_root().stat(*newpath, follow_symlinks=True)
+            return subdir.stat(*newpath, follow_symlinks=True)
+        else:
+            return st
+
     def exists(self, *path, follow_symlinks=False):
         try:
-            subdir = self.descend(*path[:-1], follow_symlinks=follow_symlinks)
-            newpath = os.path.join(subdir.external_directory, path[-1])
-            st = os.lstat(newpath)
-            if follow_symlinks and stat.S_ISLNK(st.st_mode):
-                linklocation = os.readlink(newpath)
-                newpath = linklocation.split(os.path.sep)
-                if os.path.isabs(linklocation):
-                    return subdir._find_root().exists(*newpath, follow_symlinks=True)
-                return subdir.exists(*newpath, follow_symlinks=True)
-            else:
-                return True
+            self.stat(*path, follow_symlinks=follow_symlinks)
+            return True
         except (VirtualDirectoryError, FileNotFoundError):
             return False
+
+    def file_digest(self, *path):
+        # Use descend() to avoid following symlinks (potentially escaping the sandbox)
+        subdir = self.descend(*path[:-1])
+        if subdir.exists(path[-1]) and not subdir.isfile(path[-1]):
+            raise VirtualDirectoryError("Unsupported file type for digest")
+
+        newpath = os.path.join(subdir.external_directory, path[-1])
+        return utils.sha256sum(newpath)
+
+    def readlink(self, *path):
+        # Use descend() to avoid following symlinks (potentially escaping the sandbox)
+        subdir = self.descend(*path[:-1])
+        if subdir.exists(path[-1]) and not subdir.islink(path[-1]):
+            raise VirtualDirectoryError("Unsupported file type for readlink")
+
+        newpath = os.path.join(subdir.external_directory, path[-1])
+        return os.readlink(newpath)
 
     def open_file(self, *path: str, mode: str = "r"):
         # Use descend() to avoid following symlinks (potentially escaping the sandbox)
         subdir = self.descend(*path[:-1])
         newpath = os.path.join(subdir.external_directory, path[-1])
 
-        if mode not in ["r", "rb", "w", "wb", "x", "xb"]:
+        if mode not in ["r", "rb", "w", "wb", "w+", "w+b", "x", "xb", "x+", "x+b"]:
             raise ValueError("Unsupported mode: `{}`".format(mode))
 
         if "b" in mode:
@@ -268,7 +290,41 @@ class FileBasedDirectory(Directory):
         if "r" in mode:
             return open(newpath, mode=mode, encoding=encoding)
         else:
+            if "x" in mode:
+                # This check is not atomic, however, we're operating with a
+                # single thread in a private directory tree.
+                if subdir.exists(path[-1]):
+                    raise FileExistsError("{} already exists in {}".format(path[-1], str(subdir)))
+                mode = "w" + mode[1:]
+
             return utils.save_file_atomic(newpath, mode=mode, encoding=encoding)
+
+    def remove(self, *path, recursive=False):
+        # Use descend() to avoid following symlinks (potentially escaping the sandbox)
+        subdir = self.descend(*path[:-1])
+        newpath = os.path.join(subdir.external_directory, path[-1])
+
+        if subdir._get_filetype(path[-1]) == _FileType.DIRECTORY:
+            if recursive:
+                shutil.rmtree(newpath)
+            else:
+                os.rmdir(newpath)
+        else:
+            os.unlink(newpath)
+
+    def rename(self, src, dest):
+        # Use descend() to avoid following symlinks (potentially escaping the sandbox)
+        srcdir = self.descend(*src[:-1])
+        destdir = self.descend(*dest[:-1])
+        srcpath = os.path.join(srcdir.external_directory, src[-1])
+        destpath = os.path.join(destdir.external_directory, dest[-1])
+
+        if destdir.exists(dest[-1]):
+            destdir.remove(dest[-1])
+        os.rename(srcpath, destpath)
+
+    def __iter__(self):
+        yield from os.listdir(self.external_directory)
 
     def __str__(self):
         # This returns the whole path (since we don't know where the directory started)

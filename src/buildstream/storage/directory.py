@@ -32,6 +32,8 @@ See also: :ref:`sandboxing`.
 """
 
 
+import os
+import stat
 from typing import Callable, Optional, Union, List
 
 from .._exceptions import BstError
@@ -208,6 +210,66 @@ class Directory:
         """
         raise NotImplementedError()
 
+    def stat(self, *paths: str, follow_symlinks: bool = False) -> os.stat_result:
+        """ Get the status of a file.
+
+        Args:
+          *paths: A list of strings which are all path components.
+          follow_symlinks: True to follow symlinks.
+
+        Returns:
+          A `os.stat_result` object.
+        """
+        raise NotImplementedError()
+
+    def isfile(self, *paths: str, follow_symlinks: bool = False) -> bool:
+        """ Check whether the specified path is an existing regular file.
+
+        Args:
+          *paths: A list of strings which are all path components.
+          follow_symlinks: True to follow symlinks.
+
+        Returns:
+          True if the path is an existing regular file, False otherwise.
+        """
+        try:
+            st = self.stat(*paths, follow_symlinks=follow_symlinks)
+            return stat.S_ISREG(st.st_mode)
+        except (VirtualDirectoryError, FileNotFoundError):
+            return False
+
+    def isdir(self, *paths: str, follow_symlinks: bool = False) -> bool:
+        """ Check whether the specified path is an existing directory.
+
+        Args:
+          *paths: A list of strings which are all path components.
+          follow_symlinks: True to follow symlinks.
+
+        Returns:
+          True if the path is an existing directory, False otherwise.
+        """
+        try:
+            st = self.stat(*paths, follow_symlinks=follow_symlinks)
+            return stat.S_ISDIR(st.st_mode)
+        except (VirtualDirectoryError, FileNotFoundError):
+            return False
+
+    def islink(self, *paths: str, follow_symlinks: bool = False) -> bool:
+        """ Check whether the specified path is an existing symlink.
+
+        Args:
+          *paths: A list of strings which are all path components.
+          follow_symlinks: True to follow symlinks.
+
+        Returns:
+          True if the path is an existing symlink, False otherwise.
+        """
+        try:
+            st = self.stat(*paths, follow_symlinks=follow_symlinks)
+            return stat.S_ISLNK(st.st_mode)
+        except (VirtualDirectoryError, FileNotFoundError):
+            return False
+
     def open_file(self, *paths: str, mode: str = "r"):
         """ Open file and return a corresponding file object. In text mode,
         UTF-8 is used as encoding.
@@ -215,6 +277,42 @@ class Directory:
         Args:
           *paths: A list of strings which are all path components.
           mode (str): An optional string that specifies the mode in which the file is opened.
+        """
+        raise NotImplementedError()
+
+    def file_digest(self, *paths: str) -> str:
+        """ Return a digest of a file. The digest algorithm is implementation-
+        defined.
+
+        Args:
+          *paths: A list of strings which are all path components.
+        """
+        raise NotImplementedError()
+
+    def readlink(self, *paths: str) -> str:
+        """ Return a string representing the path to which the symbolic link points.
+
+        Args:
+          *paths: A list of strings which are all path components.
+        """
+        raise NotImplementedError()
+
+    def remove(self, *paths: str, recursive: bool = False):
+        """ Remove a file, symlink or directory. Symlinks are not followed.
+
+        Args:
+          *paths: A list of strings which are all path components.
+          recursive: True to delete non-empty directories.
+        """
+        raise NotImplementedError()
+
+    def rename(self, src: List[str], dest: List[str]):
+        """ Rename a file, symlink or directory. If destination path exists
+        already and is a file or empty directory, it will be replaced.
+
+        Args:
+          *src: Source path components.
+          *dest: Destination path components.
         """
         raise NotImplementedError()
 
