@@ -90,6 +90,9 @@ cdef class Node:
     def __json__(self):
         raise ValueError("Nodes should not be allowed when jsonify-ing data", self)
 
+    def __str__(self):
+        return "{}: {}".format(self.get_provenance(), self.strip_node_info())
+
     #############################################################
     #                  Abstract Public Methods                  #
     #############################################################
