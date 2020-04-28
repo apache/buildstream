@@ -6,6 +6,9 @@ from buildstream import Source
 # Use this to test that the core behaves as expected with such plugins.
 #
 class NoLoadRefSource(Source):
+
+    BST_MIN_VERSION = "2.0"
+
     def configure(self, node):
         pass
 

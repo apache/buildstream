@@ -140,6 +140,8 @@ from buildstream import Element, ElementError, Scope
 class FilterElement(Element):
     # pylint: disable=attribute-defined-outside-init
 
+    BST_MIN_VERSION = "2.0"
+
     BST_ARTIFACT_VERSION = 1
 
     # The filter element's output is its dependencies, so

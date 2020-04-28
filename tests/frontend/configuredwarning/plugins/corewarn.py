@@ -3,6 +3,9 @@ from buildstream.plugin import CoreWarnings
 
 
 class CoreWarn(Element):
+
+    BST_MIN_VERSION = "2.0"
+
     def configure(self, node):
         pass
 

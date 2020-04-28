@@ -20,6 +20,8 @@
 import os
 import inspect
 
+from .. import utils
+from ..utils import UtilError
 from .._exceptions import PluginError
 
 from .pluginorigin import PluginOrigin, PluginOriginType
@@ -250,6 +252,8 @@ class PluginFactory:
             ) from e
 
         self._assert_plugin(kind, plugin_type)
+        self._assert_min_version(kind, plugin_type)
+
         return (plugin_type, defaults)
 
     def _assert_plugin(self, kind, plugin_type):
@@ -273,3 +277,44 @@ class PluginFactory:
                 ),
                 reason="setup-returns-not-type",
             ) from e
+
+    def _assert_min_version(self, kind, plugin_type):
+
+        if plugin_type.BST_MIN_VERSION is None:
+            raise PluginError(
+                "{} plugin '{}' did not specify BST_MIN_VERSION".format(self._base_type.__name__, kind),
+                reason="missing-min-version",
+                detail="Are you trying to use a BuildStream 1 plugin with a BuildStream 2 project ?",
+            )
+
+        try:
+            min_version_major, min_version_minor = utils._parse_version(plugin_type.BST_MIN_VERSION)
+        except UtilError as e:
+            raise PluginError(
+                "{} plugin '{}' specified malformed BST_MIN_VERSION: {}".format(
+                    self._base_type.__name__, kind, plugin_type.BST_MIN_VERSION
+                ),
+                reason="malformed-min-version",
+                detail="BST_MIN_VERSION must be specified as 'MAJOR.MINOR' with "
+                + "numeric major and minor minimum required version numbers",
+            ) from e
+
+        bst_major, bst_minor = utils._get_bst_api_version()
+
+        if min_version_major != bst_major:
+            raise PluginError(
+                "{} plugin '{}' requires BuildStream {}, but is being loaded with BuildStream {}".format(
+                    self._base_type.__name__, kind, min_version_major, bst_major
+                ),
+                reason="incompatible-major-version",
+                detail="You will need to find the correct version of this plugin for your project.",
+            )
+
+        if min_version_minor > bst_minor:
+            raise PluginError(
+                "{} plugin '{}' requires BuildStream {}, but is being loaded with BuildStream {}.{}".format(
+                    self._base_type.__name__, kind, plugin_type.BST_MIN_VERSION, bst_major, bst_minor
+                ),
+                reason="incompatible-minor-version",
+                detail="Please upgrade to BuildStream {}".format(plugin_type.BST_MIN_VERSION),
+            )
