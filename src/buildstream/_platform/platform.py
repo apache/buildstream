@@ -81,6 +81,7 @@ class Platform:
             sandbox_setups["dummy"]()
 
     def _check_sandbox(self, Sandbox):
+        Sandbox._dummy_reasons = []
         try:
             Sandbox.check_available()
         except SandboxError as Error:
