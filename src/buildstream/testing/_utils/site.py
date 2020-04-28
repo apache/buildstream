@@ -81,6 +81,7 @@ BUILDBOX_RUN = None
 if HAVE_SANDBOX == "buildbox-run":
     try:
         path = utils.get_host_tool("buildbox-run")
+        subprocess.run([path, "--capabilities"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         BUILDBOX_RUN = os.path.basename(os.readlink(path))
-    except (ProgramNotFoundError, OSError):
+    except (ProgramNotFoundError, OSError, subprocess.CalledProcessError):
         pass
