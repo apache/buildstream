@@ -187,11 +187,6 @@ class Element(Plugin):
     """Whether to raise exceptions if an element has sources.
     """
 
-    BST_VIRTUAL_DIRECTORY = False
-    """Whether to raise exceptions if an element uses Sandbox.get_directory
-    instead of Sandbox.get_virtual_directory.
-    """
-
     BST_RUN_COMMANDS = True
     """Whether the element may run commands using Sandbox.run.
     """
@@ -2456,14 +2451,6 @@ class Element(Plugin):
 
         if directory is not None and allow_remote and self.__use_remote_execution():
 
-            if not self.BST_VIRTUAL_DIRECTORY:
-                raise ElementError(
-                    "Element {} is configured to use remote execution but plugin does not support it.".format(
-                        self.name
-                    ),
-                    detail="Plugin '{kind}' does not support virtual directories.".format(kind=self.get_kind()),
-                )
-
             self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
 
             output_files_required = context.require_artifact_files or self._artifact_files_required()
@@ -2477,7 +2464,6 @@ class Element(Plugin):
                 stderr=stderr,
                 config=config,
                 specs=self.__remote_execution_specs,
-                allow_real_directory=False,
                 output_files_required=output_files_required,
                 output_node_properties=output_node_properties,
             )
@@ -2495,7 +2481,6 @@ class Element(Plugin):
                 stdout=stdout,
                 stderr=stderr,
                 config=config,
-                allow_real_directory=not self.BST_VIRTUAL_DIRECTORY,
                 output_node_properties=output_node_properties,
             )
             yield sandbox
