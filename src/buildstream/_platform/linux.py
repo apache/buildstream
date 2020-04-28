@@ -35,7 +35,7 @@ class Linux(Platform):
         }
 
         preferred_sandboxes = [
-            "bwrap",
+            "buildbox-run",
         ]
 
         self._try_sandboxes(force_sandbox, sandbox_setups, preferred_sandboxes)
