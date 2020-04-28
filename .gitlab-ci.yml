@@ -115,6 +115,12 @@ overnight-fedora-30-aarch64:
   only:
   - schedules
 
+tests-bwrap:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
+  <<: *tests
+  variables:
+    BST_FORCE_SANDBOX: "bwrap"
+
 tests-userchroot:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
@@ -443,6 +449,7 @@ coverage:
     - tox -e coverage
     - cp -a .coverage-reports/ ./coverage-report
   dependencies:
+  - tests-bwrap
   - tests-centos-7.7
   - tests-debian-10
   - tests-fedora-30
