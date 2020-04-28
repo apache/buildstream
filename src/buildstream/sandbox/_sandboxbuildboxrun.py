@@ -36,10 +36,6 @@ from ._sandboxreapi import SandboxREAPI
 # BuildBox-based sandbox implementation.
 #
 class SandboxBuildBoxRun(SandboxREAPI):
-    def __init__(self, context, project, directory, **kwargs):
-        kwargs["allow_real_directory"] = False
-        super().__init__(context, project, directory, **kwargs)
-
     @classmethod
     def check_available(cls):
         try:

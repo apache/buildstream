@@ -40,11 +40,6 @@ import buildstream
 
 # Element implementation for the 'script' kind.
 class ScriptElement(buildstream.ScriptElement):
-    # pylint: disable=attribute-defined-outside-init
-
-    # This plugin has been modified to avoid the use of Sandbox.get_directory
-    BST_VIRTUAL_DIRECTORY = True
-
     def configure(self, node):
         for n in node.get_sequence("layout", []):
             dst = self.node_subst_vars(n.get_scalar("destination"))

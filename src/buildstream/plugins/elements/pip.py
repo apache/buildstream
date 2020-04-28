@@ -36,9 +36,6 @@ from buildstream import BuildElement, SandboxFlags
 
 # Element implementation for the 'pip' kind.
 class PipElement(BuildElement):
-    # Supports virtual directories (required for remote execution)
-    BST_VIRTUAL_DIRECTORY = True
-
     # Enable command batching across prepare() and assemble()
     def configure_sandbox(self, sandbox):
         super().configure_sandbox(sandbox)
