@@ -2,6 +2,8 @@
 # pylint: disable=redefined-outer-name
 
 import os
+import uuid
+
 import pytest
 
 from buildstream import _yaml
@@ -299,9 +301,6 @@ def test_workspace_visible(cli, datafiles):
     # Cat the hello.c file from a bst shell command, and assert
     # that we got the same content here
     #
-    result = cli.run(project=project, args=["source", "fetch", element_name])
-    assert result.exit_code == 0
-
     result = cli.run(project=project, args=["shell", "--build", element_name, "--", "cat", "hello.c"])
     assert result.exit_code == 0
     assert result.output == workspace_hello
@@ -400,3 +399,38 @@ def test_integration_partial_artifact(cli, datafiles, tmpdir, integration_cache)
         result = cli.run(project=project, args=["shell", "--pull", element_name, "--", "hello"])
         result.assert_success()
         assert "autotools/amhello.bst" in result.get_pulled_elements()
+
+
+# Test that the sources are fetched automatically when opening a build shell
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_build_shell_fetch(cli, datafiles):
+    project = str(datafiles)
+    element_name = "build-shell-fetch.bst"
+
+    # Create a file with unique contents such that it cannot be in the cache already
+    test_filepath = os.path.join(project, "files", "hello.txt")
+    test_message = "Hello World! {}".format(uuid.uuid4())
+    with open(test_filepath, "w") as f:
+        f.write(test_message)
+    checksum = utils.sha256sum(test_filepath)
+
+    # Create an element that has this unique file as a source
+    element = {
+        "kind": "manual",
+        "depends": ["base.bst"],
+        "sources": [{"kind": "remote", "url": "project_dir:/files/hello.txt", "ref": checksum}],
+    }
+    _yaml.roundtrip_dump(element, os.path.join(project, "elements", element_name))
+
+    # Ensure our dependencies are cached
+    result = cli.run(project=project, args=["build", "base.bst"])
+    result.assert_success()
+
+    # Ensure our sources are not cached
+    assert cli.get_element_state(project, element_name) == "fetch needed"
+
+    # Launching a shell should fetch any uncached sources
+    result = cli.run(project=project, args=["shell", "--build", element_name, "cat", "hello.txt"])
+    result.assert_success()
+    assert result.output == test_message
