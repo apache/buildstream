@@ -108,3 +108,95 @@ def test_setup_returns_bad_type(cli, datafiles, plugin_type):
 
     result = cli.run(project=project, args=["show", "element.bst"])
     result.assert_main_error(ErrorDomain.PLUGIN, "setup-returns-bad-type")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_missing_min_version(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    update_project(
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "nominversion"),
+                    plugin_type: ["nominversion"],
+                }
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "nominversion")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.PLUGIN, "missing-min-version")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_malformed_min_version(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    update_project(
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "malformedminversion"),
+                    plugin_type: ["malformedminversion"],
+                }
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "malformedminversion")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.PLUGIN, "malformed-min-version")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_incompatible_major_version(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    update_project(
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "incompatiblemajor"),
+                    plugin_type: ["incompatiblemajor"],
+                }
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "incompatiblemajor")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.PLUGIN, "incompatible-major-version")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_incompatible_minor_version(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    update_project(
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "incompatibleminor"),
+                    plugin_type: ["incompatibleminor"],
+                }
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "incompatibleminor")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.PLUGIN, "incompatible-minor-version")
