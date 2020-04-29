@@ -43,9 +43,11 @@ def test_force_sandbox(cli, datafiles):
     _yaml.roundtrip_dump(element, element_path)
 
     # Build without access to host tools, this will fail
-    result = cli.run(project=project, args=["build", "element.bst"], env={"PATH": "", "BST_FORCE_SANDBOX": "bwrap"})
+    result = cli.run(
+        project=project, args=["build", "element.bst"], env={"PATH": "", "BST_FORCE_SANDBOX": "buildbox-run"}
+    )
     result.assert_main_error(ErrorDomain.PLATFORM, None)
-    assert "Bubblewrap not found" in result.stderr
+    assert "buildbox-run not found" in result.stderr
     # we have asked for a spesific sand box, but it is not avalble so
     # bst should fail early and the element should be waiting
     assert cli.get_element_state(project, "element.bst") == "waiting"

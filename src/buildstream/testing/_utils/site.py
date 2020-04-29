@@ -5,7 +5,6 @@ import os
 import stat
 import subprocess
 import sys
-import platform
 from typing import Optional  # pylint: disable=unused-import
 
 from buildstream import _site, utils, ProgramNotFoundError
@@ -64,23 +63,18 @@ CASD_SEPARATE_USER = bool(os.stat(casd_path).st_mode & stat.S_ISUID)
 del casd_path
 
 IS_LINUX = os.getenv("BST_FORCE_BACKEND", sys.platform).startswith("linux")
-IS_WSL = IS_LINUX and "Microsoft" in platform.uname().release
 IS_WINDOWS = os.name == "nt"
 
 MACHINE_ARCH = Platform.get_host_arch()
 
 HAVE_SANDBOX = os.getenv("BST_FORCE_SANDBOX")
 
-if HAVE_SANDBOX is not None:
-    pass
-elif IS_LINUX and HAVE_BWRAP and (not IS_WSL):
-    HAVE_SANDBOX = "bwrap"
-
-
 BUILDBOX_RUN = None
-if HAVE_SANDBOX == "buildbox-run":
+if HAVE_SANDBOX is None:
     try:
         path = utils.get_host_tool("buildbox-run")
+        subprocess.run([path, "--capabilities"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         BUILDBOX_RUN = os.path.basename(os.readlink(path))
-    except (ProgramNotFoundError, OSError):
+        HAVE_SANDBOX = "buildbox-run"
+    except (ProgramNotFoundError, OSError, subprocess.CalledProcessError):
         pass

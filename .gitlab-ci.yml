@@ -24,7 +24,7 @@ variables:
   # Our own variables
   # Version of the docker images we should use for all the images.
   # This is taken from buildstream/buildstream-docker-images
-  DOCKER_IMAGE_VERSION: master-138527946
+  DOCKER_IMAGE_VERSION: master-140747994
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   PYTEST_ARGS: "--color=yes --integration -n 2"
@@ -115,17 +115,16 @@ overnight-fedora-30-aarch64:
   only:
   - schedules
 
-tests-buildbox-run:
+tests-bwrap:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
   variables:
-    BST_FORCE_SANDBOX: "buildbox-run"
+    BST_FORCE_SANDBOX: "bwrap"
 
 tests-userchroot:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
   variables:
-    BST_FORCE_SANDBOX: "buildbox-run"
     BST_CAS_STAGING_ROOT: "/builds/userchroot"
 
   script:
@@ -450,7 +449,7 @@ coverage:
     - tox -e coverage
     - cp -a .coverage-reports/ ./coverage-report
   dependencies:
-  - tests-buildbox-run
+  - tests-bwrap
   - tests-centos-7.7
   - tests-debian-10
   - tests-fedora-30
