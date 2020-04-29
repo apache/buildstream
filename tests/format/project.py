@@ -163,7 +163,7 @@ def test_plugin_load_allowed(cli, datafiles):
 def test_plugin_load_forbidden(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, "plugin-forbidden")
     result = cli.run(project=project, silent=True, args=["show", "element.bst"])
-    result.assert_main_error(ErrorDomain.PLUGIN, None)
+    result.assert_main_error(ErrorDomain.PLUGIN, "plugin-not-found")
 
 
 @pytest.mark.datafiles(DATA_DIR)

@@ -19,8 +19,11 @@
 
 import os
 import inspect
+from typing import Tuple, Type
 
 from .. import utils
+from ..plugin import Plugin
+from ..node import ProvenanceInformation
 from ..utils import UtilError
 from .._exceptions import PluginError
 
@@ -116,13 +119,17 @@ class PluginFactory:
     #
     # Args:
     #     kind (str): The kind of Plugin to create
+    #     provenance (ProvenanceInformation): The provenance from where
+    #                                         the plugin was referenced
     #
-    # Returns: the type associated with the given kind
+    # Returns:
+    #     (type): The type associated with the given kind
+    #     (str): A path to the YAML file holding the plugin's defaults, or None
     #
     # Raises: PluginError
     #
-    def lookup(self, kind):
-        return self._ensure_plugin(kind)
+    def lookup(self, kind: str, provenance: ProvenanceInformation) -> Tuple[Type[Plugin], str]:
+        return self._ensure_plugin(kind, provenance)
 
     # register_plugin_origin():
     #
@@ -197,7 +204,7 @@ class PluginFactory:
 
         return source, defaults
 
-    def _ensure_plugin(self, kind):
+    def _ensure_plugin(self, kind: str, provenance: ProvenanceInformation) -> Tuple[Type[Plugin], str]:
 
         if kind not in self._types:
             source = None
@@ -215,7 +222,10 @@ class PluginFactory:
             else:
                 # Try getting it from the core plugins
                 if kind not in self._site_source.list_plugins():
-                    raise PluginError("No {} type registered for kind '{}'".format(self._base_type.__name__, kind))
+                    raise PluginError(
+                        "{}: No {} type registered for kind '{}'".format(provenance, self._base_type.__name__, kind),
+                        reason="plugin-not-found"
+                    )
 
                 source = self._site_source
 
