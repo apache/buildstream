@@ -4,6 +4,19 @@
 
 
 ==================
+buildstream 1.93.3
+==================
+
+  o BREAKING CHANGE: Removed BST_REQUIRED_VERSION_[MAJOR/MINOR] from plugin base class,
+    this is now replaced with BST_MIN_VERSION which is now a hard requirement.
+
+  o BREAKING CHANGE: Removed BST_FORMAT_VERSION from plugin base class, this is no
+    longer supported.
+
+  o buildbox-run is now the default sandbox backend on all platforms
+
+
+==================
 buildstream 1.93.2
 ==================
 
