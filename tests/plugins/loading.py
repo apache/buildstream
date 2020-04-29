@@ -200,3 +200,33 @@ def test_incompatible_minor_version(cli, datafiles, plugin_type):
 
     result = cli.run(project=project, args=["show", "element.bst"])
     result.assert_main_error(ErrorDomain.PLUGIN, "incompatible-minor-version")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_plugin_not_found(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    setup_element(project, plugin_type, "notfound")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.PLUGIN, "plugin-not-found")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_plugin_found(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    update_project(
+        project,
+        {
+            "plugins": [
+                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "found")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_success()
