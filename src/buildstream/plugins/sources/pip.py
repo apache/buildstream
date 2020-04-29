@@ -98,6 +98,8 @@ _SDIST_RE = re.compile(r"^([\w.-]+?)-((?:[\d.]+){2,})\.(?:tar|tar.bz2|tar.gz|tar
 class PipSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
+    BST_MIN_VERSION = "2.0"
+
     # We need access to previous sources at track time to use requirements.txt
     # but not at fetch time as self.ref should contain sufficient information
     # for this plugin

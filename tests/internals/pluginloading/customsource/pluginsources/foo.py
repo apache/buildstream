@@ -2,6 +2,9 @@ from buildstream import Source
 
 
 class FooSource(Source):
+
+    BST_MIN_VERSION = "2.0"
+
     def preflight(self):
         pass
 

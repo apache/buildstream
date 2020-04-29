@@ -36,6 +36,10 @@ from buildstream import BuildElement, SandboxFlags
 
 # Element implementation for the 'pip' kind.
 class PipElement(BuildElement):
+    # pylint: disable=attribute-defined-outside-init
+
+    BST_MIN_VERSION = "2.0"
+
     # Enable command batching across prepare() and assemble()
     def configure_sandbox(self, sandbox):
         super().configure_sandbox(sandbox)

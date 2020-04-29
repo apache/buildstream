@@ -2,6 +2,9 @@ from buildstream import Source
 
 
 class ConsistencyBugSource(Source):
+
+    BST_MIN_VERSION = "2.0"
+
     def configure(self, node):
         pass
 

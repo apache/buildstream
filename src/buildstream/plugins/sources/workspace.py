@@ -45,6 +45,9 @@ from buildstream.node import MappingNode
 
 class WorkspaceSource(Source):
     # pylint: disable=attribute-defined-outside-init
+
+    BST_MIN_VERSION = "2.0"
+
     BST_STAGE_VIRTUAL_DIRECTORY = True
     BST_KEY_REQUIRES_STAGE = True
 

@@ -29,6 +29,9 @@ from buildstream import Element
 
 # Element implementation for the 'stack' kind.
 class StackElement(Element):
+    # pylint: disable=attribute-defined-outside-init
+
+    BST_MIN_VERSION = "2.0"
 
     # This plugin does not produce any artifacts when built
     BST_ELEMENT_HAS_ARTIFACT = False

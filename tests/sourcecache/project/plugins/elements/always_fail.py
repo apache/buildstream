@@ -23,6 +23,9 @@ from buildstream.buildelement import BuildElement
 
 
 class AlwaysFail(BuildElement):
+
+    BST_MIN_VERSION = "2.0"
+
     def assemble(self, sandbox):
         raise ElementError("Always fails")
 

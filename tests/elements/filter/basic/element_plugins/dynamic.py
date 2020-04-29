@@ -3,6 +3,9 @@ from buildstream import Element, Scope
 
 # Copies files from the dependent element but inserts split-rules using dynamic data
 class DynamicElement(Element):
+
+    BST_MIN_VERSION = "2.0"
+
     def configure(self, node):
         node.validate_keys(["split-rules"])
         self.split_rules = {key: value.as_str_list() for key, value in node.get_mapping("split-rules").items()}

@@ -156,7 +156,8 @@ from buildstream import _GitSourceBase
 
 
 class GitSource(_GitSourceBase):
-    pass
+
+    BST_MIN_VERSION = "2.0"
 
 
 # Plugin entry point

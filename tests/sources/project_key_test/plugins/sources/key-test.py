@@ -7,6 +7,8 @@ class KeyTest(Source):
     """ This plugin should fail if get_unique_key is called before track
     """
 
+    BST_MIN_VERSION = "2.0"
+
     def preflight(self):
         pass
 

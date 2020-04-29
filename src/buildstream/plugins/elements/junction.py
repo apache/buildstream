@@ -165,6 +165,8 @@ from buildstream._pipeline import PipelineError
 class JunctionElement(Element):
     # pylint: disable=attribute-defined-outside-init
 
+    BST_MIN_VERSION = "2.0"
+
     # Junctions are not allowed any dependencies
     BST_FORBID_BDEPENDS = True
     BST_FORBID_RDEPENDS = True
