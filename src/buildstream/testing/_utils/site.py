@@ -7,7 +7,7 @@ import subprocess
 import sys
 from typing import Optional  # pylint: disable=unused-import
 
-from buildstream import _site, utils, ProgramNotFoundError
+from buildstream import utils, ProgramNotFoundError
 from buildstream._platform import Platform
 
 
@@ -43,14 +43,6 @@ except ProgramNotFoundError:
     BZR = None
     HAVE_BZR = False
     BZR_ENV = {}
-
-try:
-    utils.get_host_tool("bwrap")
-    HAVE_BWRAP = True
-    HAVE_BWRAP_JSON_STATUS = _site.get_bwrap_version() >= (0, 3, 2)
-except ProgramNotFoundError:
-    HAVE_BWRAP = False
-    HAVE_BWRAP_JSON_STATUS = False
 
 try:
     utils.get_host_tool("lzip")
