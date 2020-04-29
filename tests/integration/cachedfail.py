@@ -182,7 +182,7 @@ def test_push_failed_missing_shell(cli, tmpdir, datafiles, on_error):
         assert share.get_artifact(cli.get_artifact_name(project, "test", "element.bst"))
 
 
-@pytest.mark.skipif(HAVE_SANDBOX != "bwrap", reason="Only available with bubblewrap on Linux")
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
 @pytest.mark.datafiles(DATA_DIR)
 def test_host_tools_errors_are_not_cached(cli, datafiles, tmp_path):
     # Create symlink to buildbox-casd to work with custom PATH
