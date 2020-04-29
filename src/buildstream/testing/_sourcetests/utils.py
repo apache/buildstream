@@ -71,7 +71,7 @@ def add_plugins_conf(project, plugin_kind):
 
     if plugin_package is not None:
         project_conf["plugins"] = [
-            {"origin": "pip", "package-name": plugin_package, "sources": {plugin_kind: 0,},},
+            {"origin": "pip", "package-name": plugin_package, "sources": [plugin_kind],},
         ]
 
     _yaml.roundtrip_dump(project_conf, project_conf_file)

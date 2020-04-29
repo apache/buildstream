@@ -14,6 +14,7 @@ from buildstream import Source, SourceError, utils
 
 
 class FooTransformSource(Source):
+    BST_MIN_VERSION = "2.0"
 
     # We need access to previous both at track time and fetch time
     BST_REQUIRES_PREVIOUS_SOURCES_TRACK = True

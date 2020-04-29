@@ -3,8 +3,6 @@ import os
 import pytest
 
 from buildstream._project import Project
-from buildstream._exceptions import LoadError
-from buildstream.exceptions import LoadErrorReason
 from buildstream._pipeline import Pipeline
 
 from tests.testutils import dummy_context
@@ -38,23 +36,3 @@ def test_customelement(datafiles, tmpdir):
     basedir = str(datafiles)
     with create_pipeline(tmpdir, basedir, "simple.bst") as targets:
         assert targets[0].get_kind() == "foo"
-
-
-@pytest.mark.datafiles(os.path.join(DATA_DIR, "badversionsource"))
-def test_badversionsource(datafiles, tmpdir):
-    basedir = str(datafiles)
-
-    with pytest.raises(LoadError) as exc, create_pipeline(tmpdir, basedir, "simple.bst"):
-        pass
-
-    assert exc.value.reason == LoadErrorReason.UNSUPPORTED_PLUGIN
-
-
-@pytest.mark.datafiles(os.path.join(DATA_DIR, "badversionelement"))
-def test_badversionelement(datafiles, tmpdir):
-    basedir = str(datafiles)
-
-    with pytest.raises(LoadError) as exc, create_pipeline(tmpdir, basedir, "simple.bst"):
-        pass
-
-    assert exc.value.reason == LoadErrorReason.UNSUPPORTED_PLUGIN

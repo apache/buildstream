@@ -177,7 +177,7 @@ def test_plugin_no_load_ref(cli, datafiles, ref_storage):
         "name": "test",
         "min-version": "2.0",
         "ref-storage": ref_storage,
-        "plugins": [{"origin": "local", "path": "plugins", "sources": {"noloadref": 0}}],
+        "plugins": [{"origin": "local", "path": "plugins", "sources": ["noloadref"]}],
     }
     _yaml.roundtrip_dump(config, os.path.join(project, "project.conf"))
 
@@ -202,7 +202,7 @@ def test_plugin_preflight_error(cli, datafiles):
 def test_duplicate_plugins(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, "duplicate-plugins")
     result = cli.run(project=project, silent=True, args=["show", "element.bst"])
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_YAML)
+    result.assert_main_error(ErrorDomain.PLUGIN, "duplicate-plugin")
 
 
 # Assert that we get a different cache key for target.bst, depending

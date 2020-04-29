@@ -148,25 +148,30 @@ class Plugin:
         which are included in the buildstream namespace.
     """
 
-    BST_REQUIRED_VERSION_MAJOR = 0
-    """Minimum required major version"""
+    BST_MIN_VERSION = None
+    """The minimum required version of BuildStream required by this plugin.
 
-    BST_REQUIRED_VERSION_MINOR = 0
-    """Minimum required minor version"""
+    The version must be expressed as the string *"<major>.<minor>"*, where the
+    *major* version number is the API version and the *minor* version number is
+    the revision of the same BuildStream API where new symbols might have been
+    added to the API.
 
-    BST_FORMAT_VERSION = 0
-    """The plugin's YAML format version
+    **Example:**
 
-    This should be set to ``1`` the first time any new configuration
-    is understood by your :func:`Plugin.configure() <buildstream.plugin.Plugin.configure>`
-    implementation and subsequently bumped every time your
-    configuration is enhanced.
+    The following statement means that this plugin works with *BuildStream 2.X*,
+    only if *X >= 2*:
+
+    .. code:: python
+
+       class Foo(Source):
+
+           # Our plugin requires 2.2
+           BST_MIN_VERSION = "2.2"
 
     .. note::
 
-       Plugins are expected to maintain backward compatibility
-       in the format and configurations they expose. The versioning
-       is intended to track availability of new features only.
+       This version works exactly the same was as the :ref:`min-version <project_min_version>`
+       which must be specified in the project.conf file.
     """
 
     BST_PLUGIN_DEPRECATED = False

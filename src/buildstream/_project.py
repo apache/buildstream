@@ -36,13 +36,11 @@ from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
 from .node import ScalarNode, SequenceNode, _assert_symbol_name
 from .sandbox import SandboxRemote
-from ._elementfactory import ElementFactory
-from ._sourcefactory import SourceFactory
+from ._pluginfactory import ElementFactory, SourceFactory, PluginOrigin
 from .types import CoreWarnings
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._loader import Loader
 from .element import Element
-from .types import FastEnum
 from ._message import Message, MessageType
 from ._includes import Includes
 from ._workspaces import WORKSPACE_PROJECT_FILE
@@ -50,13 +48,6 @@ from ._workspaces import WORKSPACE_PROJECT_FILE
 
 # Project Configuration file
 _PROJECT_CONF_FILE = "project.conf"
-
-
-# List of all places plugins can come from
-class PluginOrigins(FastEnum):
-    CORE = "core"
-    LOCAL = "local"
-    PIP = "pip"
 
 
 # HostMount()
@@ -951,87 +942,19 @@ class Project:
         return project_directory, workspace_element
 
     def _load_plugin_factories(self, config, output):
-        plugin_source_origins = []  # Origins of custom sources
-        plugin_element_origins = []  # Origins of custom elements
-
-        # Plugin origins and versions
-        origins = config.get_sequence("plugins", default=[])
-        source_format_versions = {}
-        element_format_versions = {}
-        for origin in origins:
-            allowed_origin_fields = [
-                "origin",
-                "sources",
-                "elements",
-                "package-name",
-                "path",
-            ]
-            origin.validate_keys(allowed_origin_fields)
-
-            # Store source versions for checking later
-            source_versions = origin.get_mapping("sources", default={})
-            for key in source_versions.keys():
-                if key in source_format_versions:
-                    raise LoadError("Duplicate listing of source '{}'".format(key), LoadErrorReason.INVALID_YAML)
-                source_format_versions[key] = source_versions.get_int(key)
-
-            # Store element versions for checking later
-            element_versions = origin.get_mapping("elements", default={})
-            for key in element_versions.keys():
-                if key in element_format_versions:
-                    raise LoadError("Duplicate listing of element '{}'".format(key), LoadErrorReason.INVALID_YAML)
-                element_format_versions[key] = element_versions.get_int(key)
-
-            # Store the origins if they're not 'core'.
-            # core elements are loaded by default, so storing is unnecessary.
-            origin_value = origin.get_enum("origin", PluginOrigins)
-
-            if origin_value != PluginOrigins.CORE:
-                self._store_origin(origin, "sources", plugin_source_origins)
-                self._store_origin(origin, "elements", plugin_element_origins)
-
+        # Create the factories
         pluginbase = PluginBase(package="buildstream.plugins")
-        output.element_factory = ElementFactory(
-            pluginbase, plugin_origins=plugin_element_origins, format_versions=element_format_versions
-        )
-        output.source_factory = SourceFactory(
-            pluginbase, plugin_origins=plugin_source_origins, format_versions=source_format_versions
-        )
+        output.element_factory = ElementFactory(pluginbase)
+        output.source_factory = SourceFactory(pluginbase)
 
-    # _store_origin()
-    #
-    # Helper function to store plugin origins
-    #
-    # Args:
-    #    origin (node) - a node indicating the origin of a group of
-    #                    plugins.
-    #    plugin_group (str) - The name of the type of plugin that is being
-    #                         loaded
-    #    destination (list) - A list of nodes to store the origins in
-    #
-    # Raises:
-    #    LoadError if 'origin' is an unexpected value
-    def _store_origin(self, origin, plugin_group, destination):
-        expected_groups = ["sources", "elements"]
-        if plugin_group not in expected_groups:
-            raise LoadError(
-                "Unexpected plugin group: {}, expecting {}".format(plugin_group, expected_groups),
-                LoadErrorReason.INVALID_DATA,
-            )
-        if plugin_group in origin.keys():
-            origin_node = origin.clone()
-            plugins = origin.get_mapping(plugin_group, default={})
-            origin_node["plugins"] = plugins.keys()
-
-            for group in expected_groups:
-                if group in origin_node:
-                    del origin_node[group]
-
-            if origin_node.get_enum("origin", PluginOrigins) == PluginOrigins.LOCAL:
-                path = self.get_path_from_node(origin.get_scalar("path"), check_is_dir=True)
-                # paths are passed in relative to the project, but must be absolute
-                origin_node["path"] = os.path.join(self.directory, path)
-            destination.append(origin_node)
+        # Load the plugin origins and register them to their factories
+        origins = config.get_sequence("plugins", default=[])
+        for origin_node in origins:
+            origin = PluginOrigin.new_from_node(self, origin_node)
+            for kind in origin.elements:
+                output.element_factory.register_plugin_origin(kind, origin)
+            for kind in origin.sources:
+                output.source_factory.register_plugin_origin(kind, origin)
 
     # _warning_is_fatal():
     #

@@ -38,6 +38,8 @@ from buildstream import Element, ElementError
 class ImportElement(Element):
     # pylint: disable=attribute-defined-outside-init
 
+    BST_MIN_VERSION = "2.0"
+
     # Import elements do not run any commands
     BST_RUN_COMMANDS = False
 

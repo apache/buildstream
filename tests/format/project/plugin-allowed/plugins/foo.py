@@ -2,6 +2,9 @@ from buildstream import Element
 
 
 class FooElement(Element):
+
+    BST_MIN_VERSION = "2.0"
+
     def configure(self, config):
         pass
 

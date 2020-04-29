@@ -49,7 +49,7 @@ def generate_project():
             {"name": "arrakis", "aliases": {"foo": ["OFO/"], "bar": ["RBA/"],},},
             {"name": "oz", "aliases": {"foo": ["ooF/"], "bar": ["raB/"],}},
         ],
-        "plugins": [{"origin": "local", "path": "sources", "sources": {"fetch_source": 0}}],
+        "plugins": [{"origin": "local", "path": "sources", "sources": ["fetch_source"]}],
     }
     return project
 

@@ -11,6 +11,8 @@ from buildstream import Source
 
 
 class AlwaysCachedSource(Source):
+    BST_MIN_VERSION = "2.0"
+
     def configure(self, node):
         pass
 
