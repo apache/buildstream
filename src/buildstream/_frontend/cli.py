@@ -460,7 +460,16 @@ def init(app, project_name, min_version, element_path, force, target_directory):
     "--deps",
     "-d",
     default=None,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.PLAN, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.PLAN,
+            _PipelineSelection.RUN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.ALL,
+        ],
+    ),
     help="The dependencies to build",
 )
 @click.option(
@@ -810,7 +819,16 @@ def source():
     "-d",
     default=_PipelineSelection.PLAN,
     show_default=True,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.PLAN, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.PLAN,
+            _PipelineSelection.RUN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.ALL,
+        ],
+    ),
     help="The dependencies to fetch",
 )
 @click.option(
@@ -863,7 +881,16 @@ def source_fetch(app, elements, deps, except_, remote):
     "-d",
     default=_PipelineSelection.NONE,
     show_default=True,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.PLAN,
+            _PipelineSelection.RUN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.ALL,
+        ],
+    ),
     help="The dependencies to track",
 )
 @click.option("--cross-junctions", "-J", is_flag=True, help="Allow crossing junction boundaries")
@@ -917,7 +944,13 @@ def source_track(app, elements, deps, except_, cross_junctions):
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
-        [_PipelineSelection.BUILD, _PipelineSelection.NONE, _PipelineSelection.RUN, _PipelineSelection.ALL],
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.PLAN,
+            _PipelineSelection.RUN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.ALL,
+        ],
     ),
     help="The dependencies whose sources to checkout",
 )
@@ -1162,7 +1195,13 @@ def artifact():
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
-        [_PipelineSelection.BUILD, _PipelineSelection.RUN, _PipelineSelection.ALL, _PipelineSelection.NONE],
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.PLAN,
+            _PipelineSelection.RUN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.ALL,
+        ],
     ),
     help="The dependencies we also want to show",
 )
@@ -1188,7 +1227,13 @@ def artifact_show(app, deps, artifacts):
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
-        [_PipelineSelection.RUN, _PipelineSelection.BUILD, _PipelineSelection.NONE, _PipelineSelection.ALL],
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.PLAN,
+            _PipelineSelection.RUN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.ALL,
+        ],
     ),
     help="The dependencies to checkout",
 )
@@ -1287,7 +1332,16 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
     "-d",
     default=_PipelineSelection.NONE,
     show_default=True,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.PLAN,
+            _PipelineSelection.RUN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.ALL,
+        ],
+    ),
     help="The dependency artifacts to pull",
 )
 @click.option(
@@ -1336,7 +1390,16 @@ def artifact_pull(app, artifacts, deps, remote):
     "-d",
     default=_PipelineSelection.NONE,
     show_default=True,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.PLAN,
+            _PipelineSelection.RUN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.ALL,
+        ],
+    ),
     help="The dependencies to push",
 )
 @click.option(
@@ -1462,7 +1525,13 @@ def artifact_list_contents(app, artifacts, long_):
     show_default=True,
     type=FastEnumType(
         _PipelineSelection,
-        [_PipelineSelection.NONE, _PipelineSelection.RUN, _PipelineSelection.BUILD, _PipelineSelection.ALL],
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.PLAN,
+            _PipelineSelection.RUN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.ALL,
+        ],
     ),
     help="The dependencies to delete",
 )
