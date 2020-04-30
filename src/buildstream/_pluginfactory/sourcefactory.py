@@ -54,6 +54,6 @@ class SourceFactory(PluginFactory):
     #    LoadError (if the source itself took issue with the config)
     #
     def create(self, context, project, meta):
-        source_type, _ = self.lookup(meta.kind, meta.provenance)
+        source_type, _ = self.lookup(context.messenger, meta.kind, meta.provenance)
         source = source_type(context, project, meta)
         return source

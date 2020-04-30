@@ -18,6 +18,9 @@
 import os
 
 from ..types import FastEnum
+from ..node import ScalarNode, MappingNode
+from .._exceptions import LoadError
+from ..exceptions import LoadErrorReason
 
 
 # PluginOriginType:
@@ -29,6 +32,17 @@ class PluginOriginType(FastEnum):
     PIP = "pip"
 
 
+# PluginConfiguration:
+#
+# An object representing the configuration of a single
+# plugin in the origin.
+#
+class PluginConfiguration:
+    def __init__(self, kind, allow_deprecated):
+        self.kind = kind
+        self.allow_deprecated = allow_deprecated
+
+
 # PluginOrigin
 #
 # Base class holding common properties of all origins.
@@ -36,18 +50,19 @@ class PluginOriginType(FastEnum):
 class PluginOrigin:
 
     # Common fields valid for all plugin origins
-    _COMMON_CONFIG_KEYS = ["origin", "sources", "elements"]
+    _COMMON_CONFIG_KEYS = ["origin", "sources", "elements", "allow-deprecated"]
 
     def __init__(self, origin_type):
 
         # Public
-        self.origin_type = origin_type
-        self.elements = []
-        self.sources = []
+        self.origin_type = origin_type  # The PluginOriginType
+        self.elements = {}  # A dictionary of PluginConfiguration
+        self.sources = {}  # A dictionary of PluginConfiguration objects
 
         # Private
         self._project = None
         self._kinds = {}
+        self._allow_deprecated = False
 
     # new_from_node()
     #
@@ -73,8 +88,14 @@ class PluginOrigin:
         origin._project = project
         origin._load(origin_node)
 
-        origin.elements = origin_node.get_str_list("elements", [])
-        origin.sources = origin_node.get_str_list("sources", [])
+        # Parse commonly defined aspects of PluginOrigins
+        origin._allow_deprecated = origin_node.get_bool("allow-deprecated", False)
+
+        element_sequence = origin_node.get_sequence("elements", [])
+        origin._load_plugin_configurations(element_sequence, origin.elements)
+
+        source_sequence = origin_node.get_sequence("sources", [])
+        origin._load_plugin_configurations(source_sequence, origin.sources)
 
         return origin
 
@@ -88,6 +109,38 @@ class PluginOrigin:
     #
     def _load(self, origin_node):
         pass
+
+    # _load_plugin_configurations()
+    #
+    # Helper function to load the list of source or element
+    # PluginConfigurations
+    #
+    # Args:
+    #    sequence_node (SequenceNode): The list of configurations
+    #    dictionary (dict): The location to store the results
+    #
+    def _load_plugin_configurations(self, sequence_node, dictionary):
+
+        for node in sequence_node:
+
+            # Parse as a simple string
+            if type(node) is ScalarNode:  # pylint: disable=unidiomatic-typecheck
+                kind = node.as_str()
+                conf = PluginConfiguration(kind, self._allow_deprecated)
+
+            # Parse as a dictionary
+            elif type(node) is MappingNode:  # pylint: disable=unidiomatic-typecheck
+                node.validate_keys(["kind", "allow-deprecated"])
+                kind = node.get_str("kind")
+                allow_deprecated = node.get_bool("allow-deprecated", self._allow_deprecated)
+                conf = PluginConfiguration(kind, allow_deprecated)
+            else:
+                p = node.get_provenance()
+                raise LoadError(
+                    "{}: Plugin is not specified as a string or a dictionary".format(p), LoadErrorReason.INVALID_DATA
+                )
+
+            dictionary[kind] = conf
 
 
 # PluginOriginLocal

@@ -8,6 +8,14 @@ CLI
   o `bst shell --build` will now automatically fetch missing sources.
 
 
+Format
+------
+
+  o BREAKING CHANGE: Now deprecation warnings are suppressed using the `allow-deprecated`
+    configuration with the plugin origins in project.conf, instead of on the
+    source/element overrides section (See issue #1291)
+
+
 ==================
 buildstream 1.93.3
 ==================

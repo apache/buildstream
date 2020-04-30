@@ -177,20 +177,18 @@ class Plugin:
     BST_PLUGIN_DEPRECATED = False
     """True if this element plugin has been deprecated.
 
-    If this is set to true, BuildStream will emmit a deprecation
-    warning when this plugin is loaded. This deprecation warning may
-    be suppressed on a plugin by plugin basis by setting
-    ``suppress-deprecation-warnings: true`` in the relevent section of
-    the project's :ref:`plugin configuration overrides <project_overrides>`.
+    If this is set to true, BuildStream will emit a deprecation warning
+    in any place where this plugin is used.
 
+    The deprecation warnings can be suppressed when defining the
+    :ref:`plugin origins in your project configuration <project_plugins_deprecation>`
     """
 
-    BST_PLUGIN_DEPRECATION_MESSAGE = ""
-    """ The message printed when this element shows a deprecation warning.
+    BST_PLUGIN_DEPRECATION_MESSAGE = None
+    """An additional message to report when a plugin is deprecated
 
-    This should be set if BST_PLUGIN_DEPRECATED is True and should direct the user
-    to the deprecated plug-in's replacement.
-
+    This can be used to refer the user to a suitable replacement or
+    alternative approach when the plugin is deprecated.
     """
 
     # Unique id generator for Plugins
@@ -271,11 +269,6 @@ class Plugin:
         modulename = type(self).__module__
         self.__kind = modulename.split(".")[-1]
         self.debug("Created: {}".format(self))
-
-        # If this plugin has been deprecated, emit a warning.
-        if self.BST_PLUGIN_DEPRECATED and not self.__deprecation_warning_silenced():
-            detail = "Using deprecated plugin {}: {}".format(self.__kind, self.BST_PLUGIN_DEPRECATION_MESSAGE)
-            self.__message(MessageType.WARN, detail)
 
     def __del__(self):
         # Dont send anything through the Message() pipeline at destruction time,
@@ -761,22 +754,6 @@ class Plugin:
         output.write("Running host command {}: {}\n".format(workdir, command))
         output.flush()
         self.status("Running host command", detail=command)
-
-    def __deprecation_warning_silenced(self):
-        if not self.BST_PLUGIN_DEPRECATED:
-            return False
-        else:
-            silenced_warnings = set()
-            project = self.__project
-
-            for key, value in project.element_overrides.items():
-                if value.get_bool("suppress-deprecation-warnings", default=False):
-                    silenced_warnings.add(key)
-            for key, value in project.source_overrides.items():
-                if value.get_bool("suppress-deprecation-warnings", default=False):
-                    silenced_warnings.add(key)
-
-            return self.get_kind() in silenced_warnings
 
     def __get_full_name(self):
         project = self.__project

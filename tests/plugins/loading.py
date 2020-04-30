@@ -230,3 +230,76 @@ def test_plugin_found(cli, datafiles, plugin_type):
 
     result = cli.run(project=project, args=["show", "element.bst"])
     result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_deprecation_warnings(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    update_project(
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "deprecated"),
+                    plugin_type: ["deprecated"],
+                }
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "deprecated")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_success()
+    assert "Here is some detail." in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_deprecation_warning_suppressed_by_origin(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    update_project(
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "deprecated"),
+                    "allow-deprecated": True,
+                    plugin_type: ["deprecated"],
+                }
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "deprecated")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_success()
+    assert "Here is some detail." not in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_deprecation_warning_suppressed_specifically(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    update_project(
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "local",
+                    "path": os.path.join("plugins", plugin_type, "deprecated"),
+                    plugin_type: [{"kind": "deprecated", "allow-deprecated": True}],
+                }
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "deprecated")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_success()
+    assert "Here is some detail." not in result.stderr

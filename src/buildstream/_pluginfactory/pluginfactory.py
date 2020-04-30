@@ -26,6 +26,8 @@ from ..plugin import Plugin
 from ..node import ProvenanceInformation
 from ..utils import UtilError
 from .._exceptions import PluginError
+from .._messenger import Messenger
+from .._message import Message, MessageType
 
 from .pluginorigin import PluginOrigin, PluginOriginType
 
@@ -64,6 +66,7 @@ class PluginFactory:
         self._base_type = base_type  # The base class plugins derive from
         self._types = {}  # Plugin type lookup table by kind
         self._origins = {}  # PluginOrigin lookup table by kind
+        self._allow_deprecated = {}  # Lookup table to check if a plugin is allowed to be deprecated
 
         # The PluginSource object
         self._plugin_base = plugin_base
@@ -118,6 +121,7 @@ class PluginFactory:
     # Fetches a type loaded from a plugin in this plugin context
     #
     # Args:
+    #     messenger (Messenger): The messenger
     #     kind (str): The kind of Plugin to create
     #     provenance (ProvenanceInformation): The provenance from where
     #                                         the plugin was referenced
@@ -128,8 +132,31 @@ class PluginFactory:
     #
     # Raises: PluginError
     #
-    def lookup(self, kind: str, provenance: ProvenanceInformation) -> Tuple[Type[Plugin], str]:
-        return self._ensure_plugin(kind, provenance)
+    def lookup(self, messenger: Messenger, kind: str, provenance: ProvenanceInformation) -> Tuple[Type[Plugin], str]:
+        plugin_type, defaults = self._ensure_plugin(kind, provenance)
+
+        # We can be called with None for the messenger here in the
+        # case that we've been pickled through the scheduler (see jobpickler.py),
+        #
+        # In this case we know that we've already initialized and do not need
+        # to warn about deprecated plugins a second time.
+        if messenger is None:
+            return plugin_type, defaults
+
+        # After looking up the type, issue a warning if it's deprecated
+        #
+        # We do this here because we want to issue one warning for each time the
+        # plugin is used.
+        #
+        if plugin_type.BST_PLUGIN_DEPRECATED and not self._allow_deprecated[kind]:
+            message = Message(
+                MessageType.WARN,
+                "{}: Using deprecated plugin '{}'".format(provenance, kind),
+                detail=plugin_type.BST_PLUGIN_DEPRECATION_MESSAGE,
+            )
+            messenger.message(message)
+
+        return plugin_type, defaults
 
     # register_plugin_origin():
     #
@@ -138,8 +165,9 @@ class PluginFactory:
     # Args:
     #    kind (str): The kind identifier of the Plugin
     #    origin (PluginOrigin): The PluginOrigin providing the plugin
+    #    allow_deprecated (bool): Whether this plugin kind is allowed to be used in a deprecated state
     #
-    def register_plugin_origin(self, kind: str, origin: PluginOrigin):
+    def register_plugin_origin(self, kind: str, origin: PluginOrigin, allow_deprecated: bool):
         if kind in self._origins:
             raise PluginError(
                 "More than one {} plugin registered as kind '{}'".format(self._base_type.__name__, kind),
@@ -147,6 +175,7 @@ class PluginFactory:
             )
 
         self._origins[kind] = origin
+        self._allow_deprecated[kind] = allow_deprecated
 
     # all_loaded_plugins():
     #
@@ -224,7 +253,7 @@ class PluginFactory:
                 if kind not in self._site_source.list_plugins():
                     raise PluginError(
                         "{}: No {} type registered for kind '{}'".format(provenance, self._base_type.__name__, kind),
-                        reason="plugin-not-found"
+                        reason="plugin-not-found",
                     )
 
                 source = self._site_source
