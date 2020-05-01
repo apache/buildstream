@@ -2,6 +2,11 @@
 (unreleased)
 ============
 
+CLI
+---
+
+  o `bst shell --build` will now automatically fetch missing sources.
+
 
 ==================
 buildstream 1.93.3

@@ -205,13 +205,6 @@ class Stream:
         if unique_id and element is None:
             element = Plugin._lookup(unique_id)
 
-        # Assert we have everything we need built, using the element
-        # definitions to control the execution environment only.
-        if scope == Scope.BUILD and not element._has_all_sources_in_source_cache():
-            raise StreamError(
-                "Sources for element {} are not cached." "Element must be fetched.".format(element._get_full_name())
-            )
-
         missing_deps = [dep for dep in self._pipeline.dependencies([element], scope) if not dep._cached()]
         if missing_deps:
             if not pull_dependencies:
@@ -250,6 +243,11 @@ class Stream:
                     self._message(MessageType.INFO, message + ", shell will be loaded without it")
             else:
                 buildtree = True
+
+        # Ensure we have our sources if we are launching a build shell
+        if scope == Scope.BUILD and not buildtree:
+            self._fetch([element])
+            self._pipeline.assert_sources_cached([element])
 
         return element._shell(
             scope, mounts=mounts, isolate=isolate, prompt=prompt, command=command, usebuildtree=buildtree
