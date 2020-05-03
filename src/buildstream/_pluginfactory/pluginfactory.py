@@ -200,14 +200,39 @@ class PluginFactory:
         if ("pip", package_name) not in self._alternate_sources:
             import pkg_resources
 
+            origin = self._origins[kind]
+
             # key by a tuple to avoid collision
             try:
                 package = pkg_resources.get_entry_info(package_name, self._entrypoint_group, kind)
             except pkg_resources.DistributionNotFound as e:
-                raise PluginError("Failed to load {} plugin '{}': {}".format(self._base_type.__name__, kind, e)) from e
+                raise PluginError(
+                    "{}: Failed to load {} plugin '{}': {}".format(
+                        origin.provenance, self._base_type.__name__, kind, e
+                    ),
+                    reason="package-not-found",
+                ) from e
+            except pkg_resources.VersionConflict as e:
+                raise PluginError(
+                    "{}: Version conflict encountered while loading {} plugin '{}'".format(
+                        origin.provenance, self._base_type.__name__, kind
+                    ),
+                    detail=e.report(),
+                    reason="package-version-conflict",
+                ) from e
+            except pkg_resources.RequirementParseError as e:
+                raise PluginError(
+                    "{}: Malformed package-name '{}' encountered: {}".format(origin.provenance, package_name, e),
+                    reason="package-malformed-requirement",
+                ) from e
 
             if package is None:
-                raise PluginError("Pip package {} does not contain a plugin named '{}'".format(package_name, kind))
+                raise PluginError(
+                    "{}: Pip package {} does not contain a plugin named '{}'".format(
+                        origin.provenance, package_name, kind
+                    ),
+                    reason="plugin-not-found",
+                )
 
             location = package.dist.get_resource_filename(
                 pkg_resources._manager, package.module_name.replace(".", os.sep) + ".py"
