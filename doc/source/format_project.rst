@@ -371,8 +371,8 @@ A default mirror to consult first can be defined via
 
 .. _project_plugins:
 
-External plugins
-----------------
+Loading plugins
+---------------
 If your project makes use of any custom :mod:`Element <buildstream.element>` or
 :mod:`Source <buildstream.source>` plugins, then the project must inform BuildStream
 of the plugins it means to make use of and the origin from which they can be loaded.
@@ -385,14 +385,8 @@ Local plugins
 Local plugins are expected to be found in a subdirectory of the actual
 BuildStream project. :mod:`Element <buildstream.element>` and
 :mod:`Source <buildstream.source>` plugins should be stored in separate
-directories to avoid namespace collisions.
-
-The versions of local plugins are largely immaterial since they are
-revisioned along with the project by the user, usually in a VCS like git.
-However, for the sake of consistency with other plugin loading origins
-we require that you specify a version, this can always be ``0`` for a local
-plugin.
-
+directories to avoid namespace collisions, you can achieve this by
+specifying a separate *origin* for sources and elements.
 
 .. code:: yaml
 
@@ -405,6 +399,17 @@ plugin.
      # project's `plugins/sources` subdirectory.
      sources:
      - mysource
+
+There is no strict versioning policy for plugins loaded from the local
+origin because the plugin is provided with the project data and as such,
+it is considered to be completely deterministic.
+
+Usually your project will be managed by a VCS like git, and any changes
+to your local plugins may have an impact on your project, such as changes
+to the artifact cache keys produced by elements which use these plugins.
+Changes to plugins might provide new YAML configuration options, changes
+in the semantics of existing configurations or even removal of existing
+YAML configurations.
 
 
 Pip plugins
@@ -430,6 +435,107 @@ system.
      #
      elements:
      - starch
+
+Unlike local plugins, plugins loaded from the ``pip`` origin are
+loaded from the active *python environment*, and as such you do not
+usually have full control over the plugins your project uses unless
+one uses strict :ref:`version constraints <project_plugins_pip_version_constraints>`.
+
+The official plugin packages maintained by the BuildStream community are
+guaranteed to be fully API stable. If one chooses to load these plugins
+from the ``pip`` origin, then it is recommended to use *minimal bound dependency*
+:ref:`constraints <project_plugins_pip_version_constraints>` when using
+official plugin packages so as to be sure that you have access to all the
+features you intend to use in your project.
+
+
+.. _project_plugins_pip_version_constraints:
+
+Versioning constraints
+''''''''''''''''''''''
+When loading plugins from the ``pip`` plugin origin, it is possible to
+specify constraints on the versions of packages you want to load
+your plugins from.
+
+The syntax for specifying constraints are `explained here <https://python-poetry.org/docs/versions/>`_,
+and they are the same format supported by the ``pip`` package manager.
+
+.. note::
+
+   In order to be certain that versioning constraints work properly, plugin
+   packages should be careful to adhere to `PEP 440, Version Identification and Dependency
+   Specification <https://www.python.org/dev/peps/pep-0440/>`_.
+
+Here are a couple of examples:
+
+**Specifying minimal bound dependencies**:
+
+.. code:: yaml
+
+   plugins:
+
+   - origin: pip
+
+     # This project uses the API stable potato project and
+     # requires features from at least version 1.2
+     #
+     package-name: potato>=1.2
+
+**Specifying exact versions**:
+
+.. code:: yaml
+
+   plugins:
+
+   - origin: pip
+
+     # This project requires plugins from the potato
+     # project at exactly version 1.2.3
+     #
+     package-name: potato==1.2.3
+
+**Specifying version constraints**:
+
+.. code:: yaml
+
+   plugins:
+
+   - origin: pip
+
+     # This project requires plugins from the potato
+     # project from version 1.2.3 onward until 1.3.
+     #
+     package-name: potato>=1.2.3,<1.3
+
+.. important::
+
+   **Unstable plugin packages**
+
+   When using unstable plugins loaded from the ``pip`` origin, the installed
+   plugins can sometimes be incompatible with your project.
+
+   **Use virtual environments**
+
+   Your operating system's default python environment can only have one
+   version of a given package installed at a time, if you work on multiple
+   BuildStream projects on the same host, they may not agree on which versions
+   of plugins to use.
+
+   In order to guarantee that you can use a specific version of a plugin,
+   you may need to install BuildStream into a *virtual environment* in order
+   to control which python package versions are available when using your
+   project.
+
+   **Possible junction conflicts**
+
+   If you have multiple projects which are connected through
+   :mod:`junction <elements.junction>` elements, these projects can disagree
+   on which version of a plugin is needed from the ``pip`` origin.
+
+   Since only one version of a given plugin *package* can be installed
+   at a time in a given *python environment*, you must ensure that all
+   projects connected through :mod:`junction <elements.junction>` elements
+   agree on which versions of API unstable plugin packages to use.
 
 
 .. _project_plugins_deprecation:
