@@ -349,3 +349,82 @@ def test_pip_origin_load_success(cli, datafiles, plugin_type):
 
     result = cli.run(project=project, args=["show", "element.bst"])
     result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
+def test_pip_origin_with_constraints(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    update_project(
+        project,
+        {
+            "plugins": [
+                {"origin": "pip", "package-name": "sample-plugins>=1.0,<1.2.5,!=1.1.3", plugin_type: ["sample"],}
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "sample")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_pip_origin_package_not_found(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    update_project(
+        project, {"plugins": [{"origin": "pip", "package-name": "not-a-package", plugin_type: ["sample"],}]},
+    )
+    setup_element(project, plugin_type, "sample")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.PLUGIN, "package-not-found")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
+def test_pip_origin_plugin_not_found(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    update_project(
+        project, {"plugins": [{"origin": "pip", "package-name": "sample-plugins", plugin_type: ["notfound"],}]},
+    )
+    setup_element(project, plugin_type, "notfound")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.PLUGIN, "plugin-not-found")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
+def test_pip_origin_version_conflict(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    update_project(
+        project, {"plugins": [{"origin": "pip", "package-name": "sample-plugins>=1.4", plugin_type: ["sample"],}]},
+    )
+    setup_element(project, plugin_type, "sample")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.PLUGIN, "package-version-conflict")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
+def test_pip_origin_malformed_constraints(cli, datafiles, plugin_type):
+    project = str(datafiles)
+
+    update_project(
+        project, {"plugins": [{"origin": "pip", "package-name": "sample-plugins>1.4,A", plugin_type: ["sample"],}]},
+    )
+    setup_element(project, plugin_type, "sample")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.PLUGIN, "package-malformed-requirement")
