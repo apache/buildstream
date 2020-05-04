@@ -153,20 +153,6 @@ def test_local_plugin_not_directory(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_plugin_load_allowed(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "plugin-allowed")
-    result = cli.run(project=project, silent=True, args=["show", "element.bst"])
-    result.assert_success()
-
-
-@pytest.mark.datafiles(DATA_DIR)
-def test_plugin_load_forbidden(cli, datafiles):
-    project = os.path.join(datafiles.dirname, datafiles.basename, "plugin-forbidden")
-    result = cli.run(project=project, silent=True, args=["show", "element.bst"])
-    result.assert_main_error(ErrorDomain.PLUGIN, None)
-
-
-@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("ref_storage", [("inline"), ("project.refs")])
 def test_plugin_no_load_ref(cli, datafiles, ref_storage):
     project = os.path.join(datafiles.dirname, datafiles.basename, "plugin-no-load-ref")

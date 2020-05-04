@@ -404,7 +404,7 @@ plugin.
      # We want to use the `mysource` source plugin located in our
      # project's `plugins/sources` subdirectory.
      sources:
-       mysource: 0
+     - mysource
 
 
 Pip plugins
@@ -425,11 +425,60 @@ system.
      #
      package-name: potato
 
-     # We again must specify a minimal format version for the
-     # external plugin, it is allowed to be `0`.
+     # We again must specify specifically which plugins we
+     # want loaded from this origin.
      #
      elements:
-       starch: 0
+     - starch
+
+
+.. _project_plugins_deprecation:
+
+Suppressing deprecation warnings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Plugins can be deprecated over time, and using deprecated plugins will
+trigger a warning when loading elements and sources which use
+deprecated plugin kinds.
+
+These deprecation warnings can be suppressed for the entire plugin
+origin or on a per plugin kind basis.
+
+To suppress all deprecation warnings from the origin, set the
+``allow-deprecated`` flag for the origin as follows:
+
+.. code:: yaml
+
+   plugins:
+
+   - origin: local
+     path: plugins/sources
+
+     # Suppress deprecation warnings for any plugins loaded here
+     allow-deprecated: True
+
+     sources:
+     - mysource
+
+
+In order to suppress deprecation warnings for a single element or
+source kind within an origin, you will have to use a dictionary
+to declare the specific plugin kind and set the ``allow-deprecated`` flag
+on that dictionary as follows:
+
+.. code:: yaml
+
+   plugins:
+
+   - origin: pip
+     package-name: potato
+
+     # Here we use a dictionary to declare the "starch"
+     # element kind, and specify that it is allowed to
+     # be deprecated.
+     #
+     elements:
+     - kind: starch
+       allow-deprecated: True
 
 
 .. _project_options:

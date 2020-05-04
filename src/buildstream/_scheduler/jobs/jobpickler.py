@@ -192,7 +192,7 @@ def _reduce_plugin_with_factory_dict(plugin, plugin_class_to_factory):
 
 
 def _new_plugin_from_reduction_args(factory, meta_kind):
-    cls, _ = factory.lookup(meta_kind)
+    cls, _ = factory.lookup(None, meta_kind, None)
     plugin = cls.__new__(cls)
 
     # Note that we rely on the `__project` member of the Plugin to keep
