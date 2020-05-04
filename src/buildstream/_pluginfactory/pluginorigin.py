@@ -58,6 +58,7 @@ class PluginOrigin:
         self.origin_type = origin_type  # The PluginOriginType
         self.elements = {}  # A dictionary of PluginConfiguration
         self.sources = {}  # A dictionary of PluginConfiguration objects
+        self.provenance = None
 
         # Private
         self._project = None
@@ -85,6 +86,7 @@ class PluginOrigin:
         elif origin_type == PluginOriginType.PIP:
             origin = PluginOriginPip()
 
+        origin.provenance = origin_node.get_provenance()
         origin._project = project
         origin._load(origin_node)
 

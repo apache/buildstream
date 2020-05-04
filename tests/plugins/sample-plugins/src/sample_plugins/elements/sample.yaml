@@ -1,0 +1,5 @@
+# Set a variable so that we can test that the yaml
+# was actually loaded using bst show.
+#
+variables:
+  sample-loaded: True
