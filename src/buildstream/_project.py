@@ -951,10 +951,10 @@ class Project:
         origins = config.get_sequence("plugins", default=[])
         for origin_node in origins:
             origin = PluginOrigin.new_from_node(self, origin_node)
-            for kind in origin.elements:
-                output.element_factory.register_plugin_origin(kind, origin)
-            for kind in origin.sources:
-                output.source_factory.register_plugin_origin(kind, origin)
+            for kind, conf in origin.elements.items():
+                output.element_factory.register_plugin_origin(kind, origin, conf.allow_deprecated)
+            for kind, conf in origin.sources.items():
+                output.source_factory.register_plugin_origin(kind, origin, conf.allow_deprecated)
 
     # _warning_is_fatal():
     #
