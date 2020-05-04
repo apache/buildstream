@@ -2048,6 +2048,7 @@ class Element(Plugin):
                 "element-plugin-key": self.get_unique_key(),
                 "element-plugin-name": self.get_kind(),
                 "element-plugin-version": self.BST_ARTIFACT_VERSION,
+                "element-strict-rebuild": self.BST_STRICT_REBUILD,
                 "sandbox": self.__sandbox_config.get_unique_key(),
                 "environment": cache_env,
                 "public": self.__public.strip_node_info(),
