@@ -522,9 +522,13 @@ Here are a couple of examples:
    of plugins to use.
 
    In order to guarantee that you can use a specific version of a plugin,
-   you may need to install BuildStream into a *virtual environment* in order
-   to control which python package versions are available when using your
-   project.
+   you may need to install BuildStream into a `virtual environment
+   <https://docs.python.org/3/tutorial/venv.html>`_ in order to control which
+   python package versions are available when using your project.
+
+   Follow `these instructions
+   <https://buildstream.build/source_install.html#installing-in-virtual-environments>`_
+   to install BuildStream in a virtual environment.
 
    **Possible junction conflicts**
 
