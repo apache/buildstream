@@ -163,6 +163,7 @@ class DownloadableFileSource(Source):
                 default_name = os.path.basename(self.url)
                 request = urllib.request.Request(self.url)
                 request.add_header("Accept", "*/*")
+                request.add_header("User-Agent", "BuildStream/2")
 
                 # We do not use etag in case what we have in cache is
                 # not matching ref in order to be able to recover from
