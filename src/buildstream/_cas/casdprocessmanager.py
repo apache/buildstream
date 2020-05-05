@@ -25,6 +25,7 @@ import stat
 import subprocess
 import tempfile
 import time
+import psutil
 
 import grpc
 
@@ -37,6 +38,7 @@ from .._exceptions import CASCacheError
 from .._message import Message, MessageType
 
 _CASD_MAX_LOGFILES = 10
+_CASD_TIMEOUT = 300  # in seconds
 
 
 # CASDProcessManager
@@ -222,11 +224,11 @@ class CASDProcessManager:
     # established until it is needed.
     #
     def create_channel(self):
-        return CASDChannel(self._socket_path, self._connection_string, self._start_time)
+        return CASDChannel(self._socket_path, self._connection_string, self._start_time, self.process.pid)
 
 
 class CASDChannel:
-    def __init__(self, socket_path, connection_string, start_time):
+    def __init__(self, socket_path, connection_string, start_time, casd_pid):
         self._socket_path = socket_path
         self._connection_string = connection_string
         self._start_time = start_time
@@ -234,15 +236,24 @@ class CASDChannel:
         self._bytestream = None
         self._casd_cas = None
         self._local_cas = None
+        self._casd_pid = casd_pid
 
     def _establish_connection(self):
         assert self._casd_channel is None
 
         while not os.path.exists(self._socket_path):
             # casd is not ready yet, try again after a 10ms delay,
-            # but don't wait for more than 15s
-            if time.time() > self._start_time + 15:
+            # but don't wait for more than specified timeout period
+            if time.time() > self._start_time + _CASD_TIMEOUT:
                 raise CASCacheError("Timed out waiting for buildbox-casd to become ready")
+
+            # check that process is still alive
+            try:
+                proc = psutil.Process(self._casd_pid)
+                if not proc.is_running():
+                    raise CASCacheError(f"buildbox-casd process died before connection could be established")
+            except psutil.NoSuchProcess:
+                raise CASCacheError("buildbox-casd process died before connection could be established")
 
             time.sleep(0.01)
 
