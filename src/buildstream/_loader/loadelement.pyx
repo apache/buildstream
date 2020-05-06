@@ -107,7 +107,7 @@ cdef class LoadElement:
         #
         if loader.project.junction:
             # dependency is in subproject, qualify name
-            self.full_name = '{}:{}'.format(loader.project.junction.name, self.name)
+            self.full_name = '{}:{}'.format(loader.project.junction._get_full_name(), self.name)
         else:
             # dependency is in top-level project
             self.full_name = self.name
