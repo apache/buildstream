@@ -172,6 +172,9 @@ class JunctionElement(Element):
     BST_FORBID_RDEPENDS = True
 
     def configure(self, node):
+
+        node.validate_keys(["path", "options", "target", "cache-junction-elements", "ignore-junction-remotes"])
+
         self.path = node.get_str("path", default="")
         self.options = node.get_mapping("options", default={})
         self.target = node.get_str("target", default=None)
