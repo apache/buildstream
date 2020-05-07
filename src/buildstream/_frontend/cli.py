@@ -813,7 +813,16 @@ def source():
     "-d",
     default=_PipelineSelection.PLAN,
     show_default=True,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.PLAN, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [
+            _PipelineSelection.PLAN,
+            _PipelineSelection.NONE,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.RUN,
+            _PipelineSelection.ALL,
+        ],
+    ),
     help="The dependencies to fetch",
 )
 @click.option(
@@ -841,6 +850,8 @@ def source_fetch(app, elements, deps, except_, remote):
     \b
         none:  No dependencies, just the element itself
         plan:  Only dependencies required for the build plan
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
         all:   All dependencies
     """
     with app.initialized(session_name="Fetch"):
