@@ -22,13 +22,11 @@
 import os
 from pathlib import Path
 import re
-import shutil
-import subprocess
 import sys
 
 # Add local directory to the path, in order to be able to import versioneer
 sys.path.append(os.path.dirname(__file__))
-import versioneer  # noqa
+import versioneer  # pylint: disable=wrong-import-position
 
 
 ##################################################################
@@ -168,7 +166,7 @@ class BuildGRPC(Command):
         except ImportError:
             print("BuildStream requires grpc_tools in order to build gRPC modules.\n"
                   "Install it via pip (pip3 install grpcio-tools).")
-            exit(1)
+            sys.exit(1)
 
         protos_root = 'src/buildstream/_protos'
 
