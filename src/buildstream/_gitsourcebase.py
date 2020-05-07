@@ -70,14 +70,14 @@ def _strip_tag(rev):
 #    tags (list): Tag configuration; see _GitSourceBase._load_tags
 #
 class _GitMirror(SourceFetcher):
-    def __init__(self, source, path, url, ref, *, primary=False, tags=[]):
+    def __init__(self, source, path, url, ref, *, primary=False, tags=None):
 
         super().__init__()
         self.source = source
         self.path = path
         self.url = url
         self.ref = ref
-        self.tags = tags
+        self.tags = tags or []
         self.primary = primary
         self.mirror = os.path.join(source.get_mirror_directory(), utils.url_directory_name(url))
 
