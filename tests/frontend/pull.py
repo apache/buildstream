@@ -24,22 +24,33 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
 # Tests that:
 #
 #  * `bst build` pushes all build elements to configured 'push' cache
-#  * `bst artifact pull --deps all` downloads everything from cache after local deletion
+#  * `bst artifact pull --deps DEPS` downloads necessary artifacts from the cache
 #
 @pytest.mark.datafiles(DATA_DIR)
-def test_push_pull_all(cli, tmpdir, datafiles):
+@pytest.mark.parametrize(
+    "deps, expected_states",
+    [
+        ("build", ("buildable", "cached", "buildable")),
+        ("none", ("cached", "buildable", "buildable")),
+        ("run", ("cached", "buildable", "cached")),
+        ("all", ("cached", "cached", "cached")),
+    ],
+)
+def test_push_pull_deps(cli, tmpdir, datafiles, deps, expected_states):
     project = str(datafiles)
+    target = "checkout-deps.bst"
+    build_dep = "import-dev.bst"
+    runtime_dep = "import-bin.bst"
+    all_elements = [target, build_dep, runtime_dep]
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
 
         # First build the target element and push to the remote.
         cli.configure({"artifacts": {"url": share.repo, "push": True}})
-        result = cli.run(project=project, args=["build", "target.bst"])
+        result = cli.run(project=project, args=["build", target])
         result.assert_success()
-        assert cli.get_element_state(project, "target.bst") == "cached"
 
         # Assert that everything is now cached in the remote.
-        all_elements = ["target.bst", "import-bin.bst", "import-dev.bst", "compose-all.bst"]
         for element_name in all_elements:
             assert_shared(cli, share, project, element_name)
 
@@ -56,12 +67,13 @@ def test_push_pull_all(cli, tmpdir, datafiles):
         assert not any(states[e] == "cached" for e in all_elements)
 
         # Now try bst artifact pull
-        result = cli.run(project=project, args=["artifact", "pull", "--deps", "all", "target.bst"])
+        result = cli.run(project=project, args=["artifact", "pull", "--deps", deps, target])
         result.assert_success()
 
-        # And assert that it's again in the local cache, without having built
+        # And assert that the pulled elements are again in the local cache
         states = cli.get_element_states(project, all_elements)
-        assert not any(states[e] != "cached" for e in all_elements)
+        states_flattended = (states[target], states[build_dep], states[runtime_dep])
+        assert states_flattended == expected_states
 
 
 # Tests that:

@@ -1301,7 +1301,10 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
     "-d",
     default=_PipelineSelection.NONE,
     show_default=True,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [_PipelineSelection.BUILD, _PipelineSelection.NONE, _PipelineSelection.RUN, _PipelineSelection.ALL],
+    ),
     help="The dependency artifacts to pull",
 )
 @click.option(
@@ -1327,6 +1330,8 @@ def artifact_pull(app, artifacts, deps, remote):
 
     \b
         none:  No dependencies, just the element itself
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
         all:   All dependencies
     """
 
