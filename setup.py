@@ -43,9 +43,11 @@ try:
     from setuptools import setup, find_packages, Command, Extension
     from setuptools.command.easy_install import ScriptWriter
 except ImportError:
-    print("BuildStream requires setuptools in order to build. Install it using"
-          " your package manager (usually python3-setuptools) or via pip (pip3"
-          " install setuptools).")
+    print(
+        "BuildStream requires setuptools in order to build. Install it using"
+        " your package manager (usually python3-setuptools) or via pip (pip3"
+        " install setuptools)."
+    )
     sys.exit(1)
 
 
@@ -64,10 +66,10 @@ except ImportError:
 #
 def list_man_pages():
     bst_dir = os.path.dirname(os.path.abspath(__file__))
-    man_dir = os.path.join(bst_dir, 'man')
+    man_dir = os.path.join(bst_dir, "man")
     try:
         man_pages = os.listdir(man_dir)
-        return [os.path.join('man', page) for page in man_pages]
+        return [os.path.join("man", page) for page in man_pages]
     except FileNotFoundError:
         # Do not error out when 'man' directory does not exist
         return []
@@ -82,8 +84,8 @@ def list_man_pages():
 #
 def list_testing_datafiles():
     bst_dir = Path(os.path.dirname(os.path.abspath(__file__)))
-    data_dir = bst_dir.joinpath('src', 'buildstream', 'testing', '_sourcetests', 'project')
-    return [str(f) for f in data_dir.rglob('*')]
+    data_dir = bst_dir.joinpath("src", "buildstream", "testing", "_sourcetests", "project")
+    return [str(f) for f in data_dir.rglob("*")]
 
 
 #####################################################
@@ -95,15 +97,11 @@ def list_testing_datafiles():
 #
 # So screw it, lets just use an env var.
 bst_install_entry_points = {
-    'console_scripts': [
-        'bst-artifact-server = buildstream._cas.casserver:server_main'
-    ],
+    "console_scripts": ["bst-artifact-server = buildstream._cas.casserver:server_main"],
 }
 
-if not os.environ.get('BST_ARTIFACTS_ONLY', ''):
-    bst_install_entry_points['console_scripts'] += [
-        'bst = buildstream._frontend:cli'
-    ]
+if not os.environ.get("BST_ARTIFACTS_ONLY", ""):
+    bst_install_entry_points["console_scripts"] += ["bst = buildstream._frontend:cli"]
 
 #####################################################
 #    Monkey-patching setuptools for performance     #
@@ -116,14 +114,14 @@ if not os.environ.get('BST_ARTIFACTS_ONLY', ''):
 #
 # The patch was inspired from https://github.com/ninjaaron/fast-entry_points
 # which we believe was also inspired from the code from `setuptools` project.
-TEMPLATE = '''\
+TEMPLATE = """\
 # -*- coding: utf-8 -*-
 import sys
 
 from {0} import {1}
 
 if __name__ == '__main__':
-    sys.exit({2}())'''
+    sys.exit({2}())"""
 
 
 # Modify the get_args() function of the ScriptWriter class
@@ -134,10 +132,10 @@ if __name__ == '__main__':
 def get_args(cls, dist, header=None):
     if header is None:
         header = cls.get_header()
-    for name, ep in dist.get_entry_map('console_scripts').items():
+    for name, ep in dist.get_entry_map("console_scripts").items():
         cls._ensure_safe_name(name)
-        script_text = TEMPLATE.format(ep.module_name, ep.attrs[0], '.'.join(ep.attrs))
-        args = cls._get_script_args('console', name, header, script_text)
+        script_text = TEMPLATE.format(ep.module_name, ep.attrs[0], ".".join(ep.attrs))
+        args = cls._get_script_args("console", name, header, script_text)
         for res in args:
             yield res
 
@@ -151,7 +149,7 @@ ScriptWriter.get_args = get_args
 class BuildGRPC(Command):
     """Command to generate project *_pb2.py modules from proto files."""
 
-    description = 'build gRPC protobuf modules'
+    description = "build gRPC protobuf modules"
     user_options = []
 
     def initialize_options(self):
@@ -164,36 +162,38 @@ class BuildGRPC(Command):
         try:
             import grpc_tools.command
         except ImportError:
-            print("BuildStream requires grpc_tools in order to build gRPC modules.\n"
-                  "Install it via pip (pip3 install grpcio-tools).")
+            print(
+                "BuildStream requires grpc_tools in order to build gRPC modules.\n"
+                "Install it via pip (pip3 install grpcio-tools)."
+            )
             sys.exit(1)
 
-        protos_root = 'src/buildstream/_protos'
+        protos_root = "src/buildstream/_protos"
 
         grpc_tools.command.build_package_protos(protos_root)
 
         # Postprocess imports in generated code
         for root, _, files in os.walk(protos_root):
             for filename in files:
-                if filename.endswith('.py'):
+                if filename.endswith(".py"):
                     path = os.path.join(root, filename)
-                    with open(path, 'r') as f:
+                    with open(path, "r") as f:
                         code = f.read()
 
                     # All protos are in buildstream._protos
-                    code = re.sub(r'^from ', r'from buildstream._protos.',
-                                  code, flags=re.MULTILINE)
+                    code = re.sub(r"^from ", r"from buildstream._protos.", code, flags=re.MULTILINE)
                     # Except for the core google.protobuf protos
-                    code = re.sub(r'^from buildstream._protos.google.protobuf', r'from google.protobuf',
-                                  code, flags=re.MULTILINE)
+                    code = re.sub(
+                        r"^from buildstream._protos.google.protobuf", r"from google.protobuf", code, flags=re.MULTILINE
+                    )
 
-                    with open(path, 'w') as f:
+                    with open(path, "w") as f:
                         f.write(code)
 
 
 def get_cmdclass():
     cmdclass = {
-        'build_grpc': BuildGRPC,
+        "build_grpc": BuildGRPC,
     }
     cmdclass.update(versioneer.get_cmdclass())
     return cmdclass
@@ -202,14 +202,13 @@ def get_cmdclass():
 #####################################################
 #               Gather requirements                 #
 #####################################################
-with open('requirements/requirements.in') as install_reqs:
+with open("requirements/requirements.in") as install_reqs:
     install_requires = install_reqs.read().splitlines()
 
 #####################################################
 #     Prepare package description from README       #
 #####################################################
-with open(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                       'README.rst')) as readme:
+with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "README.rst")) as readme:
     long_description = readme.read()
 
 
@@ -223,11 +222,13 @@ def assert_cython_required():
     if "sdist" not in sys.argv:
         return
 
-    print("Cython is required when building 'sdist' in order to "
-          "ensure source distributions can be built without Cython. "
-          "Please install it using your package manager (usually 'python3-cython') "
-          "or pip (pip install cython).",
-          file=sys.stderr)
+    print(
+        "Cython is required when building 'sdist' in order to "
+        "ensure source distributions can be built without Cython. "
+        "Please install it using your package manager (usually 'python3-cython') "
+        "or pip (pip install cython).",
+        file=sys.stderr,
+    )
 
     raise SystemExit(1)
 
@@ -239,9 +240,7 @@ except ValueError:
     raise SystemExit(1)
 
 
-extension_macros = [
-    ("CYTHON_TRACE", ENABLE_CYTHON_TRACE)
-]
+extension_macros = [("CYTHON_TRACE", ENABLE_CYTHON_TRACE)]
 
 
 def cythonize(extensions, **kwargs):
@@ -296,12 +295,9 @@ def register_cython_module(module_name, dependencies=None):
         depends.append(imp_file)
         depends.append(def_file)
 
-    BUILD_EXTENSIONS.append(Extension(
-        name=module_name,
-        sources=[implementation_file],
-        depends=depends,
-        define_macros=extension_macros,
-    ))
+    BUILD_EXTENSIONS.append(
+        Extension(name=module_name, sources=[implementation_file], depends=depends, define_macros=extension_macros,)
+    )
 
 
 BUILD_EXTENSIONS = []
@@ -318,69 +314,68 @@ register_cython_module("buildstream._variables", dependencies=["buildstream.node
 #####################################################
 #             Main setup() Invocation               #
 #####################################################
-setup(name='BuildStream',
-      # Use versioneer
-      version=versioneer.get_version(),
-      cmdclass=get_cmdclass(),
-
-      author='BuildStream Developers',
-      author_email='buildstream-list@gnome.org',
-      classifiers=[
-          'Environment :: Console',
-          'Intended Audience :: Developers',
-          'License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)',
-          'Operating System :: POSIX',
-          'Programming Language :: Python :: 3',
-          'Programming Language :: Python :: 3.6',
-          'Programming Language :: Python :: 3.7',
-          'Programming Language :: Python :: 3.8',
-          'Topic :: Software Development :: Build Tools'
-      ],
-      description='A framework for modelling build pipelines in YAML',
-      license='LGPL',
-      long_description=long_description,
-      long_description_content_type='text/x-rst; charset=UTF-8',
-      url='https://buildstream.build',
-      project_urls={
-          'Source': 'https://gitlab.com/BuildStream/buildstream',
-          'Documentation': 'https://docs.buildstream.build',
-          'Tracker': 'https://gitlab.com/BuildStream/buildstream/issues',
-          'Mailing List': 'https://mail.gnome.org/mailman/listinfo/buildstream-list'
-      },
-      python_requires='~={}.{}'.format(REQUIRED_PYTHON_MAJOR, REQUIRED_PYTHON_MINOR),
-      package_dir={'': 'src'},
-      packages=find_packages(where='src', exclude=('tests', 'tests.*')),
-      package_data={'buildstream': ['plugins/*/*.py', 'plugins/*/*.yaml',
-                                    'data/*.yaml', 'data/*.sh.in',
-                                    *list_testing_datafiles()]},
-      data_files=[
-          # This is a weak attempt to integrate with the user nicely,
-          # installing things outside of the python package itself with pip is
-          # not recommended, but there seems to be no standard structure for
-          # addressing this; so just installing this here.
-          #
-          # These do not get installed in developer mode (`pip install --user -e .`)
-          #
-          # The completions are ignored by bash unless it happens to be installed
-          # in the right directory; this is more like a weak statement that we
-          # attempt to install bash completion scriptlet.
-          #
-          ('share/man/man1', list_man_pages()),
-          ('share/bash-completion/completions', [
-              os.path.join('src', 'buildstream', 'data', 'bst')
-          ])
-      ],
-      install_requires=install_requires,
-      entry_points=bst_install_entry_points,
-      ext_modules=cythonize(
-          BUILD_EXTENSIONS,
-          compiler_directives={
-              # Version of python to use
-              # https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html#arguments
-              "language_level": "3",
-              # Enable line tracing when requested only, this is needed in order to generate coverage.
-              "linetrace": bool(ENABLE_CYTHON_TRACE),
-              "profile": os.environ.get("BST_CYTHON_PROFILE", False),
-          }
-      ),
-      zip_safe=False)
+setup(
+    name="BuildStream",
+    # Use versioneer
+    version=versioneer.get_version(),
+    cmdclass=get_cmdclass(),
+    author="BuildStream Developers",
+    author_email="buildstream-list@gnome.org",
+    classifiers=[
+        "Environment :: Console",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
+        "Operating System :: POSIX",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Topic :: Software Development :: Build Tools",
+    ],
+    description="A framework for modelling build pipelines in YAML",
+    license="LGPL",
+    long_description=long_description,
+    long_description_content_type="text/x-rst; charset=UTF-8",
+    url="https://buildstream.build",
+    project_urls={
+        "Source": "https://gitlab.com/BuildStream/buildstream",
+        "Documentation": "https://docs.buildstream.build",
+        "Tracker": "https://gitlab.com/BuildStream/buildstream/issues",
+        "Mailing List": "https://mail.gnome.org/mailman/listinfo/buildstream-list",
+    },
+    python_requires="~={}.{}".format(REQUIRED_PYTHON_MAJOR, REQUIRED_PYTHON_MINOR),
+    package_dir={"": "src"},
+    packages=find_packages(where="src", exclude=("tests", "tests.*")),
+    package_data={
+        "buildstream": ["plugins/*/*.py", "plugins/*/*.yaml", "data/*.yaml", "data/*.sh.in", *list_testing_datafiles()]
+    },
+    data_files=[
+        # This is a weak attempt to integrate with the user nicely,
+        # installing things outside of the python package itself with pip is
+        # not recommended, but there seems to be no standard structure for
+        # addressing this; so just installing this here.
+        #
+        # These do not get installed in developer mode (`pip install --user -e .`)
+        #
+        # The completions are ignored by bash unless it happens to be installed
+        # in the right directory; this is more like a weak statement that we
+        # attempt to install bash completion scriptlet.
+        #
+        ("share/man/man1", list_man_pages()),
+        ("share/bash-completion/completions", [os.path.join("src", "buildstream", "data", "bst")]),
+    ],
+    install_requires=install_requires,
+    entry_points=bst_install_entry_points,
+    ext_modules=cythonize(
+        BUILD_EXTENSIONS,
+        compiler_directives={
+            # Version of python to use
+            # https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html#arguments
+            "language_level": "3",
+            # Enable line tracing when requested only, this is needed in order to generate coverage.
+            "linetrace": bool(ENABLE_CYTHON_TRACE),
+            "profile": os.environ.get("BST_CYTHON_PROFILE", False),
+        },
+    ),
+    zip_safe=False,
+)
