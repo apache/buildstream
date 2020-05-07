@@ -460,7 +460,9 @@ def init(app, project_name, min_version, element_path, force, target_directory):
     "--deps",
     "-d",
     default=None,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.PLAN, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection, [_PipelineSelection.BUILD, _PipelineSelection.PLAN, _PipelineSelection.ALL],
+    ),
     help="The dependencies to build",
 )
 @click.option(
@@ -482,6 +484,7 @@ def build(app, elements, deps, remote):
 
     \b
         plan:  Only dependencies required for the build plan
+        build: Build time dependencies, excluding the element itself
         all:   All dependencies
     """
     with app.initialized(session_name="Build"):
