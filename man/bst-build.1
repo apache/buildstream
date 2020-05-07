@@ -1,4 +1,4 @@
-.TH "BST BUILD" "1" "2020-04-23" "" "bst build Manual"
+.TH "BST BUILD" "1" "2020-05-07" "" "bst build Manual"
 .SH NAME
 bst\-build \- Build elements in a pipeline
 .SH SYNOPSIS
@@ -18,10 +18,11 @@ Specify `--deps` to control which dependencies to build:
 .PP
 
     plan:  Only dependencies required for the build plan
+    build: Build time dependencies, excluding the element itself
     all:   All dependencies
 .SH OPTIONS
 .TP
-\fB\-d,\fP \-\-deps [plan|all]
+\fB\-d,\fP \-\-deps [build|plan|all]
 The dependencies to build
 .TP
 \fB\-r,\fP \-\-remote TEXT
