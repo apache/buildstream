@@ -1355,7 +1355,10 @@ def artifact_pull(app, artifacts, deps, remote):
     "-d",
     default=_PipelineSelection.NONE,
     show_default=True,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [_PipelineSelection.BUILD, _PipelineSelection.NONE, _PipelineSelection.RUN, _PipelineSelection.ALL],
+    ),
     help="The dependencies to push",
 )
 @click.option(
@@ -1384,6 +1387,8 @@ def artifact_push(app, artifacts, deps, remote):
 
     \b
         none:  No dependencies, just the element itself
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
         all:   All dependencies
     """
     with app.initialized(session_name="Push"):

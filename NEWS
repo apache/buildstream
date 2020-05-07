@@ -9,6 +9,7 @@ CLI
   o `bst build --deps` now also accepts "build" as an input.
   o `bst source fetch --deps` now also accepts "build" and "run" as inputs.
   o `bst artifact pull --deps` now also accepts "build" and "run" as inputs.
+  o `bst artifact push --deps` now also accepts "build" and "run" as inputs.
 
 
 Format
