@@ -242,12 +242,12 @@ format for that is as such:
       server-cert: server.crt
       # "storage" remotes store the artifact contents only - this can
       # be a normal CAS implementation such as those provided by
-      # Buildbarn or Bazel Buildfarm
+      # Buildbarn, BuildGrid, or Bazel Buildfarm
       type: storage
     - url: https://index.foo.com:11001
       server-cert: server.crt
       # "index" remotes store only artifact metadata. This is
-      # currently only provided by the bst-artifact-server and BuildGrid
+      # currently only provided by the bst-artifact-server
       type: index
     # A remote cache from which to upload/download built/prebuilt artifacts
     - url: https://foo.com:11002
@@ -256,7 +256,7 @@ format for that is as such:
       client-cert: client.crt
       client-key: client.key
       # Caches that support both can omit the type, or set it to "both" -
-      # currently, also only supported by bst-artifact-server and BuildGrid
+      # currently, also only supported by bst-artifact-server
       type: both
 
 
