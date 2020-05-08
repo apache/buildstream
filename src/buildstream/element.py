@@ -517,7 +517,7 @@ class Element(Plugin):
 
           # Expect a string 'name' in 'node', substituting any
           # variables in the returned string
-          name = self.node_subst_vars(node.get_str('name'))
+          name = self.node_subst_vars(node.get_scalar('name'))
         """
         try:
             return self.__variables.subst(node.as_str())
