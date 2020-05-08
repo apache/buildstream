@@ -305,11 +305,13 @@ class Element(Plugin):
         # Extract remote execution URL
         if meta.is_junction:
             self.__remote_execution_specs = None
+            sandbox_config = Node.from_dict({})
         else:
             self.__remote_execution_specs = project.remote_execution_specs
+            sandbox_config = Node.from_dict(self.__expand_environment(project._sandbox.clone()))
 
         # Extract Sandbox config
-        self.__sandbox_config = self.__extract_sandbox_config(context, project, meta)
+        self.__sandbox_config = self.__extract_sandbox_config(context, sandbox_config, meta)
 
     def __lt__(self, other):
         return self.name < other.name
@@ -2643,11 +2645,7 @@ class Element(Plugin):
     # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
     #
     @classmethod
-    def __extract_sandbox_config(cls, context, project, meta):
-        if meta.is_junction:
-            sandbox_config = Node.from_dict({})
-        else:
-            sandbox_config = project._sandbox.clone()
+    def __extract_sandbox_config(cls, context, sandbox_config, meta):
 
         # Get the platform to ask for host architecture
         platform = context.platform
