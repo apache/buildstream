@@ -16,6 +16,12 @@ Format
     source/element overrides section (See issue #1291)
 
 
+Plugins
+-------
+
+  o The `pip` element has been removed. Please use the one from bst-plugins-experimental
+
+
 ==================
 buildstream 1.93.3
 ==================
