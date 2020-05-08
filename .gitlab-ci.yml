@@ -1,6 +1,6 @@
 include:
   - template: Code-Quality.gitlab-ci.yml
-  - template: License-Management.gitlab-ci.yml
+  - template: License-Scanning.gitlab-ci.yml
   - template: SAST.gitlab-ci.yml
 
 image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-${DOCKER_IMAGE_VERSION}
