@@ -16,7 +16,7 @@ from buildstream import _yaml
 # Returns:
 #    (str): The ref
 #
-def generate_junction(tmpdir, subproject_path, junction_path, *, store_ref=True):
+def generate_junction(tmpdir, subproject_path, junction_path, *, store_ref=True, options={}):
     # Create a repo to hold the subproject and generate
     # a junction element for it
     #
@@ -31,6 +31,10 @@ def generate_junction(tmpdir, subproject_path, junction_path, *, store_ref=True)
             repo.source_config(ref=source_ref)
         ]
     }
+
+    if options:
+        element["config"] = {"options": options}
+
     _yaml.dump(element, junction_path)
 
     return ref

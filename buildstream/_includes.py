@@ -26,15 +26,55 @@ class Includes:
     #
     # Args:
     #    node (dict): A YAML node
+    #    only_local (bool): Whether to ignore junction files
+    #    process_project_options (bool): Whether to process options from current project
+    #
+    def process(self, node, *, only_local=False, process_project_options=True):
+        self._process(node, only_local=only_local, process_project_options=process_project_options)
+
+    # _process()
+    #
+    # Process recursively include directives in a YAML node. This
+    # method is a recursively called on loaded nodes from files.
+    #
+    # Args:
+    #    node (dict): A YAML node
     #    included (set): Fail for recursion if trying to load any files in this set
     #    current_loader (Loader): Use alternative loader (for junction files)
     #    only_local (bool): Whether to ignore junction files
-    def process(self, node, *,
-                included=set(),
-                current_loader=None,
-                only_local=False):
+    #    process_project_options (bool): Whether to process options from current project
+    #
+    def _process(self, node, *, included=set(), current_loader=None, only_local=False, process_project_options=True):
+
         if current_loader is None:
             current_loader = self._loader
+
+        if process_project_options:
+            current_loader.project.options.process_node(node)
+
+        self._process_node(
+            node,
+            included=included,
+            only_local=only_local,
+            current_loader=current_loader,
+            process_project_options=process_project_options,
+        )
+
+    # _process_node()
+    #
+    # Process recursively include directives in a YAML node. This
+    # method is recursively called on all nodes.
+    #
+    # Args:
+    #    node (dict): A YAML node
+    #    included (set): Fail for recursion if trying to load any files in this set
+    #    current_loader (Loader): Use alternative loader (for junction files)
+    #    only_local (bool): Whether to ignore junction files
+    #    process_project_options (bool): Whether to process options from current project
+    #
+    def _process_node(
+        self, node, *, included=set(), current_loader=None, only_local=False, process_project_options=True
+    ):
 
         if isinstance(node.get('(@)'), str):
             includes = [_yaml.node_get(node, str, '(@)')]
@@ -61,9 +101,12 @@ class Includes:
 
                 try:
                     included.add(file_path)
-                    self.process(include_node, included=included,
-                                 current_loader=sub_loader,
-                                 only_local=only_local)
+                    self._process(
+                        include_node, included=included,
+                        current_loader=sub_loader,
+                        only_local=only_local,
+                        process_project_options=process_project_options or current_loader != sub_loader,
+                    )
                 finally:
                     included.remove(file_path)
 
@@ -75,10 +118,13 @@ class Includes:
                     del node[key]
 
         for _, value in _yaml.node_items(node):
-            self._process_value(value,
-                                included=included,
-                                current_loader=current_loader,
-                                only_local=only_local)
+            self._process_value(
+                value,
+                included=included,
+                current_loader=current_loader,
+                only_local=only_local,
+                process_project_options=process_project_options,
+            )
 
     # _include_file()
     #
@@ -94,6 +140,7 @@ class Includes:
             junction, include = include.split(':', 1)
             junction_loader = loader._get_loader(junction, fetch_subprojects=True)
             current_loader = junction_loader
+            current_loader.project.ensure_fully_loaded()
         else:
             current_loader = loader
         project = current_loader.project
@@ -116,18 +163,25 @@ class Includes:
     #    included (set): Fail for recursion if trying to load any files in this set
     #    current_loader (Loader): Use alternative loader (for junction files)
     #    only_local (bool): Whether to ignore junction files
-    def _process_value(self, value, *,
-                       included=set(),
-                       current_loader=None,
-                       only_local=False):
+    #    process_project_options (bool): Whether to process options from current project
+    #
+    def _process_value(
+        self, value, *, included=set(), current_loader=None, only_local=False, process_project_options=True
+    ):
         if isinstance(value, Mapping):
-            self.process(value,
-                         included=included,
-                         current_loader=current_loader,
-                         only_local=only_local)
+            self._process_node(
+                value,
+                included=included,
+                current_loader=current_loader,
+                only_local=only_local,
+                process_project_options=process_project_options,
+            )
         elif isinstance(value, list):
             for v in value:
-                self._process_value(v,
-                                    included=included,
-                                    current_loader=current_loader,
-                                    only_local=only_local)
+                self._process_value(
+                    v,
+                    included=included,
+                    current_loader=current_loader,
+                    only_local=only_local,
+                    process_project_options=process_project_options,
+                )

@@ -267,8 +267,6 @@ class Loader():
 
             self._includes.process(node)
 
-            self._options.process_node(node)
-
         element = LoadElement(node, filename, self)
 
         self._elements[filename] = element
