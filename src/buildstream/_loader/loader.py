@@ -311,6 +311,10 @@ class Loader:
         if filename in self._elements:
             return self._elements[filename]
 
+        if self.project.junction and filename in self.project.junction.replacements:
+            replacement = self.project.junction.replacements.get_str(filename)
+            return self._parent._load_file(replacement, rewritable, ticker, provenance)
+
         # Call the ticker
         if ticker:
             ticker(filename)
@@ -339,6 +343,9 @@ class Loader:
                         dep.junction, rewritable=rewritable, ticker=ticker, provenance=dep.provenance
                     )
                     dep_element = loader._load_file(dep.name, rewritable, ticker, dep.provenance)
+                elif self.project.junction and dep.name in self.project.junction.replacements:
+                    replacement = self.project.junction.replacements.get_str(dep.name)
+                    dep_element = self._parent._load_file(replacement, rewritable, ticker, dep.provenance)
                 else:
                     dep_element = self._elements.get(dep.name)
 

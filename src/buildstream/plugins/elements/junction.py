@@ -173,7 +173,9 @@ class JunctionElement(Element):
 
     def configure(self, node):
 
-        node.validate_keys(["path", "options", "target", "cache-junction-elements", "ignore-junction-remotes"])
+        node.validate_keys(
+            ["path", "options", "target", "cache-junction-elements", "ignore-junction-remotes", "replacements"]
+        )
 
         self.path = node.get_str("path", default="")
         self.options = node.get_mapping("options", default={})
@@ -182,6 +184,7 @@ class JunctionElement(Element):
         self.target_junction = None
         self.cache_junction_elements = node.get_bool("cache-junction-elements", default=False)
         self.ignore_junction_remotes = node.get_bool("ignore-junction-remotes", default=False)
+        self.replacements = node.get_mapping("replacements", default={})
 
     def preflight(self):
         # "target" cannot be used in conjunction with:

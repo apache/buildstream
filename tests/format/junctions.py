@@ -471,3 +471,35 @@ def test_junction_show(cli, tmpdir, datafiles):
 
     # Show, assert that it says junction
     assert cli.get_element_state(project, "base.bst") == "junction"
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_replacements(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "replacements")
+    copy_subprojects(project, datafiles, ["replacements-base"])
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Build, checkout
+    result = cli.run(project=project, args=["build", "stack.bst"])
+    result.assert_success()
+    result = cli.run(project=project, args=["artifact", "checkout", "stack.bst", "--directory", checkoutdir])
+    result.assert_success()
+
+    assert os.path.exists(os.path.join(checkoutdir, "destination/injected.txt"))
+    assert not os.path.exists(os.path.join(checkoutdir, "original.txt"))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_replacements_top_element(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "replacements")
+    copy_subprojects(project, datafiles, ["replacements-base"])
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Build, checkout
+    result = cli.run(project=project, args=["build", "base.bst:a.bst"])
+    result.assert_success()
+    result = cli.run(project=project, args=["artifact", "checkout", "base.bst:a.bst", "--directory", checkoutdir])
+    result.assert_success()
+
+    assert os.path.exists(os.path.join(checkoutdir, "destination/injected.txt"))
+    assert not os.path.exists(os.path.join(checkoutdir, "original.txt"))
