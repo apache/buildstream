@@ -217,6 +217,13 @@ class Loader():
         if ticker:
             ticker(filename)
 
+        if self.project.junction and filename in self.project.junction.replacements:
+            replacement = _yaml.node_get(self.project.junction.replacements, str, filename)
+            elt = self._parent._load_file(replacement,
+                                          rewritable, ticker, fetch_subprojects, provenance=provenance)
+            self._elements[filename] = elt
+            return elt
+
         # Load the data and process any conditional statements therein
         fullpath = os.path.join(self._basedir, filename)
         try:
@@ -311,6 +318,8 @@ class Loader():
             validated = {}
 
         element = self._elements[element_name]
+        if getattr(element, '_loader', self) != self:
+            return element._loader._check_circular_deps(element.name, check_elements, validated)
 
         # element name must be unique across projects
         # to be usable as key for the check_elements and validated dicts
@@ -353,6 +362,8 @@ class Loader():
             visited = {}
 
         element = self._elements[element_name]
+        if getattr(element, '_loader', self) != self:
+            return element._loader._sort_dependencies(element.name, visited)
 
         # element name must be unique across projects
         # to be usable as key for the visited dict
@@ -424,6 +435,8 @@ class Loader():
     def _collect_element(self, element_name):
 
         element = self._elements[element_name]
+        if element._loader != self:
+            return element._loader._collect_element(element.name)
 
         # Return the already built one, if we already built it
         meta_element = self._meta_elements.get(element_name)

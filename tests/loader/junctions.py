@@ -330,3 +330,19 @@ def test_build_git_cross_junction_names(cli, tmpdir, datafiles):
 
     # Check that the checkout contains the expected files from both projects
     assert(os.path.exists(os.path.join(checkoutdir, 'base.txt')))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_replacements(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "replacements")
+    copy_subprojects(project, datafiles, ["replacements-base"])
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Build, checkout
+    result = cli.run(project=project, args=["build", "stack.bst"])
+    result.assert_success()
+    result = cli.run(project=project, args=["checkout", "stack.bst", checkoutdir])
+    result.assert_success()
+
+    assert os.path.exists(os.path.join(checkoutdir, "destination/injected.txt"))
+    assert not os.path.exists(os.path.join(checkoutdir, "original.txt"))
