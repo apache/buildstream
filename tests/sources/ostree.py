@@ -55,3 +55,40 @@ def test_submodule_track_no_ref_or_track(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=['show', 'target.bst'])
     result.assert_main_error(ErrorDomain.SOURCE, "missing-track-and-ref")
     result.assert_task_error(None, None)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, 'template'))
+def test_fetch_gpg_verify(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    gpg_homedir = os.path.join(DATA_DIR, "gpghome")
+
+    # Create the repo from 'repofiles' subdir
+    repo = create_repo('ostree', str(tmpdir))
+    ref = repo.create(
+        os.path.join(project, 'repofiles'),
+        gpg_sign="FFFF54C070353B52D046DEB087FA0F41A6EFD9E9",
+        gpg_homedir=gpg_homedir
+    )
+
+    # Write out our test target
+    ostreesource = repo.source_config(ref=ref, gpg_key='test.gpg')
+    element = {
+        'kind': 'import',
+        'sources': [
+            ostreesource
+        ]
+    }
+
+    _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    # Assert that a fetch is needed
+    assert cli.get_element_state(project, 'target.bst') == 'fetch needed'
+
+    # Now try to fetch it
+    result = cli.run(project=project, args=['fetch', 'target.bst'])
+    result.assert_success()
+
+    # Assert that we are now buildable because the source is
+    # now cached.
+    assert cli.get_element_state(project, 'target.bst') == 'buildable'
