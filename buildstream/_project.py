@@ -436,7 +436,7 @@ class Project():
         self._project_includes = Includes(self.loader, copy_tree=False)
 
         project_conf_first_pass = _yaml.node_copy(self._project_conf)
-        self._project_includes.process(project_conf_first_pass, only_local=True)
+        self._project_includes.process(project_conf_first_pass, only_local=True, process_project_options=False)
         config_no_include = _yaml.node_copy(self._default_config_node)
         _yaml.composite(config_no_include, project_conf_first_pass)
 
@@ -460,7 +460,7 @@ class Project():
     #
     def _load_second_pass(self):
         project_conf_second_pass = _yaml.node_copy(self._project_conf)
-        self._project_includes.process(project_conf_second_pass)
+        self._project_includes.process(project_conf_second_pass, process_project_options=False)
         config = _yaml.node_copy(self._default_config_node)
         _yaml.composite(config, project_conf_second_pass)
 

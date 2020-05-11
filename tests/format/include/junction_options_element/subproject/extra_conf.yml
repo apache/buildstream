@@ -1,0 +1,7 @@
+(?):
+- local_option == 'default':
+    variables:
+      is-default: 'True'
+- local_option == 'set':
+    variables:
+      is-default: 'False'
