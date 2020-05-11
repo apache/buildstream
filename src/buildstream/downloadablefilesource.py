@@ -1,4 +1,36 @@
-"""A base abstract class for source implementations which download a file"""
+#
+#  Copyright (C) 2019 Bloomberg LP
+#  Copyright (C) 2019 Codethink Limited
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with this library. If not, see <http://www.gnu.org/licenses/>.
+#
+
+"""
+DownloadableFileSource - Abstract class for sources downloaded from a URI
+=========================================================================
+
+This DownloadableFileSource class is a convenience class on can derive for
+implementing sources that get downloaded from a URI.
+
+It provides utilities around handling mirrors, tracking and fetching the source.
+
+Any derived classes must write their own stage() and get_unique_key()
+implementation.
+
+
+"""
+
 
 import os
 import urllib.request
@@ -7,8 +39,8 @@ import contextlib
 import shutil
 import netrc
 
-from buildstream import Source, SourceError
-from buildstream import utils
+from .source import Source, SourceError
+from . import utils
 
 
 class _NetrcFTPOpener(urllib.request.FTPHandler):

@@ -34,6 +34,7 @@ if "_BST_COMPLETION" not in os.environ:
     from .node import MappingNode, Node, ProvenanceInformation, ScalarNode, SequenceNode
     from .plugin import Plugin
     from .source import Source, SourceError, SourceFetcher
+    from .downloadablefilesource import DownloadableFileSource
     from .element import Element, ElementError
     from .buildelement import BuildElement
     from .scriptelement import ScriptElement

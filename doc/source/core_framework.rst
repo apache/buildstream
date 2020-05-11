@@ -16,6 +16,7 @@ useful for working on BuildStream itself.
    buildstream.node
    buildstream.plugin
    buildstream.source
+   buildstream.downloadablefilesource
    buildstream.element
    buildstream.buildelement
    buildstream.scriptelement

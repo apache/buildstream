@@ -60,10 +60,8 @@ import os
 import zipfile
 import stat
 
-from buildstream import SourceError
+from buildstream import DownloadableFileSource, SourceError
 from buildstream import utils
-
-from ._downloadablefilesource import DownloadableFileSource
 
 
 class ZipSource(DownloadableFileSource):
