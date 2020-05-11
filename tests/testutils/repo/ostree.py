@@ -13,21 +13,31 @@ class OSTree(Repo):
 
         super(OSTree, self).__init__(directory, subdir)
 
-    def create(self, directory):
+    def create(self, directory, *, gpg_sign=None, gpg_homedir=None):
         subprocess.call(['ostree', 'init',
                          '--repo', self.repo,
                          '--mode', 'archive-z2'])
-        subprocess.call(['ostree', 'commit',
-                         '--repo', self.repo,
-                         '--branch', 'master',
-                         '--subject', 'Initial commit',
-                         directory])
+
+        commit_args = ['ostree', 'commit',
+                       '--repo', self.repo,
+                       '--branch', 'master',
+                       '--subject', 'Initial commit']
+
+        if gpg_sign and gpg_homedir:
+            commit_args += [
+                '--gpg-sign={}'.format(gpg_sign),
+                '--gpg-homedir={}'.format(gpg_homedir)
+            ]
+
+        commit_args += [directory]
+
+        subprocess.call(commit_args)
 
         latest = self.latest_commit()
 
         return latest
 
-    def source_config(self, ref=None):
+    def source_config(self, ref=None, *, gpg_key=None):
         config = {
             'kind': 'ostree',
             'url': 'file://' + self.repo,
@@ -35,6 +45,8 @@ class OSTree(Repo):
         }
         if ref is not None:
             config['ref'] = ref
+        if gpg_key is not None:
+            config['gpg-key'] = gpg_key
 
         return config
 
