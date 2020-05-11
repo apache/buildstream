@@ -67,7 +67,7 @@ class SourceRemote(BaseRemote):
                     "Configured remote does not have the BuildStream "
                     "capabilities service. Please check remote configuration."
                 )
-            raise RemoteError("Remote initialisation failed: {}".format(e.details()))
+            raise RemoteError("Remote initialisation failed with status {}: {}".format(e.code().name, e.details()))
 
         if not response.source_capabilities:
             raise RemoteError("Configured remote does not support source service")
@@ -345,7 +345,7 @@ class SourceCache(BaseCache):
 
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise SourceCacheError("Failed to pull source: {}".format(e.details()))
+                raise SourceCacheError("Failed to pull source with status {}: {}".format(e.code().name, e.details()))
             return None
 
     def _push_source(self, source_ref, remote):
@@ -356,5 +356,5 @@ class SourceCache(BaseCache):
 
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
-                raise SourceCacheError("Failed to push source: {}".format(e.details()))
+                raise SourceCacheError("Failed to push source with status {}: {}".format(e.code().name, e.details()))
             return None

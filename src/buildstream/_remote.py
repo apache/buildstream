@@ -226,7 +226,7 @@ class BaseRemote:
             self._check()
         except grpc.RpcError as e:
             # str(e) is too verbose for errors reported to the user
-            raise RemoteError(e.details())
+            raise RemoteError("{}: {}".format(e.code().name, e.details()))
         finally:
             self.close()
 
