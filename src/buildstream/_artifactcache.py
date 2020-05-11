@@ -80,7 +80,7 @@ class ArtifactRemote(BaseRemote):
                     "capabilities service. Please check remote configuration."
                 )
             # Else raise exception with details
-            raise RemoteError("Remote initialisation failed: {}".format(e.details()))
+            raise RemoteError("Remote initialisation failed with status {}: {}".format(e.code().name, e.details()))
 
         if not response.artifact_capabilities:
             raise RemoteError("Configured remote does not support artifact service")
@@ -512,7 +512,9 @@ class ArtifactCache(BaseCache):
             return False
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.RESOURCE_EXHAUSTED:
-                raise ArtifactError("Failed to push artifact blobs: {}".format(e.details()))
+                raise ArtifactError(
+                    "Failed to push artifact blobs with status {}: {}".format(e.code().name, e.details())
+                )
             return False
 
         return True
@@ -545,7 +547,9 @@ class ArtifactCache(BaseCache):
                 remote.get_artifact(element.get_artifact_name(key=key))
             except grpc.RpcError as e:
                 if e.code() != grpc.StatusCode.NOT_FOUND:
-                    raise ArtifactError("Error checking artifact cache: {}".format(e.details()))
+                    raise ArtifactError(
+                        "Error checking artifact cache with status {}: {}".format(e.code().name, e.details())
+                    )
             else:
                 return False
 
@@ -554,7 +558,7 @@ class ArtifactCache(BaseCache):
             try:
                 remote.update_artifact(element.get_artifact_name(key=key), artifact_proto)
             except grpc.RpcError as e:
-                raise ArtifactError("Failed to push artifact: {}".format(e.details()))
+                raise ArtifactError("Failed to push artifact with status {}: {}".format(e.code().name, e.details()))
 
         return True
 
@@ -600,7 +604,7 @@ class ArtifactCache(BaseCache):
             self.cas.fetch_blobs(remote, digests)
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise ArtifactError("Failed to pull artifact: {}".format(e.details()))
+                raise ArtifactError("Failed to pull artifact with status {}: {}".format(e.code().name, e.details()))
             return False
 
         return True
@@ -628,7 +632,7 @@ class ArtifactCache(BaseCache):
             artifact = remote.get_artifact(artifact_name)
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise ArtifactError("Failed to pull artifact: {}".format(e.details()))
+                raise ArtifactError("Failed to pull artifact with status {}: {}".format(e.code().name, e.details()))
             return None
 
         # Write the artifact proto to cache
@@ -655,7 +659,7 @@ class ArtifactCache(BaseCache):
             remote.artifact_service.GetArtifact(request)
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise ArtifactError("Error when querying: {}".format(e.details()))
+                raise ArtifactError("Error when querying with status {}: {}".format(e.code().name, e.details()))
             return False
 
         return True
