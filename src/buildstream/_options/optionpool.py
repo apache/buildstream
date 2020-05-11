@@ -104,7 +104,7 @@ class OptionPool:
     # Args:
     #    node (dict): The loaded YAML options
     #
-    def load_yaml_values(self, node, *, transform=None):
+    def load_yaml_values(self, node):
         for option_name, option_value in node.items():
             try:
                 option = self._options[option_name]
@@ -113,7 +113,7 @@ class OptionPool:
                 raise LoadError(
                     "{}: Unknown option '{}' specified".format(p, option_name), LoadErrorReason.INVALID_DATA
                 ) from e
-            option.load_value(node, transform=transform)
+            option.load_value(node)
 
     # load_cli_values()
     #

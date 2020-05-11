@@ -36,11 +36,8 @@ class OptionBool(Option):
         node.validate_keys(OPTION_SYMBOLS + ["default"])
         self.value = node.get_bool("default")
 
-    def load_value(self, node, *, transform=None):
-        if transform:
-            self.set_value(transform(node.get_scalar(self.name)))
-        else:
-            self.value = node.get_bool(self.name)
+    def load_value(self, node):
+        self.value = node.get_bool(self.name)
 
     def set_value(self, value):
         if value in ("True", "true"):
