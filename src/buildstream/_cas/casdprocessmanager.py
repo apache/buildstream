@@ -251,7 +251,7 @@ class CASDChannel:
             try:
                 proc = psutil.Process(self._casd_pid)
                 if not proc.is_running():
-                    raise CASCacheError(f"buildbox-casd process died before connection could be established")
+                    raise CASCacheError("buildbox-casd process died before connection could be established")
             except psutil.NoSuchProcess:
                 raise CASCacheError("buildbox-casd process died before connection could be established")
 

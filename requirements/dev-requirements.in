@@ -1,6 +1,8 @@
 pexpect
 pylint
-pytest >= 3.9
+# Pytest 5.4.0 and 5.4.1 have a bug with --basetemp and xdist
+# We should not install those
+pytest >= 3.9,!= 5.4.0,!= 5.4.1
 pytest-datafiles >= 2.0
 pytest-env
 pytest-xdist

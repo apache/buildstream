@@ -39,7 +39,7 @@ def test_artifact_list_exact_contents_element(cli, datafiles):
     # List the contents via the element name
     result = cli.run(project=project, args=["artifact", "list-contents", "import-bin.bst"])
     assert result.exit_code == 0
-    expected_output = "import-bin.bst:\n" "\tusr\n" "\tusr/bin\n" "\tusr/bin/hello\n\n"
+    expected_output = "import-bin.bst:\n\tusr\n\tusr/bin\n\tusr/bin/hello\n\n"
     assert expected_output in result.output
 
 

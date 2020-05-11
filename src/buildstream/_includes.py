@@ -42,7 +42,7 @@ class Includes:
     #    current_loader (Loader): Use alternative loader (for junction files)
     #    only_local (bool): Whether to ignore junction files
     #    process_project_options (bool): Whether to process options from current project
-    def _process(self, node, *, included=set(), current_loader=None, only_local=False, process_project_options=True):
+    def _process(self, node, *, included=None, current_loader=None, only_local=False, process_project_options=True):
         if current_loader is None:
             current_loader = self._loader
 
@@ -69,8 +69,11 @@ class Includes:
     #    only_local (bool): Whether to ignore junction files
     #    process_project_options (bool): Whether to process options from current project
     def _process_node(
-        self, node, *, included=set(), current_loader=None, only_local=False, process_project_options=True
+        self, node, *, included=None, current_loader=None, only_local=False, process_project_options=True
     ):
+        if included is None:
+            included = set()
+
         includes_node = node.get_node("(@)", allowed_types=[ScalarNode, SequenceNode], allow_none=True)
 
         if includes_node:
@@ -172,7 +175,7 @@ class Includes:
     #    only_local (bool): Whether to ignore junction files
     #    process_project_options (bool): Whether to process options from current project
     def _process_value(
-        self, value, *, included=set(), current_loader=None, only_local=False, process_project_options=True
+        self, value, *, included=None, current_loader=None, only_local=False, process_project_options=True
     ):
         value_type = type(value)
 

@@ -19,7 +19,7 @@ from .site import HAVE_GIT, GIT, GIT_ENV
 # Returns:
 #    (str): The ref
 #
-def generate_junction(tmpdir, subproject_path, junction_path, *, store_ref=True, options={}):
+def generate_junction(tmpdir, subproject_path, junction_path, *, store_ref=True, options=None):
     # Create a repo to hold the subproject and generate
     # a junction element for it
     #
