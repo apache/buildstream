@@ -44,107 +44,12 @@ import os
 
 import pytest
 
+from buildstream.testing._cachekeys import check_cache_key_stability, _parse_output_keys
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 from buildstream.testing._utils.site import HAVE_BZR, HAVE_GIT, IS_LINUX, MACHINE_ARCH
 from buildstream.plugin import CoreWarnings
 from buildstream import _yaml
 
-
-##############################################
-#                Some Helpers                #
-##############################################
-
-# Get whole filename in the temp project with
-# the option of changing the .bst suffix to something else
-#
-def element_filename(project_dir, element_name, alt_suffix=None):
-
-    if alt_suffix:
-
-        # Just in case...
-        assert element_name.endswith(".bst")
-
-        # Chop off the 'bst' in '.bst' and add the new suffix
-        element_name = element_name[:-3]
-        element_name = element_name + alt_suffix
-
-    return os.path.join(project_dir, element_name)
-
-
-# Returns an OrderedDict of element names
-# and their cache keys
-#
-def parse_output_keys(output):
-    actual_keys = OrderedDict()
-    lines = output.splitlines()
-    for line in lines:
-        split = line.split("::")
-        name = split[0]
-        key = split[1]
-        actual_keys[name] = key
-
-    return actual_keys
-
-
-# Returns an OrderedDict of element names
-# and their cache keys
-#
-def load_expected_keys(project_dir, actual_keys, raise_error=True):
-
-    expected_keys = OrderedDict()
-    for element_name in actual_keys:
-        expected = element_filename(project_dir, element_name, "expected")
-        try:
-            with open(expected, "r") as f:
-                expected_key = f.read()
-                expected_key = expected_key.strip()
-        except FileNotFoundError:
-            expected_key = None
-            if raise_error:
-                raise Exception(
-                    "Cache key test needs update, "
-                    + "expected file {} not found.\n\n".format(expected)
-                    + "Use tests/cachekey/update.py to automatically "
-                    + "update this test case"
-                )
-
-        expected_keys[element_name] = expected_key
-
-    return expected_keys
-
-
-def assert_cache_keys(project_dir, output):
-
-    # Read in the expected keys from the cache key test directory
-    # and parse the actual keys from the `bst show` output
-    #
-    actual_keys = parse_output_keys(output)
-    expected_keys = load_expected_keys(project_dir, actual_keys)
-    mismatches = []
-
-    for element_name in actual_keys:
-        if actual_keys[element_name] != expected_keys[element_name]:
-            mismatches.append(element_name)
-
-    if mismatches:
-        info = ""
-        for element_name in mismatches:
-            info += (
-                "  Element: {}\n".format(element_name)
-                + "    Expected: {}\n".format(expected_keys[element_name])
-                + "    Actual: {}\n".format(actual_keys[element_name])
-            )
-
-        raise AssertionError(
-            "Cache key mismatches occurred:\n{}\n".format(info)
-            + "Use tests/cachekey/update.py to automatically "
-            + "update this test case"
-        )
-
-
-##############################################
-#             Test Entry Point               #
-##############################################
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
@@ -172,9 +77,7 @@ def test_cache_key(datafiles, cli):
     # https://github.com/omarkohl/pytest-datafiles/issues/11
     os.chmod(goodbye_link, 0o755)
 
-    result = cli.run(project=project, silent=True, args=["show", "--format", "%{name}::%{full-key}", "target.bst"])
-    result.assert_success()
-    assert_cache_keys(project, result.output)
+    check_cache_key_stability(project, cli)
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -228,15 +131,15 @@ def test_keys_stable_over_targets(cli, datafiles):
     project = str(datafiles)
     full_graph_result = cli.run(project=project, args=["show", "--format", "%{name}::%{full-key}", root_element])
     full_graph_result.assert_success()
-    all_cache_keys = parse_output_keys(full_graph_result.output)
+    all_cache_keys = _parse_output_keys(full_graph_result.output)
 
     ordering1_result = cli.run(project=project, args=["show", "--format", "%{name}::%{full-key}", target1, target2])
     ordering1_result.assert_success()
-    ordering1_cache_keys = parse_output_keys(ordering1_result.output)
+    ordering1_cache_keys = _parse_output_keys(ordering1_result.output)
 
     ordering2_result = cli.run(project=project, args=["show", "--format", "%{name}::%{full-key}", target2, target1])
     ordering2_result.assert_success()
-    ordering2_cache_keys = parse_output_keys(ordering2_result.output)
+    ordering2_cache_keys = _parse_output_keys(ordering2_result.output)
 
     elements = ordering1_cache_keys.keys()
 

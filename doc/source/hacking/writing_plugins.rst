@@ -47,6 +47,6 @@ This test ensures that cache keys do not unexpectedly change or become incompati
 due to code changes. As such, the cache key test should have full coverage of every
 YAML configuration which can possibly affect cache key outcome at all times.
 
-See the ``tests/cachekey/update.py`` file for instructions on running the updater,
+See the ``src/buildstream/testing/_update_cachekeys.py`` file for instructions on running the updater,
 you need to run the updater to generate the ``.expected`` files and add the new
 ``.expected`` files in the same commit which extends the cache key test.
