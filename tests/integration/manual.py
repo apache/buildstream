@@ -2,6 +2,7 @@
 # pylint: disable=redefined-outer-name
 
 import os
+import shutil
 import pytest
 
 from buildstream import _yaml
@@ -16,7 +17,7 @@ pytestmark = pytest.mark.integration
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
 
-def create_manual_element(name, path, config, variables, environment):
+def create_manual_element(name, path, config, variables, environment, sources=None):
     element = {
         "kind": "manual",
         "depends": [{"filename": "base.bst", "type": "build"}],
@@ -24,6 +25,8 @@ def create_manual_element(name, path, config, variables, environment):
         "variables": variables,
         "environment": environment,
     }
+    if sources:
+        element["sources"] = sources
     os.makedirs(os.path.dirname(os.path.join(path, name)), exist_ok=True)
     _yaml.roundtrip_dump(element, os.path.join(path, name))
 
@@ -153,3 +156,51 @@ def test_manual_element_logging(cli, datafiles):
     assert "echo build" in res.stderr
     assert "echo install" in res.stderr
     assert "echo strip" in res.stderr
+
+
+# Regression test for https://gitlab.com/BuildStream/buildstream/-/issues/1295.
+#
+# Test that the command-subdir variable works as expected.
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_manual_command_subdir(cli, datafiles):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, "checkout")
+    element_path = os.path.join(project, "elements")
+    element_name = "manual/command-subdir.bst"
+    sources = [{"kind": "local", "path": "files/manual-element/root"}]
+
+    create_manual_element(
+        element_name, element_path, {"install-commands": ["cp hello %{install-root}"]}, {}, {}, sources=sources,
+    )
+
+    # First, verify that element builds, and has the correct expected output.
+    result = cli.run(project=project, args=["build", element_name])
+    result.assert_success()
+    result = cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
+    result.assert_success()
+    with open(os.path.join(checkout, "hello")) as f:
+        assert f.read() == "hello from root\n"
+
+    # Now, change element configuration to have a different command-subdir.
+    # This should result in a different cache key.
+    create_manual_element(
+        element_name,
+        element_path,
+        {"install-commands": ["cp hello %{install-root}"]},
+        {"command-subdir": "subdir"},
+        {},
+        sources=sources,
+    )
+
+    # Verify that the element needs to be rebuilt.
+    assert cli.get_element_state(project, element_name) == "buildable"
+
+    # Finally, ensure that the variable actually takes effect.
+    result = cli.run(project=project, args=["build", element_name])
+    result.assert_success()
+    shutil.rmtree(checkout)
+    result = cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
+    result.assert_success()
+    with open(os.path.join(checkout, "hello")) as f:
+        assert f.read() == "hello from subdir\n"
