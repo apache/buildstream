@@ -331,7 +331,7 @@ def test_integration_external_workspace(cli, tmpdir_factory, datafiles, build_sh
     if guess_element:
         # Mutate the project.conf to use a default shell command
         project_file = os.path.join(project, "project.conf")
-        config_text = "shell:\n" "  command: ['true']\n"
+        config_text = "shell:\n  command: ['true']\n"
         with open(project_file, "a") as f:
             f.write(config_text)
 
