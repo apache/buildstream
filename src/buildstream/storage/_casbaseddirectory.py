@@ -29,16 +29,16 @@ See also: :ref:`sandboxing`.
 
 import os
 import stat
-import copy
 import tarfile as tarfilelib
 from contextlib import contextmanager
 from io import StringIO
+from google.protobuf import timestamp_pb2
 
 from .. import utils
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .directory import Directory, VirtualDirectoryError, _FileType
 from ._filebaseddirectory import FileBasedDirectory
-from ..utils import FileListResult, BST_ARBITRARY_TIMESTAMP, _get_file_mtimestamp
+from ..utils import FileListResult, BST_ARBITRARY_TIMESTAMP
 
 
 class IndexEntry:
@@ -54,7 +54,7 @@ class IndexEntry:
         is_executable=False,
         buildstream_object=None,
         modified=False,
-        node_properties=None
+        mtime=None
     ):
         self.name = name
         self.type = entrytype
@@ -63,7 +63,7 @@ class IndexEntry:
         self.is_executable = is_executable
         self.buildstream_object = buildstream_object
         self.modified = modified
-        self.node_properties = copy.deepcopy(node_properties)
+        self.mtime = mtime
 
     def get_directory(self, parent):
         if not self.buildstream_object:
@@ -99,7 +99,7 @@ class IndexEntry:
             digest=self.get_digest(),
             target=self.target,
             is_executable=self.is_executable,
-            node_properties=self.node_properties,
+            mtime=self.mtime,
         )
 
     def __eq__(self, other: object) -> bool:
@@ -107,7 +107,7 @@ class IndexEntry:
             return NotImplemented
 
         def get_equivalency_properties(e: IndexEntry):
-            return (e.name, e.type, e.target, e.is_executable, e.node_properties, e.get_digest())
+            return (e.name, e.type, e.target, e.is_executable, e.mtime, e.get_digest())
 
         return get_equivalency_properties(self) == get_equivalency_properties(other)
 
@@ -142,7 +142,7 @@ class CasBasedDirectory(Directory):
         self.__digest = None
         self.index = {}
         self.parent = parent
-        self.__node_properties = []
+        self.__subtree_read_only = None
         self._reset(digest=digest)
 
     def _reset(self, *, digest=None):
@@ -159,17 +159,24 @@ class CasBasedDirectory(Directory):
         except FileNotFoundError as e:
             raise VirtualDirectoryError("Directory not found in local cache: {}".format(e)) from e
 
-        self.__node_properties = list(pb2_directory.node_properties)
+        for prop in pb2_directory.node_properties.properties:
+            if prop.name == "SubtreeReadOnly":
+                self.__subtree_read_only = prop.value == "true"
 
         for entry in pb2_directory.directories:
             self.index[entry.name] = IndexEntry(entry.name, _FileType.DIRECTORY, digest=entry.digest)
         for entry in pb2_directory.files:
+            if entry.node_properties.HasField("mtime"):
+                mtime = entry.node_properties.mtime
+            else:
+                mtime = None
+
             self.index[entry.name] = IndexEntry(
                 entry.name,
                 _FileType.REGULAR_FILE,
                 digest=entry.digest,
                 is_executable=entry.is_executable,
-                node_properties=list(entry.node_properties),
+                mtime=mtime,
             )
         for entry in pb2_directory.symlinks:
             self.index[entry.name] = IndexEntry(entry.name, _FileType.SYMLINK, target=entry.target)
@@ -196,14 +203,10 @@ class CasBasedDirectory(Directory):
     def _add_file(self, name, path, modified=False, can_link=False, properties=None):
         digest = self.cas_cache.add_object(path=path, link_directly=can_link)
         is_executable = os.access(path, os.X_OK)
-        node_properties = []
-        # see https://github.com/bazelbuild/remote-apis/blob/master/build/bazel/remote/execution/v2/nodeproperties.md
-        # for supported node property specifications
-        if properties and "MTime" in properties:
-            node_property = remote_execution_pb2.NodeProperty()
-            node_property.name = "MTime"
-            node_property.value = _get_file_mtimestamp(path)
-            node_properties.append(node_property)
+        mtime = None
+        if properties and "mtime" in properties:
+            mtime = timestamp_pb2.Timestamp()
+            utils._get_file_protobuf_mtimestamp(mtime, path)
 
         entry = IndexEntry(
             name,
@@ -211,7 +214,7 @@ class CasBasedDirectory(Directory):
             digest=digest,
             is_executable=is_executable,
             modified=modified or name in self.index,
-            node_properties=node_properties,
+            mtime=mtime,
         )
         self.index[name] = entry
 
@@ -817,9 +820,10 @@ class CasBasedDirectory(Directory):
             # Create updated Directory proto
             pb2_directory = remote_execution_pb2.Directory()
 
-            if self.__node_properties:
-                node_properties = sorted(self.__node_properties, key=lambda prop: prop.name)
-                pb2_directory.node_properties.extend(node_properties)
+            if self.__subtree_read_only is not None:
+                node_property = pb2_directory.node_properties.properties.add()
+                node_property.name = "SubtreeReadOnly"
+                node_property.value = "true" if self.__subtree_read_only else "false"
 
             for name, entry in sorted(self.index.items()):
                 if entry.type == _FileType.DIRECTORY:
@@ -839,9 +843,8 @@ class CasBasedDirectory(Directory):
                     filenode.name = name
                     filenode.digest.CopyFrom(entry.digest)
                     filenode.is_executable = entry.is_executable
-                    if entry.node_properties:
-                        node_properties = sorted(entry.node_properties, key=lambda prop: prop.name)
-                        filenode.node_properties.extend(node_properties)
+                    if entry.mtime is not None:
+                        filenode.node_properties.mtime.CopyFrom(entry.mtime)
                 elif entry.type == _FileType.SYMLINK:
                     symlinknode = pb2_directory.symlinks.add()
                     symlinknode.name = name
@@ -896,10 +899,8 @@ class CasBasedDirectory(Directory):
         if entry.type == _FileType.DIRECTORY or entry.is_executable:
             st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
 
-        if entry.node_properties:
-            for prop in entry.node_properties:
-                if prop.name == "MTime" and prop.value:
-                    st_mtime = utils._parse_timestamp(prop.value)
+        if entry.mtime is not None:
+            st_mtime = utils._parse_protobuf_timestamp(entry.mtime)
 
         return os.stat_result((st_mode, 0, 0, st_nlink, 0, 0, st_size, st_mtime, st_mtime, st_mtime))
 
@@ -921,11 +922,7 @@ class CasBasedDirectory(Directory):
         yield from self.index.keys()
 
     def _set_subtree_read_only(self, read_only):
-        self.__node_properties = list(filter(lambda prop: prop.name != "SubtreeReadOnly", self.__node_properties))
-        node_property = remote_execution_pb2.NodeProperty()
-        node_property.name = "SubtreeReadOnly"
-        node_property.value = "true" if read_only else "false"
-        self.__node_properties.append(node_property)
+        self.__subtree_read_only = read_only
 
         self.__invalidate_digest()
 

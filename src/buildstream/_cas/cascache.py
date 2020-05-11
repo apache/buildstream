@@ -231,18 +231,19 @@ class CASCache:
         for filenode in directory.files:
             # regular file, create hardlink
             fullpath = os.path.join(dest, filenode.name)
-            # generally, if the node holds properties we will fallback
-            # to copying instead of hardlinking
-            if can_link and not filenode.node_properties:
+
+            node_properties = filenode.node_properties
+            if node_properties.HasField("mtime"):
+                mtime = utils._parse_protobuf_timestamp(node_properties.mtime)
+            else:
+                mtime = None
+
+            if can_link and mtime is None:
                 utils.safe_link(self.objpath(filenode.digest), fullpath)
             else:
                 utils.safe_copy(self.objpath(filenode.digest), fullpath)
-                if filenode.node_properties:
-                    # see https://github.com/bazelbuild/remote-apis/blob/master/build/bazel/remote/execution/v2/nodeproperties.md
-                    # for supported node property specifications
-                    for prop in filenode.node_properties:
-                        if prop.name == "MTime" and prop.value:
-                            utils._set_file_mtime(fullpath, utils._parse_timestamp(prop.value))
+                if mtime is not None:
+                    utils._set_file_mtime(fullpath, mtime)
 
             if filenode.is_executable:
                 os.chmod(

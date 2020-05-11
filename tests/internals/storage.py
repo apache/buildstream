@@ -148,7 +148,7 @@ def test_merge_casdir_properties(tmpdir, datafiles, modification):
     elif modification == "time":
         os.utime(os.path.join(after, "root-file"), (200, 200))
 
-    _test_merge_dirs(before, after, buildtree, str(tmpdir), properties=["MTime"])
+    _test_merge_dirs(before, after, buildtree, str(tmpdir), properties=["mtime"])
 
 
 def _test_merge_dirs(
