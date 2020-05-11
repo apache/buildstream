@@ -304,7 +304,7 @@ class Plugin:
         .. note::
 
            For Elements, when variable substitution is desirable, the
-           :func:`Element.node_subst_member() <buildstream.element.Element.node_subst_member>`
+           :func:`Element.node_subst_vars() <buildstream.element.Element.node_subst_vars>`
            method can be used.
         """
         raise ImplError(
