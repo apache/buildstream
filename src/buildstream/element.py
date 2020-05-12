@@ -314,7 +314,9 @@ class Element(Plugin):
             self.__remote_execution_specs = project.remote_execution_specs
 
         # Extract Sandbox config
-        self.__sandbox_config = self.__extract_sandbox_config(context, project, meta)
+        sandbox_config = self.__extract_sandbox_config(project, meta)
+        self.__variables.expand(sandbox_config)
+        self.__sandbox_config = SandboxConfig(sandbox_config, context.platform)
 
     def __lt__(self, other):
         return self.name < other.name
@@ -2701,7 +2703,7 @@ class Element(Plugin):
     # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
     #
     @classmethod
-    def __extract_sandbox_config(cls, context, project, meta):
+    def __extract_sandbox_config(cls, project, meta):
         if meta.is_junction:
             sandbox_config = Node.from_dict({})
         else:
@@ -2715,7 +2717,7 @@ class Element(Plugin):
         meta.sandbox._composite(sandbox_config)
         sandbox_config._assert_fully_composited()
 
-        return SandboxConfig(sandbox_config, context.platform)
+        return sandbox_config
 
     # This makes a special exception for the split rules, which
     # elements may extend but whos defaults are defined in the project.
