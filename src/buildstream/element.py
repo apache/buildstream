@@ -253,6 +253,7 @@ class Element(Plugin):
         self.__splits = None  # Resolved regex objects for computing split domains
         self.__whitelist_regex = None  # Resolved regex object to check if file is allowed to overlap
         self.__tainted = None  # Whether the artifact is tainted and should not be shared
+        self.__required = False  # Whether the artifact is required in the current session
         self.__artifact_files_required = False  # Whether artifact files are required in the local cache
         self.__build_result = None  # The result of assembling this Element (success, description, detail)
         self._build_log_path = None  # The path of the build log for this Element
@@ -1383,6 +1384,13 @@ class Element(Plugin):
 
         # Ensure deterministic owners of sources at build time
         vdirectory.set_deterministic_user()
+
+    # _is_required():
+    #
+    # Returns whether this element has been marked as required.
+    #
+    def _is_required(self):
+        return self.__required
 
     # _set_artifact_files_required():
     #
