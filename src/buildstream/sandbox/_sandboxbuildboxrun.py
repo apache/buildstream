@@ -105,6 +105,10 @@ class SandboxBuildBoxRun(SandboxREAPI):
                 "--action-result={}".format(result_file.name),
             ]
 
+            # Do not redirect stdout/stderr
+            if "no-logs-capture" in self._capabilities:
+                buildbox_command.append("--no-logs-capture")
+
             marked_directories = self._get_marked_directories()
             mount_sources = self._get_mount_sources()
             for mark in marked_directories:
