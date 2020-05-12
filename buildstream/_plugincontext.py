@@ -22,6 +22,7 @@ import inspect
 
 from ._exceptions import PluginError, LoadError, LoadErrorReason
 from . import utils
+from .utils import UtilError
 
 
 # A Context for loading plugin types
@@ -222,6 +223,31 @@ class PluginContext():
                                   self._base_type.__name__, kind,
                                   plugin_type.BST_REQUIRED_VERSION_MAJOR,
                                   plugin_type.BST_REQUIRED_VERSION_MINOR))
+
+        # If a BST_MIN_VERSION was specified, then we need to raise an error
+        # that we are loading a plugin which targets the wrong BuildStream version.
+        #
+        try:
+            min_version = plugin_type.BST_MIN_VERSION
+        except AttributeError:
+            return
+
+        # Handle malformed version string specified by plugin
+        #
+        try:
+            major, minor = utils._parse_version(min_version)
+        except UtilError as e:
+            raise PluginError(
+                "Loaded plugin '{}' is not a BuildStream 1 plugin".format(kind),
+                detail="Error parsing BST_MIN_VERSION: {}".format(e),
+                reason="plugin-version-mismatch"
+            ) from e
+
+        raise PluginError(
+            "Loaded plugin '{}' is a BuildStream {} plugin".format(kind, major),
+            detail="You need to use BuildStream 1 plugins with BuildStream 1 projects",
+            reason="plugin-version-mismatch"
+        )
 
     # _assert_plugin_format()
     #

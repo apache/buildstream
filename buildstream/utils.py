@@ -1207,3 +1207,30 @@ def _deduplicate(iterable, key=None):
             if k not in seen:
                 seen_add(k)
                 yield element
+
+
+# _parse_version():
+#
+# Args:
+#    version (str): The file name from which to determine compression
+#
+# Returns:
+#    A 2-tuple of form (major_version: int, minor_version: int)
+#
+# Raises:
+#    UtilError: In the case of a malformed version string
+#
+def _parse_version(version):
+
+    try:
+        versions = version.split(".")
+    except AttributeError as e:
+        raise UtilError("Malformed version string: {}".format(version),)
+
+    try:
+        major = int(versions[0])
+        minor = int(versions[1])
+    except (IndexError, ValueError):
+        raise UtilError("Malformed version string: {}".format(version),)
+
+    return major, minor
