@@ -271,6 +271,20 @@ def configure_remote(repo, remote, url, key_url=None):
         try:
             gfile = Gio.File.new_for_uri(key_url)
             stream = gfile.read()
-            repo.remote_gpg_import(remote, stream, None, None)
+
+            # In ostree commit `v2019.2-10-gaa5df899`, the python
+            # facing API was changed by way of modifying the
+            # instrospection annotations.
+            #
+            # This means we need to call this API in two different
+            # ways depending on which ostree version is installed.
+            #
+            try:
+                # New API
+                repo.remote_gpg_import(remote, stream, None, None)
+            except TypeError:
+                # Old API
+                repo.remote_gpg_import(remote, stream, None, 0, None)
+
         except GLib.GError as e:
             raise OSTreeError("Failed to add gpg key from url '{}': {}".format(key_url, e.message)) from e
