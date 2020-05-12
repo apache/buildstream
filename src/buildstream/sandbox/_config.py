@@ -17,17 +17,34 @@
 #  Authors:
 #        Jim MacArthur <jim.macarthur@codethink.co.uk>
 
+from .._platform import Platform
+
 
 # SandboxConfig
 #
 # A container for sandbox configuration data. We want the internals
 # of this to be opaque, hence putting it in its own private file.
 class SandboxConfig:
-    def __init__(self, build_uid, build_gid, build_os=None, build_arch=None):
-        self.build_uid = build_uid
-        self.build_gid = build_gid
-        self.build_os = build_os
-        self.build_arch = build_arch
+    def __init__(self, sandbox_config, platform):
+        host_arch = platform.get_host_arch()
+        host_os = platform.get_host_os()
+
+        sandbox_config.validate_keys(["build-uid", "build-gid", "build-os", "build-arch"])
+
+        build_os = sandbox_config.get_str("build-os", default=None)
+        if build_os:
+            self.build_os = build_os.lower()
+        else:
+            self.build_os = host_os
+
+        build_arch = sandbox_config.get_str("build-arch", default=None)
+        if build_arch:
+            self.build_arch = Platform.canonicalize_arch(build_arch)
+        else:
+            self.build_arch = host_arch
+
+        self.build_uid = sandbox_config.get_int("build-uid", None)
+        self.build_gid = sandbox_config.get_int("build-gid", None)
 
     # get_unique_key():
     #
