@@ -301,11 +301,6 @@ class Plugin:
         should be used to ensure that the user has not specified keys in `node` which are unsupported
         by the plugin.
 
-        .. note::
-
-           For Elements, when variable substitution is desirable, the
-           :func:`Element.node_subst_vars() <buildstream.element.Element.node_subst_vars>`
-           method can be used.
         """
         raise ImplError(
             "{tag} plugin '{kind}' does not implement configure()".format(tag=self.__type_tag, kind=self.get_kind())

@@ -76,9 +76,8 @@ class Option:
     # Args:
     #    node (Mapping): The YAML loaded key/value dictionary
     #                    to load the value from
-    #    transform (callbable): Transform function for variable substitution
     #
-    def load_value(self, node, *, transform=None):
+    def load_value(self, node):
         pass  # pragma: nocover
 
     # set_value()

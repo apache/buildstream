@@ -22,6 +22,14 @@ Plugins
   o The `pip` element has been removed. Please use the one from bst-plugins-experimental
 
 
+API
+---
+
+  o `Element.node_subst_vars` and `Element.node_subst_sequence_vars` are now deprecated
+     and will get removed in the next version. All config entries are now resolved so there
+     is no need to use them anymore.
+
+
 ==================
 buildstream 1.93.3
 ==================
