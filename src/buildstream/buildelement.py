@@ -171,6 +171,8 @@ class BuildElement(Element):
         #        extend the configuration
         node.validate_keys(_command_steps)
 
+        self._command_subdir = self.get_variable("command-subdir")  # pylint: disable=attribute-defined-outside-init
+
         for command_name in _legacy_command_steps:
             self.__commands[command_name] = node.get_str_list(command_name, [])
 
@@ -182,6 +184,9 @@ class BuildElement(Element):
 
         for command_name, command_list in self.__commands.items():
             dictionary[command_name] = command_list
+
+        if self._command_subdir:
+            dictionary["command-subdir"] = self._command_subdir
 
         # Specifying notparallel for a given element effects the
         # cache key, while having the side effect of setting max-jobs to 1,
@@ -201,9 +206,8 @@ class BuildElement(Element):
         sandbox.mark_directory(install_root)
 
         # Allow running all commands in a specified subdirectory
-        command_subdir = self.get_variable("command-subdir")
-        if command_subdir:
-            command_dir = os.path.join(build_root, command_subdir)
+        if self._command_subdir:
+            command_dir = os.path.join(build_root, self._command_subdir)
         else:
             command_dir = build_root
         sandbox.set_work_directory(command_dir)
