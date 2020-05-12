@@ -1286,10 +1286,10 @@ class Stream:
             # others are requested dynamically as needed.
             # This avoids pulling, fetching, or building unneeded build-only dependencies.
             for element in elements:
-                element._schedule_assembly_when_necessary()
+                element._set_required()
         else:
             for element in selected:
-                element._schedule_assembly_when_necessary()
+                element._set_required()
 
         return selected
 

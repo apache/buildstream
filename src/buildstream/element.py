@@ -272,6 +272,7 @@ class Element(Plugin):
         self.__batch_prepare_assemble_collect = None  # type: Optional[str]
 
         # Callbacks
+        self.__required_callback = None  # Callback to Queues
         self.__can_query_cache_callback = None  # Callback to PullQueue/FetchQueue
         self.__buildable_callback = None  # Callback to BuildQueue
 
@@ -1143,7 +1144,7 @@ class Element(Plugin):
     # - _update_artifact_state()
     #   - Computes the state of the element's artifact using the
     #     cache key.
-    # - _schedule_assembly_when_necessary()
+    # - __schedule_assembly_when_necessary()
     #   - Schedules assembly of an element, iff its current state
     #     allows/necessitates it
     # - __update_cache_key_non_strict()
@@ -1385,6 +1386,34 @@ class Element(Plugin):
         # Ensure deterministic owners of sources at build time
         vdirectory.set_deterministic_user()
 
+    # _set_required():
+    #
+    # Mark this element and its runtime dependencies as required.
+    # This unblocks pull/fetch/build.
+    #
+    def _set_required(self):
+        if self.__required:
+            # Already done
+            return
+
+        self.__required = True
+
+        # Request artifacts of runtime dependencies
+        for dep in self.dependencies(Scope.RUN, recurse=False):
+            dep._set_required()
+
+        # When an element becomes required, it must be assembled for
+        # the current pipeline. `__schedule_assembly_when_necessary()`
+        # will abort if some other state prevents it from being built,
+        # and changes to such states will cause re-scheduling, so this
+        # is safe.
+        self.__schedule_assembly_when_necessary()
+
+        # Callback to the Queue
+        if self.__required_callback is not None:
+            self.__required_callback(self)
+            self.__required_callback = None
+
     # _is_required():
     #
     # Returns whether this element has been marked as required.
@@ -1430,6 +1459,9 @@ class Element(Plugin):
             # We're not processing
             not processing
             and
+            # We're required for the current build
+            self._is_required()
+            and
             # We have figured out the state of our artifact
             self.__artifact
             and
@@ -1437,12 +1469,12 @@ class Element(Plugin):
             not self._cached()
         )
 
-    # _schedule_assembly_when_necessary():
+    # __schedule_assembly_when_necessary():
     #
     # This is called in the main process before the element is assembled
     # in a subprocess.
     #
-    def _schedule_assembly_when_necessary(self):
+    def __schedule_assembly_when_necessary(self):
         # FIXME: We could reduce the number of function calls a bit by
         # factoring this out of this method (and checking whether we
         # should schedule at the calling end).
@@ -1456,7 +1488,7 @@ class Element(Plugin):
 
         # Requests artifacts of build dependencies
         for dep in self.dependencies(Scope.BUILD, recurse=False):
-            dep._schedule_assembly_when_necessary()
+            dep._set_required()
 
         # Once we schedule an element for assembly, we know that our
         # build dependencies have strong cache keys, so we can update
@@ -1716,7 +1748,7 @@ class Element(Plugin):
 
         # We may not have actually pulled an artifact - the pull may
         # have failed. We might therefore need to schedule assembly.
-        self._schedule_assembly_when_necessary()
+        self.__schedule_assembly_when_necessary()
         # If we've finished pulling, an artifact might now exist
         # locally, so we might need to update a non-strict strong
         # cache key.
@@ -2121,6 +2153,22 @@ class Element(Plugin):
             return not self._has_all_sources_cached()
         return not self._has_all_sources_in_source_cache()
 
+    # _set_required_callback()
+    #
+    #
+    # Notify the pull/fetch/build queue that the element is potentially
+    # ready to be processed.
+    #
+    # _Set the _required_callback - the _required_callback is invoked when an
+    # element is marked as required. This informs us that the element needs to
+    # either be pulled or fetched + built.
+    #
+    # Args:
+    #    callback (callable) - The callback function
+    #
+    def _set_required_callback(self, callback):
+        self.__required_callback = callback
+
     # _set_can_query_cache_callback()
     #
     # Notify the pull/fetch queue that the element is potentially
@@ -2228,6 +2276,11 @@ class Element(Plugin):
         state["_Element__can_query_cache_callback"] = None
         assert "_Element__buildable_callback" in state
         state["_Element__buildable_callback"] = None
+
+        # This callback is not even read in the child process, so delete it.
+        # If this assumption is invalidated, we will get an attribute error to
+        # let us know, and we will need to update accordingly.
+        del state["_Element__required_callback"]
 
         return self.__meta_kind, state
 
@@ -3024,7 +3077,7 @@ class Element(Plugin):
     # to this element.
     #
     # If the state changes, this will subsequently call
-    # `self._schedule_assembly_when_necessary()` to schedule assembly if it becomes
+    # `self.__schedule_assembly_when_necessary()` to schedule assembly if it becomes
     # possible.
     #
     # Element.__update_cache_keys() must be called before this to have
@@ -3040,7 +3093,7 @@ class Element(Plugin):
         if not context.get_strict() and not self.__artifact:
             # We've calculated the weak_key, so instantiate artifact instance member
             self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
-            self._schedule_assembly_when_necessary()
+            self.__schedule_assembly_when_necessary()
 
         if not self.__strict_cache_key:
             return
@@ -3052,7 +3105,7 @@ class Element(Plugin):
 
             if context.get_strict():
                 self.__artifact = self.__strict_artifact
-                self._schedule_assembly_when_necessary()
+                self.__schedule_assembly_when_necessary()
             else:
                 self.__update_cache_key_non_strict()
 

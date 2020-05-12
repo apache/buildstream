@@ -181,7 +181,10 @@ class Queue:
 
         # Obtain immediate element status
         for elt in elts:
-            self._enqueue_element(elt)
+            if self._required_element_check and not elt._is_required():
+                elt._set_required_callback(self._enqueue_element)
+            else:
+                self._enqueue_element(elt)
 
     # dequeue()
     #
