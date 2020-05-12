@@ -117,6 +117,14 @@ def test_project_unsupported(cli, datafiles):
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNSUPPORTED_PROJECT)
 
 
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_project_unsupported_not_bst1(cli, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename, "not-bst-1")
+
+    result = cli.run(project=project, args=['workspace', 'list'])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNSUPPORTED_PROJECT)
+
+
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'element-path'))
 def test_missing_element_path_directory(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename)
