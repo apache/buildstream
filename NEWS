@@ -1,4 +1,17 @@
 =================
+  (unreleased)
+=================
+
+  o Process options in included files in the context of the project they
+    were included from.
+
+    This is technically a breaking change, however it is highly unlikely
+    that this will break projects. In some cases projects were working around
+    the broken behavior by ensuring matching project option names in junctioned
+    projects, and in other cases simply avoiding including files which have
+    project option conditional statements.
+
+=================
 buildstream 1.4.2
 =================
 
