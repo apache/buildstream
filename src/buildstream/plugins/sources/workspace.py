@@ -51,15 +51,12 @@ class WorkspaceSource(Source):
     BST_STAGE_VIRTUAL_DIRECTORY = True
     BST_KEY_REQUIRES_STAGE = True
 
-    def __init__(self, context, project, meta) -> None:
-        super().__init__(context, project, meta)
-
-        # Cached unique key
-        self.__unique_key = None
-        # the digest of the Directory following the import of the workspace
-        self.__digest = None
-        # the cache key of the last workspace build
-        self.__last_build = None
+    # Cached unique key
+    __unique_key = None
+    # the digest of the Directory following the import of the workspace
+    __digest = None
+    # the cache key of the last workspace build
+    __last_build = None
 
     def track(self) -> SourceRef:  # pylint: disable=arguments-differ
         return None
