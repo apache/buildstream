@@ -46,8 +46,8 @@ class ImportElement(Element):
     def configure(self, node):
         node.validate_keys(["source", "target"])
 
-        self.source = self.node_subst_vars(node.get_scalar("source"))
-        self.target = self.node_subst_vars(node.get_scalar("target"))
+        self.source = node.get_str("source")
+        self.target = node.get_str("target")
 
     def preflight(self):
         # Assert that we have at least one source to fetch.

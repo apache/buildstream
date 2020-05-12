@@ -76,6 +76,7 @@ import os
 import re
 import stat
 import copy
+import warnings
 from collections import OrderedDict
 import contextlib
 from contextlib import contextmanager
@@ -286,7 +287,8 @@ class Element(Plugin):
 
         # Collect the composited environment now that we have variables
         unexpanded_env = self.__extract_environment(project, meta)
-        self.__environment = self.__expand_environment(unexpanded_env)
+        self.__variables.expand(unexpanded_env)
+        self.__environment = unexpanded_env.strip_node_info()
 
         # Collect the environment nocache blacklist list
         nocache = self.__extract_env_nocache(project, meta)
@@ -300,6 +302,8 @@ class Element(Plugin):
         # Collect the composited element configuration and
         # ask the element to configure itself.
         self.__config = self.__extract_config(meta)
+        self.__variables.expand(self.__config)
+
         self._configure(self.__config)
 
         # Extract remote execution URL
@@ -502,6 +506,8 @@ class Element(Plugin):
     def node_subst_vars(self, node: "ScalarNode") -> str:
         """Replace any variables in the string contained in the node and returns it.
 
+        **Warning**: The method is deprecated and will get removed in the next version
+
         Args:
            node: A ScalarNode loaded from YAML
 
@@ -519,14 +525,16 @@ class Element(Plugin):
           # variables in the returned string
           name = self.node_subst_vars(node.get_scalar('name'))
         """
-        try:
-            return self.__variables.subst(node.as_str())
-        except LoadError as e:
-            provenance = node.get_provenance()
-            raise LoadError("{}: {}".format(provenance, e), e.reason, detail=e.detail) from e
+        # FIXME: remove this
+        warnings.warn(
+            "configuration is now automatically expanded, this is a no-op and will be removed.", DeprecationWarning
+        )
+        return node.as_str()
 
     def node_subst_sequence_vars(self, node: "SequenceNode[ScalarNode]") -> List[str]:
         """Substitute any variables in the given sequence
+
+        **Warning**: The method is deprecated and will get removed in the next version
 
         Args:
           node: A SequenceNode loaded from YAML
@@ -538,14 +546,11 @@ class Element(Plugin):
           :class:`.LoadError`
 
         """
-        ret = []
-        for value in node:
-            try:
-                ret.append(self.__variables.subst(value.as_str()))
-            except LoadError as e:
-                provenance = value.get_provenance()
-                raise LoadError("{}: {}".format(provenance, e), e.reason, detail=e.detail) from e
-        return ret
+        # FIXME: remove this
+        warnings.warn(
+            "configuration is now automatically expanded, this is a no-op and will be removed.", DeprecationWarning
+        )
+        return node.as_str_list()
 
     def compute_manifest(
         self, *, include: Optional[List[str]] = None, exclude: Optional[List[str]] = None, orphans: bool = True
@@ -760,11 +765,8 @@ class Element(Plugin):
 
         if bstdata is not None:
             with sandbox.batch(SandboxFlags.NONE):
-                commands = bstdata.get_sequence("integration-commands", [])
-                for command in commands:
-                    cmd = self.node_subst_vars(command)
-
-                    sandbox.run(["sh", "-e", "-c", cmd], 0, env=environment, cwd="/", label=cmd)
+                for command in bstdata.get_str_list("integration-commands", []):
+                    sandbox.run(["sh", "-e", "-c", command], 0, env=environment, cwd="/", label=command)
 
     def stage_sources(self, sandbox: "Sandbox", directory: str) -> None:
         """Stage this element's sources to a directory in the sandbox
@@ -2565,17 +2567,6 @@ class Element(Plugin):
         environment._assert_fully_composited()
 
         return environment
-
-    # This will resolve the final environment to be used when
-    # creating sandboxes for this element
-    #
-    def __expand_environment(self, environment):
-        # Resolve variables in environment value strings
-        final_env = {}
-        for key, value in environment.items():
-            final_env[key] = self.node_subst_vars(value)
-
-        return final_env
 
     @classmethod
     def __extract_env_nocache(cls, project, meta):

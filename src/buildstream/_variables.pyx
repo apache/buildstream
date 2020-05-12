@@ -25,7 +25,7 @@ import sys
 
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
-from .node cimport MappingNode
+from .node cimport MappingNode, Node, ScalarNode, SequenceNode
 
 # Variables are allowed to have dashes here
 #
@@ -75,6 +75,27 @@ cdef class Variables:
         self._expstr_map = self._resolve(node)
         self.flat = self._flatten()
 
+    # expand()
+    #
+    # Expand all the variables found in the given Node, recursively.
+    # This does the change in place, modifying the node. If you want to keep
+    # the node untouched, you should use `node.clone()` beforehand
+    #
+    # Args:
+    #   (Node): A node for which to substitute the values
+    #
+    cpdef expand(self, Node node):
+        if isinstance(node, ScalarNode):
+            (<ScalarNode> node).value = self.subst((<ScalarNode> node).value)
+        elif isinstance(node, SequenceNode):
+            for entry in (<SequenceNode> node).value:
+                self.expand(entry)
+        elif isinstance(node, MappingNode):
+            for entry in (<MappingNode> node).value.values():
+                self.expand(entry)
+        else:
+            assert False, "Unknown 'Node' type"
+
     # subst():
     #
     # Substitutes any variables in 'string' and returns the result.
@@ -88,7 +109,7 @@ cdef class Variables:
     # Raises:
     #    LoadError, if the string contains unresolved variable references.
     #
-    def subst(self, str string):
+    cpdef subst(self, str string):
         expstr = _parse_expstr(string)
 
         try:

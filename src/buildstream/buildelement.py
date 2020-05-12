@@ -172,10 +172,7 @@ class BuildElement(Element):
         node.validate_keys(_command_steps)
 
         for command_name in _legacy_command_steps:
-            if command_name in _command_steps:
-                self.__commands[command_name] = self.__get_commands(node, command_name)
-            else:
-                self.__commands[command_name] = []
+            self.__commands[command_name] = node.get_str_list(command_name, [])
 
     def preflight(self):
         pass
@@ -305,10 +302,6 @@ class BuildElement(Element):
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
-    def __get_commands(self, node, name):
-        raw_commands = node.get_sequence(name, [])
-        return [self.node_subst_vars(command) for command in raw_commands]
-
     def __run_command(self, sandbox, cmd):
         # Note the -e switch to 'sh' means to exit with an error
         # if any untested command fails.

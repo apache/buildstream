@@ -58,12 +58,9 @@ class OptionEnum(Option):
         # Allow subclass to define the default value
         self.value = self.load_default_value(node)
 
-    def load_value(self, node, *, transform=None):
+    def load_value(self, node):
         value_node = node.get_scalar(self.name)
-        if transform:
-            self.value = transform(value_node)
-        else:
-            self.value = value_node.as_str()
+        self.value = value_node.as_str()
 
         self.validate(self.value, value_node)
 
