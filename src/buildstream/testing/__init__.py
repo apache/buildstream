@@ -27,6 +27,14 @@ from ._yaml import generate_project, generate_element
 from .repo import Repo
 from .runcli import cli, cli_integration, cli_remote_execution
 from .integration import integration_cache
+from ._cachekeys import check_cache_key_stability
+
+__all__ = [
+    "check_cache_key_stability",
+    "create_repo",
+    "register_repo_kind",
+    "sourcetests_collection_hook",
+]
 
 # To make use of these test utilities it is necessary to have pytest
 # available. However, we don't want to have a hard dependency on
