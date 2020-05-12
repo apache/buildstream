@@ -45,6 +45,7 @@ class SourceFactory(PluginFactory):
     #    context (object): The Context object for processing
     #    project (object): The project object
     #    meta (object): The loaded MetaSource
+    #    variables (Variables): The variables available to the source
     #
     # Returns:
     #    A newly created Source object of the appropriate kind
@@ -53,7 +54,7 @@ class SourceFactory(PluginFactory):
     #    PluginError (if the kind lookup failed)
     #    LoadError (if the source itself took issue with the config)
     #
-    def create(self, context, project, meta):
+    def create(self, context, project, meta, variables):
         source_type, _ = self.lookup(context.messenger, meta.kind, meta.provenance)
-        source = source_type(context, project, meta)
+        source = source_type(context, project, meta, variables)
         return source

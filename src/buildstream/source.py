@@ -173,6 +173,7 @@ from ._cachekey import generate_key
 from .storage import CasBasedDirectory
 from .storage import FileBasedDirectory
 from .storage.directory import Directory, VirtualDirectoryError
+from ._variables import Variables
 
 if TYPE_CHECKING:
     from typing import Any, Dict, Set
@@ -321,6 +322,7 @@ class Source(Plugin):
         context: "Context",
         project: "Project",
         meta: MetaSource,
+        variables: Variables,
         *,
         alias_override: Optional[Tuple[str, str]] = None,
         unique_id: Optional[int] = None
@@ -341,6 +343,7 @@ class Source(Plugin):
         self.__element_kind = meta.element_kind  # The kind of the element owning this source
         self.__directory = meta.directory  # Staging relative directory
         self.__meta_kind = meta.kind  # The kind of this source, required for unpickling
+        self.__variables = variables  # The variables used to resolve the source's config
 
         self.__key = None  # Cache key for source
 
@@ -354,6 +357,8 @@ class Source(Plugin):
         # ask the element to configure itself.
         self.__init_defaults(project, meta)
         self.__config = self.__extract_config(meta)
+        variables.expand(self.__config)
+
         self.__first_pass = meta.first_pass
 
         # cached values for commonly access values on the source
@@ -1238,7 +1243,9 @@ class Source(Plugin):
 
         meta.first_pass = self.__first_pass
 
-        clone = source_kind(context, project, meta, alias_override=(alias, uri), unique_id=self._unique_id)
+        clone = source_kind(
+            context, project, meta, self.__variables, alias_override=(alias, uri), unique_id=self._unique_id
+        )
 
         # Do the necessary post instantiation routines here
         #

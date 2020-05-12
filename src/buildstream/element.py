@@ -901,7 +901,7 @@ class Element(Plugin):
         # Instantiate sources and generate their keys
         for meta_source in meta.sources:
             meta_source.first_pass = meta.is_junction
-            source = meta.project.create_source(meta_source, first_pass=meta.first_pass)
+            source = meta.project.create_source(meta_source, variables=element.__variables, first_pass=meta.first_pass)
 
             redundant_ref = source._load_ref()
 
