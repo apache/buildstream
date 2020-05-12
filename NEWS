@@ -24,6 +24,7 @@ Plugins
     variable was not included in the cache key correctly.
 
   o The `pip` element has been removed. Please use the one from bst-plugins-experimental
+  o The `pip` source has been removed. Please use the one from bst-plugins-experimental
 
 
 API
