@@ -401,6 +401,37 @@ class Project():
                 "Project requested format version {}, but BuildStream {}.{} only supports up until format version {}"
                 .format(format_version, major, minor, BST_FORMAT_VERSION))
 
+        # Since BuildStream 2, project.conf is required to specify min-version.
+        #
+        # Detect this and raise an error, indicating which major version of BuildStream
+        # should be used for this project.
+        #
+        min_version = _yaml.node_get(pre_config_node, str, 'min-version', default_value=None)
+        if min_version:
+
+            # Handle case of malformed min-version
+            #
+            try:
+                major, minor = utils._parse_version(min_version)
+            except UtilError as e:
+                raise LoadError(
+                    LoadErrorReason.UNSUPPORTED_PROJECT,
+                    "This is not a BuildStream 1 project: {}".format(e)
+                ) from e
+
+            # Raise a helpful error indicating what the user should do to
+            # use this project.
+            #
+            raise LoadError(
+                LoadErrorReason.UNSUPPORTED_PROJECT,
+                "Tried to load a BuildStream {} project with BuildStream 1".format(major),
+
+                # TODO: Include a link to the appropriate documentation for parallel
+                # installing different BuildStream versions.
+                #
+                detail="Please install at least BuildStream {}.{} to use this project".format(major, minor)
+            )
+
         # FIXME:
         #
         #   Performing this check manually in the absense
