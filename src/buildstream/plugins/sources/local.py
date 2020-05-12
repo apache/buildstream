@@ -49,11 +49,7 @@ class LocalSource(Source):
     BST_STAGE_VIRTUAL_DIRECTORY = True
     BST_KEY_REQUIRES_STAGE = True
 
-    def __init__(self, context, project, meta):
-        super().__init__(context, project, meta)
-
-        # Cached unique key to avoid multiple file system traversal if the unique key is requested multiple times.
-        self.__unique_key = None
+    __unique_key = None
 
     def configure(self, node):
         node.validate_keys(["path", *Source.COMMON_CONFIG_KEYS])
