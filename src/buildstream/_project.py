@@ -375,16 +375,17 @@ class Project:
     #
     # Args:
     #    meta (MetaSource): The loaded MetaSource
+    #    variables (Variables): The list of variables available to the source
     #    first_pass (bool): Whether to use first pass configuration (for junctions)
     #
     # Returns:
     #    (Source): A newly created Source object of the appropriate kind
     #
-    def create_source(self, meta, *, first_pass=False):
+    def create_source(self, meta, variables, *, first_pass=False):
         if first_pass:
-            return self.first_pass_config.source_factory.create(self._context, self, meta)
+            return self.first_pass_config.source_factory.create(self._context, self, meta, variables)
         else:
-            return self.config.source_factory.create(self._context, self, meta)
+            return self.config.source_factory.create(self._context, self, meta, variables)
 
     # get_alias_uri()
     #
