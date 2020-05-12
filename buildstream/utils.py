@@ -1222,11 +1222,15 @@ def _deduplicate(iterable, key=None):
 #
 def _parse_version(version):
 
-    versions = version.split(".")
+    try:
+        versions = version.split(".")
+    except AttributeError as e:
+        raise UtilError("Malformed version string: {}".format(version),)
+
     try:
         major = int(versions[0])
         minor = int(versions[1])
     except (IndexError, ValueError):
         raise UtilError("Malformed version string: {}".format(version),)
 
-    return (major, minor)
+    return major, minor
