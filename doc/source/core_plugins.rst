@@ -54,7 +54,6 @@ information.
    sources/git
    sources/bzr
    sources/patch
-   sources/pip
 
 
 .. _plugins_external:
