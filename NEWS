@@ -1,5 +1,5 @@
 =================
-  (unreleased)
+buildstream 1.5.0
 =================
 
   o Process options in included files in the context of the project they
@@ -10,6 +10,30 @@
     the broken behavior by ensuring matching project option names in junctioned
     projects, and in other cases simply avoiding including files which have
     project option conditional statements.
+
+  o Added errors when trying to load BuildStream 2 projects, recommending to
+    install the appropriate BuildStream version for the project.
+
+  o Added errors when loading BuildStream 2 plugins in a BuildStream 1
+    project, recommending to use BuildStream 1 plugins with BuildStream 1 projects.
+
+=================
+buildstream 1.4.3
+=================
+
+  o Fix support for conditional list append/prepend in project.conf,
+    Merge request !1857
+
+  o Fix internal imports to import from "collections" instead
+    of "collections.abc", this improves support for Python 3.8,
+    see issue #831
+
+  o Fix some downloads from gitlab.com by setting custom user agent,
+    fixes issue #1285
+
+  o Work around python API break from ostree's repo.remote_gpg_import(),
+    this was changed in ostree commit v2019.2-10-gaa5df899, and we now
+    have a fallback to support both versions of the API, see merge request !1917.
 
 =================
 buildstream 1.4.2
