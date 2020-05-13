@@ -220,20 +220,30 @@ def test_push_fails_with_on_error_continue(cli, tmpdir, datafiles):
             assert error in result.stderr
 
 
-# Tests that `bst artifact push --deps all` pushes all dependencies of the given element.
+# Tests that `bst artifact push --deps DEPS` pushes selected dependencies of
+# the given element.
 #
 @pytest.mark.datafiles(DATA_DIR)
-def test_push_all(cli, tmpdir, datafiles):
+@pytest.mark.parametrize(
+    "deps, expected_states",
+    [
+        ("build", [False, True, False]),
+        ("none", [True, False, False]),
+        ("run", [True, False, True]),
+        ("all", [True, True, True]),
+    ],
+)
+def test_push_deps(cli, tmpdir, datafiles, deps, expected_states):
     project = str(datafiles)
+    target = "checkout-deps.bst"
+    build_dep = "import-dev.bst"
+    runtime_dep = "import-bin.bst"
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
 
         # First build it without the artifact cache configured
-        result = cli.run(project=project, args=["build", "target.bst"])
+        result = cli.run(project=project, args=["build", target])
         result.assert_success()
-
-        # Assert that we are now cached locally
-        assert cli.get_element_state(project, "target.bst") == "cached"
 
         # Configure artifact share
         cli.configure(
@@ -252,14 +262,15 @@ def test_push_all(cli, tmpdir, datafiles):
         )
 
         # Now try bst artifact push all the deps
-        result = cli.run(project=project, args=["artifact", "push", "target.bst", "--deps", "all"])
+        result = cli.run(project=project, args=["artifact", "push", target, "--deps", deps])
         result.assert_success()
 
-        # And finally assert that all the artifacts are in the share
-        assert_shared(cli, share, project, "target.bst")
-        assert_shared(cli, share, project, "import-bin.bst")
-        assert_shared(cli, share, project, "import-dev.bst")
-        assert_shared(cli, share, project, "compose-all.bst")
+        # And finally assert that the selected artifacts are in the share
+        states = []
+        for element in (target, build_dep, runtime_dep):
+            is_cached = share.get_artifact(cli.get_artifact_name(project, "test", element)) is not None
+            states.append(is_cached)
+        assert states == expected_states
 
 
 # Tests that `bst artifact push --deps run $artifact_ref` fails

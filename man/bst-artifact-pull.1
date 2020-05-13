@@ -1,4 +1,4 @@
-.TH "BST ARTIFACT PULL" "1" "2020-04-23" "" "bst artifact pull Manual"
+.TH "BST ARTIFACT PULL" "1" "2020-05-07" "" "bst artifact pull Manual"
 .SH NAME
 bst\-artifact\-pull \- Pull a built artifact
 .SH SYNOPSIS
@@ -22,10 +22,12 @@ Specify `--deps` to control which artifacts to pull:
 .PP
 
     none:  No dependencies, just the element itself
+    run:   Runtime dependencies, including the element itself
+    build: Build time dependencies, excluding the element itself
     all:   All dependencies
 .SH OPTIONS
 .TP
-\fB\-d,\fP \-\-deps [none|all]
+\fB\-d,\fP \-\-deps [build|none|run|all]
 The dependency artifacts to pull  [default: none]
 .TP
 \fB\-r,\fP \-\-remote TEXT

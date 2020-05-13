@@ -1,4 +1,4 @@
-.TH "BST ARTIFACT PUSH" "1" "2020-04-23" "" "bst artifact push Manual"
+.TH "BST ARTIFACT PUSH" "1" "2020-05-07" "" "bst artifact push Manual"
 .SH NAME
 bst\-artifact\-push \- Push a built artifact
 .SH SYNOPSIS
@@ -25,10 +25,12 @@ Specify `--deps` to control which artifacts to push:
 .PP
 
     none:  No dependencies, just the element itself
+    run:   Runtime dependencies, including the element itself
+    build: Build time dependencies, excluding the element itself
     all:   All dependencies
 .SH OPTIONS
 .TP
-\fB\-d,\fP \-\-deps [none|all]
+\fB\-d,\fP \-\-deps [build|none|run|all]
 The dependencies to push  [default: none]
 .TP
 \fB\-r,\fP \-\-remote TEXT

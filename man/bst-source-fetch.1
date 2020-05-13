@@ -1,4 +1,4 @@
-.TH "BST SOURCE FETCH" "1" "2020-04-23" "" "bst source fetch Manual"
+.TH "BST SOURCE FETCH" "1" "2020-05-07" "" "bst source fetch Manual"
 .SH NAME
 bst\-source\-fetch \- Fetch sources in a pipeline
 .SH SYNOPSIS
@@ -24,13 +24,15 @@ Specify `--deps` to control which sources to fetch:
 
     none:  No dependencies, just the element itself
     plan:  Only dependencies required for the build plan
+    run:   Runtime dependencies, including the element itself
+    build: Build time dependencies, excluding the element itself
     all:   All dependencies
 .SH OPTIONS
 .TP
 \fB\-\-except\fP PATH
 Except certain dependencies from fetching
 .TP
-\fB\-d,\fP \-\-deps [none|plan|all]
+\fB\-d,\fP \-\-deps [plan|none|build|run|all]
 The dependencies to fetch  [default: plan]
 .TP
 \fB\-r,\fP \-\-remote TEXT

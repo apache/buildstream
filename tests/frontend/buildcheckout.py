@@ -189,6 +189,22 @@ def test_build_checkout_deps(datafiles, cli, deps):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_build_deps_build(datafiles, cli):
+    project = str(datafiles)
+    target = "checkout-deps.bst"
+    build_dep = "import-dev.bst"
+    runtime_dep = "import-bin.bst"
+
+    result = cli.run(project=project, args=["build", "--deps", "build", target])
+    result.assert_success()
+
+    states = cli.get_element_states(project, [target, build_dep, runtime_dep])
+    assert states[build_dep] == "cached"
+    assert states[target] == "buildable"
+    assert states[runtime_dep] == "buildable"
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_build_checkout_unbuilt(datafiles, cli):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout")
