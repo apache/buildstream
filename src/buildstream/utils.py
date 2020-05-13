@@ -1598,14 +1598,14 @@ def _is_single_threaded():
 #
 def _parse_version(version: str) -> Tuple[int, int]:
 
-    versions = version.split(".")
     try:
+        versions = version.split(".")
         major = int(versions[0])
         minor = int(versions[1])
-    except (IndexError, ValueError):
-        raise UtilError("Malformed version string: {}".format(version),)
+    except (IndexError, ValueError, AttributeError) as e:
+        raise UtilError("Malformed version string: {}".format(version),) from e
 
-    return (major, minor)
+    return major, minor
 
 
 # _get_bst_api_version():
