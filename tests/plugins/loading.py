@@ -166,7 +166,8 @@ def test_missing_min_version(cli, datafiles, plugin_type):
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
-def test_malformed_min_version(cli, datafiles, plugin_type):
+@pytest.mark.parametrize("plugin", [("badstring"), ("number"), ("dict"), ("list")])
+def test_malformed_min_version(cli, datafiles, plugin_type, plugin):
     project = str(datafiles)
 
     update_project(
@@ -176,12 +177,12 @@ def test_malformed_min_version(cli, datafiles, plugin_type):
                 {
                     "origin": "local",
                     "path": os.path.join("plugins", plugin_type, "malformedminversion"),
-                    plugin_type: ["malformedminversion"],
+                    plugin_type: [plugin],
                 }
             ]
         },
     )
-    setup_element(project, plugin_type, "malformedminversion")
+    setup_element(project, plugin_type, plugin)
 
     result = cli.run(project=project, args=["show", "element.bst"])
     result.assert_main_error(ErrorDomain.PLUGIN, "malformed-min-version")
