@@ -1,4 +1,22 @@
 =================
+buildstream 1.4.3
+=================
+
+  o Fix support for conditional list append/prepend in project.conf,
+    Merge request !1857
+
+  o Fix internal imports to import from "collections" instead
+    of "collections.abc", this improves support for Python 3.8,
+    see issue #831
+
+  o Fix some downloads from gitlab.com by setting custom user agent,
+    fixes issue #1285
+
+  o Work around python API break from ostree's repo.remote_gpg_import(),
+    this was changed in ostree commit v2019.2-10-gaa5df899, and we now
+    have a fallback to support both versions of the API, see merge request !1917.
+
+=================
 buildstream 1.4.2
 =================
 
