@@ -117,3 +117,24 @@ def test_use_of_protected_var_in_element(cli, datafiles, protected_var):
 
     result = cli.run(project=project, args=["build", "target.bst"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.PROTECTED_VARIABLE_REDEFINED)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "shared_variables"))
+def test_variables_are_resolved_in_elements_context(cli, datafiles):
+    project = str(datafiles)
+
+    result = cli.run(project=project, args=["build"])
+    result.assert_success()
+
+    checkout_dir = os.path.join(project, "checkout")
+    for elem in ["one", "two"]:
+        result = cli.run(
+            project=project,
+            args=["artifact", "checkout", "--directory", os.path.join(checkout_dir, elem), "{}.bst".format(elem)],
+        )
+        result.assert_success()
+
+    assert (os.listdir(os.path.join(checkout_dir, "one")), os.listdir(os.path.join(checkout_dir, "two"))) == (
+        ["one.bst"],
+        ["two.bst"],
+    )
