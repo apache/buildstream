@@ -5,6 +5,7 @@ import os
 import pytest
 
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing import generate_project
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 
@@ -15,6 +16,46 @@ from . import configure_project
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = os.path.join(TOP_DIR, "project")
+
+
+# Test all possible choices of the `--deps` option.
+#
+# NOTE: Elements used in this test must have sources that are not already
+#       cached. The kind of the sources do not matter so long as they need to
+#       be fetched from somewhere.
+#       Currently we use remote sources for this purpose.
+#
+@pytest.mark.datafiles(os.path.join(TOP_DIR, "source-fetch"))
+@pytest.mark.parametrize(
+    "deps, expected_states",
+    [
+        ("build", ("fetch needed", "buildable", "fetch needed")),
+        ("none", ("waiting", "fetch needed", "fetch needed")),
+        ("run", ("waiting", "fetch needed", "buildable")),
+        ("all", ("waiting", "buildable", "buildable")),
+    ],
+)
+def test_fetch_deps(cli, datafiles, deps, expected_states):
+    project = str(datafiles)
+    generate_project(project)
+    generate_project(project, {"aliases": {"project-root": "file:///" + project}})
+
+    target = "bananas.bst"
+    build_dep = "apples.bst"
+    runtime_dep = "oranges.bst"
+
+    # Assert that none of the sources are cached
+    states = cli.get_element_states(project, [target, build_dep, runtime_dep])
+    assert all([state == "fetch needed" for state in states.values()])
+
+    # Now fetch the specified sources
+    result = cli.run(project=project, args=["source", "fetch", "--deps", deps, target])
+    result.assert_success()
+
+    # Finally assert that we have fetched _only_ the desired sources
+    states = cli.get_element_states(project, [target, build_dep, runtime_dep])
+    states_flattened = (states[target], states[build_dep], states[runtime_dep])
+    assert states_flattened == expected_states
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, "consistencyerror"))

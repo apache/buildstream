@@ -460,7 +460,9 @@ def init(app, project_name, min_version, element_path, force, target_directory):
     "--deps",
     "-d",
     default=None,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.PLAN, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection, [_PipelineSelection.BUILD, _PipelineSelection.PLAN, _PipelineSelection.ALL],
+    ),
     help="The dependencies to build",
 )
 @click.option(
@@ -482,6 +484,7 @@ def build(app, elements, deps, remote):
 
     \b
         plan:  Only dependencies required for the build plan
+        build: Build time dependencies, excluding the element itself
         all:   All dependencies
     """
     with app.initialized(session_name="Build"):
@@ -810,7 +813,16 @@ def source():
     "-d",
     default=_PipelineSelection.PLAN,
     show_default=True,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.PLAN, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [
+            _PipelineSelection.PLAN,
+            _PipelineSelection.NONE,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.RUN,
+            _PipelineSelection.ALL,
+        ],
+    ),
     help="The dependencies to fetch",
 )
 @click.option(
@@ -838,6 +850,8 @@ def source_fetch(app, elements, deps, except_, remote):
     \b
         none:  No dependencies, just the element itself
         plan:  Only dependencies required for the build plan
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
         all:   All dependencies
     """
     with app.initialized(session_name="Fetch"):
@@ -1287,7 +1301,10 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
     "-d",
     default=_PipelineSelection.NONE,
     show_default=True,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [_PipelineSelection.BUILD, _PipelineSelection.NONE, _PipelineSelection.RUN, _PipelineSelection.ALL],
+    ),
     help="The dependency artifacts to pull",
 )
 @click.option(
@@ -1313,6 +1330,8 @@ def artifact_pull(app, artifacts, deps, remote):
 
     \b
         none:  No dependencies, just the element itself
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
         all:   All dependencies
     """
 
@@ -1336,7 +1355,10 @@ def artifact_pull(app, artifacts, deps, remote):
     "-d",
     default=_PipelineSelection.NONE,
     show_default=True,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [_PipelineSelection.BUILD, _PipelineSelection.NONE, _PipelineSelection.RUN, _PipelineSelection.ALL],
+    ),
     help="The dependencies to push",
 )
 @click.option(
@@ -1365,6 +1387,8 @@ def artifact_push(app, artifacts, deps, remote):
 
     \b
         none:  No dependencies, just the element itself
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
         all:   All dependencies
     """
     with app.initialized(session_name="Push"):
