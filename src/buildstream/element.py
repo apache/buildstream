@@ -83,7 +83,7 @@ from contextlib import contextmanager
 from functools import partial
 from itertools import chain
 import string
-from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, List, Optional
+from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Set
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
@@ -113,7 +113,7 @@ from .storage.directory import VirtualDirectoryError
 if TYPE_CHECKING:
     from .node import MappingNode, ScalarNode, SequenceNode
     from .types import SourceRef
-    from typing import Set, Tuple
+    from typing import Tuple
 
     # pylint: disable=cyclic-import
     from .sandbox import Sandbox
@@ -441,10 +441,17 @@ class Element(Plugin):
         # containing element that have been visited for the `Scope.BUILD` case
         # and the second one relating to the `Scope.RUN` case.
         if not recurse:
+            result: Set[Element] = set()
             if scope in (Scope.BUILD, Scope.ALL):
-                yield from self.__build_dependencies
+                for dep in self.__build_dependencies:
+                    if dep not in result:
+                        result.add(dep)
+                        yield dep
             if scope in (Scope.RUN, Scope.ALL):
-                yield from self.__runtime_dependencies
+                for dep in self.__runtime_dependencies:
+                    if dep not in result:
+                        result.add(dep)
+                        yield dep
         else:
 
             def visit(element, scope, visited):
