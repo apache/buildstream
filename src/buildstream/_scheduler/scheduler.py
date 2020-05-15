@@ -456,6 +456,21 @@ class Scheduler:
     #
     def _sched(self):
         def real_schedule():
+
+            # Reset the scheduling handle before queuing any jobs.
+            #
+            # We do this right away because starting jobs can result
+            # in their being terminated and completed during the body
+            # of this function, and we want to be sure that we get
+            # called again in this case.
+            #
+            # This can happen if jobs are explicitly killed as a result,
+            # which might happen as a side effect of a crash in an
+            # abstracted frontend implementation handling notifications
+            # about jobs starting.
+            #
+            self._sched_handle = None
+
             if not self.terminated:
 
                 #
@@ -463,9 +478,6 @@ class Scheduler:
                 # available resources
                 #
                 self._sched_queue_jobs()
-
-            # Reset the scheduling hand
-            self._sched_handle = None
 
             #
             # If nothing is ticking then bail out
