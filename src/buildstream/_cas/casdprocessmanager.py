@@ -250,6 +250,9 @@ class CASDChannel:
             # check that process is still alive
             try:
                 proc = psutil.Process(self._casd_pid)
+                if proc.status() == psutil.STATUS_ZOMBIE:
+                    proc.wait()
+
                 if not proc.is_running():
                     raise CASCacheError("buildbox-casd process died before connection could be established")
             except psutil.NoSuchProcess:
