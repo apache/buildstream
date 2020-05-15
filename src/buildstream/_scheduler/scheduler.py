@@ -375,7 +375,15 @@ class Scheduler:
     #    job (Job): The job to start
     #
     def _start_job(self, job):
+
+        # From the scheduler perspective, the following
+        # is considered atomic; started jobs are always in the
+        # active_jobs list, and jobs in the active_jobs list
+        # are always started.
+        #
         self._active_jobs.append(job)
+        job.start()
+
         notification = Notification(
             NotificationType.JOB_START,
             full_name=job.name,
@@ -383,7 +391,6 @@ class Scheduler:
             time=self._state.elapsed_time(start_time=self._starttime),
         )
         self._notify(notification)
-        job.start()
 
     # _sched_queue_jobs()
     #
