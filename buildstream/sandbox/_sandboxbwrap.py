@@ -53,6 +53,25 @@ class SandboxBwrap(Sandbox):
         super().__init__(*args, **kwargs)
         self.user_ns_available = kwargs['user_ns_available']
         self.die_with_parent_available = kwargs['die_with_parent_available']
+        self.linux32 = False
+
+        host_os, _, _, _, host_arch = os.uname()
+        config = self._get_config()
+
+        # We can't do builds for another host or architecture except 32 bit on 64 bit
+        if config.build_os != host_os:
+            raise SandboxError("Configured and host OS don't match.")
+        elif config.build_arch != host_arch:
+            if ((config.build_arch == "i686" and host_arch == "x86_64") or
+                (config.build_arch == "armv7l" and host_arch == "aarch64")):
+                # check whether linux32 is available
+                try:
+                    utils.get_host_tool('linux32')
+                    self._linux32 = True
+                except utils.ProgramNotFoundError:
+                    raise SandboxError("Configured and host architecture don't match.")
+            else:
+                raise SandboxError("Configured and host architecture don't match.")
 
     def run(self, command, flags, *, cwd=None, env=None):
         stdout, stderr = self._get_output()
@@ -84,8 +103,14 @@ class SandboxBwrap(Sandbox):
         if cwd is None:
             cwd = '/'
 
+        # start command with linux32 if needed
+        if self.linux32:
+            bwrap_command = [utils.get_host_tool('linux32')]
+        else:
+            bwrap_command = []
+
         # Grab the full path of the bwrap binary
-        bwrap_command = [utils.get_host_tool('bwrap')]
+        bwrap_command += [utils.get_host_tool('bwrap')]
 
         for k, v in env.items():
             bwrap_command += ['--setenv', k, v]
