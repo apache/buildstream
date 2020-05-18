@@ -73,4 +73,4 @@ class Profile:
             return self.fmt(formatted, **kwargs)
 
         # Lazy regex, after our word, match anything that does not have '%'
-        return re.sub(r"%(\{(" + varname + r")[^%]*\})", subst_callback, text)
+        return re.sub(r"%(\{(" + varname + r")[^%]*?\})", subst_callback, text)
