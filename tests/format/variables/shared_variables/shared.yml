@@ -1,0 +1,3 @@
+sources:
+  - kind: local
+    path: "%{import-path}"

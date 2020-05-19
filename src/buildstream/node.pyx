@@ -106,7 +106,7 @@ cdef class Node:
         raise NotImplementedError()
 
     cpdef object strip_node_info(self):
-        """ Remove all the node information (provenance) and return the underlying data as plain python objects 
+        """ Remove all the node information (provenance) and return the underlying data as plain python objects
 
         Returns:
             (list, dict, str, None): the underlying data that was held in the node structure.
@@ -420,7 +420,9 @@ cdef class ScalarNode(Node):
     #############################################################
 
     cpdef ScalarNode clone(self):
-        return self
+        return ScalarNode.__new__(
+            ScalarNode, self.file_index, self.line, self.column, self.value
+        )
 
     cpdef object strip_node_info(self):
         return self.value
