@@ -156,6 +156,8 @@ class Job:
     #
     def start(self):
 
+        assert not self._terminated, "Attempted to start process which was already terminated"
+
         self._pipe_r, pipe_w = multiprocessing.Pipe(duplex=False)
 
         self._tries += 1
@@ -214,7 +216,8 @@ class Job:
         self._parent_stop_listening()
 
         # Terminate the process using multiprocessing API pathway
-        self._process.terminate()
+        if self._process:
+            self._process.terminate()
 
         self._terminated = True
 
@@ -235,7 +238,8 @@ class Job:
     def kill(self):
         # Force kill
         self.message(MessageType.WARN, "{} did not terminate gracefully, killing".format(self.action_name))
-        utils._kill_process_tree(self._process.pid)
+        if self._process:
+            utils._kill_process_tree(self._process.pid)
 
     # suspend()
     #
