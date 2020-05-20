@@ -36,7 +36,7 @@ from ._artifactcache import ArtifactCache
 from ._sourcecache import SourceCache
 from .node import ScalarNode, SequenceNode, _assert_symbol_name
 from .sandbox import SandboxRemote
-from ._pluginfactory import ElementFactory, SourceFactory, PluginOrigin
+from ._pluginfactory import ElementFactory, SourceFactory, load_plugin_origin
 from .types import CoreWarnings
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._loader import Loader
@@ -951,7 +951,7 @@ class Project:
         # Load the plugin origins and register them to their factories
         origins = config.get_sequence("plugins", default=[])
         for origin_node in origins:
-            origin = PluginOrigin.new_from_node(self, origin_node)
+            origin = load_plugin_origin(self, origin_node)
             for kind, conf in origin.elements.items():
                 output.element_factory.register_plugin_origin(kind, origin, conf.allow_deprecated)
             for kind, conf in origin.sources.items():

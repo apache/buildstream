@@ -15,12 +15,26 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-
 from ..types import FastEnum
 from ..node import ScalarNode, MappingNode
 from .._exceptions import LoadError
 from ..exceptions import LoadErrorReason
+
+
+# PluginType()
+#
+# A type of plugin
+#
+class PluginType(FastEnum):
+
+    # A Source plugin
+    SOURCE = "source"
+
+    # An Element plugin
+    ELEMENT = "element"
+
+    def __str__(self):
+        return str(self.value)
 
 
 # PluginOriginType:
@@ -28,7 +42,11 @@ from ..exceptions import LoadErrorReason
 # An enumeration depicting the type of plugin origin
 #
 class PluginOriginType(FastEnum):
+
+    # A local plugin
     LOCAL = "local"
+
+    # A pip plugin
     PIP = "pip"
 
 
@@ -59,49 +77,64 @@ class PluginOrigin:
         self.elements = {}  # A dictionary of PluginConfiguration
         self.sources = {}  # A dictionary of PluginConfiguration objects
         self.provenance = None
+        self.project = None
 
         # Private
-        self._project = None
         self._kinds = {}
         self._allow_deprecated = False
 
-    # new_from_node()
+    # initialize()
     #
-    # Load a PluginOrigin from the YAML in project.conf
+    # Initializes the origin, resulting in loading the origin
+    # node.
+    #
+    # This is the bottom half of the initialization, it is done
+    # separately because load_plugin_origin() needs to stay in
+    # __init__.py in order to avoid cyclic dependencies between
+    # PluginOrigin and it's subclasses.
     #
     # Args:
-    #    project (Project): The project from whence this origin is loaded
+    #    project (Project): The project this PluginOrigin was loaded for
     #    origin_node (MappingNode): The node defining this origin
     #
-    # Returns:
-    #    (PluginOrigin): The newly created PluginOrigin
-    #
-    @classmethod
-    def new_from_node(cls, project, origin_node):
+    def initialize(self, project, origin_node):
 
-        origin_type = origin_node.get_enum("origin", PluginOriginType)
-
-        if origin_type == PluginOriginType.LOCAL:
-            origin = PluginOriginLocal()
-        elif origin_type == PluginOriginType.PIP:
-            origin = PluginOriginPip()
-
-        origin.provenance = origin_node.get_provenance()
-        origin._project = project
-        origin._load(origin_node)
+        self.provenance = origin_node.get_provenance()
+        self.project = project
+        self.load_config(origin_node)
 
         # Parse commonly defined aspects of PluginOrigins
-        origin._allow_deprecated = origin_node.get_bool("allow-deprecated", False)
+        self._allow_deprecated = origin_node.get_bool("allow-deprecated", False)
 
         element_sequence = origin_node.get_sequence("elements", [])
-        origin._load_plugin_configurations(element_sequence, origin.elements)
+        self._load_plugin_configurations(element_sequence, self.elements)
 
         source_sequence = origin_node.get_sequence("sources", [])
-        origin._load_plugin_configurations(source_sequence, origin.sources)
+        self._load_plugin_configurations(source_sequence, self.sources)
 
-        return origin
+    ##############################################
+    #              Abstract methods              #
+    ##############################################
 
-    # _load()
+    # get_plugin_paths():
+    #
+    # Abstract method for loading the details about a specific plugin,
+    # the PluginFactory uses this to get the assets needed to actually
+    # load the plugins.
+    #
+    # Args:
+    #    kind (str): The plugin
+    #    plugin_type (PluginType): The kind of plugin to load
+    #
+    # Returns:
+    #    (str): The full path to the directory containing the plugin
+    #    (str): The full path to the accompanying .yaml file containing
+    #           the plugin's preferred defaults.
+    #
+    def get_plugin_paths(self, kind, plugin_type):
+        pass
+
+    # load_config()
     #
     # Abstract method for loading data from the origin node, this
     # method should not load the source and element lists.
@@ -109,8 +142,12 @@ class PluginOrigin:
     # Args:
     #    origin_node (MappingNode): The node defining this origin
     #
-    def _load(self, origin_node):
+    def load_config(self, origin_node):
         pass
+
+    ##############################################
+    #               Private methods              #
+    ##############################################
 
     # _load_plugin_configurations()
     #
@@ -143,43 +180,3 @@ class PluginOrigin:
                 )
 
             dictionary[kind] = conf
-
-
-# PluginOriginLocal
-#
-# PluginOrigin for local plugins
-#
-class PluginOriginLocal(PluginOrigin):
-    def __init__(self):
-        super().__init__(PluginOriginType.LOCAL)
-
-        # An absolute path to where the plugin can be found
-        #
-        self.path = None
-
-    def _load(self, origin_node):
-
-        origin_node.validate_keys(["path", *PluginOrigin._COMMON_CONFIG_KEYS])
-
-        path_node = origin_node.get_scalar("path")
-        path = self._project.get_path_from_node(path_node, check_is_dir=True)
-
-        self.path = os.path.join(self._project.directory, path)
-
-
-# PluginOriginPip
-#
-# PluginOrigin for pip plugins
-#
-class PluginOriginPip(PluginOrigin):
-    def __init__(self):
-        super().__init__(PluginOriginType.PIP)
-
-        # The pip package name to extract plugins from
-        #
-        self.package_name = None
-
-    def _load(self, origin_node):
-
-        origin_node.validate_keys(["package-name", *PluginOrigin._COMMON_CONFIG_KEYS])
-        self.package_name = origin_node.get_str("package-name")

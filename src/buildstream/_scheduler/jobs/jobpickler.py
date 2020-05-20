@@ -141,7 +141,7 @@ def _pickle_child_job_data(child_job_data, projects):
     ]
 
     plugin_class_to_factory = {
-        cls: factory for factory in factory_list if factory is not None for cls, _ in factory.all_loaded_plugins()
+        cls: factory for factory in factory_list if factory is not None for _, cls, _ in factory.list_plugins()
     }
 
     pickled_data = io.BytesIO()

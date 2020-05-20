@@ -17,11 +17,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .. import _site
-from ..source import Source
-
 from .pluginfactory import PluginFactory
-
+from .pluginorigin import PluginType
 
 # A SourceFactory creates Source instances
 # in the context of a given factory
@@ -31,10 +28,7 @@ from .pluginfactory import PluginFactory
 #
 class SourceFactory(PluginFactory):
     def __init__(self, plugin_base):
-
-        super().__init__(
-            plugin_base, Source, [_site.source_plugins], "buildstream.plugins.sources",
-        )
+        super().__init__(plugin_base, PluginType.SOURCE)
 
     # create():
     #
