@@ -49,6 +49,9 @@ class PluginOriginType(FastEnum):
     # A pip plugin
     PIP = "pip"
 
+    # A plugin loaded via a junction
+    JUNCTION = "junction"
+
 
 # PluginConfiguration:
 #
