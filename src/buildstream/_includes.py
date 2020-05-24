@@ -151,8 +151,7 @@ class Includes:
         shortname = include
         if ":" in include:
             junction, include = include.split(":", 1)
-            junction_loader = loader._get_loader(junction)
-            current_loader = junction_loader
+            current_loader = loader.get_loader(junction)
             current_loader.project.ensure_fully_loaded()
         else:
             current_loader = loader
