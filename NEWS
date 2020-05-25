@@ -18,6 +18,7 @@ Format
   o BREAKING CHANGE: Now deprecation warnings are suppressed using the `allow-deprecated`
     configuration with the plugin origins in project.conf, instead of on the
     source/element overrides section (See issue #1291)
+  o BREAKING CHANGE: The junction `target` option has been renamed to `link`
   o Variables from an element can now be used in source configurations
 
 
