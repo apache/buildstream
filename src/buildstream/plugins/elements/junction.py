@@ -20,8 +20,9 @@
 """
 junction - Integrate subprojects
 ================================
-This element is a link to another BuildStream project. It allows integration
-of multiple projects into a single pipeline.
+This element connects another BuildStream project, allowing one to
+depend on elements in the *junctioned* project, and integrating
+multiple projects into a single pipeline.
 
 Overview
 --------
@@ -48,12 +49,12 @@ Overview
      # Optionally look in a subpath of the source repository for the project
      path: projects/hello
 
-     # Optionally specify another junction element to serve as a target for
-     # this element. Target should be defined using the syntax
+     # Optionally cause this junction to be a symbolic link to another
+     # junction. The link target should be defined using the syntax
      # ``{junction-name}:{element-name}``.
      #
-     # Note that this option cannot be used in conjunction with sources.
-     target: sub-project.bst:sub-sub-project.bst
+     # This option cannot be used in conjunction with other configurations.
+     link: sub-project.bst:sub-sub-project.bst
 
      # Optionally declare whether elements within the junction project
      # should interact with project remotes (default: False).
@@ -66,19 +67,16 @@ Overview
 
 .. note::
 
-   Junction elements may not specify any dependencies as they are simply
-   links to other projects and are not in the dependency graph on their own.
+   Junction elements may not specify any dependencies as they simply
+   connect to other projects and are not in the dependency graph on their own.
 
-With a junction element in place, local elements can depend on elements in
-the other BuildStream project using the additional ``junction`` attribute in the
-dependency dictionary:
+With a junction element in place, local elements can ref:`depend on elements <format_dependencies>`
+in the other BuildStream project:
 
 .. code:: yaml
 
-   depends:
-   - junction: toolchain.bst
-     filename: gcc.bst
-     type: build
+   build-depends:
+   - junction: toolchain.bst:gcc.bst
 
 While junctions are elements, only a limited set of element operations is
 supported. They can be tracked and fetched like other elements.
@@ -112,7 +110,7 @@ Options
      machine_arch: "%{machine_arch}"
      debug: True
 
-Junctions can configure options of the linked project. Options are never
+Junctions can configure options of the connected project. Options are never
 implicitly inherited across junctions, however, variables can be used to
 explicitly assign the same value to a subproject option.
 
@@ -125,21 +123,24 @@ their own. Nested junctions in different subprojects may point to the same
 project, however, in most use cases the same project should be loaded only once.
 BuildStream uses the junction element name as key to determine which junctions
 to merge. It is recommended that the name of a junction is set to the same as
-the name of the linked project.
+the name of the connected project.
 
 As the junctions may differ in source version and options, BuildStream cannot
 simply use one junction and ignore the others. Due to this, BuildStream requires
 the user to resolve possibly conflicting nested junctions by creating a junction
 with the same name in the top-level project, which then takes precedence.
 
-Targeting other junctions
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Linking other junctions
+~~~~~~~~~~~~~~~~~~~~~~~
 When working with nested junctions, you can also create a junction element that
-targets another junction element in the sub-project. This can be useful if you
-need to ensure that both the top-level project and the sub-project are using
-the same version of the sub-sub-project.
+links to another junction element in a sub-project. Elements that your project depends
+on through a *linked junction* will be the same elements that your sub-project
+also depends on.
 
-This can be done using the ``target`` configuration option. See below for an
+This can be useful if you need to ensure that both the top-level project and the
+sub-project are using the same version of the sub-sub-project.
+
+This can be done using the ``link`` configuration option. See below for an
 example:
 
 .. code:: yaml
@@ -147,14 +148,11 @@ example:
    kind: junction
 
    config:
-     target: subproject.bst:subsubproject.bst
+     link: subproject.bst:subsubproject.bst
 
-In the above example, this junction element would be targeting the junction
+In the above example, this junction element becomes a link to the junction
 element named ``subsubproject.bst`` in the subproject referred to by
 ``subproject.bst``.
-
-Note that when targeting another junction, the names of the junction element
-must not be the same as the name of the target.
 """
 
 from buildstream import Element, ElementError
@@ -173,39 +171,64 @@ class JunctionElement(Element):
 
     def configure(self, node):
 
-        node.validate_keys(["path", "options", "target", "cache-junction-elements", "ignore-junction-remotes"])
+        node.validate_keys(["path", "options", "link", "cache-junction-elements", "ignore-junction-remotes"])
 
         self.path = node.get_str("path", default="")
         self.options = node.get_mapping("options", default={})
-        self.target = node.get_str("target", default=None)
-        self.target_element = None
-        self.target_junction = None
+        self.link = node.get_str("link", default=None)
+        self.link_element = None
+        self.link_junction = None
         self.cache_junction_elements = node.get_bool("cache-junction-elements", default=False)
         self.ignore_junction_remotes = node.get_bool("ignore-junction-remotes", default=False)
 
+        # Check if these parameters were specified for error reporting purposes
+        self.cache_junction_elements_specified = bool("cache-junction-elements" in node)
+        self.ignore_junction_remotes_specified = bool("ignore-junction-remotes" in node)
+
     def preflight(self):
-        # "target" cannot be used in conjunction with:
-        # 1. sources
-        # 2. config['options']
-        # 3. config['path']
-        if self.target and any(self.sources()):
-            raise ElementError("junction elements cannot define both 'sources' and 'target' config option")
-        if self.target and any(self.options.items()):
-            raise ElementError("junction elements cannot define both 'options' and 'target'")
-        if self.target and self.path:
-            raise ElementError("junction elements cannot define both 'path' and 'target'")
+        # The "link" option cannot be used in conjunction with any
+        # other defining options, because the junction becomes a symbolic
+        # link to it's link target.
+        if self.link:
 
-        # Validate format of target, if defined
-        if self.target:
+            if any(self.sources()):
+                raise ElementError(
+                    "junction elements cannot define both 'sources' and 'link' config option",
+                    reason="invalid-link-sources",
+                )
+            if any(self.options.items()):
+                raise ElementError(
+                    "junction elements cannot define both 'options' and 'link'", reason="invalid-link-options"
+                )
+            if self.path:
+                raise ElementError(
+                    "junction elements cannot define both 'path' and 'link'", reason="invalid-link-path"
+                )
+            if self.cache_junction_elements_specified:
+                raise ElementError(
+                    "junction elements cannot define both 'cache-junction-elements' and 'link'",
+                    reason="invalid-link-cache-junction-elements",
+                )
+            if self.ignore_junction_remotes_specified:
+                raise ElementError(
+                    "junction elements cannot define both 'ignore-junction-remotes' and 'link'",
+                    reason="invalid-link-ignore-junction-remotes",
+                )
+
+            # Validate format of the link target
             try:
-                self.target_junction, self.target_element = self.target.split(":")
+                self.link_junction, self.link_element = self.link.split(":")
             except ValueError:
-                raise ElementError("'target' option must be in format '{junction-name}:{element-name}'")
+                raise ElementError(
+                    "'link' option must be in format '{junction-name}:{element-name}'", reason="invalid-link-name"
+                )
 
-        # We cannot target a junction that has the same name as us, since that
+        # We cannot link to a junction that has the same name as us, since that
         # will cause an infinite recursion while trying to load it.
-        if self.name == self.target_element:
-            raise ElementError("junction elements cannot target an element with the same name")
+        if self.name == self.link_element:
+            raise ElementError(
+                "junction elements cannot link an element with the same name", reason="invalid-link-same-name"
+            )
 
     def get_unique_key(self):
         # Junctions do not produce artifacts. get_unique_key() implementation
