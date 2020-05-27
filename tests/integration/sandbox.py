@@ -39,3 +39,15 @@ def test_sandbox_shm(cli, datafiles):
 
     result = cli.run(project=project, args=["build", element_name])
     assert result.exit_code == 0
+
+
+# Test that variable expansion works in build-arch sandbox config.
+# Regression test for https://gitlab.com/BuildStream/buildstream/-/issues/1303
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.datafiles(DATA_DIR)
+def test_build_arch(cli, datafiles):
+    project = str(datafiles)
+    element_name = "sandbox/build-arch.bst"
+
+    result = cli.run(project=project, args=["build", element_name])
+    assert result.exit_code == 0
