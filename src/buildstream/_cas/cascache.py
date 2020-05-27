@@ -175,12 +175,12 @@ class CASCache:
     # Returns: True if the files are in the cache, False otherwise
     #
     def contains_files(self, digests):
-        cas = self.get_cas()
+        local_cas = self.get_local_cas()
 
-        request = remote_execution_pb2.FindMissingBlobsRequest()
+        request = remote_execution_pb2.FetchMissingBlobsRequest()
         request.blob_digests.extend(digests)
 
-        response = cas.FindMissingBlobs(request)
+        response = local_cas.FetchMissingBlobs(request)
         return len(response.missing_blob_digests) == 0
 
     # contains_directory():
