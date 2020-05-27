@@ -325,6 +325,10 @@ class ContentAddressableStorageStub(object):
   used in subsequent calls (e.g. to
   [Execute][build.bazel.remote.execution.v2.Execution.Execute]).
 
+  Servers MUST behave as though empty blobs are always available, even if they
+  have not been uploaded. Clients MAY optimize away the uploading or
+  downloading of empty blobs.
+
   As with other services in the Remote Execution API, any call may return an
   error with a [RetryInfo][google.rpc.RetryInfo] error detail providing
   information about when the client should retry the request; clients SHOULD
@@ -423,6 +427,10 @@ class ContentAddressableStorageServicer(object):
   be long enough to allow for newly-added and recently looked-up entries to be
   used in subsequent calls (e.g. to
   [Execute][build.bazel.remote.execution.v2.Execution.Execute]).
+
+  Servers MUST behave as though empty blobs are always available, even if they
+  have not been uploaded. Clients MAY optimize away the uploading or
+  downloading of empty blobs.
 
   As with other services in the Remote Execution API, any call may return an
   error with a [RetryInfo][google.rpc.RetryInfo] error detail providing

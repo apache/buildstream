@@ -36,7 +36,6 @@ from .. import utils
 from ..utils import link_files, copy_files, list_relative_paths, _get_link_mtime, BST_ARBITRARY_TIMESTAMP
 from ..utils import _set_deterministic_user, _set_deterministic_mtime
 from ..utils import FileListResult
-from .._exceptions import ImplError
 
 # FileBasedDirectory intentionally doesn't call its superclass constuctor,
 # which is meant to be unimplemented.
@@ -418,18 +417,12 @@ class FileBasedDirectory(Directory):
                     src_path = source_directory.cas_cache.objpath(entry.digest)
 
                     # fallback to copying if we require mtime support on this file
-                    if update_mtime or entry.node_properties:
+                    if update_mtime or entry.mtime is not None:
                         utils.safe_copy(src_path, dest_path, result=result)
                         mtime = update_mtime
                         # mtime property will override specified mtime
-                        # see https://github.com/bazelbuild/remote-apis/blob/master/build/bazel/remote/execution/v2/nodeproperties.md
-                        # for supported node property specifications
-                        if entry.node_properties:
-                            for prop in entry.node_properties:
-                                if prop.name == "MTime" and prop.value:
-                                    mtime = utils._parse_timestamp(prop.value)
-                                else:
-                                    raise ImplError("{} is not a supported node property.".format(prop.name))
+                        if entry.mtime is not None:
+                            mtime = utils._parse_protobuf_timestamp(entry.mtime)
                         if mtime:
                             utils._set_file_mtime(dest_path, mtime)
                     else:

@@ -17,7 +17,6 @@ syntax = "proto3";
 package build.buildgrid;
 
 import "build/bazel/remote/execution/v2/remote_execution.proto";
-import "google/api/annotations.proto";
 import "google/rpc/status.proto";
 
 service LocalContentAddressableStorage {
@@ -346,7 +345,8 @@ message CaptureFilesResponse {
     bool is_executable = 4;
 
     // The node properties of the captured file.
-    repeated build.bazel.remote.execution.v2.NodeProperty node_properties = 5;
+    reserved 5;
+    build.bazel.remote.execution.v2.NodeProperties node_properties = 6;
   }
 
   // The responses to the requests.

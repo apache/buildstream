@@ -24,6 +24,7 @@ Utilities
 import calendar
 import errno
 import hashlib
+import math
 import os
 import re
 import shutil
@@ -39,6 +40,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Callable, IO, Iterable, Iterator, Optional, Tuple, Union
 from dateutil import parser as dateutil_parser
+from google.protobuf import timestamp_pb2
 
 import psutil
 
@@ -177,6 +179,41 @@ def _parse_timestamp(timestamp: str) -> float:
         raise UtilError(errmsg)
     except (ValueError, OverflowError, TypeError):
         raise UtilError(errmsg)
+
+
+def _make_protobuf_timestamp(timestamp: timestamp_pb2.Timestamp, timepoint: float):
+    """Obtain the Protobuf Timestamp represented by the time given in seconds.
+
+    Args:
+        timestamp: the Protobuf Timestamp to set
+        timepoint: the time since the epoch in seconds
+
+    """
+    timestamp.seconds = int(timepoint)
+    timestamp.nanos = int(math.modf(timepoint)[0] * 1e9)
+
+
+def _get_file_protobuf_mtimestamp(timestamp: timestamp_pb2.Timestamp, fullpath: str):
+    """Obtain the Protobuf Timestamp represented by the mtime of the
+    file at the given path."""
+    assert isinstance(fullpath, str), "Path to file must be a string: {}".format(str(fullpath))
+    try:
+        mtime = os.path.getmtime(fullpath)
+    except OSError:
+        raise UtilError("Failed to get mtime of file at {}".format(fullpath))
+    _make_protobuf_timestamp(timestamp, mtime)
+
+
+def _parse_protobuf_timestamp(timestamp: timestamp_pb2.Timestamp) -> float:
+    """Convert Protobuf Timestamp to seconds since epoch.
+
+    Args:
+        timestamp: the Protobuf Timestamp
+
+    Returns:
+        The time in seconds since epoch represented by the timestamp.
+    """
+    return timestamp.seconds + timestamp.nanos / 1e9
 
 
 def _set_file_mtime(fullpath: str, seconds: Union[int, float]) -> None:

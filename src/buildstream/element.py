@@ -2454,7 +2454,7 @@ class Element(Plugin):
         platform = context.platform
 
         if self._get_workspace():
-            output_node_properties = ["MTime"]
+            output_node_properties = ["mtime"]
         else:
             output_node_properties = None
 

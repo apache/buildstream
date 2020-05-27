@@ -165,7 +165,7 @@ class Artifact:
         artifact.weak_key = self._weak_cache_key
 
         artifact.was_workspaced = bool(element._get_workspace())
-        properties = ["MTime"] if artifact.was_workspaced else []
+        properties = ["mtime"] if artifact.was_workspaced else []
 
         # Store files
         if collectvdir:
