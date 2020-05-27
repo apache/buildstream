@@ -371,8 +371,8 @@ class Stream:
 
         self._scheduler.clear_queues()
         track_queue = TrackQueue(self._scheduler)
-        self._add_queue(track_queue)
-        self._enqueue_plan(elements)
+        self._add_queue(track_queue, track=True)
+        self._enqueue_plan(elements, queue=track_queue)
         self._run()
 
     # pull()
@@ -1286,10 +1286,10 @@ class Stream:
             # others are requested dynamically as needed.
             # This avoids pulling, fetching, or building unneeded build-only dependencies.
             for element in elements:
-                element._schedule_assembly_when_necessary()
+                element._set_required()
         else:
             for element in selected:
-                element._schedule_assembly_when_necessary()
+                element._set_required()
 
         return selected
 
@@ -1308,7 +1308,11 @@ class Stream:
     # Args:
     #    queue (Queue): Queue to add to the pipeline
     #
-    def _add_queue(self, queue):
+    def _add_queue(self, queue, *, track=False):
+        if not track and not self.queues:
+            # First non-track queue
+            queue.set_required_element_check()
+
         self.queues.append(queue)
 
     # _enqueue_plan()

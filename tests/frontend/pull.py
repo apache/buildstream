@@ -542,3 +542,50 @@ def test_pull_artifact(cli, tmpdir, datafiles):
 
         # And assert that it's again in the local cache, without having built
         assert os.path.exists(os.path.join(local_cache, "artifacts", "refs", artifact_ref))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_dynamic_build_plan(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    target = "checkout-deps.bst"
+    build_dep = "import-dev.bst"
+    runtime_dep = "import-bin.bst"
+    all_elements = [target, build_dep, runtime_dep]
+
+    with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
+
+        # First build the target element and push to the remote.
+        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        result = cli.run(project=project, args=["build", target])
+        result.assert_success()
+
+        # Assert that everything is now cached in the remote.
+        for element_name in all_elements:
+            assert_shared(cli, share, project, element_name)
+
+        # Now we've pushed, delete the user's local artifact cache directory
+        casdir = os.path.join(cli.directory, "cas")
+        shutil.rmtree(casdir)
+        artifactdir = os.path.join(cli.directory, "artifacts")
+        shutil.rmtree(artifactdir)
+
+        # Assert that nothing is cached locally anymore
+        states = cli.get_element_states(project, all_elements)
+        assert not any(states[e] == "cached" for e in all_elements)
+
+        # Now try to rebuild target
+        result = cli.run(project=project, args=["build", target])
+        result.assert_success()
+
+        # Assert that target and runtime dependency were pulled
+        # but build dependency was not pulled as it wasn't needed
+        # (dynamic build plan).
+        assert target in result.get_pulled_elements()
+        assert runtime_dep in result.get_pulled_elements()
+        assert build_dep not in result.get_pulled_elements()
+
+        # And assert that the pulled elements are again in the local cache
+        states = cli.get_element_states(project, all_elements)
+        assert states[target] == "cached"
+        assert states[runtime_dep] == "cached"
+        assert states[build_dep] != "cached"
