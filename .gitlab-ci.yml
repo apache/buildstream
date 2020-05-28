@@ -17,6 +17,7 @@ stages:
 
 variables:
   # SAST related variables
+  SAST_DEFAULT_ANALYZERS: "bandit, secrets"
   SAST_DISABLE_DIND: "true"
   SAST_GOSEC_LEVEL: 2
   CI_PROJECT_REPOSITORY_LANGUAGES: "python"
