@@ -380,6 +380,8 @@ of the plugins it means to make use of and the origin from which they can be loa
 Note that plugins with the same name from different origins are not permitted.
 
 
+.. _project_plugins_local:
+
 Local plugins
 ~~~~~~~~~~~~~
 Local plugins are expected to be found in a subdirectory of the actual
@@ -411,6 +413,8 @@ Changes to plugins might provide new YAML configuration options, changes
 in the semantics of existing configurations or even removal of existing
 YAML configurations.
 
+
+.. _project_plugins_pip:
 
 Pip plugins
 ~~~~~~~~~~~
@@ -540,6 +544,65 @@ Here are a couple of examples:
    at a time in a given *python environment*, you must ensure that all
    projects connected through :mod:`junction <elements.junction>` elements
    agree on which versions of API unstable plugin packages to use.
+
+
+.. _project_plugins_junction:
+
+Junction plugins
+~~~~~~~~~~~~~~~~
+Junction plugins are loaded from another project which your project has a
+:mod:`junction <elements.junction>` declaration for. Plugins are loaded directly
+from the referenced project, the source and element plugins listed will simply
+be loaded from the subproject regardless of how they were defined in that project.
+
+Plugins loaded from a junction might even come from another junction and
+be *deeply nested*.
+
+.. code:: yaml
+
+   plugins:
+
+   - origin: junction
+
+     # Specify the local junction name declared in your
+     # project as the origin from where to load plugins from.
+     #
+     junction: subproject-junction.bst
+
+     # Here we want to get the `frobnicate` element
+     # from the subproject and use it in our project.
+     #
+     elements:
+     - frobnicate
+
+Plugins loaded across junction boundaries will be loaded in the
+context of your project, and any default values set in the ``project.conf``
+of the junctioned project will be ignored when resolving the
+defaults provided with element plugins.
+
+It is recommended to use :ref:`include directives <format_directives_include>`
+in the case that the referenced plugins from junctioned projects depend
+on variables defined in the project they come from, in this way you can include
+variables needed by your plugins into your own ``project.conf``.
+
+.. tip::
+
+   **Distributing plugins as projects**
+
+   It is encouraged that people use BuildStream projects to distribute plugins
+   which are intended to be shared among projects, especially when these plugins
+   are not guaranteed to be completely API stable. This can still be done while
+   also distributing your plugins as :ref:`pip packages <project_plugins_pip>` at
+   the same time.
+
+   This can be achieved by simply creating a repository or tarball which
+   contains only the plugins you want to distribute, along with a ``project.conf``
+   file declaring these plugins as :ref:`local plugins <project_plugins_local>`.
+
+   Using plugins which are distributed as local plugins in a BuildStream project
+   ensures that you always have full control over which exact plugin your
+   project is using at all times, without needing to store the plugin as a
+   :ref:`local plugin <project_plugins_local>` in your own project.
 
 
 .. _project_plugins_deprecation:

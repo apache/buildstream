@@ -18,27 +18,28 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
-import inspect
-from typing import Tuple, Type
+from typing import Tuple, Type, Iterator
+from pluginbase import PluginSource
 
 from .. import utils
+from .. import _site
 from ..plugin import Plugin
+from ..source import Source
+from ..element import Element
 from ..node import ProvenanceInformation
 from ..utils import UtilError
 from .._exceptions import PluginError
 from .._messenger import Messenger
 from .._message import Message, MessageType
 
-from .pluginorigin import PluginOrigin, PluginOriginType
+from .pluginorigin import PluginOrigin, PluginType
 
 
 # A Context for loading plugin types
 #
 # Args:
 #     plugin_base (PluginBase): The main PluginBase object to work with
-#     base_type (type):         A base object type for this context
-#     site_plugin_path (str):   Path to where buildstream keeps plugins
-#     entrypoint_group (str):   Name of the entry point group that provides plugins
+#     plugin_type (PluginType): The type of plugin to load
 #
 # Since multiple pipelines can be processed recursively
 # within the same interpretor, it's important that we have
@@ -48,14 +49,7 @@ from .pluginorigin import PluginOrigin, PluginOriginType
 # Pipelines.
 #
 class PluginFactory:
-    def __init__(self, plugin_base, base_type, site_plugin_path, entrypoint_group):
-
-        # The plugin kinds which were loaded
-        self.loaded_dependencies = []
-
-        #
-        # Private members
-        #
+    def __init__(self, plugin_base, plugin_type):
 
         # For pickling across processes, make sure this context has a unique
         # identifier, which we prepend to the identifier of each PluginSource.
@@ -63,22 +57,39 @@ class PluginFactory:
         # from eachother.
         self._identifier = str(id(self))
 
-        self._base_type = base_type  # The base class plugins derive from
+        self._plugin_type = plugin_type  # The kind of plugins this factory loads
         self._types = {}  # Plugin type lookup table by kind
         self._origins = {}  # PluginOrigin lookup table by kind
         self._allow_deprecated = {}  # Lookup table to check if a plugin is allowed to be deprecated
 
-        # The PluginSource object
-        self._plugin_base = plugin_base
-        self._site_plugin_path = site_plugin_path
-        self._entrypoint_group = entrypoint_group
-        self._alternate_sources = {}
+        self._plugin_base = plugin_base  # The PluginBase object
+
+        # The PluginSource objects need to be kept in scope for the lifetime
+        # of the loaded plugins, otherwise the PluginSources delete the plugin
+        # modules when they go out of scope.
+        #
+        # FIXME: Instead of keeping this table, we can call:
+        #
+        #            PluginBase.make_plugin_source(..., persist=True)
+        #
+        #        The persist attribute avoids this behavior. This is not currently viable
+        #        because the BuildStream data model (projects and elements) does not properly
+        #        go out of scope when the CLI completes, causing errors to occur when
+        #        invoking BuildStream multiple times during tests.
+        #
+        self._sources = {}  #  A mapping of (location, kind) -> PluginSource objects
 
         self._init_site_source()
 
+    # Initialize the PluginSource object for core plugins
     def _init_site_source(self):
+        if self._plugin_type == PluginType.SOURCE:
+            self._site_plugins_path = _site.source_plugins
+        elif self._plugin_type == PluginType.ELEMENT:
+            self._site_plugins_path = _site.element_plugins
+
         self._site_source = self._plugin_base.make_plugin_source(
-            searchpath=self._site_plugin_path, identifier=self._identifier + "site",
+            searchpath=[self._site_plugins_path], identifier=self._identifier + "site",
         )
 
     def __getstate__(self):
@@ -91,8 +102,6 @@ class PluginFactory:
         # get rid of those. It is only a cache - we will automatically recreate
         # them on demand.
         #
-        # Similarly we must clear out the `_alternate_sources` cache.
-        #
         # Note that this method of referring to members is error-prone in that
         # a later 'search and replace' renaming might miss these. Guard against
         # this by making sure we are not creating new members, only clearing
@@ -101,8 +110,8 @@ class PluginFactory:
         del state["_site_source"]
         assert "_types" in state
         state["_types"] = {}
-        assert "_alternate_sources" in state
-        state["_alternate_sources"] = {}
+        assert "_sources" in state
+        state["_sources"] = {}
 
         return state
 
@@ -115,6 +124,29 @@ class PluginFactory:
         # was before unpickling them. We are not using this method in
         # BuildStream, so the identifier is not restored here.
         self._init_site_source()
+
+    ######################################################
+    #                  Public Methods                    #
+    ######################################################
+
+    # register_plugin_origin():
+    #
+    # Registers the PluginOrigin to use for the given plugin kind
+    #
+    # Args:
+    #    kind (str): The kind identifier of the Plugin
+    #    origin (PluginOrigin): The PluginOrigin providing the plugin
+    #    allow_deprecated (bool): Whether this plugin kind is allowed to be used in a deprecated state
+    #
+    def register_plugin_origin(self, kind: str, origin: PluginOrigin, allow_deprecated: bool):
+        if kind in self._origins:
+            raise PluginError(
+                "More than one {} plugin registered as kind '{}'".format(self._plugin_type, kind),
+                reason="duplicate-plugin",
+            )
+
+        self._origins[kind] = origin
+        self._allow_deprecated[kind] = allow_deprecated
 
     # lookup():
     #
@@ -158,195 +190,197 @@ class PluginFactory:
 
         return plugin_type, defaults
 
-    # register_plugin_origin():
+    # list_plugins():
     #
-    # Registers the PluginOrigin to use for the given plugin kind
+    # A generator which yields all of the plugins which have been loaded
+    #
+    # Yields:
+    #    (str): The plugin kind
+    #    (type): The loaded plugin type
+    #    (str): The default yaml file, if any
+    #
+    def list_plugins(self) -> Iterator[Tuple[str, Type[Plugin], str]]:
+        for kind, (plugin_type, defaults) in self._types.items():
+            yield kind, plugin_type, defaults
+
+    # get_plugin_paths():
+    #
+    # Gets the directory on disk where the plugin itself is located,
+    # and a full path to the plugin's accompanying YAML file for
+    # it's defaults (if any).
     #
     # Args:
-    #    kind (str): The kind identifier of the Plugin
-    #    origin (PluginOrigin): The PluginOrigin providing the plugin
-    #    allow_deprecated (bool): Whether this plugin kind is allowed to be used in a deprecated state
+    #    kind (str): The plugin kind
     #
-    def register_plugin_origin(self, kind: str, origin: PluginOrigin, allow_deprecated: bool):
-        if kind in self._origins:
-            raise PluginError(
-                "More than one {} plugin registered as kind '{}'".format(self._base_type.__name__, kind),
-                reason="duplicate-plugin",
-            )
-
-        self._origins[kind] = origin
-        self._allow_deprecated[kind] = allow_deprecated
-
-    # all_loaded_plugins():
+    # Returns:
+    #    (str): The full path to the directory containing the plugin
+    #    (str): The full path to the accompanying .yaml file containing
+    #           the plugin's preferred defaults.
     #
-    # Returns: an iterable over all the loaded plugins.
-    #
-    def all_loaded_plugins(self):
-        return self._types.values()
-
-    def _get_local_plugin_source(self, path):
-        if ("local", path) not in self._alternate_sources:
-            # key by a tuple to avoid collision
-            source = self._plugin_base.make_plugin_source(searchpath=[path], identifier=self._identifier + path,)
-            # Ensure that sources never get garbage collected,
-            # as they'll take the plugins with them.
-            self._alternate_sources[("local", path)] = source
-        else:
-            source = self._alternate_sources[("local", path)]
-        return source
-
-    def _get_pip_plugin_source(self, package_name, kind):
-        defaults = None
-        if ("pip", package_name) not in self._alternate_sources:
-            import pkg_resources
-
+    def get_plugin_paths(self, kind: str):
+        try:
             origin = self._origins[kind]
+        except KeyError:
+            return None, None
 
-            # key by a tuple to avoid collision
-            try:
-                package = pkg_resources.get_entry_info(package_name, self._entrypoint_group, kind)
-            except pkg_resources.DistributionNotFound as e:
-                raise PluginError(
-                    "{}: Failed to load {} plugin '{}': {}".format(
-                        origin.provenance, self._base_type.__name__, kind, e
-                    ),
-                    reason="package-not-found",
-                ) from e
-            except pkg_resources.VersionConflict as e:
-                raise PluginError(
-                    "{}: Version conflict encountered while loading {} plugin '{}'".format(
-                        origin.provenance, self._base_type.__name__, kind
-                    ),
-                    detail=e.report(),
-                    reason="package-version-conflict",
-                ) from e
-            except pkg_resources.RequirementParseError as e:
-                raise PluginError(
-                    "{}: Malformed package-name '{}' encountered: {}".format(origin.provenance, package_name, e),
-                    reason="package-malformed-requirement",
-                ) from e
+        return origin.get_plugin_paths(kind, self._plugin_type)
 
-            if package is None:
-                raise PluginError(
-                    "{}: Pip package {} does not contain a plugin named '{}'".format(
-                        origin.provenance, package_name, kind
-                    ),
-                    reason="plugin-not-found",
-                )
+    ######################################################
+    #                 Private Methods                    #
+    ######################################################
 
-            location = package.dist.get_resource_filename(
-                pkg_resources._manager, package.module_name.replace(".", os.sep) + ".py"
-            )
-
-            # Also load the defaults - required since setuptools
-            # may need to extract the file.
-            try:
-                defaults = package.dist.get_resource_filename(
-                    pkg_resources._manager, package.module_name.replace(".", os.sep) + ".yaml"
-                )
-            except KeyError:
-                # The plugin didn't have an accompanying YAML file
-                defaults = None
-
-            source = self._plugin_base.make_plugin_source(
-                searchpath=[os.path.dirname(location)], identifier=self._identifier + os.path.dirname(location),
-            )
-            self._alternate_sources[("pip", package_name)] = source
-
-        else:
-            source = self._alternate_sources[("pip", package_name)]
-
-        return source, defaults
-
+    # _ensure_plugin():
+    #
+    # Ensures that a plugin is loaded, delegating the work of getting
+    # the plugin materials from the respective PluginOrigin
+    #
+    # Args:
+    #    kind (str): The plugin kind to load
+    #    provenance (str): The provenance of whence the plugin was referred to in the project
+    #
+    # Returns:
+    #    (type): The loaded type
+    #    (str): The full path the the yaml file containing defaults, or None
+    #
+    # Raises:
+    #    (PluginError): In case something went wrong loading the plugin
+    #
     def _ensure_plugin(self, kind: str, provenance: ProvenanceInformation) -> Tuple[Type[Plugin], str]:
 
         if kind not in self._types:
-            source = None
-            defaults = None
 
-            origin = self._origins.get(kind, None)
-            if origin:
-                # Try getting the plugin source from a registered origin
-                if origin.origin_type == PluginOriginType.LOCAL:
-                    source = self._get_local_plugin_source(origin.path)
-                elif origin.origin_type == PluginOriginType.PIP:
-                    source, defaults = self._get_pip_plugin_source(origin.package_name, kind)
-                else:
-                    assert False, "Encountered invalid plugin origin type"
+            # Get the directory on disk where the plugin exists, and
+            # the optional accompanying .yaml file for the plugin, should
+            # one have been provided.
+            #
+            location, defaults = self.get_plugin_paths(kind)
+
+            if location:
+
+                # Make the PluginSource object
+                #
+                source = self._plugin_base.make_plugin_source(
+                    searchpath=[location], identifier=self._identifier + location + kind,
+                )
+
+                # Keep a reference on the PluginSources (see comment in __init__)
+                #
+                self._sources[(location, kind)] = source
             else:
                 # Try getting it from the core plugins
                 if kind not in self._site_source.list_plugins():
                     raise PluginError(
-                        "{}: No {} type registered for kind '{}'".format(provenance, self._base_type.__name__, kind),
+                        "{}: No {} plugin registered for kind '{}'".format(provenance, self._plugin_type, kind),
                         reason="plugin-not-found",
                     )
 
                 source = self._site_source
+                defaults = os.path.join(self._site_plugins_path, "{}.yaml".format(kind))
+                if not os.path.exists(defaults):
+                    defaults = None
 
-            self._types[kind] = self._load_plugin(source, kind, defaults)
-            self.loaded_dependencies.append(kind)
+            self._types[kind] = (self._load_plugin(source, kind), defaults)
 
         return self._types[kind]
 
-    def _load_plugin(self, source, kind, defaults):
+    # _load_plugin():
+    #
+    # Loads the actual plugin type from the PluginSource
+    #
+    # Args:
+    #    source (PluginSource): The PluginSource
+    #    kind (str): The plugin kind to load
+    #
+    # Returns:
+    #    (type): The loaded type
+    #
+    # Raises:
+    #    (PluginError): In case something went wrong loading the plugin
+    #
+    def _load_plugin(self, source: PluginSource, kind: str) -> Type[Plugin]:
 
         try:
             plugin = source.load_plugin(kind)
 
-            if not defaults:
-                plugin_file = inspect.getfile(plugin)
-                plugin_dir = os.path.dirname(plugin_file)
-                plugin_conf_name = "{}.yaml".format(kind)
-                defaults = os.path.join(plugin_dir, plugin_conf_name)
-
         except ImportError as e:
-            raise PluginError("Failed to load {} plugin '{}': {}".format(self._base_type.__name__, kind, e)) from e
+            raise PluginError("Failed to load {} plugin '{}': {}".format(self._plugin_type, kind, e)) from e
 
         try:
             plugin_type = plugin.setup()
         except AttributeError as e:
             raise PluginError(
-                "{} plugin '{}' did not provide a setup() function".format(self._base_type.__name__, kind),
+                "{} plugin '{}' did not provide a setup() function".format(self._plugin_type, kind),
                 reason="missing-setup-function",
             ) from e
         except TypeError as e:
             raise PluginError(
-                "setup symbol in {} plugin '{}' is not a function".format(self._base_type.__name__, kind),
+                "setup symbol in {} plugin '{}' is not a function".format(self._plugin_type, kind),
                 reason="setup-is-not-function",
             ) from e
 
         self._assert_plugin(kind, plugin_type)
         self._assert_min_version(kind, plugin_type)
 
-        return (plugin_type, defaults)
+        return plugin_type
 
-    def _assert_plugin(self, kind, plugin_type):
+    # _assert_plugin():
+    #
+    # Performs assertions on the loaded plugin
+    #
+    # Args:
+    #    kind (str): The plugin kind to load
+    #    plugin_type (type): The loaded plugin type
+    #
+    # Raises:
+    #    (PluginError): In case something went wrong loading the plugin
+    #
+    def _assert_plugin(self, kind: str, plugin_type: Type[Plugin]):
         if kind in self._types:
             raise PluginError(
                 "Tried to register {} plugin for existing kind '{}' "
-                "(already registered {})".format(self._base_type.__name__, kind, self._types[kind].__name__)
+                "(already registered {})".format(self._plugin_type, kind, self._types[kind].__name__)
             )
+
+        base_type: Type[Plugin]
+        if self._plugin_type == PluginType.SOURCE:
+            base_type = Source
+        elif self._plugin_type == PluginType.ELEMENT:
+            base_type = Element
+
         try:
-            if not issubclass(plugin_type, self._base_type):
+            if not issubclass(plugin_type, base_type):
                 raise PluginError(
                     "{} plugin '{}' returned type '{}', which is not a subclass of {}".format(
-                        self._base_type.__name__, kind, plugin_type.__name__, self._base_type.__name__
+                        self._plugin_type, kind, plugin_type.__name__, base_type.__name__
                     ),
                     reason="setup-returns-bad-type",
                 )
         except TypeError as e:
             raise PluginError(
                 "{} plugin '{}' returned something that is not a type (expected subclass of {})".format(
-                    self._base_type.__name__, kind, self._base_type.__name__
+                    self._plugin_type, kind, self._plugin_type
                 ),
                 reason="setup-returns-not-type",
             ) from e
 
+    # _assert_min_version():
+    #
+    # Performs the version checks on the loaded plugin type,
+    # ensuring that the loaded plugin is intended to work
+    # with this version of BuildStream.
+    #
+    # Args:
+    #    kind (str): The plugin kind to load
+    #    plugin_type (type): The loaded plugin type
+    #
+    # Raises:
+    #    (PluginError): In case something went wrong loading the plugin
+    #
     def _assert_min_version(self, kind, plugin_type):
 
         if plugin_type.BST_MIN_VERSION is None:
             raise PluginError(
-                "{} plugin '{}' did not specify BST_MIN_VERSION".format(self._base_type.__name__, kind),
+                "{} plugin '{}' did not specify BST_MIN_VERSION".format(self._plugin_type, kind),
                 reason="missing-min-version",
                 detail="Are you trying to use a BuildStream 1 plugin with a BuildStream 2 project ?",
             )
@@ -356,7 +390,7 @@ class PluginFactory:
         except UtilError as e:
             raise PluginError(
                 "{} plugin '{}' specified malformed BST_MIN_VERSION: {}".format(
-                    self._base_type.__name__, kind, plugin_type.BST_MIN_VERSION
+                    self._plugin_type, kind, plugin_type.BST_MIN_VERSION
                 ),
                 reason="malformed-min-version",
                 detail="BST_MIN_VERSION must be specified as 'MAJOR.MINOR' with "
@@ -368,7 +402,7 @@ class PluginFactory:
         if min_version_major != bst_major:
             raise PluginError(
                 "{} plugin '{}' requires BuildStream {}, but is being loaded with BuildStream {}".format(
-                    self._base_type.__name__, kind, min_version_major, bst_major
+                    self._plugin_type, kind, min_version_major, bst_major
                 ),
                 reason="incompatible-major-version",
                 detail="You will need to find the correct version of this plugin for your project.",
@@ -377,7 +411,7 @@ class PluginFactory:
         if min_version_minor > bst_minor:
             raise PluginError(
                 "{} plugin '{}' requires BuildStream {}, but is being loaded with BuildStream {}.{}".format(
-                    self._base_type.__name__, kind, plugin_type.BST_MIN_VERSION, bst_major, bst_minor
+                    self._plugin_type, kind, plugin_type.BST_MIN_VERSION, bst_major, bst_minor
                 ),
                 reason="incompatible-minor-version",
                 detail="Please upgrade to BuildStream {}".format(plugin_type.BST_MIN_VERSION),
