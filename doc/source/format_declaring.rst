@@ -408,7 +408,7 @@ For example, the following is logically same as the example above:
 .. code:: yaml
 
    build-depends:
-     - baseproject.bst:foo.bst
+   - baseproject.bst:foo.bst
 
 Similarly, you can also refer to cross-junction elements via the ``filename``
 attribute, like so:
@@ -416,12 +416,12 @@ attribute, like so:
 .. code:: yaml
 
    depends:
-     - filename: baseproject.bst:foo.bst
-       type: build
+   - filename: baseproject.bst:foo.bst
+     type: build
 
 .. note::
 
-   BuildStream does not allow recursice lookups for junction elements. If a
+   BuildStream does not allow recursive lookups for junction elements. If a
    filename contains more than one ``:`` (colon) character, an error will be
    raised. See :ref:`nested junctions <core_junction_nested>` for more details
    on nested junctions.
