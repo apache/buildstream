@@ -372,7 +372,7 @@ class LogLine(Widget):
 
             # Variables
             if "%{vars" in format_:
-                variables = element._Element__variables.flat
+                variables = dict(element._Element__variables)
                 line = p.fmt_subst(
                     line, "vars", yaml.round_trip_dump(variables, default_flow_style=False, allow_unicode=True)
                 )
