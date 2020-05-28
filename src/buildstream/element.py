@@ -96,7 +96,6 @@ from .utils import FileListResult, BST_ARBITRARY_TIMESTAMP
 from . import utils
 from . import _cachekey
 from . import _site
-from ._platform import Platform
 from .node import Node
 from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
@@ -315,7 +314,9 @@ class Element(Plugin):
             self.__remote_execution_specs = project.remote_execution_specs
 
         # Extract Sandbox config
-        self.__sandbox_config = self.__extract_sandbox_config(context, project, meta)
+        sandbox_config = self.__extract_sandbox_config(project, meta)
+        self.__variables.expand(sandbox_config)
+        self.__sandbox_config = SandboxConfig(sandbox_config, context.platform)
 
     def __lt__(self, other):
         return self.name < other.name
@@ -2702,16 +2703,11 @@ class Element(Plugin):
     # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
     #
     @classmethod
-    def __extract_sandbox_config(cls, context, project, meta):
+    def __extract_sandbox_config(cls, project, meta):
         if meta.is_junction:
             sandbox_config = Node.from_dict({})
         else:
             sandbox_config = project._sandbox.clone()
-
-        # Get the platform to ask for host architecture
-        platform = context.platform
-        host_arch = platform.get_host_arch()
-        host_os = platform.get_host_os()
 
         # The default config is already composited with the project overrides
         sandbox_defaults = cls.__defaults.get_mapping("sandbox", default={})
@@ -2721,24 +2717,7 @@ class Element(Plugin):
         meta.sandbox._composite(sandbox_config)
         sandbox_config._assert_fully_composited()
 
-        # Sandbox config, unlike others, has fixed members so we should validate them
-        sandbox_config.validate_keys(["build-uid", "build-gid", "build-os", "build-arch"])
-
-        build_os = sandbox_config.get_str("build-os", default=None)
-        if build_os:
-            build_os = build_os.lower()
-        else:
-            build_os = host_os
-
-        build_arch = sandbox_config.get_str("build-arch", default=None)
-        if build_arch:
-            build_arch = Platform.canonicalize_arch(build_arch)
-        else:
-            build_arch = host_arch
-
-        return SandboxConfig(
-            sandbox_config.get_int("build-uid", None), sandbox_config.get_int("build-gid", None), build_os, build_arch,
-        )
+        return sandbox_config
 
     # This makes a special exception for the split rules, which
     # elements may extend but whos defaults are defined in the project.
