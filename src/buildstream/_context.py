@@ -219,9 +219,17 @@ class Context:
         # a $XDG_CONFIG_HOME/buildstream.conf file
         #
         if not config:
-            default_config = os.path.join(os.environ["XDG_CONFIG_HOME"], "buildstream.conf")
-            if os.path.exists(default_config):
-                config = default_config
+            #
+            # Support parallel installations of BuildStream by first
+            # trying a (major point) version specific configuration file
+            # and then falling back to buildstream.conf.
+            #
+            major_version, _ = utils._get_bst_api_version()
+            for config_filename in ("buildstream{}.conf".format(major_version), "buildstream.conf"):
+                default_config = os.path.join(os.environ["XDG_CONFIG_HOME"], config_filename)
+                if os.path.exists(default_config):
+                    config = default_config
+                    break
 
         # Load default config
         #
