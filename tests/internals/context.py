@@ -5,6 +5,7 @@ import os
 import pytest
 
 from buildstream._context import Context
+from buildstream import _yaml, utils
 from buildstream._exceptions import LoadError
 from buildstream.exceptions import LoadErrorReason
 
@@ -78,6 +79,33 @@ def test_context_load_user_config(context_fixture, datafiles):
     assert context.builddir == os.path.join(cache_home, "buildstream", "build")
     assert context.cachedir == os.path.join(cache_home, "buildstream")
     assert context.logdir == os.path.join(cache_home, "buildstream", "logs")
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_context_priority(datafiles):
+    confdir = os.path.join(str(datafiles), "config")
+    os.makedirs(confdir)
+
+    # The fallback (usual) config file
+    bst_conf_path = os.path.join(confdir, "buildstream.conf")
+    bst_conf = {"sourcedir": "/sources"}
+    _yaml.roundtrip_dump(bst_conf, bst_conf_path)
+
+    # The version specific config file
+    major_version, _ = utils._get_bst_api_version()
+    bst_conf_path = os.path.join(confdir, "buildstream{}.conf".format(major_version))
+    bst_conf = {"sourcedir": "/other_sources"}
+    _yaml.roundtrip_dump(bst_conf, bst_conf_path)
+
+    # Load the Context() object and assert that we've chosen
+    # the version specific one.
+    #
+    os.environ["XDG_CONFIG_HOME"] = confdir
+    with Context() as context:
+        context.load()
+        assert context.sourcedir == "/other_sources"
+
+    del os.environ["XDG_CONFIG_HOME"]
 
 
 #######################################
