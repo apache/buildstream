@@ -233,6 +233,11 @@ class ArtifactCache(BaseCache):
             remote.init()
             element.status("Pushing data from artifact {} -> {}".format(display_key, remote))
 
+            for II in range(1000):
+                self._push_artifact_blobs(artifact, remote)
+                element.info("{}: Pushed data from artifact {} -> {}".format(II, display_key, remote))
+
+
             if self._push_artifact_blobs(artifact, remote):
                 element.info("Pushed data from artifact {} -> {}".format(display_key, remote))
             else:
