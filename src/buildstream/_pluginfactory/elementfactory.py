@@ -17,10 +17,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .. import _site
-from ..element import Element
-
 from .pluginfactory import PluginFactory
+from .pluginorigin import PluginType
 
 
 # A ElementFactory creates Element instances
@@ -31,10 +29,7 @@ from .pluginfactory import PluginFactory
 #
 class ElementFactory(PluginFactory):
     def __init__(self, plugin_base):
-
-        super().__init__(
-            plugin_base, Element, [_site.element_plugins], "buildstream.plugins.elements",
-        )
+        super().__init__(plugin_base, PluginType.ELEMENT)
 
     # create():
     #

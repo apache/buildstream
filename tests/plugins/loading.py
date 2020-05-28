@@ -7,6 +7,7 @@
 #
 
 import os
+import shutil
 import pytest
 
 from buildstream.exceptions import ErrorDomain
@@ -429,3 +430,172 @@ def test_pip_origin_malformed_constraints(cli, datafiles, plugin_type):
 
     result = cli.run(project=project, args=["show", "element.bst"])
     result.assert_main_error(ErrorDomain.PLUGIN, "package-malformed-requirement")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_junction_plugin_found(cli, datafiles, plugin_type):
+    project = str(datafiles)
+    subproject = os.path.join(project, "subproject")
+
+    shutil.copytree(os.path.join(project, "plugins"), os.path.join(subproject, "plugins"))
+
+    update_project(
+        project, {"plugins": [{"origin": "junction", "junction": "subproject-junction.bst", plugin_type: ["found"],}]},
+    )
+    update_project(
+        subproject,
+        {
+            "plugins": [
+                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "found")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_junction_plugin_not_found(cli, datafiles, plugin_type):
+    project = str(datafiles)
+    subproject = os.path.join(project, "subproject")
+
+    shutil.copytree(os.path.join(project, "plugins"), os.path.join(subproject, "plugins"))
+
+    # The toplevel says to search for the "notfound" plugin in the subproject
+    #
+    update_project(
+        project,
+        {"plugins": [{"origin": "junction", "junction": "subproject-junction.bst", plugin_type: ["notfound"],}]},
+    )
+
+    # The subproject only configures the "found" plugin
+    #
+    update_project(
+        subproject,
+        {
+            "plugins": [
+                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "notfound")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.PLUGIN, "junction-plugin-not-found")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_junction_deep_plugin_found(cli, datafiles, plugin_type):
+    project = str(datafiles)
+    subproject = os.path.join(project, "subproject")
+    subsubproject = os.path.join(subproject, "subsubproject")
+
+    shutil.copytree(os.path.join(project, "plugins"), os.path.join(subsubproject, "plugins"))
+
+    update_project(
+        project, {"plugins": [{"origin": "junction", "junction": "subproject-junction.bst", plugin_type: ["found"],}]},
+    )
+    update_project(
+        subproject,
+        {"plugins": [{"origin": "junction", "junction": "subsubproject-junction.bst", plugin_type: ["found"],}]},
+    )
+    update_project(
+        subsubproject,
+        {
+            "plugins": [
+                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "found")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_junction_deep_plugin_not_found(cli, datafiles, plugin_type):
+    project = str(datafiles)
+    subproject = os.path.join(project, "subproject")
+    subsubproject = os.path.join(subproject, "subsubproject")
+
+    shutil.copytree(os.path.join(project, "plugins"), os.path.join(subsubproject, "plugins"))
+
+    # The toplevel says to search for the "notfound" plugin in the subproject
+    #
+    update_project(
+        project,
+        {"plugins": [{"origin": "junction", "junction": "subproject-junction.bst", plugin_type: ["notfound"],}]},
+    )
+
+    # The subproject says to search for the "notfound" plugin in the subproject
+    #
+    update_project(
+        subproject,
+        {"plugins": [{"origin": "junction", "junction": "subsubproject-junction.bst", plugin_type: ["notfound"],}]},
+    )
+
+    # The subsubproject only configures the "found" plugin
+    #
+    update_project(
+        subsubproject,
+        {
+            "plugins": [
+                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "notfound")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.PLUGIN, "junction-plugin-load-error")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
+def test_junction_pip_plugin_found(cli, datafiles, plugin_type):
+    project = str(datafiles)
+    subproject = os.path.join(project, "subproject")
+
+    shutil.copytree(os.path.join(project, "plugins"), os.path.join(subproject, "plugins"))
+
+    update_project(
+        project,
+        {"plugins": [{"origin": "junction", "junction": "subproject-junction.bst", plugin_type: ["sample"],}]},
+    )
+    update_project(
+        subproject, {"plugins": [{"origin": "pip", "package-name": "sample-plugins", plugin_type: ["sample"],}]},
+    )
+    setup_element(project, plugin_type, "sample")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+@pytest.mark.skipif("not pip_sample_packages()", reason=SAMPLE_PACKAGES_SKIP_REASON)
+def test_junction_pip_plugin_version_conflict(cli, datafiles, plugin_type):
+    project = str(datafiles)
+    subproject = os.path.join(project, "subproject")
+
+    shutil.copytree(os.path.join(project, "plugins"), os.path.join(subproject, "plugins"))
+
+    update_project(
+        project,
+        {"plugins": [{"origin": "junction", "junction": "subproject-junction.bst", plugin_type: ["sample"],}]},
+    )
+    update_project(
+        subproject, {"plugins": [{"origin": "pip", "package-name": "sample-plugins>=1.4", plugin_type: ["sample"],}]},
+    )
+    setup_element(project, plugin_type, "sample")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.PLUGIN, "junction-plugin-load-error")
