@@ -848,7 +848,7 @@ class Project:
             if self.junction.ignore_junction_remotes:
                 self.artifact_cache_specs = []
 
-            if self.junction.cache_junction_elements:
+            if self.junction.cache_junction_elements and parent.artifact_cache_specs:
                 self.artifact_cache_specs = parent.artifact_cache_specs + self.artifact_cache_specs
 
         # Load source caches with pull/push config
