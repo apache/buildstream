@@ -147,10 +147,15 @@ class Context():
         # a $XDG_CONFIG_HOME/buildstream.conf file
         #
         if not config:
-            default_config = os.path.join(os.environ['XDG_CONFIG_HOME'],
-                                          'buildstream.conf')
-            if os.path.exists(default_config):
-                config = default_config
+            #
+            # Support parallel installations of BuildStream by first
+            # trying buildstream1.conf and then falling back to buildstream.conf.
+            #
+            for config_filename in ("buildstream1.conf", "buildstream.conf"):
+                default_config = os.path.join(os.environ["XDG_CONFIG_HOME"], config_filename)
+                if os.path.exists(default_config):
+                    config = default_config
+                    break
 
         # Load default config
         #
