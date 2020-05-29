@@ -22,6 +22,17 @@ invoking ``bst``, an attempt is made to load user specific configuration from
 ``$XDG_CONFIG_HOME/buildstream.conf``. On most Linux based systems, the location
 will be ``~/.config/buildstream.conf``
 
+.. note::
+
+   If you have have multiple major versions of BuildStream installed, you
+   can have separate configuration files in your ``${XDG_CONFIG_HOME}``.
+
+   You can do this by naming them according to the major versions of
+   BuildStream you have installed. BuildStream 1 will load it's configuration
+   from ``$XDG_CONFIG_HOME/buildstream1.conf`` and BuildStream 2 will load
+   it's configuration from ``$XDG_CONFIG_HOME/buildstream2.conf``, while
+   any version will fallback to ``$XDG_CONFIG_HOME/buildstream.conf``.
+
 
 Project specific value
 ----------------------
