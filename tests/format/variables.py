@@ -138,3 +138,24 @@ def test_variables_are_resolved_in_elements_context(cli, datafiles):
         ["one.bst"],
         ["two.bst"],
     )
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "public_data_variables"))
+def test_variables_are_resolved_in_public_section(cli, datafiles):
+    project = str(datafiles)
+
+    result = cli.run(project=project, args=["show", "--format", "%{public}", "public.bst"])
+    result.assert_success()
+
+    output = _yaml.load_data(result.output).strip_node_info()
+    expected = {"integration-commands": ["echo expanded"], "test": "expanded"}
+
+    assert {k: v for k, v in output.items() if k in expected} == expected
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "public_data_variables"))
+def test_variables_resolving_errors_in_public_section(cli, datafiles):
+    project = str(datafiles)
+
+    result = cli.run(project=project, args=["show", "--format", "%{public}", "public_unresolved.bst"])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNRESOLVED_VARIABLE)
