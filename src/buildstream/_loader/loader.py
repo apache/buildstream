@@ -202,7 +202,7 @@ class Loader:
                 return loader
 
         try:
-            self._load_file(filename, rewritable, ticker)
+            self._load_file(filename, rewritable, ticker, provenance=provenance)
         except LoadError as e:
             if e.reason != LoadErrorReason.MISSING_FILE:
                 # other load error
@@ -492,7 +492,6 @@ class Loader:
                 current_element[2].append(dep.name)
 
                 if dep.junction:
-                    self._load_file(dep.junction, rewritable, ticker, dep.provenance)
                     loader = self.get_loader(
                         dep.junction, rewritable=rewritable, ticker=ticker, provenance=dep.provenance
                     )
