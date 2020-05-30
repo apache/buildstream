@@ -217,6 +217,27 @@ class Loader:
             self._loaders[filename] = None
             return None
 
+        # At this point we've loaded the LoadElement
+        load_element = self._elements[filename]
+
+        # If the loaded element is a link, then just follow it
+        # immediately and move on to the target.
+        #
+        if load_element.link_target:
+
+            _, filename, loader = self._parse_name(load_element.link_target, rewritable, ticker)
+
+            if loader != self:
+                level = level + 1
+
+            return loader.get_loader(
+                filename,
+                rewritable=rewritable,
+                ticker=ticker,
+                level=level,
+                provenance=load_element.link_target_provenance,
+            )
+
         # meta junction element
         #
         # Note that junction elements are not allowed to have
@@ -247,7 +268,7 @@ class Loader:
         # through the entire loading process), which is nice UX. It
         # would be nice if this could be done for *all* element types,
         # but since we haven't loaded those yet that's impossible.
-        if self._elements[filename].dependencies:
+        if load_element.dependencies:
             raise LoadError("Dependencies are forbidden for 'junction' elements", LoadErrorReason.INVALID_JUNCTION)
 
         element = Element._new_from_meta(meta_element)
@@ -549,6 +570,13 @@ class Loader:
             ticker(filename)
 
         top_element = self._load_file_no_deps(filename, rewritable, provenance)
+
+        # If this element is a link then we need to resolve it
+        # and replace the dependency we've processed with this one
+        if top_element.link_target is not None:
+            _, filename, loader = self._parse_name(top_element.link_target, rewritable, ticker)
+            top_element = loader._load_file(filename, rewritable, ticker, top_element.link_target_provenance)
+
         dependencies = extract_depends_from_node(top_element.node)
         # The loader queue is a stack of tuples
         # [0] is the LoadElement instance
@@ -587,6 +615,12 @@ class Loader:
                             raise LoadError(
                                 "{}: Cannot depend on junction".format(dep.provenance), LoadErrorReason.INVALID_DATA
                             )
+
+                # If this dependency is a link then we need to resolve it
+                # and replace the dependency we've processed with this one
+                if dep_element.link_target:
+                    _, filename, loader = self._parse_name(dep_element.link_target, rewritable, ticker)
+                    dep_element = loader._load_file(filename, rewritable, ticker, dep_element.link_target_provenance)
 
                 # All is well, push the dependency onto the LoadElement
                 # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
