@@ -5,4 +5,4 @@ sources:
   path: subproject/subsubproject
 
 config:
-  target: subproject.bst:subsubproject-junction.bst
+  link: subproject.bst:subsubproject-junction.bst

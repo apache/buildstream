@@ -255,12 +255,12 @@ class Loader:
 
         # If this junction element points to a sub-sub-project, we need to
         # find loader for that project.
-        if element.target:
+        if element.link:
             subproject_loader = self.get_loader(
-                element.target_junction, rewritable=rewritable, ticker=ticker, level=level, provenance=provenance
+                element.link_junction, rewritable=rewritable, ticker=ticker, level=level, provenance=provenance
             )
             loader = subproject_loader.get_loader(
-                element.target_element, rewritable=rewritable, ticker=ticker, level=level, provenance=provenance
+                element.link_element, rewritable=rewritable, ticker=ticker, level=level, provenance=provenance
             )
             self._loaders[filename] = loader
             return loader

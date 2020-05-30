@@ -411,8 +411,8 @@ def test_build_git_cross_junction_names(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_config_target(cli, tmpdir, datafiles):
-    project = os.path.join(str(datafiles), "config-target")
+def test_config_link(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "config-link")
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
     # Build, checkout
@@ -426,18 +426,8 @@ def test_config_target(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_invalid_sources_and_target(cli, tmpdir, datafiles):
-    project = os.path.join(str(datafiles), "config-target")
-
-    result = cli.run(project=project, args=["show", "invalid-source-target.bst"])
-    result.assert_main_error(ErrorDomain.ELEMENT, None)
-
-    assert "junction elements cannot define both 'sources' and 'target' config option" in result.stderr
-
-
-@pytest.mark.datafiles(DATA_DIR)
-def test_invalid_target_name(cli, tmpdir, datafiles):
-    project = os.path.join(str(datafiles), "config-target")
+def test_invalid_link_same_name(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "config-link")
 
     # Rename our junction element to the same name as its target
     old_path = os.path.join(project, "elements/subsubproject.bst")
@@ -446,22 +436,30 @@ def test_invalid_target_name(cli, tmpdir, datafiles):
 
     # This should fail now
     result = cli.run(project=project, args=["show", "subsubproject-junction.bst"])
-    result.assert_main_error(ErrorDomain.ELEMENT, None)
-
-    assert "junction elements cannot target an element with the same name" in result.stderr
+    result.assert_main_error(ErrorDomain.ELEMENT, "invalid-link-same-name")
 
 
-# We cannot exhaustively test all possible ways in which this can go wrong, so
-# test a couple of common ways in which we expect this to go wrong.
-@pytest.mark.parametrize("target", ["no-junction.bst", "nested-junction-target.bst"])
+@pytest.mark.parametrize(
+    "target,error",
+    [
+        ("no-junction.bst", "invalid-link-name"),
+        ("nested-junction-link.bst", "invalid-link-name"),
+        ("invalid-source-link.bst", "invalid-link-sources"),
+        ("invalid-path-link.bst", "invalid-link-path"),
+        ("invalid-cache-elements-link.bst", "invalid-link-cache-junction-elements"),
+        ("invalid-ignore-remotes-link.bst", "invalid-link-ignore-junction-remotes"),
+        # Also test if these parameters were explicitly set to their default
+        # value, ensure that an error is still issued since these would be ignored.
+        ("invalid-cache-elements-link-false.bst", "invalid-link-cache-junction-elements"),
+        ("invalid-ignore-remotes-link-false.bst", "invalid-link-ignore-junction-remotes"),
+    ],
+)
 @pytest.mark.datafiles(DATA_DIR)
-def test_invalid_target_format(cli, tmpdir, datafiles, target):
-    project = os.path.join(str(datafiles), "config-target")
+def test_invalid_link_params(cli, tmpdir, datafiles, target, error):
+    project = os.path.join(str(datafiles), "config-link")
 
     result = cli.run(project=project, args=["show", target])
-    result.assert_main_error(ErrorDomain.ELEMENT, None)
-
-    assert "'target' option must be in format '{junction-name}:{element-name}'" in result.stderr
+    result.assert_main_error(ErrorDomain.ELEMENT, error)
 
 
 @pytest.mark.datafiles(DATA_DIR)
