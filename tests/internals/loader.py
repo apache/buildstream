@@ -6,7 +6,6 @@ from buildstream.exceptions import LoadErrorReason
 from buildstream._exceptions import LoadError
 from buildstream._project import Project
 from buildstream._loader import MetaElement
-from buildstream._loader.loader import _NO_PROGRESS
 
 from tests.testutils import dummy_context
 
@@ -29,7 +28,7 @@ def test_one_file(datafiles):
 
     basedir = str(datafiles)
     with make_loader(basedir) as loader:
-        element = loader.load(["elements/onefile.bst"], _NO_PROGRESS)[0]
+        element = loader.load(["elements/onefile.bst"], None)[0]
 
         assert isinstance(element, MetaElement)
         assert element.kind == "pony"
@@ -40,7 +39,7 @@ def test_missing_file(datafiles):
 
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
-        loader.load(["elements/missing.bst"], _NO_PROGRESS)
+        loader.load(["elements/missing.bst"], None)
 
     assert exc.value.reason == LoadErrorReason.MISSING_FILE
 
@@ -50,7 +49,7 @@ def test_invalid_reference(datafiles):
 
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
-        loader.load(["elements/badreference.bst"], _NO_PROGRESS)
+        loader.load(["elements/badreference.bst"], None)
 
     assert exc.value.reason == LoadErrorReason.INVALID_YAML
 
@@ -60,7 +59,7 @@ def test_invalid_yaml(datafiles):
 
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
-        loader.load(["elements/badfile.bst"], _NO_PROGRESS)
+        loader.load(["elements/badfile.bst"], None)
 
     assert exc.value.reason == LoadErrorReason.INVALID_YAML
 
@@ -72,7 +71,7 @@ def test_fail_fullpath_target(datafiles):
     fullpath = os.path.join(basedir, "elements", "onefile.bst")
 
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
-        loader.load([fullpath], _NO_PROGRESS)
+        loader.load([fullpath], None)
 
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
@@ -82,7 +81,7 @@ def test_invalid_key(datafiles):
 
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
-        loader.load(["elements/invalidkey.bst"], _NO_PROGRESS)
+        loader.load(["elements/invalidkey.bst"], None)
 
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
@@ -92,6 +91,6 @@ def test_invalid_directory_load(datafiles):
 
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
-        loader.load(["elements/"], _NO_PROGRESS)
+        loader.load(["elements/"], None)
 
     assert exc.value.reason == LoadErrorReason.LOADING_DIRECTORY

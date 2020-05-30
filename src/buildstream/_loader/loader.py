@@ -37,11 +37,6 @@ from ..types import CoreWarnings, _KeyStrength
 from .._message import Message, MessageType
 
 
-# This should be used to deliberately disable progress reporting when
-# collecting an element
-_NO_PROGRESS = object()
-
-
 # Loader():
 #
 # The Loader class does the heavy lifting of parsing target
@@ -157,7 +152,7 @@ class Loader:
         self._clean_caches()
 
         # Cache how many Elements have just been loaded
-        if task is not _NO_PROGRESS:
+        if task:
             # Workaround for task potentially being None (because no State object)
             self.loaded = task.current_progress
 
@@ -232,7 +227,7 @@ class Loader:
         #
         # Any task counting *inside* the junction will be handled by
         # its loader.
-        meta_element = self._collect_element_no_deps(self._elements[filename], _NO_PROGRESS)
+        meta_element = self._collect_element_no_deps(self._elements[filename])
         if meta_element.kind != "junction":
             raise LoadError(
                 "{}{}: Expected junction but element kind is {}".format(provenance_str, filename, meta_element.kind),
@@ -598,7 +593,7 @@ class Loader:
     # Returns:
     #    (MetaElement): A partially loaded MetaElement
     #
-    def _collect_element_no_deps(self, element, task):
+    def _collect_element_no_deps(self, element, task=None):
         # Return the already built one, if we already built it
         meta_element = self._meta_elements.get(element.name)
         if meta_element:
@@ -654,7 +649,7 @@ class Loader:
 
         # Cache it now, make sure it's already there before recursing
         self._meta_elements[element.name] = meta_element
-        if task is not _NO_PROGRESS:
+        if task:
             task.add_current_progress()
 
         return meta_element
@@ -670,7 +665,7 @@ class Loader:
     # Returns:
     #    (MetaElement): A fully loaded MetaElement
     #
-    def _collect_element(self, top_element, task):
+    def _collect_element(self, top_element, task=None):
         element_queue = [top_element]
         meta_element_queue = [self._collect_element_no_deps(top_element, task)]
 
