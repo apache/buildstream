@@ -217,6 +217,27 @@ class Loader:
             self._loaders[filename] = None
             return None
 
+        # At this point we've loaded the LoadElement
+        load_element = self._elements[filename]
+
+        # If the loaded element is a link, then just follow it
+        # immediately and move on to the target.
+        #
+        if load_element.link_target:
+
+            _, filename, loader = self._parse_name(load_element.link_target, rewritable, ticker)
+
+            if loader != self:
+                level = level + 1
+
+            return loader.get_loader(
+                filename,
+                rewritable=rewritable,
+                ticker=ticker,
+                level=level,
+                provenance=load_element.link_target_provenance,
+            )
+
         # meta junction element
         #
         # Note that junction elements are not allowed to have
@@ -227,7 +248,7 @@ class Loader:
         #
         # Any task counting *inside* the junction will be handled by
         # its loader.
-        meta_element = self._collect_element_no_deps(self._elements[filename])
+        meta_element = self.collect_element_no_deps(self._elements[filename])
         if meta_element.kind != "junction":
             raise LoadError(
                 "{}{}: Expected junction but element kind is {}".format(provenance_str, filename, meta_element.kind),
@@ -247,23 +268,11 @@ class Loader:
         # through the entire loading process), which is nice UX. It
         # would be nice if this could be done for *all* element types,
         # but since we haven't loaded those yet that's impossible.
-        if self._elements[filename].dependencies:
+        if load_element.dependencies:
             raise LoadError("Dependencies are forbidden for 'junction' elements", LoadErrorReason.INVALID_JUNCTION)
 
         element = Element._new_from_meta(meta_element)
         element._initialize_state()
-
-        # If this junction element points to a sub-sub-project, we need to
-        # find loader for that project.
-        if element.target:
-            subproject_loader = self.get_loader(
-                element.target_junction, rewritable=rewritable, ticker=ticker, level=level, provenance=provenance
-            )
-            loader = subproject_loader.get_loader(
-                element.target_element, rewritable=rewritable, ticker=ticker, level=level, provenance=provenance
-            )
-            self._loaders[filename] = loader
-            return loader
 
         # Handle the case where a subproject has no ref
         #
@@ -367,6 +376,81 @@ class Loader:
         del state["_meta_elements"]
 
         return state
+
+    # collect_element_no_deps()
+    #
+    # Collect a single element, without its dependencies, into a meta_element
+    #
+    # NOTE: This is declared public in order to share with the LoadElement
+    #       and should not be used outside of that `_loader` module.
+    #
+    # Args:
+    #    element (LoadElement): The element for which to load a MetaElement
+    #    task (Task): A task to write progress information to
+    #
+    # Returns:
+    #    (MetaElement): A partially loaded MetaElement
+    #
+    def collect_element_no_deps(self, element, task=None):
+        # Return the already built one, if we already built it
+        meta_element = self._meta_elements.get(element.name)
+        if meta_element:
+            return meta_element
+
+        node = element.node
+        elt_provenance = node.get_provenance()
+        meta_sources = []
+
+        element_kind = node.get_str(Symbol.KIND)
+
+        # if there's a workspace for this element then just append a dummy workspace
+        # metasource.
+        workspace = self._context.get_workspaces().get_workspace(element.name)
+        skip_workspace = True
+        if workspace:
+            workspace_node = {"kind": "workspace"}
+            workspace_node["path"] = workspace.get_absolute_path()
+            workspace_node["last_build"] = str(workspace.to_dict().get("last_build", ""))
+            node[Symbol.SOURCES] = [workspace_node]
+            skip_workspace = False
+
+        sources = node.get_sequence(Symbol.SOURCES, default=[])
+        for index, source in enumerate(sources):
+            kind = source.get_str(Symbol.KIND)
+            # the workspace source plugin cannot be used unless the element is workspaced
+            if kind == "workspace" and skip_workspace:
+                continue
+
+            del source[Symbol.KIND]
+
+            # Directory is optional
+            directory = source.get_str(Symbol.DIRECTORY, default=None)
+            if directory:
+                del source[Symbol.DIRECTORY]
+            meta_source = MetaSource(element.name, index, element_kind, kind, source, directory)
+            meta_sources.append(meta_source)
+
+        meta_element = MetaElement(
+            self.project,
+            element.name,
+            element_kind,
+            elt_provenance,
+            meta_sources,
+            node.get_mapping(Symbol.CONFIG, default={}),
+            node.get_mapping(Symbol.VARIABLES, default={}),
+            node.get_mapping(Symbol.ENVIRONMENT, default={}),
+            node.get_str_list(Symbol.ENV_NOCACHE, default=[]),
+            node.get_mapping(Symbol.PUBLIC, default={}),
+            node.get_mapping(Symbol.SANDBOX, default={}),
+            element_kind == "junction",
+        )
+
+        # Cache it now, make sure it's already there before recursing
+        self._meta_elements[element.name] = meta_element
+        if task:
+            task.add_current_progress()
+
+        return meta_element
 
     ###########################################
     #            Private Methods              #
@@ -474,6 +558,13 @@ class Loader:
             ticker(filename)
 
         top_element = self._load_file_no_deps(filename, rewritable, provenance)
+
+        # If this element is a link then we need to resolve it
+        # and replace the dependency we've processed with this one
+        if top_element.link_target is not None:
+            _, filename, loader = self._parse_name(top_element.link_target, rewritable, ticker)
+            top_element = loader._load_file(filename, rewritable, ticker, top_element.link_target_provenance)
+
         dependencies = extract_depends_from_node(top_element.node)
         # The loader queue is a stack of tuples
         # [0] is the LoadElement instance
@@ -512,6 +603,12 @@ class Loader:
                             raise LoadError(
                                 "{}: Cannot depend on junction".format(dep.provenance), LoadErrorReason.INVALID_DATA
                             )
+
+                # If this dependency is a link then we need to resolve it
+                # and replace the dependency we've processed with this one
+                if dep_element.link_target:
+                    _, filename, loader = self._parse_name(dep_element.link_target, rewritable, ticker)
+                    dep_element = loader._load_file(filename, rewritable, ticker, dep_element.link_target_provenance)
 
                 # All is well, push the dependency onto the LoadElement
                 # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
@@ -581,78 +678,6 @@ class Loader:
                 check_elements.remove(this_element)
                 validated.add(this_element)
 
-    # _collect_element_no_deps()
-    #
-    # Collect a single element, without its dependencies, into a meta_element
-    #
-    # Args:
-    #    element (LoadElement): The element for which to load a MetaElement
-    #    task (Task): A task to write progress information to
-    #
-    # Returns:
-    #    (MetaElement): A partially loaded MetaElement
-    #
-    def _collect_element_no_deps(self, element, task=None):
-        # Return the already built one, if we already built it
-        meta_element = self._meta_elements.get(element.name)
-        if meta_element:
-            return meta_element
-
-        node = element.node
-        elt_provenance = node.get_provenance()
-        meta_sources = []
-
-        element_kind = node.get_str(Symbol.KIND)
-
-        # if there's a workspace for this element then just append a dummy workspace
-        # metasource.
-        workspace = self._context.get_workspaces().get_workspace(element.name)
-        skip_workspace = True
-        if workspace:
-            workspace_node = {"kind": "workspace"}
-            workspace_node["path"] = workspace.get_absolute_path()
-            workspace_node["last_build"] = str(workspace.to_dict().get("last_build", ""))
-            node[Symbol.SOURCES] = [workspace_node]
-            skip_workspace = False
-
-        sources = node.get_sequence(Symbol.SOURCES, default=[])
-        for index, source in enumerate(sources):
-            kind = source.get_str(Symbol.KIND)
-            # the workspace source plugin cannot be used unless the element is workspaced
-            if kind == "workspace" and skip_workspace:
-                continue
-
-            del source[Symbol.KIND]
-
-            # Directory is optional
-            directory = source.get_str(Symbol.DIRECTORY, default=None)
-            if directory:
-                del source[Symbol.DIRECTORY]
-            meta_source = MetaSource(element.name, index, element_kind, kind, source, directory)
-            meta_sources.append(meta_source)
-
-        meta_element = MetaElement(
-            self.project,
-            element.name,
-            element_kind,
-            elt_provenance,
-            meta_sources,
-            node.get_mapping(Symbol.CONFIG, default={}),
-            node.get_mapping(Symbol.VARIABLES, default={}),
-            node.get_mapping(Symbol.ENVIRONMENT, default={}),
-            node.get_str_list(Symbol.ENV_NOCACHE, default=[]),
-            node.get_mapping(Symbol.PUBLIC, default={}),
-            node.get_mapping(Symbol.SANDBOX, default={}),
-            element_kind == "junction",
-        )
-
-        # Cache it now, make sure it's already there before recursing
-        self._meta_elements[element.name] = meta_element
-        if task:
-            task.add_current_progress()
-
-        return meta_element
-
     # _collect_element()
     #
     # Collect the toplevel elements we have
@@ -666,7 +691,7 @@ class Loader:
     #
     def _collect_element(self, top_element, task=None):
         element_queue = [top_element]
-        meta_element_queue = [self._collect_element_no_deps(top_element, task)]
+        meta_element_queue = [self.collect_element_no_deps(top_element, task)]
 
         while element_queue:
             element = element_queue.pop()
@@ -683,7 +708,7 @@ class Loader:
                 name = dep.element.name
 
                 if name not in loader._meta_elements:
-                    meta_dep = loader._collect_element_no_deps(dep.element, task)
+                    meta_dep = loader.collect_element_no_deps(dep.element, task)
                     element_queue.append(dep.element)
                     meta_element_queue.append(meta_dep)
                 else:

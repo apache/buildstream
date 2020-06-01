@@ -139,3 +139,6 @@ class LoadErrorReason(Enum):
 
     DUPLICATE_DEPENDENCY = 24
     """A duplicate dependency was detected"""
+
+    LINK_FORBIDDEN_DEPENDENCIES = 25
+    """A link element declared dependencies"""

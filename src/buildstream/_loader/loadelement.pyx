@@ -21,8 +21,11 @@ from functools import cmp_to_key
 
 from pyroaring import BitMap, FrozenBitMap  # pylint: disable=no-name-in-module
 
-from ..node cimport MappingNode
-from .types import Symbol
+from .._exceptions import LoadError
+from ..exceptions import LoadErrorReason
+from ..element import Element
+from ..node cimport MappingNode, ProvenanceInformation
+from .types import Symbol, extract_depends_from_node
 
 
 # Counter to get ids to LoadElements
@@ -74,6 +77,8 @@ cdef class LoadElement:
     cdef public bint meta_done
     cdef int node_id
     cdef readonly object _loader
+    cdef readonly str link_target
+    cdef readonly ProvenanceInformation link_target_provenance
     # TODO: if/when pyroaring exports symbols, we could type this statically
     cdef object _dep_cache
     cdef readonly list dependencies
@@ -88,6 +93,8 @@ cdef class LoadElement:
         self.full_name = None   # The element full name (with associated junction)
         self.meta_done = False  # If the MetaElement for this LoadElement is done
         self.node_id = _next_synthetic_counter()
+        self.link_target = None  # The target of a link element
+        self.link_target_provenance = None  # The provenance of the link target
 
         #
         # Private members
@@ -105,6 +112,8 @@ cdef class LoadElement:
             # dependency is in top-level project
             self.full_name = self.name
 
+        self.dependencies = []
+
         # Ensure the root node is valid
         self.node.validate_keys([
             'kind', 'depends', 'sources', 'sandbox',
@@ -113,7 +122,27 @@ cdef class LoadElement:
             'build-depends', 'runtime-depends',
         ])
 
-        self.dependencies = []
+        #
+        # If this is a link, resolve it right away and just
+        # store the link target and provenance
+        #
+        if self.node.get_str(Symbol.KIND, default=None) == 'link':
+            meta_element = self._loader.collect_element_no_deps(self, None)
+            element = Element._new_from_meta(meta_element)
+            element._initialize_state()
+
+            # Custom error for link dependencies, since we don't completely
+            # parse their dependencies we cannot rely on the built-in ElementError.
+            deps = extract_depends_from_node(self.node)
+            if deps:
+                provenance = self.node
+                raise LoadError(
+                    "{}: Dependencies are forbidden for 'link' elements".format(element),
+                    LoadErrorReason.LINK_FORBIDDEN_DEPENDENCIES
+                )
+
+            self.link_target = element.target
+            self.link_target_provenance = element.target_provenance
 
     @property
     def junction(self):

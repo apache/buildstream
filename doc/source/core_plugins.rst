@@ -19,6 +19,7 @@ General elements
    elements/import
    elements/compose
    elements/script
+   elements/link
    elements/junction
    elements/filter
 

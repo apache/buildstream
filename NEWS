@@ -18,8 +18,9 @@ Format
   o BREAKING CHANGE: Now deprecation warnings are suppressed using the `allow-deprecated`
     configuration with the plugin origins in project.conf, instead of on the
     source/element overrides section (See issue #1291)
+  o BREAKING CHANGE: The `target` option of junctions has been completely removed,
+    Use `link` elements instead.
   o Variables from an element can now be used in source configurations
-
 
 Plugins
 -------
@@ -27,9 +28,9 @@ Plugins
   o Cache keys will change for all elements that have defined the
     `command-subdir` variable. This is the result of fixing a bug where this
     variable was not included in the cache key correctly.
-
   o The `pip` element has been removed. Please use the one from bst-plugins-experimental
-
+  o Introduced new `link` element which can be used as a symbolic link to other
+    elements or junctions, in the local project or in subprojects.
 
 API
 ---
