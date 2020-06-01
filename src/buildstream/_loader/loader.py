@@ -274,18 +274,6 @@ class Loader:
         element = Element._new_from_meta(meta_element)
         element._initialize_state()
 
-        # If this junction element points to a sub-sub-project, we need to
-        # find loader for that project.
-        if element.target:
-            subproject_loader = self.get_loader(
-                element.target_junction, rewritable=rewritable, ticker=ticker, level=level, provenance=provenance
-            )
-            loader = subproject_loader.get_loader(
-                element.target_element, rewritable=rewritable, ticker=ticker, level=level, provenance=provenance
-            )
-            self._loaders[filename] = loader
-            return loader
-
         # Handle the case where a subproject has no ref
         #
         if not element._has_all_sources_resolved():
