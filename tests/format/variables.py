@@ -67,7 +67,7 @@ def test_simple_cyclic_variables(cli, datafiles):
     print_warning("Performing cyclic test, if this test times out it will " + "exit the test sequence")
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=["build", "simple-cyclic.bst"])
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_VARIABLE)
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNRESOLVED_VARIABLE)
 
 
 @pytest.mark.timeout(15, method="signal")
@@ -76,7 +76,7 @@ def test_cyclic_variables(cli, datafiles):
     print_warning("Performing cyclic test, if this test times out it will " + "exit the test sequence")
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=["build", "cyclic.bst"])
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_VARIABLE)
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNRESOLVED_VARIABLE)
 
 
 @pytest.mark.parametrize("protected_var", PROTECTED_VARIABLES)
@@ -168,3 +168,13 @@ def test_variables_resolving_errors_in_public_section(cli, datafiles):
 
     result = cli.run(project=project, args=["show", "--format", "%{public}", "public_unresolved.bst"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNRESOLVED_VARIABLE)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "partial_context"))
+def test_partial_context_junctions(cli, datafiles):
+    project = str(datafiles)
+
+    result = cli.run(project=project, args=["show", "--format", "%{vars}", "test.bst"])
+    result.assert_success()
+    result_vars = _yaml.load_data(result.output)
+    assert result_vars.get_str("eltvar") == "/bar/foo/baz"

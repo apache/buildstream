@@ -131,13 +131,10 @@ class LoadErrorReason(Enum):
     RECURSIVE_INCLUDE = 21
     """A recursive include has been encountered"""
 
-    RECURSIVE_VARIABLE = 22
-    """A recursive variable has been encountered"""
-
-    PROTECTED_VARIABLE_REDEFINED = 23
+    PROTECTED_VARIABLE_REDEFINED = 22
     """An attempt was made to set the value of a protected variable"""
 
-    DUPLICATE_DEPENDENCY = 24
+    DUPLICATE_DEPENDENCY = 23
     """A duplicate dependency was detected"""
 
     LINK_FORBIDDEN_DEPENDENCIES = 25

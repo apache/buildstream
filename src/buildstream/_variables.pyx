@@ -22,6 +22,7 @@
 
 import re
 import sys
+import itertools
 
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
@@ -72,11 +73,18 @@ cdef class Variables:
     def __init__(self, MappingNode node):
         self.original = node
         self._expstr_map = self._resolve(node)
-        self._check_for_missing()
-        self._check_for_cycles()
+
+    def check(self):
+        self._check_variables()
 
     def __getitem__(self, str name):
-        return _expand_var(self._expstr_map, name)
+        if name not in self._expstr_map:
+            raise KeyError(name)
+        try:
+            return _expand_var(self._expstr_map, name)
+        except (KeyError, RecursionError):
+            self._check_variables(subset=[name])
+            raise
 
     def __contains__(self, str name):
         return name in self._expstr_map
@@ -105,7 +113,7 @@ cdef class Variables:
     cpdef str get(self, str name):
         if name not in self._expstr_map:
             return None
-        return _expand_var(self._expstr_map, name)
+        return self[name]
 
     # expand()
     #
@@ -146,7 +154,9 @@ cdef class Variables:
 
         try:
             return _expand_expstr(self._expstr_map, expstr)
-        except KeyError:
+        except (KeyError, RecursionError):
+            # We also check for unmatch for recursion errors since _check_variables expects
+            # subset to be defined
             unmatched = []
 
             # Look for any unmatched variable names in the expansion string
@@ -161,6 +171,9 @@ cdef class Variables:
                 )
 
                 raise LoadError(message, LoadErrorReason.UNRESOLVED_VARIABLE)
+
+            # Otherwise the missing key is from a variable definition
+            self._check_variables(subset=expstr[1::2])
             # Otherwise, re-raise the KeyError since it clearly came from some
             # other unknowable cause.
             raise
@@ -186,39 +199,41 @@ cdef class Variables:
             ret[sys.intern(key)] = _parse_expstr(value)
         return ret
 
-    def _check_for_missing(self):
-        # First the check for anything unresolvable
-        summary = []
-        for key, expstr in self._expstr_map.items():
-            for var in expstr[1::2]:
-                if var not in self._expstr_map:
-                    line = "  unresolved variable '{unmatched}' in declaration of '{variable}' at: {provenance}"
-                    provenance = self.original.get_scalar(key).get_provenance()
-                    summary.append(line.format(unmatched=var, variable=key, provenance=provenance))
-        if summary:
-            raise LoadError("Failed to resolve one or more variable:\n{}\n".format("\n".join(summary)),
-                            LoadErrorReason.UNRESOLVED_VARIABLE)
 
-    def _check_for_cycles(self):
-        # And now the cycle checks
-        def cycle_check(expstr, visited, cleared):
+    def _check_variables(self, *, subset=None):
+        summary = []
+
+        def rec_check(name, expstr, visited, cleared):
             for var in expstr[1::2]:
                 if var in cleared:
                     continue
-                if var in visited:
-                    raise LoadError("{}: ".format(self.original.get_scalar(var).get_provenance()) +
-                                    ("Variable '{}' expands to contain a reference to itself. " +
-                                     "Perhaps '{}' contains '%{{{}}}").format(var, visited[-1], var),
-                                     LoadErrorReason.RECURSIVE_VARIABLE)
-                visited.append(var)
-                cycle_check(self._expstr_map[var], visited, cleared)
-                visited.pop()
-                cleared.add(var)
+                elif var in visited:
+                    chain = list(itertools.takewhile(lambda x: x != var, reversed(visited)))
+                    chain.append(var)
+                    chain.reverse()
+                    for i in range(len(chain)-1):
+                        line = "  Variable '{variable}' recusively uses '{rec}' at: {provenance}"
+                        provenance = self.original.get_scalar(chain[i]).get_provenance()
+                        summary.append(line.format(rec=chain[i+1], variable=chain[i], provenance=provenance))
+                elif var not in self._expstr_map:
+                    line = "  unresolved variable '{unmatched}' in declaration of '{variable}' at: {provenance}"
+                    provenance = self.original.get_scalar(name).get_provenance()
+                    summary.append(line.format(unmatched=var, variable=name, provenance=provenance))
+                else:
+                    visited.append(var)
+                    rec_check(var, self._expstr_map[var], visited, cleared)
+                    visited.pop()
+                    cleared.add(var)
 
         cleared = set()
-        for key, expstr in self._expstr_map.items():
-            if key not in cleared:
-                cycle_check(expstr, [key], cleared)
+        for key in subset if subset is not None else self._expstr_map:
+            visited = []
+            rec_check(key, self._expstr_map[key], visited, cleared)
+            cleared.add(key)
+
+        if summary:
+            raise LoadError("Failed to resolve one or more variable:\n{}\n".format("\n".join(summary)),
+                            LoadErrorReason.UNRESOLVED_VARIABLE)
 
 # Cache for the parsed expansion strings.  While this is nominally
 # something which might "waste" memory, in reality each of these
