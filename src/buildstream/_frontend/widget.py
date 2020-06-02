@@ -473,11 +473,12 @@ class LogLine(Widget):
 
         # Project Options
         values = OrderedDict()
-        project.options.printable_variables(values)
-        if values:
-            text += self.content_profile.fmt("Project Options\n", bold=True)
-            text += self._format_values(values)
-            text += "\n"
+        if project.options:
+            project.options.printable_variables(values)
+            if values:
+                text += self.content_profile.fmt("Project Options\n", bold=True)
+                text += self._format_values(values)
+                text += "\n"
 
         # Plugins
         text += self._format_plugins(

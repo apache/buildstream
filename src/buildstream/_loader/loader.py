@@ -69,7 +69,6 @@ class Loader:
         self._context = context
         self._options = project.options  # Project options (OptionPool)
         self._basedir = basedir  # Base project directory
-        self._first_pass_options = project.first_pass_config.options  # Project options (OptionPool)
         self._parent = parent  # The parent loader
         self._fetch_subprojects = fetch_subprojects
 
@@ -518,7 +517,7 @@ class Loader:
 
         kind = node.get_str(Symbol.KIND)
         if kind == "junction":
-            self._first_pass_options.process_node(node)
+            self.project.first_pass_config.options.process_node(node)
         else:
             self.project.ensure_fully_loaded()
 

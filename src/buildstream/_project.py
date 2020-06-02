@@ -680,9 +680,6 @@ class Project:
             self.directory, self.get_path_from_node(pre_config_node.get_scalar("element-path"), check_is_dir=True)
         )
 
-        self.config.options = OptionPool(self.element_path)
-        self.first_pass_config.options = OptionPool(self.element_path)
-
         defaults = pre_config_node.get_mapping("defaults")
         defaults.validate_keys(["targets"])
         self._default_targets = defaults.get_str_list("targets")
@@ -694,12 +691,17 @@ class Project:
 
         self._project_includes = Includes(self.loader, copy_tree=False)
 
+        # We need to process includes without options to load options included in separate files.
+        project_conf_for_options = self._project_conf.clone()
+        self._project_includes.process(project_conf_for_options, only_local=True, process_options=False)
+        self._load_options(project_conf_for_options, self.first_pass_config, ignore_unknown=True)
+
         project_conf_first_pass = self._project_conf.clone()
-        self._project_includes.process(project_conf_first_pass, only_local=True, process_project_options=False)
+        self._project_includes.process(project_conf_first_pass, only_local=True, first_pass=True)
         config_no_include = self._default_config_node.clone()
         project_conf_first_pass._composite(config_no_include)
 
-        self._load_pass(config_no_include, self.first_pass_config, ignore_unknown=True)
+        self._load_pass(config_no_include, self.first_pass_config)
 
         # Use separate file for storing source references
         ref_storage_node = pre_config_node.get_scalar("ref-storage")
@@ -719,8 +721,13 @@ class Project:
     # Process the second pass of loading the project configuration.
     #
     def _load_second_pass(self):
+        # We need to process includes without options to load options included in separate files.
+        project_conf_for_options = self._project_conf.clone()
+        self._project_includes.process(project_conf_for_options, only_local=True, process_options=False)
+        self._load_options(project_conf_for_options, self.config)
+
         project_conf_second_pass = self._project_conf.clone()
-        self._project_includes.process(project_conf_second_pass, process_project_options=False)
+        self._project_includes.process(project_conf_second_pass)
         config = self._default_config_node.clone()
         project_conf_second_pass._composite(config)
 
@@ -818,19 +825,17 @@ class Project:
 
             self._shell_host_files.append(mount)
 
-    # _load_pass():
+    # _load_options():
     #
-    # Loads parts of the project configuration that are different
-    # for first and second pass configurations.
+    # Loads options for a given configuration pass
     #
     # Args:
     #    config (dict) - YaML node of the configuration file.
     #    output (ProjectConfig) - ProjectConfig to load configuration onto.
     #    ignore_unknown (bool) - Whether option loader shoud ignore unknown options.
     #
-    def _load_pass(self, config, output, *, ignore_unknown=False):
-
-        self._load_plugin_factories(config, output)
+    def _load_options(self, config, output, *, ignore_unknown=False):
+        output.options = OptionPool(self.element_path)
 
         # Load project options
         options_node = config.get_mapping("options", default={})
@@ -854,6 +859,19 @@ class Project:
         # any conditionals specified for project option declarations,
         # or conditionally specifying the project name; will be ignored.
         output.options.process_node(config)
+
+    # _load_pass():
+    #
+    # Loads parts of the project configuration that are common
+    # for first and second pass configurations.
+    #
+    # Args:
+    #    config (dict) - YaML node of the configuration file.
+    #    output (ProjectConfig) - ProjectConfig to load configuration onto.
+    #
+    def _load_pass(self, config, output):
+
+        self._load_plugin_factories(config, output)
 
         # Element and Source  type configurations will be composited later onto
         # element/source types, so we delete it from here and run our final
@@ -885,6 +903,8 @@ class Project:
 
         # Export options into variables, if that was requested
         output.options.export_variables(output.base_variables)
+
+        overrides = self._context.get_overrides(self.name)
 
         # Override default_mirror if not set by command-line
         output.default_mirror = self._default_mirror or overrides.get_str("default-mirror", default=None)

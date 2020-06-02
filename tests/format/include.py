@@ -220,6 +220,20 @@ def test_conditional_in_fragment(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_conditional_in_fragment_conflicts(cli, datafiles):
+    project = os.path.join(str(datafiles), "conditional-conflicts")
+
+    result = cli.run(
+        project=project,
+        args=["-o", "build_arch", "i586", "show", "--deps", "none", "--format", "%{vars}", "element.bst"],
+    )
+    result.assert_success()
+    loaded = _yaml.load_data(result.output)
+    assert loaded.get_str("enable-work-around") == "true"
+    assert loaded.get_str("size") == "4"
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_inner(cli, datafiles):
     project = os.path.join(str(datafiles), "inner")
     result = cli.run(

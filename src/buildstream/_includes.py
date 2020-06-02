@@ -27,9 +27,10 @@ class Includes:
     # Args:
     #    node (dict): A YAML node
     #    only_local (bool): Whether to ignore junction files
-    #    process_project_options (bool): Whether to process options from current project
-    def process(self, node, *, only_local=False, process_project_options=True):
-        self._process(node, only_local=only_local, process_project_options=process_project_options)
+    #    first_pass (bool): Whether to use first pass options.
+    #    process_options (bool): Whether to process options.
+    def process(self, node, *, only_local=False, first_pass=False, process_options=True):
+        self._process(node, only_local=only_local, first_pass=first_pass, process_options=process_options)
 
     # _process()
     #
@@ -41,12 +42,20 @@ class Includes:
     #    included (set): Fail for recursion if trying to load any files in this set
     #    current_loader (Loader): Use alternative loader (for junction files)
     #    only_local (bool): Whether to ignore junction files
-    #    process_project_options (bool): Whether to process options from current project
-    def _process(self, node, *, included=None, current_loader=None, only_local=False, process_project_options=True):
+    #    first_pass (bool): Whether to use first pass options.
+    #    process_options (bool): Whether to process options.
+    def _process(
+        self, node, *, included=None, current_loader=None, only_local=False, first_pass=False, process_options=True,
+    ):
         if current_loader is None:
             current_loader = self._loader
 
-        if process_project_options:
+        if not process_options:
+            pass
+        elif first_pass:
+            current_loader.project.first_pass_config.options.process_node(node)
+        else:
+            current_loader.project.ensure_fully_loaded()
             current_loader.project.options.process_node(node)
 
         self._process_node(
@@ -54,7 +63,8 @@ class Includes:
             included=included,
             only_local=only_local,
             current_loader=current_loader,
-            process_project_options=process_project_options,
+            first_pass=first_pass,
+            process_options=process_options,
         )
 
     # _process_node()
@@ -67,9 +77,10 @@ class Includes:
     #    included (set): Fail for recursion if trying to load any files in this set
     #    current_loader (Loader): Use alternative loader (for junction files)
     #    only_local (bool): Whether to ignore junction files
-    #    process_project_options (bool): Whether to process options from current project
+    #    first_pass (bool): Whether to use first pass options.
+    #    process_options (bool): Whether to process options.
     def _process_node(
-        self, node, *, included=None, current_loader=None, only_local=False, process_project_options=True
+        self, node, *, included=None, current_loader=None, only_local=False, first_pass=False, process_options=True,
     ):
         if included is None:
             included = set()
@@ -123,7 +134,8 @@ class Includes:
                         included=included,
                         current_loader=sub_loader,
                         only_local=only_local,
-                        process_project_options=process_project_options or current_loader != sub_loader,
+                        first_pass=first_pass,
+                        process_options=process_options,
                     )
                 finally:
                     included.remove(file_path)
@@ -136,7 +148,8 @@ class Includes:
                 included=included,
                 current_loader=current_loader,
                 only_local=only_local,
-                process_project_options=process_project_options,
+                first_pass=first_pass,
+                process_options=process_options,
             )
 
     # _include_file()
@@ -172,9 +185,10 @@ class Includes:
     #    included (set): Fail for recursion if trying to load any files in this set
     #    current_loader (Loader): Use alternative loader (for junction files)
     #    only_local (bool): Whether to ignore junction files
-    #    process_project_options (bool): Whether to process options from current project
+    #    first_pass (bool): Whether to use first pass options.
+    #    process_options (bool): Whether to process options.
     def _process_value(
-        self, value, *, included=None, current_loader=None, only_local=False, process_project_options=True
+        self, value, *, included=None, current_loader=None, only_local=False, first_pass=False, process_options=True,
     ):
         value_type = type(value)
 
@@ -184,7 +198,8 @@ class Includes:
                 included=included,
                 current_loader=current_loader,
                 only_local=only_local,
-                process_project_options=process_project_options,
+                first_pass=first_pass,
+                process_options=process_options,
             )
         elif value_type is SequenceNode:
             for v in value:
@@ -193,5 +208,6 @@ class Includes:
                     included=included,
                     current_loader=current_loader,
                     only_local=only_local,
-                    process_project_options=process_project_options,
+                    first_pass=first_pass,
+                    process_options=process_options,
                 )
