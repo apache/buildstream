@@ -51,9 +51,7 @@ class Darwin(Platform):
 
     @staticmethod
     def _create_dummy_sandbox(*args, **kwargs):
-        kwargs["dummy_reason"] = (
-            "OSXFUSE is not supported and there are no supported sandbox " + "technologies for MacOS at this time"
-        )
+        kwargs["dummy_reason"] = "There are no supported sandbox technologies for MacOS at this time"
         return SandboxDummy(*args, **kwargs)
 
     def _setup_dummy_sandbox(self):
