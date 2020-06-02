@@ -48,13 +48,6 @@ Overview
      # Optionally look in a subpath of the source repository for the project
      path: projects/hello
 
-     # Optionally specify another junction element to serve as a target for
-     # this element. Target should be defined using the syntax
-     # ``{junction-name}:{element-name}``.
-     #
-     # Note that this option cannot be used in conjunction with sources.
-     target: sub-project.bst:sub-sub-project.bst
-
      # Optionally declare whether elements within the junction project
      # should interact with project remotes (default: False).
      cache-junction-elements: False
@@ -132,29 +125,24 @@ simply use one junction and ignore the others. Due to this, BuildStream requires
 the user to resolve possibly conflicting nested junctions by creating a junction
 with the same name in the top-level project, which then takes precedence.
 
-Targeting other junctions
-~~~~~~~~~~~~~~~~~~~~~~~~~
-When working with nested junctions, you can also create a junction element that
-targets another junction element in the sub-project. This can be useful if you
-need to ensure that both the top-level project and the sub-project are using
-the same version of the sub-sub-project.
+Linking to other junctions
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+When working with nested junctions, you often need to ensure that multiple
+projects are using the same version of a given subproject.
 
-This can be done using the ``target`` configuration option. See below for an
-example:
+In order to ensure that your project is using a junction to a sub-subproject
+declared by a direct subproject, then you can use a :mod:`link <elements.link>`
+element in place of declaring a junction.
+
+This lets you create a link to a junction in the subproject, which you
+can then treat as a regular junction in your toplevel project.
 
 .. code:: yaml
 
-   kind: junction
+   kind: link
 
    config:
      target: subproject.bst:subsubproject.bst
-
-In the above example, this junction element would be targeting the junction
-element named ``subsubproject.bst`` in the subproject referred to by
-``subproject.bst``.
-
-Note that when targeting another junction, the names of the junction element
-must not be the same as the name of the target.
 """
 
 from buildstream import Element, ElementError
@@ -173,39 +161,15 @@ class JunctionElement(Element):
 
     def configure(self, node):
 
-        node.validate_keys(["path", "options", "target", "cache-junction-elements", "ignore-junction-remotes"])
+        node.validate_keys(["path", "options", "cache-junction-elements", "ignore-junction-remotes"])
 
         self.path = node.get_str("path", default="")
         self.options = node.get_mapping("options", default={})
-        self.target = node.get_str("target", default=None)
-        self.target_element = None
-        self.target_junction = None
         self.cache_junction_elements = node.get_bool("cache-junction-elements", default=False)
         self.ignore_junction_remotes = node.get_bool("ignore-junction-remotes", default=False)
 
     def preflight(self):
-        # "target" cannot be used in conjunction with:
-        # 1. sources
-        # 2. config['options']
-        # 3. config['path']
-        if self.target and any(self.sources()):
-            raise ElementError("junction elements cannot define both 'sources' and 'target' config option")
-        if self.target and any(self.options.items()):
-            raise ElementError("junction elements cannot define both 'options' and 'target'")
-        if self.target and self.path:
-            raise ElementError("junction elements cannot define both 'path' and 'target'")
-
-        # Validate format of target, if defined
-        if self.target:
-            try:
-                self.target_junction, self.target_element = self.target.split(":")
-            except ValueError:
-                raise ElementError("'target' option must be in format '{junction-name}:{element-name}'")
-
-        # We cannot target a junction that has the same name as us, since that
-        # will cause an infinite recursion while trying to load it.
-        if self.name == self.target_element:
-            raise ElementError("junction elements cannot target an element with the same name")
+        pass
 
     def get_unique_key(self):
         # Junctions do not produce artifacts. get_unique_key() implementation
