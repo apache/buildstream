@@ -138,14 +138,6 @@ class Sandbox:
         self.__stdout = kwargs["stdout"]
         self.__stderr = kwargs["stderr"]
 
-        # Setup the directories. Root and output_directory should be
-        # available to subclasses, hence being single-underscore. The
-        # others are private to this class.
-        self._root = os.path.join(directory, "root")
-        self.__scratch = os.path.join(directory, "scratch")
-        for directory_ in [self._root, self.__scratch]:
-            os.makedirs(directory_, exist_ok=True)
-
         self._output_directory = None  # type: Optional[str]
         self._build_directory = None
         self._build_directory_always = None
@@ -461,20 +453,6 @@ class Sandbox:
     #    (str): The sandbox work directory
     def _get_work_directory(self, *, cwd=None) -> str:
         return cwd or self.__cwd or "/"
-
-    # _get_scratch_directory()
-    #
-    # Fetches the sandbox scratch directory, this directory can
-    # be used by the sandbox implementation to cache things or
-    # redirect temporary fuse mounts.
-    #
-    # The scratch directory is guaranteed to be on the same
-    # filesystem as the root directory.
-    #
-    # Returns:
-    #    (str): The sandbox scratch directory
-    def _get_scratch_directory(self):
-        return self.__scratch
 
     # _get_output()
     #
