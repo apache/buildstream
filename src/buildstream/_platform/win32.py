@@ -20,29 +20,6 @@ from .platform import Platform
 
 
 class Win32(Platform):
-    def maximize_open_file_limit(self):
-        # Note that on Windows, we don't have the 'resource' module to help us
-        # configure open file limits.
-        #
-        # 'psutil' provides an rlimit implementation that is only available on
-        # Linux, as of version 5.3.
-        #
-        # Given that this limit is only important for SafeHardLinks FUSE, and
-        # we don't have FUSE on Windows, this won't be an obstacle for now.
-        #
-        # If it does turn out to be an obstacle, beware that the Windows API
-        # `_setmaxstdio` for increasing the open file limit only applies to the
-        # 'stream I/O level', i.e. `fopen()` and friends. CPython opens files
-        # using `_wopen()`, which is at the 'low I/O level'.
-        #
-        # You can see this in the function `os_open_impl` in `posixmodule.c` in
-        # CPython version 3.9.
-        #
-        # For more information:
-        # https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/setmaxstdio
-        #
-        pass
-
     @staticmethod
     def _check_dummy_sandbox_config(config):
         pass
