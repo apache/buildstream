@@ -18,9 +18,6 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
-import os
-
-from .. import utils
 from ..sandbox import SandboxDummy
 
 from .platform import Platform
@@ -38,29 +35,6 @@ class Linux(Platform):
         ]
 
         self._try_sandboxes(force_sandbox, sandbox_setups, preferred_sandboxes)
-
-    def __init__(self, force_sandbox=None):
-        super().__init__(force_sandbox=force_sandbox)
-
-        self._uid = os.geteuid()
-        self._gid = os.getegid()
-
-        # Set linux32 option
-        self.linux32 = None
-
-    def can_crossbuild(self, config):
-        host_arch = self.get_host_arch()
-        if (config.build_arch == "x86-32" and host_arch == "x86-64") or (
-            config.build_arch == "aarch32" and host_arch == "aarch64"
-        ):
-            if self.linux32 is None:
-                try:
-                    utils.get_host_tool("linux32")
-                    self.linux32 = True
-                except utils.ProgramNotFoundError:
-                    self.linux32 = False
-            return self.linux32
-        return False
 
     ################################################
     #              Private Methods                 #
