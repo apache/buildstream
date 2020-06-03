@@ -18,8 +18,6 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
-import shutil
-import subprocess
 
 #
 # Private module declaring some info about where the buildstream
@@ -46,22 +44,3 @@ build_all_template = os.path.join(root, "data", "build-all.sh.in")
 
 # Module building script template
 build_module_template = os.path.join(root, "data", "build-module.sh.in")
-
-
-def get_bwrap_version():
-    # Get the current bwrap version
-    #
-    # returns None if no bwrap was found
-    # otherwise returns a tuple of 3 int: major, minor, patch
-    bwrap_path = shutil.which("bwrap")
-
-    if not bwrap_path:
-        return None
-
-    cmd = [bwrap_path, "--version"]
-    try:
-        version = str(subprocess.check_output(cmd).split()[1], "utf-8")
-    except subprocess.CalledProcessError:
-        return None
-
-    return tuple(int(x) for x in version.split("."))

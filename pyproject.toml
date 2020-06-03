@@ -21,7 +21,6 @@ exclude = '''
     | build
     | dist
   )/
-  | src/buildstream/_fuse
   | src/buildstream/_protos
 )
 '''
