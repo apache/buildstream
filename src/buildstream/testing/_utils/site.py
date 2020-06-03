@@ -54,7 +54,7 @@ casd_path = utils.get_host_tool("buildbox-casd")
 CASD_SEPARATE_USER = bool(os.stat(casd_path).st_mode & stat.S_ISUID)
 del casd_path
 
-IS_LINUX = os.getenv("BST_FORCE_BACKEND", sys.platform).startswith("linux")
+IS_LINUX = sys.platform.startswith("linux")
 IS_WINDOWS = os.name == "nt"
 
 MACHINE_ARCH = Platform.get_host_arch()

@@ -21,11 +21,11 @@
 import multiprocessing
 import os
 import platform
-import sys
 
 import psutil
 
 from .._exceptions import PlatformError, ImplError, SandboxError
+from ..sandbox import SandboxDummy
 from .. import utils
 
 
@@ -58,29 +58,7 @@ class Platform:
 
     @classmethod
     def create_instance(cls):
-        if os.getenv("BST_FORCE_BACKEND"):
-            backend = os.getenv("BST_FORCE_BACKEND")
-        elif sys.platform.startswith("darwin"):
-            backend = "darwin"
-        elif sys.platform.startswith("linux"):
-            backend = "linux"
-        elif sys.platform == "win32":
-            backend = "win32"
-        else:
-            backend = "fallback"
-
-        if backend == "linux":
-            from .linux import Linux as PlatformImpl  # pylint: disable=cyclic-import
-        elif backend == "darwin":
-            from .darwin import Darwin as PlatformImpl  # pylint: disable=cyclic-import
-        elif backend == "win32":
-            from .win32 import Win32 as PlatformImpl  # pylint: disable=cyclic-import
-        elif backend == "fallback":
-            from .fallback import Fallback as PlatformImpl  # pylint: disable=cyclic-import
-        else:
-            raise PlatformError("No such platform: '{}'".format(backend))
-
-        return PlatformImpl()
+        return Platform()
 
     def get_cpu_count(self, cap=None):
         # `psutil.Process.cpu_affinity()` is not available on all platforms.
@@ -204,11 +182,6 @@ class Platform:
             "Platform {platform} does not implement check_sandbox_config()".format(platform=type(self).__name__)
         )
 
-    def _setup_dummy_sandbox(self):
-        raise ImplError(
-            "Platform {platform} does not implement _setup_dummy_sandbox()".format(platform=type(self).__name__)
-        )
-
     # Buildbox run sandbox methods
     def _check_sandbox_config_buildboxrun(self, config):
         from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun  # pylint: disable=cyclic-import
@@ -227,4 +200,19 @@ class Platform:
         self._check_sandbox(SandboxBuildBoxRun)
         self.check_sandbox_config = self._check_sandbox_config_buildboxrun
         self.create_sandbox = self._create_buildboxrun_sandbox
+        return True
+
+    # Dummy sandbox methods
+    @staticmethod
+    def _check_dummy_sandbox_config(config):
+        pass
+
+    def _create_dummy_sandbox(self, *args, **kwargs):
+        dummy_reasons = " and ".join(self.dummy_reasons)
+        kwargs["dummy_reason"] = dummy_reasons
+        return SandboxDummy(*args, **kwargs)
+
+    def _setup_dummy_sandbox(self):
+        self.check_sandbox_config = Platform._check_dummy_sandbox_config
+        self.create_sandbox = self._create_dummy_sandbox
         return True
