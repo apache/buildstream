@@ -852,7 +852,7 @@ class Element(Plugin):
            variable was declared with the given name.
         """
         # Flat is not recognized correctly by Pylint as being a dictionary
-        return self.__variables.flat.get(varname)  # pylint: disable=no-member
+        return self.__variables.get(varname)  # pylint: disable=no-member
 
     def batch_prepare_assemble(self, flags: int, *, collect: Optional[str] = None) -> None:
         """ Configure command batching across prepare() and assemble()
