@@ -59,14 +59,13 @@ IS_WINDOWS = os.name == "nt"
 
 MACHINE_ARCH = Platform.get_host_arch()
 
-HAVE_SANDBOX = os.getenv("BST_FORCE_SANDBOX")
-
+HAVE_SANDBOX = None
 BUILDBOX_RUN = None
-if HAVE_SANDBOX is None:
-    try:
-        path = utils.get_host_tool("buildbox-run")
-        subprocess.run([path, "--capabilities"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        BUILDBOX_RUN = os.path.basename(os.readlink(path))
-        HAVE_SANDBOX = "buildbox-run"
-    except (ProgramNotFoundError, OSError, subprocess.CalledProcessError):
-        pass
+
+try:
+    path = utils.get_host_tool("buildbox-run")
+    subprocess.run([path, "--capabilities"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    BUILDBOX_RUN = os.path.basename(os.readlink(path))
+    HAVE_SANDBOX = "buildbox-run"
+except (ProgramNotFoundError, OSError, subprocess.CalledProcessError):
+    pass

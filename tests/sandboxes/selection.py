@@ -30,30 +30,6 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_force_sandbox(cli, datafiles):
-    project = str(datafiles)
-    element_path = os.path.join(project, "elements", "element.bst")
-
-    # Write out our test target
-    element = {
-        "kind": "script",
-        "depends": [{"filename": "base.bst", "type": "build",},],
-        "config": {"commands": ["true",],},
-    }
-    _yaml.roundtrip_dump(element, element_path)
-
-    # Build without access to host tools, this will fail
-    result = cli.run(
-        project=project, args=["build", "element.bst"], env={"PATH": "", "BST_FORCE_SANDBOX": "buildbox-run"}
-    )
-    result.assert_main_error(ErrorDomain.PLATFORM, None)
-    assert "buildbox-run not found" in result.stderr
-    # we have asked for a spesific sand box, but it is not avalble so
-    # bst should fail early and the element should be waiting
-    assert cli.get_element_state(project, "element.bst") == "waiting"
-
-
-@pytest.mark.datafiles(DATA_DIR)
 def test_dummy_sandbox_fallback(cli, datafiles, tmp_path):
     # Create symlink to buildbox-casd to work with custom PATH
     buildbox_casd = tmp_path.joinpath("bin/buildbox-casd")
@@ -72,11 +48,7 @@ def test_dummy_sandbox_fallback(cli, datafiles, tmp_path):
     _yaml.roundtrip_dump(element, element_path)
 
     # Build without access to host tools, this will fail
-    result = cli.run(
-        project=project,
-        args=["build", "element.bst"],
-        env={"PATH": str(tmp_path.joinpath("bin")), "BST_FORCE_SANDBOX": None},
-    )
+    result = cli.run(project=project, args=["build", "element.bst"], env={"PATH": str(tmp_path.joinpath("bin"))},)
     # But if we dont spesify a sandbox then we fall back to dummy, we still
     # fail early but only once we know we need a facny sandbox and that
     # dumy is not enough, there for element gets fetched and so is buildable

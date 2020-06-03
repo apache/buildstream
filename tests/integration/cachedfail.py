@@ -202,11 +202,7 @@ def test_host_tools_errors_are_not_cached(cli, datafiles, tmp_path):
     _yaml.roundtrip_dump(element, element_path)
 
     # Build without access to host tools, this will fail
-    result1 = cli.run(
-        project=project,
-        args=["build", "element.bst"],
-        env={"PATH": str(tmp_path.joinpath("bin")), "BST_FORCE_SANDBOX": None},
-    )
+    result1 = cli.run(project=project, args=["build", "element.bst"], env={"PATH": str(tmp_path.joinpath("bin"))},)
     result1.assert_task_error(ErrorDomain.SANDBOX, "unavailable-local-sandbox")
     assert cli.get_element_state(project, "element.bst") == "buildable"
 

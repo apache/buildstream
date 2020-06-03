@@ -35,53 +35,18 @@ class Platform:
     # A class to manage platform-specific details. Currently holds the
     # sandbox factory as well as platform helpers.
     #
-    # Args:
-    #     force_sandbox (bool): Force bst to use a particular sandbox
-    #
-    def __init__(self, force_sandbox=None):
+    def __init__(self):
         self._local_sandbox = None
         self.dummy_reasons = []
-        self._setup_sandbox(force_sandbox)
+        self._setup_sandbox()
 
-    def _setup_sandbox(self, force_sandbox):
-        # The buildbox-run interface is not platform-specific
-        sandbox_setups = {"buildbox-run": self.setup_buildboxrun_sandbox, "dummy": self._setup_dummy_sandbox}
-
-        preferred_sandboxes = [
-            "buildbox-run",
-        ]
-
-        self._try_sandboxes(force_sandbox, sandbox_setups, preferred_sandboxes)
-
-    def _try_sandboxes(self, force_sandbox, sandbox_setups, preferred_sandboxes):
-        # Any sandbox from sandbox_setups can be forced by BST_FORCE_SANDBOX
-        # But if a specific sandbox is not forced then only `first class` sandbox are tried before
-        # falling back to the dummy sandbox.
+    def _setup_sandbox(self):
+        # Try to setup buildbox-run sandbox, otherwise fallback to the dummy sandbox.
         # Where `first_class` sandboxes are those in preferred_sandboxes
-        if force_sandbox:
-            try:
-                sandbox_setups[force_sandbox]()
-            except KeyError:
-                raise PlatformError(
-                    "Forced Sandbox is unavailable on this platform: BST_FORCE_SANDBOX"
-                    " is set to {} but it is not available".format(force_sandbox)
-                )
-            except SandboxError as Error:
-                raise PlatformError(
-                    "Forced Sandbox Error: BST_FORCE_SANDBOX"
-                    " is set to {} but cannot be setup".format(force_sandbox),
-                    detail=" and ".join(self.dummy_reasons),
-                ) from Error
-        else:
-            for good_sandbox in preferred_sandboxes:
-                try:
-                    sandbox_setups[good_sandbox]()
-                    return
-                except SandboxError:
-                    continue
-                except utils.ProgramNotFoundError:
-                    continue
-            sandbox_setups["dummy"]()
+        try:
+            self._setup_buildboxrun_sandbox()
+        except (SandboxError, utils.ProgramNotFoundError):
+            self._setup_dummy_sandbox()
 
     def _check_sandbox(self, Sandbox):
         Sandbox._dummy_reasons = []
@@ -93,14 +58,6 @@ class Platform:
 
     @classmethod
     def create_instance(cls):
-        # Meant for testing purposes and therefore hidden in the
-        # deepest corners of the source code. Try not to abuse this,
-        # please?
-        if os.getenv("BST_FORCE_SANDBOX"):
-            force_sandbox = os.getenv("BST_FORCE_SANDBOX")
-        else:
-            force_sandbox = None
-
         if os.getenv("BST_FORCE_BACKEND"):
             backend = os.getenv("BST_FORCE_BACKEND")
         elif sys.platform.startswith("darwin"):
@@ -123,7 +80,7 @@ class Platform:
         else:
             raise PlatformError("No such platform: '{}'".format(backend))
 
-        return PlatformImpl(force_sandbox=force_sandbox)
+        return PlatformImpl()
 
     def get_cpu_count(self, cap=None):
         # `psutil.Process.cpu_affinity()` is not available on all platforms.
@@ -264,7 +221,7 @@ class Platform:
 
         return SandboxBuildBoxRun(*args, **kwargs)
 
-    def setup_buildboxrun_sandbox(self):
+    def _setup_buildboxrun_sandbox(self):
         from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun  # pylint: disable=cyclic-import
 
         self._check_sandbox(SandboxBuildBoxRun)

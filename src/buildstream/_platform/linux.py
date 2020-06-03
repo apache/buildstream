@@ -24,17 +24,6 @@ from .platform import Platform
 
 
 class Linux(Platform):
-    def _setup_sandbox(self, force_sandbox):
-        sandbox_setups = {
-            "buildbox-run": self.setup_buildboxrun_sandbox,
-            "dummy": self._setup_dummy_sandbox,
-        }
-
-        preferred_sandboxes = [
-            "buildbox-run",
-        ]
-
-        self._try_sandboxes(force_sandbox, sandbox_setups, preferred_sandboxes)
 
     ################################################
     #              Private Methods                 #
