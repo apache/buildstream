@@ -63,6 +63,15 @@ def test_missing_variable(cli, datafiles, element):
 
 @pytest.mark.timeout(15, method="signal")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "cyclic_variables"))
+def test_simple_cyclic_variables(cli, datafiles):
+    print_warning("Performing cyclic test, if this test times out it will " + "exit the test sequence")
+    project = str(datafiles)
+    result = cli.run(project=project, silent=True, args=["build", "simple-cyclic.bst"])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_VARIABLE)
+
+
+@pytest.mark.timeout(15, method="signal")
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "cyclic_variables"))
 def test_cyclic_variables(cli, datafiles):
     print_warning("Performing cyclic test, if this test times out it will " + "exit the test sequence")
     project = str(datafiles)
