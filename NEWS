@@ -2,6 +2,13 @@
 (unreleased)
 ============
 
+Core
+----
+
+  o The bwrap sandboxing backend and the SafeHardlinks FUSE filesystem
+    have been dropped. buildbox-run is now the only sandboxing backend.
+
+
 CLI
 ---
 

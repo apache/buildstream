@@ -128,18 +128,17 @@ be a console device so that it can be used interactively.
 Platform notes
 --------------
 
-BuildStream currently only carries first-class support for modern Linux-based
-operating systems.
-
-There is also a "fallback" backend which aims to make BuildStream usable on any
-POSIX-compatible operating system. The POSIX standard does not provide good
-support for creating containers so this implementation makes a number of
-unfortunate compromises.
+BuildStream delegates sandboxing for local builds to the ``buildbox-run``
+command. ``buildbox-run`` provides a platform-independent interface to execute
+commands in a sandbox based on parts of the Remote Execution API.
 
 Linux
 ~~~~~
 
-On Linux we use the following isolation and sandboxing primitives:
+The recommended ``buildbox-run`` implementation for Linux is
+``buildbox-run-bubblewrap``, in combination with ``buildbox-fuse``.
+
+These implementations use the following isolation and sandboxing primitives:
 
 * bind mounts
 * FUSE
@@ -153,22 +152,17 @@ We access all of these features through a sandboxing tool named `Bubblewrap
 <https://github.com/projectatomic/bubblewrap/>`_.
 
 User namespaces are not enabled by default in all Linux distributions.
-BuildStream still runs on such systems but will give a big warning on startup
-and will refuse to push any artifacts built on such a system to a remote cache.
-For more information, see `issue #92
-<https://gitlab.com/BuildStream/buildstream/issues/92>`_.
+BuildStream still runs on such systems but can't build projects that set
+``build-uid`` or ``build-gid`` in the ``sandbox`` configuration.
 
-The Linux platform can operate as a standard user, if user namespace
+The Linux platform can operate as a standard user, if unprivileged user namespace
 support is available. If user namespace support is not available you have the
 option of installing bubblewrap as a setuid binary to avoid needing to run the
 entire ``bst`` process as the ``root`` user.
 
-The artifact cache on Linux systems is implemented using a content-addressable
-hardlink farm, which can allow us to stage artifacts using hardlinks instead of
-copying them. To avoid cache corruption it is vital that hardlinked files
-cannot be overwritten. In cases where the root filesystem inside the sandbox
-needs to be writable, a custom FUSE filesystem named SafeHardlinks is used
-which provides a copy-on-write layer.
+FUSE is used to provide access to directories and files stored in CAS without
+having to copy or hardlink the complete input tree into a regular filesystem
+directory structure for each build job.
 
 Some of the operations on filesystem metadata listed above are not prohibited
 by the sandbox, but will instead be silently dropped when an artifact is
@@ -179,22 +173,19 @@ Some details of the host machine are currently leaked by this platform backend.
 For more details, see `issue #262
 <https://gitlab.com/BuildStream/buildstream/issues/262>`_.
 
-Fallback (POSIX)
-~~~~~~~~~~~~~~~~
+Other POSIX systems
+~~~~~~~~~~~~~~~~~~~
 
-The fallback backend aims to be usable on a wide range of operating systems.
-Any OS that implements the POSIX specification and the ``chroot()`` syscall
-can be expected to work. There are no real isolation or sandboxing primitives
-that work across multiple operating systems, so the protection provided by
-this backend is minimal. It would be much safer to use a platform-specific
-backend.
+On other POSIX systems ``buildbox-run-userchroot`` may be used for sandboxing.
+`userchroot <https://gitlab.com/BuildGrid/buildbox/userchroot>`_ allows regular
+users to invoke processes in a chroot environment.
 
-Filesystem isolation is done using the chroot() system call. This system call
-requires special privileges to use so ``bst`` usually needs to be run as the
-``root`` user when using this backend.
+``buildbox-run-userchroot`` stages the input tree for each build job using
+hardlinks to avoid more expensive file copies. To avoid cache corruption it is
+vital that hardlinked files cannot be overwritten. Due to this it's required
+to run ``buildbox-casd`` as a separate user, which owns the files in the local
+cache.
 
-Network access is not blocked in the sandbox. However since there is unlikely
+Network access is not blocked in the chroot. However since there is unlikely
 to be a correct `/etc/resolv.conf` file, any network access that depends on
 name resolution will most likely fail anyway.
-
-Builds inside the sandbox execute as the ``root`` user.

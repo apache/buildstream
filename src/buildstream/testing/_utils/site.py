@@ -7,7 +7,7 @@ import subprocess
 import sys
 from typing import Optional  # pylint: disable=unused-import
 
-from buildstream import _site, utils, ProgramNotFoundError
+from buildstream import utils, ProgramNotFoundError
 from buildstream._platform import Platform
 
 
@@ -45,14 +45,6 @@ except ProgramNotFoundError:
     BZR_ENV = {}
 
 try:
-    utils.get_host_tool("bwrap")
-    HAVE_BWRAP = True
-    HAVE_BWRAP_JSON_STATUS = _site.get_bwrap_version() >= (0, 3, 2)
-except ProgramNotFoundError:
-    HAVE_BWRAP = False
-    HAVE_BWRAP_JSON_STATUS = False
-
-try:
     utils.get_host_tool("lzip")
     HAVE_LZIP = True
 except ProgramNotFoundError:
@@ -62,19 +54,18 @@ casd_path = utils.get_host_tool("buildbox-casd")
 CASD_SEPARATE_USER = bool(os.stat(casd_path).st_mode & stat.S_ISUID)
 del casd_path
 
-IS_LINUX = os.getenv("BST_FORCE_BACKEND", sys.platform).startswith("linux")
+IS_LINUX = sys.platform.startswith("linux")
 IS_WINDOWS = os.name == "nt"
 
 MACHINE_ARCH = Platform.get_host_arch()
 
-HAVE_SANDBOX = os.getenv("BST_FORCE_SANDBOX")
-
+HAVE_SANDBOX = None
 BUILDBOX_RUN = None
-if HAVE_SANDBOX is None:
-    try:
-        path = utils.get_host_tool("buildbox-run")
-        subprocess.run([path, "--capabilities"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        BUILDBOX_RUN = os.path.basename(os.readlink(path))
-        HAVE_SANDBOX = "buildbox-run"
-    except (ProgramNotFoundError, OSError, subprocess.CalledProcessError):
-        pass
+
+try:
+    path = utils.get_host_tool("buildbox-run")
+    subprocess.run([path, "--capabilities"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    BUILDBOX_RUN = os.path.basename(os.readlink(path))
+    HAVE_SANDBOX = "buildbox-run"
+except (ProgramNotFoundError, OSError, subprocess.CalledProcessError):
+    pass

@@ -38,7 +38,6 @@ from typing import Dict, Generator, List, Optional, TYPE_CHECKING
 from .._exceptions import ImplError, BstError, SandboxError
 from .._message import Message, MessageType
 from ..storage.directory import Directory
-from ..storage._filebaseddirectory import FileBasedDirectory
 from ..storage._casbaseddirectory import CasBasedDirectory
 
 if TYPE_CHECKING:
@@ -139,14 +138,6 @@ class Sandbox:
         self.__stdout = kwargs["stdout"]
         self.__stderr = kwargs["stderr"]
 
-        # Setup the directories. Root and output_directory should be
-        # available to subclasses, hence being single-underscore. The
-        # others are private to this class.
-        self._root = os.path.join(directory, "root")
-        self.__scratch = os.path.join(directory, "scratch")
-        for directory_ in [self._root, self.__scratch]:
-            os.makedirs(directory_, exist_ok=True)
-
         self._output_directory = None  # type: Optional[str]
         self._build_directory = None
         self._build_directory_always = None
@@ -167,11 +158,8 @@ class Sandbox:
 
         """
         if self._vdir is None:
-            if self._use_cas_based_directory():
-                cascache = self.__context.get_cascache()
-                self._vdir = CasBasedDirectory(cascache)
-            else:
-                self._vdir = FileBasedDirectory(self._root)
+            cascache = self.__context.get_cascache()
+            self._vdir = CasBasedDirectory(cascache)
         return self._vdir
 
     def set_environment(self, environment: Dict[str, str]) -> None:
@@ -363,22 +351,6 @@ class Sandbox:
     def _create_batch(self, main_group, flags, *, collect=None):
         return _SandboxBatch(self, main_group, flags, collect=collect)
 
-    # _use_cas_based_directory()
-    #
-    # Whether to use CasBasedDirectory as sandbox root. If this returns `False`,
-    # FileBasedDirectory will be used.
-    #
-    # Returns:
-    #    (bool): Whether to use CasBasedDirectory
-    #
-    def _use_cas_based_directory(self):
-        # Use CasBasedDirectory as sandbox root if Sandbox.run() is not used.
-        # This allows faster staging.
-        if not self.__allow_run:
-            return True
-
-        return "BST_CAS_DIRECTORIES" in os.environ
-
     # _fetch_missing_blobs()
     #
     # Fetch required file blobs missing from the local cache for sandboxes using
@@ -481,20 +453,6 @@ class Sandbox:
     #    (str): The sandbox work directory
     def _get_work_directory(self, *, cwd=None) -> str:
         return cwd or self.__cwd or "/"
-
-    # _get_scratch_directory()
-    #
-    # Fetches the sandbox scratch directory, this directory can
-    # be used by the sandbox implementation to cache things or
-    # redirect temporary fuse mounts.
-    #
-    # The scratch directory is guaranteed to be on the same
-    # filesystem as the root directory.
-    #
-    # Returns:
-    #    (str): The sandbox scratch directory
-    def _get_scratch_directory(self):
-        return self.__scratch
 
     # _get_output()
     #

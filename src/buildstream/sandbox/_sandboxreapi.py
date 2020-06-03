@@ -34,10 +34,6 @@ class SandboxREAPI(Sandbox):
 
         self._output_node_properties = kwargs.get("output_node_properties")
 
-    def _use_cas_based_directory(self):
-        # Always use CasBasedDirectory for REAPI
-        return True
-
     def _run(self, command, flags, *, cwd, env):
         context = self._get_context()
         cascache = context.get_cascache()
