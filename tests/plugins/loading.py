@@ -10,7 +10,7 @@ import os
 import shutil
 import pytest
 
-from buildstream.exceptions import ErrorDomain
+from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 
@@ -599,3 +599,111 @@ def test_junction_pip_plugin_version_conflict(cli, datafiles, plugin_type):
 
     result = cli.run(project=project, args=["show", "element.bst"])
     result.assert_main_error(ErrorDomain.PLUGIN, "junction-plugin-load-error")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_junction_full_path_found(cli, datafiles, plugin_type):
+    project = str(datafiles)
+    subproject = os.path.join(project, "subproject")
+    subsubproject = os.path.join(subproject, "subsubproject")
+
+    shutil.copytree(os.path.join(project, "plugins"), os.path.join(subsubproject, "plugins"))
+
+    update_project(
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "junction",
+                    "junction": "subproject-junction.bst:subsubproject-junction.bst",
+                    plugin_type: ["found"],
+                }
+            ]
+        },
+    )
+    update_project(
+        subsubproject,
+        {
+            "plugins": [
+                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "found")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_success()
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("plugin_type", [("elements"), ("sources")])
+def test_junction_full_path_not_found(cli, datafiles, plugin_type):
+    project = str(datafiles)
+    subproject = os.path.join(project, "subproject")
+    subsubproject = os.path.join(subproject, "subsubproject")
+
+    shutil.copytree(os.path.join(project, "plugins"), os.path.join(subsubproject, "plugins"))
+
+    # The toplevel says to search for the "notfound" plugin in the subproject
+    #
+    update_project(
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "junction",
+                    "junction": "subproject-junction.bst:subsubproject-junction.bst",
+                    plugin_type: ["notfound"],
+                }
+            ]
+        },
+    )
+
+    # The subsubproject only configures the "found" plugin
+    #
+    update_project(
+        subsubproject,
+        {
+            "plugins": [
+                {"origin": "local", "path": os.path.join("plugins", plugin_type, "found"), plugin_type: ["found"],}
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "notfound")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.PLUGIN, "junction-plugin-not-found")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "plugin_type,provenance",
+    [("elements", "project.conf [line 10 column 2]"), ("sources", "project.conf [line 10 column 2]")],
+)
+def test_junction_invalid_full_path(cli, datafiles, plugin_type, provenance):
+    project = str(datafiles)
+    subproject = os.path.join(project, "subproject")
+    subsubproject = os.path.join(subproject, "subsubproject")
+
+    shutil.copytree(os.path.join(project, "plugins"), os.path.join(subsubproject, "plugins"))
+
+    # The toplevel says to search for the "notfound" plugin in the subproject
+    #
+    update_project(
+        project,
+        {
+            "plugins": [
+                {
+                    "origin": "junction",
+                    "junction": "subproject-junction.bst:pony-junction.bst",
+                    plugin_type: ["notfound"],
+                }
+            ]
+        },
+    )
+    setup_element(project, plugin_type, "notfound")
+
+    result = cli.run(project=project, args=["show", "element.bst"])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+    assert provenance in result.stderr
