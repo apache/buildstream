@@ -310,3 +310,24 @@ def test_option_from_deep_junction(cli, tmpdir, datafiles):
     result.assert_success()
     loaded = _yaml.load_data(result.output)
     assert not loaded.get_bool("is-default")
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_include_full_path(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "full_path")
+
+    result = cli.run(project=project, args=["show", "--deps", "none", "--format", "%{vars}", "element.bst"])
+    result.assert_success()
+    loaded = _yaml.load_data(result.output)
+    assert loaded.get_str("bar") == "red"
+    assert loaded.get_str("foo") == "blue"
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_include_invalid_full_path(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "full_path")
+
+    result = cli.run(project=project, args=["show", "--deps", "none", "--format", "%{vars}", "invalid.bst"])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+    # Make sure the root cause provenance is in the output.
+    assert "invalid.bst [line 4 column 7]" in result.stderr
