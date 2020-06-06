@@ -147,19 +147,29 @@ def test_script_cwd(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target,expect_file",
+    [
+        # Basic test of the layout
+        ("script/script-layout.bst", "test"),
+        # Tests a script which addresses subproject elements with Element.search()
+        ("script/script-cross-junction-layout.bst", "subtest"),
+        # Tests element relative paths in Element.search()
+        ("script/script-deep-target.bst", "subsubtest"),
+    ],
+)
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
-def test_script_layout(cli, datafiles):
+def test_script_layout(cli, datafiles, target, expect_file):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout")
-    element_name = "script/script-layout.bst"
 
-    res = cli.run(project=project, args=["build", element_name])
+    res = cli.run(project=project, args=["build", target])
     assert res.exit_code == 0
 
-    cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
+    cli.run(project=project, args=["artifact", "checkout", target, "--directory", checkout])
     assert res.exit_code == 0
 
-    with open(os.path.join(checkout, "test")) as f:
+    with open(os.path.join(checkout, expect_file)) as f:
         text = f.read()
 
     assert text == "Hi\n"
