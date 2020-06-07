@@ -27,7 +27,7 @@ a symbolic element which will be resolved to another element.
 Overview
 --------
 The only configuration allowed in a ``link`` element is the specified
-target of the link.
+target :ref:`element name <format_element_names>` of the link.
 
 .. code:: yaml
 
@@ -37,7 +37,8 @@ target of the link.
      target: element.bst
 
 The ``link`` element can be used to refer to elements in subprojects, and
-can be used to symbolically link junctions as well as other elements.
+can be used to symbolically link :mod:`junction <elements.junction>` elements
+as well as other elements.
 """
 
 from buildstream import Element

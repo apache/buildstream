@@ -60,6 +60,60 @@ details here in order to have a more complete initial example.
 Let's break down the above and give a brief explanation of what these attributes mean.
 
 
+.. _format_element_names:
+
+Element names and paths
+~~~~~~~~~~~~~~~~~~~~~~~
+An *element name* is the filename of an element relative to the project's
+:ref:`element path <project_element_path>`.
+
+Element names are the identifiers used to refer to elements, they are used
+to specify an element's :ref:`dependencies <format_dependencies>`, to select
+elements to build on the :ref:`command line <commands>`, and they are arbitrarily
+used in various element specific configuration surfaces, for example the
+*target* configuration of the :mod:`link <elements.link>` element is also
+an *element name*.
+
+
+Addressing elements
+'''''''''''''''''''
+When addressing elements in a single project, it is sufficient to use
+the *element name* as a dependency or configuration parameter.
+
+When muliple projects are connected through :mod:`junction <elements.junction>`
+elements, there is a need to address elements which are not in the same
+project but in a junctioned *subproject*. In the case that you need to
+address elements across junction boundaries, one must use *element paths*.
+
+An *element path* is a path to the element indicating the junction
+elements leading up to the project, separated by ``:`` symbols, e.g.:
+``junction.bst:element.bst``.
+
+Elements can be address across multiple junction boundaries with multiple
+``:`` separators, e.g.: ``junction.bst:junction.bst:element.bst``.
+
+
+Element naming rules
+''''''''''''''''''''
+When naming the elements, use the following rules:
+
+* The name of the file must have ``.bst`` extension.
+
+* All characters in the name must be printable 7-bit ASCII characters.
+
+* Following characters are reserved and must not be part of the name:
+
+  - ``<`` (less than)
+  - ``>`` (greater than)
+  - ``:`` (colon)
+  - ``"`` (double quote)
+  - ``/`` (forward slash)
+  - ``\`` (backslash)
+  - ``|`` (vertical bar)
+  - ``?`` (question mark)
+  - ``*`` (asterisk)
+
+
 Kind
 ~~~~
 
@@ -92,8 +146,8 @@ Depends
    - element2.bst
 
 Relationships between elements are specified with the ``depends`` attribute. Elements
-may depend on other elements by specifying the :ref:`element path <project_element_path>`
-relative filename to the elements they depend on here.
+may depend on other elements by specifying the :ref:`element names <format_element_names>`
+they depend on here.
 
 See :ref:`format_dependencies` for more information on the dependency model.
 
@@ -227,7 +281,6 @@ Environment
 Environment variables can be set to literal values here, these environment
 variables will be effective in the :mod:`Sandbox <buildstream.sandbox>` where
 build instructions are run for this element.
-
 
 Environment variables can also be declared and overridden in the :ref:`projectconf`
 
@@ -364,8 +417,7 @@ Attributes:
 
 * ``filename``
 
-  The :ref:`element path <project_element_path>` relative filename of the element to
-  depend on in the project.
+  The :ref:`element name <format_element_names>` to depend on.
 
 * ``type``
 
@@ -375,15 +427,15 @@ Attributes:
 
 * ``junction``
 
-  This attribute can be used to depend on elements in other projects.
+  This attribute can be used to specify the junction portion of the :ref:`element name <format_element_names>`
+  separately from the project local element name.
 
-  If a junction is specified, then it must be an :ref:`element path <project_element_path>`
-  relative filename of the junction element in the project.
+  This should be the *element name* of the :mod:`junction <elements.junction>` element
+  in the local project, possibly followed by other junctions in subprojects leading
+  to the project in which the element you want to depend on resides.
 
-  In the case that a *junction* is specified, the ``filename`` attribute indicates an element
-  in the *junctioned project*.
-
-  See :mod:`junction <elements.junction>`.
+  In the case that a *junction* is specified, the ``filename`` attribute indicates an
+  element in the *junctioned project*.
 
 * ``strict``
 
@@ -398,33 +450,26 @@ Attributes:
 
 Cross-junction dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-As mentioned above, cross-junction dependencies can be specified using the
-``junction`` attribute. They can also be expressed as simple strings as a
-convenience shorthand. You can refer to cross-junction elements using the
-syntax ``{junction-name}:{element-name}``.
+As explained in the :ref:`element name <format_element_names>` section
+on element addressing, elements can be addressed across junction boundaries
+using *element paths* such as ``junction.bst:element.bst``. An element
+at any depth can be specified by specifying multiple junction elements.
 
-For example, the following is logically same as the example above:
+For example, one can specify a subproject element dependency with
+the following syntax:
 
 .. code:: yaml
 
    build-depends:
-   - baseproject.bst:foo.bst
+   - baseproject.bst:element.bst
 
-Similarly, you can also refer to cross-junction elements via the ``filename``
-attribute, like so:
+And one can specify an element residing in a sub-subproject as a
+dependency like so:
 
 .. code:: yaml
 
    depends:
-   - filename: baseproject.bst:foo.bst
-     type: build
-
-.. note::
-
-   BuildStream does not allow recursive lookups for junction elements. If a
-   filename contains more than one ``:`` (colon) character, an error will be
-   raised. See :ref:`nested junctions <core_junction_nested>` for more details
-   on nested junctions.
+   - baseproject.bst:middleproject.bst:element.bst
 
 
 .. _format_dependencies_types:
@@ -552,27 +597,3 @@ read-only variables are also dynamically declared by BuildStream:
   build, support for this is conditional on the element type
   and the build system used (any element using 'make' can
   implement this).
-
-
-Naming elements
----------------
-When naming the element files, use the following rules:
-
-* The name of the file must have ``.bst`` extension.
-
-* All characters in the name must be printable 7-bit ASCII characters.
-
-* Following characters are reserved and must not be part of the name:
-
-  - ``<`` (less than)
-  - ``>`` (greater than)
-  - ``:`` (colon)
-  - ``"`` (double quote)
-  - ``/`` (forward slash)
-  - ``\`` (backslash)
-  - ``|`` (vertical bar)
-  - ``?`` (question mark)
-  - ``*`` (asterisk)
-
-BuildStream will attempt to raise warnings when any of these rules are violated
-but that may not always be possible.

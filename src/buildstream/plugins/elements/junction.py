@@ -63,15 +63,15 @@ Overview
    links to other projects and are not in the dependency graph on their own.
 
 With a junction element in place, local elements can depend on elements in
-the other BuildStream project using the additional ``junction`` attribute in the
-dependency dictionary:
+the other BuildStream project using :ref:`element paths <format_element_names>`.
+For example, if you have a ``toolchain.bst`` junction element referring to
+a project which contains a ``gcc.bst`` element, you can express a build
+dependency to the compiler like this:
 
 .. code:: yaml
 
-   depends:
-   - junction: toolchain.bst
-     filename: gcc.bst
-     type: build
+   build-depends:
+   - junction: toolchain.bst:gcc.bst
 
 While junctions are elements, only a limited set of element operations is
 supported. They can be tracked and fetched like other elements.
