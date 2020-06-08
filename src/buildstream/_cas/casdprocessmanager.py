@@ -67,8 +67,8 @@ class CASDProcessManager:
             casd_args.append("--quota-high={}".format(int(cache_quota)))
             casd_args.append("--quota-low={}".format(int(cache_quota / 2)))
 
-            if protect_session_blobs:
-                casd_args.append("--protect-session-blobs")
+        if protect_session_blobs:
+            casd_args.append("--protect-session-blobs")
 
         casd_args.append(path)
 
