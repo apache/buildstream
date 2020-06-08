@@ -141,25 +141,39 @@ def test_missing_files(cli, datafiles, target, provenance):
 #
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
-    "target,reason,provenance",
+    "target,domain,reason,provenance",
     [
         # Test a junction which itself has dependencies
-        ("junction-with-deps.bst", LoadErrorReason.INVALID_JUNCTION, "base-with-deps.bst [line 6 column 2]"),
+        (
+            "junction-with-deps.bst",
+            ErrorDomain.LOAD,
+            LoadErrorReason.INVALID_JUNCTION,
+            "base-with-deps.bst [line 6 column 2]",
+        ),
         # Test having a dependency directly on a junction
-        ("junction-dep.bst", LoadErrorReason.INVALID_DATA, "junction-dep.bst [line 3 column 2]"),
+        ("junction-dep.bst", ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA, "junction-dep.bst [line 3 column 2]"),
         # Test that we error correctly when we junction-depend on a non-junction
         (
             "junctiondep-not-a-junction.bst",
+            ErrorDomain.LOAD,
             LoadErrorReason.INVALID_DATA,
             "junctiondep-not-a-junction.bst [line 3 column 2]",
         ),
+        # Test that overriding a subproject junction with the junction
+        # declaring the override itself will result in an error
+        (
+            "target-self-override.bst",
+            ErrorDomain.ELEMENT,
+            "override-junction-with-self",
+            "subproject-self-override.bst [line 16 column 20]",
+        ),
     ],
-    ids=["junction-with-deps", "deps-on-junction", "use-element-as-junction"],
+    ids=["junction-with-deps", "deps-on-junction", "use-element-as-junction", "override-with-self"],
 )
-def test_invalid(cli, datafiles, target, reason, provenance):
+def test_invalid(cli, datafiles, target, domain, reason, provenance):
     project = os.path.join(str(datafiles), "invalid")
     result = cli.run(project=project, args=["build", target])
-    result.assert_main_error(ErrorDomain.LOAD, reason)
+    result.assert_main_error(domain, reason)
     assert provenance in result.stderr
 
 
@@ -371,3 +385,148 @@ def test_full_path_not_found(cli, tmpdir, datafiles, target, provenance):
     # Check that provenance was provided if expected
     if provenance:
         assert provenance in result.stderr
+
+
+#
+# Test the overrides feature.
+#
+# Here we reuse the `nested` project since it already has deep
+# nesting, and add to it a couple of additional junctions to
+# test overriding of junctions at various depts
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target,expected",
+    [
+        # Test that we can override a subproject junction of a subproject
+        ("target-overridden-subsubproject.bst", "subsubsub.txt"),
+        # Test that we can override a subproject junction of a subproject's subproject
+        ("target-overridden-subsubsubproject.bst", "surprise.txt"),
+        # Test that we can override a subproject junction with a deep subproject path
+        ("target-overridden-with-deepsubproject.bst", "deepsurprise.txt"),
+    ],
+    ids=["override-subproject", "override-subsubproject", "override-subproject-with-subsubproject"],
+)
+def test_overrides(cli, tmpdir, datafiles, target, expected):
+    project = os.path.join(str(datafiles), "overrides")
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Build, checkout
+    result = cli.run(project=project, args=["build", target])
+    result.assert_success()
+    result = cli.run(project=project, args=["artifact", "checkout", target, "--directory", checkoutdir])
+    result.assert_success()
+
+    # Check that the checkout contains the expected file
+    assert os.path.exists(os.path.join(checkoutdir, expected))
+
+
+# Tests a situation where the same deep subproject is overridden
+# more than once.
+#
+@pytest.mark.datafiles(DATA_DIR)
+def test_override_twice(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "override-twice")
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Build, checkout
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+    result = cli.run(project=project, args=["artifact", "checkout", "target.bst", "--directory", checkoutdir])
+    result.assert_success()
+
+    # Check that the checkout contains the expected file
+    assert os.path.exists(os.path.join(checkoutdir, "overridden-again.txt"))
+
+
+#
+# Test conflicting junction scenarios
+#
+# Note here we assert 2 provenances, we want to ensure that both
+# provenances leading up to the use of a project are accounted for
+# in a conflicting junction error.
+#
+# The second provenance can be None, because there will be no
+# provenance for the originally loaded project if it was the toplevel
+# project, or in some cases when a full path to a deep element was
+# specified directly on the command line.
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target,provenances",
+    [
+        # Test a stack element which depends directly on the same project twice
+        ("simple-conflict.bst", ["simple-conflict.bst [line 5 column 2]", "simple-conflict.bst [line 4 column 2]"]),
+        # Test a dependency chain leading deep into a project which conflicts with the toplevel
+        ("nested-conflict-toplevel.bst", ["subproject.bst:subsubproject-conflict-target.bst [line 4 column 2]"]),
+        # Test an attempt to override a subproject with a subproject of that same subproject through a different junction
+        (
+            "override-conflict.bst",
+            [
+                "subproject-override-conflicting-path.bst [line 13 column 23]",
+                "override-conflict.bst [line 8 column 2]",
+            ],
+        ),
+        # Same test as above, but specifying the target as a full path instead of a stack element
+        (
+            "subproject-override-conflicting-path.bst:subsubproject.bst:target.bst",
+            ["subproject-override-conflicting-path.bst [line 13 column 23]"],
+        ),
+        # Test a dependency on a subproject conflicting with an include of a file from a different
+        # version of the same project
+        (
+            "include-conflict-target.bst",
+            ["include-conflict-target.bst [line 5 column 2]", "include-conflict.bst [line 4 column 7]"],
+        ),
+        # Test an element kind which needs to load it's plugin from a subproject, but
+        # the element has a dependency on an element from a different version of the same project
+        ("plugin-conflict.bst", ["project.conf [line 4 column 2]", "plugin-conflict.bst [line 4 column 2]"]),
+    ],
+    ids=["simple", "nested", "override", "override-full-path", "include", "plugin"],
+)
+def test_conflict(cli, tmpdir, datafiles, target, provenances):
+    project = os.path.join(str(datafiles), "conflicts")
+
+    # Special case setup the conflicting project.conf
+    if target == "plugin-conflict.bst":
+        update_project(
+            project, {"plugins": [{"origin": "junction", "junction": "subproject2.bst", "elements": ["found"],}]},
+        )
+
+    result = cli.run(project=project, args=["build", target])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.CONFLICTING_JUNCTION)
+
+    # Assert expected provenances
+    for provenance in provenances:
+        assert provenance in result.stderr
+
+
+#
+# Test circular references in junction override cycles
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target,provenance1,provenance2",
+    [
+        # Override a subprojects subsubproject, with a subproject of the
+        # subsubproject being overridden.
+        (
+            "target-overridden-subsubproject-circular.bst",
+            "subproject-overriden-with-circular-reference.bst [line 8 column 23]",
+            None,
+        ),
+        (
+            "target-overridden-subsubproject-circular-link.bst",
+            "link-subsubsubproject.bst [line 4 column 10]",
+            "target-overridden-subsubproject-circular-link.bst [line 4 column 2]",
+        ),
+    ],
+    ids=["override-self", "override-self-using-link"],
+)
+def test_circular_reference(cli, tmpdir, datafiles, target, provenance1, provenance2):
+    project = os.path.join(str(datafiles), "circular-references")
+    result = cli.run(project=project, args=["build", target])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.CIRCULAR_REFERENCE)
+    assert provenance1 in result.stderr
+    if provenance2:
+        assert provenance2 in result.stderr
