@@ -417,3 +417,55 @@ def test_junction_show(cli, tmpdir, datafiles):
 
     # Show, assert that it says junction
     assert cli.get_element_state(project, "base.bst") == "junction"
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("target", ["junction-full-path.bst", "element-full-path.bst", "foo.bst:base.bst:target.bst"])
+def test_full_path(cli, tmpdir, datafiles, target):
+    project_foo = os.path.join(str(datafiles), "foo")
+    copy_subprojects(project_foo, datafiles, ["base"])
+
+    project = os.path.join(str(datafiles), "toplevel")
+    copy_subprojects(project, datafiles, ["base", "foo", "bar"])
+
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # FIXME: This file can be removed after removing the junction coalescing feature
+    os.remove(os.path.join(project, "base.bst"))
+
+    # Build, checkout
+    result = cli.run(project=project, args=["build", target])
+    result.assert_success()
+    result = cli.run(project=project, args=["artifact", "checkout", target, "--directory", checkoutdir])
+    result.assert_success()
+
+    # Check that the checkout contains the expected file from base
+    assert os.path.exists(os.path.join(checkoutdir, "base.txt"))
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target,provenance",
+    [
+        ("junction-full-path-notfound.bst", "junction-full-path-notfound.bst [line 3 column 2]"),
+        ("element-full-path-notfound.bst", "element-full-path-notfound.bst [line 3 column 2]"),
+        ("foo.bst:base.bst:pony.bst", None),
+    ],
+)
+def test_full_path_not_found(cli, tmpdir, datafiles, target, provenance):
+    project_foo = os.path.join(str(datafiles), "foo")
+    copy_subprojects(project_foo, datafiles, ["base"])
+
+    project = os.path.join(str(datafiles), "toplevel")
+    copy_subprojects(project, datafiles, ["base", "foo", "bar"])
+
+    # FIXME: This file can be removed after removing the junction coalescing feature
+    os.remove(os.path.join(project, "base.bst"))
+
+    # Build
+    result = cli.run(project=project, args=["build", target])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+
+    # Check that provenance was provided if expected
+    if provenance:
+        assert provenance in result.stderr

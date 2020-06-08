@@ -35,7 +35,7 @@ class PluginOriginJunction(PluginOrigin):
         # Get access to the project indicated by the junction,
         # possibly loading it as a side effect.
         #
-        loader = self.project.loader.get_loader(self._junction)
+        loader = self.project.loader.get_loader(self._junction, provenance=self.provenance)
         project = loader.project
         project.ensure_fully_loaded()
 

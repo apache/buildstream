@@ -755,7 +755,7 @@ class Plugin:
         # Set the name, depending on element or source plugin type
         name = self._element_name if self.__type_tag == "source" else self.name  # pylint: disable=no-member
         if project.junction:
-            return "{}:{}".format(project.junction.name, name)
+            return "{}:{}".format(project.junction._get_full_name(), name)
         else:
             return name
 

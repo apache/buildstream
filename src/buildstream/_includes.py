@@ -150,7 +150,7 @@ class Includes:
     def _include_file(self, include, loader):
         shortname = include
         if ":" in include:
-            junction, include = include.split(":", 1)
+            junction, include = include.rsplit(":", 1)
             current_loader = loader.get_loader(junction)
             current_loader.project.ensure_fully_loaded()
         else:
