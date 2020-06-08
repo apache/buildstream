@@ -161,12 +161,33 @@ class JunctionElement(Element):
 
     def configure(self, node):
 
-        node.validate_keys(["path", "options", "cache-junction-elements", "ignore-junction-remotes"])
+        node.validate_keys(["path", "options", "cache-junction-elements", "ignore-junction-remotes", "overrides"])
 
         self.path = node.get_str("path", default="")
         self.options = node.get_mapping("options", default={})
         self.cache_junction_elements = node.get_bool("cache-junction-elements", default=False)
         self.ignore_junction_remotes = node.get_bool("ignore-junction-remotes", default=False)
+
+        # The overrides dictionary has the target junction
+        # to override as a key, and a tuple consisting
+        # of the local overriding junction and the provenance
+        # of the override declaration.
+        self.overrides = {}
+        overrides_node = node.get_mapping("overrides", {})
+        for key, value in overrides_node.items():
+            junction_name = value.as_str()
+            provenance = value.get_provenance()
+
+            # Cannot override a subproject with the project itself
+            #
+            if junction_name == self.name:
+                raise ElementError(
+                    "{}: Attempt to override subproject junction '{}' with the overriding junction '{}' itself".format(
+                        provenance, key, junction_name
+                    ),
+                    reason="override-junction-with-self",
+                )
+            self.overrides[key] = (junction_name, provenance)
 
     def preflight(self):
         pass

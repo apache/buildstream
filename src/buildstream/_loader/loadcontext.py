@@ -17,6 +17,9 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+from .._exceptions import LoadError
+from ..exceptions import LoadErrorReason
+
 
 # LoaderContext()
 #
@@ -33,6 +36,9 @@ class LoadContext:
         self.rewritable = False
         self.fetch_subprojects = None
         self.task = None
+
+        # A table of all Loaders, indexed by project name
+        self._loaders = {}
 
     # set_rewritable()
     #
@@ -64,3 +70,45 @@ class LoadContext:
     #
     def set_fetch_subprojects(self, fetch_subprojects):
         self.fetch_subprojects = fetch_subprojects
+
+    # register_loader()
+    #
+    # Registers a new loader in the load context, possibly
+    # raising an error in the case of a conflict
+    #
+    # Args:
+    #    loader (Loader): The Loader object to register into context
+    #
+    # Raises:
+    #    (LoadError): A CONFLICTING_JUNCTION LoadError in the case of a conflict
+    #
+    def register_loader(self, loader):
+        project = loader.project
+        existing_loader = self._loaders.get(project.name, None)
+
+        if existing_loader:
+
+            assert project.junction is not None
+
+            if existing_loader.project.junction:
+                # The existing provenance can be None even if there is a junction, this
+                # can happen when specifying a full element path on the command line.
+                #
+                provenance_str = ""
+                if existing_loader.provenance:
+                    provenance_str = ": {}".format(existing_loader.provenance)
+
+                detail = "Project '{}' was already loaded by junction '{}'{}".format(
+                    project.name, existing_loader.project.junction._get_full_name(), provenance_str
+                )
+            else:
+                detail = "Project '{}' is also the toplevel project".format(project.name)
+
+            raise LoadError(
+                "{}: Error loading project '{}' from junction: {}".format(
+                    loader.provenance, project.name, project.junction._get_full_name()
+                ),
+                LoadErrorReason.CONFLICTING_JUNCTION,
+                detail=detail,
+            )
+        self._loaders[project.name] = loader

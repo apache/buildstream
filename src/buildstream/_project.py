@@ -99,6 +99,7 @@ class Project:
         cli_options=None,
         default_mirror=None,
         parent_loader=None,
+        provenance=None,
         search_for_project=True,
     ):
 
@@ -164,7 +165,7 @@ class Project:
         self._project_includes = None
 
         with PROFILER.profile(Topics.LOAD_PROJECT, self.directory.replace(os.sep, "-")):
-            self._load(parent_loader=parent_loader)
+            self._load(parent_loader=parent_loader, provenance=provenance)
 
         self._partially_loaded = True
 
@@ -653,7 +654,7 @@ class Project:
     #
     # Raises: LoadError if there was a problem with the project.conf
     #
-    def _load(self, *, parent_loader=None):
+    def _load(self, *, parent_loader=None, provenance=None):
 
         # Load builtin default
         projectfile = os.path.join(self.directory, _PROJECT_CONF_FILE)
@@ -700,7 +701,7 @@ class Project:
         # Fatal warnings
         self._fatal_warnings = pre_config_node.get_str_list("fatal-warnings", default=[])
 
-        self.loader = Loader(self, parent=parent_loader)
+        self.loader = Loader(self, parent=parent_loader, provenance=provenance)
 
         self._project_includes = Includes(self.loader, copy_tree=False)
 

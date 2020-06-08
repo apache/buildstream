@@ -46,9 +46,10 @@ from .._message import Message, MessageType
 # Args:
 #    project (Project): The toplevel Project object
 #    parent (Loader): A parent Loader object, in the case this is a junctioned Loader
+#    provenance (ProvenanceInformation): The provenance of the reference to this project's junction
 #
 class Loader:
-    def __init__(self, project, *, parent=None):
+    def __init__(self, project, *, parent=None, provenance=None):
 
         # Ensure we have an absolute path for the base directory
         basedir = project.element_path
@@ -60,6 +61,7 @@ class Loader:
         #
         self.load_context = project.load_context  # The LoadContext
         self.project = project  # The associated Project
+        self.provenance = provenance  # The provenance of whence this loader was instantiated
         self.loaded = None  # The number of loaded Elements
 
         #
@@ -73,8 +75,13 @@ class Loader:
         self._meta_elements = {}  # Dict of resolved meta elements by name
         self._elements = {}  # Dict of elements
         self._loaders = {}  # Dict of junction loaders
+        self._loader_search_provenances = {}  # Dictionary of provenances of ongoing child loader searches
 
         self._includes = Includes(self, copy_tree=True)
+
+        assert project.name is not None
+
+        self.load_context.register_loader(self)
 
     # load():
     #
@@ -163,12 +170,27 @@ class Loader:
     # Returns:
     #   (Loader): loader for sub-project
     #
-    def get_loader(self, name, provenance, *, level=0):
+    def get_loader(self, name, provenance):
         junction_path = name.split(":")
         loader = self
 
+        circular_provenance = self._loader_search_provenances.get(name, None)
+        if circular_provenance:
+            detail = None
+            if circular_provenance is not provenance:
+                detail = "Already searching for '{}' at: {}".format(name, circular_provenance)
+            raise LoadError(
+                "{}: Circular reference while searching for '{}'".format(provenance, name),
+                LoadErrorReason.CIRCULAR_REFERENCE,
+                detail=detail,
+            )
+
+        self._loader_search_provenances[name] = provenance
+
         for junction_name in junction_path:
-            loader = loader._get_loader(junction_name, provenance, level=level)
+            loader = loader._get_loader(junction_name, provenance)
+
+        del self._loader_search_provenances[name]
 
         return loader
 
@@ -514,6 +536,40 @@ class Loader:
 
         return self._meta_elements[top_element.name]
 
+    # _search_for_override():
+    #
+    # Search parent projects for an overridden subproject to replace this junction.
+    #
+    # Args:
+    #    filename (str): Junction name
+    #
+    def _search_for_override(self, filename):
+        loader = self
+        override_path = filename
+
+        # Collect any overrides to this junction in the ancestry
+        #
+        overriding_loaders = []
+        while loader._parent:
+            junction = loader.project.junction
+            override_filename, override_provenance = junction.overrides.get(override_path, (None, None))
+            if override_filename:
+                overriding_loaders.append((loader, override_filename, override_provenance))
+
+            override_path = junction.name + ":" + override_path
+            loader = loader._parent
+
+        # If there are any overriding loaders, use the highest one in
+        # the ancestry to lookup the loader for this project.
+        #
+        if overriding_loaders:
+            loader, filename, provenance = overriding_loaders[-1]
+            return loader._parent.get_loader(filename, provenance)
+
+        # No overrides were found in the ancestry
+        #
+        return None
+
     # _get_loader():
     #
     # Return loader for specified junction
@@ -526,7 +582,7 @@ class Loader:
     #
     # Returns: A Loader or None if specified junction does not exist
     #
-    def _get_loader(self, filename, provenance, *, level=0):
+    def _get_loader(self, filename, provenance):
         loader = None
         provenance_str = ""
         if provenance is not None:
@@ -534,43 +590,21 @@ class Loader:
 
         # return previously determined result
         if filename in self._loaders:
-            loader = self._loaders[filename]
+            return self._loaders[filename]
 
-            if loader is None:
-                # do not allow junctions with the same name in different
-                # subprojects
-                raise LoadError(
-                    "{}Conflicting junction {} in subprojects, define junction in {}".format(
-                        provenance_str, filename, self.project.name
-                    ),
-                    LoadErrorReason.CONFLICTING_JUNCTION,
-                )
+        #
+        # Search the ancestry for an overridden loader to use in place
+        # of using the locally defined junction.
+        #
+        override_loader = self._search_for_override(filename)
+        if override_loader:
+            self._loaders[filename] = override_loader
+            return override_loader
 
-            return loader
-
-        if self._parent:
-            # junctions in the parent take precedence over junctions defined
-            # in subprojects
-            loader = self._parent._get_loader(filename, level=level + 1, provenance=provenance)
-            if loader:
-                self._loaders[filename] = loader
-                return loader
-
-        try:
-            self._load_file(filename, provenance=provenance)
-        except LoadError as e:
-            if e.reason != LoadErrorReason.MISSING_FILE:
-                # other load error
-                raise
-
-            if level == 0:
-                # junction element not found in this or ancestor projects
-                raise
-
-            # mark junction as not available to allow detection of
-            # conflicting junctions in subprojects
-            self._loaders[filename] = None
-            return None
+        #
+        # Load the junction file
+        #
+        self._load_file(filename, provenance)
 
         # At this point we've loaded the LoadElement
         load_element = self._elements[filename]
@@ -668,7 +702,12 @@ class Loader:
             from .._project import Project  # pylint: disable=cyclic-import
 
             project = Project(
-                project_dir, self.load_context.context, junction=element, parent_loader=self, search_for_project=False,
+                project_dir,
+                self.load_context.context,
+                junction=element,
+                parent_loader=self,
+                search_for_project=False,
+                provenance=provenance,
             )
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
