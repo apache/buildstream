@@ -120,7 +120,7 @@ class Loader:
         dummy_target = LoadElement(Node.from_dict({}), "", self)
         # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
         dummy_target.dependencies.extend(  # pylint: disable=no-member
-            Dependency(element, Symbol.RUNTIME, False) for element in target_elements
+            Dependency(element, Symbol.RUNTIME, False, None) for element in target_elements
         )
 
         with PROFILER.profile(Topics.CIRCULAR_CHECK, "_".join(targets)):
@@ -403,7 +403,7 @@ class Loader:
                 # All is well, push the dependency onto the LoadElement
                 # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
                 current_element[0].dependencies.append(  # pylint: disable=no-member
-                    Dependency(dep_element, dep.dep_type, dep.strict)
+                    Dependency(dep_element, dep.dep_type, dep.strict, dep.provenance)
                 )
             else:
                 # We do not have any more dependencies to load for this
@@ -613,7 +613,11 @@ class Loader:
         # would be nice if this could be done for *all* element types,
         # but since we haven't loaded those yet that's impossible.
         if load_element.dependencies:
-            raise LoadError("Dependencies are forbidden for 'junction' elements", LoadErrorReason.INVALID_JUNCTION)
+            # Use the first dependency in the list as provenance
+            p = load_element.dependencies[0].provenance
+            raise LoadError(
+                "{}: Dependencies are forbidden for 'junction' elements".format(p), LoadErrorReason.INVALID_JUNCTION
+            )
 
         element = Element._new_from_meta(meta_element)
         element._initialize_state()
