@@ -133,15 +133,9 @@ cdef class Dependency:
                             "junction attribute is specified.".format(self.provenance, self.name),
                             LoadErrorReason.INVALID_DATA)
 
-        # Name of the element should never contain more than one `:` characters
-        if self.name.count(':') > 1:
-            raise LoadError("{}: Dependency {} contains multiple `:` in its name. "
-                            "Recursive lookups for cross-junction elements is not "
-                            "allowed.".format(self.provenance, self.name), LoadErrorReason.INVALID_DATA)
-
         # Attempt to split name if no junction was specified explicitly
-        if not self.junction and self.name.count(':') == 1:
-            self.junction, self.name = self.name.split(':')
+        if not self.junction and ':' in self.name:
+            self.junction, self.name = self.name.rsplit(':', maxsplit=1)
 
 
 # _extract_depends_from_node():

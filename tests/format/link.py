@@ -59,7 +59,9 @@ def test_conditional_link(cli, tmpdir, datafiles, target, greeting, expected_fil
 # Test links to junctions from local projects and subprojects
 #
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("target", ["target-local.bst", "target-nested.bst"])
+@pytest.mark.parametrize(
+    "target", ["target-local.bst", "target-nested.bst", "full-path-link.bst", "target-full-path.bst"]
+)
 def test_simple_junctions(cli, tmpdir, datafiles, target):
     project = os.path.join(str(datafiles), "simple-junctions")
     checkoutdir = os.path.join(str(tmpdir), "checkout")
@@ -115,6 +117,10 @@ def test_conditional_junctions(cli, tmpdir, datafiles, greeting, expected_file):
         ("linked-local-junction.bst", "subproject-link-notfound.bst [line 4 column 10]",),
         # Depends on an element via a link to a non-existing subproject junction
         ("linked-nested-junction.bst", "subsubproject-link-notfound.bst [line 4 column 10]",),
+        # Target is a link to a non-existing nested element referred to with a full path
+        ("link-full-path.bst", "link-full-path.bst [line 4 column 10]"),
+        # Target depends on a link to a non-existing nested element referred to with a full path
+        ("target-full-path.bst", "link-full-path.bst [line 4 column 10]"),
     ],
 )
 def test_link_not_found(cli, tmpdir, datafiles, target, provenance):

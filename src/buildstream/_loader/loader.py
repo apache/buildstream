@@ -160,190 +160,26 @@ class Loader:
 
     # get_loader():
     #
-    # Return loader for specified junction
+    # Obtains the appropriate loader for the specified junction
     #
     # Args:
-    #    filename (str): Junction name
+    #   name (str): Name of junction, may have multiple `:` in the name
+    #   rewritable (bool): Whether the loaded files should be rewritable
+    #                      this is a bit more expensive due to deep copies
+    #   ticker (callable): An optional function for tracking load progress
+    #   provenance (ProvenanceInformation): The provenance
     #
-    # Raises: LoadError
+    # Returns:
+    #   (Loader): loader for sub-project
     #
-    # Returns: A Loader or None if specified junction does not exist
-    #
-    def get_loader(self, filename, *, rewritable=False, ticker=None, level=0, provenance=None):
+    def get_loader(self, name, *, rewritable=False, ticker=None, level=0, provenance=None):
+        junction_path = name.split(":")
+        loader = self
 
-        provenance_str = ""
-        if provenance is not None:
-            provenance_str = "{}: ".format(provenance)
-
-        # return previously determined result
-        if filename in self._loaders:
-            loader = self._loaders[filename]
-
-            if loader is None:
-                # do not allow junctions with the same name in different
-                # subprojects
-                raise LoadError(
-                    "{}Conflicting junction {} in subprojects, define junction in {}".format(
-                        provenance_str, filename, self.project.name
-                    ),
-                    LoadErrorReason.CONFLICTING_JUNCTION,
-                )
-
-            return loader
-
-        if self._parent:
-            # junctions in the parent take precedence over junctions defined
-            # in subprojects
-            loader = self._parent.get_loader(
-                filename, rewritable=rewritable, ticker=ticker, level=level + 1, provenance=provenance
+        for junction_name in junction_path:
+            loader = loader._get_loader(
+                junction_name, rewritable=rewritable, ticker=ticker, level=level, provenance=provenance
             )
-            if loader:
-                self._loaders[filename] = loader
-                return loader
-
-        try:
-            self._load_file(filename, rewritable, ticker, provenance=provenance)
-        except LoadError as e:
-            if e.reason != LoadErrorReason.MISSING_FILE:
-                # other load error
-                raise
-
-            if level == 0:
-                # junction element not found in this or ancestor projects
-                raise
-
-            # mark junction as not available to allow detection of
-            # conflicting junctions in subprojects
-            self._loaders[filename] = None
-            return None
-
-        # At this point we've loaded the LoadElement
-        load_element = self._elements[filename]
-
-        # If the loaded element is a link, then just follow it
-        # immediately and move on to the target.
-        #
-        if load_element.link_target:
-
-            _, filename, loader = self._parse_name(load_element.link_target, rewritable, ticker)
-
-            if loader != self:
-                level = level + 1
-
-            return loader.get_loader(
-                filename,
-                rewritable=rewritable,
-                ticker=ticker,
-                level=level,
-                provenance=load_element.link_target_provenance,
-            )
-
-        # meta junction element
-        #
-        # Note that junction elements are not allowed to have
-        # dependencies, so disabling progress reporting here should
-        # have no adverse effects - the junction element itself cannot
-        # be depended on, so it would be confusing for its load to
-        # show up in logs.
-        #
-        # Any task counting *inside* the junction will be handled by
-        # its loader.
-        meta_element = self.collect_element_no_deps(self._elements[filename])
-        if meta_element.kind != "junction":
-            raise LoadError(
-                "{}{}: Expected junction but element kind is {}".format(provenance_str, filename, meta_element.kind),
-                LoadErrorReason.INVALID_DATA,
-            )
-
-        # We check that junctions have no dependencies a little
-        # early. This is cheating, since we don't technically know
-        # that junctions aren't allowed to have dependencies.
-        #
-        # However, this makes progress reporting more intuitive
-        # because we don't need to load dependencies of an element
-        # that shouldn't have any, and therefore don't need to
-        # duplicate the load count for elements that shouldn't be.
-        #
-        # We also fail slightly earlier (since we don't need to go
-        # through the entire loading process), which is nice UX. It
-        # would be nice if this could be done for *all* element types,
-        # but since we haven't loaded those yet that's impossible.
-        if load_element.dependencies:
-            raise LoadError("Dependencies are forbidden for 'junction' elements", LoadErrorReason.INVALID_JUNCTION)
-
-        element = Element._new_from_meta(meta_element)
-        element._initialize_state()
-
-        # Handle the case where a subproject has no ref
-        #
-        if not element._has_all_sources_resolved():
-            detail = "Try tracking the junction element with `bst source track {}`".format(filename)
-            raise LoadError(
-                "{}Subproject has no ref for junction: {}".format(provenance_str, filename),
-                LoadErrorReason.SUBPROJECT_INCONSISTENT,
-                detail=detail,
-            )
-
-        # Handle the case where a subproject needs to be fetched
-        #
-        if not element._has_all_sources_in_source_cache():
-            if ticker:
-                ticker(filename, "Fetching subproject")
-            self._fetch_subprojects([element])
-
-        sources = list(element.sources())
-        if len(sources) == 1 and sources[0]._get_local_path():
-            # Optimization for junctions with a single local source
-            basedir = sources[0]._get_local_path()
-        else:
-            # Stage sources
-            element._set_required()
-
-            # Note: We use _KeyStrength.WEAK here because junctions
-            # cannot have dependencies, therefore the keys are
-            # equivalent.
-            #
-            # Since the element has not necessarily been given a
-            # strong cache key at this point (in a non-strict build
-            # that is set *after* we complete building/pulling, which
-            # we haven't yet for this element),
-            # element._get_cache_key() can fail if used with the
-            # default _KeyStrength.STRONG.
-            basedir = os.path.join(
-                self.project.directory, ".bst", "staged-junctions", filename, element._get_cache_key(_KeyStrength.WEAK)
-            )
-            if not os.path.exists(basedir):
-                os.makedirs(basedir, exist_ok=True)
-                element._stage_sources_at(basedir)
-
-        # Load the project
-        project_dir = os.path.join(basedir, element.path)
-        try:
-            from .._project import Project  # pylint: disable=cyclic-import
-
-            project = Project(
-                project_dir,
-                self._context,
-                junction=element,
-                parent_loader=self,
-                search_for_project=False,
-                fetch_subprojects=self._fetch_subprojects,
-            )
-        except LoadError as e:
-            if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
-                message = (
-                    provenance_str + "Could not find the project.conf file in the project "
-                    "referred to by junction element '{}'.".format(element.name)
-                )
-                if element.path:
-                    message += " Was expecting it at path '{}' in the junction's source.".format(element.path)
-                raise LoadError(message=message, reason=LoadErrorReason.INVALID_JUNCTION) from e
-
-            # Otherwise, we don't know the reason, so just raise
-            raise
-
-        loader = project.loader
-        self._loaders[filename] = loader
 
         return loader
 
@@ -562,7 +398,9 @@ class Loader:
         # If this element is a link then we need to resolve it
         # and replace the dependency we've processed with this one
         if top_element.link_target is not None:
-            _, filename, loader = self._parse_name(top_element.link_target, rewritable, ticker)
+            _, filename, loader = self._parse_name(
+                top_element.link_target, rewritable, ticker, top_element.link_target_provenance
+            )
             top_element = loader._load_file(filename, rewritable, ticker, top_element.link_target_provenance)
 
         dependencies = extract_depends_from_node(top_element.node)
@@ -607,7 +445,9 @@ class Loader:
                 # If this dependency is a link then we need to resolve it
                 # and replace the dependency we've processed with this one
                 if dep_element.link_target:
-                    _, filename, loader = self._parse_name(dep_element.link_target, rewritable, ticker)
+                    _, filename, loader = self._parse_name(
+                        dep_element.link_target, rewritable, ticker, dep_element.link_target_provenance
+                    )
                     dep_element = loader._load_file(filename, rewritable, ticker, dep_element.link_target_provenance)
 
                 # All is well, push the dependency onto the LoadElement
@@ -725,6 +565,197 @@ class Loader:
 
         return self._meta_elements[top_element.name]
 
+    # _get_loader():
+    #
+    # Return loader for specified junction
+    #
+    # Args:
+    #    filename (str): Junction name
+    #
+    # Raises: LoadError
+    #
+    # Returns: A Loader or None if specified junction does not exist
+    #
+    def _get_loader(self, filename, *, rewritable=False, ticker=None, level=0, provenance=None):
+
+        provenance_str = ""
+        if provenance is not None:
+            provenance_str = "{}: ".format(provenance)
+
+        # return previously determined result
+        if filename in self._loaders:
+            loader = self._loaders[filename]
+
+            if loader is None:
+                # do not allow junctions with the same name in different
+                # subprojects
+                raise LoadError(
+                    "{}Conflicting junction {} in subprojects, define junction in {}".format(
+                        provenance_str, filename, self.project.name
+                    ),
+                    LoadErrorReason.CONFLICTING_JUNCTION,
+                )
+
+            return loader
+
+        if self._parent:
+            # junctions in the parent take precedence over junctions defined
+            # in subprojects
+            loader = self._parent._get_loader(
+                filename, rewritable=rewritable, ticker=ticker, level=level + 1, provenance=provenance
+            )
+            if loader:
+                self._loaders[filename] = loader
+                return loader
+
+        try:
+            self._load_file(filename, rewritable, ticker, provenance=provenance)
+        except LoadError as e:
+            if e.reason != LoadErrorReason.MISSING_FILE:
+                # other load error
+                raise
+
+            if level == 0:
+                # junction element not found in this or ancestor projects
+                raise
+
+            # mark junction as not available to allow detection of
+            # conflicting junctions in subprojects
+            self._loaders[filename] = None
+            return None
+
+        # At this point we've loaded the LoadElement
+        load_element = self._elements[filename]
+
+        # If the loaded element is a link, then just follow it
+        # immediately and move on to the target.
+        #
+        if load_element.link_target:
+
+            _, filename, loader = self._parse_name(
+                load_element.link_target, rewritable, ticker, provenance=load_element.link_target_provenance
+            )
+
+            if loader != self:
+                level = level + 1
+
+            return loader._get_loader(
+                filename,
+                rewritable=rewritable,
+                ticker=ticker,
+                level=level,
+                provenance=load_element.link_target_provenance,
+            )
+
+        # meta junction element
+        #
+        # Note that junction elements are not allowed to have
+        # dependencies, so disabling progress reporting here should
+        # have no adverse effects - the junction element itself cannot
+        # be depended on, so it would be confusing for its load to
+        # show up in logs.
+        #
+        # Any task counting *inside* the junction will be handled by
+        # its loader.
+        meta_element = self.collect_element_no_deps(self._elements[filename])
+        if meta_element.kind != "junction":
+            raise LoadError(
+                "{}{}: Expected junction but element kind is {}".format(provenance_str, filename, meta_element.kind),
+                LoadErrorReason.INVALID_DATA,
+            )
+
+        # We check that junctions have no dependencies a little
+        # early. This is cheating, since we don't technically know
+        # that junctions aren't allowed to have dependencies.
+        #
+        # However, this makes progress reporting more intuitive
+        # because we don't need to load dependencies of an element
+        # that shouldn't have any, and therefore don't need to
+        # duplicate the load count for elements that shouldn't be.
+        #
+        # We also fail slightly earlier (since we don't need to go
+        # through the entire loading process), which is nice UX. It
+        # would be nice if this could be done for *all* element types,
+        # but since we haven't loaded those yet that's impossible.
+        if load_element.dependencies:
+            raise LoadError("Dependencies are forbidden for 'junction' elements", LoadErrorReason.INVALID_JUNCTION)
+
+        element = Element._new_from_meta(meta_element)
+        element._initialize_state()
+
+        # Handle the case where a subproject has no ref
+        #
+        if not element._has_all_sources_resolved():
+            detail = "Try tracking the junction element with `bst source track {}`".format(filename)
+            raise LoadError(
+                "{}Subproject has no ref for junction: {}".format(provenance_str, filename),
+                LoadErrorReason.SUBPROJECT_INCONSISTENT,
+                detail=detail,
+            )
+
+        # Handle the case where a subproject needs to be fetched
+        #
+        if not element._has_all_sources_in_source_cache():
+            if ticker:
+                ticker(filename, "Fetching subproject")
+            self._fetch_subprojects([element])
+
+        sources = list(element.sources())
+        if len(sources) == 1 and sources[0]._get_local_path():
+            # Optimization for junctions with a single local source
+            basedir = sources[0]._get_local_path()
+        else:
+            # Stage sources
+            element._set_required()
+
+            # Note: We use _KeyStrength.WEAK here because junctions
+            # cannot have dependencies, therefore the keys are
+            # equivalent.
+            #
+            # Since the element has not necessarily been given a
+            # strong cache key at this point (in a non-strict build
+            # that is set *after* we complete building/pulling, which
+            # we haven't yet for this element),
+            # element._get_cache_key() can fail if used with the
+            # default _KeyStrength.STRONG.
+            basedir = os.path.join(
+                self.project.directory, ".bst", "staged-junctions", filename, element._get_cache_key(_KeyStrength.WEAK)
+            )
+            if not os.path.exists(basedir):
+                os.makedirs(basedir, exist_ok=True)
+                element._stage_sources_at(basedir)
+
+        # Load the project
+        project_dir = os.path.join(basedir, element.path)
+        try:
+            from .._project import Project  # pylint: disable=cyclic-import
+
+            project = Project(
+                project_dir,
+                self._context,
+                junction=element,
+                parent_loader=self,
+                search_for_project=False,
+                fetch_subprojects=self._fetch_subprojects,
+            )
+        except LoadError as e:
+            if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
+                message = (
+                    provenance_str + "Could not find the project.conf file in the project "
+                    "referred to by junction element '{}'.".format(element.name)
+                )
+                if element.path:
+                    message += " Was expecting it at path '{}' in the junction's source.".format(element.path)
+                raise LoadError(message=message, reason=LoadErrorReason.INVALID_JUNCTION) from e
+
+            # Otherwise, we don't know the reason, so just raise
+            raise
+
+        loader = project.loader
+        self._loaders[filename] = loader
+
+        return loader
+
     # _parse_name():
     #
     # Get junction and base name of element along with loader for the sub-project
@@ -734,13 +765,14 @@ class Loader:
     #   rewritable (bool): Whether the loaded files should be rewritable
     #                      this is a bit more expensive due to deep copies
     #   ticker (callable): An optional function for tracking load progress
+    #   provenance (ProvenanceInformation): The provenance
     #
     # Returns:
     #   (tuple): - (str): name of the junction element
     #            - (str): name of the element
     #            - (Loader): loader for sub-project
     #
-    def _parse_name(self, name, rewritable, ticker):
+    def _parse_name(self, name, rewritable, ticker, provenance=None):
         # We allow to split only once since deep junctions names are forbidden.
         # Users who want to refer to elements in sub-sub-projects are required
         # to create junctions on the top level project.
@@ -748,8 +780,7 @@ class Loader:
         if len(junction_path) == 1:
             return None, junction_path[-1], self
         else:
-            self._load_file(junction_path[-2], rewritable, ticker)
-            loader = self.get_loader(junction_path[-2], rewritable=rewritable, ticker=ticker)
+            loader = self.get_loader(junction_path[-2], rewritable=rewritable, ticker=ticker, provenance=provenance)
             return junction_path[-2], junction_path[-1], loader
 
     # Print a warning message, checks warning_token against project configuration
