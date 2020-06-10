@@ -241,21 +241,20 @@ class CASCache:
             if can_link and mtime is None:
                 utils.safe_link(self.objpath(filenode.digest), fullpath)
             else:
-                utils.safe_copy(self.objpath(filenode.digest), fullpath)
+                utils.safe_copy(self.objpath(filenode.digest), fullpath, copystat=False)
                 if mtime is not None:
                     utils._set_file_mtime(fullpath, mtime)
 
             if filenode.is_executable:
-                os.chmod(
-                    fullpath,
-                    stat.S_IRUSR
-                    | stat.S_IWUSR
-                    | stat.S_IXUSR
-                    | stat.S_IRGRP
-                    | stat.S_IXGRP
-                    | stat.S_IROTH
-                    | stat.S_IXOTH,
-                )
+                st = os.stat(fullpath)
+                mode = st.st_mode
+                if mode & stat.S_IRUSR:
+                    mode |= stat.S_IXUSR
+                if mode & stat.S_IRGRP:
+                    mode |= stat.S_IXGRP
+                if mode & stat.S_IROTH:
+                    mode |= stat.S_IXOTH
+                os.chmod(fullpath, mode)
 
         for dirnode in directory.directories:
             fullpath = os.path.join(dest, dirnode.name)
