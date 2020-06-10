@@ -78,39 +78,24 @@ class Includes:
 
         if includes_node:
             if type(includes_node) is ScalarNode:  # pylint: disable=unidiomatic-typecheck
-                includes = [includes_node.as_str()]
+                includes = [includes_node]
             else:
-                includes = includes_node.as_str_list()
+                includes = includes_node
 
             del node["(@)"]
 
             for include in reversed(includes):
-                if only_local and ":" in include:
+                if only_local and ":" in include.as_str():
                     continue
-                try:
-                    include_node, file_path, sub_loader = self._include_file(include, current_loader)
-                except LoadError as e:
-                    include_provenance = includes_node.get_provenance()
-                    if e.reason == LoadErrorReason.MISSING_FILE:
-                        message = "{}: Include block references a file that could not be found: '{}'.".format(
-                            include_provenance, include
-                        )
-                        raise LoadError(message, LoadErrorReason.MISSING_FILE) from e
-                    if e.reason == LoadErrorReason.LOADING_DIRECTORY:
-                        message = "{}: Include block references a directory instead of a file: '{}'.".format(
-                            include_provenance, include
-                        )
-                        raise LoadError(message, LoadErrorReason.LOADING_DIRECTORY) from e
 
-                    # Otherwise, we don't know the reason, so just raise
-                    raise
-
+                include_node, file_path, sub_loader = self._include_file(include, current_loader)
                 if file_path in included:
                     include_provenance = includes_node.get_provenance()
                     raise LoadError(
                         "{}: trying to recursively include {}".format(include_provenance, file_path),
                         LoadErrorReason.RECURSIVE_INCLUDE,
                     )
+
                 # Because the included node will be modified, we need
                 # to copy it so that we do not modify the toplevel
                 # node of the provenance.
@@ -144,14 +129,16 @@ class Includes:
     # Load include YAML file from with a loader.
     #
     # Args:
-    #    include (str): file path relative to loader's project directory.
-    #                   Can be prefixed with junctio name.
+    #    include (ScalarNode): file path relative to loader's project directory.
+    #                          Can be prefixed with junctio name.
     #    loader (Loader): Loader for the current project.
     def _include_file(self, include, loader):
+        provenance = include.get_provenance()
+        include = include.as_str()
         shortname = include
         if ":" in include:
             junction, include = include.rsplit(":", 1)
-            current_loader = loader.get_loader(junction)
+            current_loader = loader.get_loader(junction, provenance=provenance)
             current_loader.project.ensure_fully_loaded()
         else:
             current_loader = loader
@@ -160,7 +147,13 @@ class Includes:
         file_path = os.path.join(directory, include)
         key = (current_loader, file_path)
         if key not in self._loaded:
-            self._loaded[key] = _yaml.load(file_path, shortname=shortname, project=project, copy_tree=self._copy_tree)
+            try:
+                self._loaded[key] = _yaml.load(
+                    file_path, shortname=shortname, project=project, copy_tree=self._copy_tree
+                )
+            except LoadError as e:
+                raise LoadError("{}: {}".format(provenance, e), e.reason, detail=e.detail) from e
+
         return self._loaded[key], file_path, current_loader
 
     # _process_value()

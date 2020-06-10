@@ -44,7 +44,7 @@ def test_include_missing_file(cli, tmpdir):
     result = cli.run(project=str(tmpdir), args=["show", str(element.basename)])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
     # Make sure the root cause provenance is in the output.
-    assert "line 4 column 2" in result.stderr
+    assert "include_missing_file.bst [line 4 column 4]" in result.stderr
 
 
 def test_include_dir(cli, tmpdir):
@@ -68,7 +68,7 @@ def test_include_dir(cli, tmpdir):
     result = cli.run(project=str(tmpdir), args=["show", str(element.basename)])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.LOADING_DIRECTORY)
     # Make sure the root cause provenance is in the output.
-    assert "line 4 column 2" in result.stderr
+    assert "include_dir.bst [line 4 column 4]" in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
