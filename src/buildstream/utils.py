@@ -363,19 +363,20 @@ def sha256sum(filename: str) -> str:
     return h.hexdigest()
 
 
-def safe_copy(src: str, dest: str, *, result: Optional[FileListResult] = None) -> None:
-    """Copy a file while preserving attributes
+def safe_copy(src: str, dest: str, *, copystat: bool = True, result: Optional[FileListResult] = None) -> None:
+    """Copy a file while optionally preserving attributes
 
     Args:
        src: The source filename
        dest: The destination filename
+       copystat: Whether to preserve attributes
        result: An optional collective result
 
     Raises:
        UtilError: In the case of unexpected system call failures
 
-    This is almost the same as shutil.copy2(), except that
-    we unlink *dest* before overwriting it if it exists, just
+    This is almost the same as shutil.copy2() when copystat is True,
+    except that we unlink *dest* before overwriting it if it exists, just
     incase *dest* is a hardlink to a different file.
     """
     # First unlink the target if it exists
@@ -390,17 +391,18 @@ def safe_copy(src: str, dest: str, *, result: Optional[FileListResult] = None) -
     except (OSError, shutil.Error) as e:
         raise UtilError("Failed to copy '{} -> {}': {}".format(src, dest, e)) from e
 
-    try:
-        shutil.copystat(src, dest)
-    except PermissionError:
-        # If we failed to copy over some file stats, dont treat
-        # it as an unrecoverable error, but provide some feedback
-        # we can use for a warning.
-        #
-        # This has a tendency of happening when attempting to copy
-        # over extended file attributes.
-        if result:
-            result.failed_attributes.append(dest)
+    if copystat:
+        try:
+            shutil.copystat(src, dest)
+        except PermissionError:
+            # If we failed to copy over some file stats, dont treat
+            # it as an unrecoverable error, but provide some feedback
+            # we can use for a warning.
+            #
+            # This has a tendency of happening when attempting to copy
+            # over extended file attributes.
+            if result:
+                result.failed_attributes.append(dest)
 
 
 def safe_link(src: str, dest: str, *, result: Optional[FileListResult] = None, _unlink=False) -> None:
