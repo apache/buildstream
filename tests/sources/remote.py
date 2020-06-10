@@ -5,6 +5,7 @@ import os
 import stat
 import pytest
 
+from buildstream import utils
 from buildstream.testing import ErrorDomain
 from buildstream.testing import generate_project
 from buildstream.testing import cli  # pylint: disable=unused-import
@@ -71,8 +72,12 @@ def test_simple_file_build(cli, tmpdir, datafiles):
     mode = os.stat(checkout_file).st_mode
     # Assert not executable by anyone
     assert not mode & (stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
-    # Assert not writeable by anyone other than me
-    assert not mode & (stat.S_IWGRP | stat.S_IWOTH)
+
+    # Assert not writeable by anyone other than me (unless umask allows it)
+    if utils.get_umask() & stat.S_IWGRP:
+        assert not mode & stat.S_IWGRP
+    if utils.get_umask() & stat.S_IWOTH:
+        assert not mode & stat.S_IWOTH
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "single-file-custom-name"))
