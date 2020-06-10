@@ -110,7 +110,7 @@ class SandboxRemote(SandboxREAPI):
         self.operation_name = None
 
     def info(self, msg):
-        self._get_context().messenger.message(Message(MessageType.INFO, msg))
+        self._get_context().messenger.message(Message(MessageType.INFO, msg, element_name=self._get_element_name()))
 
     @staticmethod
     def specs_from_config_node(config_node, basedir=None):
@@ -237,7 +237,7 @@ class SandboxRemote(SandboxREAPI):
         # Set up signal handler to trigger cancel_operation on SIGTERM
         operation = None
         with self._get_context().messenger.timed_activity(
-            "Waiting for the remote build to complete"
+            "Waiting for the remote build to complete", element_name=self._get_element_name()
         ), _signals.terminator(partial(self.cancel_operation, channel)):
             operation = __run_remote_command(stub, execute_request=request)
             if operation is None:
@@ -315,31 +315,34 @@ class SandboxRemote(SandboxREAPI):
                         "Failed to contact remote execution CAS endpoint at {}: {}".format(self.storage_url, e)
                     ) from e
 
-                # Determine blobs missing on remote
-                try:
-                    input_root_digest = action.input_root_digest
-                    missing_blobs = list(cascache.remote_missing_blobs_for_directory(casremote, input_root_digest))
-                except grpc.RpcError as e:
-                    raise SandboxError("Failed to determine missing blobs: {}".format(e)) from e
+                with self._get_context().messenger.timed_activity(
+                    "Uploading input root", element_name=self._get_element_name()
+                ):
+                    # Determine blobs missing on remote
+                    try:
+                        input_root_digest = action.input_root_digest
+                        missing_blobs = list(cascache.remote_missing_blobs_for_directory(casremote, input_root_digest))
+                    except grpc.RpcError as e:
+                        raise SandboxError("Failed to determine missing blobs: {}".format(e)) from e
 
-                # Check if any blobs are also missing locally (partial artifact)
-                # and pull them from the artifact cache.
-                try:
-                    local_missing_blobs = cascache.local_missing_blobs(missing_blobs)
-                    if local_missing_blobs:
-                        artifactcache.fetch_missing_blobs(project, local_missing_blobs)
-                except (grpc.RpcError, BstError) as e:
-                    raise SandboxError("Failed to pull missing blobs from artifact cache: {}".format(e)) from e
+                    # Check if any blobs are also missing locally (partial artifact)
+                    # and pull them from the artifact cache.
+                    try:
+                        local_missing_blobs = cascache.local_missing_blobs(missing_blobs)
+                        if local_missing_blobs:
+                            artifactcache.fetch_missing_blobs(project, local_missing_blobs)
+                    except (grpc.RpcError, BstError) as e:
+                        raise SandboxError("Failed to pull missing blobs from artifact cache: {}".format(e)) from e
 
-                # Add command and action messages to blob list to push
-                missing_blobs.append(action.command_digest)
-                missing_blobs.append(action_digest)
+                    # Add command and action messages to blob list to push
+                    missing_blobs.append(action.command_digest)
+                    missing_blobs.append(action_digest)
 
-                # Now, push the missing blobs to the remote.
-                try:
-                    cascache.send_blobs(casremote, missing_blobs)
-                except grpc.RpcError as e:
-                    raise SandboxError("Failed to push source directory to remote: {}".format(e)) from e
+                    # Now, push the missing blobs to the remote.
+                    try:
+                        cascache.send_blobs(casremote, missing_blobs)
+                    except grpc.RpcError as e:
+                        raise SandboxError("Failed to push source directory to remote: {}".format(e)) from e
 
             # Next, try to create a communication channel to the BuildGrid server.
             url = urlparse(self.exec_url)
