@@ -119,9 +119,6 @@ class Project:
         # Absolute path to where elements are loaded from within the project
         self.element_path = None
 
-        # Default target elements
-        self._default_targets = None
-
         # ProjectRefs for the main refs and also for junctions
         self.refs = ProjectRefs(self.directory, "project.refs")
         self.junction_refs = ProjectRefs(self.directory, "junction.refs")
@@ -135,10 +132,14 @@ class Project:
         self.base_environment = {}  # The base set of environment variables
         self.base_env_nocache = None  # The base nocache mask (list) for the environment
 
+        self.artifact_cache_specs = None
+        self.source_cache_specs = None
+        self.remote_execution_specs = None
+
         #
         # Private Members
         #
-
+        self._default_targets = None  # Default target elements
         self._default_mirror = default_mirror  # The name of the preferred mirror.
 
         self._cli_options = cli_options
@@ -148,10 +149,6 @@ class Project:
         self._shell_command = []  # The default interactive shell command
         self._shell_environment = {}  # Statically set environment vars
         self._shell_host_files = []  # A list of HostMount objects
-
-        self.artifact_cache_specs = None
-        self.source_cache_specs = None
-        self.remote_execution_specs = None
         self._sandbox = None
         self._splits = None
 
