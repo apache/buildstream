@@ -63,9 +63,6 @@ class Context:
         # The directory where various sources are stored
         self.sourcedir = None
 
-        # specs for source cache remotes
-        self.source_cache_specs = None
-
         # The directory where build sandboxes will be created
         self.builddir = None
 
@@ -84,6 +81,9 @@ class Context:
 
         # Default root location for workspaces
         self.workspacedir = None
+
+        # specs for source cache remotes
+        self.source_cache_specs = None
 
         # The locations from which to push and pull prebuilt artifacts
         self.artifact_cache_specs = None
