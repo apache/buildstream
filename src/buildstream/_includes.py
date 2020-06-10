@@ -138,7 +138,7 @@ class Includes:
         shortname = include
         if ":" in include:
             junction, include = include.rsplit(":", 1)
-            current_loader = loader.get_loader(junction, provenance=provenance)
+            current_loader = loader.get_loader(junction, provenance)
             current_loader.project.ensure_fully_loaded()
         else:
             current_loader = loader

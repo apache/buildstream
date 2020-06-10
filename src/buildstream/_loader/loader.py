@@ -164,15 +164,15 @@ class Loader:
     #
     # Args:
     #   name (str): Name of junction, may have multiple `:` in the name
+    #   provenance (ProvenanceInformation): The provenance
     #   rewritable (bool): Whether the loaded files should be rewritable
     #                      this is a bit more expensive due to deep copies
     #   ticker (callable): An optional function for tracking load progress
-    #   provenance (ProvenanceInformation): The provenance
     #
     # Returns:
     #   (Loader): loader for sub-project
     #
-    def get_loader(self, name, *, rewritable=False, ticker=None, level=0, provenance=None):
+    def get_loader(self, name, provenance, *, rewritable=False, ticker=None, level=0):
         junction_path = name.split(":")
         loader = self
 
@@ -421,9 +421,7 @@ class Loader:
                 current_element[2].append(dep.name)
 
                 if dep.junction:
-                    loader = self.get_loader(
-                        dep.junction, rewritable=rewritable, ticker=ticker, provenance=dep.provenance
-                    )
+                    loader = self.get_loader(dep.junction, dep.provenance, rewritable=rewritable, ticker=ticker)
                     dep_element = loader._load_file(dep.name, rewritable, ticker, dep.provenance)
                 else:
                     dep_element = self._elements.get(dep.name)
@@ -780,7 +778,7 @@ class Loader:
         if len(junction_path) == 1:
             return None, junction_path[-1], self
         else:
-            loader = self.get_loader(junction_path[-2], rewritable=rewritable, ticker=ticker, provenance=provenance)
+            loader = self.get_loader(junction_path[-2], provenance, rewritable=rewritable, ticker=ticker)
             return junction_path[-2], junction_path[-1], loader
 
     # Print a warning message, checks warning_token against project configuration
