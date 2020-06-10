@@ -220,6 +220,7 @@ and keys, please see: :ref:`Key pair for the server <server_authentication>`.
    new server API. As a result newer buildstream clients won't work with older
    servers.
 
+
 .. _project_essentials_split_artifacts:
 
 Split cache servers
@@ -258,6 +259,7 @@ format for that is as such:
       # currently, also only supported by bst-artifact-server and BuildGrid
       type: both
 
+
 .. _project_source_cache:
 
 Source cache server
@@ -284,6 +286,7 @@ Exactly the same as artifact servers, source cache servers can be specified.
 
    Source caches also support "splitting" like :ref:`artifact servers
    <project_essentials_split_artifacts>`.
+
 
 .. _project_remote_execution:
 
@@ -335,6 +338,7 @@ The Remote Execution API can be found via https://github.com/bazelbuild/remote-a
 
 Remote execution configuration can be also provided in the `user
 configuration <user_config_remote_execution>`.
+
 
 .. _project_essentials_mirrors:
 
@@ -939,6 +943,100 @@ same syntax as other Flag options.
      - ("element.bst" in debug_elements):
          enable-debug: True
 
+
+.. _project_junctions:
+
+Junctions
+---------
+In this section of ``project.conf``, we can define the relationship a project
+has with :mod:`junction <elements.junction>` elements in the same project, or
+even in subprojects.
+
+Sometimes when your project has multiple :mod:`junction <elements.junction>` elements,
+a situation can arise where you have multiple instances of the same project loaded
+at the same time. In most cases, you will want to reconcile this conflict by ensuring
+that your projects share the same junction. In order to reconcile conflicts by
+ensuring nested junctions to the same project are shared, please refer to
+:ref:`the documentation on nested junctions <core_junction_nested>`.
+
+In some exceptional cases, it is entirely intentional and appropriate to use
+the same project more than once in the same build pipeline. The attributes
+in the ``junctions`` group here in ``project.conf`` provide some tools you can
+use to explicitly allow the coexistence of the same project multiple times.
+
+
+Duplicate junctions
+~~~~~~~~~~~~~~~~~~~
+In the case that you are faced with an error due to subprojects sharing
+a common sub-subproject, you can use the ``duplicates`` configuration
+in order to allow the said project to be loaded twice.
+
+**Example**:
+
+.. code:: yaml
+
+   junctions:
+
+     duplicates:
+
+       # Here we use the packaging tooling completely separately from
+       # the payload that we are packaging, they are never staged to
+       # the same location in a given sandbox, and as such we would
+       # prefer to allow the 'runtime' project to be loaded separately.
+       #
+       # This statement will ensure that loading the 'runtime' project
+       # from these two locations will not produce any errors.
+       #
+       runtime:
+       - payload.bst:runtime.bst
+       - packaging.bst:runtime.bst
+
+When considering duplicated projects in the same pipeline, all instances
+of the said project need to be marked as ``duplicates`` in order to avoid
+a *conflicting junction error* at load time.
+
+.. tip::
+
+   The declaration of ``duplicates`` is inherited by any dependant projects
+   which may later decide to depend on your project.
+
+   If you depend on a project which itself has ``duplicates``, and you need
+   to duplicate it again, then you only need to declare the new duplicate,
+   you do not need to redeclare duplicates redundantly.
+
+
+Internal junctions
+~~~~~~~~~~~~~~~~~~
+Another way to avoid *conflicting junction errors* when you know that your
+subproject should not conflict with other instances of the same subproject,
+is to declare the said subproject as *internal*.
+
+**Example**:
+
+.. code:: yaml
+
+   junctions:
+
+     # Declare this subproject as "internal" because we know
+     # that we only use it for build dependencies, and as such
+     # we know that it cannot collide with elements in dependant
+     # projects.
+     #
+     internal:
+     - special-compiler.bst
+
+When compared to *duplicates* above, *internal* projects have the advantage
+of never producing any *conflicting junction errors* in dependant projects
+(reverse dependency projects).
+
+This approach is preferrable in cases where you know for sure that dependant
+projects will not be depending directly on elements from your internal
+subproject.
+
+.. attention::
+
+   Declaring a junction as *internal* is a promise that dependant projects
+   will not accrue runtime dependencies on elements in your *internal* subproject.
 
 
 .. _project_defaults:
