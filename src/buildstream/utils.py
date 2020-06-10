@@ -385,7 +385,11 @@ def safe_copy(src: str, dest: str, *, result: Optional[FileListResult] = None) -
         if e.errno != errno.ENOENT:
             raise UtilError("Failed to remove destination file '{}': {}".format(dest, e)) from e
 
-    shutil.copyfile(src, dest)
+    try:
+        shutil.copyfile(src, dest)
+    except (OSError, shutil.Error) as e:
+        raise UtilError("Failed to copy '{} -> {}': {}".format(src, dest, e)) from e
+
     try:
         shutil.copystat(src, dest)
     except PermissionError:
@@ -397,9 +401,6 @@ def safe_copy(src: str, dest: str, *, result: Optional[FileListResult] = None) -
         # over extended file attributes.
         if result:
             result.failed_attributes.append(dest)
-
-    except shutil.Error as e:
-        raise UtilError("Failed to copy '{} -> {}': {}".format(src, dest, e)) from e
 
 
 def safe_link(src: str, dest: str, *, result: Optional[FileListResult] = None, _unlink=False) -> None:
