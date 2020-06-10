@@ -442,6 +442,8 @@ def test_pull_access_rights(cli, tmpdir, datafiles):
     project = str(datafiles)
     checkout = os.path.join(str(tmpdir), "checkout")
 
+    umask = utils.get_umask()
+
     # Work-around datafiles not preserving mode
     os.chmod(os.path.join(project, "files/bin-files/usr/bin/hello"), 0o0755)
 
@@ -467,15 +469,15 @@ def test_pull_access_rights(cli, tmpdir, datafiles):
 
         st = os.lstat(os.path.join(checkout, "usr/include/pony.h"))
         assert stat.S_ISREG(st.st_mode)
-        assert stat.S_IMODE(st.st_mode) == 0o0644
+        assert stat.S_IMODE(st.st_mode) == 0o0666 & ~umask
 
         st = os.lstat(os.path.join(checkout, "usr/bin/hello"))
         assert stat.S_ISREG(st.st_mode)
-        assert stat.S_IMODE(st.st_mode) == 0o0755
+        assert stat.S_IMODE(st.st_mode) == 0o0777 & ~umask
 
         st = os.lstat(os.path.join(checkout, "usr/share/big-file"))
         assert stat.S_ISREG(st.st_mode)
-        assert stat.S_IMODE(st.st_mode) == 0o0644
+        assert stat.S_IMODE(st.st_mode) == 0o0666 & ~umask
 
         shutil.rmtree(checkout)
 
@@ -493,15 +495,15 @@ def test_pull_access_rights(cli, tmpdir, datafiles):
 
         st = os.lstat(os.path.join(checkout, "usr/include/pony.h"))
         assert stat.S_ISREG(st.st_mode)
-        assert stat.S_IMODE(st.st_mode) == 0o0644
+        assert stat.S_IMODE(st.st_mode) == 0o0666 & ~umask
 
         st = os.lstat(os.path.join(checkout, "usr/bin/hello"))
         assert stat.S_ISREG(st.st_mode)
-        assert stat.S_IMODE(st.st_mode) == 0o0755
+        assert stat.S_IMODE(st.st_mode) == 0o0777 & ~umask
 
         st = os.lstat(os.path.join(checkout, "usr/share/big-file"))
         assert stat.S_ISREG(st.st_mode)
-        assert stat.S_IMODE(st.st_mode) == 0o0644
+        assert stat.S_IMODE(st.st_mode) == 0o0666 & ~umask
 
 
 # Tests `bst artifact pull $artifact_ref`
