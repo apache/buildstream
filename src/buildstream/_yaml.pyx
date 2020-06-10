@@ -283,7 +283,7 @@ cpdef MappingNode load(str filename, str shortname=None, bint copy_tree=False, o
         raise LoadError("Could not find file at {}".format(filename),
                         LoadErrorReason.MISSING_FILE) from e
     except IsADirectoryError as e:
-        raise LoadError("{} is a directory. bst command expects a .bst file.".format(filename),
+        raise LoadError("{} is a directory".format(filename),
                         LoadErrorReason.LOADING_DIRECTORY) from e
     except LoadError as e:
         raise LoadError("{}: {}".format(displayname, e), e.reason) from e
