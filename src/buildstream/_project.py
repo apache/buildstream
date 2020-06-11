@@ -509,14 +509,6 @@ class Project:
 
         self._load_second_pass()
 
-    # invoked_from_workspace_element()
-    #
-    # Returns the element whose workspace was used to invoke buildstream
-    # if buildstream was invoked from an external workspace
-    #
-    def invoked_from_workspace_element(self):
-        return self._invoked_from_workspace_element
-
     # cleanup()
     #
     # Cleans up resources used loading elements
