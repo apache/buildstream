@@ -1100,36 +1100,6 @@ def test_external_open_other(cli, datafiles, tmpdir_factory):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_external_close_other(cli, datafiles, tmpdir_factory):
-    # From inside an external workspace, close the other workspace
-    tmpdir1 = tmpdir_factory.mktemp(BASE_FILENAME)
-    tmpdir2 = tmpdir_factory.mktemp(BASE_FILENAME)
-    # Making use of the assumption that it's the same project in both invocations of open_workspace
-    _, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", suffix="-alpha")
-    beta_element, _, _ = open_workspace(cli, tmpdir2, datafiles, "git", suffix="-beta")
-
-    result = cli.run(project=project, args=["-C", alpha_workspace, "workspace", "close", beta_element])
-    result.assert_success()
-    assert "you can no longer run BuildStream" not in result.stderr
-
-
-@pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("guess_element", [True, False], ids=["guess", "no-guess"])
-def test_external_close_self(cli, datafiles, tmpdir_factory, guess_element):
-    # From inside an external workspace, close it
-    tmpdir1 = tmpdir_factory.mktemp(BASE_FILENAME)
-    tmpdir2 = tmpdir_factory.mktemp(BASE_FILENAME)
-    # Making use of the assumption that it's the same project in both invocations of open_workspace
-    alpha_element, project, alpha_workspace = open_workspace(cli, tmpdir1, datafiles, "git", suffix="-alpha")
-    _, _, _ = open_workspace(cli, tmpdir2, datafiles, "git", suffix="-beta")
-    arg_elm = [alpha_element] if not guess_element else []
-
-    result = cli.run(project=project, args=["-C", alpha_workspace, "workspace", "close", *arg_elm])
-    result.assert_success()
-    assert "you can no longer run BuildStream" in result.stderr
-
-
-@pytest.mark.datafiles(DATA_DIR)
 def test_external_reset_other(cli, datafiles, tmpdir_factory):
     tmpdir1 = tmpdir_factory.mktemp(BASE_FILENAME)
     tmpdir2 = tmpdir_factory.mktemp(BASE_FILENAME)

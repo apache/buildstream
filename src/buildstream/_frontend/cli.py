@@ -1040,8 +1040,6 @@ def workspace_open(app, no_checkout, force, directory, elements):
 def workspace_close(app, remove_dir, all_, elements):
     """Close a workspace"""
 
-    removed_required_element = False
-
     with app.initialized():
         if not (all_ or elements):
             # NOTE: I may need to revisit this when implementing multiple projects
@@ -1073,17 +1071,6 @@ def workspace_close(app, remove_dir, all_, elements):
 
         for element_name in elements:
             app.stream.workspace_close(element_name, remove_dir=remove_dir)
-            if app.stream.workspace_is_required(element_name):
-                removed_required_element = True
-
-    # This message is echo'd last, as it's most relevant to the next
-    # thing the user will type.
-    if removed_required_element:
-        click.echo(
-            "Removed '{}', therefore you can no longer run BuildStream "
-            "commands from the current directory.".format(element_name),
-            err=True,
-        )
 
 
 ##################################################################
