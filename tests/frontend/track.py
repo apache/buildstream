@@ -17,10 +17,10 @@ TOP_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = os.path.join(TOP_DIR, "project")
 
 
-def generate_element(repo, element_path, dep_name=None):
-    element = {"kind": "import", "sources": [repo.source_config()]}
-    if dep_name:
-        element["depends"] = [dep_name]
+def generate_element(repo, element_path, dependencies=None, ref=None):
+    element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
+    if dependencies:
+        element["depends"] = dependencies
 
     _yaml.roundtrip_dump(element, element_path)
 
@@ -41,7 +41,7 @@ def test_track_single(cli, tmpdir, datafiles):
 
     # Write out our test targets
     generate_element(repo, os.path.join(element_path, element_dep_name))
-    generate_element(repo, os.path.join(element_path, element_target_name), dep_name=element_dep_name)
+    generate_element(repo, os.path.join(element_path, element_target_name), dependencies=[element_dep_name])
 
     # Assert that tracking is needed for both elements
     states = cli.get_element_states(project, [element_target_name])
@@ -139,7 +139,7 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
 
     # Generate two elements using the git source, one in
     # the main project and one in the subproject.
-    generate_element(repo, target_path, dep_name="subproject.bst")
+    generate_element(repo, target_path, dependencies=["subproject.bst"])
     generate_element(repo, subtarget_path)
 
     # Generate project.conf
