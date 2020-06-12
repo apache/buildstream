@@ -179,6 +179,10 @@ class Project:
     def source_overrides(self):
         return self.config.source_overrides
 
+    ########################################################
+    #                     Public Methods                   #
+    ########################################################
+
     # translate_url():
     #
     # Translates the given url which may be specified with an alias
@@ -319,35 +323,6 @@ class Project:
             )
 
         return path_str
-
-    def _validate_node(self, node):
-        node.validate_keys(
-            [
-                "min-version",
-                "element-path",
-                "variables",
-                "environment",
-                "environment-nocache",
-                "split-rules",
-                "elements",
-                "plugins",
-                "aliases",
-                "name",
-                "defaults",
-                "artifacts",
-                "options",
-                "fail-on-overlap",
-                "shell",
-                "fatal-warnings",
-                "ref-storage",
-                "sandbox",
-                "mirrors",
-                "remote-execution",
-                "sources",
-                "source-caches",
-                "(@)",
-            ]
-        )
 
     # create_element()
     #
@@ -509,14 +484,6 @@ class Project:
 
         self._load_second_pass()
 
-    # invoked_from_workspace_element()
-    #
-    # Returns the element whose workspace was used to invoke buildstream
-    # if buildstream was invoked from an external workspace
-    #
-    def invoked_from_workspace_element(self):
-        return self._invoked_from_workspace_element
-
     # cleanup()
     #
     # Cleans up resources used loading elements
@@ -566,6 +533,46 @@ class Project:
                     default_targets.append(rel_file)
 
         return tuple(default_targets)
+
+    ########################################################
+    #                    Private Methods                   #
+    ########################################################
+
+    # _validate_toplevel_node()
+    #
+    # Validates the toplevel project.conf keys
+    #
+    # Args:
+    #    node (MappingNode): The toplevel project.conf node
+    #
+    def _validate_toplevel_node(self, node):
+        node.validate_keys(
+            [
+                "min-version",
+                "element-path",
+                "variables",
+                "environment",
+                "environment-nocache",
+                "split-rules",
+                "elements",
+                "plugins",
+                "aliases",
+                "name",
+                "defaults",
+                "artifacts",
+                "options",
+                "fail-on-overlap",
+                "shell",
+                "fatal-warnings",
+                "ref-storage",
+                "sandbox",
+                "mirrors",
+                "remote-execution",
+                "sources",
+                "source-caches",
+                "(@)",
+            ]
+        )
 
     # _validate_version()
     #
@@ -663,7 +670,7 @@ class Project:
         # Assert project's minimum required version early, before validating toplevel keys
         self._validate_version(pre_config_node)
 
-        self._validate_node(pre_config_node)
+        self._validate_toplevel_node(pre_config_node)
 
         # The project name, element path and option declarations
         # are constant and cannot be overridden by option conditional statements
@@ -723,7 +730,7 @@ class Project:
 
         self._load_pass(config, self.config)
 
-        self._validate_node(config)
+        self._validate_toplevel_node(config)
 
         #
         # Now all YAML composition is done, from here on we just load
