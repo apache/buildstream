@@ -1,6 +1,6 @@
-============
-(unreleased)
-============
+==================
+buildstream 1.93.4
+==================
 
 Core
 ----
@@ -17,6 +17,7 @@ CLI
   o `bst source fetch --deps` now also accepts "build" and "run" as inputs.
   o `bst artifact pull --deps` now also accepts "build" and "run" as inputs.
   o `bst artifact push --deps` now also accepts "build" and "run" as inputs.
+  o Full paths can now be used to address elements across multiple junction boundaries
 
 
 Format
@@ -28,6 +29,11 @@ Format
   o BREAKING CHANGE: The `target` option of junctions has been completely removed,
     Use `link` elements instead.
   o Variables from an element can now be used in source configurations
+  o Full paths can now be used to address elements across multiple junction boundaries
+  o A new "junction" plugin origin allows loading of plugins across junction boundaries
+  o Support buildstream2.conf as a user configuration, allowing parallel installation
+    of bst 1 & bst 2
+
 
 Plugins
 -------
@@ -38,6 +44,7 @@ Plugins
   o The `pip` element has been removed. Please use the one from bst-plugins-experimental
   o Introduced new `link` element which can be used as a symbolic link to other
     elements or junctions, in the local project or in subprojects.
+  o The DownloadableFileSource is now public API
 
 API
 ---
