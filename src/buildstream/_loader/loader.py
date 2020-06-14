@@ -44,13 +44,11 @@ from .._message import Message, MessageType
 # with their own MetaSources, ready for instantiation by the core.
 #
 # Args:
-#    context (Context): The Context object
 #    project (Project): The toplevel Project object
-#    fetch_subprojects (callable): A function to fetch subprojects
 #    parent (Loader): A parent Loader object, in the case this is a junctioned Loader
 #
 class Loader:
-    def __init__(self, context, project, *, fetch_subprojects, parent=None):
+    def __init__(self, project, *, parent=None):
 
         # Ensure we have an absolute path for the base directory
         basedir = project.element_path
@@ -60,18 +58,17 @@ class Loader:
         #
         # Public members
         #
+        self.load_context = project.load_context  # The LoadContext
         self.project = project  # The associated Project
         self.loaded = None  # The number of loaded Elements
 
         #
         # Private members
         #
-        self._context = context
         self._options = project.options  # Project options (OptionPool)
         self._basedir = basedir  # Base project directory
         self._first_pass_options = project.first_pass_config.options  # Project options (OptionPool)
         self._parent = parent  # The parent loader
-        self._fetch_subprojects = fetch_subprojects
 
         self._meta_elements = {}  # Dict of resolved meta elements by name
         self._elements = {}  # Dict of elements
@@ -84,16 +81,13 @@ class Loader:
     # Loads the project based on the parameters given to the constructor
     #
     # Args:
-    #    rewritable (bool): Whether the loaded files should be rewritable
-    #                       this is a bit more expensive due to deep copies
-    #    ticker (callable): An optional function for tracking load progress
     #    targets (list of str): Target, element-path relative bst filenames in the project
-    #    task (Task): A task object to report progress to
     #
     # Raises: LoadError
     #
     # Returns: The toplevel LoadElement
-    def load(self, targets, task, rewritable=False, ticker=None):
+    #
+    def load(self, targets):
 
         for filename in targets:
             if os.path.isabs(filename):
@@ -113,8 +107,8 @@ class Loader:
 
         for target in targets:
             with PROFILER.profile(Topics.LOAD_PROJECT, target):
-                _junction, name, loader = self._parse_name(target, rewritable, ticker)
-                element = loader._load_file(name, rewritable, ticker)
+                _junction, name, loader = self._parse_name(target, None)
+                element = loader._load_file(name, None)
                 target_elements.append(element)
 
         #
@@ -147,14 +141,14 @@ class Loader:
 
             # Finally, wrap what we have into LoadElements and return the target
             #
-            ret.append(loader._collect_element(element, task))
+            ret.append(loader._collect_element(element))
 
         self._clean_caches()
 
         # Cache how many Elements have just been loaded
-        if task:
+        if self.load_context.task:
             # Workaround for task potentially being None (because no State object)
-            self.loaded = task.current_progress
+            self.loaded = self.load_context.task.current_progress
 
         return ret
 
@@ -165,21 +159,16 @@ class Loader:
     # Args:
     #   name (str): Name of junction, may have multiple `:` in the name
     #   provenance (ProvenanceInformation): The provenance
-    #   rewritable (bool): Whether the loaded files should be rewritable
-    #                      this is a bit more expensive due to deep copies
-    #   ticker (callable): An optional function for tracking load progress
     #
     # Returns:
     #   (Loader): loader for sub-project
     #
-    def get_loader(self, name, provenance, *, rewritable=False, ticker=None, level=0):
+    def get_loader(self, name, provenance, *, level=0):
         junction_path = name.split(":")
         loader = self
 
         for junction_name in junction_path:
-            loader = loader._get_loader(
-                junction_name, rewritable=rewritable, ticker=ticker, level=level, provenance=provenance
-            )
+            loader = loader._get_loader(junction_name, provenance, level=level)
 
         return loader
 
@@ -192,12 +181,14 @@ class Loader:
     #
     # Args:
     #    element (LoadElement): The element for which to load a MetaElement
-    #    task (Task): A task to write progress information to
+    #    report_progress (bool): Whether to report progress for this element, this is
+    #                            because we ignore junctions and links when counting
+    #                            how many elements we load.
     #
     # Returns:
     #    (MetaElement): A partially loaded MetaElement
     #
-    def collect_element_no_deps(self, element, task=None):
+    def collect_element_no_deps(self, element, *, report_progress=False):
         # Return the already built one, if we already built it
         meta_element = self._meta_elements.get(element.name)
         if meta_element:
@@ -211,7 +202,7 @@ class Loader:
 
         # if there's a workspace for this element then just append a dummy workspace
         # metasource.
-        workspace = self._context.get_workspaces().get_workspace(element.name)
+        workspace = self.load_context.context.get_workspaces().get_workspace(element.name)
         skip_workspace = True
         if workspace:
             workspace_node = {"kind": "workspace"}
@@ -253,8 +244,8 @@ class Loader:
 
         # Cache it now, make sure it's already there before recursing
         self._meta_elements[element.name] = meta_element
-        if task:
-            task.add_current_progress()
+        if self.load_context.task and report_progress:
+            self.load_context.task.add_current_progress()
 
         return meta_element
 
@@ -272,17 +263,18 @@ class Loader:
     #
     # Args:
     #    filename (str): The element-path relative bst file
-    #    rewritable (bool): Whether we should load in round trippable mode
     #    provenance (Provenance): The location from where the file was referred to, or None
     #
     # Returns:
     #    (LoadElement): A partially-loaded LoadElement
     #
-    def _load_file_no_deps(self, filename, rewritable, provenance=None):
+    def _load_file_no_deps(self, filename, provenance=None):
         # Load the data and process any conditional statements therein
         fullpath = os.path.join(self._basedir, filename)
         try:
-            node = _yaml.load(fullpath, shortname=filename, copy_tree=rewritable, project=self.project)
+            node = _yaml.load(
+                fullpath, shortname=filename, copy_tree=self.load_context.rewritable, project=self.project
+            )
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_FILE:
 
@@ -346,32 +338,24 @@ class Loader:
     #
     # Args:
     #    filename (str): The element-path relative bst file
-    #    rewritable (bool): Whether we should load in round trippable mode
-    #    ticker (callable): A callback to report loaded filenames to the frontend
     #    provenance (Provenance): The location from where the file was referred to, or None
     #
     # Returns:
     #    (LoadElement): A loaded LoadElement
     #
-    def _load_file(self, filename, rewritable, ticker, provenance=None):
+    def _load_file(self, filename, provenance):
 
         # Silently ignore already loaded files
         if filename in self._elements:
             return self._elements[filename]
 
-        # Call the ticker
-        if ticker:
-            ticker(filename)
-
-        top_element = self._load_file_no_deps(filename, rewritable, provenance)
+        top_element = self._load_file_no_deps(filename, provenance)
 
         # If this element is a link then we need to resolve it
         # and replace the dependency we've processed with this one
         if top_element.link_target is not None:
-            _, filename, loader = self._parse_name(
-                top_element.link_target, rewritable, ticker, top_element.link_target_provenance
-            )
-            top_element = loader._load_file(filename, rewritable, ticker, top_element.link_target_provenance)
+            _, filename, loader = self._parse_name(top_element.link_target, top_element.link_target_provenance)
+            top_element = loader._load_file(filename, top_element.link_target_provenance)
 
         dependencies = extract_depends_from_node(top_element.node)
         # The loader queue is a stack of tuples
@@ -391,8 +375,8 @@ class Loader:
                 current_element[2].append(dep.name)
 
                 if dep.junction:
-                    loader = self.get_loader(dep.junction, dep.provenance, rewritable=rewritable, ticker=ticker)
-                    dep_element = loader._load_file(dep.name, rewritable, ticker, dep.provenance)
+                    loader = self.get_loader(dep.junction, dep.provenance)
+                    dep_element = loader._load_file(dep.name, dep.provenance)
                 else:
                     dep_element = self._elements.get(dep.name)
 
@@ -400,7 +384,7 @@ class Loader:
                         # The loader does not have this available so we need to
                         # either recursively cause it to be loaded, or else we
                         # need to push this onto the loader queue in this loader
-                        dep_element = self._load_file_no_deps(dep.name, rewritable, dep.provenance)
+                        dep_element = self._load_file_no_deps(dep.name, dep.provenance)
                         dep_deps = extract_depends_from_node(dep_element.node)
                         loader_queue.append((dep_element, list(reversed(dep_deps)), []))
 
@@ -413,10 +397,8 @@ class Loader:
                 # If this dependency is a link then we need to resolve it
                 # and replace the dependency we've processed with this one
                 if dep_element.link_target:
-                    _, filename, loader = self._parse_name(
-                        dep_element.link_target, rewritable, ticker, dep_element.link_target_provenance
-                    )
-                    dep_element = loader._load_file(filename, rewritable, ticker, dep_element.link_target_provenance)
+                    _, filename, loader = self._parse_name(dep_element.link_target, dep_element.link_target_provenance)
+                    dep_element = loader._load_file(filename, dep_element.link_target_provenance)
 
                 # All is well, push the dependency onto the LoadElement
                 # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
@@ -492,14 +474,13 @@ class Loader:
     #
     # Args:
     #    top_element (LoadElement): The element for which to load a MetaElement
-    #    task (Task): The task to update with progress changes
     #
     # Returns:
     #    (MetaElement): A fully loaded MetaElement
     #
-    def _collect_element(self, top_element, task=None):
+    def _collect_element(self, top_element):
         element_queue = [top_element]
-        meta_element_queue = [self.collect_element_no_deps(top_element, task)]
+        meta_element_queue = [self.collect_element_no_deps(top_element, report_progress=True)]
 
         while element_queue:
             element = element_queue.pop()
@@ -515,12 +496,12 @@ class Loader:
                 loader = dep.element._loader
                 name = dep.element.name
 
-                if name not in loader._meta_elements:
-                    meta_dep = loader.collect_element_no_deps(dep.element, task)
+                try:
+                    meta_dep = loader._meta_elements[name]
+                except KeyError:
+                    meta_dep = loader.collect_element_no_deps(dep.element, report_progress=True)
                     element_queue.append(dep.element)
                     meta_element_queue.append(meta_dep)
-                else:
-                    meta_dep = loader._meta_elements[name]
 
                 if dep.dep_type != "runtime":
                     meta_element.build_dependencies.append(meta_dep)
@@ -539,13 +520,14 @@ class Loader:
     #
     # Args:
     #    filename (str): Junction name
+    #    provenance (Provenance): The location from where the file was referred to, or None
     #
     # Raises: LoadError
     #
     # Returns: A Loader or None if specified junction does not exist
     #
-    def _get_loader(self, filename, *, rewritable=False, ticker=None, level=0, provenance=None):
-
+    def _get_loader(self, filename, provenance, *, level=0):
+        loader = None
         provenance_str = ""
         if provenance is not None:
             provenance_str = "{}: ".format(provenance)
@@ -569,15 +551,13 @@ class Loader:
         if self._parent:
             # junctions in the parent take precedence over junctions defined
             # in subprojects
-            loader = self._parent._get_loader(
-                filename, rewritable=rewritable, ticker=ticker, level=level + 1, provenance=provenance
-            )
+            loader = self._parent._get_loader(filename, level=level + 1, provenance=provenance)
             if loader:
                 self._loaders[filename] = loader
                 return loader
 
         try:
-            self._load_file(filename, rewritable, ticker, provenance=provenance)
+            self._load_file(filename, provenance=provenance)
         except LoadError as e:
             if e.reason != LoadErrorReason.MISSING_FILE:
                 # other load error
@@ -599,21 +579,8 @@ class Loader:
         # immediately and move on to the target.
         #
         if load_element.link_target:
-
-            _, filename, loader = self._parse_name(
-                load_element.link_target, rewritable, ticker, provenance=load_element.link_target_provenance
-            )
-
-            if loader != self:
-                level = level + 1
-
-            return loader._get_loader(
-                filename,
-                rewritable=rewritable,
-                ticker=ticker,
-                level=level,
-                provenance=load_element.link_target_provenance,
-            )
+            _, filename, loader = self._parse_name(load_element.link_target, load_element.link_target_provenance)
+            return loader.get_loader(filename, load_element.link_target_provenance)
 
         # meta junction element
         #
@@ -664,9 +631,7 @@ class Loader:
         # Handle the case where a subproject needs to be fetched
         #
         if not element._has_all_sources_in_source_cache():
-            if ticker:
-                ticker(filename, "Fetching subproject")
-            self._fetch_subprojects([element])
+            self.load_context.fetch_subprojects([element])
 
         sources = list(element.sources())
         if len(sources) == 1 and sources[0]._get_local_path():
@@ -699,12 +664,7 @@ class Loader:
             from .._project import Project  # pylint: disable=cyclic-import
 
             project = Project(
-                project_dir,
-                self._context,
-                junction=element,
-                parent_loader=self,
-                search_for_project=False,
-                fetch_subprojects=self._fetch_subprojects,
+                project_dir, self.load_context.context, junction=element, parent_loader=self, search_for_project=False,
             )
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
@@ -730,9 +690,6 @@ class Loader:
     #
     # Args:
     #   name (str): Name of target
-    #   rewritable (bool): Whether the loaded files should be rewritable
-    #                      this is a bit more expensive due to deep copies
-    #   ticker (callable): An optional function for tracking load progress
     #   provenance (ProvenanceInformation): The provenance
     #
     # Returns:
@@ -740,7 +697,7 @@ class Loader:
     #            - (str): name of the element
     #            - (Loader): loader for sub-project
     #
-    def _parse_name(self, name, rewritable, ticker, provenance=None):
+    def _parse_name(self, name, provenance):
         # We allow to split only once since deep junctions names are forbidden.
         # Users who want to refer to elements in sub-sub-projects are required
         # to create junctions on the top level project.
@@ -748,7 +705,7 @@ class Loader:
         if len(junction_path) == 1:
             return None, junction_path[-1], self
         else:
-            loader = self.get_loader(junction_path[-2], provenance, rewritable=rewritable, ticker=ticker)
+            loader = self.get_loader(junction_path[-2], provenance)
             return junction_path[-2], junction_path[-1], loader
 
     # Print a warning message, checks warning_token against project configuration
@@ -767,7 +724,7 @@ class Loader:
                 raise LoadError(brief, warning_token)
 
         message = Message(MessageType.WARN, brief)
-        self._context.messenger.message(message)
+        self.load_context.context.messenger.message(message)
 
     # Print warning messages if any of the specified elements have invalid names.
     #
