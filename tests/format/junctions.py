@@ -453,14 +453,23 @@ def test_override_twice(cli, tmpdir, datafiles):
 #
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
-    "target,provenances",
+    "project_dir,target,provenances",
     [
         # Test a stack element which depends directly on the same project twice
-        ("simple-conflict.bst", ["simple-conflict.bst [line 5 column 2]", "simple-conflict.bst [line 4 column 2]"]),
+        (
+            "conflicts",
+            "simple-conflict.bst",
+            ["simple-conflict.bst [line 5 column 2]", "simple-conflict.bst [line 4 column 2]"],
+        ),
         # Test a dependency chain leading deep into a project which conflicts with the toplevel
-        ("nested-conflict-toplevel.bst", ["subproject.bst:subsubproject-conflict-target.bst [line 4 column 2]"]),
+        (
+            "conflicts",
+            "nested-conflict-toplevel.bst",
+            ["subproject.bst:subsubproject-conflict-target.bst [line 4 column 2]"],
+        ),
         # Test an attempt to override a subproject with a subproject of that same subproject through a different junction
         (
+            "conflicts",
             "override-conflict.bst",
             [
                 "subproject-override-conflicting-path.bst [line 13 column 23]",
@@ -469,23 +478,52 @@ def test_override_twice(cli, tmpdir, datafiles):
         ),
         # Same test as above, but specifying the target as a full path instead of a stack element
         (
+            "conflicts",
             "subproject-override-conflicting-path.bst:subsubproject.bst:target.bst",
             ["subproject-override-conflicting-path.bst [line 13 column 23]"],
         ),
         # Test a dependency on a subproject conflicting with an include of a file from a different
         # version of the same project
         (
+            "conflicts",
             "include-conflict-target.bst",
             ["include-conflict-target.bst [line 5 column 2]", "include-conflict.bst [line 4 column 7]"],
         ),
         # Test an element kind which needs to load it's plugin from a subproject, but
         # the element has a dependency on an element from a different version of the same project
-        ("plugin-conflict.bst", ["project.conf [line 4 column 2]", "plugin-conflict.bst [line 4 column 2]"]),
+        (
+            "conflicts",
+            "plugin-conflict.bst",
+            ["project.conf [line 4 column 2]", "plugin-conflict.bst [line 4 column 2]"],
+        ),
+        # Test a project which subproject's the same project twice, but only lists it
+        # as a duplicate via one of it's junctions.
+        (
+            "duplicates-simple-incomplete",
+            "target.bst",
+            ["target.bst [line 4 column 2]", "target.bst [line 5 column 2]"],
+        ),
+        # Test a project which subproject's the same project twice, but only lists it
+        # as a duplicate via one of it's junctions.
+        (
+            "duplicates-nested-incomplete",
+            "target.bst",
+            ["target.bst [line 6 column 2]", "target.bst [line 4 column 2]", "target.bst [line 5 column 2]"],
+        ),
     ],
-    ids=["simple", "nested", "override", "override-full-path", "include", "plugin"],
+    ids=[
+        "simple",
+        "nested",
+        "override",
+        "override-full-path",
+        "include",
+        "plugin",
+        "incomplete-duplicates",
+        "incomplete-nested-duplicates",
+    ],
 )
-def test_conflict(cli, tmpdir, datafiles, target, provenances):
-    project = os.path.join(str(datafiles), "conflicts")
+def test_conflict(cli, tmpdir, datafiles, project_dir, target, provenances):
+    project = os.path.join(str(datafiles), project_dir)
 
     # Special case setup the conflicting project.conf
     if target == "plugin-conflict.bst":
@@ -530,3 +568,80 @@ def test_circular_reference(cli, tmpdir, datafiles, target, provenance1, provena
     assert provenance1 in result.stderr
     if provenance2:
         assert provenance2 in result.stderr
+
+
+#
+# Test explicitly marked duplicates
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "project_dir",
+    [
+        # Test a project with two direct dependencies on the same project
+        ("duplicates-simple"),
+        # Test a project with a dependency on a project with two duplicate subprojects,
+        # while additionally adding a dependency on that duplicated subproject at the toplevel
+        ("duplicates-nested"),
+        # Same as previous test, but duplicate the subprojects only from the toplevel,
+        # ensuring that the pathing and addressing of elements works.
+        ("duplicates-nested-full-path"),
+        # Test a project with two direct dependencies on the same project, one of them
+        # referred to via a link to the junction.
+        ("duplicates-simple-link"),
+        # Test a project where the toplevel duplicates a link in a subproject
+        ("duplicates-nested-link1"),
+        # Test a project where the toplevel duplicates a link to a nested subproject
+        ("duplicates-nested-link2"),
+        # Test a project which overrides the a subsubproject which is marked as a duplicate by the subproject,
+        # ensure that the duplicate relationship for the subproject/subsubproject is preserved.
+        ("duplicates-override-dup"),
+        # Test a project which overrides a deep subproject multiple times in the hierarchy, the intermediate
+        # junction to the deep subproject (which is overridden by the toplevel) marks that deep subproject as
+        # a duplicate using a link element in the project.conf to mark the duplicate, this link is otherwise unused.
+        ("duplicates-override-twice-link"),
+    ],
+    ids=[
+        "simple",
+        "nested",
+        "nested-full-path",
+        "simple-link",
+        "link-in-subproject",
+        "link-to-subproject",
+        "overridden",
+        "overridden-twice-link",
+    ],
+)
+def test_duplicates(cli, tmpdir, datafiles, project_dir):
+    project = os.path.join(str(datafiles), project_dir)
+
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+
+
+#
+# Test errors which occur when duplicate lists refer to elements which
+# don't exist.
+#
+# While subprojects are not loaded by virtue of searching the duplicate
+# lists, we do attempt to load elements in loaded projects in order to
+# ensure that we properly traverse `link` elements.
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "project_dir,provenance",
+    [
+        # Test a not found duplicate at the toplevel
+        ("duplicates-simple-not-found", "project.conf [line 8 column 6]"),
+        # Test a listed duplicate of a broken `link` target in a subproject
+        ("duplicates-nested-not-found", "subproject.bst:subproject1-link.bst [line 4 column 10]"),
+    ],
+    ids=["simple", "broken-nested-link"],
+)
+def test_duplicates_not_found(cli, tmpdir, datafiles, project_dir, provenance):
+    project = os.path.join(str(datafiles), project_dir)
+
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_FILE)
+
+    # Check that provenance was provided if expected
+    assert provenance in result.stderr
