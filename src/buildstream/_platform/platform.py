@@ -18,7 +18,6 @@
 #  Authors:
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
-import multiprocessing
 import os
 import platform
 
@@ -145,19 +144,6 @@ class Platform:
         else:
             # Otherwise, use the hardware identifier from uname
             return Platform.canonicalize_arch(uname.machine)
-
-    # does_multiprocessing_start_require_pickling():
-    #
-    # Returns True if the multiprocessing start method will pickle arguments
-    # to new processes.
-    #
-    # Returns:
-    #    (bool): Whether pickling is required or not
-    #
-    def does_multiprocessing_start_require_pickling(self):
-        # Note that if the start method has not been set before now, it will be
-        # set to the platform default by `get_start_method`.
-        return multiprocessing.get_start_method() != "fork"
 
     ##################################################################
     #                        Sandbox functions                       #

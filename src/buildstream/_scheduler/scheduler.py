@@ -634,18 +634,3 @@ class Scheduler:
         # as a 'BUG', format it appropriately & exit. mypy needs to ignore parameter
         # types here as we're overriding sys globally in App._global_exception_handler()
         sys.excepthook(type(e), e, e.__traceback__, exc)  # type: ignore
-
-    def __getstate__(self):
-        # The only use-cases for pickling in BuildStream at the time of writing
-        # are enabling the 'spawn' method of starting child processes, and
-        # saving jobs to disk for replays.
-        #
-        # In both of these use-cases, a common mistake is that something being
-        # pickled indirectly holds a reference to the Scheduler, which in turn
-        # holds lots of things that are not pickleable.
-        #
-        # Make this situation easier to debug by failing early, in the
-        # Scheduler itself. Pickling this is almost certainly a mistake, unless
-        # a new use-case arises.
-        #
-        raise TypeError("Scheduler objects should not be pickled.")

@@ -65,17 +65,6 @@ class OptionPool:
         self._environment = None
         self._init_environment()
 
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        # Jinja2 Environments don't appear to be serializable. It is easy
-        # enough for us to reconstruct this one anyway, so no need to pickle it.
-        del state["_environment"]
-        return state
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-        self._init_environment()
-
     # load()
     #
     # Loads the options described in the project.conf
