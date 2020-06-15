@@ -92,39 +92,6 @@ class PluginFactory:
             searchpath=[self._site_plugins_path], identifier=self._identifier + "site",
         )
 
-    def __getstate__(self):
-        state = self.__dict__.copy()
-
-        # PluginSource is not a picklable type, so we must reconstruct this one
-        # as best we can when unpickling.
-        #
-        # Since the values of `_types` depend on the PluginSource, we must also
-        # get rid of those. It is only a cache - we will automatically recreate
-        # them on demand.
-        #
-        # Note that this method of referring to members is error-prone in that
-        # a later 'search and replace' renaming might miss these. Guard against
-        # this by making sure we are not creating new members, only clearing
-        # existing ones.
-        #
-        del state["_site_source"]
-        assert "_types" in state
-        state["_types"] = {}
-        assert "_sources" in state
-        state["_sources"] = {}
-
-        return state
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-
-        # Note that in order to enable plugins to be unpickled along with this
-        # PluginSource, we would also have to set and restore the 'identifier'
-        # of the PluginSource. We would also have to recreate `_types` as it
-        # was before unpickling them. We are not using this method in
-        # BuildStream, so the identifier is not restored here.
-        self._init_site_source()
-
     ######################################################
     #                  Public Methods                    #
     ######################################################

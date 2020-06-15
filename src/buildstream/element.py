@@ -2251,40 +2251,6 @@ class Element(Plugin):
                         rdep.__buildable_callback(rdep)
                         rdep.__buildable_callback = None
 
-    # _get_args_for_child_job_pickling(self)
-    #
-    # Return data necessary to reconstruct this object in a child job process.
-    #
-    # Returns:
-    #    (str, dict): A tuple of (meta_kind, state), where a factory can use
-    #    `meta_kind` to create an instance of the same type as `self`. `state`
-    #    is what we want `self.__dict__` to be restored to after instantiation
-    #    in the child process.
-    #
-    def _get_args_for_child_job_pickling(self):
-        state = self.__dict__.copy()
-
-        # These are called in the main process to notify the scheduler about
-        # certain things. They carry a reference to the scheduler, which we
-        # don't want in the child process, so clear them.
-        #
-        # Note that this method of referring to members is error-prone in that
-        # a later 'search and replace' renaming might miss these. Guard against
-        # this by making sure we are not creating new members, only clearing
-        # existing ones.
-        #
-        assert "_Element__can_query_cache_callback" in state
-        state["_Element__can_query_cache_callback"] = None
-        assert "_Element__buildable_callback" in state
-        state["_Element__buildable_callback"] = None
-
-        # This callback is not even read in the child process, so delete it.
-        # If this assumption is invalidated, we will get an attribute error to
-        # let us know, and we will need to update accordingly.
-        del state["_Element__required_callback"]
-
-        return self.__meta_kind, state
-
     def _walk_artifact_files(self):
         yield from self.__artifact.get_files().walk()
 

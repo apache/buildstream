@@ -183,36 +183,6 @@ class Loader:
 
         return loader
 
-    # get_state_for_child_job_pickling(self)
-    #
-    # Return data necessary to reconstruct this object in a child job process.
-    #
-    # This should be implemented the same as __getstate__(). We define this
-    # method instead as it is child job specific.
-    #
-    # Returns:
-    #    (dict): This `state` is what we want `self.__dict__` to be restored to
-    #    after instantiation in the child process.
-    #
-    def get_state_for_child_job_pickling(self):
-        state = self.__dict__.copy()
-
-        # When pickling a Loader over to the ChildJob, we don't want to bring
-        # the whole Stream over with it. The _fetch_subprojects member is a
-        # method of the Stream. We also don't want to remove it in the main
-        # process. If we remove it in the child process then we will already be
-        # too late. The only time that seems just right is here, when preparing
-        # the child process' copy of the Loader.
-        #
-        del state["_fetch_subprojects"]
-
-        # Also there's no gain in pickling over the caches, and they might
-        # contain things which are unpleasantly large or unable to pickle.
-        del state["_elements"]
-        del state["_meta_elements"]
-
-        return state
-
     # collect_element_no_deps()
     #
     # Collect a single element, without its dependencies, into a meta_element
