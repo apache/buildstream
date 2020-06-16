@@ -127,7 +127,7 @@ cdef class LoadElement:
         # store the link target and provenance
         #
         if self.node.get_str(Symbol.KIND, default=None) == 'link':
-            meta_element = self._loader.collect_element_no_deps(self, None)
+            meta_element = self._loader.collect_element_no_deps(self)
             element = Element._new_from_meta(meta_element)
             element._initialize_state()
 

@@ -286,7 +286,6 @@ class App:
                     self.context,
                     cli_options=self._main_options["option"],
                     default_mirror=self._main_options.get("default_mirror"),
-                    fetch_subprojects=self.stream.fetch_subprojects,
                 )
 
                 self.stream.set_project(self.project)

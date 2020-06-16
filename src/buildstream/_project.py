@@ -39,7 +39,7 @@ from .sandbox import SandboxRemote
 from ._pluginfactory import ElementFactory, SourceFactory, load_plugin_origin
 from .types import CoreWarnings
 from ._projectrefs import ProjectRefs, ProjectRefStorage
-from ._loader import Loader
+from ._loader import Loader, LoadContext
 from .element import Element
 from ._message import Message, MessageType
 from ._includes import Includes
@@ -100,13 +100,18 @@ class Project:
         default_mirror=None,
         parent_loader=None,
         search_for_project=True,
-        fetch_subprojects=None
     ):
 
         # The project name
         self.name = None
 
         self._context = context  # The invocation Context, a private member
+
+        # Create the LoadContext here if we are the toplevel project.
+        if parent_loader:
+            self.load_context = parent_loader.load_context
+        else:
+            self.load_context = LoadContext(self._context)
 
         if search_for_project:
             self.directory, self._invoked_from_workspace_element = self._find_project_dir(directory)
@@ -159,7 +164,7 @@ class Project:
         self._project_includes = None
 
         with PROFILER.profile(Topics.LOAD_PROJECT, self.directory.replace(os.sep, "-")):
-            self._load(parent_loader=parent_loader, fetch_subprojects=fetch_subprojects)
+            self._load(parent_loader=parent_loader)
 
         self._partially_loaded = True
 
@@ -410,15 +415,16 @@ class Project:
     #
     # Args:
     #    targets (list): Target names
-    #    rewritable (bool): Whether the loaded files should be rewritable
-    #                       this is a bit more expensive due to deep copies
     #
     # Returns:
     #    (list): A list of loaded Element
     #
-    def load_elements(self, targets, *, rewritable=False):
+    def load_elements(self, targets):
+
         with self._context.messenger.simple_task("Loading elements", silent_nested=True) as task:
-            meta_elements = self.loader.load(targets, task, rewritable=rewritable, ticker=None)
+            self.load_context.set_task(task)
+            meta_elements = self.loader.load(targets)
+            self.load_context.set_task(None)
 
         with self._context.messenger.simple_task("Resolving elements") as task:
             if task:
@@ -647,7 +653,7 @@ class Project:
     #
     # Raises: LoadError if there was a problem with the project.conf
     #
-    def _load(self, *, parent_loader=None, fetch_subprojects):
+    def _load(self, *, parent_loader=None):
 
         # Load builtin default
         projectfile = os.path.join(self.directory, _PROJECT_CONF_FILE)
@@ -694,7 +700,7 @@ class Project:
         # Fatal warnings
         self._fatal_warnings = pre_config_node.get_str_list("fatal-warnings", default=[])
 
-        self.loader = Loader(self._context, self, parent=parent_loader, fetch_subprojects=fetch_subprojects)
+        self.loader = Loader(self, parent=parent_loader)
 
         self._project_includes = Includes(self.loader, copy_tree=False)
 

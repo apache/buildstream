@@ -133,6 +133,7 @@ class Stream:
     def set_project(self, project):
         assert self._project is None
         self._project = project
+        self._project.load_context.set_fetch_subprojects(self._fetch_subprojects)
         self._pipeline = Pipeline(self._context, project, self._artifacts)
 
     # load_selection()
@@ -1002,20 +1003,6 @@ class Stream:
 
         return list(output_elements)
 
-    # fetch_subprojects()
-    #
-    # Fetch subprojects as part of the project and element loading process.
-    #
-    # Args:
-    #    junctions (list of Element): The junctions to fetch
-    #
-    def fetch_subprojects(self, junctions):
-        self._scheduler.clear_queues()
-        queue = FetchQueue(self._scheduler)
-        queue.enqueue(junctions)
-        self.queues = [queue]
-        self._run()
-
     # get_state()
     #
     # Get the State object owned by Stream
@@ -1097,7 +1084,21 @@ class Stream:
     #                    Private Methods                        #
     #############################################################
 
-    # __load_elements_from_targets
+    # _fetch_subprojects()
+    #
+    # Fetch subprojects as part of the project and element loading process.
+    #
+    # Args:
+    #    junctions (list of Element): The junctions to fetch
+    #
+    def _fetch_subprojects(self, junctions):
+        self._scheduler.clear_queues()
+        queue = FetchQueue(self._scheduler)
+        queue.enqueue(junctions)
+        self.queues = [queue]
+        self._run()
+
+    # _load_elements_from_targets
     #
     # Given the usual set of target element names/artifact refs, load
     # the `Element` objects required to describe the selection.
@@ -1114,15 +1115,17 @@ class Stream:
     # Returns:
     #     ([elements], [except_elements], [artifact_elements])
     #
-    def __load_elements_from_targets(
+    def _load_elements_from_targets(
         self, targets: List[str], except_targets: List[str], *, rewritable: bool = False
     ) -> Tuple[List[Element], List[Element], List[Element]]:
         names, refs = self._classify_artifacts(targets)
         loadable = [names, except_targets]
 
+        self._project.load_context.set_rewritable(rewritable)
+
         # Load and filter elements
         if loadable:
-            elements, except_elements = self._pipeline.load(loadable, rewritable=rewritable)
+            elements, except_elements = self._pipeline.load(loadable)
         else:
             elements, except_elements = [], []
 
@@ -1134,7 +1137,7 @@ class Stream:
 
         return elements, except_elements, artifacts
 
-    # __connect_remotes()
+    # _connect_remotes()
     #
     # Connect to the source and artifact remotes.
     #
@@ -1144,9 +1147,7 @@ class Stream:
     #     use_artifact_config - Whether to use the artifact config.
     #     use_source_config - Whether to use the source config.
     #
-    def __connect_remotes(
-        self, artifact_url: str, source_url: str, use_artifact_config: bool, use_source_config: bool
-    ):
+    def _connect_remotes(self, artifact_url: str, source_url: str, use_artifact_config: bool, use_source_config: bool):
         # ArtifactCache.setup_remotes expects all projects to be fully loaded
         for project in self._context.get_projects():
             project.ensure_fully_loaded()
@@ -1176,7 +1177,7 @@ class Stream:
         # We never want to use a PLAN selection when tracking elements
         assert selection != _PipelineSelection.PLAN
 
-        elements, except_elements, artifacts = self.__load_elements_from_targets(
+        elements, except_elements, artifacts = self._load_elements_from_targets(
             targets, except_targets, rewritable=True
         )
 
@@ -1241,7 +1242,7 @@ class Stream:
         dynamic_plan=False,
         load_refs=False
     ):
-        elements, except_elements, artifacts = self.__load_elements_from_targets(
+        elements, except_elements, artifacts = self._load_elements_from_targets(
             targets, except_targets, rewritable=False
         )
 
@@ -1259,7 +1260,7 @@ class Stream:
         self.targets = elements + artifacts
 
         # Connect to remote caches, this needs to be done before resolving element state
-        self.__connect_remotes(artifact_remote_url, source_remote_url, use_artifact_config, use_source_config)
+        self._connect_remotes(artifact_remote_url, source_remote_url, use_artifact_config, use_source_config)
 
         # Now move on to loading primary selection.
         #

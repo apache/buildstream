@@ -19,4 +19,5 @@
 
 from .metasource import MetaSource
 from .metaelement import MetaElement
+from .loadcontext import LoadContext
 from .loader import Loader
