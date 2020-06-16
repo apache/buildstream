@@ -1,4 +1,3 @@
-import multiprocessing
 import os
 import sys
 from functools import partial
@@ -211,41 +210,6 @@ def validate_output_streams():
             sys.exit(-1)
 
 
-def handle_bst_force_start_method_env():
-    bst_force_start_method_str = "BST_FORCE_START_METHOD"
-    if bst_force_start_method_str in os.environ:
-        start_method = os.environ[bst_force_start_method_str]
-        existing_start_method = multiprocessing.get_start_method(allow_none=True)
-        if existing_start_method is None:
-            multiprocessing.set_start_method(start_method)
-            print(
-                bst_force_start_method_str + ": multiprocessing start method forced to:",
-                start_method,
-                file=sys.stderr,
-                flush=True,
-            )
-        elif existing_start_method == start_method:
-            # Note that when testing, we run the buildstream entrypoint
-            # multiple times in the same executable, so guard against that
-            # here.
-            print(
-                bst_force_start_method_str + ": multiprocessing start method already set to:",
-                existing_start_method,
-                file=sys.stderr,
-                flush=True,
-            )
-        else:
-            print(
-                bst_force_start_method_str + ": cannot set multiprocessing start method to:",
-                start_method,
-                ", already set to:",
-                existing_start_method,
-                file=sys.stderr,
-                flush=True,
-            )
-            sys.exit(-1)
-
-
 def override_main(self, args=None, prog_name=None, complete_var=None, standalone_mode=True, **extra):
 
     # Hook for the Bash completion.  This only activates if the Bash
@@ -270,12 +234,6 @@ def override_main(self, args=None, prog_name=None, complete_var=None, standalone
     # provide a reasonable error message instead of a stack trace
     # in the case that it is non-blocking.
     validate_output_streams()
-
-    # We can only set the global multiprocessing start method once; for that
-    # reason we're advised to do it inside the entrypoint, where it's more
-    # likely that you can ensure the code path is only followed once. In the
-    # case of testing, our tests preceed our entrypoint, so we do our best.
-    handle_bst_force_start_method_env()
 
     original_main(self, args=args, prog_name=prog_name, complete_var=None, standalone_mode=standalone_mode, **extra)
 

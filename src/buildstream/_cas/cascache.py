@@ -94,32 +94,6 @@ class CASCache:
             self._casd_channel = self._casd_process_manager.create_channel()
             self._cache_usage_monitor = _CASCacheUsageMonitor(self._casd_channel)
 
-    def __getstate__(self):
-        # Note that we can't use jobpickler's
-        # 'get_state_for_child_job_pickling' protocol here, since CASCache's
-        # are passed to subprocesses other than child jobs. e.g.
-        # test.utils.ArtifactShare.
-
-        state = self.__dict__.copy()
-
-        # Child jobs do not need to manage the CASD process, they only need a
-        # connection to CASD.
-        if state["_casd_process_manager"] is not None:
-            state["_casd_process_manager"] = None
-            # In order to be pickle-able, the connection must be in the initial
-            # 'closed' state.
-            state["_casd_channel"] = self._casd_process_manager.create_channel()
-
-        # The usage monitor is not pickle-able, but we also don't need it in
-        # child processes currently. Make sure that if this changes, we get a
-        # bug report, by setting _cache_usage_monitor_forbidden.
-        assert "_cache_usage_monitor" in state
-        assert "_cache_usage_monitor_forbidden" in state
-        state["_cache_usage_monitor"] = None
-        state["_cache_usage_monitor_forbidden"] = True
-
-        return state
-
     # get_cas():
     #
     # Return ContentAddressableStorage stub for buildbox-casd channel.

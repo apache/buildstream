@@ -72,10 +72,6 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
     @classmethod
     def check_sandbox_config(cls, platform, config):
-        if platform.does_multiprocessing_start_require_pickling():
-            # Reinitialize class as class data is not pickled.
-            cls.check_available()
-
         if config.build_os not in cls._osfamilies:
             raise SandboxError("OS '{}' is not supported by buildbox-run.".format(config.build_os))
         if config.build_arch not in cls._isas:

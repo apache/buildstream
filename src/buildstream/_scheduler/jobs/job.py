@@ -36,8 +36,6 @@ from ...types import FastEnum
 from ... import _signals, utils
 from .. import _multiprocessing
 
-from .jobpickler import pickle_child_job, do_pickled_child_job
-
 
 # Return code values shutdown of job handling child processes
 #
@@ -174,11 +172,7 @@ class Job:
             self._message_element_key,
         )
 
-        if self._scheduler.context.platform.does_multiprocessing_start_require_pickling():
-            pickled = pickle_child_job(child_job, self._scheduler.context.get_projects(),)
-            self._process = _multiprocessing.AsyncioSafeProcess(target=do_pickled_child_job, args=[pickled, pipe_w],)
-        else:
-            self._process = _multiprocessing.AsyncioSafeProcess(target=child_job.child_action, args=[pipe_w],)
+        self._process = _multiprocessing.AsyncioSafeProcess(target=child_job.child_action, args=[pipe_w],)
 
         # Block signals which are handled in the main process such that
         # the child process does not inherit the parent's state, but the main

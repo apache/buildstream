@@ -208,18 +208,6 @@ tests-remote-execution:
     SOURCE_CACHE_SERVICE: http://docker:50052
     PYTEST_ARGS: "--color=yes --remote-execution"
 
-tests-spawn-multiprocessing-start-method:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
-  <<: *tests
-  variables:
-    BST_FORCE_START_METHOD: "spawn"
-  script:
-    # FIXME: Until all the tests pass as normal, override which tests will run here.
-    - mkdir -p "${INTEGRATION_CACHE}"
-    - useradd -Um buildstream
-    - chown -R buildstream:buildstream .
-    - su buildstream -c "tox -- ${PYTEST_ARGS} tests/{artifactcache,cachekey,elements,format,frontend,internals,plugins,sourcecache}"
-
 tests-no-usedevelop:
   # Ensure that tests also pass without `--develop` flag.
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}

@@ -693,27 +693,6 @@ class Plugin:
     def _get_full_name(self):
         return self.__full_name
 
-    # _get_args_for_child_job_pickling(self)
-    #
-    # Return data necessary to reconstruct this object in a child job process.
-    #
-    # Returns:
-    #    (str, dict): A tuple of (meta_kind, state), where a factory can use
-    #    `meta_kind` to create an instance of the same type as `self`. `state`
-    #    is what we want `self.__dict__` to be restored to after instantiation
-    #    in the child process.
-    #
-    def _get_args_for_child_job_pickling(self):
-        # Note that this is only to be implemented as a BuildStream internal,
-        # so it's not an ImplError - those apply to custom plugins. Direct
-        # descendants of Plugin must implement this, e.g. Element and Source.
-        # Raise NotImplementedError as this would be an internal bug.
-        raise NotImplementedError(
-            "{tag} plugin '{kind}' does not implement _get_args_for_child_job_pickling()".format(
-                tag=self.__type_tag, kind=self.get_kind()
-            )
-        )
-
     #############################################################
     #                     Local Private Methods                 #
     #############################################################
