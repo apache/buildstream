@@ -28,7 +28,7 @@ def test_one_file(datafiles):
 
     basedir = str(datafiles)
     with make_loader(basedir) as loader:
-        element = loader.load(["elements/onefile.bst"], None)[0]
+        element = loader.load(["elements/onefile.bst"])[0]
 
         assert isinstance(element, MetaElement)
         assert element.kind == "pony"
@@ -39,7 +39,7 @@ def test_missing_file(datafiles):
 
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
-        loader.load(["elements/missing.bst"], None)
+        loader.load(["elements/missing.bst"])
 
     assert exc.value.reason == LoadErrorReason.MISSING_FILE
 
@@ -49,7 +49,7 @@ def test_invalid_reference(datafiles):
 
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
-        loader.load(["elements/badreference.bst"], None)
+        loader.load(["elements/badreference.bst"])
 
     assert exc.value.reason == LoadErrorReason.INVALID_YAML
 
@@ -59,7 +59,7 @@ def test_invalid_yaml(datafiles):
 
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
-        loader.load(["elements/badfile.bst"], None)
+        loader.load(["elements/badfile.bst"])
 
     assert exc.value.reason == LoadErrorReason.INVALID_YAML
 
@@ -71,7 +71,7 @@ def test_fail_fullpath_target(datafiles):
     fullpath = os.path.join(basedir, "elements", "onefile.bst")
 
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
-        loader.load([fullpath], None)
+        loader.load([fullpath])
 
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
@@ -81,7 +81,7 @@ def test_invalid_key(datafiles):
 
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
-        loader.load(["elements/invalidkey.bst"], None)
+        loader.load(["elements/invalidkey.bst"])
 
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
 
@@ -91,6 +91,6 @@ def test_invalid_directory_load(datafiles):
 
     basedir = str(datafiles)
     with make_loader(basedir) as loader, pytest.raises(LoadError) as exc:
-        loader.load(["elements/"], None)
+        loader.load(["elements/"])
 
     assert exc.value.reason == LoadErrorReason.LOADING_DIRECTORY
