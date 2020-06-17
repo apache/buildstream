@@ -140,6 +140,6 @@ def set_xdg_paths(pytestconfig):
     ]:
         value = os.environ.get("BST_TEST_{}".format(env_var))
         if value is None:
-            value = os.path.join(pytestconfig.getoption("basetemp"), default)
+            value = os.path.realpath(os.path.join(pytestconfig.getoption("basetemp"), default))
 
         os.environ[env_var] = value
