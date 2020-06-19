@@ -55,25 +55,29 @@ class ProjectLoaders:
     #
     def assert_loaders(self):
         duplicates = {}
+        internal = {}
         primary = []
 
         for loader in self._collect:
-            duplicating = self._search_duplicates(loader)
+            duplicating, internalizing = self._search_project_relationships(loader)
             if duplicating:
                 duplicates[loader] = duplicating
-            else:
+            if internalizing:
+                internal[loader] = internalizing
+
+            if not (duplicating or internalizing):
                 primary.append(loader)
 
         if len(primary) > 1:
-            self._raise_conflict(duplicates)
+            self._raise_conflict(duplicates, internal)
 
         elif primary and duplicates:
-            self._raise_conflict(duplicates)
+            self._raise_conflict(duplicates, internal)
 
-    # _search_duplicates()
+    # _search_project_relationships()
     #
     # Searches this loader's ancestry for projects which mark this
-    # loader as a duplicate.
+    # loader as internal or duplicate
     #
     # Args:
     #    loader (Loader): The loader to search for duplicate markers of
@@ -81,13 +85,18 @@ class ProjectLoaders:
     # Returns:
     #    (list): A list of Loader objects who's project has marked
     #            this junction as a duplicate
+    #    (list): A list of Loader objects who's project has marked
+    #            this junction as internal
     #
-    def _search_duplicates(self, loader):
+    def _search_project_relationships(self, loader):
         duplicates = []
+        internal = []
         for parent in loader.ancestors():
             if parent.project.junction_is_duplicated(self._name, loader):
                 duplicates.append(parent)
-        return duplicates
+            if parent.project.junction_is_internal(loader):
+                internal.append(parent)
+        return duplicates, internal
 
     # _raise_conflict()
     #
@@ -98,16 +107,24 @@ class ProjectLoaders:
     # Args:
     #    duplicates (dict): A table of duplicating Loaders, indexed
     #                       by duplicated Loader
+    #    internals (dict): A table of Loaders which mark a loader as internal,
+    #                      indexed by internal Loader
     #
     # Raises:
     #    (LoadError): In case there is a CONFLICTING_JUNCTION error
     #
-    def _raise_conflict(self, duplicates):
-        lines = [self._loader_description(loader, duplicates) for loader in self._collect]
+    def _raise_conflict(self, duplicates, internals):
+        explanation = (
+            "Internal projects do not cause any conflicts. Conflicts can also be avoided\n"
+            + "by marking every instance of the project as a duplicate."
+        )
+        lines = [self._loader_description(loader, duplicates, internals) for loader in self._collect]
+        detail = "{}\n{}".format("\n".join(lines), explanation)
+
         raise LoadError(
             "Project '{}' was loaded in multiple contexts".format(self._name),
             LoadErrorReason.CONFLICTING_JUNCTION,
-            detail="\n".join(lines),
+            detail=detail,
         )
 
     # _loader_description()
@@ -116,11 +133,13 @@ class ProjectLoaders:
     #    loader (Loader): The loader to describe
     #    duplicates (dict): A table of duplicating Loaders, indexed
     #                       by duplicated Loader
+    #    internals (dict): A table of Loaders which mark a loader as internal,
+    #                      indexed by internal Loader
     #
     # Returns:
     #    (str): A string representing how this loader was loaded
     #
-    def _loader_description(self, loader, duplicates):
+    def _loader_description(self, loader, duplicates, internals):
 
         line = "{}\n".format(loader)
 
@@ -129,6 +148,12 @@ class ProjectLoaders:
         if duplicating:
             for dup in duplicating:
                 line += "  Duplicated by: {}\n".format(dup)
+
+        # Mention projects which have marked this project as internal
+        internalizing = internals.get(loader)
+        if internalizing:
+            for internal in internalizing:
+                line += "  Internal to: {}\n".format(internal)
 
         return line
 
