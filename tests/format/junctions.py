@@ -510,6 +510,17 @@ def test_override_twice(cli, tmpdir, datafiles):
             "target.bst",
             ["target.bst [line 6 column 2]", "target.bst [line 4 column 2]", "target.bst [line 5 column 2]"],
         ),
+        # Test a project which uses an internal subsubproject, but also uses that same subsubproject twice
+        # at the toplevel, this test ensures we also get the provenance of the internal project in the error.
+        (
+            "internal-and-conflict",
+            "target.bst",
+            [
+                "subproject.bst:subtarget.bst [line 10 column 2]",
+                "target.bst [line 5 column 2]",
+                "target.bst [line 6 column 2]",
+            ],
+        ),
     ],
     ids=[
         "simple",
@@ -520,6 +531,7 @@ def test_override_twice(cli, tmpdir, datafiles):
         "plugin",
         "incomplete-duplicates",
         "incomplete-nested-duplicates",
+        "internal",
     ],
 )
 def test_conflict(cli, tmpdir, datafiles, project_dir, target, provenances):
@@ -645,3 +657,39 @@ def test_duplicates_not_found(cli, tmpdir, datafiles, project_dir, provenance):
 
     # Check that provenance was provided if expected
     assert provenance in result.stderr
+
+
+#
+# Test internal projects
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "project_dir,expected_files",
+    [
+        # Test a project which repeats a subproject which is also
+        # internal to another subproject.
+        ("internal-simple", ["subsub.txt", "subsub-again.txt"]),
+        # Test a project which repeats a subproject which is also
+        # internal to two other subprojects.
+        ("internal-double", ["subsub1.txt", "subsub2.txt", "subsub-again.txt"]),
+        # Test a project which repeats a subproject which is also
+        # internal to another subproject, which marks it internal using a link.
+        ("internal-link", ["subsub.txt", "subsub-again.txt"]),
+        # Test a project which repeats a subproject which is also internal to another
+        # subproject, and also overrides that same internal subproject.
+        ("internal-override", ["subsub-override.txt", "subsub-again.txt"]),
+    ],
+    ids=["simple", "double", "link", "override"],
+)
+def test_internal(cli, tmpdir, datafiles, project_dir, expected_files):
+    project = os.path.join(str(datafiles), project_dir)
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+    result = cli.run(project=project, args=["artifact", "checkout", "target.bst", "--directory", checkoutdir])
+    result.assert_success()
+
+    # Check that the checkout contains the expected file
+    for expected in expected_files:
+        assert os.path.exists(os.path.join(checkoutdir, expected))
