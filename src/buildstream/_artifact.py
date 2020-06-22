@@ -193,7 +193,6 @@ class Artifact:
         log_filename = context.messenger.get_log_filename()
         if log_filename:
             digest = self._cas.add_object(path=log_filename)
-            element._build_log_path = self._cas.objpath(digest)
             log = artifact.logs.add()
             log.name = os.path.basename(log_filename)
             log.digest.CopyFrom(digest)

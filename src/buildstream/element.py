@@ -91,7 +91,7 @@ from ruamel import yaml
 from . import _yaml
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
-from ._exceptions import BstError, LoadError, ImplError, SourceCacheError
+from ._exceptions import BstError, LoadError, ImplError, SourceCacheError, CachedFailure
 from .exceptions import ErrorDomain, LoadErrorReason
 from .utils import FileListResult, BST_ARBITRARY_TIMESTAMP
 from . import utils
@@ -256,7 +256,6 @@ class Element(Plugin):
         self.__required = False  # Whether the artifact is required in the current session
         self.__artifact_files_required = False  # Whether artifact files are required in the local cache
         self.__build_result = None  # The result of assembling this Element (success, description, detail)
-        self._build_log_path = None  # The path of the build log for this Element
         # Artifact class for direct artifact composite interaction
         self.__artifact = None  # type: Optional[Artifact]
         self.__strict_artifact = None  # Artifact for strict cache key
@@ -1558,6 +1557,20 @@ class Element(Plugin):
     #
     def _assemble(self):
 
+        # Only do this the first time around (i.e. __assemble_done is False)
+        # to allow for retrying the job
+        if self._cached_failure() and not self.__assemble_done:
+            with self._output_file() as output_file:
+                for log_path in self.__artifact.get_logs():
+                    with open(log_path) as log_file:
+                        output_file.write(log_file.read())
+
+            _, description, detail = self._get_build_result()
+            e = CachedFailure(description, detail=detail)
+            # Shelling into a sandbox is useful to debug this error
+            e.sandbox = True
+            raise e
+
         # Assert call ordering
         assert not self._cached_success()
 
@@ -1684,9 +1697,6 @@ class Element(Plugin):
             )
 
         return artifact_size
-
-    def _get_build_log(self):
-        return self._build_log_path
 
     # _fetch_done()
     #

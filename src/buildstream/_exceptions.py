@@ -267,6 +267,14 @@ class AppError(BstError):
         super().__init__(message, detail=detail, domain=ErrorDomain.APP, reason=reason)
 
 
+# CachedFailure
+#
+# Raised from a child process within a job to indicate that the failure was cached
+#
+class CachedFailure(BstError):
+    pass
+
+
 # SkipJob
 #
 # Raised from a child process within a job when the job should be
