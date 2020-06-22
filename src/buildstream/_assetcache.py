@@ -35,9 +35,9 @@ if TYPE_CHECKING:
     from ._remote import BaseRemote
 
 
-# Base Cache for Caches to derive from
+# Base Asset Cache for Caches to derive from
 #
-class BaseCache:
+class AssetCache:
 
     # None of these should ever be called in the base class, but this appeases
     # pylint to some degree
@@ -75,7 +75,7 @@ class BaseCache:
 
     # release_resources():
     #
-    # Release resources used by BaseCache.
+    # Release resources used by AssetCache.
     #
     def release_resources(self):
         self.close_grpc_channels()

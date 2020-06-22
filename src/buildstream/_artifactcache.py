@@ -21,7 +21,7 @@
 import os
 import grpc
 
-from ._basecache import BaseCache
+from ._assetcache import AssetCache
 from ._cas.casremote import BlobNotFound
 from ._exceptions import ArtifactError, CASError, CacheError, CASRemoteError, RemoteError
 from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, artifact_pb2, artifact_pb2_grpc
@@ -134,7 +134,7 @@ class ArtifactRemote(BaseRemote):
 # Args:
 #     context (Context): The BuildStream context
 #
-class ArtifactCache(BaseCache):
+class ArtifactCache(AssetCache):
 
     spec_name = "artifact_cache_specs"
     config_node_name = "artifacts"
