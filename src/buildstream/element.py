@@ -1467,7 +1467,7 @@ class Element(Plugin):
             self.__artifact
             and
             # And we're not cached yet
-            not self._cached()
+            not self._cached_success()
         )
 
     # __schedule_assembly_when_necessary():
@@ -1508,7 +1508,6 @@ class Element(Plugin):
     def _assemble_done(self, successful):
         assert self.__assemble_scheduled
 
-        self.__assemble_scheduled = False
         self.__assemble_done = True
 
         self.__strict_artifact.reset_cached()
