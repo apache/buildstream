@@ -16,9 +16,6 @@
 #  Author:
 #        Tristan Daniël Maat <tristan.maat@codethink.co.uk>
 #
-from ruamel import yaml
-
-from ..._message import MessageType
 
 from .job import Job, ChildJob
 
@@ -91,13 +88,6 @@ class ChildElementJob(ChildJob):
         self._action_cb = action_cb
 
     def child_process(self):
-
-        # Print the element's environment at the beginning of any element's log file.
-        #
-        # This should probably be omitted for non-build tasks but it's harmless here
-        elt_env = self._element.get_environment()
-        env_dump = yaml.round_trip_dump(elt_env, default_flow_style=False, allow_unicode=True)
-        self.message(MessageType.LOG, "Build environment for element {}".format(self._element.name), detail=env_dump)
 
         # Run the action
         return self._action_cb(self._element)
