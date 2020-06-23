@@ -42,10 +42,25 @@ def build_session(datafiles, element_name):
 @pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("element_name", ["interactive/failed-build.bst"])
-@pytest.mark.parametrize("choice", ["continue", "quit", "terminate", "retry"])
+@pytest.mark.parametrize("choice", ["continue", "quit", "terminate"])
 def test_failed_build_quit(element_name, build_session, choice):
     build_session.expect_exact("Choice: [continue]:", timeout=PEXPECT_TIMEOUT_LONG)
     build_session.sendline(choice)
+
+    build_session.expect_exact(pexpect.EOF)
+    build_session.close()
+    assert build_session.exitstatus == 255
+
+
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("element_name", ["interactive/failed-build.bst"])
+def test_failed_build_retry(element_name, build_session):
+    build_session.expect_exact("Choice: [continue]:", timeout=PEXPECT_TIMEOUT_LONG)
+    build_session.sendline("retry")
+
+    build_session.expect_exact("Choice: [continue]:", timeout=PEXPECT_TIMEOUT_LONG)
+    build_session.sendline("quit")
 
     build_session.expect_exact(pexpect.EOF)
     build_session.close()
