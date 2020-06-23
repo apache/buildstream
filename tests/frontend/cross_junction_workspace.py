@@ -48,15 +48,18 @@ def prepare_junction_project(cli, tmpdir):
 
 def open_cross_junction(cli, tmpdir):
     project = prepare_junction_project(cli, tmpdir)
-    workspace = tmpdir.join("workspace")
-
     element = "sub.bst:data.bst"
+
+    oldkey = cli.get_element_key(project, element)
+
+    workspace = tmpdir.join("workspace")
     args = ["workspace", "open", "--directory", str(workspace), element]
     result = cli.run(project=project, args=args)
     result.assert_success()
 
     assert cli.get_element_state(project, element) == "buildable"
     assert os.path.exists(str(workspace.join("hello.txt")))
+    assert cli.get_element_key(project, element) != oldkey
 
     return project, workspace
 
