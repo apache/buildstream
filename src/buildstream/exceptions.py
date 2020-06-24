@@ -142,3 +142,6 @@ class LoadErrorReason(Enum):
 
     LINK_FORBIDDEN_DEPENDENCIES = 25
     """A link element declared dependencies"""
+
+    CIRCULAR_REFERENCE = 26
+    """A circular element reference was detected"""

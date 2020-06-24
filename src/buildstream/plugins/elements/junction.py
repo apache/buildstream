@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 Codethink Limited
+#  Copyright (C) 2020 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -20,7 +20,7 @@
 """
 junction - Integrate subprojects
 ================================
-This element is a link to another BuildStream project. It allows integration
+This element acts as a window into another BuildStream project. It allows integration
 of multiple projects into a single pipeline.
 
 Overview
@@ -48,6 +48,12 @@ Overview
      # Optionally look in a subpath of the source repository for the project
      path: projects/hello
 
+     # Optionally override junction configurations in the subproject
+     # with a junction declaration in this project.
+     #
+     overrides:
+       subproject-junction.bst: local-junction.bst
+
      # Optionally declare whether elements within the junction project
      # should interact with project remotes (default: False).
      cache-junction-elements: False
@@ -56,11 +62,6 @@ Overview
      # will not attempt to pull artifacts from the junction project's
      # remote(s) (default: False).
      ignore-junction-remotes: False
-
-.. note::
-
-   Junction elements may not specify any dependencies as they are simply
-   links to other projects and are not in the dependency graph on their own.
 
 With a junction element in place, local elements can depend on elements in
 the other BuildStream project using :ref:`element paths <format_element_names>`.
@@ -73,41 +74,69 @@ dependency to the compiler like this:
    build-depends:
    - junction: toolchain.bst:gcc.bst
 
-While junctions are elements, only a limited set of element operations is
-supported. They can be tracked and fetched like other elements.
-However, junction elements do not produce any artifacts, which means that
-they cannot be built or staged. It also means that another element cannot
-depend on a junction element itself.
+.. important::
 
-.. note::
+   **Limitations**
 
-   Elements within the subproject are not tracked by default when running
-   `bst source track`. You must specify `--cross-junctions` to the track
-   command to explicitly do it.
+   Junction elements are only connectors which bring multiple projects together,
+   and as such they are not in the element dependency graph. This means that it is
+   illegal to depend on a junction, and it is also illegal for a junction to have
+   dependencies.
+
+   While junctions are elements, a limited set of element operations are
+   supported. Junction elements can be tracked and fetched like other
+   elements but they do not produce any artifacts, which means that they
+   cannot be built or staged.
+
+   Note that when running :ref:`bst source track <invoking_source_track>`
+   on your project, elements found in subprojects are not tracked by default.
+   You may specify ``--cross-junctions`` to the
+   :ref:`bst source track <invoking_source_track>` command to explicitly track
+   elements across junction boundaries.
 
 
 Sources
 -------
-``bst show`` does not implicitly fetch junction sources if they haven't been
-cached yet. However, they can be fetched explicitly:
+The sources of a junction element define how to obtain the BuildStream project
+that the junction connects to.
+
+Most commands, such as :ref:`bst build <invoking_build>`, will automatically
+try to fetch the junction elements required to access any subproject elements which
+are specified as dependencies of the targets provided.
+
+Some commands, such as :ref:`bst show <invoking_show>`, do not do this, and in
+such cases they can be fetched explicitly using
+:ref:`bst source fetch <invoking_source_fetch>`:
 
 .. code::
 
    bst source fetch junction.bst
 
-Other commands such as ``bst build`` implicitly fetch junction sources.
 
 Options
 -------
+Junction elements can configure the :ref:`project options <project_options>`
+in the subproject, using the ``options`` configuration.
+
 .. code:: yaml
 
-   options:
-     machine_arch: "%{machine_arch}"
-     debug: True
+   kind: junction
 
-Junctions can configure options of the linked project. Options are never
-implicitly inherited across junctions, however, variables can be used to
-explicitly assign the same value to a subproject option.
+   ...
+
+   config:
+
+     # Specify the options for this subproject
+     #
+     options:
+       machine_arch: "%{machine_arch}"
+       debug: True
+
+Options are never implicitly propagated across junctions, however
+:ref:`variables <format_variables>` can be used to explicitly assign
+configuration in a subproject which matches the toplevel project's
+configuration.
+
 
 .. _core_junction_nested:
 
@@ -116,33 +145,119 @@ Nested Junctions
 Junctions can be nested. That is, subprojects are allowed to have junctions on
 their own. Nested junctions in different subprojects may point to the same
 project, however, in most use cases the same project should be loaded only once.
-BuildStream uses the junction element name as key to determine which junctions
-to merge. It is recommended that the name of a junction is set to the same as
-the name of the linked project.
 
 As the junctions may differ in source version and options, BuildStream cannot
 simply use one junction and ignore the others. Due to this, BuildStream requires
-the user to resolve possibly conflicting nested junctions by creating a junction
-with the same name in the top-level project, which then takes precedence.
+the user to resolve conflicting nested junctions, and will provide an error
+message whenever a conflict is detected.
 
-Linking to other junctions
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-When working with nested junctions, you often need to ensure that multiple
-projects are using the same version of a given subproject.
 
-In order to ensure that your project is using a junction to a sub-subproject
-declared by a direct subproject, then you can use a :mod:`link <elements.link>`
-element in place of declaring a junction.
+Overriding subproject junctions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If your project and a subproject share a subproject in common, then one way
+to resolve the conflict is to override the subproject's junction with a local
+in your project.
 
-This lets you create a link to a junction in the subproject, which you
-can then treat as a regular junction in your toplevel project.
+You can override junctions in a subproject in the junction declaration
+of that subproject, e.g.:
 
 .. code:: yaml
 
+   kind: junction
+
+   # Here we are junctioning "subproject" which
+   # also junctions "subsubproject", which we also
+   # use directly.
+   #
+   sources:
+   - kind: git
+     url: https://example.com/subproject.git
+
+   config:
+     # Override `subsubproject.bst` in the subproject using
+     # the locally declared `local-subsubproject.bst` junction.
+     #
+     overrides:
+       subsubproject.bst: local-subsubproject.bst
+
+When declaring the ``overrides`` dictionary, the keys (on the left side)
+refer to :ref:`junction paths <format_element_names>` which are relative
+to the subproject you are declaring. The values (on the right side) refer
+to :ref:`junction paths <format_element_names>` which are relative to the
+project in which your junction is declared.
+
+.. warning::
+
+   This approach modifies your subproject, causing its output artifacts
+   to differ from that project's expectations.
+
+   If you rely on validation and guarantees provided by the organization
+   which maintains the subproject, then it is desirable to avoid overriding
+   any details from that upstream project.
+
+
+Linking to other junctions
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+Another way to resolve the conflict when your project and a subproject both
+junction a common project, is to simply reuse the same junction from the
+subproject in your toplevel project.
+
+This is preferable to *overrides* because you can avoid modifying the
+subproject you would otherwise be changing with an override.
+
+A convenient way to reuse a nested junction in a higher level project
+is to create a :mod:`link <elements.link>` element to that subproject's
+junction. This will help you avoid redundantly typing out longer
+:ref:`element paths <format_element_names>` in your project's
+:ref:`dependency declarations <format_dependencies>`.
+
+This way you can simply create the :mod:`link <elements.link>` once
+in your project and use it locally to depend on elements in a nested
+subproject.
+
+**Example:**
+
+.. code:: yaml
+
+   # Declare the `subsubproject-link.bst` link element, which
+   # is a symbolic link to the junction declared in the subproject
+   #
    kind: link
 
    config:
      target: subproject.bst:subsubproject.bst
+
+
+.. code:: yaml
+
+   # Depend on elements in the subsubproject using
+   # the subproject's junction directly
+   #
+   kind: autotools
+
+   depends:
+   - subsubproject-link.bst:glibc.bst
+
+
+.. tip::
+
+   When reconciling conflicting junction declarations to the
+   same subproject, it is also possible to use a locally defined
+   :mod:`link <elements.link>` element from one subproject to
+   override another junction to the same project in an adjacent
+   subproject.
+
+
+Multiple project instances
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+By default, loading the same project more than once will result
+in a *conflicting junction error*. There are some use cases which
+demand that you load the same project more than once in the same
+build pipeline.
+
+In order to allow the loading of multiple instances of the same project
+in the same build pipeline, please refer to the
+:ref:`relevant project.conf documentation <project_junctions>`.
 """
 
 from buildstream import Element, ElementError
@@ -161,12 +276,33 @@ class JunctionElement(Element):
 
     def configure(self, node):
 
-        node.validate_keys(["path", "options", "cache-junction-elements", "ignore-junction-remotes"])
+        node.validate_keys(["path", "options", "cache-junction-elements", "ignore-junction-remotes", "overrides"])
 
         self.path = node.get_str("path", default="")
         self.options = node.get_mapping("options", default={})
         self.cache_junction_elements = node.get_bool("cache-junction-elements", default=False)
         self.ignore_junction_remotes = node.get_bool("ignore-junction-remotes", default=False)
+
+        # The overrides dictionary has the target junction
+        # to override as a key, and a tuple consisting
+        # of the local overriding junction and the provenance
+        # of the override declaration.
+        self.overrides = {}
+        overrides_node = node.get_mapping("overrides", {})
+        for key, value in overrides_node.items():
+            junction_name = value.as_str()
+            provenance = value.get_provenance()
+
+            # Cannot override a subproject with the project itself
+            #
+            if junction_name == self.name:
+                raise ElementError(
+                    "{}: Attempt to override subproject junction '{}' with the overriding junction '{}' itself".format(
+                        provenance, key, junction_name
+                    ),
+                    reason="override-junction-with-self",
+                )
+            self.overrides[key] = (junction_name, provenance)
 
     def preflight(self):
         pass

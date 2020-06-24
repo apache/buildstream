@@ -52,11 +52,13 @@ cdef class Dependency:
     cdef readonly LoadElement element
     cdef readonly str dep_type
     cdef readonly bint strict
+    cdef readonly ProvenanceInformation provenance
 
-    def __cinit__(self, LoadElement element, str dep_type, bint strict):
+    def __cinit__(self, LoadElement element, str dep_type, bint strict, ProvenanceInformation provenance):
         self.element = element
         self.dep_type = dep_type
         self.strict = strict
+        self.provenance = provenance
 
 
 # LoadElement():

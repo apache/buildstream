@@ -18,6 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
+from contextlib import suppress
 
 from .._exceptions import LoadError
 from ..exceptions import LoadErrorReason
@@ -46,9 +47,10 @@ from .._message import Message, MessageType
 # Args:
 #    project (Project): The toplevel Project object
 #    parent (Loader): A parent Loader object, in the case this is a junctioned Loader
+#    provenance (ProvenanceInformation): The provenance of the reference to this project's junction
 #
 class Loader:
-    def __init__(self, project, *, parent=None):
+    def __init__(self, project, *, parent=None, provenance=None):
 
         # Ensure we have an absolute path for the base directory
         basedir = project.element_path
@@ -60,6 +62,7 @@ class Loader:
         #
         self.load_context = project.load_context  # The LoadContext
         self.project = project  # The associated Project
+        self.provenance = provenance  # The provenance of whence this loader was instantiated
         self.loaded = None  # The number of loaded Elements
 
         #
@@ -69,12 +72,36 @@ class Loader:
         self._basedir = basedir  # Base project directory
         self._first_pass_options = project.first_pass_config.options  # Project options (OptionPool)
         self._parent = parent  # The parent loader
+        self._alternative_parents = []  # Overridden parent loaders
 
         self._meta_elements = {}  # Dict of resolved meta elements by name
         self._elements = {}  # Dict of elements
         self._loaders = {}  # Dict of junction loaders
+        self._loader_search_provenances = {}  # Dictionary of provenances of ongoing child loader searches
 
         self._includes = Includes(self, copy_tree=True)
+
+        assert project.name is not None
+
+        self.load_context.register_loader(self)
+
+    # The __str__ of a Loader is used to clearly identify the Loader,
+    # the junction is was loaded as, and the provenance causing the
+    # junction to be loaded.
+    #
+    def __str__(self):
+        project_name = self.project.name
+
+        if self.project.junction:
+            junction_name = self.project.junction._get_full_name()
+            if self.provenance:
+                provenance = "({}): {}".format(junction_name, self.provenance)
+            else:
+                provenance = "({})".format(junction_name)
+        else:
+            provenance = "(toplevel)"
+
+        return "{} {}".format(project_name, provenance)
 
     # load():
     #
@@ -120,7 +147,7 @@ class Loader:
         dummy_target = LoadElement(Node.from_dict({}), "", self)
         # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
         dummy_target.dependencies.extend(  # pylint: disable=no-member
-            Dependency(element, Symbol.RUNTIME, False) for element in target_elements
+            Dependency(element, Symbol.RUNTIME, False, None) for element in target_elements
         )
 
         with PROFILER.profile(Topics.CIRCULAR_CHECK, "_".join(targets)):
@@ -156,21 +183,73 @@ class Loader:
     #
     # Obtains the appropriate loader for the specified junction
     #
+    # If `load_subprojects` is enabled, then this function will
+    # either return the desired loader or raise a LoadError. If
+    # `load_subprojects` is disabled, then it can also return None
+    # in the case that a loader could not be found. In either case,
+    # a non-existant file in a loaded project will result in a LoadError.
+    #
     # Args:
     #   name (str): Name of junction, may have multiple `:` in the name
     #   provenance (ProvenanceInformation): The provenance
+    #   load_subprojects (bool): Whether to load subprojects on demand
     #
     # Returns:
     #   (Loader): loader for sub-project
     #
-    def get_loader(self, name, provenance, *, level=0):
+    def get_loader(self, name, provenance, *, load_subprojects=True):
         junction_path = name.split(":")
         loader = self
 
+        circular_provenance = self._loader_search_provenances.get(name, None)
+        if circular_provenance:
+
+            assert provenance
+
+            detail = None
+            if circular_provenance is not provenance:
+                detail = "Already searching for '{}' at: {}".format(name, circular_provenance)
+            raise LoadError(
+                "{}: Circular reference while searching for '{}'".format(provenance, name),
+                LoadErrorReason.CIRCULAR_REFERENCE,
+                detail=detail,
+            )
+
+        self._loader_search_provenances[name] = provenance
+
         for junction_name in junction_path:
-            loader = loader._get_loader(junction_name, provenance, level=level)
+            loader = loader._get_loader(junction_name, provenance, load_subprojects=load_subprojects)
+
+        del self._loader_search_provenances[name]
 
         return loader
+
+    # ancestors()
+    #
+    # This will traverse all active loaders in the ancestry for which this
+    # project is reachable using a relative path.
+    #
+    # Yields:
+    #     (Loader): Each loader in the ancestry
+    #
+    def ancestors(self):
+        traversed = {}
+
+        def foreach_parent(parent):
+            while parent:
+                if parent in traversed:
+                    return
+                traversed[parent] = True
+                yield parent
+                parent = parent._parent
+
+        # Yield from the direct/active ancestry
+        yield from foreach_parent(self._parent)
+
+        # Yield from alternative parents which have been replaced by
+        # overrides in the ancestry.
+        for parent in self._alternative_parents:
+            yield from foreach_parent(parent)
 
     # collect_element_no_deps()
     #
@@ -338,15 +417,16 @@ class Loader:
     #
     # Args:
     #    filename (str): The element-path relative bst file
+    #    load_subprojects (bool): Whether to load subprojects
     #    provenance (Provenance): The location from where the file was referred to, or None
     #
     # Returns:
     #    (LoadElement): A loaded LoadElement
     #
-    def _load_file(self, filename, provenance):
+    def _load_file(self, filename, provenance, *, load_subprojects=True):
 
         # Silently ignore already loaded files
-        if filename in self._elements:
+        with suppress(KeyError):
             return self._elements[filename]
 
         top_element = self._load_file_no_deps(filename, provenance)
@@ -354,8 +434,12 @@ class Loader:
         # If this element is a link then we need to resolve it
         # and replace the dependency we've processed with this one
         if top_element.link_target is not None:
-            _, filename, loader = self._parse_name(top_element.link_target, top_element.link_target_provenance)
-            top_element = loader._load_file(filename, top_element.link_target_provenance)
+            _, filename, loader = self._parse_name(
+                top_element.link_target, top_element.link_target_provenance, load_subprojects=load_subprojects
+            )
+            top_element = loader._load_file(
+                filename, top_element.link_target_provenance, load_subprojects=load_subprojects
+            )
 
         dependencies = extract_depends_from_node(top_element.node)
         # The loader queue is a stack of tuples
@@ -403,7 +487,7 @@ class Loader:
                 # All is well, push the dependency onto the LoadElement
                 # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
                 current_element[0].dependencies.append(  # pylint: disable=no-member
-                    Dependency(dep_element, dep.dep_type, dep.strict)
+                    Dependency(dep_element, dep.dep_type, dep.strict, dep.provenance)
                 )
             else:
                 # We do not have any more dependencies to load for this
@@ -514,19 +598,78 @@ class Loader:
 
         return self._meta_elements[top_element.name]
 
+    # _search_for_override():
+    #
+    # Search parent projects for an overridden subproject to replace this junction.
+    #
+    # This function is called once for each direct child while looking up
+    # child loaders, after which point the child loader is cached in the `_loaders`
+    # table. This function also has the side effect of recording alternative parents
+    # of a child loader in the case that the child loader is overridden.
+    #
+    # Args:
+    #    filename (str): Junction name
+    #
+    def _search_for_override(self, filename):
+        loader = self
+        override_path = filename
+
+        # Collect any overrides to this junction in the ancestry
+        #
+        overriding_loaders = []
+        while loader._parent:
+            junction = loader.project.junction
+            override_filename, override_provenance = junction.overrides.get(override_path, (None, None))
+            if override_filename:
+                overriding_loaders.append((loader._parent, override_filename, override_provenance))
+
+            override_path = junction.name + ":" + override_path
+            loader = loader._parent
+
+        # If there are any overriding loaders, use the highest one in
+        # the ancestry to lookup the loader for this project.
+        #
+        if overriding_loaders:
+            overriding_loader, override_filename, provenance = overriding_loaders[-1]
+            loader = overriding_loader.get_loader(override_filename, provenance)
+
+            #
+            # Record alternative loaders which were overridden.
+            #
+            # When a junction is overridden by another higher priority junction,
+            # the resulting loader is still reachable with the original element paths,
+            # which will now traverse override redirections.
+            #
+            # In order to iterate over every project/loader in the ancestry which can
+            # reach the actually selected loader, we need to keep track of the parent
+            # loaders of all overridden junctions.
+            #
+            if loader is not self:
+                loader._alternative_parents.append(self)
+
+            del overriding_loaders[-1]
+            loader._alternative_parents.extend(l for l, _, _ in overriding_loaders)
+
+            return loader
+
+        # No overrides were found in the ancestry
+        #
+        return None
+
     # _get_loader():
     #
     # Return loader for specified junction
     #
     # Args:
     #    filename (str): Junction name
+    #    load_subprojects (bool): Whether to load subprojects
     #    provenance (Provenance): The location from where the file was referred to, or None
     #
     # Raises: LoadError
     #
     # Returns: A Loader or None if specified junction does not exist
     #
-    def _get_loader(self, filename, provenance, *, level=0):
+    def _get_loader(self, filename, provenance, *, load_subprojects=True):
         loader = None
         provenance_str = ""
         if provenance is not None:
@@ -534,43 +677,21 @@ class Loader:
 
         # return previously determined result
         if filename in self._loaders:
-            loader = self._loaders[filename]
+            return self._loaders[filename]
 
-            if loader is None:
-                # do not allow junctions with the same name in different
-                # subprojects
-                raise LoadError(
-                    "{}Conflicting junction {} in subprojects, define junction in {}".format(
-                        provenance_str, filename, self.project.name
-                    ),
-                    LoadErrorReason.CONFLICTING_JUNCTION,
-                )
+        #
+        # Search the ancestry for an overridden loader to use in place
+        # of using the locally defined junction.
+        #
+        override_loader = self._search_for_override(filename)
+        if override_loader:
+            self._loaders[filename] = override_loader
+            return override_loader
 
-            return loader
-
-        if self._parent:
-            # junctions in the parent take precedence over junctions defined
-            # in subprojects
-            loader = self._parent._get_loader(filename, level=level + 1, provenance=provenance)
-            if loader:
-                self._loaders[filename] = loader
-                return loader
-
-        try:
-            self._load_file(filename, provenance=provenance)
-        except LoadError as e:
-            if e.reason != LoadErrorReason.MISSING_FILE:
-                # other load error
-                raise
-
-            if level == 0:
-                # junction element not found in this or ancestor projects
-                raise
-
-            # mark junction as not available to allow detection of
-            # conflicting junctions in subprojects
-            self._loaders[filename] = None
-            return None
+        #
+        # Load the junction file
+        #
+        self._load_file(filename, provenance, load_subprojects=load_subprojects)
 
         # At this point we've loaded the LoadElement
         load_element = self._elements[filename]
@@ -579,8 +700,15 @@ class Loader:
         # immediately and move on to the target.
         #
         if load_element.link_target:
-            _, filename, loader = self._parse_name(load_element.link_target, load_element.link_target_provenance)
-            return loader.get_loader(filename, load_element.link_target_provenance)
+            _, filename, loader = self._parse_name(
+                load_element.link_target, load_element.link_target_provenance, load_subprojects=load_subprojects
+            )
+            return loader.get_loader(filename, load_element.link_target_provenance, load_subprojects=load_subprojects)
+
+        # If we're only performing a lookup, we're done here.
+        #
+        if not load_subprojects:
+            return None
 
         # meta junction element
         #
@@ -613,7 +741,11 @@ class Loader:
         # would be nice if this could be done for *all* element types,
         # but since we haven't loaded those yet that's impossible.
         if load_element.dependencies:
-            raise LoadError("Dependencies are forbidden for 'junction' elements", LoadErrorReason.INVALID_JUNCTION)
+            # Use the first dependency in the list as provenance
+            p = load_element.dependencies[0].provenance
+            raise LoadError(
+                "{}: Dependencies are forbidden for 'junction' elements".format(p), LoadErrorReason.INVALID_JUNCTION
+            )
 
         element = Element._new_from_meta(meta_element)
         element._initialize_state()
@@ -664,7 +796,12 @@ class Loader:
             from .._project import Project  # pylint: disable=cyclic-import
 
             project = Project(
-                project_dir, self.load_context.context, junction=element, parent_loader=self, search_for_project=False,
+                project_dir,
+                self.load_context.context,
+                junction=element,
+                parent_loader=self,
+                search_for_project=False,
+                provenance=provenance,
             )
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
@@ -691,13 +828,14 @@ class Loader:
     # Args:
     #   name (str): Name of target
     #   provenance (ProvenanceInformation): The provenance
+    #   load_subprojects (bool): Whether to load subprojects
     #
     # Returns:
     #   (tuple): - (str): name of the junction element
     #            - (str): name of the element
     #            - (Loader): loader for sub-project
     #
-    def _parse_name(self, name, provenance):
+    def _parse_name(self, name, provenance, *, load_subprojects=True):
         # We allow to split only once since deep junctions names are forbidden.
         # Users who want to refer to elements in sub-sub-projects are required
         # to create junctions on the top level project.
@@ -705,7 +843,7 @@ class Loader:
         if len(junction_path) == 1:
             return None, junction_path[-1], self
         else:
-            loader = self.get_loader(junction_path[-2], provenance)
+            loader = self.get_loader(junction_path[-2], provenance, load_subprojects=load_subprojects)
             return junction_path[-2], junction_path[-1], loader
 
     # Print a warning message, checks warning_token against project configuration

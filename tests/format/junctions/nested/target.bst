@@ -1,4 +1,5 @@
 kind: stack
+
 depends:
-- junction: foo.bst
-  filename: target.bst
+- subproject.bst:target.bst
+- subproject.bst:subtarget.bst

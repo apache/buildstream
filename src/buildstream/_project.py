@@ -99,6 +99,7 @@ class Project:
         cli_options=None,
         default_mirror=None,
         parent_loader=None,
+        provenance=None,
         search_for_project=True,
     ):
 
@@ -157,6 +158,15 @@ class Project:
         self._sandbox = None
         self._splits = None
 
+        # This is a lookup table of dictionaries indexed by project,
+        # the child dictionaries are junction names as keys with their
+        # provenances as values
+        self._junction_duplicates = {}
+
+        # A table of project relative junctions to consider as 'internal'. The values
+        # of the table are simply used to store ProvenanceInformation.
+        self._junction_internal = {}
+
         self._context.add_project(self)
 
         self._partially_loaded = False
@@ -164,7 +174,7 @@ class Project:
         self._project_includes = None
 
         with PROFILER.profile(Topics.LOAD_PROJECT, self.directory.replace(os.sep, "-")):
-            self._load(parent_loader=parent_loader)
+            self._load(parent_loader=parent_loader, provenance=provenance)
 
         self._partially_loaded = True
 
@@ -433,6 +443,12 @@ class Project:
 
         Element._clear_meta_elements_cache()
 
+        # Assert loaders after resolving everything, this is because plugin
+        # loading (across junction boundaries) can also be the cause of
+        # conflicting projects.
+        #
+        self.load_context.assert_loaders()
+
         # Now warn about any redundant source references which may have
         # been discovered in the resolve() phase.
         redundant_refs = Element._get_redundant_source_refs()
@@ -540,6 +556,65 @@ class Project:
 
         return tuple(default_targets)
 
+    # junction_is_duplicated()
+    #
+    # Check whether this loader is specified as a duplicate by
+    # this project.
+    #
+    # Args:
+    #    project_name: (str): The project name
+    #    loader (Loader): The loader to check for
+    #
+    # Returns:
+    #    (bool): Whether the loader is specified as duplicate
+    #
+    def junction_is_duplicated(self, project_name, loader):
+
+        junction_dict = self._junction_duplicates.get(project_name, {})
+
+        # Iterate over all paths specified by this project and see
+        # if we find a match for the specified loader.
+        #
+        # Using the regular `Loader.get_loader()` codepath from this
+        # project ensures that we will find the correct loader relative
+        # to this project, regardless of any overrides or link elements
+        # which might have been used in the project.
+        #
+        for dup_path, dup_provenance in junction_dict.items():
+            search = self.loader.get_loader(dup_path, dup_provenance, load_subprojects=False)
+            if loader is search:
+                return True
+
+        return False
+
+    # junction_is_internal()
+    #
+    # Check whether this loader is specified as internal to
+    # this project.
+    #
+    # Args:
+    #    loader (Loader): The loader to check for
+    #
+    # Returns:
+    #    (bool): Whether the loader is specified as internal
+    #
+    def junction_is_internal(self, loader):
+
+        # Iterate over all paths specified by this project and see
+        # if we find a match for the specified loader.
+        #
+        # Using the regular `Loader.get_loader()` codepath from this
+        # project ensures that we will find the correct loader relative
+        # to this project, regardless of any overrides or link elements
+        # which might have been used in the project.
+        #
+        for internal_path, internal_provenance in self._junction_internal.items():
+            search = self.loader.get_loader(internal_path, internal_provenance, load_subprojects=False)
+            if loader is search:
+                return True
+
+        return False
+
     ########################################################
     #                    Private Methods                   #
     ########################################################
@@ -576,6 +651,7 @@ class Project:
                 "remote-execution",
                 "sources",
                 "source-caches",
+                "junctions",
                 "(@)",
             ]
         )
@@ -653,7 +729,7 @@ class Project:
     #
     # Raises: LoadError if there was a problem with the project.conf
     #
-    def _load(self, *, parent_loader=None):
+    def _load(self, *, parent_loader=None, provenance=None):
 
         # Load builtin default
         projectfile = os.path.join(self.directory, _PROJECT_CONF_FILE)
@@ -700,7 +776,26 @@ class Project:
         # Fatal warnings
         self._fatal_warnings = pre_config_node.get_str_list("fatal-warnings", default=[])
 
-        self.loader = Loader(self, parent=parent_loader)
+        # Junction configuration
+        junctions_node = pre_config_node.get_mapping("junctions", default={})
+        junctions_node.validate_keys(["duplicates", "internal"])
+
+        # Parse duplicates
+        junction_duplicates = junctions_node.get_mapping("duplicates", default={})
+        for project_name, junctions in junction_duplicates.items():
+            # For each junction we preserve the provenance and the junction string,
+            # the provenance is used for lookups later on.
+            #
+            self._junction_duplicates[project_name] = junctions_dict = {}
+            for junction_node in junctions:
+                junctions_dict[junction_node.as_str()] = junction_node.get_provenance()
+
+        # Parse internal
+        junction_internal = junctions_node.get_sequence("internal", default=[])
+        for junction_node in junction_internal:
+            self._junction_internal[junction_node.as_str()] = junction_node.get_provenance()
+
+        self.loader = Loader(self, parent=parent_loader, provenance=provenance)
 
         self._project_includes = Includes(self.loader, copy_tree=False)
 
