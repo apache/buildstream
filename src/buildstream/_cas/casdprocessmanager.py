@@ -29,6 +29,7 @@ import psutil
 
 import grpc
 
+from .._protos.build.bazel.remote.asset.v1 import remote_asset_pb2_grpc
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2_grpc
 from .._protos.build.buildgrid import local_cas_pb2_grpc
 from .._protos.google.bytestream import bytestream_pb2_grpc
@@ -236,6 +237,8 @@ class CASDChannel:
         self._bytestream = None
         self._casd_cas = None
         self._local_cas = None
+        self._asset_fetch = None
+        self._asset_push = None
         self._casd_pid = casd_pid
 
     def _establish_connection(self):
@@ -264,6 +267,8 @@ class CASDChannel:
         self._bytestream = bytestream_pb2_grpc.ByteStreamStub(self._casd_channel)
         self._casd_cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self._casd_channel)
         self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
+        self._asset_fetch = remote_asset_pb2_grpc.FetchStub(self._casd_channel)
+        self._asset_push = remote_asset_pb2_grpc.PushStub(self._casd_channel)
 
     # get_cas():
     #
@@ -288,6 +293,24 @@ class CASDChannel:
             self._establish_connection()
         return self._bytestream
 
+    # get_asset_fetch():
+    #
+    # Return Remote Asset Fetch stub for buildbox-casd channel.
+    #
+    def get_asset_fetch(self):
+        if self._casd_channel is None:
+            self._establish_connection()
+        return self._asset_fetch
+
+    # get_asset_push():
+    #
+    # Return Remote Asset Push stub for buildbox-casd channel.
+    #
+    def get_asset_push(self):
+        if self._casd_channel is None:
+            self._establish_connection()
+        return self._asset_push
+
     # is_closed():
     #
     # Return whether this connection is closed or not.
@@ -302,6 +325,8 @@ class CASDChannel:
     def close(self):
         if self.is_closed():
             return
+        self._asset_push = None
+        self._asset_fetch = None
         self._local_cas = None
         self._casd_cas = None
         self._bytestream = None
