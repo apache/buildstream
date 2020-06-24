@@ -508,8 +508,10 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
         # Add the artifact proto to the cas
         artifact_path = os.path.join(self.artifactdir, request.cache_key)
         os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
+        self.logger.info("serialis '%s' -> '%s'", request.artifact, request.cache_key)
         with save_file_atomic(artifact_path, mode="wb") as f:
             f.write(artifact.SerializeToString())
+        self.logger.info("serialised '%s' -> '%s'", request.artifact, request.cache_key)
 
         return artifact
 

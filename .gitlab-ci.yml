@@ -342,8 +342,8 @@ docs:
   stage: test
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   variables:
-    FD_SDK_REF: valentindavid/bst2
-    BST_EXT_REF: 1.93.3
+    FD_SDK_REF: bst2
+    BST_EXT_REF: master
   before_script:
   - |
     mkdir -p "${HOME}/.config"
