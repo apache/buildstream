@@ -53,6 +53,11 @@ class LocalContentAddressableStorageStub(object):
                 request_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemoteRequest.SerializeToString,
                 response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemoteResponse.FromString,
                 )
+        self.GetInstanceNameForRemotes = channel.unary_unary(
+                '/build.buildgrid.LocalContentAddressableStorage/GetInstanceNameForRemotes',
+                request_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesRequest.SerializeToString,
+                response_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesResponse.FromString,
+                )
         self.GetLocalDiskUsage = channel.unary_unary(
                 '/build.buildgrid.LocalContentAddressableStorage/GetLocalDiskUsage',
                 request_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetLocalDiskUsageRequest.SerializeToString,
@@ -187,6 +192,18 @@ class LocalContentAddressableStorageServicer(object):
 
         This returns a string that can be used as instance_name to access the
         specified endpoint in further requests.
+
+        DEPRECATED: Use `GetInstanceNameForRemotes()` instead.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetInstanceNameForRemotes(self, request, context):
+        """Configure remote endpoints.
+
+        This returns a string that can be used as instance_name to access the
+        specified endpoints in further requests.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -241,6 +258,11 @@ def add_LocalContentAddressableStorageServicer_to_server(servicer, server):
                     servicer.GetInstanceNameForRemote,
                     request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemoteRequest.FromString,
                     response_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemoteResponse.SerializeToString,
+            ),
+            'GetInstanceNameForRemotes': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetInstanceNameForRemotes,
+                    request_deserializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesRequest.FromString,
+                    response_serializer=build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesResponse.SerializeToString,
             ),
             'GetLocalDiskUsage': grpc.unary_unary_rpc_method_handler(
                     servicer.GetLocalDiskUsage,
@@ -382,6 +404,22 @@ class LocalContentAddressableStorage(object):
         return grpc.experimental.unary_unary(request, target, '/build.buildgrid.LocalContentAddressableStorage/GetInstanceNameForRemote',
             build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemoteRequest.SerializeToString,
             build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemoteResponse.FromString,
+            options, channel_credentials,
+            call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetInstanceNameForRemotes(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/build.buildgrid.LocalContentAddressableStorage/GetInstanceNameForRemotes',
+            build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesRequest.SerializeToString,
+            build_dot_buildgrid_dot_local__cas__pb2.GetInstanceNameForRemotesResponse.FromString,
             options, channel_credentials,
             call_credentials, compression, wait_for_ready, timeout, metadata)
 

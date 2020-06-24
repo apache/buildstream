@@ -115,7 +115,16 @@ service LocalContentAddressableStorage {
   //
   // This returns a string that can be used as instance_name to access the
   // specified endpoint in further requests.
+  //
+  // DEPRECATED: Use `content_addressable_storage` in `GetInstanceNameForRemotes()`
+  // instead.
   rpc GetInstanceNameForRemote(GetInstanceNameForRemoteRequest) returns (GetInstanceNameForRemoteResponse) {}
+
+  // Configure remote endpoints.
+  //
+  // This returns a string that can be used as instance_name to access the
+  // specified endpoints in further requests.
+  rpc GetInstanceNameForRemotes(GetInstanceNameForRemotesRequest) returns (GetInstanceNameForRemotesResponse) {}
 
   // Query total space used by the local cache.
   rpc GetLocalDiskUsage(GetLocalDiskUsageRequest) returns (GetLocalDiskUsageResponse) {}
@@ -384,6 +393,45 @@ message GetInstanceNameForRemoteRequest {
 // A response message for
 // [LocalContentAddressableStorage.GetInstanceNameForRemote][build.buildgrid.v2.LocalContentAddressableStorage.GetInstanceNameForRemote].
 message GetInstanceNameForRemoteResponse {
+  string instance_name = 1;
+}
+
+message Remote {
+  // The URL for the remote server.
+  string url = 1;
+
+  // The instance of the execution system to operate against. A server may
+  // support multiple instances of the execution system (with their own workers,
+  // storage, caches, etc.). The server MAY require use of this field to select
+  // between them in an implementation-defined fashion, otherwise it can be
+  // omitted.
+  string instance_name = 2;
+
+  // PEM-encoded public server certificate for https connections to the remote
+  // server.
+  bytes server_cert = 3;
+
+  // PEM-encoded private client key for https with certificate-based client
+  // authentication. If this is specified, `client_cert` must be specified
+  // as well.
+  bytes client_key = 4;
+
+  // PEM-encoded public client certificate for https with certificate-based
+  // client authentication. If this is specified, `client_key` must be
+  // specified as well.
+  bytes client_cert = 5;
+}
+
+// A request message for
+// [LocalContentAddressableStorage.GetInstanceNameForRemotes][build.buildgrid.v2.LocalContentAddressableStorage.GetInstanceNameForRemotes].
+message GetInstanceNameForRemotesRequest {
+  Remote content_addressable_storage = 1;
+  Remote remote_asset = 2;
+}
+
+// A response message for
+// [LocalContentAddressableStorage.GetInstanceNameForRemotes][build.buildgrid.v2.LocalContentAddressableStorage.GetInstanceNameForRemotes].
+message GetInstanceNameForRemotesResponse {
   string instance_name = 1;
 }
 
