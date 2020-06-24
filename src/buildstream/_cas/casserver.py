@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2018 Codethink Limited
+#  Copyright (C) 2020 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -29,6 +30,7 @@ import grpc
 from google.protobuf.message import DecodeError
 import click
 
+from .._protos.build.bazel.remote.asset.v1 import remote_asset_pb2_grpc
 from .._protos.build.bazel.remote.execution.v2 import (
     remote_execution_pb2,
     remote_execution_pb2_grpc,
@@ -132,6 +134,12 @@ def create_server(repo, *, enable_push, quota, index_only, log_level=LogLevel.Le
 
         remote_execution_pb2_grpc.add_CapabilitiesServicer_to_server(_CapabilitiesServicer(), server)
 
+        # Remote Asset API
+        remote_asset_pb2_grpc.add_FetchServicer_to_server(_FetchServicer(casd_channel), server)
+        if enable_push:
+            remote_asset_pb2_grpc.add_PushServicer_to_server(_PushServicer(casd_channel), server)
+
+        # BuildStream protocols
         buildstream_pb2_grpc.add_ReferenceStorageServicer_to_server(
             _ReferenceStorageServicer(casd_channel, root, enable_push=enable_push), server
         )
@@ -293,6 +301,48 @@ class _CapabilitiesServicer(remote_execution_pb2_grpc.CapabilitiesServicer):
         response.high_api_version.major = 2
 
         return response
+
+
+class _FetchServicer(remote_asset_pb2_grpc.FetchServicer):
+    def __init__(self, casd):
+        super().__init__()
+        self.fetch = casd.get_asset_fetch()
+        self.logger = logging.getLogger("buildstream._cas.casserver")
+
+    def FetchBlob(self, request, context):
+        self.logger.debug("FetchBlob '%s'", request.uris)
+        try:
+            return self.fetch.FetchBlob(request)
+        except grpc.RpcError as err:
+            context.abort(err.code(), err.details())
+
+    def FetchDirectory(self, request, context):
+        self.logger.debug("FetchDirectory '%s'", request.uris)
+        try:
+            return self.fetch.FetchDirectory(request)
+        except grpc.RpcError as err:
+            context.abort(err.code(), err.details())
+
+
+class _PushServicer(remote_asset_pb2_grpc.PushServicer):
+    def __init__(self, casd):
+        super().__init__()
+        self.push = casd.get_asset_push()
+        self.logger = logging.getLogger("buildstream._cas.casserver")
+
+    def PushBlob(self, request, context):
+        self.logger.debug("PushBlob '%s'", request.uris)
+        try:
+            return self.push.PushBlob(request)
+        except grpc.RpcError as err:
+            context.abort(err.code(), err.details())
+
+    def PushDirectory(self, request, context):
+        self.logger.debug("PushDirectory '%s'", request.uris)
+        try:
+            return self.push.PushDirectory(request)
+        except grpc.RpcError as err:
+            context.abort(err.code(), err.details())
 
 
 class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
