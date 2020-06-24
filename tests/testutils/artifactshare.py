@@ -6,14 +6,19 @@ from collections import namedtuple
 from contextlib import ExitStack, contextmanager
 from concurrent import futures
 from multiprocessing import Process, Queue
+from urllib.parse import urlparse
 
 import grpc
 
 from buildstream._cas import CASCache
 from buildstream._cas.casserver import create_server
 from buildstream._exceptions import CASError
+from buildstream._protos.build.bazel.remote.asset.v1 import remote_asset_pb2, remote_asset_pb2_grpc
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from buildstream._protos.buildstream.v2 import artifact_pb2, source_pb2
+from buildstream._protos.google.rpc import code_pb2
+
+REMOTE_ASSET_ARTIFACT_URN_TEMPLATE = "urn:fdc:buildstream.build:2020:artifact:{}"
 
 
 class BaseArtifactShare:
@@ -118,8 +123,6 @@ class ArtifactShare(BaseArtifactShare):
         #
         self.repodir = os.path.join(self.directory, "repo")
         os.makedirs(self.repodir)
-        self.artifactdir = os.path.join(self.repodir, "artifacts", "refs")
-        os.makedirs(self.artifactdir)
         self.sourcedir = os.path.join(self.repodir, "source_protos")
         os.makedirs(self.sourcedir)
 
@@ -153,16 +156,29 @@ class ArtifactShare(BaseArtifactShare):
         return os.path.exists(object_path)
 
     def get_artifact_proto(self, artifact_name):
-        artifact_proto = artifact_pb2.Artifact()
-        artifact_path = os.path.join(self.artifactdir, artifact_name)
-
+        url = urlparse(self.repo)
+        channel = grpc.insecure_channel("{}:{}".format(url.hostname, url.port))
         try:
-            with open(artifact_path, "rb") as f:
-                artifact_proto.ParseFromString(f.read())
-        except FileNotFoundError:
-            return None
+            fetch_service = remote_asset_pb2_grpc.FetchStub(channel)
 
-        return artifact_proto
+            uri = REMOTE_ASSET_ARTIFACT_URN_TEMPLATE.format(artifact_name)
+
+            request = remote_asset_pb2.FetchBlobRequest()
+            request.uris.append(uri)
+
+            try:
+                response = fetch_service.FetchBlob(request)
+            except grpc.RpcError as e:
+                if e.code() == grpc.StatusCode.NOT_FOUND:
+                    return None
+                raise
+
+            if response.status.code != code_pb2.OK:
+                return None
+
+            return response.blob_digest
+        finally:
+            channel.close()
 
     def get_source_proto(self, source_name):
         source_proto = source_pb2.Source()
@@ -176,7 +192,7 @@ class ArtifactShare(BaseArtifactShare):
 
         return source_proto
 
-    def get_cas_files(self, artifact_proto):
+    def get_cas_files(self, artifact_proto_digest):
 
         reachable = set()
 
@@ -184,6 +200,17 @@ class ArtifactShare(BaseArtifactShare):
             self.cas._reachable_refs_dir(reachable, digest, update_mtime=False, check_exists=True)
 
         try:
+            artifact_proto_path = self.cas.objpath(artifact_proto_digest)
+            if not os.path.exists(artifact_proto_path):
+                return None
+
+            artifact_proto = artifact_pb2.Artifact()
+            try:
+                with open(artifact_proto_path, "rb") as f:
+                    artifact_proto.ParseFromString(f.read())
+            except FileNotFoundError:
+                return None
+
             if str(artifact_proto.files):
                 reachable_dir(artifact_proto.files)
 
