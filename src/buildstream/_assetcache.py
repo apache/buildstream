@@ -25,7 +25,7 @@ from . import utils
 from . import _yaml
 from ._cas import CASRemote
 from ._message import Message, MessageType
-from ._exceptions import LoadError, RemoteError, CacheError
+from ._exceptions import AssetCacheError, LoadError, RemoteError
 from ._remote import RemoteSpec, RemoteType
 
 
@@ -430,13 +430,13 @@ class AssetCache:
     #    ref (str): The ref to remove
     #
     # Raises:
-    #    (CASCacheError): If the ref didnt exist, or a system error
+    #    (AssetCacheError): If the ref didnt exist, or a system error
     #                     occurred while removing it
     #
     def _remove_ref(self, ref):
         try:
             utils._remove_path_with_parents(self._basedir, ref)
         except FileNotFoundError as e:
-            raise CacheError("Could not find ref '{}'".format(ref)) from e
+            raise AssetCacheError("Could not find ref '{}'".format(ref)) from e
         except OSError as e:
-            raise CacheError("System error while removing ref '{}': {}".format(ref, e)) from e
+            raise AssetCacheError("System error while removing ref '{}': {}".format(ref, e)) from e

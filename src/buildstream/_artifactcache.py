@@ -23,7 +23,7 @@ import grpc
 
 from ._assetcache import AssetCache
 from ._cas.casremote import BlobNotFound
-from ._exceptions import ArtifactError, CASError, CacheError, CASRemoteError, RemoteError
+from ._exceptions import ArtifactError, AssetCacheError, CASError, CASRemoteError, RemoteError
 from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, artifact_pb2, artifact_pb2_grpc
 
 from ._remote import BaseRemote
@@ -201,7 +201,7 @@ class ArtifactCache(AssetCache):
     def remove(self, ref):
         try:
             self._remove_ref(ref)
-        except CacheError as e:
+        except AssetCacheError as e:
             raise ArtifactError("{}".format(e)) from e
 
     # push():
