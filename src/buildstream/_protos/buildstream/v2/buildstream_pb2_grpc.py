@@ -5,127 +5,196 @@ from buildstream._protos.buildstream.v2 import buildstream_pb2 as buildstream_do
 
 
 class ReferenceStorageStub(object):
-  # missing associated documentation comment in .proto file
-  pass
+    """Missing associated documentation comment in .proto file"""
 
-  def __init__(self, channel):
-    """Constructor.
+    def __init__(self, channel):
+        """Constructor.
 
-    Args:
-      channel: A grpc.Channel.
-    """
-    self.GetReference = channel.unary_unary(
-        '/buildstream.v2.ReferenceStorage/GetReference',
-        request_serializer=buildstream_dot_v2_dot_buildstream__pb2.GetReferenceRequest.SerializeToString,
-        response_deserializer=buildstream_dot_v2_dot_buildstream__pb2.GetReferenceResponse.FromString,
-        )
-    self.UpdateReference = channel.unary_unary(
-        '/buildstream.v2.ReferenceStorage/UpdateReference',
-        request_serializer=buildstream_dot_v2_dot_buildstream__pb2.UpdateReferenceRequest.SerializeToString,
-        response_deserializer=buildstream_dot_v2_dot_buildstream__pb2.UpdateReferenceResponse.FromString,
-        )
-    self.Status = channel.unary_unary(
-        '/buildstream.v2.ReferenceStorage/Status',
-        request_serializer=buildstream_dot_v2_dot_buildstream__pb2.StatusRequest.SerializeToString,
-        response_deserializer=buildstream_dot_v2_dot_buildstream__pb2.StatusResponse.FromString,
-        )
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.GetReference = channel.unary_unary(
+                '/buildstream.v2.ReferenceStorage/GetReference',
+                request_serializer=buildstream_dot_v2_dot_buildstream__pb2.GetReferenceRequest.SerializeToString,
+                response_deserializer=buildstream_dot_v2_dot_buildstream__pb2.GetReferenceResponse.FromString,
+                )
+        self.UpdateReference = channel.unary_unary(
+                '/buildstream.v2.ReferenceStorage/UpdateReference',
+                request_serializer=buildstream_dot_v2_dot_buildstream__pb2.UpdateReferenceRequest.SerializeToString,
+                response_deserializer=buildstream_dot_v2_dot_buildstream__pb2.UpdateReferenceResponse.FromString,
+                )
+        self.Status = channel.unary_unary(
+                '/buildstream.v2.ReferenceStorage/Status',
+                request_serializer=buildstream_dot_v2_dot_buildstream__pb2.StatusRequest.SerializeToString,
+                response_deserializer=buildstream_dot_v2_dot_buildstream__pb2.StatusResponse.FromString,
+                )
 
 
 class ReferenceStorageServicer(object):
-  # missing associated documentation comment in .proto file
-  pass
+    """Missing associated documentation comment in .proto file"""
 
-  def GetReference(self, request, context):
-    """Retrieve a CAS [Directory][build.bazel.remote.execution.v2.Directory]
-    digest by name.
+    def GetReference(self, request, context):
+        """Retrieve a CAS [Directory][build.bazel.remote.execution.v2.Directory]
+        digest by name.
 
-    Errors:
-    * `NOT_FOUND`: The requested reference is not in the cache.
-    """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
+        Errors:
+        * `NOT_FOUND`: The requested reference is not in the cache.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
-  def UpdateReference(self, request, context):
-    """Associate a name with a CAS [Directory][build.bazel.remote.execution.v2.Directory]
-    digest.
+    def UpdateReference(self, request, context):
+        """Associate a name with a CAS [Directory][build.bazel.remote.execution.v2.Directory]
+        digest.
 
-    Errors:
-    * `RESOURCE_EXHAUSTED`: There is insufficient storage space to add the
-    entry to the cache.
-    """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
+        Errors:
+        * `RESOURCE_EXHAUSTED`: There is insufficient storage space to add the
+        entry to the cache.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
-  def Status(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
+    def Status(self, request, context):
+        """Missing associated documentation comment in .proto file"""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
 
 def add_ReferenceStorageServicer_to_server(servicer, server):
-  rpc_method_handlers = {
-      'GetReference': grpc.unary_unary_rpc_method_handler(
-          servicer.GetReference,
-          request_deserializer=buildstream_dot_v2_dot_buildstream__pb2.GetReferenceRequest.FromString,
-          response_serializer=buildstream_dot_v2_dot_buildstream__pb2.GetReferenceResponse.SerializeToString,
-      ),
-      'UpdateReference': grpc.unary_unary_rpc_method_handler(
-          servicer.UpdateReference,
-          request_deserializer=buildstream_dot_v2_dot_buildstream__pb2.UpdateReferenceRequest.FromString,
-          response_serializer=buildstream_dot_v2_dot_buildstream__pb2.UpdateReferenceResponse.SerializeToString,
-      ),
-      'Status': grpc.unary_unary_rpc_method_handler(
-          servicer.Status,
-          request_deserializer=buildstream_dot_v2_dot_buildstream__pb2.StatusRequest.FromString,
-          response_serializer=buildstream_dot_v2_dot_buildstream__pb2.StatusResponse.SerializeToString,
-      ),
-  }
-  generic_handler = grpc.method_handlers_generic_handler(
-      'buildstream.v2.ReferenceStorage', rpc_method_handlers)
-  server.add_generic_rpc_handlers((generic_handler,))
+    rpc_method_handlers = {
+            'GetReference': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetReference,
+                    request_deserializer=buildstream_dot_v2_dot_buildstream__pb2.GetReferenceRequest.FromString,
+                    response_serializer=buildstream_dot_v2_dot_buildstream__pb2.GetReferenceResponse.SerializeToString,
+            ),
+            'UpdateReference': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateReference,
+                    request_deserializer=buildstream_dot_v2_dot_buildstream__pb2.UpdateReferenceRequest.FromString,
+                    response_serializer=buildstream_dot_v2_dot_buildstream__pb2.UpdateReferenceResponse.SerializeToString,
+            ),
+            'Status': grpc.unary_unary_rpc_method_handler(
+                    servicer.Status,
+                    request_deserializer=buildstream_dot_v2_dot_buildstream__pb2.StatusRequest.FromString,
+                    response_serializer=buildstream_dot_v2_dot_buildstream__pb2.StatusResponse.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'buildstream.v2.ReferenceStorage', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+
+
+ # This class is part of an EXPERIMENTAL API.
+class ReferenceStorage(object):
+    """Missing associated documentation comment in .proto file"""
+
+    @staticmethod
+    def GetReference(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/buildstream.v2.ReferenceStorage/GetReference',
+            buildstream_dot_v2_dot_buildstream__pb2.GetReferenceRequest.SerializeToString,
+            buildstream_dot_v2_dot_buildstream__pb2.GetReferenceResponse.FromString,
+            options, channel_credentials,
+            call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def UpdateReference(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/buildstream.v2.ReferenceStorage/UpdateReference',
+            buildstream_dot_v2_dot_buildstream__pb2.UpdateReferenceRequest.SerializeToString,
+            buildstream_dot_v2_dot_buildstream__pb2.UpdateReferenceResponse.FromString,
+            options, channel_credentials,
+            call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Status(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/buildstream.v2.ReferenceStorage/Status',
+            buildstream_dot_v2_dot_buildstream__pb2.StatusRequest.SerializeToString,
+            buildstream_dot_v2_dot_buildstream__pb2.StatusResponse.FromString,
+            options, channel_credentials,
+            call_credentials, compression, wait_for_ready, timeout, metadata)
 
 
 class CapabilitiesStub(object):
-  # missing associated documentation comment in .proto file
-  pass
+    """Missing associated documentation comment in .proto file"""
 
-  def __init__(self, channel):
-    """Constructor.
+    def __init__(self, channel):
+        """Constructor.
 
-    Args:
-      channel: A grpc.Channel.
-    """
-    self.GetCapabilities = channel.unary_unary(
-        '/buildstream.v2.Capabilities/GetCapabilities',
-        request_serializer=buildstream_dot_v2_dot_buildstream__pb2.GetCapabilitiesRequest.SerializeToString,
-        response_deserializer=buildstream_dot_v2_dot_buildstream__pb2.ServerCapabilities.FromString,
-        )
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.GetCapabilities = channel.unary_unary(
+                '/buildstream.v2.Capabilities/GetCapabilities',
+                request_serializer=buildstream_dot_v2_dot_buildstream__pb2.GetCapabilitiesRequest.SerializeToString,
+                response_deserializer=buildstream_dot_v2_dot_buildstream__pb2.ServerCapabilities.FromString,
+                )
 
 
 class CapabilitiesServicer(object):
-  # missing associated documentation comment in .proto file
-  pass
+    """Missing associated documentation comment in .proto file"""
 
-  def GetCapabilities(self, request, context):
-    """GetCapabilities mirrors
-    """
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
+    def GetCapabilities(self, request, context):
+        """GetCapabilities mirrors
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
 
 def add_CapabilitiesServicer_to_server(servicer, server):
-  rpc_method_handlers = {
-      'GetCapabilities': grpc.unary_unary_rpc_method_handler(
-          servicer.GetCapabilities,
-          request_deserializer=buildstream_dot_v2_dot_buildstream__pb2.GetCapabilitiesRequest.FromString,
-          response_serializer=buildstream_dot_v2_dot_buildstream__pb2.ServerCapabilities.SerializeToString,
-      ),
-  }
-  generic_handler = grpc.method_handlers_generic_handler(
-      'buildstream.v2.Capabilities', rpc_method_handlers)
-  server.add_generic_rpc_handlers((generic_handler,))
+    rpc_method_handlers = {
+            'GetCapabilities': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCapabilities,
+                    request_deserializer=buildstream_dot_v2_dot_buildstream__pb2.GetCapabilitiesRequest.FromString,
+                    response_serializer=buildstream_dot_v2_dot_buildstream__pb2.ServerCapabilities.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'buildstream.v2.Capabilities', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+
+
+ # This class is part of an EXPERIMENTAL API.
+class Capabilities(object):
+    """Missing associated documentation comment in .proto file"""
+
+    @staticmethod
+    def GetCapabilities(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/buildstream.v2.Capabilities/GetCapabilities',
+            buildstream_dot_v2_dot_buildstream__pb2.GetCapabilitiesRequest.SerializeToString,
+            buildstream_dot_v2_dot_buildstream__pb2.ServerCapabilities.FromString,
+            options, channel_credentials,
+            call_credentials, compression, wait_for_ready, timeout, metadata)
