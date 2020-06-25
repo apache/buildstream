@@ -304,5 +304,6 @@ class CASDChannel:
             return
         self._local_cas = None
         self._casd_cas = None
+        self._bytestream = None
         self._casd_channel.close()
         self._casd_channel = None

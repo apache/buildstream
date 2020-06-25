@@ -230,13 +230,19 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
 
     def Read(self, request, context):
         self.logger.debug("Reading %s", request.resource_name)
-        return self.bytestream.Read(request)
+        try:
+            return self.bytestream.Read(request)
+        except grpc.RpcError as err:
+            context.abort(err.code(), err.details())
 
     def Write(self, request_iterator, context):
         # Note that we can't easily give more information because the
         # data is stuck in an iterator that will be consumed if read.
         self.logger.debug("Writing data")
-        return self.bytestream.Write(request_iterator)
+        try:
+            return self.bytestream.Write(request_iterator)
+        except grpc.RpcError as err:
+            context.abort(err.code(), err.details())
 
 
 class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddressableStorageServicer):
@@ -248,15 +254,24 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
 
     def FindMissingBlobs(self, request, context):
         self.logger.info("Finding '%s'", request.blob_digests)
-        return self.cas.FindMissingBlobs(request)
+        try:
+            return self.cas.FindMissingBlobs(request)
+        except grpc.RpcError as err:
+            context.abort(err.code(), err.details())
 
     def BatchReadBlobs(self, request, context):
         self.logger.info("Reading '%s'", request.digests)
-        return self.cas.BatchReadBlobs(request)
+        try:
+            return self.cas.BatchReadBlobs(request)
+        except grpc.RpcError as err:
+            context.abort(err.code(), err.details())
 
     def BatchUpdateBlobs(self, request, context):
         self.logger.info("Updating: '%s'", [request.digest for request in request.requests])
-        return self.cas.BatchUpdateBlobs(request)
+        try:
+            return self.cas.BatchUpdateBlobs(request)
+        except grpc.RpcError as err:
+            context.abort(err.code(), err.details())
 
 
 class _CapabilitiesServicer(remote_execution_pb2_grpc.CapabilitiesServicer):
