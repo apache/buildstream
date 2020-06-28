@@ -161,15 +161,24 @@ class SourceCache(BaseCache):
     # dependent on previous sources, such as the patch source.
     #
     # Args:
-    #    source: last source
-    #    previous_sources: rest of the sources.
-    def commit(self, source, previous_sources):
+    #    sources: list of the sources of an element
+    def commit(self, sources):
+        last_requires_previous = 0
+        # commit all other sources by themselves
+        for ix, source in enumerate(sources):
+            if source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
+                self._commit_one(source, sources[last_requires_previous:ix])
+                last_requires_previous = ix
+            else:
+                self._commit_one(source, [])
+
+    def _commit_one(self, source, previous_sources):
         ref = source._get_source_name()
 
         # Use tmpdir for now
         vdir = CasBasedDirectory(self.cas)
         for previous_source in previous_sources:
-            vdir.import_files(self.export(previous_source))
+            vdir.import_files(self._export_one(previous_source))
 
         if not source.BST_STAGE_VIRTUAL_DIRECTORY:
             with utils._tempdir(dir=self.context.tmpdir, prefix="staging-temp") as tmpdir:
@@ -191,7 +200,22 @@ class SourceCache(BaseCache):
     #
     # Returns:
     #    CASBasedDirectory
-    def export(self, source):
+    def export(self, sources):
+        # find last required source
+        last_requires_previous_ix = 0
+        for ix, source in enumerate(sources):
+            if source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
+                last_requires_previous_ix = ix
+
+        import_dir = CasBasedDirectory(self.cas)
+
+        for source in sources[last_requires_previous_ix:]:
+            source_dir = self._export_one(source)
+            import_dir.import_files(source_dir)
+
+        return import_dir
+
+    def _export_one(self, source):
         ref = source._get_source_name()
         source = self._get_source(ref)
         return CasBasedDirectory(self.cas, digest=source.files)

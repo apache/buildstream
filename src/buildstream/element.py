@@ -106,7 +106,6 @@ from ._artifact import Artifact
 
 from .storage.directory import Directory
 from .storage._filebaseddirectory import FileBasedDirectory
-from .storage._casbaseddirectory import CasBasedDirectory
 from .storage.directory import VirtualDirectoryError
 
 if TYPE_CHECKING:
@@ -1352,16 +1351,8 @@ class Element(Plugin):
 
                 if self.__sources:
 
-                    sourcecache = context.sourcecache
-                    # find last required source
-                    last_required_previous_ix = self.__last_source_requires_previous()
-                    import_dir = CasBasedDirectory(context.get_cascache())
-
                     try:
-                        for source in self.__sources[last_required_previous_ix:]:
-                            source_dir = sourcecache.export(source)
-                            import_dir.import_files(source_dir)
-
+                        import_dir = context.sourcecache.export(self.__sources)
                     except SourceCacheError as e:
                         raise ElementError("Error trying to export source for {}: {}".format(self.name, e))
                     except VirtualDirectoryError as e:
@@ -2056,7 +2047,7 @@ class Element(Plugin):
                     source._fetch(previous_sources)
                 previous_sources.append(source)
 
-            self.__cache_sources()
+            self.__sourcecache.commit(self.__sources)
 
     # _calculate_cache_key():
     #
@@ -2888,38 +2879,6 @@ class Element(Plugin):
         self.__artifacts.link_key(self, weak_key, key)
 
         return True
-
-    # __cache_sources():
-    #
-    # Caches the sources into the local CAS
-    #
-    def __cache_sources(self):
-        if self.__sources and not self._has_all_sources_in_source_cache():
-            last_requires_previous = 0
-            # commit all other sources by themselves
-            for ix, source in enumerate(self.__sources):
-                if source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
-                    self.__sourcecache.commit(source, self.__sources[last_requires_previous:ix])
-                    last_requires_previous = ix
-                else:
-                    self.__sourcecache.commit(source, [])
-
-    # __last_source_requires_previous
-    #
-    # This is the last source that requires previous sources to be cached.
-    # Sources listed after this will be cached separately.
-    #
-    # Returns:
-    #    (int): index of last source that requires previous sources
-    #
-    def __last_source_requires_previous(self):
-        if self.__last_source_requires_previous_ix is None:
-            last_requires_previous = 0
-            for ix, source in enumerate(self.__sources):
-                if source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
-                    last_requires_previous = ix
-            self.__last_source_requires_previous_ix = last_requires_previous
-        return self.__last_source_requires_previous_ix
 
     # __update_cache_keys()
     #
