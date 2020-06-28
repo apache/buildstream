@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2020 Codethink Limited
 #  Copyright (C) 2019 Bloomberg L.P.
 #
 #  This program is free software; you can redistribute it and/or
@@ -22,33 +22,11 @@
 
 import re
 import sys
+import itertools
 
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
-from .node cimport MappingNode, Node, ScalarNode, SequenceNode
-
-# Variables are allowed to have dashes here
-#
-PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
-
-
-# Throughout this code you will see variables named things like `expstr`.
-# These hold data structures called "expansion strings" and are the parsed
-# form of the strings which are the input to this subsystem.  Strings
-# such as "Hello %{name}, how are you?" are parsed into the form:
-# ["Hello ", "name", ", how are you?"]
-# i.e. a list which consists of one or more strings.
-# Strings in even indices of the list (0, 2, 4, etc) are constants which
-# are copied into the output of the expansion algorithm.  Strings in the
-# odd indices (1, 3, 5, etc) are the names of further expansions to make.
-# In the example above, first "Hello " is copied, then "name" is expanded
-# and so must be another named expansion string passed in to the constructor
-# of the Variables class, and whatever is yielded from the expansion of "name"
-# is added to the concatenation for the result.  Finally ", how are you?" is
-# copied in and the whole lot concatenated for return.
-#
-# To see how strings are parsed, see `_parse_expstr()` after the class, and
-# to see how expansion strings are expanded, see `_expand_expstr()` after that.
+from .node cimport MappingNode, Node, ScalarNode, SequenceNode, ProvenanceInformation
 
 
 # The Variables helper object will resolve the variable references in
@@ -66,30 +44,61 @@ PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
 #
 cdef class Variables:
 
-    cdef MappingNode original
-    cdef dict _expstr_map
+    cdef dict _values  # The Value objects
 
     def __init__(self, MappingNode node):
-        self.original = node
-        self._expstr_map = self._resolve(node)
-        self._check_for_missing()
-        self._check_for_cycles()
 
-    def __getitem__(self, str name):
-        return _expand_var(self._expstr_map, name)
+        # Special case, if notparallel is specified in the variables for this
+        # element, then override max-jobs to be 1.
+        # Initialize it as a string as all variables are processed as strings.
+        #
+        if node.get_bool('notparallel', False):
+            #
+            # The MappingNode API will automatically convert this `str(1)`
+            # into a ScalarNode, no need to manually create the ScalarNode here.
+            #
+            node['max-jobs'] = str(1)
 
-    def __contains__(self, str name):
-        return name in self._expstr_map
+        self._values = self._init_values(node)
+
+    # __getitem__()
+    #
+    # Enables indexing access to variables.
+    #
+    # Args:
+    #    name (str): The key
+    #
+    # Returns:
+    #    (str): The value
+    #
+    def __getitem__(self, str name) -> str:
+        return self._resolve(name, None)
+
+    # __contains__()
+    #
+    # Implements syntaxes like `if "foo" in variables`
+    #
+    # Args:
+    #    name (str): The key
+    #
+    # Returns:
+    #    (bool): Whether the name exists as a key in this variables mapping
+    #
+    def __contains__(self, str name) -> bool:
+        return name in self._values
 
     # __iter__()
     #
-    # Provide an iterator for all variables effective values
+    # Implements the iterator interface so that we can iterate over the
+    # Variables type, this also allows transformation of the Variables
+    # type into a simple dictionary where the keys are the variable names
+    # and the values are the fully resolve values.
     #
     # Returns:
-    #   (Iterator[Tuple[str, str]])
+    #    (Iterator[Tuple[str, str]]): The variable names and resolved values
     #
     def __iter__(self):
-        return _VariablesIterator(self._expstr_map)
+        return ValueIterator(self, self._values)
 
     # get()
     #
@@ -103,9 +112,9 @@ cdef class Variables:
     #   (str|None): The expanded value for the variable or None variable was not defined.
     #
     cpdef str get(self, str name):
-        if name not in self._expstr_map:
+        if name not in self._values:
             return None
-        return _expand_var(self._expstr_map, name)
+        return self[name]
 
     # expand()
     #
@@ -117,16 +126,7 @@ cdef class Variables:
     #   (Node): A node for which to substitute the values
     #
     cpdef expand(self, Node node):
-        if isinstance(node, ScalarNode):
-            (<ScalarNode> node).value = self.subst((<ScalarNode> node).value)
-        elif isinstance(node, SequenceNode):
-            for entry in (<SequenceNode> node).value:
-                self.expand(entry)
-        elif isinstance(node, MappingNode):
-            for entry in (<MappingNode> node).value.values():
-                self.expand(entry)
-        else:
-            assert False, "Unknown 'Node' type"
+        self._expand(node)
 
     # subst():
     #
@@ -141,195 +141,465 @@ cdef class Variables:
     # Raises:
     #    LoadError, if the string contains unresolved variable references.
     #
-    cpdef subst(self, str string):
-        expstr = _parse_expstr(string)
+    cpdef subst(self, ScalarNode node):
+        cdef Value value = Value(node)
+        cdef str dep_name
 
-        try:
-            return _expand_expstr(self._expstr_map, expstr)
-        except KeyError:
-            unmatched = []
+        for dep_name in value.dependencies():
+            self._resolve(dep_name, node.get_provenance())
 
-            # Look for any unmatched variable names in the expansion string
-            for var in expstr[1::2]:
-                if var not in self._expstr_map:
-                    unmatched.append(var)
+        return value.resolve(self._values)
 
-            if unmatched:
-                message = "Unresolved variable{}: {}".format(
-                    "s" if len(unmatched) > 1 else "",
-                    ", ".join(unmatched)
-                )
-
-                raise LoadError(message, LoadErrorReason.UNRESOLVED_VARIABLE)
-            # Otherwise, re-raise the KeyError since it clearly came from some
-            # other unknowable cause.
-            raise
-
-    # Variable resolving code
+    # check()
     #
-    # Here we resolve all of our inputs into a dictionary, ready for use
-    # in subst()
-    cdef dict _resolve(self, MappingNode node):
-        # Special case, if notparallel is specified in the variables for this
-        # element, then override max-jobs to be 1.
-        # Initialize it as a string as all variables are processed as strings.
-        #
-        if node.get_bool('notparallel', False):
-            node['max-jobs'] = str(1)
+    # Checks the variables for unresolved references
+    #
+    # Raises:
+    #    (LoadError): If there are unresolved references, then a LoadError
+    #                 with LoadErrorReason.UNRESOLVED_VARIABLE reason will
+    #                 be raised.
+    #
+    cpdef check(self):
 
+        # Resolve all variables.
+        for key in self._values.keys():
+            self._resolve(key, None)
+
+    # _init_values()
+    #
+    # Here we initialize the Value() table, which contains
+    # as of yet unresolved variables.
+    #
+    cdef dict _init_values(self, MappingNode node):
         cdef dict ret = {}
         cdef str key
-        cdef str value
+        cdef ScalarNode value
 
-        for key in node.keys():
-            value = node.get_str(key)
-            ret[sys.intern(key)] = _parse_expstr(value)
+        for key, value in node.items():
+            ret[sys.intern(key)] = Value(value)
+
         return ret
 
-    def _check_for_missing(self):
-        # First the check for anything unresolvable
-        summary = []
-        for key, expstr in self._expstr_map.items():
-            for var in expstr[1::2]:
-                if var not in self._expstr_map:
-                    line = "  unresolved variable '{unmatched}' in declaration of '{variable}' at: {provenance}"
-                    provenance = self.original.get_scalar(key).get_provenance()
-                    summary.append(line.format(unmatched=var, variable=key, provenance=provenance))
-        if summary:
-            raise LoadError("Failed to resolve one or more variable:\n{}\n".format("\n".join(summary)),
-                            LoadErrorReason.UNRESOLVED_VARIABLE)
+    # _expand()
+    #
+    # Internal implementation of Variables.expand()
+    #
+    # Args:
+    #   (Node): A node for which to substitute the values
+    #
+    cdef _expand(self, Node node):
+        if isinstance(node, ScalarNode):
+            (<ScalarNode> node).value = self.subst(node)
+        elif isinstance(node, SequenceNode):
+            for entry in (<SequenceNode> node).value:
+                self._expand(entry)
+        elif isinstance(node, MappingNode):
+            for entry in (<MappingNode> node).value.values():
+                self._expand(entry)
+        else:
+            assert False, "Unknown 'Node' type"
 
-    def _check_for_cycles(self):
-        # And now the cycle checks
-        def cycle_check(expstr, visited, cleared):
-            for var in expstr[1::2]:
-                if var in cleared:
-                    continue
-                if var in visited:
-                    raise LoadError("{}: ".format(self.original.get_scalar(var).get_provenance()) +
-                                    ("Variable '{}' expands to contain a reference to itself. " +
-                                     "Perhaps '{}' contains '%{{{}}}").format(var, visited[-1], var),
-                                     LoadErrorReason.RECURSIVE_VARIABLE)
-                visited.append(var)
-                cycle_check(self._expstr_map[var], visited, cleared)
-                visited.pop()
-                cleared.add(var)
+    # _resolve()
+    #
+    # Helper to expand and cache a variable definition in the context of
+    # the given dictionary of expansion strings.
+    #
+    # Args:
+    #     name (str): Name of the variable to expand
+    #     provenance (ProvenanceInformation): Whence this variable was refered from
+    #
+    # Returns:
+    #     (str): The expanded value of variable
+    #
+    # Raises:
+    #     (LoadError): In case there was any undefined variables or circular
+    #                  references encountered when resolving the variable.
+    #
+    cdef str _resolve(self, str name, ProvenanceInformation provenance):
+        cdef ResolutionStep step
+        cdef Value referee_value
+        cdef Value iter_value
+        cdef object iter_name_object
+        cdef str iter_name
+        cdef set iter_value_deps
+        cdef str cyclic_variable
 
-        cleared = set()
-        for key, expstr in self._expstr_map.items():
-            if key not in cleared:
-                cycle_check(expstr, [key], cleared)
+        # While iterating over the first loop, we collect all of the variable
+        # dependencies, and perform all required validation.
+        #
+        # Each iteration processes a ResolutionStep object and has the possibility
+        # to enque more ResolutionStep objects as a result.
+        #
+        cdef list pending = [ResolutionStep(None, { sys.intern(name) }, None)]
+        cdef list deps = []
+        cdef bint first_iteration = True
 
-# Cache for the parsed expansion strings.  While this is nominally
-# something which might "waste" memory, in reality each of these
-# will live as long as the element which uses it, which is the
-# vast majority of the memory usage across the execution of BuildStream.
-cdef dict PARSE_CACHE = {
-    # Prime the cache with the empty string since otherwise that can
-    # cause issues with the parser, complications to which cause slowdown
-    "": [""],
-}
+        while pending:
+            step = pending.pop()
+
+            #
+            # Handle circular deps
+            #
+            step.check_circular(self._values)
+
+            # For each dependency stemming from this provenance
+            for iter_name_object in step.varnames:
+                iter_name = <str> iter_name_object
+
+                iter_value = self._get_checked_value(iter_name, step.referee, provenance)
+
+                # Earliest return for an already resolved value
+                #
+                if first_iteration:
+                    if iter_value._resolved is not None:
+                        return iter_value.resolve(self._values)
+                    first_iteration = False
+
+                # Queue up this value to be resolved in the next loop
+                if iter_value._resolved is None:
+                    deps.append(iter_value)
+
+                    # Queue up it's dependencies for resolution
+                    iter_value_deps = iter_value.dependencies()
+                    if iter_value_deps:
+                        pending.append(ResolutionStep(iter_name, iter_value_deps, step))
+
+        #
+        # Now that we've pushed all of the required dependencies onto the deps queue,
+        # we know that there are no undefined variables or circular references, we
+        # also know that the deps queue is ordered such that the earlier items in
+        # the list depend on resolution of later items in the list.
+        #
+        # Now we can bubble back up iterating backwards over the list, and
+        # the last resolved value is the one we want to return.
+        #
+        cdef str resolved_value
+        while deps:
+            iter_value = deps.pop()
+            resolved_value = iter_value.resolve(self._values)
+
+        return resolved_value
+
+    # _get_checked_value()
+    #
+    # Fetches a value from the value table and raises a user
+    # facing error if the value is undefined.
+    #
+    # Args:
+    #    varname (str): The variable name to fetch
+    #    referee (str): The variable name referring to `varname`, or None
+    #    provenance (ProvenanceInformation): The provenance, incase referee is None.
+    #
+    # Returns:
+    #   (Value): The Value for varname
+    #
+    # Raises:
+    #   (LoadError): An appropriate error in case of undefined variables
+    #
+    cdef Value _get_checked_value(self, str varname, str referee, ProvenanceInformation provenance):
+        cdef Value referee_value
+        cdef str error_message
+
+        #
+        # Fetch the value and detect undefined references
+        #
+        try:
+            return self._values[varname]
+        except KeyError as e:
+
+            # Either the provenance is the toplevel calling provenance,
+            # or it is the provenance of the direct referee
+            try:
+                referee_value = self._values[referee]
+            except KeyError:
+                referee_value = None
+
+            if referee_value:
+                provenance = referee_value.provenance
+
+            error_message = "Reference to undefined variable '{}'".format(varname)
+            if provenance:
+                error_message = "{}: {}".format(provenance, error_message)
+            raise LoadError(error_message, LoadErrorReason.UNRESOLVED_VARIABLE) from e
 
 
-# Helper to parse a string into an expansion string tuple, caching
-# the results so that future parse requests don't need to think about
-# the string
-cdef list _parse_expstr(str instr):
-    cdef list ret
+# ResolutionStep()
+#
+# The context for a single iteration in variable resolution.
+#
+# This only exists for better performance than constructing
+# and unpacking tuples.
+#
+# Args:
+#    referee (str): The name of the referring variable
+#    varnames (set): A set of variable names which referee refers to.
+#
+cdef class ResolutionStep:
+    cdef str referee
+    cdef set varnames
+    cdef ResolutionStep parent
 
-    try:
-        return <list> PARSE_CACHE[instr]
-    except KeyError:
-        # This use of the regex turns a string like "foo %{bar} baz" into
-        # a list ["foo ", "bar", " baz"]
-        splits = PARSE_EXPANSION.split(instr)
-        # If an expansion ends the string, we get an empty string on the end
-        # which we can optimise away, making the expansion routines not need
-        # a test for this.
-        if splits[-1] == '':
-           del splits [-1]
-        # Cache an interned copy of this.  We intern it to try and reduce the
-        # memory impact of the cache.  It seems odd to cache the list length
-        # but this is measurably cheaper than calculating it each time during
-        # string expansion.
-        ret = [sys.intern(<str> s) for s in <list> splits]
-        PARSE_CACHE[instr] = ret
+    def __cinit__(self, str referee, set varnames, ResolutionStep parent):
+        self.referee = referee
+        self.varnames = varnames
+        self.parent = parent
+
+    cdef check_circular(self, dict values):
+        cdef ResolutionStep step = self.parent
+        while step:
+            if self.referee is step.referee:
+                self._raise_circular_reference_error(step, values)
+            step = step.parent
+
+    cdef _raise_circular_reference_error(self, ResolutionStep conflict, dict values):
+        cdef list error_lines = []
+        cdef ResolutionStep step = self
+        cdef Value value
+        cdef str referee
+
+        while step is not conflict:
+            if step.parent:
+                referee = step.parent.referee
+            else:
+                referee = self.referee
+            value = values[referee]
+
+            error_lines.append("{}: Variable '{}' refers to variable '{}'".format(value.provenance, referee, step.referee))
+            step = step.parent
+
+        raise LoadError("Circular dependency detected on variable '{}'".format(self.referee),
+                        LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE,
+                        detail="\n".join(reversed(error_lines)))
+
+
+# ValuePart()
+#
+# Represents a part of a value (a string and an indicator
+# of whether the string is a variable or not).
+#
+# This only exists for better performance than constructing
+# and unpacking tuples.
+#
+# Args:
+#    text (str): The text of this part
+#    is_variable (bint): True if the text is a variable, False if it's literal
+#
+cdef class ValuePart:
+    cdef str text
+    cdef bint is_variable
+
+    def __cinit__(self, str text, bint is_variable):
+        self.text = text
+        self.is_variable = is_variable
+
+
+cdef EMPTY_SET = set()
+
+# Value():
+#
+# Represents a variable value
+#
+cdef class Value:
+    cdef ProvenanceInformation provenance
+    cdef ValueClass _value_class
+    cdef str _resolved
+
+    def __cinit__(self, ScalarNode node):
+
+        # Public
+        self.provenance = node.get_provenance()
+
+        # Private
+        self._value_class = self._load_value_class(node.as_str())
+        self._resolved = None
+
+    # resolve()
+    #
+    # Resolve the value of this variable, this function expects
+    # all dependency values to already be resolved, otherwise
+    # it will fail due to an undefined variable.
+    #
+    # Args:
+    #    values (dict): The full value table for resolving dependencies
+    #
+    # Returns:
+    #    (str): The resolved value
+    #
+    cdef str resolve(self, dict values):
+        cdef str dep_name
+        cdef Value part_var
+        cdef ValuePart part
+        cdef object part_object
+        cdef list parts = []
+
+        if self._resolved is None:
+            for part_object in self._value_class.parts:
+                part = <ValuePart> part_object
+
+                if part.is_variable:
+                    part_var = values[part.text]
+                    parts.append(part_var._resolved)
+                else:
+                    parts.append(part.text)
+
+            self._resolved = "".join(parts)
+
+        return self._resolved
+
+    # dependencies()
+    #
+    # Returns the set of dependency variable names
+    #
+    # Returns:
+    #    (set): The set of variable names which this ValueClass depends on, or None.
+    #
+    cdef set dependencies(self):
+        if self._resolved is None:
+            return self._value_class.variable_names
+
+        # If we're already resolved, we don't have any dependencies anymore
+        return EMPTY_SET
+
+    # _load_value_class()
+    #
+    # Load the ValueClass for this Value, possibly reusing
+    # a pre-cached ValueClass if one exists.
+    #
+    # Args:
+    #    string (str): The string to parse
+    #
+    # Returns:
+    #    (ValueClass): The ValueClass object
+    #
+    cdef ValueClass _load_value_class(self, str string):
+        cdef ValueClass ret
+        cdef internal_string = sys.intern(string)
+
+        try:
+            ret = VALUE_CLASS_TABLE[internal_string]
+        except KeyError:
+            ret = ValueClass(internal_string)
+            VALUE_CLASS_TABLE[internal_string] = ret
+
         return ret
 
 
-# Helper to expand and cache a variable definition in the context of
-# the given dictionary of expansion strings.
+# Global cache of all ValueClass objects ever instantiated.
+#
+# While many elements share exactly the same ValueClasses, they
+# all have their own Value instances and can resolve to different
+# string values.
+#
+# Holding on to this avoids ever parsing the same value strings
+# more than once.
+#
+cdef dict VALUE_CLASS_TABLE = {}
+
+
+#
+# The regular expression used for parsing ValueClass strings.
+#
+# Note that Variable names are allowed to have alphanumeric characters
+# and dashes and underscores, but cannot start with a dash, underscore
+# or a digit.
+#
+VALUE_CLASS_PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
+
+
+# ValueClass()
+#
+# A class representing a broken down parse of a value.
 #
 # Args:
-#     content (dict): Dictionary of expansion strings
-#     name (str): Name of the variable to expand
-#     counter (int): Recursion counter
+#    string (str): The string which can contain variables
 #
-# Returns:
-#     (str): The expanded value of variable
+cdef class ValueClass:
+    #
+    # Public
+    #
+    cdef set variable_names  # A set of variable names
+    cdef list parts  # A list of ValuePart objects
+
+    def __cinit__(self, str string):
+        self.variable_names = set()
+        self.parts = []
+        self._parse_string(string)
+
+    # _parse_string()
+    #
+    # Parse the string for this ValueClass, breaking it down into
+    # the parts list, which is an ordered list of literal values
+    # and variable names, which when resolved, can be joined into
+    # the resolved value.
+    #
+    cdef _parse_string(self, str string):
+
+        # This use of this regex turns a string like
+        # "foo %{bar} baz" into a list ["foo ", "bar", " baz"]
+        #
+        # This split has special properties in that it will
+        # return empty strings, and even/odd members of the
+        # returned list are meaningful.
+        #
+        # The even number indices are slices of the text which
+        # did not match the regular expression, while the odd
+        # number indices represent variable names, with the "%{}"
+        # portions stripped away.
+        #
+        # In case you are still wondering: Yes. This is very, very weird.
+        #
+        # What do you expect ? These are regular expressions after all,
+        # they are *supposed* to be weird.
+        #
+        cdef list splits = VALUE_CLASS_PARSE_EXPANSION.split(string)
+        cdef object split_object
+        cdef str split
+        cdef Py_ssize_t split_idx = 0
+        cdef bint is_variable
+
+        #
+        # Collect the weird regex return value into something
+        # more comprehensible.
+        #
+
+        for split_object in splits:
+            split = <str> split_object
+            if split:
+
+                # Use an intern for the part, this will not only
+                # save memory but it will speed up lookups in the
+                # case that the part in question is used to lookup
+                # variable values.
+                split = <str> sys.intern(split)
+
+                if (split_idx % 2) == 0:
+                    is_variable = False
+                else:
+                    is_variable = True
+                    self.variable_names.add(split)
+
+                self.parts.append(ValuePart(split, is_variable))
+
+            split_idx += 1
+
+
+# ValueIterator()
 #
-# Raises:
-#     KeyError, if any expansion is missing
-#     RecursionError, if recursion required for evaluation is too deep
-#
-cdef str _expand_var(dict content, str name, int counter = 0):
-    cdef str sub
-
-    if len(content[name]) > 1:
-        sub = _expand_expstr(content, <list> content[name], counter)
-        content[name] = [sys.intern(sub)]
-
-    return content[name][0]
-
-
-# Helper to expand a given top level expansion string tuple in the context
-# of the given dictionary of expansion strings.
-#
-# Args:
-#     content (dict): Dictionary of expansion strings
-#     name (str): Name of the variable to expand
-#     counter (int): Recursion counter
-#
-# Returns:
-#     (str): The expanded value of variable
-#
-# Raises:
-#     KeyError, if any expansion is missing
-#     RecursionError, if recursion required for evaluation is too deep
-#
-cdef str _expand_expstr(dict content, list value, int counter = 0):
-    if counter > 1000:
-        raise RecursionError()
-
-    cdef Py_ssize_t idx = 0
-    cdef Py_ssize_t value_len = len(value)
-    cdef str sub
-    cdef list acc = []
-
-    while idx < value_len:
-        acc.append(value[idx])
-        idx += 1
-
-        if idx < value_len:
-            acc.append(_expand_var(content, <str> value[idx], counter + 1))
-        idx += 1
-
-    return "".join(acc)
-
-
 # Iterator for all flatten variables.
+#
 # Used by Variables.__iter__
-cdef class _VariablesIterator:
-    cdef dict _expstr_map
+#
+cdef class ValueIterator:
+    cdef Variables _variables
     cdef object _iter
 
-    def __init__(self, dict expstr_map):
-        self._expstr_map = expstr_map
-        self._iter = iter(expstr_map)
+    def __cinit__(self, Variables variables, dict values):
+        self._variables = variables
+        self._iter = iter(values)
 
     def __iter__(self):
         return self
 
     def __next__(self):
         name = next(self._iter)
-        return name, _expand_var(self._expstr_map, name)
+        return name, self._variables[name]

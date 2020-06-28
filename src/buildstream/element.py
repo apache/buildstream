@@ -285,6 +285,8 @@ class Element(Plugin):
         variables = self.__extract_variables(project, meta)
         variables["element-name"] = self.name
         self.__variables = Variables(variables)
+        if not meta.is_junction:
+            self.__variables.check()
 
         # Collect the composited environment now that we have variables
         unexpanded_env = self.__extract_environment(project, meta)
@@ -2817,8 +2819,8 @@ class Element(Plugin):
         # If this ever changes, things will go wrong unexpectedly.
         if not self.__whitelist_regex:
             bstdata = self.get_public_data("bst")
-            whitelist = bstdata.get_str_list("overlap-whitelist", default=[])
-            whitelist_expressions = [utils._glob2re(self.__variables.subst(exp.strip())) for exp in whitelist]
+            whitelist = bstdata.get_sequence("overlap-whitelist", default=[])
+            whitelist_expressions = [utils._glob2re(self.__variables.subst(exp)) for exp in whitelist]
             expression = "^(?:" + "|".join(whitelist_expressions) + ")$"
             self.__whitelist_regex = re.compile(expression)
         return self.__whitelist_regex.match(os.path.join(os.sep, path))
