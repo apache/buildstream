@@ -23,6 +23,7 @@ import grpc
 from ._remote import BaseRemote
 from ._cas.casremote import BlobNotFound
 from .storage._casbaseddirectory import CasBasedDirectory
+from .storage._filebaseddirectory import FileBasedDirectory
 from ._basecache import BaseCache
 from ._exceptions import CASError, CASRemoteError, SourceCacheError, RemoteError
 from . import utils
@@ -167,29 +168,42 @@ class SourceCache(BaseCache):
         # commit all other sources by themselves
         for ix, source in enumerate(sources):
             if source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
-                self._commit_one(source, sources[last_requires_previous:ix])
                 last_requires_previous = ix
-            else:
-                self._commit_one(source, [])
 
-    def _commit_one(self, source, previous_sources):
+        with utils._tempdir(dir=self.context.tmpdir, prefix="staging-temp") as all_sources_tmpdir:
+            all_sources_vdir = FileBasedDirectory(all_sources_tmpdir)
+
+            for i, source in enumerate(sources):
+                if source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
+                    self._commit_one(source, all_sources_vdir)
+                else:
+                    source_vdir = self._commit_one(source)
+                    if i < last_requires_previous:
+                        all_sources_vdir.import_files(source_vdir)
+
+    def _commit_one(self, source, previous_sources_vdir=None):
         ref = source._get_source_name()
-
-        # Use tmpdir for now
         vdir = CasBasedDirectory(self.cas)
-        for previous_source in previous_sources:
-            vdir.import_files(self._export_one(previous_source))
 
-        if not source.BST_STAGE_VIRTUAL_DIRECTORY:
-            with utils._tempdir(dir=self.context.tmpdir, prefix="staging-temp") as tmpdir:
-                if not vdir.is_empty():
-                    vdir.export_files(tmpdir)
-                source._stage(tmpdir)
-                vdir.import_files(tmpdir, can_link=True)
+        if source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
+            if source.BST_STAGE_VIRTUAL_DIRECTORY:
+                source._stage(previous_sources_vdir)
+            else:
+                source._stage(previous_sources_vdir._get_underlying_directory())
+                previous_sources_vdir._mark_changed()
+
+            vdir.import_files(previous_sources_vdir)
         else:
-            source._stage(vdir)
+            if source.BST_STAGE_VIRTUAL_DIRECTORY:
+                source._stage(vdir)
+            else:
+                with utils._tempdir(dir=self.context.tmpdir, prefix="staging-temp") as tmpdir:
+                    source._stage(tmpdir)
+                    vdir.import_files(tmpdir, can_link=True)
 
         self._store_source(ref, vdir._get_digest())
+
+        return vdir
 
     # export()
     #
@@ -210,15 +224,12 @@ class SourceCache(BaseCache):
         import_dir = CasBasedDirectory(self.cas)
 
         for source in sources[last_requires_previous_ix:]:
-            source_dir = self._export_one(source)
+            ref = source._get_source_name()
+            source_proto = self._get_source(ref)
+            source_dir = CasBasedDirectory(self.cas, digest=source_proto.files)
             import_dir.import_files(source_dir)
 
         return import_dir
-
-    def _export_one(self, source):
-        ref = source._get_source_name()
-        source = self._get_source(ref)
-        return CasBasedDirectory(self.cas, digest=source.files)
 
     # pull()
     #
