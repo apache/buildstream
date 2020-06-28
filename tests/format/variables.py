@@ -53,30 +53,59 @@ def test_overrides(cli, datafiles, target, varname, expected):
     assert result_vars.get_str(varname) == expected
 
 
-@pytest.mark.parametrize("element", ["manual.bst", "manual2.bst"])
+@pytest.mark.parametrize(
+    "element,provenance",
+    [
+        # This test makes a reference to an undefined variable in a build command
+        ("manual.bst", "manual.bst [line 5 column 6]"),
+        # This test makes a reference to an undefined variable by another variable,
+        # ensuring that we validate variables even when they are unused
+        ("manual2.bst", "manual2.bst [line 4 column 8]"),
+        # This test uses a build command to refer to some variables which ultimately
+        # refer to an undefined variable, testing a more complex case.
+        ("manual3.bst", "manual3.bst [line 6 column 8]"),
+    ],
+    ids=["build-command", "variables", "complex"],
+)
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "missing_variables"))
-def test_missing_variable(cli, datafiles, element):
+def test_undefined(cli, datafiles, element, provenance):
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=["show", "--deps", "none", "--format", "%{config}", element])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNRESOLVED_VARIABLE)
+    assert provenance in result.stderr
 
 
+@pytest.mark.parametrize(
+    "element,provenances",
+    [
+        # Test a simple a -> b and b -> a reference
+        ("simple-cyclic.bst", ["simple-cyclic.bst [line 4 column 5]", "simple-cyclic.bst [line 5 column 5]"]),
+        # Test a simple a -> b and b -> a reference with some text involved
+        ("cyclic.bst", ["cyclic.bst [line 5 column 10]", "cyclic.bst [line 4 column 5]"]),
+        # Test an indirect circular dependency
+        (
+            "indirect-cyclic.bst",
+            [
+                "indirect-cyclic.bst [line 5 column 5]",
+                "indirect-cyclic.bst [line 6 column 5]",
+                "indirect-cyclic.bst [line 7 column 5]",
+                "indirect-cyclic.bst [line 8 column 5]",
+            ],
+        ),
+        # Test an indirect circular dependency
+        ("self-reference.bst", ["self-reference.bst [line 4 column 5]"]),
+    ],
+    ids=["simple", "simple-text", "indirect", "self-reference"],
+)
 @pytest.mark.timeout(15, method="signal")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "cyclic_variables"))
-def test_simple_cyclic_variables(cli, datafiles):
-    print_warning("Performing cyclic test, if this test times out it will " + "exit the test sequence")
+def test_circular_reference(cli, datafiles, element, provenances):
+    print_warning("Performing cyclic test, if this test times out it will exit the test sequence")
     project = str(datafiles)
-    result = cli.run(project=project, silent=True, args=["build", "simple-cyclic.bst"])
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_VARIABLE)
-
-
-@pytest.mark.timeout(15, method="signal")
-@pytest.mark.datafiles(os.path.join(DATA_DIR, "cyclic_variables"))
-def test_cyclic_variables(cli, datafiles):
-    print_warning("Performing cyclic test, if this test times out it will " + "exit the test sequence")
-    project = str(datafiles)
-    result = cli.run(project=project, silent=True, args=["build", "cyclic.bst"])
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_VARIABLE)
+    result = cli.run(project=project, silent=True, args=["build", element])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE)
+    for provenance in provenances:
+        assert provenance in result.stderr
 
 
 @pytest.mark.parametrize("protected_var", PROTECTED_VARIABLES)
@@ -168,3 +197,13 @@ def test_variables_resolving_errors_in_public_section(cli, datafiles):
 
     result = cli.run(project=project, args=["show", "--format", "%{public}", "public_unresolved.bst"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNRESOLVED_VARIABLE)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "partial_context"))
+def test_partial_context_junctions(cli, datafiles):
+    project = str(datafiles)
+
+    result = cli.run(project=project, args=["show", "--format", "%{vars}", "test.bst"])
+    result.assert_success()
+    result_vars = _yaml.load_data(result.output)
+    assert result_vars.get_str("eltvar") == "/bar/foo/baz"
