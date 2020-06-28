@@ -69,7 +69,7 @@ def test_source_staged(tmpdir, cli, datafiles):
         assert sourcecache.contains(source)
 
         # Extract the file and check it's the same as the one we imported
-        digest = sourcecache.export(source)._get_digest()
+        digest = sourcecache._get_source(source._get_source_name()).files
         extractdir = os.path.join(str(tmpdir), "extract")
         cas.checkout(extractdir, digest)
         dir1 = extractdir
@@ -102,7 +102,7 @@ def test_source_fetch(tmpdir, cli, datafiles):
         assert element._has_all_sources_in_source_cache()
 
         # check that the directory structures are identical
-        digest = sourcecache.export(source)._get_digest()
+        digest = sourcecache._get_source(source._get_source_name()).files
         extractdir = os.path.join(str(tmpdir), "extract")
         cas.checkout(extractdir, digest)
         dir1 = extractdir

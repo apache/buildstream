@@ -101,7 +101,7 @@ def test_source_push_split(cli, tmpdir, datafiles):
             assert sourcecache.contains(source)
 
             # check that the remote CAS now has it
-            digest = sourcecache.export(source)._get_digest()
+            digest = sourcecache._get_source(source._get_source_name()).files
             assert storage.has_object(digest)
 
 
@@ -150,7 +150,7 @@ def test_source_push(cli, tmpdir, datafiles):
             assert sourcecache.contains(source)
 
             # check that the remote CAS now has it
-            digest = sourcecache.export(source)._get_digest()
+            digest = sourcecache._get_source(source._get_source_name()).files
             assert share.has_object(digest)
 
 

@@ -96,7 +96,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
 
             # get root digest of source
             sourcecache = context.sourcecache
-            digest = sourcecache.export(source)._get_digest()
+            digest = sourcecache._get_source(source._get_source_name()).files
 
             move_local_cas_to_remote_source_share(str(cache_dir), share.directory)
 
@@ -204,7 +204,7 @@ def test_source_pull_partial_fallback_fetch(cli, tmpdir, datafiles):
 
             # get root digest of source
             sourcecache = context.sourcecache
-            digest = sourcecache.export(source)._get_digest()
+            digest = sourcecache._get_source(source._get_source_name()).files
 
             move_local_cas_to_remote_source_share(str(cache_dir), share.directory)
 
