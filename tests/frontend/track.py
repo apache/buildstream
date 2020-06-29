@@ -1,8 +1,10 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
-import stat
+import itertools
 import os
+import stat
+
 import pytest
 
 from buildstream.testing import create_repo
@@ -120,6 +122,97 @@ def test_track_optional(cli, tmpdir, datafiles, ref_storage):
     # Assert that the keys are different when having
     # tracked separate branches
     assert test_key != master_key
+
+
+# Test various combinations of `--except` with all possible values for `--deps`
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+@pytest.mark.parametrize("ref_storage", [("inline"), ("project.refs")])
+@pytest.mark.parametrize(
+    "track_targets,deps,exceptions,tracked",
+    [
+        # --deps none
+        ### Test with no exceptions
+        (["0.bst"], "none", [], ["0.bst"]),
+        (["3.bst"], "none", [], ["3.bst"]),
+        (["2.bst", "3.bst"], "none", [], ["2.bst", "3.bst"]),
+        ### Test excepting '2.bst'
+        (["0.bst"], "none", ["2.bst"], ["0.bst"]),
+        (["2.bst", "3.bst"], "none", ["2.bst"], ["3.bst"]),
+        (["0.bst", "3.bst"], "none", ["2.bst"], ["0.bst", "3.bst"]),
+        ### Test excepting '2.bst' and '3.bst'
+        (["0.bst"], "none", ["2.bst", "3.bst"], ["0.bst"]),
+        (["3.bst"], "none", ["2.bst", "3.bst"], []),
+        (["2.bst", "3.bst"], "none", ["2.bst", "3.bst"], []),
+        #
+        # --deps all
+        ### Test with no exceptions
+        (["0.bst"], "all", [], ["0.bst", "2.bst", "3.bst", "4.bst", "5.bst", "6.bst", "7.bst"]),
+        (["3.bst"], "all", [], ["3.bst", "4.bst", "5.bst", "6.bst"]),
+        (["2.bst", "3.bst"], "all", [], ["2.bst", "3.bst", "4.bst", "5.bst", "6.bst", "7.bst"]),
+        ### Test excepting '2.bst'
+        (["0.bst"], "all", ["2.bst"], ["0.bst", "3.bst", "4.bst", "5.bst", "6.bst"]),
+        (["3.bst"], "all", ["2.bst"], []),
+        (["2.bst", "3.bst"], "all", ["2.bst"], ["3.bst", "4.bst", "5.bst", "6.bst"]),
+        ### Test excepting '2.bst' and '3.bst'
+        (["0.bst"], "all", ["2.bst", "3.bst"], ["0.bst"]),
+        (["3.bst"], "all", ["2.bst", "3.bst"], []),
+        (["2.bst", "3.bst"], "all", ["2.bst", "3.bst"], []),
+    ],
+)
+def test_track_except(cli, datafiles, tmpdir, ref_storage, track_targets, deps, exceptions, tracked):
+    project = str(datafiles)
+    dev_files_path = os.path.join(project, "files", "dev-files")
+    elements_path = os.path.join(project, "elements")
+
+    repo = create_repo("git", str(tmpdir))
+    ref = repo.create(dev_files_path)
+
+    configure_project(project, {"ref-storage": ref_storage})
+
+    create_elements = {
+        "0.bst": ["2.bst", "3.bst"],
+        "2.bst": ["3.bst", "7.bst"],
+        "3.bst": ["4.bst", "5.bst", "6.bst"],
+        "4.bst": [],
+        "5.bst": [],
+        "6.bst": ["5.bst"],
+        "7.bst": [],
+    }
+
+    initial_project_refs = {}
+    for element, dependencies in create_elements.items():
+        element_path = os.path.join(elements_path, element)
+
+        # Test the element inconsistency resolution by ensuring that
+        # only elements that aren't tracked have refs
+        if element in set(tracked):
+            # Elements which should not have a ref set
+            #
+            generate_element(repo, element_path, dependencies)
+        elif ref_storage == "project.refs":
+            # Store a ref in project.refs
+            #
+            generate_element(repo, element_path, dependencies)
+            initial_project_refs[element] = [{"ref": ref}]
+        else:
+            # Store a ref in the element itself
+            #
+            generate_element(repo, element_path, dependencies, ref=ref)
+
+    # Generate initial project.refs
+    if ref_storage == "project.refs":
+        project_refs = {"projects": {"test": initial_project_refs}}
+        _yaml.roundtrip_dump(project_refs, os.path.join(project, "project.refs"))
+
+    args = ["source", "track", "--deps", deps, *track_targets]
+    args += itertools.chain.from_iterable(zip(itertools.repeat("--except"), exceptions))
+
+    result = cli.run(project=project, silent=True, args=args)
+    result.assert_success()
+
+    # Assert that we tracked exactly the elements we expected to
+    tracked_elements = result.get_tracked_elements()
+    assert set(tracked_elements) == set(tracked)
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, "track-cross-junction"))
