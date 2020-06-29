@@ -32,7 +32,7 @@ from ruamel import yaml
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
 from . cimport node
-from .node cimport MappingNode, ScalarNode, SequenceNode
+from .node cimport MappingNode, Node, ScalarNode, SequenceNode
 
 
 # These exceptions are intended to be caught entirely within
@@ -188,7 +188,7 @@ cdef class Representer:
     cdef RepresenterState _handle_wait_value_MappingStartEvent(self, object ev):
         cdef RepresenterState new_state = self._handle_doc_MappingStartEvent(ev)
         key = self.keys.pop()
-        (<MappingNode> self.output[-2])._set(key, self.output[-1])
+        (<MappingNode> self.output[-2])._set(key, <Node> self.output[-1])
         return new_state
 
     cdef RepresenterState _handle_wait_key_MappingEndEvent(self, object ev):
@@ -206,7 +206,7 @@ cdef class Representer:
     cdef RepresenterState _handle_wait_value_SequenceStartEvent(self, object ev):
         self.output.append(SequenceNode.__new__(
             SequenceNode, self._file_index, ev.start_mark.line, ev.start_mark.column, []))
-        (<MappingNode> self.output[-2])._set(self.keys[-1], self.output[-1])
+        (<MappingNode> self.output[-2])._set(self.keys[-1], <Node> self.output[-1])
         return RepresenterState.wait_list_item
 
     cdef RepresenterState _handle_wait_list_item_SequenceStartEvent(self, object ev):

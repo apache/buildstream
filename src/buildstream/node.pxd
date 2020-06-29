@@ -71,7 +71,7 @@ cdef class MappingNode(Node):
 
     # Private Methods
     cdef void __composite(self, MappingNode target, list path) except *
-    cdef void _set(self, str key, object value)
+    cdef void _set(self, str key, Node value)
     cdef Node _get(self, str key, default, default_constructor)
 
 
