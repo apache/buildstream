@@ -2,7 +2,7 @@ import os
 import pytest
 from tests.testutils.runcli import cli
 from tests.testutils import generate_junction
-from buildstream._exceptions import ErrorDomain
+from buildstream._exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
 from buildstream.plugin import CoreWarnings
 
@@ -77,6 +77,26 @@ def test_overlaps_whitelist_on_overlapper(cli, datafiles):
         'build', 'collect-partially-whitelisted.bst'])
     result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_overlaps_whitelist_undefined_variable(cli, datafiles):
+    project_dir = str(datafiles)
+    gen_project(project_dir, False)
+    result = cli.run(project=project_dir, silent=True, args=["build", "collect-whitelisted-undefined.bst"])
+
+    # Assert that we get the expected undefined variable error,
+    # and that it has the provenance we expect from whitelist-undefined.bst
+    #
+    # FIXME: In BuildStream 1, we only encounter this error later when extracting
+    #        the variables from an artifact, and we lose the provenance.
+    #
+    #        This is not a huge problem in light of the coming of BuildStream 2 and
+    #        is probably not worth too much attention, but it is worth noting that
+    #        this is an imperfect error message delivered at a late stage.
+    #
+    result.assert_main_error(ErrorDomain.STREAM, None)
+    assert "public.yaml [line 3 column 4]" in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
