@@ -53,6 +53,7 @@ Class Reference
 """
 
 import string
+import sys
 
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
@@ -503,36 +504,7 @@ cdef class MappingNode(Node):
         del self.value[key]
 
     def __setitem__(self, str key, object value):
-        cdef Node old_value
-
-        if type(value) in [MappingNode, ScalarNode, SequenceNode]:
-            self.value[key] = value
-        else:
-            node = __create_node_recursive(value, self)
-
-            # FIXME: Do we really want to override provenance?
-            #
-            # Related to https://gitlab.com/BuildStream/buildstream/issues/1058
-            #
-            # There are only two cases were nodes are set in the code (hence without provenance):
-            #   - When automatic variables are set by the core (e-g: max-jobs)
-            #   - when plugins call Element.set_public_data
-            #
-            # The first case should never throw errors, so it is of limited interests.
-            #
-            # The second is more important. What should probably be done here is to have 'set_public_data'
-            # able of creating a fake provenance with the name of the plugin, the project and probably the
-            # element name.
-            #
-            # We would therefore have much better error messages, and would be able to get rid of most synthetic
-            # nodes.
-            old_value = self.value.get(key)
-            if old_value:
-                node.file_index = old_value.file_index
-                node.line = old_value.line
-                node.column = old_value.column
-
-            self.value[key] = node
+        self._set(key, value)
 
     #############################################################
     #                       Public Methods                      #
@@ -1125,6 +1097,49 @@ cdef class MappingNode(Node):
             target.file_index = self.file_index
             target.line = self.line
             target.column = self.column
+
+    # _set(key, value)
+    #
+    # Internal helper method to set an entry. This is used
+    # everywhere that a MappingNode value can be set, and ensures
+    # that MappingNode keys are always interned.
+    #
+    # Args:
+    #   key (str): the key for which to set the value
+    #   value (object): the value to set
+    #
+    cdef void _set(self, str key, object value):
+        cdef Node old_value
+        cdef intern_key = sys.intern(key)
+
+        if type(value) in [MappingNode, ScalarNode, SequenceNode]:
+            self.value[intern_key] = value
+        else:
+            node = __create_node_recursive(value, self)
+
+            # FIXME: Do we really want to override provenance?
+            #
+            # Related to https://gitlab.com/BuildStream/buildstream/issues/1058
+            #
+            # There are only two cases were nodes are set in the code (hence without provenance):
+            #   - When automatic variables are set by the core (e-g: max-jobs)
+            #   - when plugins call Element.set_public_data
+            #
+            # The first case should never throw errors, so it is of limited interests.
+            #
+            # The second is more important. What should probably be done here is to have 'set_public_data'
+            # able of creating a fake provenance with the name of the plugin, the project and probably the
+            # element name.
+            #
+            # We would therefore have much better error messages, and would be able to get rid of most synthetic
+            # nodes.
+            old_value = self.value.get(intern_key)
+            if old_value:
+                node.file_index = old_value.file_index
+                node.line = old_value.line
+                node.column = old_value.column
+
+            self.value[intern_key] = node
 
     # _get(key, default, default_constructor)
     #
