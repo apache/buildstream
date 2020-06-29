@@ -54,8 +54,8 @@ Glossary
        element into its output. The output is called an
        :term:`Artifact <Artifact>`.
 
-       Configuration for elements is stored in form of :term:```.bst`` files
-       <``.bst`` file>` See :ref:`Declaring Elements document <format_basics>`
+       Configuration for elements is stored in form of :term:`.bst files
+       <.bst file>`. See :ref:`Declaring Elements document <format_basics>`
        for more details on element configurtion.
 
 
