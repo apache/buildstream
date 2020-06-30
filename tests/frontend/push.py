@@ -675,3 +675,43 @@ def test_push_after_rebuild(cli, tmpdir, datafiles):
         result.assert_success()
         assert result.get_pushed_elements() == ["random.bst"]
         assert cli.get_element_state(project, "random.bst") == "cached"
+
+
+# Test that push after rebuilding a non-reproducible element updates the
+# artifact on the server.
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_update_after_rebuild(cli, tmpdir, datafiles):
+    project = os.path.join(datafiles.dirname, datafiles.basename)
+
+    generate_project(
+        project,
+        config={
+            "element-path": "elements",
+            "min-version": "2.0",
+            "plugins": [{"origin": "local", "path": "plugins", "elements": ["randomelement"]}],
+        },
+    )
+
+    with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
+        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+
+        # Build the element and push the artifact
+        result = cli.run(project=project, args=["build", "random.bst"])
+        result.assert_success()
+        assert result.get_pushed_elements() == ["random.bst"]
+        assert cli.get_element_state(project, "random.bst") == "cached"
+
+        # Now delete the artifact and ensure it is not in the cache
+        result = cli.run(project=project, args=["artifact", "delete", "random.bst"])
+        assert cli.get_element_state(project, "random.bst") != "cached"
+
+        # Now rebuild the element. Reset config to disable pulling.
+        cli.config = None
+        result = cli.run(project=project, args=["build", "random.bst"])
+        result.assert_success()
+        assert cli.get_element_state(project, "random.bst") == "cached"
+
+        # Push the new build
+        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        result = cli.run(project=project, args=["artifact", "push", "random.bst"])
+        assert result.get_pushed_elements() == ["random.bst"]
