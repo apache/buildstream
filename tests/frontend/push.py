@@ -29,6 +29,7 @@ import pytest
 
 from buildstream.exceptions import ErrorDomain
 from buildstream.testing import cli, generate_project  # pylint: disable=unused-import
+from buildstream.testing.runcli import Cli
 from tests.testutils import (
     create_artifact_share,
     create_element_size,
@@ -497,16 +498,16 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
         assert_shared(cli, share, project, "element1.bst")
         assert_shared(cli, share, project, "element2.bst")
 
-        # Remove element1 from the local cache
-        cli.remove_artifact_from_cache(project, "element1.bst")
-        assert cli.get_element_state(project, "element1.bst") != "cached"
-
-        # Pull the element1 from the remote cache (this should update its mtime)
-        result = cli.run(project=project, args=["artifact", "pull", "element1.bst", "--remote", share.repo])
+        # Pull the element1 from the remote cache (this should update its mtime).
+        # Use a separate local cache for this to ensure the complete element is pulled.
+        cli2_path = os.path.join(str(tmpdir), "cli2")
+        os.mkdir(cli2_path)
+        cli2 = Cli(cli2_path)
+        result = cli2.run(project=project, args=["artifact", "pull", "element1.bst", "--remote", share.repo])
         result.assert_success()
 
         # Ensure element1 is cached locally
-        assert cli.get_element_state(project, "element1.bst") == "cached"
+        assert cli2.get_element_state(project, "element1.bst") == "cached"
 
         wait_for_cache_granularity()
 
