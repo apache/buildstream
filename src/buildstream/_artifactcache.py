@@ -541,26 +541,27 @@ class ArtifactCache(BaseCache):
 
         keys = list(utils._deduplicate([artifact_proto.strong_key, artifact_proto.weak_key]))
 
-        # Check whether the artifact is on the server
+        pushed = False
+
         for key in keys:
             try:
-                remote.get_artifact(element.get_artifact_name(key=key))
+                remote_artifact = remote.get_artifact(element.get_artifact_name(key=key))
+                # Skip push if artifact is already on the server
+                if remote_artifact == artifact_proto:
+                    continue
             except grpc.RpcError as e:
                 if e.code() != grpc.StatusCode.NOT_FOUND:
                     raise ArtifactError(
                         "Error checking artifact cache with status {}: {}".format(e.code().name, e.details())
                     )
-            else:
-                return False
 
-        # If not, we send the artifact proto
-        for key in keys:
             try:
                 remote.update_artifact(element.get_artifact_name(key=key), artifact_proto)
+                pushed = True
             except grpc.RpcError as e:
                 raise ArtifactError("Failed to push artifact with status {}: {}".format(e.code().name, e.details()))
 
-        return True
+        return pushed
 
     # _pull_artifact_storage():
     #
