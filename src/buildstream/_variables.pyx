@@ -243,8 +243,7 @@ cdef class Variables:
         # Each iteration processes a ResolutionStep object and has the possibility
         # to enque more ResolutionStep objects as a result.
         #
-        cdef ValueLink deps = None
-        cdef ValueLink dep = None
+        cdef list deps = []
         cdef bint first_iteration = True
 
         step = ResolutionStep()
@@ -272,10 +271,7 @@ cdef class Variables:
 
                 # Queue up this value to be resolved in the next loop
                 if iter_value._resolved is None:
-                    dep = ValueLink()
-                    dep.value = iter_value
-                    dep.prev = deps
-                    deps = dep
+                    deps.append(iter_value)
 
                     # Queue up it's dependencies for resolution
                     iter_value_deps = iter_value.dependencies()
@@ -293,8 +289,8 @@ cdef class Variables:
         # we want to return.
         #
         while deps:
-            resolved_value = deps.value.resolve(self._values)
-            deps = deps.prev
+            iter_value = deps.pop()
+            resolved_value = iter_value.resolve(self._values)
 
         return resolved_value
 
@@ -411,15 +407,6 @@ cdef class ResolutionStep:
         raise LoadError("Circular dependency detected on variable '{}'".format(self.referee),
                         LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE,
                         detail="\n".join(reversed(error_lines)))
-
-
-# ValueLink
-#
-# A link list for Values.
-#
-cdef class ValueLink:
-    cdef Value value
-    cdef ValueLink prev
 
 
 # ValuePart()
