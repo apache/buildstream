@@ -42,7 +42,6 @@ class BaseCache:
     # None of these should ever be called in the base class, but this appeases
     # pylint to some degree
     spec_name = None  # type: str
-    spec_error = None  # type: Type[BstError]
     config_node_name = None  # type: str
     index_remote_class = None  # type: Type[BaseRemote]
     storage_remote_class = CASRemote  # type: Type[BaseRemote]

@@ -122,7 +122,6 @@ class SourceRemote(BaseRemote):
 class SourceCache(BaseCache):
 
     spec_name = "source_cache_specs"
-    spec_error = SourceCacheError
     config_node_name = "source-caches"
     index_remote_class = SourceRemote
 

@@ -137,7 +137,6 @@ class ArtifactRemote(BaseRemote):
 class ArtifactCache(BaseCache):
 
     spec_name = "artifact_cache_specs"
-    spec_error = ArtifactError
     config_node_name = "artifacts"
     index_remote_class = ArtifactRemote
 
