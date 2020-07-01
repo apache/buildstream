@@ -230,10 +230,12 @@ cdef class Variables:
     cdef str _resolve(self, str name, ProvenanceInformation provenance):
         cdef ResolutionStep step
         cdef ResolutionStep new_step
+        cdef ResolutionStep this_step
         cdef Value iter_value
         cdef object iter_name_object
         cdef str iter_name
         cdef set iter_value_deps
+        cdef str resolved_value
 
         # While iterating over the first loop, we collect all of the variable
         # dependencies, and perform all required validation.
@@ -241,24 +243,25 @@ cdef class Variables:
         # Each iteration processes a ResolutionStep object and has the possibility
         # to enque more ResolutionStep objects as a result.
         #
-        cdef list pending;
-        cdef list deps = []
+        cdef ValueLink deps = None
+        cdef ValueLink dep = None
         cdef bint first_iteration = True
 
         step = ResolutionStep()
         step.init(None, { sys.intern(name) }, None)
-        pending = [step]
 
-        while pending:
-            step = pending.pop()
+        while step:
+            # Keep a hold of the current overall step
+            this_step = step
+            step = step.prev
 
             # Check for circular dependencies
-            step.check_circular(self._values)
+            this_step.check_circular(self._values)
 
             # For each dependency stemming from this provenance
-            for iter_name_object in step.varnames:
+            for iter_name_object in this_step.varnames:
                 iter_name = <str> iter_name_object
-                iter_value = self._get_checked_value(iter_name, step.referee, provenance)
+                iter_value = self._get_checked_value(iter_name, this_step.referee, provenance)
 
                 # Earliest return for an already resolved value
                 #
@@ -269,24 +272,29 @@ cdef class Variables:
 
                 # Queue up this value to be resolved in the next loop
                 if iter_value._resolved is None:
-                    deps.append(iter_value)
+                    dep = ValueLink()
+                    dep.value = iter_value
+                    dep.prev = deps
+                    deps = dep
 
                     # Queue up it's dependencies for resolution
                     iter_value_deps = iter_value.dependencies()
                     if iter_value_deps:
                         new_step = ResolutionStep()
-                        new_step.init(iter_name, iter_value_deps, step)
-                        pending.append(new_step)
+                        new_step.init(iter_name, iter_value_deps, this_step)
+
+                        # Link it to the end of the stack
+                        new_step.prev = step
+                        step = new_step
 
         # We've now constructed the dependencies queue such that
         # later dependencies are on the right, we can now safely peddle
         # backwards and the last (leftmost) resolved value is the one
         # we want to return.
         #
-        cdef str resolved_value
         while deps:
-            iter_value = deps.pop()
-            resolved_value = iter_value.resolve(self._values)
+            resolved_value = deps.value.resolve(self._values)
+            deps = deps.prev
 
         return resolved_value
 
@@ -344,6 +352,7 @@ cdef class ResolutionStep:
     cdef str referee
     cdef set varnames
     cdef ResolutionStep parent
+    cdef ResolutionStep prev
 
     # init()
     #
@@ -358,6 +367,7 @@ cdef class ResolutionStep:
         self.referee = referee
         self.varnames = varnames
         self.parent = parent
+        self.prev = None
 
     # check_circular()
     #
@@ -401,6 +411,15 @@ cdef class ResolutionStep:
         raise LoadError("Circular dependency detected on variable '{}'".format(self.referee),
                         LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE,
                         detail="\n".join(reversed(error_lines)))
+
+
+# ValueLink
+#
+# A link list for Values.
+#
+cdef class ValueLink:
+    cdef Value value
+    cdef ValueLink prev
 
 
 # ValuePart()
