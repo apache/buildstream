@@ -265,8 +265,6 @@ class AssetCache:
     # pylint to some degree
     spec_name = None  # type: str
     config_node_name = None  # type: str
-    index_remote_class = None  # type: Type[BaseRemote]
-    storage_remote_class = CASRemote  # type: Type[BaseRemote]
 
     def __init__(self, context):
         self.context = context
@@ -495,12 +493,11 @@ class AssetCache:
     # are accessible.
     #
     # Args:
-    #     on_failure (Callable[[self.remote_class,Exception],None]):
+    #     on_failure (Callable[[Remote,Exception],None]):
     #     What do do when a remote doesn't respond.
     #
     # Returns:
-    #    (Dict[RemoteSpec, self.remote_class], Dict[RemoteSpec,
-    #    self.remote_class]) -
+    #    (Dict[RemoteSpec, AssetRemote], Dict[RemoteSpec, CASRemote]) -
     #    The created remote instances, index first, storage last.
     #
     def _create_remote_instances(self, *, on_failure=None):
@@ -568,10 +565,10 @@ class AssetCache:
         index = None
         storage = None
         if remote_spec.type in [RemoteType.INDEX, RemoteType.ALL]:
-            index = self.index_remote_class(remote_spec)  # pylint: disable=not-callable
+            index = AssetRemote(remote_spec)  # pylint: disable=not-callable
             index.check()
         if remote_spec.type in [RemoteType.STORAGE, RemoteType.ALL]:
-            storage = self.storage_remote_class(remote_spec, self.cas)
+            storage = CASRemote(remote_spec, self.cas)
             storage.check()
 
         return (index, storage)

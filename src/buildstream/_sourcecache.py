@@ -22,7 +22,7 @@ import grpc
 
 from ._cas.casremote import BlobNotFound
 from .storage._casbaseddirectory import CasBasedDirectory
-from ._assetcache import AssetCache, AssetRemote
+from ._assetcache import AssetCache
 from ._exceptions import CASError, CASRemoteError, SourceCacheError
 from . import utils
 from ._protos.buildstream.v2 import source_pb2
@@ -39,7 +39,6 @@ class SourceCache(AssetCache):
 
     spec_name = "source_cache_specs"
     config_node_name = "source-caches"
-    index_remote_class = AssetRemote
 
     def __init__(self, context):
         super().__init__(context)

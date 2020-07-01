@@ -21,7 +21,7 @@
 import os
 import grpc
 
-from ._assetcache import AssetCache, AssetRemote
+from ._assetcache import AssetCache
 from ._cas.casremote import BlobNotFound
 from ._exceptions import ArtifactError, AssetCacheError, CASError, CASRemoteError
 from ._protos.buildstream.v2 import artifact_pb2
@@ -40,7 +40,6 @@ class ArtifactCache(AssetCache):
 
     spec_name = "artifact_cache_specs"
     config_node_name = "artifacts"
-    index_remote_class = AssetRemote
 
     def __init__(self, context):
         super().__init__(context)
