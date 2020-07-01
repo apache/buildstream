@@ -409,29 +409,6 @@ cdef class ResolutionStep:
                         detail="\n".join(reversed(error_lines)))
 
 
-# ValuePart()
-#
-# Represents a part of a value (a string and an indicator
-# of whether the string is a variable or not).
-#
-# This only exists for better performance than constructing
-# and unpacking tuples.
-#
-# Args:
-#    text (str): The text of this part
-#    is_variable (bint): True if the text is a variable, False if it's literal
-#
-cdef class ValuePart:
-    cdef str text
-    cdef bint is_variable
-    cdef ValuePart next_part
-
-    cdef init(self, str text, bint is_variable):
-        self.text = text
-        self.is_variable = is_variable
-        self.next_part = None
-
-
 cdef EMPTY_SET = set()
 
 # Value():
@@ -474,7 +451,7 @@ cdef class Value:
     cdef str resolve(self, dict values):
         cdef str dep_name
         cdef Value part_var
-        cdef ValuePart part
+        cdef ValuePart *part
         cdef object part_object
         cdef list parts = []
 
@@ -483,10 +460,10 @@ cdef class Value:
 
             while part:
                 if part.is_variable:
-                    part_var = <Value> values[part.text]
+                    part_var = <Value> values[<str>part.text]
                     parts.append(part_var._resolved)
                 else:
-                    parts.append(part.text)
+                    parts.append(<str>part.text)
 
                 part = part.next_part
 
@@ -564,7 +541,7 @@ cdef class ValueClass:
     # Public
     #
     cdef set variable_names  # A set of variable names
-    cdef ValuePart parts  # The linked list of ValuePart objects
+    cdef ValuePart *parts
 
     # init():
     #
@@ -574,9 +551,14 @@ cdef class ValueClass:
     #    string (str): The string which can contain variables
     #
     cdef init(self, str string):
+
         self.variable_names = set()
-        self.parts = None
+        self.parts = NULL
+
         self._parse_string(string)
+
+    def __dealloc__(self):
+        free_value_parts(self.parts)
 
     # _parse_string()
     #
@@ -604,19 +586,21 @@ cdef class ValueClass:
         # What do you expect ? These are regular expressions after all,
         # they are *supposed* to be weird.
         #
-        cdef list splits = VALUE_CLASS_PARSE_EXPANSION.split(string)
+        cdef splits = VALUE_CLASS_PARSE_EXPANSION.split(string)
         cdef object split_object
         cdef str split
         cdef Py_ssize_t split_idx = 0
-        cdef bint is_variable
-        cdef ValuePart part
-        cdef ValuePart last_part = None
+        cdef int is_variable
+
+        # Adding parts
+        #
+        cdef ValuePart *part
+        cdef ValuePart *last_part = NULL
 
         #
         # Collect the weird regex return value into something
         # more comprehensible.
         #
-
         for split_object in splits:
             split = <str> split_object
             if split:
@@ -633,8 +617,7 @@ cdef class ValueClass:
                     is_variable = True
                     self.variable_names.add(split)
 
-                part = ValuePart()
-                part.init(split, is_variable)
+                part = new_value_part(split, is_variable)
                 if last_part:
                     last_part.next_part = part
                 else:
@@ -664,3 +647,50 @@ cdef class ValueIterator:
     def __next__(self):
         name = next(self._iter)
         return name, self._variables[name]
+
+
+############################## BASEMENT ########################################
+
+
+from cpython.mem cimport PyMem_Malloc, PyMem_Free
+from cpython.object cimport PyObject
+from cpython.ref cimport Py_XINCREF, Py_XDECREF
+
+# ValuePart()
+#
+# Represents a part of a value (a string and an indicator
+# of whether the string is a variable or not).
+#
+# This only exists for better performance than constructing
+# and unpacking tuples.
+#
+# Args:
+#    text (str): The text of this part
+#    is_variable (bint): True if the text is a variable, False if it's literal
+#
+ctypedef struct ValuePart:
+    PyObject *text
+    int is_variable
+    ValuePart *next_part
+
+cdef ValuePart *new_value_part(str text, int is_variable):
+    cdef ValuePart *part = <ValuePart *>PyMem_Malloc(sizeof(ValuePart))
+    if not part:
+        raise MemoryError()
+
+    part.text = <PyObject *>text
+    part.is_variable = is_variable
+    part.next_part = NULL
+    Py_XINCREF(part.text)
+    return part
+
+cdef void free_value_part(ValuePart *part):
+    Py_XDECREF(part.text)
+    PyMem_Free(part)
+
+cdef void free_value_parts(ValuePart *part):
+    cdef ValuePart *to_free
+    while part:
+        to_free = part
+        part = part.next_part
+        free_value_part(to_free)
