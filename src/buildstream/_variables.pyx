@@ -24,6 +24,10 @@ import re
 import sys
 import itertools
 
+from cpython.mem cimport PyMem_Malloc, PyMem_Free
+from cpython.object cimport PyObject
+from cpython.ref cimport Py_XINCREF, Py_XDECREF
+
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
 from .node cimport MappingNode, Node, ScalarNode, SequenceNode, ProvenanceInformation
@@ -145,14 +149,17 @@ cdef class Variables:
     #
     cpdef subst(self, ScalarNode node):
         cdef Value value = Value()
-        cdef object dep_name_object
+        cdef PyObject **dependencies
+        cdef Py_ssize_t n_dependencies
+        cdef Py_ssize_t idx = 0
         cdef str dep_name
 
         value.init(node)
-
-        for dep_name_object in value.dependencies():
-            dep_name = <str> dep_name_object
+        dependencies, n_dependencies = value.dependencies()
+        while idx < n_dependencies:
+            dep_name = <str> dependencies[idx]
             self._resolve(dep_name, node.get_provenance())
+            idx += 1
 
         return value.resolve(self._values)
 
@@ -231,11 +238,18 @@ cdef class Variables:
         cdef ResolutionStep step
         cdef ResolutionStep new_step
         cdef ResolutionStep this_step
+
         cdef Value iter_value
-        cdef object iter_name_object
         cdef str iter_name
-        cdef set iter_value_deps
-        cdef str resolved_value
+
+        cdef PyObject **iter_value_deps
+        cdef Py_ssize_t n_iter_value_deps
+        cdef Py_ssize_t idx = 0
+
+        cdef str resolved_value = None
+
+        cdef list deps = []
+        cdef bint first_iteration = True
 
         # While iterating over the first loop, we collect all of the variable
         # dependencies, and perform all required validation.
@@ -243,11 +257,12 @@ cdef class Variables:
         # Each iteration processes a ResolutionStep object and has the possibility
         # to enque more ResolutionStep objects as a result.
         #
-        cdef list deps = []
-        cdef bint first_iteration = True
+        name = sys.intern(name)
+        cdef PyObject *names[1]
+        names[0] = <PyObject *>name
 
         step = ResolutionStep()
-        step.init(None, { sys.intern(name) }, None)
+        step.init(None, names, 1, None)
 
         while step:
             # Keep a hold of the current overall step
@@ -257,10 +272,11 @@ cdef class Variables:
             # Check for circular dependencies
             this_step.check_circular(self._values)
 
-            # For each dependency stemming from this provenance
-            for iter_name_object in this_step.varnames:
-                iter_name = <str> iter_name_object
+            idx = 0
+            while idx < this_step.n_varnames:
+                iter_name = <str> this_step.varnames[idx]
                 iter_value = self._get_checked_value(iter_name, this_step.referee, provenance)
+                idx += 1
 
                 # Earliest return for an already resolved value
                 #
@@ -274,10 +290,10 @@ cdef class Variables:
                     deps.append(iter_value)
 
                     # Queue up it's dependencies for resolution
-                    iter_value_deps = iter_value.dependencies()
-                    if iter_value_deps:
+                    iter_value_deps, n_iter_value_deps = iter_value.dependencies()
+                    if n_iter_value_deps > 0:
                         new_step = ResolutionStep()
-                        new_step.init(iter_name, iter_value_deps, this_step)
+                        new_step.init(iter_name, iter_value_deps, n_iter_value_deps, this_step)
 
                         # Link it to the end of the stack
                         new_step.prev = step
@@ -346,9 +362,10 @@ cdef class Variables:
 #
 cdef class ResolutionStep:
     cdef str referee
-    cdef set varnames
     cdef ResolutionStep parent
     cdef ResolutionStep prev
+    cdef PyObject **varnames
+    cdef Py_ssize_t n_varnames
 
     # init()
     #
@@ -359,9 +376,10 @@ cdef class ResolutionStep:
     #    varnames (set): A set of variable names which referee refers to.
     #    parent (ResolutionStep): The parent ResolutionStep
     #
-    cdef init(self, str referee, set varnames, ResolutionStep parent):
+    cdef init(self, str referee, PyObject **varnames, Py_ssize_t n_varnames, ResolutionStep parent):
         self.referee = referee
         self.varnames = varnames
+        self.n_varnames = n_varnames
         self.parent = parent
         self.prev = None
 
@@ -473,17 +491,18 @@ cdef class Value:
 
     # dependencies()
     #
-    # Returns the set of dependency variable names
+    # Returns the array of dependency variable names
     #
     # Returns:
-    #    (set): The set of variable names which this ValueClass depends on, or None.
+    #    (PyObject **): The array of variable names which this ValueClass depends on, or NULL
+    #    (int): The length of the returned array
     #
-    cdef set dependencies(self):
+    cdef (PyObject **, Py_ssize_t)dependencies(self):
         if self._resolved is None:
-            return self._value_class.variable_names
+            return self._value_class.variable_names, self._value_class.n_variable_names
 
         # If we're already resolved, we don't have any dependencies anymore
-        return <set> EMPTY_SET
+        return NULL, 0
 
     # _load_value_class()
     #
@@ -540,8 +559,17 @@ cdef class ValueClass:
     #
     # Public
     #
-    cdef set variable_names  # A set of variable names
     cdef ValuePart *parts
+    cdef PyObject **variable_names
+    cdef Py_ssize_t n_variable_names
+
+    # __dealloc__()
+    #
+    # Cleanup stuff which cython wont cleanup automatically
+    #
+    def __dealloc__(self):
+        free_value_parts(self.parts)
+        PyMem_Free(self.variable_names)
 
     # init():
     #
@@ -551,14 +579,10 @@ cdef class ValueClass:
     #    string (str): The string which can contain variables
     #
     cdef init(self, str string):
-
-        self.variable_names = set()
         self.parts = NULL
-
+        self.variable_names = NULL
+        self.n_variable_names = 0
         self._parse_string(string)
-
-    def __dealloc__(self):
-        free_value_parts(self.parts)
 
     # _parse_string()
     #
@@ -589,7 +613,7 @@ cdef class ValueClass:
         cdef splits = VALUE_CLASS_PARSE_EXPANSION.split(string)
         cdef object split_object
         cdef str split
-        cdef Py_ssize_t split_idx = 0
+        cdef Py_ssize_t idx = 0
         cdef int is_variable
 
         # Adding parts
@@ -611,11 +635,11 @@ cdef class ValueClass:
                 # variable values.
                 split = <str> sys.intern(split)
 
-                if (split_idx % 2) == 0:
+                if (idx % 2) == 0:
                     is_variable = False
                 else:
+                    self.n_variable_names += 1
                     is_variable = True
-                    self.variable_names.add(split)
 
                 part = new_value_part(split, is_variable)
                 if last_part:
@@ -624,8 +648,32 @@ cdef class ValueClass:
                     self.parts = part
                 last_part = part
 
-            split_idx += 1
+            idx += 1
 
+        # Initialize the variables array
+        #
+        # Note that we don't bother ref counting the string objects, as the
+        # ValuePart already takes care of owning the strings.
+        #
+        if self.n_variable_names > 0:
+            self.variable_names = <PyObject **>PyMem_Malloc(self.n_variable_names * sizeof(PyObject *))
+            if not self.variable_names:
+                raise MemoryError()
+
+            part = self.parts
+            idx = 0
+            while part:
+                if part.is_variable:
+
+                    # Record only unique variable names in the variable_names array.
+                    #
+                    if object_array_search(part.text, self.variable_names, idx) < 0:
+                        self.variable_names[idx] = part.text
+                        idx += 1
+                    else:
+                        self.n_variable_names -= 1
+
+                part = part.next_part
 
 # ValueIterator()
 #
@@ -652,9 +700,27 @@ cdef class ValueIterator:
 ############################## BASEMENT ########################################
 
 
-from cpython.mem cimport PyMem_Malloc, PyMem_Free
-from cpython.object cimport PyObject
-from cpython.ref cimport Py_XINCREF, Py_XDECREF
+# object_array_search()
+#
+# Searches for an object pointer in an array of object pointers.
+#
+# Args:
+#    search (PyObject *): The object to search for
+#    array (PyObject **): The array to search in
+#    length (Py_ssize_t): The length of the array
+#
+# Returns:
+#    (Py_ssize_t): The index of `search` in `array`, or -1 if `search` is not found.
+#
+cdef Py_ssize_t object_array_search(PyObject *search, PyObject **array, Py_ssize_t length):
+    cdef Py_ssize_t idx = 0
+
+    while idx < length:
+        if array[idx] == search:
+            return idx
+        idx += 1
+
+    return -1
 
 # ValuePart()
 #
