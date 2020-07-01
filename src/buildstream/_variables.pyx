@@ -112,9 +112,11 @@ cdef class Variables:
     #   (str|None): The expanded value for the variable or None variable was not defined.
     #
     cpdef str get(self, str name):
-        if name not in self._values:
-            return None
-        return self[name]
+        try:
+            return <str> self._resolve(name, None)
+        except LoadError as e:
+            if e.reason == LoadErrorReason.UNRESOLVED_VARIABLE:
+                return None
 
     # expand()
     #
@@ -142,10 +144,14 @@ cdef class Variables:
     #    LoadError, if the string contains unresolved variable references.
     #
     cpdef subst(self, ScalarNode node):
-        cdef Value value = Value(node)
+        cdef Value value = Value()
+        cdef object dep_name_object
         cdef str dep_name
 
-        for dep_name in value.dependencies():
+        value.init(node)
+
+        for dep_name_object in value.dependencies():
+            dep_name = <str> dep_name_object
             self._resolve(dep_name, node.get_provenance())
 
         return value.resolve(self._values)
@@ -172,11 +178,17 @@ cdef class Variables:
     #
     cdef dict _init_values(self, MappingNode node):
         cdef dict ret = {}
+        cdef key_object
+        cdef value_node_object
         cdef str key
-        cdef ScalarNode value
+        cdef ScalarNode value_node
 
-        for key, value in node.items():
-            ret[sys.intern(key)] = Value(value)
+        for key_object, value_object in node.items():
+            key = <str> sys.intern(<str> key_object)
+            value_node = <ScalarNode> value_object
+            value = Value()
+            value.init(value_node)
+            ret[key] = value
 
         return ret
 
@@ -217,12 +229,11 @@ cdef class Variables:
     #
     cdef str _resolve(self, str name, ProvenanceInformation provenance):
         cdef ResolutionStep step
-        cdef Value referee_value
+        cdef ResolutionStep new_step
         cdef Value iter_value
         cdef object iter_name_object
         cdef str iter_name
         cdef set iter_value_deps
-        cdef str cyclic_variable
 
         # While iterating over the first loop, we collect all of the variable
         # dependencies, and perform all required validation.
@@ -230,22 +241,23 @@ cdef class Variables:
         # Each iteration processes a ResolutionStep object and has the possibility
         # to enque more ResolutionStep objects as a result.
         #
-        cdef list pending = [ResolutionStep(None, { sys.intern(name) }, None)]
+        cdef list pending;
         cdef list deps = []
         cdef bint first_iteration = True
+
+        step = ResolutionStep()
+        step.init(None, { sys.intern(name) }, None)
+        pending = [step]
 
         while pending:
             step = pending.pop()
 
-            #
-            # Handle circular deps
-            #
+            # Check for circular dependencies
             step.check_circular(self._values)
 
             # For each dependency stemming from this provenance
             for iter_name_object in step.varnames:
                 iter_name = <str> iter_name_object
-
                 iter_value = self._get_checked_value(iter_name, step.referee, provenance)
 
                 # Earliest return for an already resolved value
@@ -262,16 +274,14 @@ cdef class Variables:
                     # Queue up it's dependencies for resolution
                     iter_value_deps = iter_value.dependencies()
                     if iter_value_deps:
-                        pending.append(ResolutionStep(iter_name, iter_value_deps, step))
+                        new_step = ResolutionStep()
+                        new_step.init(iter_name, iter_value_deps, step)
+                        pending.append(new_step)
 
-        #
-        # Now that we've pushed all of the required dependencies onto the deps queue,
-        # we know that there are no undefined variables or circular references, we
-        # also know that the deps queue is ordered such that the earlier items in
-        # the list depend on resolution of later items in the list.
-        #
-        # Now we can bubble back up iterating backwards over the list, and
-        # the last resolved value is the one we want to return.
+        # We've now constructed the dependencies queue such that
+        # later dependencies are on the right, we can now safely peddle
+        # backwards and the last (leftmost) resolved value is the one
+        # we want to return.
         #
         cdef str resolved_value
         while deps:
@@ -304,7 +314,7 @@ cdef class Variables:
         # Fetch the value and detect undefined references
         #
         try:
-            return self._values[varname]
+            return <Value> self._values[varname]
         except KeyError as e:
 
             # Either the provenance is the toplevel calling provenance,
@@ -330,20 +340,37 @@ cdef class Variables:
 # This only exists for better performance than constructing
 # and unpacking tuples.
 #
-# Args:
-#    referee (str): The name of the referring variable
-#    varnames (set): A set of variable names which referee refers to.
-#
 cdef class ResolutionStep:
     cdef str referee
     cdef set varnames
     cdef ResolutionStep parent
 
-    def __cinit__(self, str referee, set varnames, ResolutionStep parent):
+    # init()
+    #
+    # Initialize this ResolutionStep
+    #
+    # Args:
+    #    referee (str): The name of the referring variable
+    #    varnames (set): A set of variable names which referee refers to.
+    #    parent (ResolutionStep): The parent ResolutionStep
+    #
+    cdef init(self, str referee, set varnames, ResolutionStep parent):
         self.referee = referee
         self.varnames = varnames
         self.parent = parent
 
+    # check_circular()
+    #
+    # Check for circular references in this step.
+    #
+    # Args:
+    #    values (dict): The value dictionary for lookups
+    #
+    # Raises:
+    #    (LoadError): Will raise a user facing LoadError with
+    #                 LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE in case
+    #                 circular references were encountered.
+    #
     cdef check_circular(self, dict values):
         cdef ResolutionStep step = self.parent
         while step:
@@ -351,6 +378,10 @@ cdef class ResolutionStep:
                 self._raise_circular_reference_error(step, values)
             step = step.parent
 
+    # _raise_circular_reference_error()
+    #
+    # Helper function to construct a full report and raise the circular reference error.
+    #
     cdef _raise_circular_reference_error(self, ResolutionStep conflict, dict values):
         cdef list error_lines = []
         cdef ResolutionStep step = self
@@ -388,7 +419,7 @@ cdef class ValuePart:
     cdef str text
     cdef bint is_variable
 
-    def __cinit__(self, str text, bint is_variable):
+    cdef init(self, str text, bint is_variable):
         self.text = text
         self.is_variable = is_variable
 
@@ -404,7 +435,14 @@ cdef class Value:
     cdef ValueClass _value_class
     cdef str _resolved
 
-    def __cinit__(self, ScalarNode node):
+    # init()
+    #
+    # Initialize the Value
+    #
+    # Args:
+    #    node (ScalarNode): The node representing this value.
+    #
+    cdef init(self, ScalarNode node):
 
         # Public
         self.provenance = node.get_provenance()
@@ -437,7 +475,7 @@ cdef class Value:
                 part = <ValuePart> part_object
 
                 if part.is_variable:
-                    part_var = values[part.text]
+                    part_var = <Value> values[part.text]
                     parts.append(part_var._resolved)
                 else:
                     parts.append(part.text)
@@ -458,7 +496,7 @@ cdef class Value:
             return self._value_class.variable_names
 
         # If we're already resolved, we don't have any dependencies anymore
-        return EMPTY_SET
+        return <set> EMPTY_SET
 
     # _load_value_class()
     #
@@ -473,12 +511,13 @@ cdef class Value:
     #
     cdef ValueClass _load_value_class(self, str string):
         cdef ValueClass ret
-        cdef internal_string = sys.intern(string)
+        cdef str internal_string = sys.intern(string)
 
         try:
             ret = VALUE_CLASS_TABLE[internal_string]
         except KeyError:
-            ret = ValueClass(internal_string)
+            ret = ValueClass()
+            ret.init(internal_string)
             VALUE_CLASS_TABLE[internal_string] = ret
 
         return ret
@@ -510,9 +549,6 @@ VALUE_CLASS_PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
 #
 # A class representing a broken down parse of a value.
 #
-# Args:
-#    string (str): The string which can contain variables
-#
 cdef class ValueClass:
     #
     # Public
@@ -520,7 +556,14 @@ cdef class ValueClass:
     cdef set variable_names  # A set of variable names
     cdef list parts  # A list of ValuePart objects
 
-    def __cinit__(self, str string):
+    # init():
+    #
+    # Initialize the ValueClass()
+    #
+    # Args:
+    #    string (str): The string which can contain variables
+    #
+    cdef init(self, str string):
         self.variable_names = set()
         self.parts = []
         self._parse_string(string)
@@ -556,6 +599,7 @@ cdef class ValueClass:
         cdef str split
         cdef Py_ssize_t split_idx = 0
         cdef bint is_variable
+        cdef ValuePart part
 
         #
         # Collect the weird regex return value into something
@@ -578,7 +622,9 @@ cdef class ValueClass:
                     is_variable = True
                     self.variable_names.add(split)
 
-                self.parts.append(ValuePart(split, is_variable))
+                part = ValuePart()
+                part.init(split, is_variable)
+                self.parts.append(part)
 
             split_idx += 1
 
