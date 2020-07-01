@@ -437,10 +437,12 @@ cdef class ValueLink:
 cdef class ValuePart:
     cdef str text
     cdef bint is_variable
+    cdef ValuePart next_part
 
     cdef init(self, str text, bint is_variable):
         self.text = text
         self.is_variable = is_variable
+        self.next_part = None
 
 
 cdef EMPTY_SET = set()
@@ -490,14 +492,16 @@ cdef class Value:
         cdef list parts = []
 
         if self._resolved is None:
-            for part_object in self._value_class.parts:
-                part = <ValuePart> part_object
+            part = self._value_class.parts
 
+            while part:
                 if part.is_variable:
                     part_var = <Value> values[part.text]
                     parts.append(part_var._resolved)
                 else:
                     parts.append(part.text)
+
+                part = part.next_part
 
             self._resolved = "".join(parts)
 
@@ -573,7 +577,7 @@ cdef class ValueClass:
     # Public
     #
     cdef set variable_names  # A set of variable names
-    cdef list parts  # A list of ValuePart objects
+    cdef ValuePart parts  # The linked list of ValuePart objects
 
     # init():
     #
@@ -584,7 +588,7 @@ cdef class ValueClass:
     #
     cdef init(self, str string):
         self.variable_names = set()
-        self.parts = []
+        self.parts = None
         self._parse_string(string)
 
     # _parse_string()
@@ -619,6 +623,7 @@ cdef class ValueClass:
         cdef Py_ssize_t split_idx = 0
         cdef bint is_variable
         cdef ValuePart part
+        cdef ValuePart last_part = None
 
         #
         # Collect the weird regex return value into something
@@ -643,7 +648,11 @@ cdef class ValueClass:
 
                 part = ValuePart()
                 part.init(split, is_variable)
-                self.parts.append(part)
+                if last_part:
+                    last_part.next_part = part
+                else:
+                    self.parts = part
+                last_part = part
 
             split_idx += 1
 
