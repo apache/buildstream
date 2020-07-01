@@ -376,6 +376,48 @@ class Stream:
         self._enqueue_plan(elements, queue=track_queue)
         self._run()
 
+    # source_push()
+    #
+    # Push sources.
+    #
+    # Args:
+    #    targets (list of str): Targets to push
+    #    selection (_PipelineSelection): The selection mode for the specified targets
+    #    remote (str): The URL of a specific remote server to push to, or None
+    #
+    # If `remote` specified as None, then regular configuration will be used
+    # to determine where to push sources to.
+    #
+    # If any of the given targets are missing their expected sources,
+    # a fetch queue will be created if user context and available remotes allow for
+    # attempting to fetch them.
+    #
+    def source_push(self, targets, *, selection=_PipelineSelection.NONE, remote=None):
+
+        use_source_config = True
+        if remote:
+            use_source_config = False
+
+        elements = self._load(
+            targets,
+            selection=selection,
+            use_source_config=use_source_config,
+            source_remote_url=remote,
+            load_refs=True,
+        )
+
+        if not self._sourcecache.has_push_remotes():
+            raise StreamError("No source caches available for pushing sources")
+
+        self._pipeline.assert_consistent(elements)
+
+        self._add_queue(FetchQueue(self._scheduler, skip_cached=True))
+
+        self._add_queue(SourcePushQueue(self._scheduler))
+
+        self._enqueue_plan(elements)
+        self._run()
+
     # pull()
     #
     # Pulls artifacts from remote artifact server(s)
