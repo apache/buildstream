@@ -22,20 +22,6 @@ package buildstream.v2;
 import "build/bazel/remote/execution/v2/remote_execution.proto";
 import "google/api/annotations.proto";
 
-service ArtifactService {
-  // Retrieves an Artifact message
-  //
-  // Errors:
-  // * `NOT_FOUND`: Artifact not found on server
-  rpc GetArtifact(GetArtifactRequest) returns (Artifact) {}
-
-  // Sets an Artifact message
-  //
-  // Errors:
-  // * `FAILED_PRECONDITION`: Files specified in upload aren't present in CAS
-  rpc UpdateArtifact(UpdateArtifactRequest) returns (Artifact) {}
-}
-
 message Artifact {
   // This version number must always be present and can be used to
   // further indicate presence or absence of parts of the proto at a
@@ -78,15 +64,4 @@ message Artifact {
 
   // digest of a directory
   build.bazel.remote.execution.v2.Digest sources = 13;  // optional
-}
-
-message GetArtifactRequest {
-  string instance_name = 1;
-  string cache_key = 2;
-}
-
-message UpdateArtifactRequest {
-  string instance_name = 1;
-  string cache_key = 2;
-  Artifact artifact = 3;
 }

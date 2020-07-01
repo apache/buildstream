@@ -19,21 +19,6 @@ package buildstream.v2;
 import "build/bazel/remote/execution/v2/remote_execution.proto";
 import "google/api/annotations.proto";
 
-service SourceService {
-  // Retrieve a source message given a reference name from the service
-  //
-  // Errors:
-  // * `NOT_FOUND`: The requested reference is not in the cache.
-  rpc GetSource(GetSourceRequest) returns (Source) {}
-
-  // Sets a source message on the service
-  //
-  // Errors:
-  // * `RESOURCE_EXHAUSTED`: There is insufficient storage space to add the
-  //   entry to the cache.
-  rpc UpdateSource(UpdateSourceRequest) returns (Source) {}
-}
-
 message Source {
   // This version number must always be present and can be used to
   // further indicate presence or absence of parts of the proto at a
@@ -42,20 +27,4 @@ message Source {
   int32 version = 1;
   // root directory digest of the files
   build.bazel.remote.execution.v2.Digest files = 2;
-}
-
-message GetSourceRequest {
-  // instance of the service we want to query
-  string instance_name = 1;
-  // reference key for the source
-  string cache_key = 2;
-}
-
-message UpdateSourceRequest {
-  // instance of the service we want to query
-  string instance_name = 1;
-  // reference key ofr the source 
-  string cache_key = 2;
-  // Source that we want to upload to the service
-  Source source = 3;
 }
