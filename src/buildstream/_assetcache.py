@@ -143,6 +143,47 @@ class AssetRemote(BaseRemote):
 
         return response
 
+    # fetch_directory():
+    #
+    # Resolve URIs to a CAS Directory digest.
+    #
+    # Args:
+    #    uris (list of str): The URIs to resolve. Multiple URIs should represent
+    #                        the same content available at different locations.
+    #    qualifiers (list of Qualifier): Optional qualifiers sub-specifying the
+    #                                    content to fetch.
+    #
+    # Returns
+    #    (FetchDirectoryResponse): The asset server response or None if the resource
+    #                              is not available.
+    #
+    # Raises:
+    #     AssetCacheError: If the upstream has a problem
+    #
+    def fetch_directory(self, uris, *, qualifiers=None):
+        request = remote_asset_pb2.FetchDirectoryRequest()
+        if self.instance_name:
+            request.instance_name = self.instance_name
+        request.uris.extend(uris)
+        if qualifiers:
+            request.qualifiers.extend(qualifiers)
+
+        try:
+            response = self.fetch_service.FetchDirectory(request)
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                return None
+
+            raise AssetCacheError("FetchDirectory failed with status {}: {}".format(e.code().name, e.details())) from e
+
+        if response.status.code == code_pb2.NOT_FOUND:
+            return None
+
+        if response.status.code != code_pb2.OK:
+            raise AssetCacheError("FetchDirectory failed with response status {}".format(response.status.code))
+
+        return response
+
     # push_blob():
     #
     # Associate a CAS blob digest to URIs.
@@ -177,6 +218,43 @@ class AssetRemote(BaseRemote):
             self.push_service.PushBlob(request)
         except grpc.RpcError as e:
             raise AssetCacheError("PushBlob failed with status {}: {}".format(e.code().name, e.details())) from e
+
+    # push_directory():
+    #
+    # Associate a CAS Directory digest to URIs.
+    #
+    # Args:
+    #    uris (list of str): The URIs to associate with the blob digest.
+    #    directory_digest (Digest): The CAS Direcdtory to associate.
+    #    qualifiers (list of Qualifier): Optional qualifiers sub-specifying the
+    #                                    content that is being pushed.
+    #    references_blobs (list of Digest): Referenced blobs that need to not expire
+    #                                       before expiration of this association.
+    #    references_directories (list of Digest): Referenced directories that need to not expire
+    #                                             before expiration of this association.
+    #
+    # Raises:
+    #     AssetCacheError: If the upstream has a problem
+    #
+    def push_directory(
+        self, uris, directory_digest, *, qualifiers=None, references_blobs=None, references_directories=None
+    ):
+        request = remote_asset_pb2.PushDirectoryRequest()
+        if self.instance_name:
+            request.instance_name = self.instance_name
+        request.uris.extend(uris)
+        request.root_directory_digest.CopyFrom(directory_digest)
+        if qualifiers:
+            request.qualifiers.extend(qualifiers)
+        if references_blobs:
+            request.references_blobs.extend(references_blobs)
+        if references_directories:
+            request.references_directories.extend(references_directories)
+
+        try:
+            self.push_service.PushDirectory(request)
+        except grpc.RpcError as e:
+            raise AssetCacheError("PushDirectory failed with status {}: {}".format(e.code().name, e.details())) from e
 
 
 # Base Asset Cache for Caches to derive from
