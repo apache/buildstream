@@ -754,6 +754,60 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
 def source():
     """Manipulate sources for an element"""
 
+##################################################################
+#                     Source Show Command                        #
+##################################################################
+@source.command(name="show", short_help="Show the sources used in the project")
+@click.option(
+    "--except",
+    "except_",
+    multiple=True,
+    type=click.Path(readable=False),
+    help="Except certain dependencies from fetching",
+)
+@click.option(
+    "--deps",
+    "-d",
+    default=_PipelineSelection.ALL,
+    show_default=True,
+    type=FastEnumType(
+        _PipelineSelection,
+        [
+            _PipelineSelection.PLAN,
+            _PipelineSelection.NONE,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.RUN,
+            _PipelineSelection.ALL,
+        ],
+    ),
+    help="The dependencies to fetch",
+)
+@click.option(
+    "--remote", "-r", default=None, help="The URL of the remote source cache (defaults to the first configured cache)"
+)
+@click.argument("elements", nargs=-1, type=click.Path(readable=False))
+@click.pass_obj
+def source_show(app, elements, deps, except_, remote):
+    """Show the sources in used in the project
+
+    Specify `--deps` to control which sources to fetch:
+
+    \b
+        none:  No dependencies, just the element itself
+        plan:  Only dependencies required for the build plan
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
+        all:   All dependencies
+    """
+    with app.initialized(session_name="Show"):
+        print("hello")
+        if not elements:
+            print("world")
+            elements = app.project.get_default_targets()
+            #elements = app.project.get_default_elements()
+
+        app.stream.show(elements, selection=deps, except_targets=except_, remote=remote)
+
 
 ##################################################################
 #                     Source Fetch Command                       #

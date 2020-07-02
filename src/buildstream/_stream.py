@@ -309,6 +309,34 @@ class Stream:
         self._enqueue_plan(elements)
         self._run()
 
+    def show(self, targets, *, selection=_PipelineSelection.ALL, except_targets=None, remote=None):
+        """"""
+
+        #use_source_config = True
+        use_source_config = True
+        if remote:
+            use_source_config = False
+
+        elements = self._load(
+            targets,
+            selection=selection,
+            except_targets=except_targets,
+            use_source_config=use_source_config,
+            source_remote_url=remote,
+        )
+        print(len(elements))
+
+        for element in elements:
+            print("oi")
+            source = element.sources()
+            for source in element:
+                print(source)
+            print("hello")
+            #element = target._get_source_element()
+            #source = element
+            #print(element)
+
+
     # fetch()
     #
     # Fetches sources on the pipeline.
