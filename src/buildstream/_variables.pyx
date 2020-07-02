@@ -24,13 +24,21 @@ import re
 import sys
 import itertools
 
-from cpython.mem cimport PyMem_Malloc, PyMem_Free
+from cpython.mem cimport PyMem_Malloc, PyMem_Free, PyMem_Realloc
 from cpython.object cimport PyObject
 from cpython.ref cimport Py_XINCREF, Py_XDECREF
 
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
 from .node cimport MappingNode, Node, ScalarNode, SequenceNode, ProvenanceInformation
+
+
+ctypedef struct ObjectArray:
+    Py_ssize_t length
+    PyObject **array
+
+    # Private, actual size of the allocated vector
+    Py_ssize_t _size
 
 
 # The Variables helper object will resolve the variable references in
@@ -202,15 +210,14 @@ cdef class Variables:
     #
     cpdef str _subst(self, ScalarNode node):
         cdef Value value = Value()
-        cdef PyObject **dependencies
-        cdef Py_ssize_t n_dependencies
+        cdef ObjectArray *dependencies
         cdef Py_ssize_t idx = 0
         cdef str dep_name
 
         value.init(node)
-        dependencies, n_dependencies = value.dependencies()
-        while idx < n_dependencies:
-            dep_name = <str> dependencies[idx]
+        dependencies = value.dependencies()
+        while idx < dependencies.length:
+            dep_name = <str> dependencies.array[idx]
             self._resolve(dep_name, node)
             idx += 1
 
@@ -263,8 +270,7 @@ cdef class Variables:
         cdef Value iter_value
         cdef str iter_name
 
-        cdef PyObject **iter_value_deps
-        cdef Py_ssize_t n_iter_value_deps
+        cdef ObjectArray *iter_value_deps
         cdef Py_ssize_t idx = 0
 
         cdef str resolved_value = None
@@ -278,11 +284,12 @@ cdef class Variables:
         # Each iteration processes a ResolutionStep object and has the possibility
         # to enque more ResolutionStep objects as a result.
         #
-        cdef PyObject *names[1]
-        names[0] = <PyObject *>name
+        cdef ObjectArray initial_deps
+        object_array_init(&(initial_deps), 1)
+        object_array_append(&(initial_deps), <PyObject *>name)
 
         step = ResolutionStep()
-        step.init(None, names, 1, None)
+        step.init(None, &(initial_deps), None)
 
         while step:
             # Keep a hold of the current overall step
@@ -293,8 +300,8 @@ cdef class Variables:
             this_step.check_circular(self._values)
 
             idx = 0
-            while idx < this_step.n_varnames:
-                iter_name = <str> this_step.varnames[idx]
+            while idx < this_step.varnames.length:
+                iter_name = <str> this_step.varnames.array[idx]
                 iter_value = self._get_checked_value(iter_name, this_step.referee, pnode)
                 idx += 1
 
@@ -310,10 +317,10 @@ cdef class Variables:
                     deps.append(iter_value)
 
                     # Queue up it's dependencies for resolution
-                    iter_value_deps, n_iter_value_deps = iter_value.dependencies()
-                    if n_iter_value_deps > 0:
+                    iter_value_deps = iter_value.dependencies()
+                    if iter_value_deps:
                         new_step = ResolutionStep()
-                        new_step.init(iter_name, iter_value_deps, n_iter_value_deps, this_step)
+                        new_step.init(iter_name, iter_value_deps, this_step)
 
                         # Link it to the end of the stack
                         new_step.prev = step
@@ -327,6 +334,10 @@ cdef class Variables:
         while deps:
             iter_value = deps.pop()
             resolved_value = iter_value.resolve(self._values)
+
+        # Cleanup
+        #
+        object_array_free(&(initial_deps))
 
         return resolved_value
 
@@ -387,8 +398,7 @@ cdef class ResolutionStep:
     cdef str referee
     cdef ResolutionStep parent
     cdef ResolutionStep prev
-    cdef PyObject **varnames
-    cdef Py_ssize_t n_varnames
+    cdef ObjectArray *varnames
 
     # init()
     #
@@ -399,10 +409,9 @@ cdef class ResolutionStep:
     #    varnames (set): A set of variable names which referee refers to.
     #    parent (ResolutionStep): The parent ResolutionStep
     #
-    cdef init(self, str referee, PyObject **varnames, Py_ssize_t n_varnames, ResolutionStep parent):
+    cdef init(self, str referee, ObjectArray *varnames, ResolutionStep parent):
         self.referee = referee
         self.varnames = varnames
-        self.n_varnames = n_varnames
         self.parent = parent
         self.prev = None
 
@@ -523,15 +532,14 @@ cdef class Value:
     # Returns the array of dependency variable names
     #
     # Returns:
-    #    (PyObject **): The array of variable names which this ValueClass depends on, or NULL
-    #    (int): The length of the returned array
+    #    (ObjectArray *): The array of variable names, or NULL
     #
-    cdef (PyObject **, Py_ssize_t)dependencies(self):
+    cdef ObjectArray *dependencies(self):
         if self._resolved is None:
-            return self._value_class.variable_names, self._value_class.n_variable_names
+            return &(self._value_class.varnames)
 
         # If we're already resolved, we don't have any dependencies anymore
-        return NULL, 0
+        return NULL
 
     # _load_value_class()
     #
@@ -590,8 +598,7 @@ cdef class ValueClass:
     # Public
     #
     cdef ValuePart *parts
-    cdef PyObject **variable_names
-    cdef Py_ssize_t n_variable_names
+    cdef ObjectArray varnames
 
     # __dealloc__()
     #
@@ -599,7 +606,7 @@ cdef class ValueClass:
     #
     def __dealloc__(self):
         free_value_parts(self.parts)
-        PyMem_Free(self.variable_names)
+        object_array_free(&(self.varnames))
 
     # init():
     #
@@ -610,8 +617,6 @@ cdef class ValueClass:
     #
     cdef init(self, str string):
         self.parts = NULL
-        self.variable_names = NULL
-        self.n_variable_names = 0
         self._parse_string(string)
 
     # _parse_string()
@@ -640,10 +645,11 @@ cdef class ValueClass:
         # What do you expect ? These are regular expressions after all,
         # they are *supposed* to be weird.
         #
-        cdef splits = VALUE_CLASS_PARSE_EXPANSION.split(string)
+        cdef list splits = VALUE_CLASS_PARSE_EXPANSION.split(string)
         cdef object split_object
         cdef str split
         cdef Py_ssize_t idx = 0
+        cdef Py_ssize_t n_variables = 0
         cdef int is_variable
 
         # Adding parts
@@ -662,7 +668,7 @@ cdef class ValueClass:
                 if (idx % 2) == 0:
                     is_variable = False
                 else:
-                    self.n_variable_names += 1
+                    n_variables += 1
                     is_variable = True
 
                 part = new_value_part(split, is_variable)
@@ -676,28 +682,12 @@ cdef class ValueClass:
 
         # Initialize the variables array
         #
-        # Note that we don't bother ref counting the string objects, as the
-        # ValuePart already takes care of owning the strings.
-        #
-        if self.n_variable_names > 0:
-            self.variable_names = <PyObject **>PyMem_Malloc(self.n_variable_names * sizeof(PyObject *))
-            if not self.variable_names:
-                raise MemoryError()
-
-            part = self.parts
-            idx = 0
-            while part:
-                if part.is_variable:
-
-                    # Record only unique variable names in the variable_names array.
-                    #
-                    if object_array_search(part.text, self.variable_names, idx) < 0:
-                        self.variable_names[idx] = part.text
-                        idx += 1
-                    else:
-                        self.n_variable_names -= 1
-
-                part = part.next_part
+        object_array_init(&(self.varnames), n_variables)
+        part = self.parts
+        while part:
+            if part.is_variable:
+                object_array_append(&(self.varnames), part.text)
+            part = part.next_part
 
 # ValueIterator()
 #
@@ -723,28 +713,75 @@ cdef class ValueIterator:
 
 ############################## BASEMENT ########################################
 
+cdef int OBJECT_ARRAY_BLOCK_SIZE = 8
 
-# object_array_search()
+
+# object_array_init()
 #
-# Searches for an object pointer in an array of object pointers.
+# Initialize the object array
 #
 # Args:
-#    search (PyObject *): The object to search for
-#    array (PyObject **): The array to search in
-#    length (Py_ssize_t): The length of the array
+#    array (ObjectArray *): The array to initialize
+#    size (Py_ssize_t): The initial size of the array, or < 0 for an automatic size,
+#                       0 for no allocated buffer initially
 #
-# Returns:
-#    (Py_ssize_t): The index of `search` in `array`, or -1 if `search` is not found.
+# Raises:
+#    (MemoryError): In the case we failed to allocate memory for the array
 #
-cdef Py_ssize_t object_array_search(PyObject *search, PyObject **array, Py_ssize_t length):
-    cdef Py_ssize_t idx = 0
+cdef void object_array_init(ObjectArray *array, Py_ssize_t size):
+    array._size = size
+    if array._size < 0:
+        array._size = OBJECT_ARRAY_BLOCK_SIZE
+    array.length = 0
+    if array._size > 0:
+        array.array = <PyObject **>PyMem_Malloc(array._size * sizeof(PyObject *))
+        if not array.array:
+            raise MemoryError()
+    else:
+        array.array = NULL
 
-    while idx < length:
-        if array[idx] == search:
-            return idx
+
+# object_array_append()
+#
+# Append an object to the array
+#
+# Args:
+#    array (ObjectArray *): The array to append to
+#    obj (PyObject *): The object to append to the array
+#
+# Raises:
+#    (MemoryError): In the case we failed to allocate memory for the array
+#
+cdef void object_array_append(ObjectArray *array, PyObject *obj):
+
+    # Ensure we have enough space for the new item
+    if array.length >= array._size:
+        array._size = array._size + OBJECT_ARRAY_BLOCK_SIZE - (array._size % 8)
+        array.array = <PyObject **>PyMem_Realloc(array.array, array._size * sizeof(PyObject *))
+        if not array.array:
+            raise MemoryError()
+
+    Py_XINCREF(obj)
+    array.array[array.length] = obj
+    array.length += 1
+
+
+# object_array_free()
+#
+# Free the array, releasing references to all the objects
+#
+# Args:
+#    array (ObjectArray *): The array to free up
+#
+cdef void object_array_free(ObjectArray *array):
+    cdef Py_ssize_t idx = 0
+    while idx < array.length:
+        Py_XDECREF(array.array[idx])
         idx += 1
 
-    return -1
+    if array._size > 0:
+        PyMem_Free(array.array)
+
 
 # ValuePart()
 #
