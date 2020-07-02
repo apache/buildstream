@@ -129,7 +129,10 @@ cdef class Variables:
     # the node untouched, you should use `node.clone()` beforehand
     #
     # Args:
-    #   (Node): A node for which to substitute the values
+    #    (Node): A node for which to substitute the values
+    #
+    # Raises:
+    #    (LoadError): if the string contains unresolved variable references.
     #
     cpdef expand(self, Node node):
         self._expand(node)
@@ -145,9 +148,60 @@ cdef class Variables:
     #    (string): The new string with any substitutions made
     #
     # Raises:
-    #    LoadError, if the string contains unresolved variable references.
+    #    (LoadError): if the string contains unresolved variable references.
     #
-    cpdef subst(self, ScalarNode node):
+    cpdef str subst(self, ScalarNode node):
+        return self._subst(node)
+
+    # check()
+    #
+    # Checks the variables for unresolved references
+    #
+    # Raises:
+    #    (LoadError): If there are unresolved references, then a LoadError
+    #                 with LoadErrorReason.UNRESOLVED_VARIABLE reason will
+    #                 be raised.
+    #
+    cpdef check(self):
+        cdef object key
+
+        # Resolve all variables.
+        for key in self._values.keys():
+            self._resolve(<str> key, None)
+
+    # _init_values()
+    #
+    # Here we initialize the Value() table, which contains
+    # as of yet unresolved variables.
+    #
+    cdef dict _init_values(self, MappingNode node):
+        cdef dict ret = {}
+        cdef object key
+        cdef object value_node
+        cdef Value value
+
+        for key, value_node in node.items():
+            key = <object> sys.intern(<str> key)
+            value = Value()
+            value.init(<ScalarNode> value_node)
+            ret[key] = value
+
+        return ret
+
+    # _subst():
+    #
+    # Internal implementation of Variables.subst()
+    #
+    # Args:
+    #    (string): The string to substitute
+    #
+    # Returns:
+    #    (string): The new string with any substitutions made
+    #
+    # Raises:
+    #    (LoadError): if the string contains unresolved variable references.
+    #
+    cpdef str _subst(self, ScalarNode node):
         cdef Value value = Value()
         cdef PyObject **dependencies
         cdef Py_ssize_t n_dependencies
@@ -163,42 +217,6 @@ cdef class Variables:
 
         return value.resolve(self._values)
 
-    # check()
-    #
-    # Checks the variables for unresolved references
-    #
-    # Raises:
-    #    (LoadError): If there are unresolved references, then a LoadError
-    #                 with LoadErrorReason.UNRESOLVED_VARIABLE reason will
-    #                 be raised.
-    #
-    cpdef check(self):
-
-        # Resolve all variables.
-        for key in self._values.keys():
-            self._resolve(key, None)
-
-    # _init_values()
-    #
-    # Here we initialize the Value() table, which contains
-    # as of yet unresolved variables.
-    #
-    cdef dict _init_values(self, MappingNode node):
-        cdef dict ret = {}
-        cdef key_object
-        cdef value_node_object
-        cdef str key
-        cdef ScalarNode value_node
-
-        for key_object, value_object in node.items():
-            key = <str> sys.intern(<str> key_object)
-            value_node = <ScalarNode> value_object
-            value = Value()
-            value.init(value_node)
-            ret[key] = value
-
-        return ret
-
     # _expand()
     #
     # Internal implementation of Variables.expand()
@@ -206,15 +224,19 @@ cdef class Variables:
     # Args:
     #   (Node): A node for which to substitute the values
     #
+    # Raises:
+    #   (LoadError): if the string contains unresolved variable references.
+    #
     cdef _expand(self, Node node):
+        cdef object entry
         if isinstance(node, ScalarNode):
-            (<ScalarNode> node).value = self.subst(node)
+            (<ScalarNode> node).value = self._subst(<ScalarNode> node)
         elif isinstance(node, SequenceNode):
             for entry in (<SequenceNode> node).value:
-                self._expand(entry)
+                self._expand(<Node> entry)
         elif isinstance(node, MappingNode):
             for entry in (<MappingNode> node).value.values():
-                self._expand(entry)
+                self._expand(<Node> entry)
         else:
             assert False, "Unknown 'Node' type"
 
