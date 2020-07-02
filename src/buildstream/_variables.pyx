@@ -274,9 +274,11 @@ cdef class Variables:
         cdef Py_ssize_t idx = 0
 
         cdef str resolved_value = None
-
-        cdef list deps = []
         cdef bint first_iteration = True
+
+        # We'll be collecting the values to resolve at the end in here
+        cdef ObjectArray values
+        object_array_init(&(values), -1)
 
         # While iterating over the first loop, we collect all of the variable
         # dependencies, and perform all required validation.
@@ -314,7 +316,8 @@ cdef class Variables:
 
                 # Queue up this value to be resolved in the next loop
                 if iter_value._resolved is None:
-                    deps.append(iter_value)
+
+                    object_array_append(&(values), <PyObject *>iter_value)
 
                     # Queue up it's dependencies for resolution
                     iter_value_deps = iter_value.dependencies()
@@ -331,13 +334,16 @@ cdef class Variables:
         # backwards and the last (leftmost) resolved value is the one
         # we want to return.
         #
-        while deps:
-            iter_value = deps.pop()
+        idx = values.length -1
+        while idx >= 0:
+            iter_value = <Value>values.array[idx]
             resolved_value = iter_value.resolve(self._values)
+            idx -= 1
 
         # Cleanup
         #
         object_array_free(&(initial_deps))
+        object_array_free(&(values))
 
         return resolved_value
 
