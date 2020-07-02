@@ -181,7 +181,6 @@ cdef class Variables:
         cdef Value value
 
         for key, value_node in node.items():
-            key = <object> sys.intern(<str> key)
             value = Value()
             value.init(<ScalarNode> value_node)
             ret[key] = value
@@ -279,7 +278,6 @@ cdef class Variables:
         # Each iteration processes a ResolutionStep object and has the possibility
         # to enque more ResolutionStep objects as a result.
         #
-        name = sys.intern(name)
         cdef PyObject *names[1]
         names[0] = <PyObject *>name
 
@@ -548,14 +546,15 @@ cdef class Value:
     #
     cdef ValueClass _load_value_class(self, str string):
         cdef ValueClass ret
-        cdef str internal_string = sys.intern(string)
+
+        string = sys.intern(string)
 
         try:
-            ret = VALUE_CLASS_TABLE[internal_string]
+            ret = VALUE_CLASS_TABLE[string]
         except KeyError:
             ret = ValueClass()
-            ret.init(internal_string)
-            VALUE_CLASS_TABLE[internal_string] = ret
+            ret.init(string)
+            VALUE_CLASS_TABLE[string] = ret
 
         return ret
 
@@ -659,12 +658,6 @@ cdef class ValueClass:
         for split_object in splits:
             split = <str> split_object
             if split:
-
-                # Use an intern for the part, this will not only
-                # save memory but it will speed up lookups in the
-                # case that the part in question is used to lookup
-                # variable values.
-                split = <str> sys.intern(split)
 
                 if (idx % 2) == 0:
                     is_variable = False
