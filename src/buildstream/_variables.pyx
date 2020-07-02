@@ -345,7 +345,7 @@ cdef class Variables:
                 referee_value = None
 
             if referee_value:
-                provenance = referee_value.provenance
+                provenance = referee_value.get_provenance()
 
             error_message = "Reference to undefined variable '{}'".format(varname)
             if provenance:
@@ -419,7 +419,7 @@ cdef class ResolutionStep:
                 referee = self.referee
             value = values[referee]
 
-            error_lines.append("{}: Variable '{}' refers to variable '{}'".format(value.provenance, referee, step.referee))
+            error_lines.append("{}: Variable '{}' refers to variable '{}'".format(value.get_provenance(), referee, step.referee))
             step = step.parent
 
         raise LoadError("Circular dependency detected on variable '{}'".format(self.referee),
@@ -434,7 +434,7 @@ cdef EMPTY_SET = set()
 # Represents a variable value
 #
 cdef class Value:
-    cdef ProvenanceInformation provenance
+    cdef ScalarNode _node
     cdef ValueClass _value_class
     cdef str _resolved
 
@@ -446,13 +446,19 @@ cdef class Value:
     #    node (ScalarNode): The node representing this value.
     #
     cdef init(self, ScalarNode node):
-
-        # Public
-        self.provenance = node.get_provenance()
-
-        # Private
+        self._node = node
         self._value_class = self._load_value_class(node.as_str())
         self._resolved = None
+
+    # get_provenance():
+    #
+    # Fetches the provenance of this Value
+    #
+    # Returns:
+    #    (ProvenanceInformation): The provenance of this Value
+    #
+    cdef get_provenance(self):
+        return self._node.get_provenance()
 
     # resolve()
     #
