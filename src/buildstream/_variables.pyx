@@ -158,7 +158,7 @@ cdef class Variables:
         dependencies, n_dependencies = value.dependencies()
         while idx < n_dependencies:
             dep_name = <str> dependencies[idx]
-            self._resolve(dep_name, node.get_provenance())
+            self._resolve(dep_name, node)
             idx += 1
 
         return value.resolve(self._values)
@@ -224,17 +224,17 @@ cdef class Variables:
     # the given dictionary of expansion strings.
     #
     # Args:
-    #     name (str): Name of the variable to expand
-    #     provenance (ProvenanceInformation): Whence this variable was refered from
+    #    name (str): Name of the variable to expand
+    #    pnode (ScalarNode): The ScalarNode for which we need to resolve `name`
     #
     # Returns:
-    #     (str): The expanded value of variable
+    #    (str): The expanded value of variable
     #
     # Raises:
-    #     (LoadError): In case there was any undefined variables or circular
-    #                  references encountered when resolving the variable.
+    #    (LoadError): In case there was any undefined variables or circular
+    #                 references encountered when resolving the variable.
     #
-    cdef str _resolve(self, str name, ProvenanceInformation provenance):
+    cdef str _resolve(self, str name, ScalarNode pnode):
         cdef ResolutionStep step
         cdef ResolutionStep new_step
         cdef ResolutionStep this_step
@@ -275,7 +275,7 @@ cdef class Variables:
             idx = 0
             while idx < this_step.n_varnames:
                 iter_name = <str> this_step.varnames[idx]
-                iter_value = self._get_checked_value(iter_name, this_step.referee, provenance)
+                iter_value = self._get_checked_value(iter_name, this_step.referee, pnode)
                 idx += 1
 
                 # Earliest return for an already resolved value
@@ -318,7 +318,7 @@ cdef class Variables:
     # Args:
     #    varname (str): The variable name to fetch
     #    referee (str): The variable name referring to `varname`, or None
-    #    provenance (ProvenanceInformation): The provenance, incase referee is None.
+    #    pnode (ScalarNode): The ScalarNode for which we need to resolve `name`
     #
     # Returns:
     #   (Value): The Value for varname
@@ -326,7 +326,8 @@ cdef class Variables:
     # Raises:
     #   (LoadError): An appropriate error in case of undefined variables
     #
-    cdef Value _get_checked_value(self, str varname, str referee, ProvenanceInformation provenance):
+    cdef Value _get_checked_value(self, str varname, str referee, ScalarNode pnode):
+        cdef ProvenanceInformation provenance = None
         cdef Value referee_value
         cdef str error_message
 
@@ -346,8 +347,10 @@ cdef class Variables:
 
             if referee_value:
                 provenance = referee_value.get_provenance()
-
+            elif pnode:
+                provenance = pnode.get_provenance()
             error_message = "Reference to undefined variable '{}'".format(varname)
+
             if provenance:
                 error_message = "{}: {}".format(provenance, error_message)
             raise LoadError(error_message, LoadErrorReason.UNRESOLVED_VARIABLE) from e
