@@ -217,18 +217,30 @@ cdef class Variables:
     #
     cpdef str _subst(self, ScalarNode node):
         cdef Value value = Value()
+        cdef Value iter_value
         cdef ObjectArray *dependencies
         cdef Py_ssize_t idx = 0
         cdef str dep_name
+        cdef str resolve_value
+
+        cdef ObjectArray values
+        object_array_init(&(values), -1)
 
         value.init(node)
         dependencies = value.dependencies()
         while idx < dependencies.length:
             dep_name = <str> dependencies.array[idx]
-            self._resolve(dep_name, node)
+            iter_value = self._do_resolve(dep_name, node)
+
+            object_array_append(&(values), <PyObject *>iter_value)
+
             idx += 1
 
-        return value.resolve(self._values)
+        resolved_value = value.resolve(&values, 0)
+
+        object_array_free(&(values))
+
+        return resolved_value
 
     # _expand()
     #
@@ -253,7 +265,14 @@ cdef class Variables:
         else:
             assert False, "Unknown 'Node' type"
 
-    # _resolve()
+    # XXX
+    #
+    cdef str _resolve(self, str name, ScalarNode pnode):
+        cdef Value value
+        value = self._do_resolve(name, pnode)
+        return value._resolved
+
+    # _do_resolve()
     #
     # Helper to expand and cache a variable definition in the context of
     # the given dictionary of expansion strings.
@@ -269,7 +288,7 @@ cdef class Variables:
     #    (LoadError): In case there was any undefined variables or circular
     #                 references encountered when resolving the variable.
     #
-    cdef str _resolve(self, str name, ScalarNode pnode):
+    cdef Value _do_resolve(self, str name, ScalarNode pnode):
         cdef ResolutionStep step
         cdef ResolutionStep new_step
         cdef ResolutionStep this_step
@@ -279,9 +298,6 @@ cdef class Variables:
 
         cdef ObjectArray *iter_value_deps
         cdef Py_ssize_t idx = 0
-
-        cdef str resolved_value = None
-        cdef bint first_iteration = True
 
         # We'll be collecting the values to resolve at the end in here
         cdef ObjectArray values
@@ -314,27 +330,23 @@ cdef class Variables:
                 iter_value = self._get_checked_value(iter_name, this_step.referee, pnode)
                 idx += 1
 
-                # Earliest return for an already resolved value
+                # Queue up this value.
                 #
-                if first_iteration:
-                    if iter_value._resolved is not None:
-                        return iter_value.resolve(self._values)
-                    first_iteration = False
+                # Even if the value was already resolved, we need it in context to resolve
+                # previously enqueued variables
+                object_array_append(&(values), <PyObject *>iter_value)
 
-                # Queue up this value to be resolved in the next loop
-                if iter_value._resolved is None:
+                # Queue up the values dependencies.
+                #
+                # These will be NULL if this value has previously been resolved.
+                iter_value_deps = iter_value.dependencies()
+                if iter_value_deps:
+                    new_step = ResolutionStep()
+                    new_step.init(iter_name, iter_value_deps, this_step)
 
-                    object_array_append(&(values), <PyObject *>iter_value)
-
-                    # Queue up it's dependencies for resolution
-                    iter_value_deps = iter_value.dependencies()
-                    if iter_value_deps:
-                        new_step = ResolutionStep()
-                        new_step.init(iter_name, iter_value_deps, this_step)
-
-                        # Link it to the end of the stack
-                        new_step.prev = step
-                        step = new_step
+                    # Link it to the end of the stack
+                    new_step.prev = step
+                    step = new_step
 
         # We've now constructed the dependencies queue such that
         # later dependencies are on the right, we can now safely peddle
@@ -344,7 +356,7 @@ cdef class Variables:
         idx = values.length -1
         while idx >= 0:
             iter_value = <Value>values.array[idx]
-            resolved_value = iter_value.resolve(self._values)
+            iter_value.resolve(&values, idx + 1)
             idx -= 1
 
         # Cleanup
@@ -352,7 +364,7 @@ cdef class Variables:
         object_array_free(&(initial_deps))
         object_array_free(&(values))
 
-        return resolved_value
+        return iter_value
 
     # _get_checked_value()
     #
@@ -517,7 +529,7 @@ cdef class Value:
     # Returns:
     #    (str): The resolved value
     #
-    cdef str resolve(self, dict values):
+    cdef str resolve(self, ObjectArray *resolved_values, Py_ssize_t idx):
         cdef str dep_name
         cdef Value part_var
         cdef ValuePart *part
@@ -529,7 +541,11 @@ cdef class Value:
 
             while part:
                 if part.is_variable:
-                    part_var = <Value> values[<str>part.text]
+
+                    # Consume one variable
+                    part_var = <Value> resolved_values.array[idx]
+                    idx += 1
+
                     parts.append(part_var._resolved)
                 else:
                     parts.append(<str>part.text)
