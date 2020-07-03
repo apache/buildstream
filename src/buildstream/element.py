@@ -1542,7 +1542,7 @@ class Element(Plugin):
     #    scope (_Scope): The scope of dependencies to mark as required
     #
     def _set_required(self, scope=_Scope.RUN):
-        assert utils._is_main_process(), "This has an impact on all elements and must be run in the main process"
+        assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         if self.__required:
             # Already done
@@ -1579,7 +1579,7 @@ class Element(Plugin):
     # required in the local cache.
     #
     def _set_artifact_files_required(self, scope=_Scope.RUN):
-        assert utils._is_main_process(), "This has an impact on all elements and must be run in the main process"
+        assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         if self.__artifact_files_required:
             # Already done
@@ -1629,7 +1629,7 @@ class Element(Plugin):
     # in a subprocess.
     #
     def __schedule_assembly_when_necessary(self):
-        assert utils._is_main_process(), "This has an impact on all elements and must be run in the main process"
+        assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         # FIXME: We could reduce the number of function calls a bit by
         # factoring this out of this method (and checking whether we
@@ -1662,7 +1662,7 @@ class Element(Plugin):
     #
     def _assemble_done(self, successful):
         assert self.__assemble_scheduled
-        assert utils._is_main_process(), "This has an impact on all elements and must be run in the main process"
+        assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         self.__assemble_done = True
 
@@ -1682,8 +1682,6 @@ class Element(Plugin):
         self._update_ready_for_runtime_and_cached()
 
         if self._get_workspace() and self._cached():
-            assert utils._is_main_process(), "Attempted to save workspace configuration from child process"
-            #
             # Note that this block can only happen in the
             # main process, since `self._cached_success()` cannot
             # be true when assembly is successful in the task.
@@ -1860,7 +1858,7 @@ class Element(Plugin):
     #   fetched_original (bool): Whether the original sources had been asked (and fetched) or not
     #
     def _fetch_done(self, fetched_original):
-        assert utils._is_main_process(), "This has an impact on all elements and must be run in the main process"
+        assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         self.__sources.fetch_done(fetched_original)
 
@@ -1906,7 +1904,7 @@ class Element(Plugin):
     # This will result in updating the element state.
     #
     def _pull_done(self):
-        assert utils._is_main_process(), "This has an impact on all elements and must be run in the main process"
+        assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         self.__pull_done = True
 
@@ -2084,7 +2082,7 @@ class Element(Plugin):
     # the workspaces metadata first.
     #
     def _open_workspace(self):
-        assert utils._is_main_process(), "This writes to a global file and therefore must be run in the main process"
+        assert utils._is_in_main_thread(), "This writes to a global file and therefore must be run in the main thread"
 
         context = self._get_context()
         workspace = self._get_workspace()
@@ -2386,7 +2384,7 @@ class Element(Plugin):
     # the appropriate counters.
     #
     def _update_ready_for_runtime_and_cached(self):
-        assert utils._is_main_process(), "This has an impact on all elements and must be run in the main process"
+        assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         if not self.__ready_for_runtime_and_cached:
             if self.__runtime_deps_uncached == 0 and self.__cache_key and self._cached_success():
@@ -3132,7 +3130,7 @@ class Element(Plugin):
     # in Scope.BUILD has changed in any way.
     #
     def __update_cache_keys(self):
-        assert utils._is_main_process(), "This has an impact on all elements and must be run in the main process"
+        assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         if self.__strict_cache_key is not None:
             # Cache keys already calculated
@@ -3205,7 +3203,7 @@ class Element(Plugin):
     # it can check whether an artifact exists for that cache key.
     #
     def __update_artifact_state(self):
-        assert utils._is_main_process(), "This has an impact on all elements and must be run in the main process"
+        assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
         assert self.__artifact is None
 
         context = self._get_context()
@@ -3240,7 +3238,7 @@ class Element(Plugin):
     # a remote cache).
     #
     def __update_cache_key_non_strict(self):
-        assert utils._is_main_process(), "This has an impact on all elements and must be run in the main process"
+        assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         # The final cache key can be None here only in non-strict mode
         if self.__cache_key is None:

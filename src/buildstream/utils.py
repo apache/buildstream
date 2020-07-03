@@ -34,6 +34,7 @@ from stat import S_ISDIR
 import subprocess
 from subprocess import TimeoutExpired
 import tempfile
+import threading
 import time
 import datetime
 import itertools
@@ -869,13 +870,12 @@ def _pretty_size(size, dec_places=0):
     return "{size:g}{unit}".format(size=round(psize, dec_places), unit=unit)
 
 
-# _is_main_process()
+# _is_in_main_thread()
 #
-# Return whether we are in the main process or not.
+# Return whether we are running in the main thread or not
 #
-def _is_main_process():
-    assert _MAIN_PID is not None
-    return os.getpid() == _MAIN_PID
+def _is_in_main_thread():
+    return threading.current_thread() is threading.main_thread()
 
 
 # Remove a path and any empty directories leading up to it.

@@ -26,7 +26,6 @@ from functools import partial
 
 import grpc
 
-from .. import utils
 from ..node import Node
 from .._message import Message, MessageType
 from ._sandboxreapi import SandboxREAPI
@@ -58,9 +57,6 @@ class SandboxRemote(SandboxREAPI):
         config = kwargs["specs"]  # This should be a RemoteExecutionSpec
         if config is None:
             return
-
-        # gRPC doesn't support fork without exec, which is used in the main process.
-        assert not utils._is_main_process()
 
         self.storage_url = config.storage_service["url"]
         self.exec_url = config.exec_service["url"]

@@ -928,17 +928,14 @@ class Source(Plugin):
         clean = node.strip_node_info()
         to_modify = node.strip_node_info()
 
-        current_ref = self.get_ref()  # pylint: disable=assignment-from-no-return
-
         # Set the ref regardless of whether it changed, the
         # TrackQueue() will want to update a specific node with
         # the ref, regardless of whether the original has changed.
         self.set_ref(new_ref, to_modify)
 
-        if current_ref == new_ref or not save:
-            # Note: We do not look for and propagate changes at this point
-            # which might result in desync depending if something changes about
-            # tracking in the future.  For now, this is quite safe.
+        # FIXME: this will save things too often, as a ref might not have
+        #        changed. We should optimize this to detect it differently
+        if not save:
             return False
 
         # Ensure the node is not from a junction

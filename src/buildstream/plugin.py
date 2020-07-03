@@ -613,8 +613,7 @@ class Plugin:
                 proc = self.__multiprocessing_context.Process(
                     target=_background_job_wrapper, args=(result_queue, target, args)
                 )
-                with _signals.blocked([signal.SIGINT, signal.SIGTSTP, signal.SIGTERM], ignore=False):
-                    proc.start()
+                proc.start()
 
                 should_continue = True
                 last_check = False

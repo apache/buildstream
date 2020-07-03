@@ -162,6 +162,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
 
             # Assert that we are not cached locally anymore
             artifactcache.close_grpc_channels()
+            cas._casd_channel.request_shutdown()
             cas.close_grpc_channels()
             assert cli.get_element_state(project_dir, "target.bst") != "cached"
 

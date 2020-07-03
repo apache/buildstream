@@ -16,6 +16,7 @@
 #
 
 import os
+import threading
 from collections import namedtuple
 from urllib.parse import urlparse
 
@@ -146,41 +147,44 @@ class BaseRemote:
         self.push = spec.push
         self.url = spec.url
 
+        self._lock = threading.Lock()
+
     # init():
     #
     # Initialize the given remote. This function must be called before
     # any communication is performed, since such will otherwise fail.
     #
     def init(self):
-        if self._initialized:
-            return
+        with self._lock:
+            if self._initialized:
+                return
 
-        # Set up the communcation channel
-        url = urlparse(self.spec.url)
-        if url.scheme == "http":
-            port = url.port or 80
-            self.channel = grpc.insecure_channel("{}:{}".format(url.hostname, port))
-        elif url.scheme == "https":
-            port = url.port or 443
-            try:
-                server_cert, client_key, client_cert = _read_files(
-                    self.spec.server_cert, self.spec.client_key, self.spec.client_cert
+            # Set up the communcation channel
+            url = urlparse(self.spec.url)
+            if url.scheme == "http":
+                port = url.port or 80
+                self.channel = grpc.insecure_channel("{}:{}".format(url.hostname, port))
+            elif url.scheme == "https":
+                port = url.port or 443
+                try:
+                    server_cert, client_key, client_cert = _read_files(
+                        self.spec.server_cert, self.spec.client_key, self.spec.client_cert
+                    )
+                except FileNotFoundError as e:
+                    raise RemoteError("Could not read certificates: {}".format(e)) from e
+                self.server_cert = server_cert
+                self.client_key = client_key
+                self.client_cert = client_cert
+                credentials = grpc.ssl_channel_credentials(
+                    root_certificates=self.server_cert, private_key=self.client_key, certificate_chain=self.client_cert
                 )
-            except FileNotFoundError as e:
-                raise RemoteError("Could not read certificates: {}".format(e)) from e
-            self.server_cert = server_cert
-            self.client_key = client_key
-            self.client_cert = client_cert
-            credentials = grpc.ssl_channel_credentials(
-                root_certificates=self.server_cert, private_key=self.client_key, certificate_chain=self.client_cert
-            )
-            self.channel = grpc.secure_channel("{}:{}".format(url.hostname, port), credentials)
-        else:
-            raise RemoteError("Unsupported URL: {}".format(self.spec.url))
+                self.channel = grpc.secure_channel("{}:{}".format(url.hostname, port), credentials)
+            else:
+                raise RemoteError("Unsupported URL: {}".format(self.spec.url))
 
-        self._configure_protocols()
+            self._configure_protocols()
 
-        self._initialized = True
+            self._initialized = True
 
     def __enter__(self):
         return self

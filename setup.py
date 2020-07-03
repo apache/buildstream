@@ -319,6 +319,7 @@ BUILD_EXTENSIONS = []
 register_cython_module("buildstream.node")
 register_cython_module("buildstream._loader._loader")
 register_cython_module("buildstream._loader.loadelement", dependencies=["buildstream.node"])
+register_cython_module("buildstream._scheduler.jobs._job")
 register_cython_module("buildstream._yaml", dependencies=["buildstream.node"])
 register_cython_module("buildstream._types")
 register_cython_module("buildstream._utils")
