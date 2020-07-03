@@ -14,8 +14,7 @@ Requirements
 There are a couple of requirements and accounts required in order
 to publish a release.
 
-* Ability to send email to ``buildstream-list@gnome.org`` and
-  to ``gnome-announce-list@gnome.org``.
+* Ability to send email to ``dev@buildstream.apache.org``.
 
 * Shell account at ``master.gnome.org``.
 
@@ -113,9 +112,9 @@ Release process
   announcements as much as possible, an example of the email
   can be `found here <https://mail.gnome.org/archives/buildstream-list/2019-February/msg00039.html>`_.
 
-  The recipients of the email are ``buildstream-list@gnome.org`` and
-  ``gnome-announce-list@gnome.org`` and the title of the email should
-  be of the form: ``BuildStream 1.1.1 released``, without any exclamation point.
+  The recipient of the email is ``dev@buildstream.apache.org`` and the title
+  of the email should be of the form: ``BuildStream 1.1.1 released``, without
+  any exclamation point.
 
   The format of the email is essentially::
 
@@ -237,7 +236,7 @@ which need to be done to ensure everything is up to date.
   the release email will be in the mailing list archive.
 
   Find the URL to the announcement you just published
-  `in the mailing list archives <https://mail.gnome.org/archives/buildstream-list/>`_,
+  `in the mailing list archives <https://lists.apache.org/list.html?dev@buildstream.apache.org/>`_,
   and use that URL to update the ``anouncements.json`` file in the website
   repository.
 
