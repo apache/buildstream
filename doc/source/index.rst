@@ -28,5 +28,5 @@ Resources
 ---------
 * GitLab repository: https://gitlab.com/BuildStream/buildstream
 * Bug Tracking: https://gitlab.com/BuildStream/buildstream/issues
-* Mailing list: https://mail.gnome.org/mailman/listinfo/buildstream-list
+* Mailing list: https://lists.apache.org/list.html?dev@buildstream.apache.org
 * IRC Channel: irc://irc.gnome.org/#buildstream
