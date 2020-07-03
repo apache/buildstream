@@ -6,7 +6,7 @@ Some tips and guidelines for developers hacking on BuildStream
 Feature additions
 -----------------
 Major feature additions should be proposed on the
-`mailing list <https://mail.gnome.org/mailman/listinfo/buildstream-list>`_
+`mailing list <https://lists.apache.org/list.html?dev@buildstream.apache.org>`_
 before being considered for inclusion, we strongly recommend proposing
 in advance of commencing work.
 
