@@ -24,13 +24,12 @@ from .._exceptions import LoadError
 from ..exceptions import LoadErrorReason
 from ..node import MappingNode, SequenceNode, _assert_symbol_name
 from ..types import FastEnum
+from .optionarch import OptionArch
 from .optionbool import OptionBool
+from .optioneltmask import OptionEltMask
 from .optionenum import OptionEnum
 from .optionflags import OptionFlags
-from .optioneltmask import OptionEltMask
-from .optionarch import OptionArch
 from .optionos import OptionOS
-
 
 _OPTION_TYPES = {
     OptionBool.OPTION_TYPE: OptionBool,

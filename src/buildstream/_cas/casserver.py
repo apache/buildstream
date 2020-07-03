@@ -17,33 +17,29 @@
 #  Authors:
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-from concurrent import futures
-from enum import Enum
 import contextlib
 import logging
 import os
 import signal
 import sys
+from concurrent import futures
+from enum import Enum
 
+import click
 import grpc
 from google.protobuf.message import DecodeError
-import click
 
-from .._protos.build.bazel.remote.execution.v2 import (
-    remote_execution_pb2,
-    remote_execution_pb2_grpc,
-)
-from .._protos.google.bytestream import bytestream_pb2_grpc
+from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
 from .._protos.build.buildgrid import local_cas_pb2
 from .._protos.buildstream.v2 import (
-    buildstream_pb2,
-    buildstream_pb2_grpc,
     artifact_pb2,
     artifact_pb2_grpc,
+    buildstream_pb2,
+    buildstream_pb2_grpc,
     source_pb2,
     source_pb2_grpc,
 )
-
+from .._protos.google.bytestream import bytestream_pb2_grpc
 # Note: We'd ideally like to avoid imports from the core codebase as
 # much as possible, since we're expecting to eventually split this
 # module off into its own project.
@@ -51,9 +47,8 @@ from .._protos.buildstream.v2 import (
 # Not enough that we'd like to duplicate code, but enough that we want
 # to make it very obvious what we're using, so in this case we import
 # the specific methods we'll be using.
-from ..utils import save_file_atomic, _remove_path_with_parents
+from ..utils import _remove_path_with_parents, save_file_atomic
 from .casdprocessmanager import CASDProcessManager
-
 
 # The default limit for gRPC messages is 4 MiB.
 # Limit payload to 1 MiB to leave sufficient headroom for metadata.

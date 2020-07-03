@@ -15,11 +15,10 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from .._protos.google.rpc import code_pb2
-from .._protos.build.buildgrid import local_cas_pb2
-
-from .._remote import BaseRemote
 from .._exceptions import CASRemoteError
+from .._protos.build.buildgrid import local_cas_pb2
+from .._protos.google.rpc import code_pb2
+from .._remote import BaseRemote
 
 # The default limit for gRPC messages is 4 MiB.
 # Limit payload to 1 MiB to leave sufficient headroom for metadata.

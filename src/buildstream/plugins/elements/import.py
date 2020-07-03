@@ -31,6 +31,7 @@ The empty configuration is as such:
 """
 
 import os
+
 from buildstream import Element, ElementError
 
 

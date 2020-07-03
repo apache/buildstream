@@ -20,10 +20,10 @@
 
 from datetime import timedelta
 
-from . import Queue, QueueStatus
-from ..resources import ResourceType
 from ..._message import MessageType
 from ..jobs import JobStatus
+from ..resources import ResourceType
+from . import Queue, QueueStatus
 
 
 # A queue which assembles elements

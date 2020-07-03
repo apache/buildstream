@@ -18,6 +18,7 @@
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 
 import platform
+
 from .optionenum import OptionEnum
 
 

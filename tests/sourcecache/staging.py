@@ -23,15 +23,14 @@
 
 import os
 import shutil
+
 import pytest
 
 from buildstream._project import Project
-
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 
 from tests.testutils import dummy_context
 from tests.testutils.element_generators import create_element_size
-
 
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 

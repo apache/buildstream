@@ -1,7 +1,6 @@
 import os
 
-from buildstream import _yaml
-from buildstream import utils
+from buildstream import _yaml, utils
 from buildstream.testing import create_repo
 
 

@@ -2,12 +2,12 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
 from buildstream import _yaml
-from buildstream.testing import create_repo
 from buildstream.testing import cli  # pylint: disable=unused-import
-
+from buildstream.testing import create_repo
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))

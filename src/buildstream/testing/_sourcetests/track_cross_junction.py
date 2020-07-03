@@ -24,11 +24,11 @@ import os
 import pytest
 
 from buildstream import _yaml
-from .._utils import generate_junction
-from .. import create_repo, ALL_REPO_KINDS
-from .. import cli  # pylint: disable=unused-import
-from .utils import add_plugins_conf
 
+from .. import cli  # pylint: disable=unused-import
+from .. import ALL_REPO_KINDS, create_repo
+from .._utils import generate_junction
+from .utils import add_plugins_conf
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))

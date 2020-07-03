@@ -18,15 +18,15 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
-from contextlib import contextmanager
 import os
-import pytest
+from contextlib import contextmanager
 
 import grpc
+import pytest
 
 from buildstream.testing import cli  # pylint: disable=unused-import
-from tests.testutils import create_artifact_share, assert_shared
 
+from tests.testutils import assert_shared, create_artifact_share
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)

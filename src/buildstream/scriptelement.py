@@ -34,7 +34,7 @@ implementations.
 
 import os
 from collections import OrderedDict
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from .element import Element, ElementError
 from .sandbox import SandboxFlags

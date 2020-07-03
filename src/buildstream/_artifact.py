@@ -30,12 +30,11 @@ artifact composite interaction away from Element class
 
 import os
 
+from . import _yaml, utils
 from ._exceptions import ArtifactError
 from ._protos.buildstream.v2.artifact_pb2 import Artifact as ArtifactProto
-from . import _yaml
-from . import utils
-from .types import Scope
 from .storage._casbaseddirectory import CasBasedDirectory
+from .types import Scope
 
 
 # An Artifact class to abstract artifact operations

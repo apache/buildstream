@@ -31,7 +31,6 @@ from buildstream.testing._utils.site import HAVE_SANDBOX
 
 from tests.testutils import create_artifact_share
 
-
 pytestmark = pytest.mark.integration
 
 

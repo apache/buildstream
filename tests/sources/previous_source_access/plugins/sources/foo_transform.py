@@ -7,8 +7,8 @@ previous sources, and copies its contents to a file called "filetransform".
 
 """
 
-import os
 import hashlib
+import os
 
 from buildstream import Source, SourceError, utils
 

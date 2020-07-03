@@ -20,41 +20,40 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
-import sys
-import stat
 import shlex
 import shutil
+import stat
+import sys
 import tarfile
 import tempfile
+from collections import deque
 from contextlib import contextmanager, suppress
 from fnmatch import fnmatch
-from collections import deque
 from typing import List, Tuple
 
-from ._artifactelement import verify_artifact_ref, ArtifactElement
-from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
+from . import Scope, _site, _yaml, utils
+from ._artifactelement import ArtifactElement, verify_artifact_ref
+from ._exceptions import ArtifactElementError, ArtifactError, BstError, ImplError, StreamError
 from ._message import Message, MessageType
-from ._scheduler import (
-    Scheduler,
-    SchedStatus,
-    TrackQueue,
-    FetchQueue,
-    SourcePushQueue,
-    BuildQueue,
-    PullQueue,
-    ArtifactPushQueue,
-    NotificationType,
-    Notification,
-    JobStatus,
-)
-from .element import Element
 from ._pipeline import Pipeline
-from ._profile import Topics, PROFILER
+from ._profile import PROFILER, Topics
+from ._scheduler import (
+    ArtifactPushQueue,
+    BuildQueue,
+    FetchQueue,
+    JobStatus,
+    Notification,
+    NotificationType,
+    PullQueue,
+    SchedStatus,
+    Scheduler,
+    SourcePushQueue,
+    TrackQueue,
+)
 from ._state import State
-from .types import _KeyStrength, _PipelineSelection, _SchedulerErrorAction
+from .element import Element
 from .plugin import Plugin
-from . import utils, _yaml, _site
-from . import Scope
+from .types import _KeyStrength, _PipelineSelection, _SchedulerErrorAction
 
 
 # Stream()

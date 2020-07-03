@@ -32,15 +32,15 @@ implementation.
 """
 
 
-import os
-import urllib.request
-import urllib.error
 import contextlib
-import shutil
 import netrc
+import os
+import shutil
+import urllib.error
+import urllib.request
 
-from .source import Source, SourceError
 from . import utils
+from .source import Source, SourceError
 
 
 class _NetrcFTPOpener(urllib.request.FTPHandler):

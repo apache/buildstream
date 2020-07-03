@@ -6,17 +6,15 @@ import os
 
 import pytest
 
-from buildstream._remote import RemoteSpec, RemoteType
+from buildstream import _yaml
 from buildstream._artifactcache import ArtifactCache
 from buildstream._project import Project
-from buildstream.utils import _deduplicate
-from buildstream import _yaml
+from buildstream._remote import RemoteSpec, RemoteType
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
-
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+from buildstream.utils import _deduplicate
 
 from tests.testutils import dummy_context
-
 
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 cache1 = RemoteSpec(url="https://example.com/cache1", push=True)

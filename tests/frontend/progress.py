@@ -2,11 +2,12 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
-from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
+from buildstream.testing import cli  # pylint: disable=unused-import
 
 from tests.testutils import generate_junction
 

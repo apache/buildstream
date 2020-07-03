@@ -19,6 +19,7 @@ import pytest
 
 from buildstream import node, utils
 
+
 # Catch tests that don't shut down background threads, which could then lead
 # to other tests hanging when BuildStream uses fork().
 @pytest.fixture(autouse=True)

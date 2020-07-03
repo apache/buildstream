@@ -2,11 +2,11 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
 from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
-from buildstream.testing import generate_element
+from buildstream.testing import create_repo, generate_element
 from buildstream.testing._utils.site import HAVE_BZR
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "bzr")

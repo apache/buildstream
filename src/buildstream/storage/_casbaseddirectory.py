@@ -32,13 +32,14 @@ import stat
 import tarfile as tarfilelib
 from contextlib import contextmanager
 from io import StringIO
+
 from google.protobuf import timestamp_pb2
 
 from .. import utils
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
-from .directory import Directory, VirtualDirectoryError, _FileType
+from ..utils import BST_ARBITRARY_TIMESTAMP, FileListResult
 from ._filebaseddirectory import FileBasedDirectory
-from ..utils import FileListResult, BST_ARBITRARY_TIMESTAMP
+from .directory import Directory, VirtualDirectoryError, _FileType
 
 
 class IndexEntry:

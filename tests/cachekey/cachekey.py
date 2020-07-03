@@ -39,17 +39,16 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
-from collections import OrderedDict
 import os
+from collections import OrderedDict
 
 import pytest
 
-from buildstream.testing._cachekeys import check_cache_key_stability, _parse_output_keys
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_BZR, HAVE_GIT, IS_LINUX, MACHINE_ARCH
-from buildstream.plugin import CoreWarnings
 from buildstream import _yaml
-
+from buildstream.plugin import CoreWarnings
+from buildstream.testing._cachekeys import _parse_output_keys, check_cache_key_stability
+from buildstream.testing._utils.site import HAVE_BZR, HAVE_GIT, IS_LINUX, MACHINE_ARCH
+from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)

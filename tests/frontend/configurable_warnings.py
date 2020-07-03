@@ -5,9 +5,9 @@ import os
 
 import pytest
 
-from buildstream.plugin import CoreWarnings
-from buildstream.exceptions import ErrorDomain
 from buildstream import _yaml
+from buildstream.exceptions import ErrorDomain
+from buildstream.plugin import CoreWarnings
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 
 TOP_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "configuredwarning")

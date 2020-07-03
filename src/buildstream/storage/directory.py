@@ -34,7 +34,7 @@ See also: :ref:`sandboxing`.
 
 import os
 import stat
-from typing import Callable, Optional, Union, List
+from typing import Callable, List, Optional, Union
 
 from .._exceptions import BstError
 from ..exceptions import ErrorDomain

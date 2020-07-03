@@ -20,16 +20,17 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain
-from .._utils import generate_junction
-from .. import create_repo
-from .. import cli  # pylint: disable=unused-import
-from .utils import update_project_configuration
-from .utils import kind  # pylint: disable=unused-import
 
+from .. import cli  # pylint: disable=unused-import
+from .. import create_repo
+from .._utils import generate_junction
+from .utils import kind  # pylint: disable=unused-import
+from .utils import update_project_configuration
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))

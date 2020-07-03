@@ -6,10 +6,10 @@ import shutil
 
 import pytest
 
-from buildstream.testing import create_repo
-from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.exceptions import ErrorDomain
 from buildstream import _yaml
+from buildstream.exceptions import ErrorDomain
+from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing import create_repo
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "filter",)
 

@@ -15,9 +15,8 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
 import os
-
-from types import MethodType
 from contextlib import contextmanager
+from types import MethodType
 
 from buildstream._context import Context
 

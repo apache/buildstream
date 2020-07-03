@@ -18,15 +18,15 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
-from buildstream import utils, _yaml
+from buildstream import _yaml, utils
 from buildstream.exceptions import ErrorDomain
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.testing._utils.site import HAVE_SANDBOX
 
 from tests.testutils import create_artifact_share
-
 
 pytestmark = pytest.mark.integration
 

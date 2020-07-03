@@ -18,8 +18,8 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 from .._exceptions import LoadError, PlatformError
-from ..exceptions import LoadErrorReason
 from .._platform import Platform
+from ..exceptions import LoadErrorReason
 from .optionenum import OptionEnum
 
 

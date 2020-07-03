@@ -29,16 +29,16 @@ conform to this interface.
 See also: :ref:`sandboxing`.
 """
 
+import contextlib
 import os
 import shlex
-import contextlib
 from contextlib import contextmanager
-from typing import Dict, Generator, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Generator, List, Optional
 
-from .._exceptions import ImplError, BstError, SandboxError
+from .._exceptions import BstError, ImplError, SandboxError
 from .._message import Message, MessageType
-from ..storage.directory import Directory
 from ..storage._casbaseddirectory import CasBasedDirectory
+from ..storage.directory import Directory
 
 if TYPE_CHECKING:
     from typing import Union

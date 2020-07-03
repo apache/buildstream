@@ -19,13 +19,14 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
 from buildstream.element import _get_normal_name
 from buildstream.exceptions import ErrorDomain
 from buildstream.testing import cli  # pylint: disable=unused-import
-from tests.testutils import create_artifact_share
 
+from tests.testutils import create_artifact_share
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)

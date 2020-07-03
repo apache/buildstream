@@ -37,8 +37,9 @@ details on common configuration options for sources.
 """
 
 import os
-from buildstream.storage.directory import Directory
+
 from buildstream import Source, SourceError
+from buildstream.storage.directory import Directory
 
 
 class LocalSource(Source):

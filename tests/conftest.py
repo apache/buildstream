@@ -28,12 +28,10 @@ from buildstream.testing import register_repo_kind, sourcetests_collection_hook
 from buildstream.testing._fixtures import reset_global_node_state, thread_check  # pylint: disable=unused-import
 from buildstream.testing.integration import integration_cache  # pylint: disable=unused-import
 
-
-from tests.testutils.repo.git import Git
 from tests.testutils.repo.bzr import Bzr
+from tests.testutils.repo.git import Git
 from tests.testutils.repo.tar import Tar
 from tests.testutils.repo.zip import Zip
-
 
 #
 # This file is loaded by pytest, we use it to add a custom

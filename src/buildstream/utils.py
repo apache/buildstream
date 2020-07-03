@@ -22,36 +22,35 @@ Utilities
 """
 
 import calendar
+import datetime
 import errno
 import hashlib
+import itertools
 import math
 import os
 import re
 import shutil
 import signal
 import stat
-from stat import S_ISDIR
 import subprocess
 import tempfile
 import time
-import datetime
-import itertools
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Callable, IO, Iterable, Iterator, Optional, Tuple, Union
+from stat import S_ISDIR
+from typing import IO, Callable, Iterable, Iterator, Optional, Tuple, Union
+
+import psutil
 from dateutil import parser as dateutil_parser
 from google.protobuf import timestamp_pb2
 
-import psutil
-
 from . import _signals
 from ._exceptions import BstError
-from .exceptions import ErrorDomain
 from ._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
-
 # Contains utils that have been rewritten in Cython for speed benefits
 # This makes them available when importing from utils
 from ._utils import url_directory_name  # pylint: disable=unused-import
+from .exceptions import ErrorDomain
 
 # The magic number for timestamps: 2011-11-11 11:11:11
 BST_ARBITRARY_TIMESTAMP = calendar.timegm((2011, 11, 11, 11, 11, 11))

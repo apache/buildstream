@@ -19,8 +19,7 @@
 from ruamel import yaml
 
 from ..._message import MessageType
-
-from .job import Job, ChildJob
+from .job import ChildJob, Job
 
 
 # ElementJob()

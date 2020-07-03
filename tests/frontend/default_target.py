@@ -7,6 +7,7 @@ import pytest
 
 from buildstream import _yaml
 from buildstream.testing import cli, create_repo  # pylint: disable=unused-import
+
 from tests.testutils import create_artifact_share
 
 # project directory

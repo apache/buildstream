@@ -18,10 +18,10 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
+from ..jobs import JobStatus
+from ..resources import ResourceType
 # Local imports
 from . import Queue, QueueStatus
-from ..resources import ResourceType
-from ..jobs import JobStatus
 
 
 # A queue which fetches element sources

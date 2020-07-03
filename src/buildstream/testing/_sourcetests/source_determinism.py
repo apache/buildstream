@@ -20,12 +20,14 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
 from buildstream import _yaml
-from .._utils.site import HAVE_SANDBOX, CASD_SEPARATE_USER
-from .. import create_repo
+
 from .. import cli  # pylint: disable=unused-import
+from .. import create_repo
+from .._utils.site import CASD_SEPARATE_USER, HAVE_SANDBOX
 from .utils import kind  # pylint: disable=unused-import
 
 # Project directory

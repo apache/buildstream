@@ -23,9 +23,9 @@ import platform
 
 import psutil
 
-from .._exceptions import PlatformError, ImplError, SandboxError
-from ..sandbox import SandboxDummy
 from .. import utils
+from .._exceptions import ImplError, PlatformError, SandboxError
+from ..sandbox import SandboxDummy
 
 
 class Platform:

@@ -2,6 +2,7 @@
 # pylint: disable=redefined-outer-name
 
 import pytest
+
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 
 

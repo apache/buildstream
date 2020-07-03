@@ -17,7 +17,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from .metasource import MetaSource
-from .metaelement import MetaElement
 from .loadcontext import LoadContext
 from .loader import Loader
+from .metaelement import MetaElement
+from .metasource import MetaSource

@@ -1,9 +1,9 @@
+import base64
+import html
 import multiprocessing
 import os
 import posixpath
-import html
-import base64
-from http.server import SimpleHTTPRequestHandler, HTTPServer, HTTPStatus
+from http.server import HTTPServer, HTTPStatus, SimpleHTTPRequestHandler
 
 
 class Unauthorized(Exception):

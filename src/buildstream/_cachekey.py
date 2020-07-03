@@ -22,7 +22,6 @@ import hashlib
 
 import ujson
 
-
 # Internal record of the size of a cache key
 _CACHEKEY_SIZE = len(hashlib.sha256().hexdigest())
 

@@ -24,8 +24,8 @@
 # pylint: disable=redefined-outer-name
 
 import os
-import subprocess
 import shutil
+import subprocess
 
 import pytest
 
@@ -33,8 +33,7 @@ from buildstream import Node
 from buildstream.exceptions import ErrorDomain
 from buildstream.plugin import CoreWarnings
 from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import generate_project, generate_element, load_yaml
-from buildstream.testing import create_repo
+from buildstream.testing import create_repo, generate_element, generate_project, load_yaml
 from buildstream.testing._utils.site import HAVE_GIT, HAVE_OLD_GIT
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "git",)

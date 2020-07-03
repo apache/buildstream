@@ -21,6 +21,10 @@
 
 import os
 
+from buildstream import _yaml
+
+from .. import ALL_REPO_KINDS
+
 # To make use of these test utilities it is necessary to have pytest
 # available. However, we don't want to have a hard dependency on
 # pytest.
@@ -30,9 +34,6 @@ except ImportError:
     module_name = globals()["__name__"]
     msg = "Could not import pytest:\n" "To use the {} module, you must have pytest installed.".format(module_name)
     raise ImportError(msg)
-
-from buildstream import _yaml
-from .. import ALL_REPO_KINDS
 
 
 # kind()

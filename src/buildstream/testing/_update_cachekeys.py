@@ -32,7 +32,7 @@ import os
 import tempfile
 from unittest import mock
 
-from buildstream.testing._cachekeys import _element_filename, _parse_output_keys, _load_expected_keys
+from buildstream.testing._cachekeys import _element_filename, _load_expected_keys, _parse_output_keys
 from buildstream.testing.runcli import Cli
 
 

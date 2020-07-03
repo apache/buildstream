@@ -6,14 +6,12 @@ import uuid
 
 import pytest
 
-from buildstream import _yaml
-from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-from buildstream.testing._utils.site import HAVE_SANDBOX, BUILDBOX_RUN
+from buildstream import _yaml, utils
 from buildstream.exceptions import ErrorDomain
-from buildstream import utils
+from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream.testing._utils.site import BUILDBOX_RUN, HAVE_SANDBOX
 
 from tests.testutils import create_artifact_share
-
 
 pytestmark = pytest.mark.integration
 

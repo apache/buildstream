@@ -18,21 +18,20 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
+import heapq
 # System imports
 import os
-from collections import deque
-import heapq
 import traceback
+from collections import deque
 from typing import TYPE_CHECKING
-
-# Local imports
-from ..jobs import ElementJob, JobStatus
-from ..resources import ResourceType
 
 # BuildStream toplevel imports
 from ..._exceptions import BstError, ImplError, set_last_task_error
 from ..._message import Message, MessageType
 from ...types import FastEnum
+# Local imports
+from ..jobs import ElementJob, JobStatus
+from ..resources import ResourceType
 
 if TYPE_CHECKING:
     from typing import List, Optional

@@ -2,13 +2,13 @@
 # pylint: disable=redefined-outer-name
 
 import os
-import pytest
-from buildstream.testing import cli  # pylint: disable=unused-import
 
-from buildstream import _yaml
-from buildstream import utils
+import pytest
+
+from buildstream import _yaml, utils
 from buildstream._frontend.app import App
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
+from buildstream.testing import cli  # pylint: disable=unused-import
 
 
 def get_default_min_version():

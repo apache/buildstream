@@ -7,9 +7,11 @@ import zipfile
 import pytest
 
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing import generate_project
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing import generate_project
+
 from tests.testutils.file_server import create_file_server
+
 from . import list_dir_contents
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "zip",)

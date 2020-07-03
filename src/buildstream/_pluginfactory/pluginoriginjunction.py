@@ -15,8 +15,7 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 from .._exceptions import PluginError
-
-from .pluginorigin import PluginType, PluginOrigin, PluginOriginType
+from .pluginorigin import PluginOrigin, PluginOriginType, PluginType
 
 
 # PluginOriginJunction

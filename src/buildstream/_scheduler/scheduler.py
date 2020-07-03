@@ -19,22 +19,21 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
+import asyncio
+import datetime
 # System imports
 import os
-import asyncio
-from itertools import chain
 import signal
-import datetime
 import sys
+from itertools import chain
 
+from .._message import Message, MessageType
+from .._profile import PROFILER, Topics
+from ..plugin import Plugin
+from ..types import FastEnum
+from .jobs import JobStatus
 # Local imports
 from .resources import Resources
-from .jobs import JobStatus
-from ..types import FastEnum
-from .._profile import Topics, PROFILER
-from .._message import Message, MessageType
-from ..plugin import Plugin
-
 
 _MAX_TIMEOUT_TO_KILL_CHILDREN = 20  # in seconds
 

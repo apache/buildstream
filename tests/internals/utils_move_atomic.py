@@ -4,11 +4,11 @@
 import pytest
 
 from buildstream.utils import (
-    move_atomic,
     DirectoryExistsError,
     _get_file_mtimestamp,
-    _set_file_mtime,
     _parse_timestamp,
+    _set_file_mtime,
+    move_atomic,
 )
 
 

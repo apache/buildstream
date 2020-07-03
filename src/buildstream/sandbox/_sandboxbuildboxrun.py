@@ -22,12 +22,12 @@ from contextlib import ExitStack
 
 import psutil
 
-from .. import utils, _signals
-from . import SandboxFlags
+from .. import _signals, utils
 from .._exceptions import SandboxError
 from .._message import Message, MessageType
 from .._platform import Platform
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+from . import SandboxFlags
 from ._sandboxreapi import SandboxREAPI
 
 

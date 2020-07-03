@@ -159,21 +159,20 @@ Class Reference
 
 import os
 from contextlib import contextmanager
-from typing import Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, Iterator, Optional, Tuple
 
 from . import _yaml, utils
-from .node import MappingNode
-from .plugin import Plugin
-from .types import SourceRef, Union, List
+from ._cachekey import generate_key
 from ._exceptions import BstError, ImplError, PluginError
-from .exceptions import ErrorDomain
 from ._loader.metasource import MetaSource
 from ._projectrefs import ProjectRefStorage
-from ._cachekey import generate_key
-from .storage import CasBasedDirectory
-from .storage import FileBasedDirectory
-from .storage.directory import Directory, VirtualDirectoryError
 from ._variables import Variables
+from .exceptions import ErrorDomain
+from .node import MappingNode
+from .plugin import Plugin
+from .storage import CasBasedDirectory, FileBasedDirectory
+from .storage.directory import Directory, VirtualDirectoryError
+from .types import List, SourceRef, Union
 
 if TYPE_CHECKING:
     from typing import Any, Dict, Set

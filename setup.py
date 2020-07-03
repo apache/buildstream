@@ -20,13 +20,13 @@
 #        Benjamin Schubert <bschubert15@bloomberg.net>
 
 import os
-from pathlib import Path
 import re
 import sys
+from pathlib import Path
 
 # Add local directory to the path, in order to be able to import versioneer
 sys.path.append(os.path.dirname(__file__))
-import versioneer  # pylint: disable=wrong-import-position
+import versioneer  # isort:skip
 
 
 ##################################################################

@@ -20,11 +20,13 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
-from buildstream.testing import create_repo
-from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
+from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing import create_repo
+
 from .utils import kind  # pylint: disable=unused-import
 
 # Project directory

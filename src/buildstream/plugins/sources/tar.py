@@ -60,8 +60,7 @@ import tarfile
 from contextlib import contextmanager
 from tempfile import TemporaryFile
 
-from buildstream import DownloadableFileSource, SourceError
-from buildstream import utils
+from buildstream import DownloadableFileSource, SourceError, utils
 
 
 class ReadableTarInfo(tarfile.TarInfo):

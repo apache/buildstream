@@ -1,10 +1,10 @@
-from contextlib import contextmanager
+import glob
+import hashlib
 import os
 import pprint
 import shutil
 import stat
-import glob
-import hashlib
+from contextlib import contextmanager
 from pathlib import Path
 from typing import List, Optional
 
@@ -13,7 +13,7 @@ import pytest
 from buildstream._cas import CASCache
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
-from buildstream.storage.directory import _FileType, VirtualDirectoryError
+from buildstream.storage.directory import VirtualDirectoryError, _FileType
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "storage")
 

@@ -2,10 +2,11 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
-from buildstream._context import Context
 from buildstream import _yaml, utils
+from buildstream._context import Context
 from buildstream._exceptions import LoadError
 from buildstream.exceptions import LoadErrorReason
 

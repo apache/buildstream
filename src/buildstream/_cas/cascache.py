@@ -18,26 +18,24 @@
 #  Authors:
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-import itertools
-import os
-import stat
 import contextlib
 import ctypes
+import itertools
 import multiprocessing
+import os
 import signal
+import stat
 import time
-from typing import Optional, List
+from typing import List, Optional
 
 import grpc
 
-from .._protos.google.rpc import code_pb2
+from .. import _signals, utils
+from .._exceptions import CASCacheError
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from .._protos.build.buildgrid import local_cas_pb2
-
-from .. import _signals, utils
+from .._protos.google.rpc import code_pb2
 from ..types import FastEnum, SourceRef
-from .._exceptions import CASCacheError
-
 from .casdprocessmanager import CASDProcessManager
 from .casremote import _CASBatchRead, _CASBatchUpdate
 

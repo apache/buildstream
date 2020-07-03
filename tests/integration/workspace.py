@@ -2,16 +2,16 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
 from buildstream import _yaml
+from buildstream.exceptions import ErrorDomain
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.testing._utils.site import HAVE_SANDBOX
-from buildstream.exceptions import ErrorDomain
 from buildstream.utils import BST_ARBITRARY_TIMESTAMP
 
 from tests.testutils import wait_for_cache_granularity
-
 
 pytestmark = pytest.mark.integration
 

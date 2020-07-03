@@ -19,10 +19,13 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
+
+from buildstream import _yaml
 from buildstream.testing import cli_remote_execution as cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
-from buildstream import _yaml
+
 from tests.testutils import generate_junction
 
 pytestmark = pytest.mark.remoteexecution

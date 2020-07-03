@@ -3,13 +3,15 @@
 
 import os
 import textwrap
+
 import pytest
+
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
-from tests.testutils import generate_junction
 
+from tests.testutils import generate_junction
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "include")

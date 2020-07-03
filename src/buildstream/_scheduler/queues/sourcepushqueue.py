@@ -17,9 +17,9 @@
 #  Authors:
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 
-from . import Queue, QueueStatus
-from ..resources import ResourceType
 from ..._exceptions import SkipJob
+from ..resources import ResourceType
+from . import Queue, QueueStatus
 
 
 # A queue which pushes staged sources

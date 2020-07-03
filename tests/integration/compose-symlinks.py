@@ -2,10 +2,10 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
-
 
 pytestmark = pytest.mark.integration
 

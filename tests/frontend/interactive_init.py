@@ -2,8 +2,8 @@ import os
 
 import pexpect
 
-from buildstream import _yaml
-from buildstream import utils
+from buildstream import _yaml, utils
+
 from tests.testutils.constants import PEXPECT_TIMEOUT_SHORT
 
 

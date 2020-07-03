@@ -15,12 +15,12 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 
+from .elementfactory import ElementFactory
 from .pluginorigin import PluginOrigin, PluginOriginType, PluginType
+from .pluginoriginjunction import PluginOriginJunction
 from .pluginoriginlocal import PluginOriginLocal
 from .pluginoriginpip import PluginOriginPip
-from .pluginoriginjunction import PluginOriginJunction
 from .sourcefactory import SourceFactory
-from .elementfactory import ElementFactory
 
 
 # load_plugin_origin()

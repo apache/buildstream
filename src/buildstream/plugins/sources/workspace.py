@@ -37,10 +37,10 @@ workspace. The node constructed would be specified as follows:
 
 import os
 
-from buildstream.storage.directory import Directory
 from buildstream import Source, SourceError
-from buildstream.types import SourceRef
 from buildstream.node import MappingNode
+from buildstream.storage.directory import Directory
+from buildstream.types import SourceRef
 
 
 class WorkspaceSource(Source):

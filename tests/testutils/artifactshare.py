@@ -3,8 +3,8 @@ import shutil
 import signal
 import sys
 from collections import namedtuple
-from contextlib import ExitStack, contextmanager
 from concurrent import futures
+from contextlib import ExitStack, contextmanager
 from multiprocessing import Process, Queue
 
 import grpc

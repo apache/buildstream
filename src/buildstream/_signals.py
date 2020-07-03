@@ -21,10 +21,9 @@ import signal
 import sys
 import threading
 import traceback
-from contextlib import contextmanager, ExitStack
 from collections import deque
+from contextlib import ExitStack, contextmanager
 from typing import Callable, Deque
-
 
 # Global per process state for handling of sigterm/sigtstp/sigcont,
 # note that it is expected that this only ever be used by new processes

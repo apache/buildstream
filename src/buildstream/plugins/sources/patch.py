@@ -45,8 +45,8 @@ details on common configuration options for sources.
 """
 
 import os
-from buildstream import Source, SourceError
-from buildstream import utils
+
+from buildstream import Source, SourceError, utils
 
 
 class PatchSource(Source):

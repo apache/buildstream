@@ -3,10 +3,9 @@ from io import StringIO
 
 import pytest
 
-from buildstream import _yaml, Node, ProvenanceInformation, SequenceNode
-from buildstream.exceptions import LoadErrorReason
+from buildstream import Node, ProvenanceInformation, SequenceNode, _yaml
 from buildstream._exceptions import LoadError
-
+from buildstream.exceptions import LoadErrorReason
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "yaml",)
 

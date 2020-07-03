@@ -20,6 +20,7 @@
 from .pluginfactory import PluginFactory
 from .pluginorigin import PluginType
 
+
 # A SourceFactory creates Source instances
 # in the context of a given factory
 #

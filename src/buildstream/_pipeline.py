@@ -19,17 +19,17 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
-import os
 import itertools
-from operator import itemgetter
+import os
 from collections import OrderedDict
+from operator import itemgetter
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
+from . import Scope
 from ._exceptions import PipelineError
 from ._message import Message, MessageType
-from ._profile import Topics, PROFILER
-from . import Scope
+from ._profile import PROFILER, Topics
 from ._project import ProjectRefStorage
 from .types import _PipelineSelection
 

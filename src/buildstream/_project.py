@@ -22,29 +22,28 @@ import os
 import sys
 from collections import OrderedDict
 from pathlib import Path
+
 from pluginbase import PluginBase
-from . import utils
-from . import _site
-from . import _yaml
-from .utils import UtilError
-from ._artifactelement import ArtifactElement
-from ._profile import Topics, PROFILER
-from ._exceptions import LoadError
-from .exceptions import LoadErrorReason
-from ._options import OptionPool
+
+from . import _site, _yaml, utils
 from ._artifactcache import ArtifactCache
+from ._artifactelement import ArtifactElement
+from ._exceptions import LoadError
+from ._includes import Includes
+from ._loader import LoadContext, Loader
+from ._message import Message, MessageType
+from ._options import OptionPool
+from ._pluginfactory import ElementFactory, SourceFactory, load_plugin_origin
+from ._profile import PROFILER, Topics
+from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._sourcecache import SourceCache
+from ._workspaces import WORKSPACE_PROJECT_FILE
+from .element import Element
+from .exceptions import LoadErrorReason
 from .node import ScalarNode, SequenceNode, _assert_symbol_name
 from .sandbox import SandboxRemote
-from ._pluginfactory import ElementFactory, SourceFactory, load_plugin_origin
 from .types import CoreWarnings
-from ._projectrefs import ProjectRefs, ProjectRefStorage
-from ._loader import Loader, LoadContext
-from .element import Element
-from ._message import Message, MessageType
-from ._includes import Includes
-from ._workspaces import WORKSPACE_PROJECT_FILE
-
+from .utils import UtilError
 
 # Project Configuration file
 _PROJECT_CONF_FILE = "project.conf"

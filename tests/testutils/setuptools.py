@@ -1,6 +1,7 @@
 import os
-import pytest
+
 import pkg_resources
+import pytest
 
 
 # A mock setuptools dist object.

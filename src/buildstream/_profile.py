@@ -23,10 +23,11 @@
 
 import contextlib
 import cProfile
-import pstats
-import os
 import datetime
+import os
+import pstats
 import time
+
 from ._exceptions import ProfileError
 
 

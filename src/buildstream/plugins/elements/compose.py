@@ -34,6 +34,7 @@ The default configuration and possible options are as such:
 """
 
 import os
+
 from buildstream import Element, Scope
 
 

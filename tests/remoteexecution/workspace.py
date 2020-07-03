@@ -4,6 +4,7 @@
 import os
 import re
 import shutil
+
 import pytest
 
 from buildstream.testing import cli_remote_execution as cli  # pylint: disable=unused-import

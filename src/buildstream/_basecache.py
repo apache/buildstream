@@ -21,13 +21,11 @@ from fnmatch import fnmatch
 from itertools import chain
 from typing import TYPE_CHECKING
 
-from . import utils
-from . import _yaml
+from . import _yaml, utils
 from ._cas import CASRemote
+from ._exceptions import CacheError, LoadError, RemoteError
 from ._message import Message, MessageType
-from ._exceptions import LoadError, RemoteError, CacheError
 from ._remote import RemoteSpec, RemoteType
-
 
 if TYPE_CHECKING:
     from typing import Optional, Type

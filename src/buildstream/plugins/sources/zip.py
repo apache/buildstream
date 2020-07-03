@@ -57,11 +57,10 @@ details on common configuration options for sources.
 """
 
 import os
-import zipfile
 import stat
+import zipfile
 
-from buildstream import DownloadableFileSource, SourceError
-from buildstream import utils
+from buildstream import DownloadableFileSource, SourceError, utils
 
 
 class ZipSource(DownloadableFileSource):

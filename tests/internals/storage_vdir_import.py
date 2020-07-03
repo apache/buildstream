@@ -13,18 +13,17 @@
 #
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
-from hashlib import sha256
 import os
 import random
+from hashlib import sha256
 
 import pytest
 
+from buildstream._cas import CASCache
 from buildstream.storage._casbaseddirectory import CasBasedDirectory
 from buildstream.storage._filebaseddirectory import FileBasedDirectory
-from buildstream._cas import CASCache
 from buildstream.storage.directory import VirtualDirectoryError
-from buildstream.utils import _set_file_mtime, _parse_timestamp
-
+from buildstream.utils import _parse_timestamp, _set_file_mtime
 
 # These are comparitive tests that check that FileBasedDirectory and
 # CasBasedDirectory act identically.

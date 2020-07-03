@@ -31,7 +31,6 @@ from buildstream.testing import cli  # pylint: disable=unused-import
 
 from tests.testutils import create_element_size, wait_for_cache_granularity
 
-
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "expiry")
 
 

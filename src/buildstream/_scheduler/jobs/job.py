@@ -29,11 +29,11 @@ import signal
 import sys
 import traceback
 
+from ... import _signals, utils
 # BuildStream toplevel imports
-from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
+from ..._exceptions import BstError, ImplError, SkipJob, set_last_task_error
 from ..._message import Message, MessageType, unconditional_messages
 from ...types import FastEnum
-from ... import _signals, utils
 from .. import _multiprocessing
 
 

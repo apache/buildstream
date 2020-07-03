@@ -18,10 +18,10 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
+from ..._exceptions import SkipJob
+from ..resources import ResourceType
 # Local imports
 from . import Queue, QueueStatus
-from ..resources import ResourceType
-from ..._exceptions import SkipJob
 
 
 # A queue which pushes element artifacts

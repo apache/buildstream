@@ -16,7 +16,7 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="sample-plugins",

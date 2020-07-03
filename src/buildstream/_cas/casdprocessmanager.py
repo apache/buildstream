@@ -25,17 +25,16 @@ import stat
 import subprocess
 import tempfile
 import time
-import psutil
 
 import grpc
-
-from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2_grpc
-from .._protos.build.buildgrid import local_cas_pb2_grpc
-from .._protos.google.bytestream import bytestream_pb2_grpc
+import psutil
 
 from .. import _signals, utils
 from .._exceptions import CASCacheError
 from .._message import Message, MessageType
+from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2_grpc
+from .._protos.build.buildgrid import local_cas_pb2_grpc
+from .._protos.google.bytestream import bytestream_pb2_grpc
 
 _CASD_MAX_LOGFILES = 10
 _CASD_TIMEOUT = 300  # in seconds

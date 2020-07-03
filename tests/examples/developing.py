@@ -2,11 +2,13 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
+from buildstream.testing._utils.site import HAVE_SANDBOX, IS_LINUX, MACHINE_ARCH
 from buildstream.testing.integration import assert_contains
-from buildstream.testing._utils.site import IS_LINUX, MACHINE_ARCH, HAVE_SANDBOX
+
 import tests.testutils.patch as patch
 
 pytestmark = pytest.mark.integration

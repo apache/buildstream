@@ -1,4 +1,5 @@
 import os
+
 from buildstream import _yaml
 
 

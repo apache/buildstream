@@ -5,11 +5,10 @@ import os
 
 import pytest
 
-from buildstream import utils, _yaml
+from buildstream import _yaml, utils
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing._utils.site import IS_LINUX
 from buildstream.testing import cli  # pylint: disable=unused-import
-
+from buildstream.testing._utils.site import IS_LINUX
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "missing-dependencies",)

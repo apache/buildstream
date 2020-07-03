@@ -18,20 +18,21 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 import datetime
 import os
-from collections import defaultdict, OrderedDict
-from contextlib import ExitStack
-from mmap import mmap
 import re
 import textwrap
-from ruamel import yaml
-import click
+from collections import OrderedDict, defaultdict
+from contextlib import ExitStack
+from mmap import mmap
 
-from .profile import Profile
+import click
+from ruamel import yaml
+
 from .. import Scope
 from .. import __version__ as bst_version
 from .._exceptions import ImplError
 from .._message import MessageType
 from ..storage.directory import _FileType
+from .profile import Profile
 
 # These messages are printed a bit differently
 ERROR_MESSAGES = [MessageType.FAIL, MessageType.ERROR, MessageType.BUG]

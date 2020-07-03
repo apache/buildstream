@@ -36,7 +36,7 @@ import copy
 import os
 
 import click
-from click.core import MultiCommand, Option, Argument
+from click.core import Argument, MultiCommand, Option
 from click.parser import split_arg_string
 
 WORDBREAK = "="

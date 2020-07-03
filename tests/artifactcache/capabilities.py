@@ -4,14 +4,13 @@
 import os
 
 import pytest
-from buildstream._project import Project
 
 from buildstream import _yaml
+from buildstream._project import Project
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+
 from tests.testutils import dummy_context
-
 from tests.testutils.artifactshare import create_dummy_artifact_share
-
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
 

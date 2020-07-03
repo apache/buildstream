@@ -16,8 +16,9 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
-import re
 import copy
+import re
+
 import click
 
 

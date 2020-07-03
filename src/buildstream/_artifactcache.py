@@ -19,15 +19,15 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
+
 import grpc
 
+from . import utils
 from ._basecache import BaseCache
 from ._cas.casremote import BlobNotFound
-from ._exceptions import ArtifactError, CASError, CacheError, CASRemoteError, RemoteError
-from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, artifact_pb2, artifact_pb2_grpc
-
+from ._exceptions import ArtifactError, CacheError, CASError, CASRemoteError, RemoteError
+from ._protos.buildstream.v2 import artifact_pb2, artifact_pb2_grpc, buildstream_pb2, buildstream_pb2_grpc
 from ._remote import BaseRemote
-from . import utils
 
 
 # ArtifactRemote():

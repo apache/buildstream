@@ -17,6 +17,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 import os
+
 from .cli import cli
 
 if "_BST_COMPLETION" not in os.environ:

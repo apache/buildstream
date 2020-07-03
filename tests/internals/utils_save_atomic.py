@@ -1,4 +1,5 @@
 import os
+
 import pytest
 
 from buildstream.utils import save_file_atomic

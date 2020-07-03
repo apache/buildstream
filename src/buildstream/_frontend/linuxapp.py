@@ -17,6 +17,7 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 import os
+
 import click
 
 from .app import App

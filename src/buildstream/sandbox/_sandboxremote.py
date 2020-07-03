@@ -21,23 +21,21 @@
 import os
 import shutil
 from collections import namedtuple
-from urllib.parse import urlparse
 from functools import partial
+from urllib.parse import urlparse
 
 import grpc
 
-from .. import utils
-from ..node import Node
-from .._message import Message, MessageType
-from ._sandboxreapi import SandboxREAPI
-from .. import _signals
-from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
-from .._protos.google.rpc import code_pb2
-from .._exceptions import BstError, SandboxError
-from .. import _yaml
-from .._protos.google.longrunning import operations_pb2, operations_pb2_grpc
+from .. import _signals, _yaml, utils
 from .._cas import CASRemote
+from .._exceptions import BstError, SandboxError
+from .._message import Message, MessageType
+from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
+from .._protos.google.longrunning import operations_pb2, operations_pb2_grpc
+from .._protos.google.rpc import code_pb2
 from .._remote import RemoteSpec
+from ..node import Node
+from ._sandboxreapi import SandboxREAPI
 
 
 class RemoteExecutionSpec(namedtuple("RemoteExecutionSpec", "exec_service storage_service action_service")):

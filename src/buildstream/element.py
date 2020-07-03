@@ -72,42 +72,37 @@ Class Reference
 ---------------
 """
 
+import contextlib
+import copy
 import os
 import re
 import stat
-import copy
+import string
 import warnings
 from collections import OrderedDict
-import contextlib
 from contextlib import contextmanager
 from functools import partial
 from itertools import chain
-import string
-from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Set, cast
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
-from . import _yaml
+from . import _cachekey, _site, _yaml, utils
+from ._artifact import Artifact
+from ._exceptions import BstError, ImplError, LoadError, SourceCacheError
 from ._variables import Variables
 from ._versions import BST_CORE_ARTIFACT_VERSION
-from ._exceptions import BstError, LoadError, ImplError, SourceCacheError
 from .exceptions import ErrorDomain, LoadErrorReason
-from .utils import FileListResult, BST_ARBITRARY_TIMESTAMP
-from . import utils
-from . import _cachekey
-from . import _site
 from .node import Node
 from .plugin import Plugin
-from .sandbox import SandboxFlags, SandboxCommandError
+from .sandbox import SandboxCommandError, SandboxFlags
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import CoreWarnings, Scope, _CacheBuildTrees, _KeyStrength
-from ._artifact import Artifact
-
-from .storage.directory import Directory
-from .storage._filebaseddirectory import FileBasedDirectory
 from .storage._casbaseddirectory import CasBasedDirectory
-from .storage.directory import VirtualDirectoryError
+from .storage._filebaseddirectory import FileBasedDirectory
+from .storage.directory import Directory, VirtualDirectoryError
+from .types import CoreWarnings, Scope, _CacheBuildTrees, _KeyStrength
+from .utils import BST_ARBITRARY_TIMESTAMP, FileListResult
 
 if TYPE_CHECKING:
     from .node import MappingNode, ScalarNode, SequenceNode

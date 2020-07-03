@@ -54,13 +54,12 @@ See :ref:`built-in functionality doumentation <core_source_builtins>` for
 details on common configuration options for sources.
 """
 
+import fcntl
 import os
 import shutil
-import fcntl
 from contextlib import contextmanager
 
-from buildstream import Source, SourceError
-from buildstream import utils
+from buildstream import Source, SourceError, utils
 
 
 class BzrSource(Source):

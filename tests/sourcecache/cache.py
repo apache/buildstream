@@ -22,10 +22,11 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 from buildstream import _yaml
+from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 

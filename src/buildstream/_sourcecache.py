@@ -18,15 +18,16 @@
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 #
 import os
+
 import grpc
 
-from ._remote import BaseRemote
-from ._cas.casremote import BlobNotFound
-from .storage._casbaseddirectory import CasBasedDirectory
-from ._basecache import BaseCache
-from ._exceptions import CASError, CASRemoteError, SourceCacheError, RemoteError
 from . import utils
+from ._basecache import BaseCache
+from ._cas.casremote import BlobNotFound
+from ._exceptions import CASError, CASRemoteError, RemoteError, SourceCacheError
 from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, source_pb2, source_pb2_grpc
+from ._remote import BaseRemote
+from .storage._casbaseddirectory import CasBasedDirectory
 
 
 class SourceRemote(BaseRemote):

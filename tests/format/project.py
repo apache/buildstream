@@ -2,13 +2,14 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
+
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream.testing import cli  # pylint: disable=unused-import
 
 from tests.testutils import filetypegenerator
-
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")

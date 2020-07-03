@@ -17,30 +17,27 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from contextlib import contextmanager
+import datetime
 import os
 import sys
 import traceback
-import datetime
+from contextlib import contextmanager
 from textwrap import TextWrapper
+
 import click
 from click import UsageError
 
 # Import buildstream public symbols
-from .. import Scope
-
+from .. import Scope, node, utils
 # Import various buildstream internals
 from .._context import Context
-from .._project import Project
-from .._exceptions import BstError, StreamError, LoadError, AppError
-from ..exceptions import LoadErrorReason
+from .._exceptions import AppError, BstError, LoadError, StreamError
 from .._message import Message, MessageType, unconditional_messages
+from .._project import Project
 from .._stream import Stream
+from ..exceptions import LoadErrorReason
 from ..types import _SchedulerErrorAction
-from .. import node
-from .. import utils
 from ..utils import UtilError
-
 # Import frontend assets
 from .profile import Profile
 from .status import Status

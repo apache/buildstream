@@ -18,20 +18,19 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
 import os
-from typing import Tuple, Type, Iterator
+from typing import Iterator, Tuple, Type
+
 from pluginbase import PluginSource
 
-from .. import utils
-from .. import _site
-from ..plugin import Plugin
-from ..source import Source
+from .. import _site, utils
+from .._exceptions import PluginError
+from .._message import Message, MessageType
+from .._messenger import Messenger
 from ..element import Element
 from ..node import ProvenanceInformation
+from ..plugin import Plugin
+from ..source import Source
 from ..utils import UtilError
-from .._exceptions import PluginError
-from .._messenger import Messenger
-from .._message import Message, MessageType
-
 from .pluginorigin import PluginOrigin, PluginType
 
 

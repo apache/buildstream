@@ -15,10 +15,10 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from ..types import FastEnum
-from ..node import ScalarNode, MappingNode
 from .._exceptions import LoadError
 from ..exceptions import LoadErrorReason
+from ..node import MappingNode, ScalarNode
+from ..types import FastEnum
 
 
 # PluginType()

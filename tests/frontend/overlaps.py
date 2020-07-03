@@ -2,11 +2,14 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
-from buildstream.testing.runcli import cli  # pylint: disable=unused-import
-from buildstream.exceptions import ErrorDomain
+
 from buildstream import _yaml
+from buildstream.exceptions import ErrorDomain
 from buildstream.plugin import CoreWarnings
+from buildstream.testing.runcli import cli  # pylint: disable=unused-import
+
 from tests.testutils import generate_junction
 
 # Project directory

@@ -19,8 +19,7 @@
 
 from typing import TYPE_CHECKING
 
-from . import Element
-from . import _cachekey
+from . import Element, _cachekey
 from ._exceptions import ArtifactElementError
 from ._loader.metaelement import MetaElement
 from .types import Scope

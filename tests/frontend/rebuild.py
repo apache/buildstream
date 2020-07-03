@@ -2,7 +2,9 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
+
 from buildstream.testing import cli  # pylint: disable=unused-import
 
 # Project directory

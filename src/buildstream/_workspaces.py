@@ -18,12 +18,10 @@
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
 import os
-from . import utils
-from . import _yaml
 
+from . import _yaml, utils
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
-
 
 BST_WORKSPACE_FORMAT_VERSION = 4
 BST_WORKSPACE_PROJECT_FORMAT_VERSION = 1

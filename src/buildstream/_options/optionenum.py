@@ -19,7 +19,7 @@
 
 from .._exceptions import LoadError
 from ..exceptions import LoadErrorReason
-from .option import Option, OPTION_SYMBOLS
+from .option import OPTION_SYMBOLS, Option
 
 
 # OptionEnum

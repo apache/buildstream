@@ -18,6 +18,6 @@
 #  Authors:
 #        Jim MacArthur <jim.macarthur@codethink.co.uk>
 
-from ._filebaseddirectory import FileBasedDirectory
 from ._casbaseddirectory import CasBasedDirectory
+from ._filebaseddirectory import FileBasedDirectory
 from .directory import Directory

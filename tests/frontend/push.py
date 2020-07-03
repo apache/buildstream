@@ -25,19 +25,20 @@
 
 import os
 import shutil
+
 import pytest
 
 from buildstream.exceptions import ErrorDomain
 from buildstream.testing import cli, generate_project  # pylint: disable=unused-import
+
 from tests.testutils import (
+    assert_not_shared,
+    assert_shared,
     create_artifact_share,
     create_element_size,
     generate_junction,
     wait_for_cache_granularity,
-    assert_shared,
-    assert_not_shared,
 )
-
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)

@@ -17,15 +17,13 @@
 #  Authors:
 #        Angelos Evripiotis <jevripiotis@bloomberg.net>
 
-import os
 import datetime
+import os
 from contextlib import contextmanager
 
-from . import _signals
-from . import utils
+from . import _signals, utils
 from ._exceptions import BstError
 from ._message import Message, MessageType
-
 
 _RENDER_INTERVAL = datetime.timedelta(seconds=1)
 

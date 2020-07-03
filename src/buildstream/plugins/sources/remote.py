@@ -48,6 +48,7 @@ See :ref:`built-in functionality doumentation <core_source_builtins>` for
 details on common configuration options for sources.
 """
 import os
+
 from buildstream import DownloadableFileSource, SourceError, utils
 
 

@@ -21,13 +21,15 @@ This package contains various utilities which make it easier to test plugins.
 
 import os
 from collections import OrderedDict
-from buildstream.exceptions import ErrorDomain, LoadErrorReason
+
 from buildstream._yaml import load as load_yaml  # type: ignore
-from ._yaml import generate_project, generate_element
+from buildstream.exceptions import ErrorDomain, LoadErrorReason
+
+from ._cachekeys import check_cache_key_stability
+from ._yaml import generate_element, generate_project
+from .integration import integration_cache
 from .repo import Repo
 from .runcli import cli, cli_integration, cli_remote_execution
-from .integration import integration_cache
-from ._cachekeys import check_cache_key_stability
 
 __all__ = [
     "check_cache_key_stability",

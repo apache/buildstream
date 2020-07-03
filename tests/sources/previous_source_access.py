@@ -2,10 +2,11 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
-from buildstream.testing import generate_project, load_yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing import generate_project, load_yaml
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "previous_source_access")
 

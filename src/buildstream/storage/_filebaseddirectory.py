@@ -31,11 +31,18 @@ import os
 import shutil
 import stat
 
-from .directory import Directory, VirtualDirectoryError, _FileType
 from .. import utils
-from ..utils import link_files, copy_files, list_relative_paths, _get_link_mtime, BST_ARBITRARY_TIMESTAMP
-from ..utils import _set_deterministic_user, _set_deterministic_mtime
-from ..utils import FileListResult
+from ..utils import (
+    BST_ARBITRARY_TIMESTAMP,
+    FileListResult,
+    _get_link_mtime,
+    _set_deterministic_mtime,
+    _set_deterministic_user,
+    copy_files,
+    link_files,
+    list_relative_paths,
+)
+from .directory import Directory, VirtualDirectoryError, _FileType
 
 # FileBasedDirectory intentionally doesn't call its superclass constuctor,
 # which is meant to be unimplemented.

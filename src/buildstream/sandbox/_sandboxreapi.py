@@ -17,10 +17,10 @@
 import os
 import shlex
 
-from .sandbox import Sandbox, SandboxFlags, SandboxCommandError, _SandboxBatch
 from .. import utils
 from .._exceptions import ImplError, SandboxError
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
+from .sandbox import Sandbox, SandboxCommandError, SandboxFlags, _SandboxBatch
 
 
 # SandboxREAPI()

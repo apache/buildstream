@@ -2,13 +2,12 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
 from buildstream import _yaml
-
 from buildstream.testing import cli_integration as cli  # pylint: disable=unused-import
 from buildstream.testing.integration import walk_dir
-
 
 pytestmark = pytest.mark.integration
 

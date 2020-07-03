@@ -29,17 +29,16 @@ runcli - Test fixtures used for running BuildStream commands
 """
 
 
+import itertools
 import os
 import re
-import sys
 import shutil
+import sys
 import tempfile
-import itertools
 import traceback
-from contextlib import contextmanager, ExitStack
-from ruamel import yaml
-import pytest
+from contextlib import ExitStack, contextmanager
 
+import pytest
 # XXX Using pytest private internals here
 #
 # We use pytest internals to capture the stdout/stderr during
@@ -47,17 +46,17 @@ import pytest
 # CliRunner convenience API (click.testing module) does not support
 # separation of stdout/stderr.
 #
-from _pytest.capture import MultiCapture, FDCapture, FDCaptureBinary
+from _pytest.capture import FDCapture, FDCaptureBinary, MultiCapture
+from ruamel import yaml
 
-# Import the main cli entrypoint
-from buildstream._frontend import cli as bst_cli
 from buildstream import _yaml, node
 from buildstream._cas import CASCache
-from buildstream.element import _get_normal_name, _compose_artifact_name
-
 # Special private exception accessor, for test case purposes
 from buildstream._exceptions import BstError, get_last_exception, get_last_task_error
+# Import the main cli entrypoint
+from buildstream._frontend import cli as bst_cli
 from buildstream._protos.buildstream.v2 import artifact_pb2
+from buildstream.element import _compose_artifact_name, _get_normal_name
 
 
 # Wrapper for the click.testing result

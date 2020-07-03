@@ -20,22 +20,21 @@
 import os
 from contextlib import suppress
 
-from .._exceptions import LoadError
-from ..exceptions import LoadErrorReason
 from .. import _yaml
-from ..element import Element
-from ..node import Node
-from .._profile import Topics, PROFILER
+from .._exceptions import LoadError
 from .._includes import Includes
-
-from ._loader import valid_chars_name
-from .types import Symbol, extract_depends_from_node
+from .._message import Message, MessageType
+from .._profile import PROFILER, Topics
+from ..element import Element
+from ..exceptions import LoadErrorReason
+from ..node import Node
+from ..types import CoreWarnings, _KeyStrength
 from . import loadelement
+from ._loader import valid_chars_name
 from .loadelement import Dependency, LoadElement
 from .metaelement import MetaElement
 from .metasource import MetaSource
-from ..types import CoreWarnings, _KeyStrength
-from .._message import Message, MessageType
+from .types import Symbol, extract_depends_from_node
 
 
 # Loader():

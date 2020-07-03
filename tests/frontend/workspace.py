@@ -28,17 +28,17 @@
 # pylint: disable=redefined-outer-name
 
 import os
-import stat
 import shutil
+import stat
 import subprocess
 
 import pytest
 
-from buildstream.testing import create_repo, ALL_REPO_KINDS
-from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream import _yaml
-from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream._workspaces import BST_WORKSPACE_FORMAT_VERSION
+from buildstream.exceptions import ErrorDomain, LoadErrorReason
+from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing import ALL_REPO_KINDS, create_repo
 
 from tests.testutils import create_artifact_share, create_element_size, wait_for_cache_granularity
 

@@ -114,11 +114,11 @@ import os
 import subprocess
 import sys
 from contextlib import contextmanager
-from typing import Generator, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Generator, Optional, Tuple
 from weakref import WeakValueDictionary
 
 from . import utils
-from ._exceptions import PluginError, ImplError
+from ._exceptions import ImplError, PluginError
 from ._message import Message, MessageType
 from .node import MappingNode, ProvenanceInformation
 from .types import CoreWarnings, SourceRef

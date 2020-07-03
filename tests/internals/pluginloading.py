@@ -1,9 +1,10 @@
-from contextlib import contextmanager
 import os
+from contextlib import contextmanager
+
 import pytest
 
-from buildstream._project import Project
 from buildstream._pipeline import Pipeline
+from buildstream._project import Project
 
 from tests.testutils import dummy_context
 

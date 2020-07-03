@@ -1,10 +1,9 @@
 import os
-
 from contextlib import contextmanager
 
-from buildstream._project import Project
-from buildstream._includes import Includes
 from buildstream import _yaml
+from buildstream._includes import Includes
+from buildstream._project import Project
 
 from tests.testutils import dummy_context
 

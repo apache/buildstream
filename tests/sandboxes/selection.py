@@ -17,9 +17,10 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
-from buildstream import utils, _yaml
+from buildstream import _yaml, utils
 from buildstream.exceptions import ErrorDomain
 from buildstream.testing import cli  # pylint: disable=unused-import
 

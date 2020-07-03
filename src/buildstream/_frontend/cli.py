@@ -1,15 +1,15 @@
 import os
+import shutil
 import sys
 from functools import partial
 
-import shutil
 import click
-from .. import _yaml
-from .._exceptions import BstError, LoadError, AppError
-from .complete import main_bashcomplete, complete_path, CompleteUnhandled
-from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection
-from ..utils import UtilError
 
+from .. import _yaml
+from .._exceptions import AppError, BstError, LoadError
+from ..types import _CacheBuildTrees, _PipelineSelection, _SchedulerErrorAction
+from ..utils import UtilError
+from .complete import CompleteUnhandled, complete_path, main_bashcomplete
 
 ##################################################################
 #              Helper classes and methods for Click              #

@@ -17,14 +17,12 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+from .jobs import ElementJob, JobStatus
 from .queues import Queue, QueueStatus
-
+from .queues.artifactpushqueue import ArtifactPushQueue
+from .queues.buildqueue import BuildQueue
 from .queues.fetchqueue import FetchQueue
+from .queues.pullqueue import PullQueue
 from .queues.sourcepushqueue import SourcePushQueue
 from .queues.trackqueue import TrackQueue
-from .queues.buildqueue import BuildQueue
-from .queues.artifactpushqueue import ArtifactPushQueue
-from .queues.pullqueue import PullQueue
-
-from .scheduler import Scheduler, SchedStatus, Notification, NotificationType
-from .jobs import ElementJob, JobStatus
+from .scheduler import Notification, NotificationType, SchedStatus, Scheduler

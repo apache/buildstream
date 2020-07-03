@@ -17,8 +17,8 @@
 #  Authors:
 #        Angelos Evripiotis <jevripiotis@bloomberg.net>
 
-from contextlib import contextmanager
 import platform
+from contextlib import contextmanager
 
 
 # override_platform_uname()

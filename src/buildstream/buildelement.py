@@ -141,7 +141,6 @@ from .element import Element
 from .sandbox import SandboxFlags
 from .types import Scope
 
-
 # This list is preserved because of an unfortunate situation, we
 # need to remove these older commands which were secret and never
 # documented, but without breaking the cache keys.

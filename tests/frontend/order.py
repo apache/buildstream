@@ -4,9 +4,10 @@
 import os
 
 import pytest
-from buildstream.testing import create_repo
-from buildstream.testing import cli  # pylint: disable=unused-import
+
 from buildstream import _yaml
+from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing import create_repo
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)

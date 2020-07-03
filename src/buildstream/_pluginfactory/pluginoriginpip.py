@@ -17,8 +17,7 @@
 import os
 
 from .._exceptions import PluginError
-
-from .pluginorigin import PluginType, PluginOrigin, PluginOriginType
+from .pluginorigin import PluginOrigin, PluginOriginType, PluginType
 
 
 # PluginOriginPip

@@ -25,16 +25,14 @@
 import os
 import re
 import shutil
+from configparser import RawConfigParser
 from io import StringIO
 from tempfile import TemporaryFile
 
-from configparser import RawConfigParser
-
-from .source import Source, SourceError, SourceFetcher
-from .types import CoreWarnings
 from . import utils
-from .types import FastEnum
-from .utils import move_atomic, DirectoryExistsError
+from .source import Source, SourceError, SourceFetcher
+from .types import CoreWarnings, FastEnum
+from .utils import DirectoryExistsError, move_atomic
 
 GIT_MODULES = ".gitmodules"
 EXACT_TAG_PATTERN = r"(?P<tag>.*)-0-g(?P<commit>.*)"

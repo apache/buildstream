@@ -16,10 +16,11 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+import curses
 import os
 import sys
-import curses
 from collections import OrderedDict
+
 import click
 
 # Import a widget internal for formatting time codes

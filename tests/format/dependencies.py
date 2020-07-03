@@ -2,6 +2,7 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
 from buildstream.exceptions import ErrorDomain, LoadErrorReason

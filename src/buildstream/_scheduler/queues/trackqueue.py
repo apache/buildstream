@@ -20,11 +20,10 @@
 
 # BuildStream toplevel imports
 from ...plugin import Plugin
-
+from ..jobs import JobStatus
+from ..resources import ResourceType
 # Local imports
 from . import Queue, QueueStatus
-from ..resources import ResourceType
-from ..jobs import JobStatus
 
 
 # A queue which tracks sources

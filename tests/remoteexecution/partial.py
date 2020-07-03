@@ -2,6 +2,7 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
 from buildstream.exceptions import ErrorDomain
@@ -9,7 +10,6 @@ from buildstream.testing import cli_remote_execution as cli  # pylint: disable=u
 from buildstream.testing.integration import assert_contains
 
 from tests.testutils.artifactshare import create_artifact_share
-
 
 pytestmark = pytest.mark.remoteexecution
 

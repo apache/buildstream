@@ -4,18 +4,20 @@
 import os
 import shutil
 import stat
+
 import pytest
-from buildstream import utils, _yaml
+
+from buildstream import _yaml, utils
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.testing import create_repo
+
 from tests.testutils import (
+    assert_not_shared,
+    assert_shared,
     create_artifact_share,
     create_split_share,
     generate_junction,
-    assert_shared,
-    assert_not_shared,
 )
-
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)

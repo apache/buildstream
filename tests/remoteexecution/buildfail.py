@@ -19,10 +19,11 @@
 # pylint: disable=redefined-outer-name
 
 import os
+
 import pytest
 
-from buildstream.exceptions import ErrorDomain
 from buildstream import _yaml
+from buildstream.exceptions import ErrorDomain
 from buildstream.testing import cli_remote_execution as cli  # pylint: disable=unused-import
 
 pytestmark = pytest.mark.remoteexecution

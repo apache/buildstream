@@ -1,14 +1,14 @@
-from contextlib import contextmanager
 import os
+from contextlib import contextmanager
+
 import pytest
 
-from buildstream.exceptions import LoadErrorReason
 from buildstream._exceptions import LoadError
-from buildstream._project import Project
 from buildstream._loader import MetaElement
+from buildstream._project import Project
+from buildstream.exceptions import LoadErrorReason
 
 from tests.testutils import dummy_context
-
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "loader",)
 

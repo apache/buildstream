@@ -3,16 +3,18 @@
 # source: google/api/annotations.proto
 
 from google.protobuf import descriptor as _descriptor
+from google.protobuf import descriptor_pb2 as google_dot_protobuf_dot_descriptor__pb2
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+
+from buildstream._protos.google.api import http_pb2 as google_dot_api_dot_http__pb2
+
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
 
 
-from buildstream._protos.google.api import http_pb2 as google_dot_api_dot_http__pb2
-from google.protobuf import descriptor_pb2 as google_dot_protobuf_dot_descriptor__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
