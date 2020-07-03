@@ -218,28 +218,23 @@ cdef class Variables:
     cpdef str _subst(self, ScalarNode node):
         cdef Value value = Value()
         cdef Value iter_value
-        cdef ObjectArray *dependencies
-        cdef Py_ssize_t idx = 0
-        cdef str dep_name
-        cdef str resolve_value
+        cdef str resolved_value
+        cdef ValuePart *part
 
         cdef ObjectArray values
         object_array_init(&(values), -1)
 
         value.init(node)
-        dependencies = value.dependencies()
-        while idx < dependencies.length:
-            dep_name = <str> dependencies.array[idx]
-            iter_value = self._do_resolve(dep_name, node)
-
-            object_array_append(&(values), <PyObject *>iter_value)
-
-            idx += 1
+        part = value._value_class.parts
+        while part:
+            if part.is_variable:
+                iter_value = self._do_resolve(<str> part.text, node)
+                object_array_append(&(values), <PyObject *>iter_value)
+            part = part.next_part
 
         resolved_value = value.resolve(&values, 0)
 
         object_array_free(&(values))
-
         return resolved_value
 
     # _expand()
@@ -292,11 +287,7 @@ cdef class Variables:
         cdef ResolutionStep step
         cdef ResolutionStep new_step
         cdef ResolutionStep this_step
-
         cdef Value iter_value
-        cdef str iter_name
-
-        cdef ObjectArray *iter_value_deps
         cdef Py_ssize_t idx = 0
 
         # We'll be collecting the values to resolve at the end in here
@@ -309,12 +300,13 @@ cdef class Variables:
         # Each iteration processes a ResolutionStep object and has the possibility
         # to enque more ResolutionStep objects as a result.
         #
-        cdef ObjectArray initial_deps
-        object_array_init(&(initial_deps), 1)
-        object_array_append(&(initial_deps), <PyObject *>name)
+        cdef ValuePart initial_part
+        initial_part.text = <PyObject *>name
+        initial_part.is_variable = True
+        initial_part.next_part = NULL
 
         step = ResolutionStep()
-        step.init(None, &(initial_deps), None)
+        step.init(None, &initial_part, None)
 
         while step:
             # Keep a hold of the current overall step
@@ -324,11 +316,13 @@ cdef class Variables:
             # Check for circular dependencies
             this_step.check_circular(self._values)
 
-            idx = 0
-            while idx < this_step.varnames.length:
-                iter_name = <str> this_step.varnames.array[idx]
-                iter_value = self._get_checked_value(iter_name, this_step.referee, pnode)
-                idx += 1
+            part = this_step.parts
+            while part:
+                if not part.is_variable:
+                    part = part.next_part
+                    continue
+
+                iter_value = self._get_checked_value(<str> part.text, this_step.referee, pnode)
 
                 # Queue up this value.
                 #
@@ -339,14 +333,18 @@ cdef class Variables:
                 # Queue up the values dependencies.
                 #
                 # These will be NULL if this value has previously been resolved.
-                iter_value_deps = iter_value.dependencies()
-                if iter_value_deps:
-                    new_step = ResolutionStep()
-                    new_step.init(iter_name, iter_value_deps, this_step)
+                if iter_value._resolved is None:
+                    iter_value_parts = iter_value._value_class.parts
+                    if iter_value_parts:
+                        new_step = ResolutionStep()
+                        new_step.init(<str> part.text, iter_value_parts, this_step)
 
-                    # Link it to the end of the stack
-                    new_step.prev = step
-                    step = new_step
+                        # Link it to the end of the stack
+                        new_step.prev = step
+                        step = new_step
+
+                # Next part of this variable
+                part = part.next_part
 
         # We've now constructed the dependencies queue such that
         # later dependencies are on the right, we can now safely peddle
@@ -361,7 +359,6 @@ cdef class Variables:
 
         # Cleanup
         #
-        object_array_free(&(initial_deps))
         object_array_free(&(values))
 
         return iter_value
@@ -423,7 +420,7 @@ cdef class ResolutionStep:
     cdef str referee
     cdef ResolutionStep parent
     cdef ResolutionStep prev
-    cdef ObjectArray *varnames
+    cdef ValuePart *parts
 
     # init()
     #
@@ -431,12 +428,12 @@ cdef class ResolutionStep:
     #
     # Args:
     #    referee (str): The name of the referring variable
-    #    varnames (set): A set of variable names which referee refers to.
+    #    parts (ValuePart *): A link list of ValueParts which `referee` refers to
     #    parent (ResolutionStep): The parent ResolutionStep
     #
-    cdef init(self, str referee, ObjectArray *varnames, ResolutionStep parent):
+    cdef init(self, str referee, ValuePart *parts, ResolutionStep parent):
         self.referee = referee
-        self.varnames = varnames
+        self.parts = parts
         self.parent = parent
         self.prev = None
 
@@ -556,20 +553,6 @@ cdef class Value:
 
         return self._resolved
 
-    # dependencies()
-    #
-    # Returns the array of dependency variable names
-    #
-    # Returns:
-    #    (ObjectArray *): The array of variable names, or NULL
-    #
-    cdef ObjectArray *dependencies(self):
-        if self._resolved is None:
-            return &(self._value_class.varnames)
-
-        # If we're already resolved, we don't have any dependencies anymore
-        return NULL
-
     # _load_value_class()
     #
     # Load the ValueClass for this Value, possibly reusing
@@ -627,7 +610,6 @@ cdef class ValueClass:
     # Public
     #
     cdef ValuePart *parts
-    cdef ObjectArray varnames
 
     # __dealloc__()
     #
@@ -635,7 +617,6 @@ cdef class ValueClass:
     #
     def __dealloc__(self):
         free_value_parts(self.parts)
-        object_array_free(&(self.varnames))
 
     # init():
     #
@@ -678,7 +659,6 @@ cdef class ValueClass:
         cdef object split_object
         cdef str split
         cdef Py_ssize_t idx = 0
-        cdef Py_ssize_t n_variables = 0
         cdef int is_variable
 
         # Adding parts
@@ -697,7 +677,6 @@ cdef class ValueClass:
                 if (idx % 2) == 0:
                     is_variable = False
                 else:
-                    n_variables += 1
                     is_variable = True
 
                 part = new_value_part(split, is_variable)
@@ -708,15 +687,6 @@ cdef class ValueClass:
                 last_part = part
 
             idx += 1
-
-        # Initialize the variables array
-        #
-        object_array_init(&(self.varnames), n_variables)
-        part = self.parts
-        while part:
-            if part.is_variable:
-                object_array_append(&(self.varnames), part.text)
-            part = part.next_part
 
 # ValueIterator()
 #
