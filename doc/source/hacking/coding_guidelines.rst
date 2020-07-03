@@ -675,7 +675,7 @@ than the actual way in which things are done, always.
 
 Instead, if you like a certain Python feature and think the BuildStream
 codebase should use it, then propose your change on the `mailing list
-<https://mail.gnome.org/mailman/listinfo/buildstream-list>`_. Chances
+<https://lists.apache.org/list.html?dev@buildstream.apache.org>`_. Chances
 are that we will reach agreement to use your preferred approach, and
 in that case, it will be important to apply the change unilaterally
 across the entire codebase, such that we continue to have a consistent
