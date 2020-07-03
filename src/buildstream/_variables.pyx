@@ -774,7 +774,7 @@ cdef void object_array_append(ObjectArray *array, PyObject *obj):
         if not array.array:
             raise MemoryError()
 
-    Py_XINCREF(obj)
+    # Py_XINCREF(obj)
     array.array[array.length] = obj
     array.length += 1
 
@@ -787,11 +787,10 @@ cdef void object_array_append(ObjectArray *array, PyObject *obj):
 #    array (ObjectArray *): The array to free up
 #
 cdef void object_array_free(ObjectArray *array):
-    cdef Py_ssize_t idx = 0
-    while idx < array.length:
-        Py_XDECREF(array.array[idx])
-        idx += 1
-
+    #cdef Py_ssize_t idx = 0
+    #while idx < array.length:
+    #    Py_XDECREF(array.array[idx])
+    #    idx += 1
     if array._size > 0:
         PyMem_Free(array.array)
 
