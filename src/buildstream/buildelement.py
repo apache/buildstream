@@ -222,7 +222,7 @@ class BuildElement(Element):
 
         # Stage deps in the sandbox root
         with self.timed_activity("Staging dependencies", silent_nested=True):
-            self.stage_dependency_artifacts(sandbox, Scope.BUILD)
+            self.stage_dependency_artifacts(sandbox.get_virtual_directory(), Scope.BUILD)
 
         # Run any integration commands provided by the dependencies
         # once they are all staged and ready

@@ -609,7 +609,7 @@ class Element(Plugin):
 
     def stage_artifact(
         self,
-        sandbox: "Sandbox",
+        vbasedir: "Directory",
         *,
         path: str = None,
         include: Optional[List[str]] = None,
@@ -668,7 +668,6 @@ class Element(Plugin):
 
             # Hard link it into the staging area
             #
-            vbasedir = sandbox.get_virtual_directory()
             vstagedir = vbasedir if path is None else vbasedir.descend(*path.lstrip(os.sep).split(os.sep), create=True)
 
             split_filter = self.__split_filter_func(include, exclude, orphans)
@@ -681,7 +680,7 @@ class Element(Plugin):
 
     def stage_dependency_artifacts(
         self,
-        sandbox: "Sandbox",
+        vbasedir: "Directory",
         scope: Scope,
         *,
         path: str = None,
@@ -714,7 +713,7 @@ class Element(Plugin):
         files_written = {}  # type: Dict[str, List[str]]
 
         for dep in self.dependencies(scope):
-            result = dep.stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans)
+            result = dep.stage_artifact(vbasedir, path=path, include=include, exclude=exclude, orphans=orphans)
             if result.overwritten:
                 for overwrite in result.overwritten:
                     # Completely new overwrite
@@ -1286,7 +1285,7 @@ class Element(Plugin):
             else:
                 # Stage deps in the sandbox root
                 with self.timed_activity("Staging dependencies", silent_nested=True):
-                    self.stage_dependency_artifacts(sandbox, scope)
+                    self.stage_dependency_artifacts(sandbox.get_virtual_directory(), scope)
 
                 # Run any integration commands provided by the dependencies
                 # once they are all staged and ready

@@ -55,6 +55,7 @@ from .types import _KeyStrength, _PipelineSelection, _SchedulerErrorAction
 from .plugin import Plugin
 from . import utils, _yaml, _site
 from . import Scope
+from .storage._casbaseddirectory import CasBasedDirectory
 
 
 # Stream()
@@ -553,9 +554,16 @@ class Stream:
                 _PipelineSelection.NONE: Scope.NONE,
                 _PipelineSelection.ALL: Scope.ALL,
             }
-            with target._prepare_sandbox(scope=scope[selection], integrate=integrate) as sandbox:
-                # Copy or move the sandbox to the target directory
-                virdir = sandbox.get_virtual_directory()
+            if integrate:
+                with target._prepare_sandbox(scope=scope[selection], integrate=integrate) as sandbox:
+                    # Copy or move the sandbox to the target directory
+                    virdir = sandbox.get_virtual_directory()
+                    self._export_artifact(tar, location, compression, target, hardlinks, virdir)
+            else:
+                # This allows for checking out elements when they were build with a non local sandbox
+                virdir = CasBasedDirectory(target._get_context().get_cascache())
+                with target.timed_activity("Staging dependencies", silent_nested=True):
+                    target.stage_dependency_artifacts(virdir, scope[selection])
                 self._export_artifact(tar, location, compression, target, hardlinks, virdir)
         except BstError as e:
             raise StreamError(
