@@ -29,7 +29,7 @@ Patches which fix bugs should always come with a regression test.
 Adding new features
 -------------------
 Feature additions should be proposed on the `mailing list
-<https://mail.gnome.org/mailman/listinfo/buildstream-list>`_
+<https://lists.apache.org/list.html?dev@buildstream.apache.org>`_
 before being considered for inclusion. To save time and avoid any frustration,
 we strongly recommend proposing your new feature in advance of commencing work.
 

@@ -320,7 +320,7 @@ setup(
     version=versioneer.get_version(),
     cmdclass=get_cmdclass(),
     author="BuildStream Developers",
-    author_email="buildstream-list@gnome.org",
+    author_email="dev@buildstream.apache.org",
     classifiers=[
         "Environment :: Console",
         "Intended Audience :: Developers",
@@ -341,7 +341,7 @@ setup(
         "Source": "https://gitlab.com/BuildStream/buildstream",
         "Documentation": "https://docs.buildstream.build",
         "Tracker": "https://gitlab.com/BuildStream/buildstream/issues",
-        "Mailing List": "https://mail.gnome.org/mailman/listinfo/buildstream-list",
+        "Mailing List": "https://lists.apache.org/list.html?dev@buildstream.apache.org",
     },
     python_requires="~={}.{}".format(REQUIRED_PYTHON_MAJOR, REQUIRED_PYTHON_MINOR),
     package_dir={"": "src"},
