@@ -8,7 +8,7 @@
   <name xml:lang="en">BuildStream</name>
   <shortdesc xml:lang="en">Build tool for running abstract, deterministic build pipelines</shortdesc>
   <homepage rdf:resource="https://gitlab.com/BuildStream/buildstream/" />
-  <mailing-list rdf:resource="https://mail.gnome.org/mailman/listinfo/buildstream-list" />
+  <mailing-list rdf:resource="https://lists.apache.org/list.html?dev@buildstream.apache.org" />
   <download-page rdf:resource="http://download.gnome.org/sources/BuildStream/" />
   <bug-database rdf:resource="https://gitlab.com/BuildStream/buildstream/issues" />
 
