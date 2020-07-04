@@ -102,7 +102,7 @@ class Stream:
         self._notifier = self._scheduler._stream_notification_handler  # Assign the schedulers notification handler
         self._scheduler_running = False
         self._scheduler_terminated = False
-        self._scheduler_suspended = False
+        self._suspended = False
 
     # init()
     #
@@ -1070,7 +1070,7 @@ class Stream:
     #
     @property
     def suspended(self):
-        return self._scheduler_suspended
+        return self._suspended
 
     # terminated
     #
@@ -1107,7 +1107,9 @@ class Stream:
         # Send the notification to suspend jobs
         notification = Notification(NotificationType.SUSPEND)
         self._notify(notification)
+        self._suspended = True
         yield
+        self._suspended = False
         # Unsuspend jobs on context exit
         notification = Notification(NotificationType.UNSUSPEND)
         self._notify(notification)
@@ -1655,8 +1657,6 @@ class Stream:
             self._scheduler_running = not self._scheduler_running
         elif notification.notification_type == NotificationType.TERMINATED:
             self._scheduler_terminated = True
-        elif notification.notification_type == NotificationType.SUSPENDED:
-            self._scheduler_suspended = not self._scheduler_suspended
         else:
             raise StreamError("Unrecognised notification type received: {}".format(notification.notification_type))
 

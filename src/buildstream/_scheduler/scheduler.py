@@ -62,7 +62,6 @@ class NotificationType(FastEnum):
     TERMINATED = "terminated"
     SUSPEND = "suspend"
     UNSUSPEND = "unsuspend"
-    SUSPENDED = "suspended"
 
 
 # Notification()
@@ -469,7 +468,6 @@ class Scheduler:
             self._suspendtime = datetime.datetime.now()
             self.suspended = True
             # Notify that we're suspended
-            self._notify(Notification(NotificationType.SUSPENDED))
             for job in self._active_jobs:
                 job.suspend()
 
@@ -484,7 +482,6 @@ class Scheduler:
             self.suspended = False
             # Notify that we're unsuspended
             self._state.offset_start_time(datetime.datetime.now() - self._suspendtime)
-            self._notify(Notification(NotificationType.SUSPENDED))
             self._suspendtime = None
 
     # _interrupt_event():
