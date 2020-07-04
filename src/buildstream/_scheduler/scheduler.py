@@ -54,8 +54,6 @@ class SchedStatus(FastEnum):
 # to be used as a conditional for control or state handling.
 #
 class NotificationType(FastEnum):
-    INTERRUPT = "interrupt"
-    TICK = "tick"
     TERMINATE = "terminate"
     QUIT = "quit"
     SUSPEND = "suspend"
@@ -112,7 +110,7 @@ class Notification:
 #    ticker_callback: A callback call once per second
 #
 class Scheduler:
-    def __init__(self, context, start_time, state, notification_queue, notifier):
+    def __init__(self, context, start_time, state, notification_queue, interrupt_callback, ticker_callback):
 
         #
         # Public members
@@ -137,9 +135,11 @@ class Scheduler:
 
         self._sched_handle = None  # Whether a scheduling job is already scheduled or not
 
+        self._ticker_callback = ticker_callback
+        self._interrupt_callback = interrupt_callback
+
         # Bidirectional queue to send notifications back to the Scheduler's owner
         self._notification_queue = notification_queue
-        self._notifier = notifier
 
         self.resources = Resources(context.sched_builders, context.sched_fetchers, context.sched_pushers)
         self._state.register_task_retry_callback(self._failure_retry)
@@ -487,8 +487,7 @@ class Scheduler:
         if self.terminated:
             return
 
-        notification = Notification(NotificationType.INTERRUPT)
-        self._notify(notification)
+        self._interrupt_callback()
 
     # _terminate_event():
     #
@@ -541,7 +540,7 @@ class Scheduler:
 
     # Regular timeout for driving status in the UI
     def _tick(self):
-        self._notify(Notification(NotificationType.TICK))
+        self._ticker_callback()
         self.loop.call_later(1, self._tick)
 
     def _failure_retry(self, action_name, unique_id):
@@ -555,11 +554,6 @@ class Scheduler:
         element = Plugin._lookup(unique_id)
         queue._task_group.failed_tasks.remove(element._get_full_name())
         queue.enqueue([element])
-
-    def _notify(self, notification):
-        # Scheduler to Stream notifcations on right side
-        self._notification_queue.append(notification)
-        self._notifier()
 
     def _stream_notification_handler(self):
         notification = self._notification_queue.popleft()

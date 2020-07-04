@@ -94,11 +94,9 @@ class Stream:
         context.messenger.set_state(self._state)
 
         self._scheduler = Scheduler(
-            context, session_start, self._state, self._notification_queue, self._scheduler_notification_handler
+            context, session_start, self._state, self._notification_queue, interrupt_callback, ticker_callback
         )
         self._session_start_callback = session_start_callback
-        self._ticker_callback = ticker_callback
-        self._interrupt_callback = interrupt_callback
         self._notifier = self._scheduler._stream_notification_handler  # Assign the schedulers notification handler
         self._running = False
         self._terminated = False
@@ -1646,18 +1644,6 @@ class Stream:
                 self._message(MessageType.WARN, "No artifacts found for globs: {}".format(", ".join(artifact_globs)))
 
         return element_targets, artifact_refs
-
-    def _scheduler_notification_handler(self):
-        # Check the queue is there
-        assert self._notification_queue
-        notification = self._notification_queue.pop()
-
-        if notification.notification_type == NotificationType.INTERRUPT:
-            self._interrupt_callback()
-        elif notification.notification_type == NotificationType.TICK:
-            self._ticker_callback()
-        else:
-            raise StreamError("Unrecognised notification type received: {}".format(notification.notification_type))
 
     def _notify(self, notification):
         # Stream to scheduler notifcations on left side
