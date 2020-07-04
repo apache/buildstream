@@ -1658,9 +1658,7 @@ class Stream:
         assert self._notification_queue
         notification = self._notification_queue.pop()
 
-        if notification.notification_type == NotificationType.MESSAGE:
-            self._context.messenger.message(notification.message)
-        elif notification.notification_type == NotificationType.INTERRUPT:
+        if notification.notification_type == NotificationType.INTERRUPT:
             self._interrupt_callback()
         elif notification.notification_type == NotificationType.TICK:
             self._ticker_callback()
@@ -1679,7 +1677,7 @@ class Stream:
         elif notification.notification_type == NotificationType.SUSPENDED:
             self._scheduler_suspended = not self._scheduler_suspended
         else:
-            raise StreamError("Unrecognised notification type received")
+            raise StreamError("Unrecognised notification type received: {}".format(notification.notification_type))
 
     def _notify(self, notification):
         # Stream to scheduler notifcations on left side

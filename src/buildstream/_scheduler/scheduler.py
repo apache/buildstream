@@ -67,7 +67,6 @@ class NotificationType(FastEnum):
     UNSUSPEND = "unsuspend"
     SUSPENDED = "suspended"
     RETRY = "retry"
-    MESSAGE = "message"
 
 
 # Notification()
@@ -334,17 +333,6 @@ class Scheduler:
         self._notify(notification)
         self._sched()
 
-    # notify_messenger()
-    #
-    # Send message over notification queue to Messenger callback
-    #
-    # Args:
-    #    message (Message): A Message() to be sent to the frontend message
-    #                       handler, as assigned by context's messenger.
-    #
-    def notify_messenger(self, message):
-        self._notify(Notification(NotificationType.MESSAGE, message=message))
-
     #######################################################
     #                  Local Private Methods              #
     #######################################################
@@ -362,7 +350,7 @@ class Scheduler:
     #
     def _abort_on_casd_failure(self, pid, returncode):
         message = Message(MessageType.BUG, "buildbox-casd died while the pipeline was active.")
-        self._notify(Notification(NotificationType.MESSAGE, message=message))
+        self.context.messenger.message(message)
 
         self._casd_process.returncode = returncode
         self.terminate_jobs()
@@ -435,7 +423,7 @@ class Scheduler:
         # Make sure fork is allowed before starting jobs
         if not self.context.prepare_fork():
             message = Message(MessageType.BUG, "Fork is not allowed", detail="Background threads are active")
-            self._notify(Notification(NotificationType.MESSAGE, message=message))
+            self.context.messenger.message(message)
             self.terminate_jobs()
             return
 
