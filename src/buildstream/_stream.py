@@ -43,8 +43,6 @@ from ._scheduler import (
     BuildQueue,
     PullQueue,
     ArtifactPushQueue,
-    NotificationType,
-    Notification,
 )
 from .element import Element
 from ._pipeline import Pipeline
@@ -93,11 +91,8 @@ class Stream:
 
         context.messenger.set_state(self._state)
 
-        self._scheduler = Scheduler(
-            context, session_start, self._state, self._notification_queue, interrupt_callback, ticker_callback
-        )
+        self._scheduler = Scheduler(context, session_start, self._state, interrupt_callback, ticker_callback)
         self._session_start_callback = session_start_callback
-        self._notifier = self._scheduler._stream_notification_handler  # Assign the schedulers notification handler
         self._running = False
         self._terminated = False
         self._suspended = False
@@ -1083,8 +1078,7 @@ class Stream:
     # Terminate jobs
     #
     def terminate(self):
-        notification = Notification(NotificationType.TERMINATE)
-        self._notify(notification)
+        self._scheduler.terminate()
         self._terminated = True
 
     # quit()
@@ -1094,8 +1088,7 @@ class Stream:
     # of ongoing jobs
     #
     def quit(self):
-        notification = Notification(NotificationType.QUIT)
-        self._notify(notification)
+        self._scheduler.stop()
 
     # suspend()
     #
@@ -1103,15 +1096,11 @@ class Stream:
     #
     @contextmanager
     def suspend(self):
-        # Send the notification to suspend jobs
-        notification = Notification(NotificationType.SUSPEND)
-        self._notify(notification)
+        self._scheduler.suspend()
         self._suspended = True
         yield
         self._suspended = False
-        # Unsuspend jobs on context exit
-        notification = Notification(NotificationType.UNSUSPEND)
-        self._notify(notification)
+        self._scheduler.resume()
 
     #############################################################
     #                    Private Methods                        #
@@ -1644,11 +1633,6 @@ class Stream:
                 self._message(MessageType.WARN, "No artifacts found for globs: {}".format(", ".join(artifact_globs)))
 
         return element_targets, artifact_refs
-
-    def _notify(self, notification):
-        # Stream to scheduler notifcations on left side
-        self._notification_queue.appendleft(notification)
-        self._notifier()
 
 
 # _handle_compression()
