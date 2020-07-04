@@ -59,7 +59,6 @@ class NotificationType(FastEnum):
     TERMINATE = "terminate"
     QUIT = "quit"
     RUNNING = "running"
-    TERMINATED = "terminated"
     SUSPEND = "suspend"
     UNSUSPEND = "unsuspend"
 
@@ -262,7 +261,6 @@ class Scheduler:
 
         # Notify the frontend that we're terminated as it might be
         # from an interactive prompt callback or SIGTERM
-        self._notify(Notification(NotificationType.TERMINATED))
         self.loop.call_soon(self._terminate_jobs_real)
 
         # Block this until we're finished terminating jobs,
