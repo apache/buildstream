@@ -63,7 +63,6 @@ class NotificationType(FastEnum):
     SUSPEND = "suspend"
     UNSUSPEND = "unsuspend"
     SUSPENDED = "suspended"
-    RETRY = "retry"
 
 
 # Notification()
@@ -146,6 +145,7 @@ class Scheduler:
         self._notifier = notifier
 
         self.resources = Resources(context.sched_builders, context.sched_fetchers, context.sched_pushers)
+        self._state.register_task_retry_callback(self._failure_retry)
 
     # run()
     #
@@ -583,8 +583,6 @@ class Scheduler:
             self.jobs_suspended()
         elif notification.notification_type == NotificationType.UNSUSPEND:
             self.jobs_unsuspended()
-        elif notification.notification_type == NotificationType.RETRY:
-            self._failure_retry(notification.job_action, notification.element)
         else:
             # Do not raise exception once scheduler process is separated
             # as we don't want to pickle exceptions between processes

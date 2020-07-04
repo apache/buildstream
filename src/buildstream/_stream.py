@@ -1354,12 +1354,11 @@ class Stream:
     # failed task from the tasks group.
     #
     # Args:
-    #    action_name (str): The name of the action being performed
-    #    unique_id (str): A unique_id to load an Element instance
+    #    action_name: The name of the action being performed
+    #    unique_id: A unique_id to load an Element instance
     #
-    def _failure_retry(self, action_name, unique_id):
-        notification = Notification(NotificationType.RETRY, job_action=action_name, element=unique_id)
-        self._notify(notification)
+    def _failure_retry(self, action_name: str, unique_id: str) -> None:
+        self._state.retry_task(action_name, unique_id)
 
     # _run()
     #
