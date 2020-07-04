@@ -212,8 +212,8 @@ def test_push_fails_with_on_error_continue(cli, tmpdir, datafiles):
             "import-dev.bst is not cached",
             (
                 "Error while pushing. The following elements were not pushed as they are not yet cached:\n"
-                "\n"
-                "\timport-dev.bst\n"
+                + "\n"
+                + "\timport-dev.bst\n"
             ),
         ]
         for error in errors:

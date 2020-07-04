@@ -229,7 +229,7 @@ class _ByteStreamServicer(bytestream_pb2_grpc.ByteStreamServicer):
         self.logger = logging.getLogger("buildstream._cas.casserver")
 
     def Read(self, request, context):
-        self.logger.debug("Reading %s", request.resource_name)
+        self.logger.debug("Reading {}", request.resource_name)
         try:
             return self.bytestream.Read(request)
         except grpc.RpcError as err:
@@ -253,21 +253,21 @@ class _ContentAddressableStorageServicer(remote_execution_pb2_grpc.ContentAddres
         self.logger = logging.getLogger("buildstream._cas.casserver")
 
     def FindMissingBlobs(self, request, context):
-        self.logger.info("Finding '%s'", request.blob_digests)
+        self.logger.info("Finding '{}'", request.blob_digests)
         try:
             return self.cas.FindMissingBlobs(request)
         except grpc.RpcError as err:
             context.abort(err.code(), err.details())
 
     def BatchReadBlobs(self, request, context):
-        self.logger.info("Reading '%s'", request.digests)
+        self.logger.info("Reading '{}'", request.digests)
         try:
             return self.cas.BatchReadBlobs(request)
         except grpc.RpcError as err:
             context.abort(err.code(), err.details())
 
     def BatchUpdateBlobs(self, request, context):
-        self.logger.info("Updating: '%s'", [request.digest for request in request.requests])
+        self.logger.info("Updating: '{}'", [request.digest for request in request.requests])
         try:
             return self.cas.BatchUpdateBlobs(request)
         except grpc.RpcError as err:
@@ -356,7 +356,7 @@ class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
             return digest
 
     def GetReference(self, request, context):
-        self.logger.debug("'%s'", request.key)
+        self.logger.debug("'{}'", request.key)
         response = buildstream_pb2.GetReferenceResponse()
 
         try:
@@ -374,7 +374,7 @@ class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
         return response
 
     def UpdateReference(self, request, context):
-        self.logger.debug("%s -> %s", request.keys, request.digest)
+        self.logger.debug("{} -> {}", request.keys, request.digest)
         response = buildstream_pb2.UpdateReferenceResponse()
 
         if not self.enable_push:
@@ -437,7 +437,7 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
         return directory
 
     def GetArtifact(self, request, context):
-        self.logger.info("'%s'", request.cache_key)
+        self.logger.info("'{}'", request.cache_key)
         artifact_path = os.path.join(self.artifactdir, request.cache_key)
         if not os.path.exists(artifact_path):
             context.abort(grpc.StatusCode.NOT_FOUND, "Artifact proto not found")
@@ -504,7 +504,7 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
         return artifact
 
     def UpdateArtifact(self, request, context):
-        self.logger.info("'%s' -> '%s'", request.artifact, request.cache_key)
+        self.logger.info("'{}' -> '{}'", request.artifact, request.cache_key)
         artifact = request.artifact
 
         if self.update_cas:
@@ -532,10 +532,10 @@ class _ArtifactServicer(artifact_pb2_grpc.ArtifactServiceServicer):
         try:
             self.resolve_digest(digest)
         except FileNotFoundError:
-            self.logger.warning("Artifact %s specified but no files found", name)
+            self.logger.warning("Artifact {} specified but no files found", name)
             context.abort(grpc.StatusCode.FAILED_PRECONDITION, "Artifact {} specified but no files found".format(name))
         except DecodeError:
-            self.logger.warning("Artifact %s specified but directory not found", name)
+            self.logger.warning("Artifact {} specified but directory not found", name)
             context.abort(
                 grpc.StatusCode.FAILED_PRECONDITION, "Artifact {} specified but directory not found".format(name)
             )
@@ -563,7 +563,7 @@ class _SourceServicer(source_pb2_grpc.SourceServiceServicer):
         self.logger = logging.getLogger("buildstream._cas.casserver")
 
     def GetSource(self, request, context):
-        self.logger.info("'%s'", request.cache_key)
+        self.logger.info("'{}'", request.cache_key)
         try:
             source_proto = self._get_source(request.cache_key)
         except FileNotFoundError:
@@ -574,7 +574,7 @@ class _SourceServicer(source_pb2_grpc.SourceServiceServicer):
         return source_proto
 
     def UpdateSource(self, request, context):
-        self.logger.info("'%s' -> '%s'", request.source, request.cache_key)
+        self.logger.info("'{}' -> '{}'", request.source, request.cache_key)
         self._set_source(request.cache_key, request.source)
         return request.source
 

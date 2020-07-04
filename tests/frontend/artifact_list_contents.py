@@ -104,9 +104,9 @@ def test_artifact_list_exact_contents_element_long(cli, datafiles):
     assert result.exit_code == 0
     expected_output = (
         "import-bin.bst:\n"
-        "\tdrwxr-xr-x  dir    1           usr\n"
-        "\tdrwxr-xr-x  dir    1           usr/bin\n"
-        "\t-rw-r--r--  reg    107         usr/bin/hello\n\n"
+        + "\tdrwxr-xr-x  dir    1           usr\n"
+        + "\tdrwxr-xr-x  dir    1           usr/bin\n"
+        + "\t-rw-r--r--  reg    107         usr/bin/hello\n\n"
     )
 
     assert expected_output in result.output
