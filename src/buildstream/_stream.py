@@ -100,7 +100,7 @@ class Stream:
         self._ticker_callback = ticker_callback
         self._interrupt_callback = interrupt_callback
         self._notifier = self._scheduler._stream_notification_handler  # Assign the schedulers notification handler
-        self._scheduler_running = False
+        self._running = False
         self._terminated = False
         self._suspended = False
 
@@ -1062,7 +1062,7 @@ class Stream:
     #
     @property
     def running(self):
-        return self._scheduler_running
+        return self._running
 
     # suspended
     #
@@ -1377,7 +1377,9 @@ class Stream:
         if self._session_start_callback is not None:
             self._session_start_callback()
 
+        self._running = True
         status = self._scheduler.run(self.queues, self._context.get_cascache().get_casd_process_manager())
+        self._running = False
 
         if status == SchedStatus.ERROR:
             raise StreamError()
@@ -1654,8 +1656,6 @@ class Stream:
             self._interrupt_callback()
         elif notification.notification_type == NotificationType.TICK:
             self._ticker_callback()
-        elif notification.notification_type == NotificationType.RUNNING:
-            self._scheduler_running = not self._scheduler_running
         else:
             raise StreamError("Unrecognised notification type received: {}".format(notification.notification_type))
 
