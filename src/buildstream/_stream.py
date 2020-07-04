@@ -52,6 +52,9 @@ from .types import _KeyStrength, _PipelineSelection, _SchedulerErrorAction
 from .plugin import Plugin
 from . import utils, _yaml, _site
 from . import Scope
+from . import DownloadableFileSource, _GitSourceBase
+from .plugins.sources.bzr import BzrSource
+from .plugins.sources.pip import PipSource
 
 
 # Stream()
@@ -312,7 +315,6 @@ class Stream:
     def show(self, targets, *, selection=_PipelineSelection.ALL, except_targets=None, remote=None):
         """"""
 
-        #use_source_config = True
         use_source_config = True
         if remote:
             use_source_config = False
@@ -324,14 +326,24 @@ class Stream:
             use_source_config=use_source_config,
             source_remote_url=remote,
         )
-        print(len(elements))
 
         for element in elements:
-            print("oi")
-            source = element.sources()
-            for source in element:
-                print(source)
-            print("hello")
+            for source in element.sources():
+                if isinstance(source, (DownloadableFileSource, BzrSource, _GitSourceBase, PipSource)):
+                    print(source.get_url())
+                #print(source._get_source_name())
+                #print(source.get_mirror_directory())
+                #for source_fetcher in source.get_source_fetchers():
+                #    print(source_fetcher._get_alias())
+                print("")
+            #if element._get_remote_execution_specs() is None:
+            #    print("local")
+            #else:
+            #    print("remote")
+            #    print(element._get_remote_execution_specs())
+            #for source in element:
+            #    print(source)
+            #print(source)
             #element = target._get_source_element()
             #source = element
             #print(element)

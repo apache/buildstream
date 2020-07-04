@@ -68,6 +68,9 @@ class RemoteSource(DownloadableFileSource):
             )
         node.validate_keys(DownloadableFileSource.COMMON_CONFIG_KEYS + ["filename", "executable"])
 
+    #def get_url(self):
+    #    return super().get_url()
+
     def get_unique_key(self):
         return super().get_unique_key() + [self.filename, self.executable]
 

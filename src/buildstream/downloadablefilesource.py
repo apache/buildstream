@@ -114,6 +114,9 @@ class DownloadableFileSource(Source):
         self._mirror_dir = os.path.join(self.get_mirror_directory(), utils.url_directory_name(self.original_url))
         self._warn_deprecated_etag(node)
 
+    def get_url(self):
+        return self.original_url
+
     def preflight(self):
         return
 

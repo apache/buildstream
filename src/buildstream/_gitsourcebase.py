@@ -555,6 +555,9 @@ class _GitSourceBase(Source):
 
         self.mark_download_url(self.original_url)
 
+    def get_url(self):
+        return self.original_url
+
     def preflight(self):
         # Check if git is installed, get the binary at the same time
         self.host_git = utils.get_host_tool("git")

@@ -2459,6 +2459,9 @@ class Element(Plugin):
     def __use_remote_execution(self):
         return bool(self.__remote_execution_specs)
 
+    def _get_remote_execution_specs(self):
+        return self.__remote_execution_specs
+
     # __sandbox():
     #
     # A context manager to prepare a Sandbox object at the specified directory,
