@@ -45,7 +45,6 @@ from ._scheduler import (
     ArtifactPushQueue,
     NotificationType,
     Notification,
-    JobStatus,
 )
 from .element import Element
 from ._pipeline import Pipeline
@@ -1662,12 +1661,6 @@ class Stream:
             self._interrupt_callback()
         elif notification.notification_type == NotificationType.TICK:
             self._ticker_callback()
-        elif notification.notification_type == NotificationType.JOB_START:
-            self._state.add_task(notification.job_action, notification.full_name, notification.time)
-        elif notification.notification_type == NotificationType.JOB_COMPLETE:
-            self._state.remove_task(notification.job_action, notification.full_name)
-            if notification.job_status == JobStatus.FAIL:
-                self._state.fail_task(notification.job_action, notification.full_name, notification.element)
         elif notification.notification_type == NotificationType.SCHED_START_TIME:
             self._starttime = notification.time
         elif notification.notification_type == NotificationType.RUNNING:

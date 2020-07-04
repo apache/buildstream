@@ -55,8 +55,6 @@ class SchedStatus(FastEnum):
 #
 class NotificationType(FastEnum):
     INTERRUPT = "interrupt"
-    JOB_START = "job_start"
-    JOB_COMPLETE = "job_complete"
     TICK = "tick"
     TERMINATE = "terminate"
     QUIT = "quit"
@@ -311,7 +309,6 @@ class Scheduler:
         # Remove from the active jobs list
         self._active_jobs.remove(job)
 
-        element_info = None
         if status == JobStatus.FAIL:
             # If it's an elementjob, we want to compare against the failure messages
             # and send the unique_id and display key tuple of the Element. This can then
@@ -322,15 +319,10 @@ class Scheduler:
             else:
                 element_info = None
 
-        # Now check for more jobs
-        notification = Notification(
-            NotificationType.JOB_COMPLETE,
-            full_name=job.name,
-            job_action=job.action_name,
-            job_status=status,
-            element=element_info,
-        )
-        self._notify(notification)
+            self._state.fail_task(job.action_name, job.name, element_info)
+
+        self._state.remove_task(job.action_name, job.name)
+
         self._sched()
 
     #######################################################
@@ -372,13 +364,7 @@ class Scheduler:
         self._active_jobs.append(job)
         job.start()
 
-        notification = Notification(
-            NotificationType.JOB_START,
-            full_name=job.name,
-            job_action=job.action_name,
-            time=self._state.elapsed_time(start_time=self._starttime),
-        )
-        self._notify(notification)
+        self._state.add_task(job.action_name, job.name, self._state.elapsed_time(start_time=self._starttime))
 
     # _sched_queue_jobs()
     #
