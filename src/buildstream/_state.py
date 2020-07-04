@@ -354,6 +354,20 @@ class State:
             start_time = self._session_start or time_now
         return time_now - start_time
 
+    # offset_start_time()
+    #
+    # Update the 'start' time of the application by a given offset
+    #
+    # This allows modifying the time spent building when BuildStream
+    # gets paused then restarted, to give an accurate view of the real
+    # time spend building.
+    #
+    # Args:
+    #   offset: the offset to add to the start time
+    #
+    def offset_start_time(self, offset: datetime.timedelta) -> None:
+        self._session_start += offset
+
 
 # _Task
 #

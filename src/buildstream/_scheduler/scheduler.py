@@ -58,7 +58,6 @@ class NotificationType(FastEnum):
     TICK = "tick"
     TERMINATE = "terminate"
     QUIT = "quit"
-    SCHED_START_TIME = "sched_start_time"
     RUNNING = "running"
     TERMINATED = "terminated"
     SUSPEND = "suspend"
@@ -135,7 +134,6 @@ class Scheduler:
         # Private members
         #
         self._active_jobs = []  # Jobs currently being run in the scheduler
-        self._starttime = start_time  # Initial application start time
         self._suspendtime = None  # Session time compensation for suspended state
         self._queue_jobs = True  # Whether we should continue to queue jobs
         self._state = state
@@ -364,7 +362,7 @@ class Scheduler:
         self._active_jobs.append(job)
         job.start()
 
-        self._state.add_task(job.action_name, job.name, self._state.elapsed_time(start_time=self._starttime))
+        self._state.add_task(job.action_name, job.name, self._state.elapsed_time())
 
     # _sched_queue_jobs()
     #
@@ -485,9 +483,8 @@ class Scheduler:
                 job.resume()
             self.suspended = False
             # Notify that we're unsuspended
+            self._state.offset_start_time(datetime.datetime.now() - self._suspendtime)
             self._notify(Notification(NotificationType.SUSPENDED))
-            self._starttime += datetime.datetime.now() - self._suspendtime
-            self._notify(Notification(NotificationType.SCHED_START_TIME, time=self._starttime))
             self._suspendtime = None
 
     # _interrupt_event():

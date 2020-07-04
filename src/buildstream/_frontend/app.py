@@ -311,7 +311,7 @@ class App:
 
                 # Print a nice summary if this is a session
                 if session_name:
-                    elapsed = self.stream.elapsed_time
+                    elapsed = self._state.elapsed_time()
 
                     if isinstance(e, StreamError) and e.terminated:  # pylint: disable=no-member
                         self._message(MessageType.WARN, session_name + " Terminated", elapsed=elapsed)
@@ -339,7 +339,7 @@ class App:
             else:
                 # No exceptions occurred, print session time and summary
                 if session_name:
-                    self._message(MessageType.SUCCESS, session_name, elapsed=self.stream.elapsed_time)
+                    self._message(MessageType.SUCCESS, session_name, elapsed=self._state.elapsed_time())
                     if self._started:
                         self._print_summary()
 

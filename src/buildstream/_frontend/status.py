@@ -109,7 +109,7 @@ class Status:
         if not self._term_caps:
             return
 
-        elapsed = self._stream.elapsed_time
+        elapsed = self._state.elapsed_time()
 
         self.clear()
         self._check_term_width()

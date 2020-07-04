@@ -90,7 +90,6 @@ class Stream:
         self._pipeline = None
         self._state = State(session_start)  # Owned by Stream, used by Core to set state
         self._notification_queue = deque()
-        self._starttime = session_start  # Synchronised with Scheduler's relative start time
 
         context.messenger.set_state(self._state)
 
@@ -1081,14 +1080,6 @@ class Stream:
     def terminated(self):
         return self._scheduler_terminated
 
-    # elapsed_time
-    #
-    # Elapsed time since the session start
-    #
-    @property
-    def elapsed_time(self):
-        return self._state.elapsed_time(start_time=self._starttime)
-
     # terminate()
     #
     # Terminate jobs
@@ -1661,8 +1652,6 @@ class Stream:
             self._interrupt_callback()
         elif notification.notification_type == NotificationType.TICK:
             self._ticker_callback()
-        elif notification.notification_type == NotificationType.SCHED_START_TIME:
-            self._starttime = notification.time
         elif notification.notification_type == NotificationType.RUNNING:
             self._scheduler_running = not self._scheduler_running
         elif notification.notification_type == NotificationType.TERMINATED:
