@@ -516,8 +516,7 @@ class App:
     # Local message propagator
     #
     def _message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        self.context.messenger.message(Message(message_type, message, **args))
+        self.context.messenger.message(Message(message_type, message, **kwargs))
 
     # Exception handler
     #
