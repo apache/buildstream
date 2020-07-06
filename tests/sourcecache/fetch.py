@@ -35,15 +35,6 @@ from tests.testutils import create_artifact_share, dummy_context
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
 
-def move_local_cas_to_remote_source_share(local, remote):
-    shutil.rmtree(os.path.join(remote, "repo", "cas"))
-    shutil.rmtree(os.path.join(remote, "repo", "source_protos"))
-    shutil.move(os.path.join(local, "source_protos"), os.path.join(remote, "repo"))
-    shutil.move(os.path.join(local, "cas"), os.path.join(remote, "repo"))
-    shutil.rmtree(os.path.join(local, "sources"))
-    shutil.rmtree(os.path.join(local, "artifacts"))
-
-
 def create_test_element(tmpdir, project_dir):
     repo = create_repo("git", str(tmpdir))
     ref = repo.create(os.path.join(project_dir, "files"))
@@ -98,11 +89,17 @@ def test_source_fetch(cli, tmpdir, datafiles):
             sourcecache = context.sourcecache
             digest = sourcecache.export(source)._get_digest()
 
-            move_local_cas_to_remote_source_share(str(cache_dir), share.directory)
+            # Push the source to the remote
+            res = cli.run(project=project_dir, args=["source", "push", "--remote", share.repo, element_name])
+            res.assert_success()
 
-            # check the share has the object
+            # check the share has the proto and the object
+            assert share.get_source_proto(source._get_source_name())
             assert share.has_object(digest)
 
+            # Delete the source locally
+            shutil.rmtree(os.path.join(str(cache_dir), "sources"))
+            shutil.rmtree(os.path.join(str(cache_dir), "cas"))
             state = cli.get_element_state(project_dir, element_name)
             assert state == "fetch needed"
 
@@ -110,6 +107,12 @@ def test_source_fetch(cli, tmpdir, datafiles):
             res = cli.run(project=project_dir, args=["source", "fetch", element_name])
             res.assert_success()
             assert "Pulled source" in res.stderr
+
+        with context_with_source_cache(cli, cache_dir, share, tmpdir) as context:
+            project = Project(project_dir, context)
+            project.ensure_fully_loaded()
+
+            element = project.load_elements([element_name])[0]
 
             # check that we have the source in the cas now and it's not fetched
             assert element._has_all_sources_in_source_cache()
@@ -206,13 +209,18 @@ def test_source_pull_partial_fallback_fetch(cli, tmpdir, datafiles):
             sourcecache = context.sourcecache
             digest = sourcecache.export(source)._get_digest()
 
-            move_local_cas_to_remote_source_share(str(cache_dir), share.directory)
+            # Push the source to the remote
+            res = cli.run(project=project_dir, args=["source", "push", "--remote", share.repo, element_name])
+            res.assert_success()
 
             # Remove the cas content, only keep the proto and such around
             shutil.rmtree(os.path.join(str(tmpdir), "sourceshare", "repo", "cas", "objects"))
             # check the share doesn't have the object
             assert not share.has_object(digest)
 
+            # Delete the source locally
+            shutil.rmtree(os.path.join(str(cache_dir), "sources"))
+            shutil.rmtree(os.path.join(str(cache_dir), "cas"))
             state = cli.get_element_state(project_dir, element_name)
             assert state == "fetch needed"
 

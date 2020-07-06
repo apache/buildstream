@@ -1,0 +1,31 @@
+.TH "BST SOURCE PUSH" "1" "2020-07-01" "" "bst source push Manual"
+.SH NAME
+bst\-source\-push \- Push sources in a pipeline
+.SH SYNOPSIS
+.B bst source push
+[OPTIONS] [ELEMENTS]...
+.SH DESCRIPTION
+Push sources required to build the pipeline
+.PP
+Specifying no elements will result in pushing the sources of the default
+targets of the project. If no default targets are configured, sources of
+all project elements will be pushed.
+.PP
+When this command is executed from a workspace directory, the default
+is to push the sources of the workspace element.
+.PP
+Specify `--deps` to control which sources to fetch:
+.PP
+
+    none:  No dependencies, just the element itself
+    plan:  Only dependencies required for the build plan
+    run:   Runtime dependencies, including the element itself
+    build: Build time dependencies, excluding the element itself
+    all:   All dependencies
+.SH OPTIONS
+.TP
+\fB\-d,\fP \-\-deps [none|plan|build|run|all]
+The dependencies to push  [default: none]
+.TP
+\fB\-r,\fP \-\-remote TEXT
+The URL of the remote source cache (defaults to the first configured cache)
