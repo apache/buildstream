@@ -112,6 +112,7 @@ class State:
         self._task_changed_cbs = []
         self._task_groups_changed_cbs = []
         self._task_failed_cbs = []
+        self._task_retry_cbs = []
 
     #####################################
     # Frontend-facing notification APIs #
@@ -226,6 +227,23 @@ class State:
     def unregister_task_failed_callback(self, callback):
         self._task_failed_cbs.remove(callback)
 
+    # register_task_retry_callback()
+    #
+    # Registers a callback to be notified when a task is to be retried
+    #
+    # Args:
+    #    callback (function): The callback to be notified
+    #
+    # Callback Args:
+    #    action_name (str): The name of the action, e.g. 'build'
+    #    full_name (str): The full name of the task, distinguishing
+    #                     it from other tasks with the same action name
+    #                     e.g. an element's name.
+    #    element_job (bool): (optionally) If an element job failed.
+    #
+    def register_task_retry_callback(self, callback):
+        self._task_retry_cbs.append(callback)
+
     ##############################################
     # Core-facing APIs for driving notifications #
     ##############################################
@@ -336,6 +354,20 @@ class State:
         for cb in self._task_failed_cbs:
             cb(action_name, full_name, element)
 
+    # retry_task()
+    #
+    # Notify all registered callbacks that a task is to be retried.
+    #
+    # This is a core-facing API and should not be called from the frontend
+    #
+    # Args:
+    #    action_name: The name of the action, e.g. 'build'
+    #    unique_id: The unique id of the plugin instance to look up
+    #
+    def retry_task(self, action_name: str, unique_id: str) -> None:
+        for cb in self._task_retry_cbs:
+            cb(action_name, unique_id)
+
     # elapsed_time()
     #
     # Fetches the current session elapsed time
@@ -353,6 +385,20 @@ class State:
         if start_time is None:
             start_time = self._session_start or time_now
         return time_now - start_time
+
+    # offset_start_time()
+    #
+    # Update the 'start' time of the application by a given offset
+    #
+    # This allows modifying the time spent building when BuildStream
+    # gets paused then restarted, to give an accurate view of the real
+    # time spend building.
+    #
+    # Args:
+    #   offset: the offset to add to the start time
+    #
+    def offset_start_time(self, offset: datetime.timedelta) -> None:
+        self._session_start += offset
 
 
 # _Task

@@ -352,7 +352,7 @@ class Queue:
     # a message for the element they are processing
     def _message(self, element, message_type, brief, **kwargs):
         message = Message(message_type, brief, element_name=element._get_full_name(), **kwargs)
-        self._scheduler.notify_messenger(message)
+        self._scheduler.context.messenger.message(message)
 
     def _element_log_path(self, element):
         project = element._get_project()
