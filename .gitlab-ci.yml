@@ -332,7 +332,7 @@ docs:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   variables:
     FD_SDK_REF: bst2
-    BST_EXT_REF: master
+    BST_EXT_REF: dwinship/flatpak-image-unique-key-no-configparser
   before_script:
   - |
     mkdir -p "${HOME}/.config"
