@@ -132,6 +132,44 @@ def test_caching_junction_elements(cli, tmpdir, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_caching_junction_elements_no_parent_cache(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "parent")
+    base_project = os.path.join(str(project), "base")
+
+    # Load the junction element
+    junction_element = os.path.join(project, "base.bst")
+    junction_data = _yaml.roundtrip_load(junction_element)
+
+    # Configure to push everything to the junction's remote
+    junction_data["config"] = {"cache-junction-elements": True}
+    _yaml.roundtrip_dump(junction_data, junction_element)
+
+    with create_artifact_share(os.path.join(str(tmpdir), "artifactshare-base")) as base_share:
+
+        # First build it without the artifact cache configured
+        result = cli.run(project=project, args=["build", "target.bst"])
+        assert result.exit_code == 0
+
+        # Assert that we are now cached locally
+        state = cli.get_element_state(project, "target.bst")
+        assert state == "cached"
+        state = cli.get_element_state(base_project, "base-element.bst")
+        assert state == "cached"
+
+        project_set_artifacts(base_project, base_share.repo)
+
+        # Push to the remote(s))
+        result = cli.run(project=project, args=["artifact", "push", "--deps", "all", "target.bst"])
+        assert result.exit_code == 0
+
+        # And finally assert that the artifacts are in the right shares
+        # The junction project's cache should contain only junction elements
+        assert_not_shared(cli, base_share, project, "target.bst", project_name="parent")
+        assert_not_shared(cli, base_share, project, "app.bst", project_name="parent")
+        assert_shared(cli, base_share, base_project, "base-element.bst", project_name="base")
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_ignore_junction_remotes(cli, tmpdir, datafiles):
     project = os.path.join(str(datafiles), "parent")
     base_project = os.path.join(str(project), "base")
