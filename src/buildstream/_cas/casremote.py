@@ -15,6 +15,8 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import grpc
+
 from .._protos.google.rpc import code_pb2
 from .._protos.build.buildgrid import local_cas_pb2
 
@@ -54,17 +56,25 @@ class CASRemote(BaseRemote):
     #
     def _configure_protocols(self):
         local_cas = self.cascache.get_local_cas()
-        request = local_cas_pb2.GetInstanceNameForRemoteRequest()
-        request.url = self.spec.url
+        request = local_cas_pb2.GetInstanceNameForRemotesRequest()
+        cas_endpoint = request.content_addressable_storage
+        cas_endpoint.url = self.spec.url
         if self.spec.instance_name:
-            request.instance_name = self.spec.instance_name
+            cas_endpoint.instance_name = self.spec.instance_name
         if self.server_cert:
-            request.server_cert = self.server_cert
+            cas_endpoint.server_cert = self.server_cert
         if self.client_key:
-            request.client_key = self.client_key
+            cas_endpoint.client_key = self.client_key
         if self.client_cert:
-            request.client_cert = self.client_cert
-        response = local_cas.GetInstanceNameForRemote(request)
+            cas_endpoint.client_cert = self.client_cert
+        try:
+            response = local_cas.GetInstanceNameForRemotes(request)
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNIMPLEMENTED:
+                raise CASRemoteError(
+                    "Unsupported buildbox-casd version: GetInstanceNameForRemotes unimplemented"
+                ) from e
+            raise
         self.local_cas_instance_name = response.instance_name
 
     # push_message():
