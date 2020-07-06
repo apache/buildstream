@@ -105,7 +105,7 @@ def create_server(repo, *, enable_push, quota, index_only, log_level=LogLevel.Le
     logger = logging.getLogger("buildstream._cas.casserver")
     logger.setLevel(LogLevel.get_logging_equivalent(log_level))
     handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(logging.Formatter(fmt="%(levelname)s: %(funcName)s: %(message)s"))
+    handler.setFormatter(logging.Formatter(fmt="{levelname} {funcName} {message}", style="{"))
     logger.addHandler(handler)
 
     casd_manager = CASDProcessManager(
