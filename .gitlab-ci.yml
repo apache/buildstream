@@ -331,7 +331,7 @@ docs:
   stage: test
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   variables:
-    FD_SDK_REF: bst2
+    FD_SDK_REF: dwinship/rebase-bst2/update-plugins-to-bst-1.93.4
     BST_EXT_REF: dwinship/flatpak-image-unique-key-no-configparser
   before_script:
   - |
