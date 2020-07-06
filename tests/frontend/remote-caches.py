@@ -69,12 +69,34 @@ def test_source_artifact_caches(cli, tmpdir, datafiles):
         assert "Pulled artifact " in res.stderr
         assert "Pulled source " not in res.stderr
 
-        # remove the artifact from the repo and check it pulls sources, builds
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_source_cache_empty_artifact_cache(cli, tmpdir, datafiles):
+    cachedir = os.path.join(str(tmpdir), "cache")
+    project_dir = str(datafiles)
+    element_path = os.path.join(project_dir, "elements")
+
+    with create_artifact_share(os.path.join(str(tmpdir), "share")) as share:
+        user_config_file = str(tmpdir.join("buildstream.conf"))
+        user_config = {
+            "scheduler": {"pushers": 1},
+            "source-caches": {"url": share.repo, "push": True,},
+            "artifacts": {"url": share.repo, "push": True,},
+            "cachedir": cachedir,
+        }
+        _yaml.roundtrip_dump(user_config, file=user_config_file)
+        cli.configure(user_config)
+
+        create_element_size("repo.bst", project_dir, element_path, [], 10000)
+
+        res = cli.run(project=project_dir, args=["source", "push", "repo.bst"])
+        res.assert_success()
+        assert "Pushed source " in res.stderr
+
+        # delete local sources and check it pulls sources, builds
         # and then pushes the artifacts
         shutil.rmtree(os.path.join(cachedir, "cas"))
-        shutil.rmtree(os.path.join(cachedir, "artifacts"))
-        print(os.listdir(os.path.join(share.repodir, "artifacts", "refs")))
-        shutil.rmtree(os.path.join(share.repodir, "artifacts", "refs", "test"))
+        shutil.rmtree(os.path.join(cachedir, "sources"))
 
         res = cli.run(project=project_dir, args=["build", "repo.bst"])
         res.assert_success()

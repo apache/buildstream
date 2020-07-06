@@ -120,7 +120,7 @@ class ArtifactShare(BaseArtifactShare):
         os.makedirs(self.repodir)
         self.artifactdir = os.path.join(self.repodir, "artifacts", "refs")
         os.makedirs(self.artifactdir)
-        self.sourcedir = os.path.join(self.repodir, "source_protos", "refs")
+        self.sourcedir = os.path.join(self.repodir, "source_protos")
         os.makedirs(self.sourcedir)
 
         logdir = os.path.join(self.directory, "logs") if casd else None

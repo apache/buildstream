@@ -144,6 +144,13 @@ Source subcommands
 
 ----
 
+.. _invoking_source_push:
+
+.. click:: buildstream._frontend.cli:source_push
+   :prog: bst source push
+
+----
+
 .. _invoking_source_checkout:
 
 .. click:: buildstream._frontend.cli:source_checkout

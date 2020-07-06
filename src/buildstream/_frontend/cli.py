@@ -820,6 +820,58 @@ def source_fetch(app, elements, deps, except_, remote):
 
 
 ##################################################################
+#                      Source Push Command                       #
+##################################################################
+@source.command(name="push", short_help="Push sources in a pipeline")
+@click.option(
+    "--deps",
+    "-d",
+    default=_PipelineSelection.NONE,
+    show_default=True,
+    type=FastEnumType(
+        _PipelineSelection,
+        [
+            _PipelineSelection.NONE,
+            _PipelineSelection.PLAN,
+            _PipelineSelection.BUILD,
+            _PipelineSelection.RUN,
+            _PipelineSelection.ALL,
+        ],
+    ),
+    help="The dependencies to push",
+)
+@click.option(
+    "--remote", "-r", default=None, help="The URL of the remote source cache (defaults to the first configured cache)"
+)
+@click.argument("elements", nargs=-1, type=click.Path(readable=False))
+@click.pass_obj
+def source_push(app, elements, deps, remote):
+    """Push sources required to build the pipeline
+
+    Specifying no elements will result in pushing the sources of the default
+    targets of the project. If no default targets are configured, sources of
+    all project elements will be pushed.
+
+    When this command is executed from a workspace directory, the default
+    is to push the sources of the workspace element.
+
+    Specify `--deps` to control which sources to fetch:
+
+    \b
+        none:  No dependencies, just the element itself
+        plan:  Only dependencies required for the build plan
+        run:   Runtime dependencies, including the element itself
+        build: Build time dependencies, excluding the element itself
+        all:   All dependencies
+    """
+    with app.initialized(session_name="Push"):
+        if not elements:
+            elements = app.project.get_default_targets()
+
+        app.stream.source_push(elements, selection=deps, remote=remote)
+
+
+##################################################################
 #                     Source Track Command                       #
 ##################################################################
 @source.command(name="track", short_help="Track new source references")
