@@ -128,6 +128,7 @@ class Job:
         # Private members
         #
         self._scheduler = scheduler  # The scheduler
+        self._messenger = self._scheduler.context.messenger
         self._pipe_r = None  # The read end of a pipe for message passing
         self._process = None  # The Process object
         self._listening = False  # Whether the parent is currently listening
@@ -163,7 +164,7 @@ class Job:
 
         child_job = self.create_child_job(  # pylint: disable=assignment-from-no-return
             self.action_name,
-            self._scheduler.context.messenger,
+            self._messenger,
             self._scheduler.context.logdir,
             self._logfile,
             self._max_retries,
@@ -314,7 +315,7 @@ class Job:
         if element_key is None:
             element_key = self._message_element_key
         message = Message(message_type, message, element_name=element_name, element_key=element_key, **kwargs)
-        self._scheduler.notify_messenger(message)
+        self._messenger.message(message)
 
     # get_element()
     #
@@ -470,7 +471,7 @@ class Job:
         if envelope.message_type is _MessageType.LOG_MESSAGE:
             # Propagate received messages from children
             # back through the context.
-            self._scheduler.notify_messenger(envelope.message)
+            self._messenger.message(envelope.message)
         elif envelope.message_type is _MessageType.ERROR:
             # For regression tests only, save the last error domain / reason
             # reported from a child task in the main process, this global state
