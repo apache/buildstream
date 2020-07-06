@@ -35,7 +35,7 @@ import contextlib
 from contextlib import contextmanager
 from typing import Dict, Generator, List, Optional, TYPE_CHECKING
 
-from .._exceptions import ImplError, BstError, SandboxError
+from .._exceptions import ImplError, SandboxError
 from .._message import Message, MessageType
 from ..storage.directory import Directory
 from ..storage._casbaseddirectory import CasBasedDirectory
