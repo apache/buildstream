@@ -28,6 +28,7 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Free, PyMem_Realloc
 from cpython.object cimport PyObject
 from cpython.ref cimport Py_XINCREF, Py_XDECREF
 
+from ._profile import Topics, PROFILER
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
 from .node cimport MappingNode, Node, ScalarNode, SequenceNode, ProvenanceInformation
@@ -57,8 +58,11 @@ ctypedef struct ObjectArray:
 cdef class Variables:
 
     cdef dict _values  # The Value objects
+    cdef MappingNode _origin
 
     def __init__(self, MappingNode node):
+
+        self._origin = node
 
         # Special case, if notparallel is specified in the variables for this
         # element, then override max-jobs to be 1.
@@ -173,9 +177,10 @@ cdef class Variables:
     cpdef check(self):
         cdef object key
 
-        # Resolve all variables.
-        for key in self._values.keys():
-            self._resolve(<str> key, None)
+        with PROFILER.profile(Topics.VARIABLES_CHECK, id(self._origin)):
+            # Resolve all variables.
+            for key in self._values.keys():
+                self._resolve(<str> key, None)
 
     # _init_values()
     #
@@ -188,10 +193,12 @@ cdef class Variables:
         cdef object value_node
         cdef Value value
 
-        for key, value_node in node.items():
-            value = Value()
-            value.init(<ScalarNode> value_node)
-            ret[key] = value
+        with PROFILER.profile(Topics.VARIABLES_INIT, id(self._origin)):
+
+            for key, value_node in node.items():
+                value = Value()
+                value.init(<ScalarNode> value_node)
+                ret[key] = value
 
         return ret
 

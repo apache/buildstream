@@ -48,6 +48,8 @@ class Topics:
     LOAD_PIPELINE = "load-pipeline"
     LOAD_SELECTION = "load-selection"
     SCHEDULER = "scheduler"
+    VARIABLES_INIT = "variables-init"
+    VARIABLES_CHECK = "variables-check"
     ALL = "all"
 
 
