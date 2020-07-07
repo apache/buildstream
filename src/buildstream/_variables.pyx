@@ -28,6 +28,35 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Free, PyMem_Realloc
 from cpython.object cimport PyObject
 from cpython.ref cimport Py_XINCREF, Py_XDECREF
 
+# Some of this is already imported from cpython.unicode by the cython
+# layer, but since this header is incomplete, let's just import all the
+# necessary bits directly from the C API.
+#
+cdef extern from "Python.h":
+
+    # Returns the length of the unicode string in code points.
+    #
+    Py_ssize_t PyUnicode_GET_LENGTH(PyObject *o)
+
+    # Macro expands to the maximum character width required for
+    # a given existing unicode object (suitable for the `maxchar`
+    # argument of `PyUnicode_New()`).
+    #
+    Py_UCS4 PyUnicode_MAX_CHAR_VALUE(PyObject *o)
+
+    # Creates a new unicode object with a preallocated buffer
+    # of `size` code points, with wide enough code points to
+    # account for codepoints as wide as `maxchar` requires.
+    #
+    PyObject* PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar)
+
+    # Copy characters from one string to another string.
+    #
+    # This will raise an exception automatically if -1 is returned.
+    #
+    Py_ssize_t PyUnicode_CopyCharacters(PyObject *to, Py_ssize_t to_start, PyObject *from_, Py_ssize_t from_start, Py_ssize_t how_many) except -1
+
+
 from ._profile import Topics, PROFILER
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
@@ -526,30 +555,67 @@ cdef class Value:
     # Returns:
     #    (str): The resolved value
     #
-    cdef str resolve(self, ObjectArray *resolved_values, Py_ssize_t idx):
-        cdef str dep_name
+    cdef str resolve(self, ObjectArray *resolved_values, Py_ssize_t values_idx):
         cdef Value part_var
         cdef ValuePart *part
-        cdef object part_object
-        cdef list parts = []
+        cdef Py_UCS4 maxchar = 0
+        cdef Py_UCS4 part_maxchar
+        cdef Py_ssize_t full_length = 0
+        cdef Py_ssize_t idx
+        cdef Py_ssize_t offset
+        cdef Py_ssize_t part_length
+        cdef PyObject *resolved
+        cdef PyObject *part_object
 
         if self._resolved is None:
-            part = self._value_class.parts
 
+            # Calculate the number of codepoints and maximum character width
+            # required for the strings involved.
+            idx = values_idx
+            part = self._value_class.parts
             while part:
                 if part.is_variable:
-
-                    # Consume one variable
                     part_var = <Value> resolved_values.array[idx]
                     idx += 1
-
-                    parts.append(part_var._resolved)
+                    part_object = <PyObject *>part_var._resolved
                 else:
-                    parts.append(<str>part.text)
+                    part_object = part.text
+
+                full_length += PyUnicode_GET_LENGTH(part_object)
+                part_maxchar = PyUnicode_MAX_CHAR_VALUE(part_object)
+                if part_maxchar > maxchar:
+                    maxchar = part_maxchar
 
                 part = part.next_part
 
-            self._resolved = "".join(parts)
+            # Do the stringy thingy
+            resolved = PyUnicode_New(full_length, maxchar)
+            part = self._value_class.parts
+            idx = values_idx
+            offset = 0
+
+            # This time copy characters as we loop through the parts
+            while part:
+                if part.is_variable:
+                    part_var = <Value> resolved_values.array[idx]
+                    idx += 1
+                    part_object = <PyObject *>part_var._resolved
+                else:
+                    part_object = part.text
+
+                part_length = PyUnicode_GET_LENGTH(part_object)
+
+                # Does this need to be in a loop and have a maximum copy length ?
+                #
+                # Should we be doing the regular posix thing, handling an exception indicating
+                # a SIGINT or such which means we should resume our copy instead of consider an error ?
+                #
+                PyUnicode_CopyCharacters(resolved, offset, part_object, 0, part_length)
+
+                offset += part_length
+                part = part.next_part
+
+            self._resolved = <str> resolved
 
         return self._resolved
 
