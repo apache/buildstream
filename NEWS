@@ -8,6 +8,10 @@ CLI
   o Add `bst source push` subcommand. This command pushes element sources to a
     remote source cache.
 
+Plugins
+-------
+
+  o tar: filter out 'dev' nodes from the tar archives when extracting them
 
 ==================
 buildstream 1.93.4
