@@ -246,7 +246,7 @@ cdef class Variables:
     #
     cpdef str _subst(self, ScalarNode node):
         cdef Value value = Value()
-        cdef Value iter_value
+        cdef str iter_value
         cdef str resolved_value
         cdef ValuePart *part
 
@@ -257,7 +257,7 @@ cdef class Variables:
         part = value._value_class.parts
         while part:
             if part.is_variable:
-                iter_value = self._do_resolve(<str> part.text, node)
+                iter_value = self._resolve(<str> part.text, node)
                 object_array_append(&(values), <PyObject *>iter_value)
             part = part.next_part
 
@@ -289,14 +289,7 @@ cdef class Variables:
         else:
             assert False, "Unknown 'Node' type"
 
-    # XXX
-    #
-    cdef str _resolve(self, str name, ScalarNode pnode):
-        cdef Value value
-        value = self._do_resolve(name, pnode)
-        return value._resolved
-
-    # _do_resolve()
+    # _resolve()
     #
     # Helper to expand and cache a variable definition in the context of
     # the given dictionary of expansion strings.
@@ -312,11 +305,12 @@ cdef class Variables:
     #    (LoadError): In case there was any undefined variables or circular
     #                 references encountered when resolving the variable.
     #
-    cdef Value _do_resolve(self, str name, ScalarNode pnode):
+    cdef str _resolve(self, str name, ScalarNode pnode):
         cdef ResolutionStep step
         cdef ResolutionStep new_step
         cdef ResolutionStep this_step
         cdef Value iter_value
+        cdef str resolved_value
         cdef Py_ssize_t idx = 0
 
         # We'll be collecting the values to resolve at the end in here
@@ -382,15 +376,19 @@ cdef class Variables:
         #
         idx = values.length -1
         while idx >= 0:
+
+            # Values in, strings out
+            #
             iter_value = <Value>values.array[idx]
-            iter_value.resolve(&values, idx + 1)
+            resolved_value = iter_value.resolve(&values, idx + 1)
+            values.array[idx] = <PyObject *>resolved_value
             idx -= 1
 
         # Cleanup
         #
         object_array_free(&(values))
 
-        return iter_value
+        return resolved_value
 
     # _get_checked_value()
     #
@@ -556,7 +554,6 @@ cdef class Value:
     #    (str): The resolved value
     #
     cdef str resolve(self, ObjectArray *resolved_values, Py_ssize_t values_idx):
-        cdef Value part_var
         cdef ValuePart *part
         cdef Py_UCS4 maxchar = 0
         cdef Py_UCS4 part_maxchar
@@ -575,9 +572,8 @@ cdef class Value:
             part = self._value_class.parts
             while part:
                 if part.is_variable:
-                    part_var = <Value> resolved_values.array[idx]
+                    part_object = resolved_values.array[idx]
                     idx += 1
-                    part_object = <PyObject *>part_var._resolved
                 else:
                     part_object = part.text
 
@@ -597,9 +593,8 @@ cdef class Value:
             # This time copy characters as we loop through the parts
             while part:
                 if part.is_variable:
-                    part_var = <Value> resolved_values.array[idx]
+                    part_object = resolved_values.array[idx]
                     idx += 1
-                    part_object = <PyObject *>part_var._resolved
                 else:
                     part_object = part.text
 
