@@ -133,10 +133,17 @@ class TarSource(DownloadableFileSource):
                 if self.base_dir:
                     base_dir = self._find_base_dir(tar, self.base_dir)
 
+                def filter_non_dev(tarfiles):
+                    for file in tarfiles:
+                        if not file.isdev():
+                            yield file
+
                 if base_dir:
-                    tar.extractall(path=directory, members=self._extract_members(tar, base_dir, directory))
+                    tar.extractall(
+                        path=directory, members=filter_non_dev(self._extract_members(tar, base_dir, directory))
+                    )
                 else:
-                    tar.extractall(path=directory)
+                    tar.extractall(path=directory, members=filter_non_dev(tar.getmembers()))
 
         except (tarfile.TarError, OSError) as e:
             raise SourceError("{}: Error staging source: {}".format(self, e)) from e
