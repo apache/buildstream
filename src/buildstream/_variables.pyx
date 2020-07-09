@@ -305,15 +305,19 @@ cdef class Variables:
     #    (LoadError): In case there was any undefined variables or circular
     #                 references encountered when resolving the variable.
     #
+
+
     cdef str _resolve(self, str name, ScalarNode pnode):
+        cdef Value value
 
+        value = self._get_checked_value(name, None, pnode)
+        if value._resolved is None:
+            return self._resolve_value(name, value)
+
+        return value._resolved
+
+    cdef str _resolve_value(self, str name, Value value):
         cdef Value iter_value
-
-        # Try early return first
-        iter_value = self._get_checked_value(name, None, pnode)
-        if iter_value._resolved:
-            return iter_value._resolved
-
         cdef ResolutionStep step
         cdef ResolutionStep new_step
         cdef ResolutionStep this_step
@@ -323,20 +327,10 @@ cdef class Variables:
         # We'll be collecting the values to resolve at the end in here
         cdef ObjectArray values
         object_array_init(&(values), -1)
-
-        # While iterating over the first loop, we collect all of the variable
-        # dependencies, and perform all required validation.
-        #
-        # Each iteration processes a ResolutionStep object and has the possibility
-        # to enque more ResolutionStep objects as a result.
-        #
-        cdef ValuePart initial_part
-        initial_part.text = <PyObject *>name
-        initial_part.is_variable = True
-        initial_part.next_part = NULL
+        object_array_append(&(values), <PyObject *>value)
 
         step = ResolutionStep()
-        step.init(None, &initial_part, None)
+        step.init(name, value._value_class.parts, None)
 
         while step:
             # Keep a hold of the current overall step
@@ -348,11 +342,14 @@ cdef class Variables:
 
             part = this_step.parts
             while part:
+
+                # Skip literal ValueParts
+                #
                 if not part.is_variable:
                     part = part.next_part
                     continue
 
-                iter_value = self._get_checked_value(<str> part.text, this_step.referee, pnode)
+                iter_value = self._get_checked_value(<str> part.text, this_step.referee, None)
 
                 # Queue up this value.
                 #
@@ -362,16 +359,13 @@ cdef class Variables:
 
                 # Queue up the values dependencies.
                 #
-                # These will be NULL if this value has previously been resolved.
                 if iter_value._resolved is None:
-                    iter_value_parts = iter_value._value_class.parts
-                    if iter_value_parts:
-                        new_step = ResolutionStep()
-                        new_step.init(<str> part.text, iter_value_parts, this_step)
+                    new_step = ResolutionStep()
+                    new_step.init(<str> part.text, iter_value._value_class.parts, this_step)
 
-                        # Link it to the end of the stack
-                        new_step.prev = step
-                        step = new_step
+                    # Link it to the end of the stack
+                    new_step.prev = step
+                    step = new_step
 
                 # Next part of this variable
                 part = part.next_part
@@ -382,14 +376,20 @@ cdef class Variables:
         # we want to return.
         #
         idx = values.length -1
-        while idx >= 0:
-
+        while idx > 0:
             # Values in, strings out
             #
             iter_value = <Value>values.array[idx]
-            resolved_value = iter_value.resolve(&values, idx + 1)
-            values.array[idx] = <PyObject *>resolved_value
+
+            if iter_value._resolved is None:
+                iter_value.resolve(&values, idx + 1)
+
+            values.array[idx] = <PyObject *>iter_value._resolved
             idx -= 1
+
+        # Save the return of Value.resolve from the toplevel value
+        iter_value = <Value>values.array[0]
+        resolved_value = iter_value.resolve(&values, 1)
 
         # Cleanup
         #
