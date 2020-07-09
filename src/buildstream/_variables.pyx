@@ -306,10 +306,17 @@ cdef class Variables:
     #                 references encountered when resolving the variable.
     #
     cdef str _resolve(self, str name, ScalarNode pnode):
+
+        cdef Value iter_value
+
+        # Try early return first
+        iter_value = self._get_checked_value(name, None, pnode)
+        if iter_value._resolved:
+            return iter_value._resolved
+
         cdef ResolutionStep step
         cdef ResolutionStep new_step
         cdef ResolutionStep this_step
-        cdef Value iter_value
         cdef str resolved_value
         cdef Py_ssize_t idx = 0
 
