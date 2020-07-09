@@ -41,21 +41,31 @@ as shown in the examples below. If a public API exists without the *Since*
 annotation, this is taken to mean that it was available since the first stable
 major point release (e.g: 2.0).
 
+We also always ensure that the **public API** is entirely typed using type
+annotations inline.
+
+The private API *can* be typed inline or in the documentation at the author's
+discretion.
+
+.. note::
+
+  Types are checked using `mypy`. You can run it like :command:`tox -e mypy`
+
 Here are some examples to get the hang of the format of API documenting
 comments and docstrings.
 
 **Public API Surface method**::
 
-  def frobnicate(self, source, *, frobilicious=False):
+  def frobnicate(self, source: Source, *, frobilicious: bool = False) -> Element:
       """Frobnicates this element with the specified source
 
       Args:
-         source (Source): The Source to frobnicate with
-         frobilicious (bool): Optionally specify that frobnication should be
+         source: The Source to frobnicate with
+         frobilicious: Optionally specify that frobnication should be
                               performed frobiliciously
 
       Returns:
-         (Element): The frobnicated version of this Element.
+         The frobnicated version of this Element.
 
       *Since: 2.2*
       """
@@ -68,14 +78,14 @@ comments and docstrings.
   # Frobnicates this element with the specified source
   #
   # Args:
-  #    source (Source): The Source to frobnicate with
-  #    frobilicious (bool): Optionally specify that frobnication should be
+  #    source: The Source to frobnicate with
+  #    frobilicious: Optionally specify that frobnication should be
   #                         performed frobiliciously
   #
   # Returns:
-  #    (Element): The frobnicated version of this Element.
+  #    The frobnicated version of this Element.
   #
-  def frobnicate(self, source, *, frobilicious=False):
+  def frobnicate(self, source: Source, *, frobilicious: bool = False) -> Element:
       ...
 
 **Public API Surface instance variable**::
@@ -118,11 +128,12 @@ comments and docstrings.
       method.
 
       Args:
-         context (Context): The invocation Context
-         count (int): The number to count
+         context: The invocation Context
+         count: The number to count
 
       *Since: 2.2*
       """
+      def __init__(self, context: Context, count: int) -> None:
       ...
 
 **Internal class**::
@@ -873,4 +884,3 @@ and then redesign the ``Scheduler`` and ``Queue`` objects to accommodate for
 the new feature and condition under which you need to dispatch a ``Job``,
 or how you can give the ``Queue`` implementation the additional context it
 needs.
-
