@@ -195,6 +195,10 @@ class Element(Plugin):
     """Whether the element produces an artifact when built.
     """
 
+    BST_NEVER_CACHE_BUILDTREES = False
+    """Whether the element prohibits caching of buildtrees.
+    """
+
     def __init__(self, context: "Context", project: "Project", meta: "MetaElement", plugin_conf: Dict[str, Any]):
 
         self.__cache_key_dict = None  # Dict for cache key calculation
@@ -1576,7 +1580,10 @@ class Element(Plugin):
                 # This allows the remote execution sandbox to skip buildtree
                 # download when it's not needed.
                 buildroot = self.get_variable("build-root")
-                cache_buildtrees = context.cache_buildtrees
+                if self.BST_NEVER_CACHE_BUILDTREES:
+                    cache_buildtrees = _CacheBuildTrees.NEVER
+                else:
+                    cache_buildtrees = context.cache_buildtrees
                 if cache_buildtrees != _CacheBuildTrees.NEVER:
                     always_cache_buildtrees = cache_buildtrees == _CacheBuildTrees.ALWAYS
                     sandbox._set_build_directory(buildroot, always=always_cache_buildtrees)
@@ -1634,7 +1641,10 @@ class Element(Plugin):
         sandbox_build_dir = None
         sourcesvdir = None
 
-        cache_buildtrees = context.cache_buildtrees
+        if self.BST_NEVER_CACHE_BUILDTREES:
+            cache_buildtrees = _CacheBuildTrees.NEVER
+        else:
+            cache_buildtrees = context.cache_buildtrees
         build_success = buildresult[0]
 
         # cache_buildtrees defaults to 'auto', only caching buildtrees
