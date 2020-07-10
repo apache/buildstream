@@ -1249,10 +1249,10 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
         else:
             if directory is None:
                 location = os.path.abspath(os.path.join(os.getcwd(), target))
+                if location[-4:] == ".bst":
+                    location = location[:-4]
             else:
                 location = directory
-            if location[-4:] == ".bst":
-                location = location[:-4]
             tar = False
     else:
         location = tar
