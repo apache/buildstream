@@ -261,7 +261,7 @@ cdef class Variables:
                 object_array_append(&(values), <PyObject *>iter_value)
             part = part.next_part
 
-        resolved_value = value.resolve(&values, 0)
+        resolved_value = value.resolve(values.array)
 
         object_array_free(&(values))
         return resolved_value
@@ -390,14 +390,14 @@ cdef class Variables:
                 # expansion though, because of how variables are
                 # sorted.
                 #
-                iter_value.resolve(&values, idx + 1)
+                iter_value.resolve(&(values.array[idx + 1]))
 
             values.array[idx] = <PyObject *>iter_value._resolved
             idx -= 1
 
         # Save the return of Value.resolve from the toplevel value
         iter_value = <Value>values.array[0]
-        resolved_value = iter_value.resolve(&values, 1)
+        resolved_value = iter_value.resolve(&(values.array[1]))
 
         # Cleanup
         #
@@ -559,19 +559,24 @@ cdef class Value:
     # resolve()
     #
     # Resolve the value of this variable, this function expects
-    # all dependency values to already be resolved, otherwise
-    # it will fail due to an undefined variable.
+    # that variables referred to by this Value's ValueClass be
+    # already resolved and prepared as an array of strings.
+    #
+    # The array of strings will be used as needed while resolving
+    # this value from left to right (so the array of strings *must*
+    # contain appropriately resolved values for any variables referred
+    # to in this value, in the correct order).
     #
     # Args:
-    #    values (PyObject **): Array of resolved strings to fill in the values
+    #    values (PyObject **): Array of string objects to fill in variable values
     #
     # Returns:
     #    (str): The resolved value
     #
-    cdef str resolve(self, ObjectArray *values, Py_ssize_t value_idx):
+    cdef str resolve(self, PyObject **values):
 
         if self._resolved is None:
-            self._resolved = self._value_class.resolve(values, value_idx)
+            self._resolved = self._value_class.resolve(values)
 
         return self._resolved
 
@@ -653,13 +658,22 @@ cdef class ValueClass:
 
     # resolve()
     #
+    # Resolve an expanded string for this ValueClass, by filling
+    # in any variables referred to by this ValueClass using the
+    # strings provided in the array, from left to right.
     #
-    cdef str resolve(self, ObjectArray *values, Py_ssize_t value_idx):
+    # Args:
+    #    values (PyObject **): Array of string objects to fill in variable values
+    #
+    # Returns:
+    #    (str): The resolved value
+    #
+    cdef str resolve(self, PyObject **values):
         cdef ValuePart *part
         cdef Py_UCS4 maxchar = 0
         cdef Py_UCS4 part_maxchar
         cdef Py_ssize_t full_length = 0
-        cdef Py_ssize_t idx
+        cdef Py_ssize_t idx = 0
         cdef Py_ssize_t offset = 0
         cdef Py_ssize_t part_length
         cdef PyObject *resolved
@@ -667,11 +681,11 @@ cdef class ValueClass:
 
         # Calculate the number of codepoints and maximum character width
         # required for the strings involved.
-        idx = value_idx
+        idx = 0
         part = self.parts
         while part:
             if part.is_variable:
-                part_object = values.array[idx]
+                part_object = values[idx]
                 idx += 1
             else:
                 part_object = part.text
@@ -687,11 +701,11 @@ cdef class ValueClass:
         resolved = PyUnicode_New(full_length, maxchar)
 
         # This time copy characters as we loop through the parts
-        idx = value_idx
+        idx = 0
         part = self.parts
         while part:
             if part.is_variable:
-                part_object = values.array[idx]
+                part_object = values[idx]
                 idx += 1
             else:
                 part_object = part.text
