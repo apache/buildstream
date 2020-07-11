@@ -337,9 +337,10 @@ cdef class Variables:
 
     cdef str _resolve_value(self, str name, Value value):
         cdef Value iter_value
-        cdef ResolutionStep step
-        cdef ResolutionStep new_step
-        cdef ResolutionStep this_step
+        cdef ResolutionStep *step
+        cdef ResolutionStep *new_step
+        cdef ResolutionStep *this_step
+        cdef ResolutionStep *last_step
         cdef str resolved_value
         cdef Py_ssize_t idx = 0
 
@@ -347,8 +348,8 @@ cdef class Variables:
         object_array_reset(&(self._resolve_value_cache))
         object_array_append(&(self._resolve_value_cache), <PyObject *>value)
 
-        step = ResolutionStep()
-        step.init(name, value._value_class.parts, None)
+        step = new_resolution_step(<PyObject *>name, value._value_class.parts, NULL)
+        last_step = step
 
         while step:
             # Keep a hold of the current overall step
@@ -356,7 +357,7 @@ cdef class Variables:
             step = step.prev
 
             # Check for circular dependencies
-            this_step.check_circular(self._values)
+            check_resolution_step(this_step, self._values)
 
             part = this_step.parts
             while part:
@@ -367,7 +368,7 @@ cdef class Variables:
                     part = part.next_part
                     continue
 
-                iter_value = self._get_checked_value(<str> part.text, this_step.referee, None)
+                iter_value = self._get_checked_value(<str> part.text, <str> this_step.referee, None)
 
                 # Queue up this value.
                 #
@@ -378,8 +379,8 @@ cdef class Variables:
                 # Queue up the values dependencies.
                 #
                 if iter_value._resolved is None:
-                    new_step = ResolutionStep()
-                    new_step.init(<str> part.text, iter_value._value_class.parts, this_step)
+                    new_step = new_resolution_step(part.text, iter_value._value_class.parts, this_step)
+                    last_step = new_step
 
                     # Link it to the end of the stack
                     new_step.prev = step
@@ -416,6 +417,13 @@ cdef class Variables:
         # Save the return of Value.resolve from the toplevel value
         iter_value = <Value>self._resolve_value_cache.array[0]
         resolved_value = iter_value.resolve(&(self._resolve_value_cache.array[1]))
+
+        # Free up the steps
+        step = last_step
+        while step:
+            this_step = step
+            step = step.prev
+            free_resolution_step(this_step)
 
         return resolved_value
 
@@ -465,79 +473,95 @@ cdef class Variables:
             raise LoadError(error_message, LoadErrorReason.UNRESOLVED_VARIABLE) from e
 
 
-# ResolutionStep()
+# ResolutionStep
 #
 # The context for a single iteration in variable resolution.
 #
 # This only exists for better performance than constructing
 # and unpacking tuples.
 #
-cdef class ResolutionStep:
-    cdef str referee
-    cdef ResolutionStep parent
-    cdef ResolutionStep prev
-    cdef ValuePart *parts
+ctypedef struct ResolutionStep:
+    PyObject *referee
+    ResolutionStep *parent
+    ResolutionStep *prev
+    ValuePart *parts
 
-    # init()
-    #
-    # Initialize this ResolutionStep
-    #
-    # Args:
-    #    referee (str): The name of the referring variable
-    #    parts (ValuePart *): A link list of ValueParts which `referee` refers to
-    #    parent (ResolutionStep): The parent ResolutionStep
-    #
-    cdef init(self, str referee, ValuePart *parts, ResolutionStep parent):
-        self.referee = referee
-        self.parts = parts
-        self.parent = parent
-        self.prev = None
 
-    # check_circular()
-    #
-    # Check for circular references in this step.
-    #
-    # Args:
-    #    values (dict): The value dictionary for lookups
-    #
-    # Raises:
-    #    (LoadError): Will raise a user facing LoadError with
-    #                 LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE in case
-    #                 circular references were encountered.
-    #
-    cdef check_circular(self, dict values):
-        cdef ResolutionStep step = self.parent
-        while step:
-            if self.referee is step.referee:
-                self._raise_circular_reference_error(step, values)
-            step = step.parent
+# new_resolution_step()
+#
+# Create a new ResolutionStep
+#
+# Args:
+#    referee (str): The name of the referring variable
+#    parts (ValuePart *): A link list of ValueParts which `referee` refers to
+#    parent (ResolutionStep): The parent ResolutionStep
+#
+cdef ResolutionStep *new_resolution_step(PyObject *referee, ValuePart *parts, ResolutionStep *parent):
+    cdef ResolutionStep *step = <ResolutionStep *>PyMem_Malloc(sizeof(ResolutionStep))
+    if not step:
+        raise MemoryError()
 
-    # _raise_circular_reference_error()
-    #
-    # Helper function to construct a full report and raise the circular reference error.
-    #
-    cdef _raise_circular_reference_error(self, ResolutionStep conflict, dict values):
+    step.referee = referee
+    step.parts = parts
+    step.parent = parent
+    step.prev = NULL
+
+    return step
+
+# free_resolution_step()
+#
+# Free a ResolutionStep
+#
+# Args:
+#    step (ResolutionStep): The step to free
+#
+cdef void free_resolution_step(ResolutionStep *step):
+    PyMem_Free(step)
+
+# check_resolution_step()
+#
+# Check for circular references in this step.
+#
+# Args:
+#    step (ResolutionStep): The step to check
+#    values (dict): The value dictionary for lookups
+#
+# Raises:
+#    (LoadError): Will raise a user facing LoadError with
+#                 LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE in case
+#                 circular references were encountered.
+#
+cdef check_resolution_step(ResolutionStep *step, dict values):
+    cdef ResolutionStep *iter_step = step.parent
+    while iter_step:
+        if step.referee is iter_step.referee:
+            _raise_resolution_step_error(step, iter_step, values)
+        iter_step = iter_step.parent
+
+# _raise_resolution_step_error()
+#
+# Helper function to construct a full report and raise the circular reference error.
+#
+cdef _raise_resolution_step_error(ResolutionStep *step, ResolutionStep *conflict, dict values):
         cdef list error_lines = []
-        cdef ResolutionStep step = self
+        cdef ResolutionStep *this_step = step
         cdef Value value
         cdef str referee
 
         while step is not conflict:
             if step.parent:
-                referee = step.parent.referee
+                referee = <str> step.parent.referee
             else:
-                referee = self.referee
+                referee = <str> this_step.referee
             value = values[referee]
 
-            error_lines.append("{}: Variable '{}' refers to variable '{}'".format(value.get_provenance(), referee, step.referee))
+            error_lines.append("{}: Variable '{}' refers to variable '{}'".format(value.get_provenance(), referee, <str> step.referee))
             step = step.parent
 
-        raise LoadError("Circular dependency detected on variable '{}'".format(self.referee),
+        raise LoadError("Circular dependency detected on variable '{}'".format(<str> this_step.referee),
                         LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE,
                         detail="\n".join(reversed(error_lines)))
 
-
-cdef EMPTY_SET = set()
 
 # Value():
 #
