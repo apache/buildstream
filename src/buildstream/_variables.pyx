@@ -382,6 +382,14 @@ cdef class Variables:
             iter_value = <Value>values.array[idx]
 
             if iter_value._resolved is None:
+
+                # For the first iteration, we pass an invalid pointer
+                # outside the bounds of the array.
+                #
+                # The first iteration cannot require any variable
+                # expansion though, because of how variables are
+                # sorted.
+                #
                 iter_value.resolve(&values, idx + 1)
 
             values.array[idx] = <PyObject *>iter_value._resolved
@@ -555,69 +563,15 @@ cdef class Value:
     # it will fail due to an undefined variable.
     #
     # Args:
-    #    values (dict): The full value table for resolving dependencies
+    #    values (PyObject **): Array of resolved strings to fill in the values
     #
     # Returns:
     #    (str): The resolved value
     #
-    cdef str resolve(self, ObjectArray *resolved_values, Py_ssize_t values_idx):
-        cdef ValuePart *part
-        cdef Py_UCS4 maxchar = 0
-        cdef Py_UCS4 part_maxchar
-        cdef Py_ssize_t full_length = 0
-        cdef Py_ssize_t idx
-        cdef Py_ssize_t offset
-        cdef Py_ssize_t part_length
-        cdef PyObject *resolved
-        cdef PyObject *part_object
+    cdef str resolve(self, ObjectArray *values, Py_ssize_t value_idx):
 
         if self._resolved is None:
-
-            # Calculate the number of codepoints and maximum character width
-            # required for the strings involved.
-            idx = values_idx
-            part = self._value_class.parts
-            while part:
-                if part.is_variable:
-                    part_object = resolved_values.array[idx]
-                    idx += 1
-                else:
-                    part_object = part.text
-
-                full_length += PyUnicode_GET_LENGTH(part_object)
-                part_maxchar = PyUnicode_MAX_CHAR_VALUE(part_object)
-                if part_maxchar > maxchar:
-                    maxchar = part_maxchar
-
-                part = part.next_part
-
-            # Do the stringy thingy
-            resolved = PyUnicode_New(full_length, maxchar)
-            part = self._value_class.parts
-            idx = values_idx
-            offset = 0
-
-            # This time copy characters as we loop through the parts
-            while part:
-                if part.is_variable:
-                    part_object = resolved_values.array[idx]
-                    idx += 1
-                else:
-                    part_object = part.text
-
-                part_length = PyUnicode_GET_LENGTH(part_object)
-
-                # Does this need to be in a loop and have a maximum copy length ?
-                #
-                # Should we be doing the regular posix thing, handling an exception indicating
-                # a SIGINT or such which means we should resume our copy instead of consider an error ?
-                #
-                PyUnicode_CopyCharacters(resolved, offset, part_object, 0, part_length)
-
-                offset += part_length
-                part = part.next_part
-
-            self._resolved = <str> resolved
+            self._resolved = self._value_class.resolve(values, value_idx)
 
         return self._resolved
 
@@ -696,6 +650,65 @@ cdef class ValueClass:
     cdef init(self, str string):
         self.parts = NULL
         self._parse_string(string)
+
+    # resolve()
+    #
+    #
+    cdef str resolve(self, ObjectArray *values, Py_ssize_t value_idx):
+        cdef ValuePart *part
+        cdef Py_UCS4 maxchar = 0
+        cdef Py_UCS4 part_maxchar
+        cdef Py_ssize_t full_length = 0
+        cdef Py_ssize_t idx
+        cdef Py_ssize_t offset = 0
+        cdef Py_ssize_t part_length
+        cdef PyObject *resolved
+        cdef PyObject *part_object
+
+        # Calculate the number of codepoints and maximum character width
+        # required for the strings involved.
+        idx = value_idx
+        part = self.parts
+        while part:
+            if part.is_variable:
+                part_object = values.array[idx]
+                idx += 1
+            else:
+                part_object = part.text
+
+            full_length += PyUnicode_GET_LENGTH(part_object)
+            part_maxchar = PyUnicode_MAX_CHAR_VALUE(part_object)
+            if part_maxchar > maxchar:
+                maxchar = part_maxchar
+
+            part = part.next_part
+
+        # Do the stringy thingy
+        resolved = PyUnicode_New(full_length, maxchar)
+
+        # This time copy characters as we loop through the parts
+        idx = value_idx
+        part = self.parts
+        while part:
+            if part.is_variable:
+                part_object = values.array[idx]
+                idx += 1
+            else:
+                part_object = part.text
+
+            part_length = PyUnicode_GET_LENGTH(part_object)
+
+            # Does this need to be in a loop and have a maximum copy length ?
+            #
+            # Should we be doing the regular posix thing, handling an exception indicating
+            # a SIGINT or such which means we should resume our copy instead of consider an error ?
+            #
+            PyUnicode_CopyCharacters(resolved, offset, part_object, 0, part_length)
+
+            offset += part_length
+            part = part.next_part
+
+        return <str> resolved
 
     # _parse_string()
     #
