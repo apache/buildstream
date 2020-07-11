@@ -88,6 +88,7 @@ cdef class Variables:
 
     cdef dict _values  # The Value objects
     cdef MappingNode _origin
+    cdef ObjectArray _resolve_value_cache
 
     def __init__(self, MappingNode node):
 
@@ -105,6 +106,16 @@ cdef class Variables:
             node['max-jobs'] = str(1)
 
         self._values = self._init_values(node)
+
+        # Initialize the resolution cache without allocating any vector initially
+        object_array_init(&(self._resolve_value_cache), 0)
+
+    # __dealloc__()
+    #
+    # Cleanup stuff which cython wont cleanup automatically
+    #
+    def __dealloc__(self):
+        object_array_free(&(self._resolve_value_cache))
 
     # __getitem__()
     #
@@ -207,9 +218,13 @@ cdef class Variables:
         cdef object key
 
         with PROFILER.profile(Topics.VARIABLES_CHECK, id(self._origin)):
+
             # Resolve all variables.
             for key in self._values.keys():
                 self._resolve(<str> key, None)
+
+            # Free any used resources after resolving a batch
+            object_array_free(&(self._resolve_value_cache))
 
     # _init_values()
     #
@@ -264,6 +279,10 @@ cdef class Variables:
         resolved_value = value.resolve(values.array)
 
         object_array_free(&(values))
+
+        # Free any used resources after substitutions
+        object_array_free(&(self._resolve_value_cache))
+
         return resolved_value
 
     # _expand()
@@ -324,10 +343,9 @@ cdef class Variables:
         cdef str resolved_value
         cdef Py_ssize_t idx = 0
 
-        # We'll be collecting the values to resolve at the end in here
-        cdef ObjectArray values
-        object_array_init(&(values), -1)
-        object_array_append(&(values), <PyObject *>value)
+        # Reset the value array cache
+        object_array_reset(&(self._resolve_value_cache))
+        object_array_append(&(self._resolve_value_cache), <PyObject *>value)
 
         step = ResolutionStep()
         step.init(name, value._value_class.parts, None)
@@ -355,7 +373,7 @@ cdef class Variables:
                 #
                 # Even if the value was already resolved, we need it in context to resolve
                 # previously enqueued variables
-                object_array_append(&(values), <PyObject *>iter_value)
+                object_array_append(&(self._resolve_value_cache), <PyObject *>iter_value)
 
                 # Queue up the values dependencies.
                 #
@@ -375,11 +393,11 @@ cdef class Variables:
         # backwards and the last (leftmost) resolved value is the one
         # we want to return.
         #
-        idx = values.length -1
+        idx = self._resolve_value_cache.length -1
         while idx > 0:
             # Values in, strings out
             #
-            iter_value = <Value>values.array[idx]
+            iter_value = <Value>self._resolve_value_cache.array[idx]
 
             if iter_value._resolved is None:
 
@@ -390,18 +408,14 @@ cdef class Variables:
                 # expansion though, because of how variables are
                 # sorted.
                 #
-                iter_value.resolve(&(values.array[idx + 1]))
+                iter_value.resolve(&(self._resolve_value_cache.array[idx + 1]))
 
-            values.array[idx] = <PyObject *>iter_value._resolved
+            self._resolve_value_cache.array[idx] = <PyObject *>iter_value._resolved
             idx -= 1
 
         # Save the return of Value.resolve from the toplevel value
-        iter_value = <Value>values.array[0]
-        resolved_value = iter_value.resolve(&(values.array[1]))
-
-        # Cleanup
-        #
-        object_array_free(&(values))
+        iter_value = <Value>self._resolve_value_cache.array[0]
+        resolved_value = iter_value.resolve(&(self._resolve_value_cache.array[1]))
 
         return resolved_value
 
@@ -850,12 +864,11 @@ cdef void object_array_append(ObjectArray *array, PyObject *obj):
 
     # Ensure we have enough space for the new item
     if array.length >= array._size:
-        array._size = array._size + OBJECT_ARRAY_BLOCK_SIZE - (array._size % 8)
+        array._size = array._size + OBJECT_ARRAY_BLOCK_SIZE - (array._size % OBJECT_ARRAY_BLOCK_SIZE)
         array.array = <PyObject **>PyMem_Realloc(array.array, array._size * sizeof(PyObject *))
         if not array.array:
             raise MemoryError()
 
-    # Py_XINCREF(obj)
     array.array[array.length] = obj
     array.length += 1
 
@@ -864,16 +877,32 @@ cdef void object_array_append(ObjectArray *array, PyObject *obj):
 #
 # Free the array, releasing references to all the objects
 #
+# This leaves the array in a state as if it had been initialized
+# with a 0 length vector, so a subsequent call to object_array_append()
+# will start by allocating a block.
+#
 # Args:
 #    array (ObjectArray *): The array to free up
 #
 cdef void object_array_free(ObjectArray *array):
-    #cdef Py_ssize_t idx = 0
-    #while idx < array.length:
-    #    Py_XDECREF(array.array[idx])
-    #    idx += 1
     if array._size > 0:
         PyMem_Free(array.array)
+        array._size = 0
+    array.length = 0
+
+
+# object_array_reset()
+#
+# Reset the array, ignoring any existing elements but not
+# freeing the allocated vector.
+#
+# This allows for reuse of an already cached array.
+#
+# Args:
+#    array (ObjectArray *): The array to reset
+#
+cdef void object_array_reset(ObjectArray *array):
+    array.length = 0
 
 
 # ValuePart()
