@@ -318,7 +318,7 @@ class Loader:
             node.get_str_list(Symbol.ENV_NOCACHE, default=[]),
             node.get_mapping(Symbol.PUBLIC, default={}),
             node.get_mapping(Symbol.SANDBOX, default={}),
-            element_kind == "junction",
+            element_kind in ("junction", "link"),
         )
 
         # Cache it now, make sure it's already there before recursing
@@ -394,7 +394,7 @@ class Loader:
             raise
 
         kind = node.get_str(Symbol.KIND)
-        if kind == "junction":
+        if kind in ("junction", "link"):
             self._first_pass_options.process_node(node)
         else:
             self.project.ensure_fully_loaded()
