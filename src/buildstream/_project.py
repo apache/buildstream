@@ -499,6 +499,20 @@ class Project:
         if self._fully_loaded:
             return
         assert self._partially_loaded
+
+        # Here we mark the project as fully loaded right away,
+        # before doing the work.
+        #
+        # This function will otherwise reenter itself infinitely:
+        #
+        #   * Ensuring the invariant that a parent project is fully
+        #     loaded before completing the load of this project, will
+        #     trigger this function when completing the load of subprojects.
+        #
+        #   * Completing the load of this project may include processing
+        #     some `(@)` include directives, which can directly trigger
+        #     the loading of subprojects.
+        #
         self._fully_loaded = True
 
         if self.junction:
