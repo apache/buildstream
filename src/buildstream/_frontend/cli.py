@@ -371,22 +371,10 @@ def help_command(ctx, command):
 ##################################################################
 #                           Init Command                         #
 ##################################################################
-def default_min_version():
-    from .. import utils
-
-    bst_major, bst_minor = utils._get_bst_api_version()
-
-    return "{}.{}".format(bst_major, bst_minor)
-
-
 @cli.command(short_help="Initialize a new BuildStream project")
 @click.option("--project-name", type=click.STRING, help="The project name to use")
 @click.option(
-    "--min-version",
-    type=click.STRING,
-    default=default_min_version(),
-    show_default=True,
-    help="The required format version",
+    "--min-version", type=click.STRING, default="2.0", show_default=True, help="The required format version",
 )
 @click.option(
     "--element-path",
