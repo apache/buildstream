@@ -1590,71 +1590,71 @@ class Element(Plugin):
 
                     raise
 
-                try:
-                    collectvdir = sandbox_vroot.descend(collect.lstrip(os.sep).split(os.sep))
-                except VirtualDirectoryError:
-                    raise ElementError(
-                        "Directory '{}' was not found inside the sandbox, "
-                        "unable to collect artifact contents"
-                        .format(collect))
-
-                # At this point, we expect an exception was raised leading to
-                # an error message, or we have good output to collect.
-
-                # Create artifact directory structure
-                assembledir = os.path.join(rootdir, 'artifact')
-                filesdir = os.path.join(assembledir, 'files')
-                logsdir = os.path.join(assembledir, 'logs')
-                metadir = os.path.join(assembledir, 'meta')
-                os.mkdir(assembledir)
-                os.mkdir(filesdir)
-                os.mkdir(logsdir)
-                os.mkdir(metadir)
-
-                # Hard link files from collect dir to files directory
-                collectvdir.export_files(filesdir, can_link=True)
-
-                # Copy build log
-                log_filename = context.get_log_filename()
-                if log_filename:
-                    shutil.copyfile(log_filename, os.path.join(logsdir, 'build.log'))
-
-                # Store public data
-                _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
-
-                # ensure we have cache keys
-                self._assemble_done()
-
-                # Store keys.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    'strong': self._get_cache_key(),
-                    'weak': self._get_cache_key(_KeyStrength.WEAK),
-                }), os.path.join(metadir, 'keys.yaml'))
-
-                # Store dependencies.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
-                }), os.path.join(metadir, 'dependencies.yaml'))
-
-                # Store workspaced.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    'workspaced': True if self._get_workspace() else False
-                }), os.path.join(metadir, 'workspaced.yaml'))
-
-                # Store workspaced-dependencies.yaml
-                _yaml.dump(_yaml.node_sanitize({
-                    'workspaced-dependencies': [
-                        e.name for e in self.dependencies(Scope.BUILD)
-                        if e._get_workspace()
-                    ]
-                }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
-
                 with self.timed_activity("Caching artifact"):
+                    try:
+                        collectvdir = sandbox_vroot.descend(collect.lstrip(os.sep).split(os.sep))
+                    except VirtualDirectoryError:
+                        raise ElementError(
+                            "Directory '{}' was not found inside the sandbox, "
+                            "unable to collect artifact contents"
+                            .format(collect))
+
+                    # At this point, we expect an exception was raised leading to
+                    # an error message, or we have good output to collect.
+
+                    # Create artifact directory structure
+                    assembledir = os.path.join(rootdir, 'artifact')
+                    filesdir = os.path.join(assembledir, 'files')
+                    logsdir = os.path.join(assembledir, 'logs')
+                    metadir = os.path.join(assembledir, 'meta')
+                    os.mkdir(assembledir)
+                    os.mkdir(filesdir)
+                    os.mkdir(logsdir)
+                    os.mkdir(metadir)
+
+                    # Hard link files from collect dir to files directory
+                    collectvdir.export_files(filesdir, can_link=True)
+
+                    # Copy build log
+                    log_filename = context.get_log_filename()
+                    if log_filename:
+                        shutil.copyfile(log_filename, os.path.join(logsdir, 'build.log'))
+
+                    # Store public data
+                    _yaml.dump(_yaml.node_sanitize(self.__dynamic_public), os.path.join(metadir, 'public.yaml'))
+
+                    # ensure we have cache keys
+                    self._assemble_done()
+
+                    # Store keys.yaml
+                    _yaml.dump(_yaml.node_sanitize({
+                        'strong': self._get_cache_key(),
+                        'weak': self._get_cache_key(_KeyStrength.WEAK),
+                    }), os.path.join(metadir, 'keys.yaml'))
+
+                    # Store dependencies.yaml
+                    _yaml.dump(_yaml.node_sanitize({
+                        e.name: e._get_cache_key() for e in self.dependencies(Scope.BUILD)
+                    }), os.path.join(metadir, 'dependencies.yaml'))
+
+                    # Store workspaced.yaml
+                    _yaml.dump(_yaml.node_sanitize({
+                        'workspaced': True if self._get_workspace() else False
+                    }), os.path.join(metadir, 'workspaced.yaml'))
+
+                    # Store workspaced-dependencies.yaml
+                    _yaml.dump(_yaml.node_sanitize({
+                        'workspaced-dependencies': [
+                            e.name for e in self.dependencies(Scope.BUILD)
+                            if e._get_workspace()
+                        ]
+                    }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
+
                     artifact_size = utils._get_dir_size(assembledir)
                     self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
 
-            # Finally cleanup the build dir
-            cleanup_rootdir()
+                    # Finally cleanup the build dir
+                    cleanup_rootdir()
 
         return artifact_size
 
