@@ -331,7 +331,7 @@ docs:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   variables:
     FD_SDK_REF: valentindavid/bst2
-    BST_EXT_REF: 1.93.3
+    BST_EXT_REF: 1.93.4
   before_script:
   - |
     mkdir -p "${HOME}/.config"
@@ -339,7 +339,7 @@ docs:
     scheduler:
       fetchers: 2
     EOF
-  - dnf install -y ostree python3-gobject-base
+  - dnf install -y ostree
   # Install pinned BuildStream dependencies, BuildStream from the local repository
   # and bst-plugins-expeirmental from its repository
   - |
