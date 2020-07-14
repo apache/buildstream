@@ -214,3 +214,8 @@ class FileBasedDirectory(Directory):
         # which exposes the sandbox directory; we will have to assume for the time being
         # that people will not abuse __str__.
         return self.external_directory
+
+    def _get_underlying_directory(self) -> str:
+        """ Returns the underlying (real) file system directory this
+        object refers to. """
+        return self.external_directory
