@@ -99,8 +99,9 @@ from ._platform import Platform
 from .sandbox._config import SandboxConfig
 from .types import CoreWarnings, _KeyStrength
 
-from .storage.directory import Directory
-from .storage._filebaseddirectory import FileBasedDirectory, VirtualDirectoryError
+from .storage.directory import Directory, VirtualDirectoryError
+from .storage._filebaseddirectory import FileBasedDirectory
+from .storage._casbaseddirectory import CasBasedDirectory
 
 
 class Scope(Enum):
@@ -1602,19 +1603,24 @@ class Element(Plugin):
                     # At this point, we expect an exception was raised leading to
                     # an error message, or we have good output to collect.
 
+                    context = self._get_context()
+
+                    assemblevdir = CasBasedDirectory(cas_cache=context.artifactcache.cas, ref=None)
+                    logsvdir = assemblevdir.descend("logs", create=True)
+                    metavdir = assemblevdir.descend("meta", create=True)
+
                     # Create artifact directory structure
                     assembledir = os.path.join(rootdir, 'artifact')
-                    filesdir = os.path.join(assembledir, 'files')
                     logsdir = os.path.join(assembledir, 'logs')
                     metadir = os.path.join(assembledir, 'meta')
                     os.mkdir(assembledir)
-                    os.mkdir(filesdir)
                     os.mkdir(logsdir)
                     os.mkdir(metadir)
 
-                    # Hard link files from collect dir to files directory
-                    collectvdir.export_files(filesdir, can_link=True)
+                    filesvdir = assemblevdir.descend("files", create=True)
+                    filesvdir.import_files(collectvdir)
 
+                    # Write some logs out to normal directories: logsdir and metadir
                     # Copy build log
                     log_filename = context.get_log_filename()
                     if log_filename:
@@ -1650,8 +1656,11 @@ class Element(Plugin):
                         ]
                     }), os.path.join(metadir, 'workspaced-dependencies.yaml'))
 
-                    artifact_size = utils._get_dir_size(assembledir)
-                    self.__artifacts.commit(self, assembledir, self.__get_cache_keys_for_commit())
+                    metavdir.import_files(metadir)
+                    logsvdir.import_files(logsdir)
+
+                    artifact_size = assemblevdir.get_size()
+                    self.__artifacts.commit(self, assemblevdir, self.__get_cache_keys_for_commit())
 
                     # Finally cleanup the build dir
                     cleanup_rootdir()
