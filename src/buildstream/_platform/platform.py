@@ -41,7 +41,6 @@ class Platform:
 
     def _setup_sandbox(self):
         # Try to setup buildbox-run sandbox, otherwise fallback to the dummy sandbox.
-        # Where `first_class` sandboxes are those in preferred_sandboxes
         try:
             self._setup_buildboxrun_sandbox()
         except (SandboxError, utils.ProgramNotFoundError):
