@@ -330,7 +330,7 @@ docs:
   stage: test
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   variables:
-    FD_SDK_REF: valentindavid/bst2
+    FD_SDK_REF: freedesktop-sdk-20.08beta.1-buildstream2
     BST_EXT_REF: 1.93.4
   before_script:
   - |
