@@ -5,6 +5,7 @@ import os
 
 import pytest
 
+from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 
@@ -149,3 +150,19 @@ def test_link_invalid_config(cli, tmpdir, datafiles, target, expected_error, exp
     project = os.path.join(str(datafiles), "invalid")
     result = cli.run(project=project, args=["show", target])
     result.assert_main_error(expected_error, expected_reason)
+
+
+#
+# Test including files across the boundry a link to a subproject's junction
+#
+@pytest.mark.datafiles(DATA_DIR)
+def test_cross_link_junction_include(cli, tmpdir, datafiles):
+    project = os.path.join(str(datafiles), "cross-link-junction-include")
+
+    # Show the variables and parse our test variable from the subsubproject
+    result = cli.run(project=project, args=["show", "--format", "%{vars}", "target.bst"])
+    result.assert_success()
+
+    # Read back some of our project defaults from the env
+    variables = _yaml.load_data(result.output)
+    assert variables.get_str("test") == "the test"
