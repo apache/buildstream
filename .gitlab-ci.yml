@@ -152,7 +152,7 @@ tests-fedora-missing-deps:
     - useradd -Um buildstream
     - chown -R buildstream:buildstream .
 
-    - ${TEST_COMMAND}
+    - su buildstream -c "${TEST_COMMAND}"
 
 
 tests-fedora-update-deps:
