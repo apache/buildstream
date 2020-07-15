@@ -70,4 +70,4 @@ class MetaElement:
         self.dependencies = []
         self.strict_dependencies = []
         self.first_pass = first_pass
-        self.is_junction = kind == "junction"
+        self.is_junction = kind in ("junction", "link")
