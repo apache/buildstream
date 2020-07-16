@@ -281,7 +281,7 @@ class Loader:
 
         # if there's a workspace for this element then just append a dummy workspace
         # metasource.
-        workspace = self.load_context.context.get_workspaces().get_workspace(element.name)
+        workspace = self.load_context.context.get_workspaces().get_workspace(element.full_name)
         skip_workspace = True
         if workspace:
             workspace_node = {"kind": "workspace"}
