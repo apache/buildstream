@@ -361,6 +361,8 @@ overnight-tests:
   - make -C freedesktop-sdk
   tags:
   - overnight-tests
+  variables:
+    ARTIFACT_CACHE_SERVICE: http://cache.aws.celduin.co.uk
 
 overnight-tests-no-cache:
   <<: *overnight-tests-template
