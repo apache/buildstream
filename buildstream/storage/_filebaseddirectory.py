@@ -30,10 +30,13 @@ See also: :ref:`sandboxing`.
 import os
 import stat
 import time
-from .directory import Directory, VirtualDirectoryError
+
+from .directory import Directory, VirtualDirectoryError, _FileType
 from .. import utils
 from ..utils import link_files, copy_files, list_relative_paths, _get_link_mtime, _magic_timestamp
 from ..utils import _set_deterministic_user, _set_deterministic_mtime
+from ..utils import _ensure_real_directory, _relative_symlink_target, safe_remove
+from ..utils import FileListResult
 
 # FileBasedDirectory intentionally doesn't call its superclass constuctor,
 # which is meant to be unimplemented.
@@ -80,19 +83,31 @@ class FileBasedDirectory(Directory):
                      can_link=False):
         """ See superclass Directory for arguments """
 
-        if isinstance(external_pathspec, Directory):
-            source_directory = external_pathspec.external_directory
-        else:
-            source_directory = external_pathspec
+        from ._casbaseddirectory import CasBasedDirectory
 
-        if can_link and not update_mtime:
-            import_result = link_files(source_directory, self.external_directory,
-                                       filter_callback=filter_callback,
-                                       ignore_missing=False, report_written=report_written)
+        if isinstance(external_pathspec, CasBasedDirectory):
+            if can_link and not update_mtime:
+                actionfunc = utils.safe_link
+            else:
+                actionfunc = utils.safe_copy
+
+            import_result = FileListResult()
+            self._import_files_from_cas(external_pathspec, actionfunc, filter_callback, result=import_result)
         else:
-            import_result = copy_files(source_directory, self.external_directory,
-                                       filter_callback=filter_callback,
-                                       ignore_missing=False, report_written=report_written)
+            if isinstance(external_pathspec, Directory):
+                source_directory = external_pathspec.external_directory
+            else:
+                source_directory = external_pathspec
+
+            if can_link and not update_mtime:
+                import_result = link_files(source_directory, self.external_directory,
+                                           filter_callback=filter_callback,
+                                           ignore_missing=False, report_written=report_written)
+            else:
+                import_result = copy_files(source_directory, self.external_directory,
+                                           filter_callback=filter_callback,
+                                           ignore_missing=False, report_written=report_written)
+
         if update_mtime:
             cur_time = time.time()
 
@@ -202,3 +217,71 @@ class FileBasedDirectory(Directory):
             return _FileType.REGULAR_FILE
         else:
             return _FileType.SPECIAL_FILE
+
+    def _import_files_from_cas(self, source_directory, actionfunc, filter_callback, *, path_prefix="", result):
+        """ Import files from a CAS-based directory. """
+
+        filelist = source_directory.list_relative_paths()
+
+        if filter_callback:
+            filelist = [path for path in filelist if filter_callback(path)]
+
+        # Sorting the list of files is necessary to ensure that we processes
+        # symbolic links which lead to directories before processing files inside
+        # those directories.
+        filelist = sorted(filelist)
+
+        # Now walk the list
+        for path in filelist:
+            destpath = os.path.join(self.external_directory, path)
+
+            # Add to the results the list of files written
+            result.files_written.append(path)
+
+            # Collect overlaps
+            if os.path.lexists(destpath) and not os.path.isdir(destpath):
+                result.overwritten.append(path)
+
+            # Ensure that broken symlinks to directories have their targets
+            # created before attempting to stage files across broken
+            # symlink boundaries
+            _ensure_real_directory(self.external_directory, os.path.dirname(destpath))
+
+            entry = source_directory._lightweight_resolve_to_index(path)
+            item = entry.pb_object
+
+            if entry.type == _FileType.DIRECTORY:
+                # Ensure directory exists in destination
+                if not os.path.exists(destpath):
+                    _ensure_real_directory(self.external_directory, destpath)
+
+                dest_stat = os.lstat(os.path.realpath(destpath))
+                if not stat.S_ISDIR(dest_stat.st_mode):
+                    raise UtilError('Destination not a directory. source has {}'
+                                    ' destination has {}'.format(path, destpath))
+
+            elif entry.type == _FileType.SYMLINK:
+                if not safe_remove(destpath):
+                    result.ignored.append(path)
+                    continue
+
+                target = item.target
+                target = _relative_symlink_target(self.external_directory, destpath, target)
+                os.symlink(target, destpath)
+
+            elif entry.type == _FileType.REGULAR_FILE:
+                # Process the file.
+                if not safe_remove(destpath):
+                    result.ignored.append(path)
+                    continue
+
+                src_path = source_directory.cas_cache.objpath(item.digest)
+                actionfunc(src_path, destpath, result=result)
+
+                if item.is_executable:
+                    os.chmod(destpath, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
+                             stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+
+            else:
+                # Unsupported type.
+                raise UtilError('Cannot extract {} into staging-area. Unsupported type.'.format(path))
