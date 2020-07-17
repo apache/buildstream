@@ -48,8 +48,8 @@ PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
 # is added to the concatenation for the result.  Finally ", how are you?" is
 # copied in and the whole lot concatenated for return.
 #
-# To see how strings are parsed, see `_parse_expstr()` after the class, and
-# to see how expansion strings are expanded, see `_expand_expstr()` after that.
+# To see how strings are parsed, see `_parse_value_expression()` after the class, and
+# to see how expansion strings are expanded, see `_expand_value_expression()` after that.
 
 
 # The Variables helper object will resolve the variable references in
@@ -74,9 +74,6 @@ cdef class Variables:
         self.original = node
         self._expstr_map = self._resolve(node)
 
-    def check(self):
-        self._check_variables()
-
     def __getitem__(self, str name):
         if name not in self._expstr_map:
             raise KeyError(name)
@@ -86,6 +83,17 @@ cdef class Variables:
             self._check_variables(subset=[name])
             raise
 
+    # __contains__()
+    #
+    # Checks whether a given variable exists, allows
+    # supporting `if 'foo' in variables` expressions.
+    #
+    # Args:
+    #    name (str): The name of the variable to check for
+    #
+    # Returns:
+    #    (bool): True if `name` is a valid variable
+    #
     def __contains__(self, str name):
         return name in self._expstr_map
 
@@ -98,6 +106,19 @@ cdef class Variables:
     #
     def __iter__(self):
         return _VariablesIterator(self._expstr_map)
+
+    # check()
+    #
+    # Assert that all variables declared on this Variables
+    # instance have been resolved properly, and reports errors
+    # for undefined references and circular references.
+    #
+    # Raises:
+    #   (LoadError): In the case of references to undefined variables
+    #                or circular variable references.
+    #
+    def check(self):
+        self._check_variables()
 
     # get()
     #
@@ -150,10 +171,10 @@ cdef class Variables:
     #    LoadError, if the string contains unresolved variable references.
     #
     cpdef subst(self, str string):
-        expstr = _parse_expstr(string)
+        expstr = _parse_value_expression(string)
 
         try:
-            return _expand_expstr(self._expstr_map, expstr)
+            return _expand_value_expression(self._expstr_map, expstr)
         except (KeyError, RecursionError):
             # We also check for unmatch for recursion errors since _check_variables expects
             # subset to be defined
@@ -196,9 +217,8 @@ cdef class Variables:
 
         for key in node.keys():
             value = node.get_str(key)
-            ret[sys.intern(key)] = _parse_expstr(value)
+            ret[sys.intern(key)] = _parse_value_expression(value)
         return ret
-
 
     def _check_variables(self, *, subset=None):
         summary = []
@@ -239,7 +259,7 @@ cdef class Variables:
 # something which might "waste" memory, in reality each of these
 # will live as long as the element which uses it, which is the
 # vast majority of the memory usage across the execution of BuildStream.
-cdef dict PARSE_CACHE = {
+cdef dict VALUE_EXPRESSION_CACHE = {
     # Prime the cache with the empty string since otherwise that can
     # cause issues with the parser, complications to which cause slowdown
     "": [""],
@@ -249,11 +269,11 @@ cdef dict PARSE_CACHE = {
 # Helper to parse a string into an expansion string tuple, caching
 # the results so that future parse requests don't need to think about
 # the string
-cdef list _parse_expstr(str instr):
+cdef list _parse_value_expression(str instr):
     cdef list ret
 
     try:
-        return <list> PARSE_CACHE[instr]
+        return <list> VALUE_EXPRESSION_CACHE[instr]
     except KeyError:
         # This use of the regex turns a string like "foo %{bar} baz" into
         # a list ["foo ", "bar", " baz"]
@@ -268,7 +288,7 @@ cdef list _parse_expstr(str instr):
         # but this is measurably cheaper than calculating it each time during
         # string expansion.
         ret = [sys.intern(<str> s) for s in <list> splits]
-        PARSE_CACHE[instr] = ret
+        VALUE_EXPRESSION_CACHE[instr] = ret
         return ret
 
 
@@ -291,7 +311,7 @@ cdef str _expand_var(dict content, str name, int counter = 0):
     cdef str sub
 
     if len(content[name]) > 1:
-        sub = _expand_expstr(content, <list> content[name], counter)
+        sub = _expand_value_expression(content, <list> content[name], counter)
         content[name] = [sys.intern(sub)]
 
     return content[name][0]
@@ -312,7 +332,7 @@ cdef str _expand_var(dict content, str name, int counter = 0):
 #     KeyError, if any expansion is missing
 #     RecursionError, if recursion required for evaluation is too deep
 #
-cdef str _expand_expstr(dict content, list value, int counter = 0):
+cdef str _expand_value_expression(dict content, list value, int counter = 0):
     if counter > 1000:
         raise RecursionError()
 
