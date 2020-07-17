@@ -78,7 +78,7 @@ cdef class Variables:
         if name not in self._expstr_map:
             raise KeyError(name)
         try:
-            return _expand_var(self._expstr_map, name)
+            return self._expand_var(name)
         except (KeyError, RecursionError):
             self._check_variables(subset=[name])
             raise
@@ -105,7 +105,7 @@ cdef class Variables:
     #   (Iterator[Tuple[str, str]])
     #
     def __iter__(self):
-        return _VariablesIterator(self._expstr_map)
+        return _VariablesIterator(self)
 
     # check()
     #
@@ -171,17 +171,17 @@ cdef class Variables:
     #    LoadError, if the string contains unresolved variable references.
     #
     cpdef subst(self, str string):
-        expstr = _parse_value_expression(string)
+        value_expression = _parse_value_expression(string)
 
         try:
-            return _expand_value_expression(self._expstr_map, expstr)
+            return self._expand_value_expression(value_expression)
         except (KeyError, RecursionError):
             # We also check for unmatch for recursion errors since _check_variables expects
             # subset to be defined
             unmatched = []
 
             # Look for any unmatched variable names in the expansion string
-            for var in expstr[1::2]:
+            for var in value_expression[1::2]:
                 if var not in self._expstr_map:
                     unmatched.append(var)
 
@@ -194,7 +194,7 @@ cdef class Variables:
                 raise LoadError(message, LoadErrorReason.UNRESOLVED_VARIABLE)
 
             # Otherwise the missing key is from a variable definition
-            self._check_variables(subset=expstr[1::2])
+            self._check_variables(subset=value_expression[1::2])
             # Otherwise, re-raise the KeyError since it clearly came from some
             # other unknowable cause.
             raise
@@ -255,6 +255,67 @@ cdef class Variables:
             raise LoadError("Failed to resolve one or more variable:\n{}\n".format("\n".join(summary)),
                             LoadErrorReason.UNRESOLVED_VARIABLE)
 
+
+    # _expand_var()
+    #
+    # Helper to expand and cache a variable definition.
+    #
+    # Args:
+    #     name (str): Name of the variable to expand
+    #     counter (int): Recursion counter
+    #
+    # Returns:
+    #     (str): The expanded value of variable
+    #
+    # Raises:
+    #     KeyError, if any expansion is missing
+    #     RecursionError, if recursion required for evaluation is too deep
+    #
+    cdef str _expand_var(self, str name, int counter = 0):
+        cdef str sub
+
+        if len(self._expstr_map[name]) > 1:
+            sub = self._expand_value_expression(<list> self._expstr_map[name], counter)
+            self._expstr_map[name] = [sys.intern(sub)]
+
+        return self._expstr_map[name][0]
+
+    # _expand_value_expression()
+    #
+    # Helper to expand a given top level expansion string tuple in the context
+    # of the given dictionary of expansion strings.
+    #
+    # Args:
+    #     name (str): Name of the variable to expand
+    #     counter (int): Recursion counter
+    #
+    # Returns:
+    #     (str): The expanded value of variable
+    #
+    # Raises:
+    #     KeyError, if any expansion is missing
+    #     RecursionError, if recursion required for evaluation is too deep
+    #
+    cdef str _expand_value_expression(self, list value, int counter = 0):
+        if counter > 1000:
+            raise RecursionError()
+
+        cdef Py_ssize_t idx = 0
+        cdef Py_ssize_t value_len = len(value)
+        cdef str sub
+        cdef list acc = []
+
+        while idx < value_len:
+            acc.append(value[idx])
+            idx += 1
+
+            if idx < value_len:
+                acc.append(self._expand_var(<str> value[idx], counter + 1))
+            idx += 1
+
+        return "".join(acc)
+
+
 # Cache for the parsed expansion strings.  While this is nominally
 # something which might "waste" memory, in reality each of these
 # will live as long as the element which uses it, which is the
@@ -292,79 +353,19 @@ cdef list _parse_value_expression(str instr):
         return ret
 
 
-# Helper to expand and cache a variable definition in the context of
-# the given dictionary of expansion strings.
-#
-# Args:
-#     content (dict): Dictionary of expansion strings
-#     name (str): Name of the variable to expand
-#     counter (int): Recursion counter
-#
-# Returns:
-#     (str): The expanded value of variable
-#
-# Raises:
-#     KeyError, if any expansion is missing
-#     RecursionError, if recursion required for evaluation is too deep
-#
-cdef str _expand_var(dict content, str name, int counter = 0):
-    cdef str sub
-
-    if len(content[name]) > 1:
-        sub = _expand_value_expression(content, <list> content[name], counter)
-        content[name] = [sys.intern(sub)]
-
-    return content[name][0]
-
-
-# Helper to expand a given top level expansion string tuple in the context
-# of the given dictionary of expansion strings.
-#
-# Args:
-#     content (dict): Dictionary of expansion strings
-#     name (str): Name of the variable to expand
-#     counter (int): Recursion counter
-#
-# Returns:
-#     (str): The expanded value of variable
-#
-# Raises:
-#     KeyError, if any expansion is missing
-#     RecursionError, if recursion required for evaluation is too deep
-#
-cdef str _expand_value_expression(dict content, list value, int counter = 0):
-    if counter > 1000:
-        raise RecursionError()
-
-    cdef Py_ssize_t idx = 0
-    cdef Py_ssize_t value_len = len(value)
-    cdef str sub
-    cdef list acc = []
-
-    while idx < value_len:
-        acc.append(value[idx])
-        idx += 1
-
-        if idx < value_len:
-            acc.append(_expand_var(content, <str> value[idx], counter + 1))
-        idx += 1
-
-    return "".join(acc)
-
-
 # Iterator for all flatten variables.
 # Used by Variables.__iter__
 cdef class _VariablesIterator:
-    cdef dict _expstr_map
+    cdef Variables _variables
     cdef object _iter
 
-    def __init__(self, dict expstr_map):
-        self._expstr_map = expstr_map
-        self._iter = iter(expstr_map)
+    def __init__(self, Variables variables):
+        self._variables = variables
+        self._iter = iter(variables._expstr_map)
 
     def __iter__(self):
         return self
 
     def __next__(self):
         name = next(self._iter)
-        return name, _expand_var(self._expstr_map, name)
+        return name, self._variables._expand_var(name)
