@@ -197,7 +197,8 @@ cdef class Variables:
                     unmatched.append(var)
 
             if unmatched:
-                message = "Unresolved variable{}: {}".format(
+                message = "{}: Unresolved variable{}: {}".format(
+                    node.get_provenance(),
                     "s" if len(unmatched) > 1 else "",
                     ", ".join(unmatched)
                 )
