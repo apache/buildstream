@@ -152,8 +152,7 @@ tests-fedora-missing-deps:
     - useradd -Um buildstream
     - chown -R buildstream:buildstream .
 
-    - ${TEST_COMMAND}
-    - ${PLUGINS_TESTS_COMMAND}
+    - su buildstream -c "${TEST_COMMAND}"
 
 
 tests-fedora-update-deps:
@@ -171,7 +170,6 @@ tests-fedora-update-deps:
     - cat requirements/*.txt
 
     - su buildstream -c "${TEST_COMMAND}"
-    - su buildstream -c "${PLUGINS_TESTS_COMMAND}"
 
 tests-remote-execution:
   allow_failure: true
