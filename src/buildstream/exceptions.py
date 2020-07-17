@@ -142,3 +142,6 @@ class LoadErrorReason(Enum):
 
     CIRCULAR_REFERENCE = 26
     """A circular element reference was detected"""
+
+    CIRCULAR_REFERENCE_VARIABLE = 27
+    """A circular variable reference was detected"""
