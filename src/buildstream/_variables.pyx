@@ -67,15 +67,26 @@ PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
 #
 cdef class Variables:
 
-    cdef MappingNode original
-    cdef dict _expstr_map
+    cdef MappingNode _original
+    cdef dict _values
 
     def __init__(self, MappingNode node):
-        self.original = node
-        self._expstr_map = self._resolve(node)
+
+        # The original MappingNode, we need to keep this
+        # around for proper error reporting.
+        #
+        self._original = node
+
+        # The value map, this dictionary contains either unresolved
+        # value expressions, or resolved values.
+        #
+        # Each mapping value is a list, in the case that the value
+        # is resolved, then the list is only 1 element long.
+        #
+        self._values = self._init_values(node)
 
     def __getitem__(self, str name):
-        if name not in self._expstr_map:
+        if name not in self._values:
             raise KeyError(name)
         try:
             return self._expand_var(name)
@@ -95,7 +106,7 @@ cdef class Variables:
     #    (bool): True if `name` is a valid variable
     #
     def __contains__(self, str name):
-        return name in self._expstr_map
+        return name in self._values
 
     # __iter__()
     #
@@ -132,7 +143,7 @@ cdef class Variables:
     #   (str|None): The expanded value for the variable or None variable was not defined.
     #
     cpdef str get(self, str name):
-        if name not in self._expstr_map:
+        if name not in self._values:
             return None
         return self[name]
 
@@ -147,7 +158,7 @@ cdef class Variables:
     #
     cpdef expand(self, Node node):
         if isinstance(node, ScalarNode):
-            (<ScalarNode> node).value = self.subst((<ScalarNode> node).value)
+            (<ScalarNode> node).value = self.subst(<ScalarNode> node)
         elif isinstance(node, SequenceNode):
             for entry in (<SequenceNode> node).value:
                 self.expand(entry)
@@ -162,7 +173,7 @@ cdef class Variables:
     # Substitutes any variables in 'string' and returns the result.
     #
     # Args:
-    #    (string): The string to substitute
+    #    (ScalarNode): The ScalarNode to substitute variables in
     #
     # Returns:
     #    (string): The new string with any substitutions made
@@ -170,8 +181,8 @@ cdef class Variables:
     # Raises:
     #    LoadError, if the string contains unresolved variable references.
     #
-    cpdef subst(self, str string):
-        value_expression = _parse_value_expression(string)
+    cpdef subst(self, ScalarNode node):
+        value_expression = _parse_value_expression(node.as_str())
 
         try:
             return self._expand_value_expression(value_expression)
@@ -182,7 +193,7 @@ cdef class Variables:
 
             # Look for any unmatched variable names in the expansion string
             for var in value_expression[1::2]:
-                if var not in self._expstr_map:
+                if var not in self._values:
                     unmatched.append(var)
 
             if unmatched:
@@ -203,7 +214,7 @@ cdef class Variables:
     #
     # Here we resolve all of our inputs into a dictionary, ready for use
     # in subst()
-    cdef dict _resolve(self, MappingNode node):
+    cdef dict _init_values(self, MappingNode node):
         # Special case, if notparallel is specified in the variables for this
         # element, then override max-jobs to be 1.
         # Initialize it as a string as all variables are processed as strings.
@@ -233,22 +244,22 @@ cdef class Variables:
                     chain.reverse()
                     for i in range(len(chain)-1):
                         line = "  Variable '{variable}' recusively uses '{rec}' at: {provenance}"
-                        provenance = self.original.get_scalar(chain[i]).get_provenance()
+                        provenance = self._original.get_scalar(chain[i]).get_provenance()
                         summary.append(line.format(rec=chain[i+1], variable=chain[i], provenance=provenance))
-                elif var not in self._expstr_map:
+                elif var not in self._values:
                     line = "  unresolved variable '{unmatched}' in declaration of '{variable}' at: {provenance}"
-                    provenance = self.original.get_scalar(name).get_provenance()
+                    provenance = self._original.get_scalar(name).get_provenance()
                     summary.append(line.format(unmatched=var, variable=name, provenance=provenance))
                 else:
                     visited.append(var)
-                    rec_check(var, self._expstr_map[var], visited, cleared)
+                    rec_check(var, self._values[var], visited, cleared)
                     visited.pop()
                     cleared.add(var)
 
         cleared = set()
-        for key in subset if subset is not None else self._expstr_map:
+        for key in subset if subset is not None else self._values:
             visited = []
-            rec_check(key, self._expstr_map[key], visited, cleared)
+            rec_check(key, self._values[key], visited, cleared)
             cleared.add(key)
 
         if summary:
@@ -274,11 +285,11 @@ cdef class Variables:
     cdef str _expand_var(self, str name, int counter = 0):
         cdef str sub
 
-        if len(self._expstr_map[name]) > 1:
-            sub = self._expand_value_expression(<list> self._expstr_map[name], counter)
-            self._expstr_map[name] = [sys.intern(sub)]
+        if len(self._values[name]) > 1:
+            sub = self._expand_value_expression(<list> self._values[name], counter)
+            self._values[name] = [sys.intern(sub)]
 
-        return self._expstr_map[name][0]
+        return self._values[name][0]
 
     # _expand_value_expression()
     #
@@ -361,7 +372,7 @@ cdef class _VariablesIterator:
 
     def __init__(self, Variables variables):
         self._variables = variables
-        self._iter = iter(variables._expstr_map)
+        self._iter = iter(variables._values)
 
     def __iter__(self):
         return self
