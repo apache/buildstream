@@ -180,7 +180,16 @@ cdef class Variables:
     #                 a cyclic variable reference
     #
     cpdef expand(self, Node node):
-        self._expand(node)
+        if isinstance(node, ScalarNode):
+            (<ScalarNode> node).value = self.subst(<ScalarNode> node)
+        elif isinstance(node, SequenceNode):
+            for entry in (<SequenceNode> node).value:
+                self.expand(entry)
+        elif isinstance(node, MappingNode):
+            for entry in (<MappingNode> node).value.values():
+                self.expand(entry)
+        else:
+            assert False, "Unknown 'Node' type"
 
     # subst():
     #
@@ -197,7 +206,8 @@ cdef class Variables:
     #                 a cyclic variable reference
     #
     cpdef str subst(self, ScalarNode node):
-        return self._subst(node)
+        value_expression = _parse_value_expression(node.as_str())
+        return self._expand_value_expression(value_expression)
 
     #################################################################
     #                          Private API                          #
@@ -223,30 +233,6 @@ cdef class Variables:
             value = node.get_str(key)
             ret[sys.intern(key)] = _parse_value_expression(value)
         return ret
-
-    # _expand():
-    #
-    # Internal pure cython implementation of Variables.expand().
-    #
-    cdef _expand(self, Node node):
-        if isinstance(node, ScalarNode):
-            (<ScalarNode> node).value = self._subst(<ScalarNode> node)
-        elif isinstance(node, SequenceNode):
-            for entry in (<SequenceNode> node).value:
-                self._expand(entry)
-        elif isinstance(node, MappingNode):
-            for entry in (<MappingNode> node).value.values():
-                self._expand(entry)
-        else:
-            assert False, "Unknown 'Node' type"
-
-    # _subst():
-    #
-    # Internal pure cython implementation of Variables.subst().
-    #
-    cdef str _subst(self, ScalarNode node):
-        value_expression = _parse_value_expression(node.as_str())
-        return self._expand_value_expression(value_expression)
 
     # _check_variables()
     #
