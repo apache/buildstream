@@ -661,23 +661,21 @@ class Element(Plugin):
         # Time to use the artifact, check once more that it's there
         self.__assert_cached()
 
-        with self.timed_activity("Staging {}/{}".format(self.name, self._get_brief_display_key())):
-            # Disable type checking since we can't easily tell mypy that
-            # `self.__artifact` can't be None at this stage.
-            files_vdir = self.__artifact.get_files()  # type: ignore
+        self.status("Staging {}/{}".format(self.name, self._get_brief_display_key()))
+        # Disable type checking since we can't easily tell mypy that
+        # `self.__artifact` can't be None at this stage.
+        files_vdir = self.__artifact.get_files()  # type: ignore
 
-            # Hard link it into the staging area
-            #
-            vbasedir = sandbox.get_virtual_directory()
-            vstagedir = vbasedir if path is None else vbasedir.descend(*path.lstrip(os.sep).split(os.sep), create=True)
+        # Hard link it into the staging area
+        #
+        vbasedir = sandbox.get_virtual_directory()
+        vstagedir = vbasedir if path is None else vbasedir.descend(*path.lstrip(os.sep).split(os.sep), create=True)
 
-            split_filter = self.__split_filter_func(include, exclude, orphans)
+        split_filter = self.__split_filter_func(include, exclude, orphans)
 
-            result = vstagedir.import_files(
-                files_vdir, filter_callback=split_filter, report_written=True, can_link=True
-            )
+        result = vstagedir.import_files(files_vdir, filter_callback=split_filter, report_written=True, can_link=True)
 
-            return result
+        return result
 
     def stage_dependency_artifacts(
         self,
