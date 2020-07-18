@@ -196,7 +196,7 @@ cdef class Variables:
     # Substitutes any variables in 'string' and returns the result.
     #
     # Args:
-    #    (ScalarNode): The ScalarNode to substitute variables in
+    #    node (ScalarNode): The ScalarNode to substitute variables in
     #
     # Returns:
     #    (str): The new string with any substitutions made
@@ -207,7 +207,7 @@ cdef class Variables:
     #
     cpdef str subst(self, ScalarNode node):
         value_expression = _parse_value_expression(node.as_str())
-        return self._expand_value_expression(value_expression)
+        return self._expand_value_expression(value_expression, node)
 
     #################################################################
     #                          Private API                          #
@@ -316,11 +316,11 @@ cdef class Variables:
 
     # _expand_value_expression()
     #
-    # Helper to expand a given top level expansion string tuple in the context
-    # of the given dictionary of expansion strings.
+    # Expands a given top level expansion string.
     #
     # Args:
     #     value_expression (list): The parsed value expression to be expanded
+    #     node (ScalarNode): The toplevel ScalarNode who is asking for an expansion
     #
     # Returns:
     #     (str): The expanded value expression
@@ -329,7 +329,7 @@ cdef class Variables:
     #     KeyError, if any expansion is missing
     #     RecursionError, if recursion required for evaluation is too deep
     #
-    cdef str _expand_value_expression(self, list value_expression):
+    cdef str _expand_value_expression(self, list value_expression, ScalarNode node):
         try:
             return self._fast_expand_value_expression(value_expression)
         except (KeyError, RecursionError):
@@ -343,7 +343,8 @@ cdef class Variables:
                     unmatched.append(var)
 
             if unmatched:
-                message = "Unresolved variable{}: {}".format(
+                message = "{}: Unresolved variable{}: {}".format(
+                    node.get_provenance(),
                     "s" if len(unmatched) > 1 else "",
                     ", ".join(unmatched)
                 )
