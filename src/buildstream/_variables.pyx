@@ -70,6 +70,9 @@ cdef class Variables:
     cdef MappingNode _original
     cdef dict _values
 
+    #################################################################
+    #                        Magic Methods                          #
+    #################################################################
     def __init__(self, MappingNode node):
 
         # The original MappingNode, we need to keep this
@@ -85,6 +88,21 @@ cdef class Variables:
         #
         self._values = self._init_values(node)
 
+    # __getitem__()
+    #
+    # Fetches a resolved variable by it's name, allows
+    # addressing the Variables instance like a dictionary.
+    #
+    # Args:
+    #    name (str): The name of the variable
+    #
+    # Returns:
+    #    (str): The resolved variable value
+    #
+    # Raises:
+    #    (LoadError): In the case of an undefined variable or
+    #                 a cyclic variable reference
+    #
     def __getitem__(self, str name):
         if name not in self._values:
             raise KeyError(name)
@@ -118,6 +136,10 @@ cdef class Variables:
     def __iter__(self):
         return _VariablesIterator(self)
 
+    #################################################################
+    #                          Public API                           #
+    #################################################################
+
     # check()
     #
     # Assert that all variables declared on this Variables
@@ -125,10 +147,10 @@ cdef class Variables:
     # for undefined references and circular references.
     #
     # Raises:
-    #   (LoadError): In the case of references to undefined variables
-    #                or circular variable references.
+    #    (LoadError): In the case of an undefined variable or
+    #                 a cyclic variable reference
     #
-    def check(self):
+    cpdef check(self):
         self._check_variables()
 
     # get()
@@ -137,10 +159,10 @@ cdef class Variables:
     # defined, it will return None instead of failing.
     #
     # Args:
-    #   name (str): Name of the variable to expand
+    #    name (str): Name of the variable to expand
     #
     # Returns:
-    #   (str|None): The expanded value for the variable or None variable was not defined.
+    #    (str|None): The expanded value for the variable or None variable was not defined.
     #
     cpdef str get(self, str name):
         if name not in self._values:
@@ -154,19 +176,14 @@ cdef class Variables:
     # the node untouched, you should use `node.clone()` beforehand
     #
     # Args:
-    #   (Node): A node for which to substitute the values
+    #    (Node): A node for which to substitute the values
+    #
+    # Raises:
+    #    (LoadError): In the case of an undefined variable or
+    #                 a cyclic variable reference
     #
     cpdef expand(self, Node node):
-        if isinstance(node, ScalarNode):
-            (<ScalarNode> node).value = self.subst(<ScalarNode> node)
-        elif isinstance(node, SequenceNode):
-            for entry in (<SequenceNode> node).value:
-                self.expand(entry)
-        elif isinstance(node, MappingNode):
-            for entry in (<MappingNode> node).value.values():
-                self.expand(entry)
-        else:
-            assert False, "Unknown 'Node' type"
+        self._expand(node)
 
     # subst():
     #
@@ -176,12 +193,61 @@ cdef class Variables:
     #    (ScalarNode): The ScalarNode to substitute variables in
     #
     # Returns:
-    #    (string): The new string with any substitutions made
+    #    (str): The new string with any substitutions made
     #
     # Raises:
-    #    LoadError, if the string contains unresolved variable references.
+    #    (LoadError): In the case of an undefined variable or
+    #                 a cyclic variable reference
     #
-    cpdef subst(self, ScalarNode node):
+    cpdef str subst(self, ScalarNode node):
+        return self._subst(node)
+
+    #################################################################
+    #                          Private API                          #
+    #################################################################
+
+    # Variable resolving code
+    #
+    # Here we resolve all of our inputs into a dictionary, ready for use
+    # in subst()
+    cdef dict _init_values(self, MappingNode node):
+        # Special case, if notparallel is specified in the variables for this
+        # element, then override max-jobs to be 1.
+        # Initialize it as a string as all variables are processed as strings.
+        #
+        if node.get_bool('notparallel', False):
+            node['max-jobs'] = str(1)
+
+        cdef dict ret = {}
+        cdef str key
+        cdef str value
+
+        for key in node.keys():
+            value = node.get_str(key)
+            ret[sys.intern(key)] = _parse_value_expression(value)
+        return ret
+
+    # _expand():
+    #
+    # Internal pure cython implementation of Variables.expand().
+    #
+    cdef _expand(self, Node node):
+        if isinstance(node, ScalarNode):
+            (<ScalarNode> node).value = self._subst(<ScalarNode> node)
+        elif isinstance(node, SequenceNode):
+            for entry in (<SequenceNode> node).value:
+                self._expand(entry)
+        elif isinstance(node, MappingNode):
+            for entry in (<MappingNode> node).value.values():
+                self._expand(entry)
+        else:
+            assert False, "Unknown 'Node' type"
+
+    # _subst():
+    #
+    # Internal pure cython implementation of Variables.subst().
+    #
+    cdef str _subst(self, ScalarNode node):
         value_expression = _parse_value_expression(node.as_str())
 
         try:
@@ -211,28 +277,12 @@ cdef class Variables:
             # other unknowable cause.
             raise
 
-    # Variable resolving code
+    # _check_variables()
     #
-    # Here we resolve all of our inputs into a dictionary, ready for use
-    # in subst()
-    cdef dict _init_values(self, MappingNode node):
-        # Special case, if notparallel is specified in the variables for this
-        # element, then override max-jobs to be 1.
-        # Initialize it as a string as all variables are processed as strings.
-        #
-        if node.get_bool('notparallel', False):
-            node['max-jobs'] = str(1)
-
-        cdef dict ret = {}
-        cdef str key
-        cdef str value
-
-        for key in node.keys():
-            value = node.get_str(key)
-            ret[sys.intern(key)] = _parse_value_expression(value)
-        return ret
-
-    def _check_variables(self, *, subset=None):
+    # Raises a user facing error in the case that an error was detected
+    # while attempting to resolve a variable.
+    #
+    cdef _check_variables(self, list subset=None):
         summary = []
 
         def rec_check(name, expstr, visited, cleared):
@@ -266,7 +316,6 @@ cdef class Variables:
         if summary:
             raise LoadError("Failed to resolve one or more variable:\n{}\n".format("\n".join(summary)),
                             LoadErrorReason.UNRESOLVED_VARIABLE)
-
 
     # _expand_var()
     #
