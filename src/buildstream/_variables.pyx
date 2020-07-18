@@ -374,12 +374,15 @@ cdef class Variables:
     #################################################################
     cdef str _fast_expand_var(self, str name, int counter = 0):
         cdef str sub
+        cdef list value_expression
 
-        if len(self._values[name]) > 1:
-            sub = self._fast_expand_value_expression(<list> self._values[name], counter)
-            self._values[name] = [sys.intern(sub)]
+        value_expression = <list> self._values[name]
+        if len(value_expression) > 1:
+            sub = self._fast_expand_value_expression(value_expression, counter)
+            value_expression = [sys.intern(sub)]
+            self._values[name] = value_expression
 
-        return self._values[name][0]
+        return <str> value_expression[0]
 
     cdef str _fast_expand_value_expression(self, list value, int counter = 0):
         if counter > 1000:
