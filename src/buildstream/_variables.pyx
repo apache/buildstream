@@ -374,18 +374,15 @@ cdef class Variables:
         if counter > 1000:
             raise RecursionError()
 
-        cdef Py_ssize_t idx = 0
-        cdef Py_ssize_t value_len = len(value)
-        cdef str sub
+        cdef Py_ssize_t idx
+        cdef object val
         cdef list acc = []
 
-        while idx < value_len:
-            acc.append(value[idx])
-            idx += 1
-
-            if idx < value_len:
-                acc.append(self._fast_expand_var(<str> value[idx], counter + 1))
-            idx += 1
+        for idx, val in enumerate(value):
+            if (idx % 2) == 0:
+                acc.append(val)
+            else:
+                acc.append(self._fast_expand_var(<str> val, counter + 1))
 
         return "".join(acc)
 
