@@ -106,11 +106,8 @@ cdef class Variables:
     def __getitem__(self, str name):
         if name not in self._values:
             raise KeyError(name)
-        try:
-            return self._expand_var(name)
-        except (KeyError, RecursionError):
-            self._check_variables(subset=[name])
-            raise
+
+        return self._expand_var(name)
 
     # __contains__()
     #
@@ -249,33 +246,7 @@ cdef class Variables:
     #
     cdef str _subst(self, ScalarNode node):
         value_expression = _parse_value_expression(node.as_str())
-
-        try:
-            return self._expand_value_expression(value_expression)
-        except (KeyError, RecursionError):
-            # We also check for unmatch for recursion errors since _check_variables expects
-            # subset to be defined
-            unmatched = []
-
-            # Look for any unmatched variable names in the expansion string
-            for var in value_expression[1::2]:
-                if var not in self._values:
-                    unmatched.append(var)
-
-            if unmatched:
-                message = "{}: Unresolved variable{}: {}".format(
-                    node.get_provenance(),
-                    "s" if len(unmatched) > 1 else "",
-                    ", ".join(unmatched)
-                )
-
-                raise LoadError(message, LoadErrorReason.UNRESOLVED_VARIABLE)
-
-            # Otherwise the missing key is from a variable definition
-            self._check_variables(subset=value_expression[1::2])
-            # Otherwise, re-raise the KeyError since it clearly came from some
-            # other unknowable cause.
-            raise
+        return self._expand_value_expression(value_expression)
 
     # _check_variables()
     #
@@ -317,13 +288,31 @@ cdef class Variables:
             raise LoadError("Failed to resolve one or more variable:\n{}\n".format("\n".join(summary)),
                             LoadErrorReason.UNRESOLVED_VARIABLE)
 
+
+    #################################################################
+    #                     Resolution algorithm                      #
+    #################################################################
+    #
+    # This is split into a fast path and a slower path, with a small
+    # calling layer in between for expanding variables and for expanding
+    # value expressions which refer to variables expected to be defined
+    # in this Variables instance.
+    #
+    # The fast path is initially used, it supports limited variable
+    # expansion depth due to it's recursive nature, and does not support
+    # full error reporting.
+    #
+    # The fallback slower path is non-recursive and reports user facing
+    # errors, it is called in the case that KeyError or RecursionError
+    # are reported from the faster path.
+    #
+
     # _expand_var()
     #
     # Helper to expand and cache a variable definition.
     #
     # Args:
     #     name (str): Name of the variable to expand
-    #     counter (int): Recursion counter
     #
     # Returns:
     #     (str): The expanded value of variable
@@ -332,14 +321,12 @@ cdef class Variables:
     #     KeyError, if any expansion is missing
     #     RecursionError, if recursion required for evaluation is too deep
     #
-    cdef str _expand_var(self, str name, int counter = 0):
-        cdef str sub
-
-        if len(self._values[name]) > 1:
-            sub = self._expand_value_expression(<list> self._values[name], counter)
-            self._values[name] = [sys.intern(sub)]
-
-        return self._values[name][0]
+    cdef str _expand_var(self, str name):
+        try:
+            return self._fast_expand_var(name)
+        except (KeyError, RecursionError):
+            self._check_variables(subset=[name])
+            raise
 
     # _expand_value_expression()
     #
@@ -347,17 +334,54 @@ cdef class Variables:
     # of the given dictionary of expansion strings.
     #
     # Args:
-    #     name (str): Name of the variable to expand
-    #     counter (int): Recursion counter
+    #     value_expression (list): The parsed value expression to be expanded
     #
     # Returns:
-    #     (str): The expanded value of variable
+    #     (str): The expanded value expression
     #
     # Raises:
     #     KeyError, if any expansion is missing
     #     RecursionError, if recursion required for evaluation is too deep
     #
-    cdef str _expand_value_expression(self, list value, int counter = 0):
+    cdef str _expand_value_expression(self, list value_expression):
+        try:
+            return self._fast_expand_value_expression(value_expression)
+        except (KeyError, RecursionError):
+            # We also check for unmatch for recursion errors since _check_variables expects
+            # subset to be defined
+            unmatched = []
+
+            # Look for any unmatched variable names in the expansion string
+            for var in value_expression[1::2]:
+                if var not in self._values:
+                    unmatched.append(var)
+
+            if unmatched:
+                message = "Unresolved variable{}: {}".format(
+                    "s" if len(unmatched) > 1 else "",
+                    ", ".join(unmatched)
+                )
+                raise LoadError(message, LoadErrorReason.UNRESOLVED_VARIABLE)
+
+            # Otherwise the missing key is from a variable definition
+            self._check_variables(subset=value_expression[1::2])
+            # Otherwise, re-raise the KeyError since it clearly came from some
+            # other unknowable cause.
+            raise
+
+    #################################################################
+    #             Resolution algorithm: fast path                   #
+    #################################################################
+    cdef str _fast_expand_var(self, str name, int counter = 0):
+        cdef str sub
+
+        if len(self._values[name]) > 1:
+            sub = self._fast_expand_value_expression(<list> self._values[name], counter)
+            self._values[name] = [sys.intern(sub)]
+
+        return self._values[name][0]
+
+    cdef str _fast_expand_value_expression(self, list value, int counter = 0):
         if counter > 1000:
             raise RecursionError()
 
@@ -371,7 +395,7 @@ cdef class Variables:
             idx += 1
 
             if idx < value_len:
-                acc.append(self._expand_var(<str> value[idx], counter + 1))
+                acc.append(self._fast_expand_var(<str> value[idx], counter + 1))
             idx += 1
 
         return "".join(acc)
