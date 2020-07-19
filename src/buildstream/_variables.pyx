@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 Codethink Limited
+#  Copyright (C) 2020 Codethink Limited
 #  Copyright (C) 2019 Bloomberg L.P.
 #
 #  This program is free software; you can redistribute it and/or
@@ -26,12 +26,13 @@ import itertools
 
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
-from .node cimport MappingNode, Node, ScalarNode, SequenceNode
+from .node cimport MappingNode, Node, ScalarNode, SequenceNode, ProvenanceInformation
 
 # Variables are allowed to have dashes here
 #
 PARSE_EXPANSION = re.compile(r"\%\{([a-zA-Z][a-zA-Z0-9_-]*)\}")
 
+cdef Py_ssize_t MAX_RECURSION_DEPTH = 200
 
 # Throughout this code you will see variables named things like `expstr`.
 # These hold data structures called "expansion strings" and are the parsed
@@ -148,7 +149,11 @@ cdef class Variables:
     #                 a cyclic variable reference
     #
     cpdef check(self):
-        self._check_variables()
+        cdef object key
+
+        # Just resolve all variables.
+        for key in self._values.keys():
+            self._expand_var(<str> key)
 
     # get()
     #
@@ -234,47 +239,6 @@ cdef class Variables:
             ret[sys.intern(key)] = _parse_value_expression(value)
         return ret
 
-    # _check_variables()
-    #
-    # Raises a user facing error in the case that an error was detected
-    # while attempting to resolve a variable.
-    #
-    cdef _check_variables(self, list subset=None):
-        summary = []
-
-        def rec_check(name, expstr, visited, cleared):
-            for var in expstr[1::2]:
-                if var in cleared:
-                    continue
-                elif var in visited:
-                    chain = list(itertools.takewhile(lambda x: x != var, reversed(visited)))
-                    chain.append(var)
-                    chain.reverse()
-                    for i in range(len(chain)-1):
-                        line = "  Variable '{variable}' recusively uses '{rec}' at: {provenance}"
-                        provenance = self._original.get_scalar(chain[i]).get_provenance()
-                        summary.append(line.format(rec=chain[i+1], variable=chain[i], provenance=provenance))
-                elif var not in self._values:
-                    line = "  unresolved variable '{unmatched}' in declaration of '{variable}' at: {provenance}"
-                    provenance = self._original.get_scalar(name).get_provenance()
-                    summary.append(line.format(unmatched=var, variable=name, provenance=provenance))
-                else:
-                    visited.append(var)
-                    rec_check(var, self._values[var], visited, cleared)
-                    visited.pop()
-                    cleared.add(var)
-
-        cleared = set()
-        for key in subset if subset is not None else self._values:
-            visited = []
-            rec_check(key, self._values[key], visited, cleared)
-            cleared.add(key)
-
-        if summary:
-            raise LoadError("Failed to resolve one or more variable:\n{}\n".format("\n".join(summary)),
-                            LoadErrorReason.UNRESOLVED_VARIABLE)
-
-
     #################################################################
     #                     Resolution algorithm                      #
     #################################################################
@@ -311,50 +275,28 @@ cdef class Variables:
         try:
             return self._fast_expand_var(name)
         except (KeyError, RecursionError):
-            self._check_variables(subset=[name])
-            raise
+            return self._slow_expand_var(name)
 
     # _expand_value_expression()
     #
     # Expands a given top level expansion string.
     #
     # Args:
-    #     value_expression (list): The parsed value expression to be expanded
-    #     node (ScalarNode): The toplevel ScalarNode who is asking for an expansion
+    #    value_expression (list): The parsed value expression to be expanded
+    #    node (ScalarNode): The toplevel ScalarNode who is asking for an expansion
     #
     # Returns:
-    #     (str): The expanded value expression
+    #    (str): The expanded value expression
     #
     # Raises:
-    #     KeyError, if any expansion is missing
-    #     RecursionError, if recursion required for evaluation is too deep
+    #    KeyError, if any expansion is missing
+    #    RecursionError, if recursion required for evaluation is too deep
     #
     cdef str _expand_value_expression(self, list value_expression, ScalarNode node):
         try:
             return self._fast_expand_value_expression(value_expression)
         except (KeyError, RecursionError):
-            # We also check for unmatch for recursion errors since _check_variables expects
-            # subset to be defined
-            unmatched = []
-
-            # Look for any unmatched variable names in the expansion string
-            for var in value_expression[1::2]:
-                if var not in self._values:
-                    unmatched.append(var)
-
-            if unmatched:
-                message = "{}: Unresolved variable{}: {}".format(
-                    node.get_provenance(),
-                    "s" if len(unmatched) > 1 else "",
-                    ", ".join(unmatched)
-                )
-                raise LoadError(message, LoadErrorReason.UNRESOLVED_VARIABLE)
-
-            # Otherwise the missing key is from a variable definition
-            self._check_variables(subset=value_expression[1::2])
-            # Otherwise, re-raise the KeyError since it clearly came from some
-            # other unknowable cause.
-            raise
+            return self._slow_expand_value_expression(None, value_expression, node)
 
     #################################################################
     #             Resolution algorithm: fast path                   #
@@ -372,7 +314,7 @@ cdef class Variables:
         return <str> value_expression[0]
 
     cdef str _fast_expand_value_expression(self, list value, int counter = 0):
-        if counter > 1000:
+        if counter > MAX_RECURSION_DEPTH:
             raise RecursionError()
 
         cdef Py_ssize_t idx
@@ -386,6 +328,225 @@ cdef class Variables:
                 acc.append(self._fast_expand_var(<str> val, counter + 1))
 
         return "".join(acc)
+
+    #################################################################
+    #             Resolution algorithm: slow path                   #
+    #################################################################
+
+    # _get_checked_value_expression()
+    #
+    # Fetches a value expression from the value table and raises a user
+    # facing error if the value is undefined.
+    #
+    # Args:
+    #    varname (str): The variable name to fetch
+    #    referee (str): The variable name referring to `varname`, or None
+    #    node (ScalarNode): The ScalarNode for which we need to resolve `name`
+    #
+    # Returns:
+    #    (list): The value expression for varname
+    #
+    # Raises:
+    #    (LoadError): An appropriate error in case of undefined variables
+    #
+    cdef list _get_checked_value_expression(self, str varname, str referee, ScalarNode node):
+        cdef ProvenanceInformation provenance = None
+        cdef Node referee_value
+        cdef str error_message
+
+        #
+        # Fetch the value and detect undefined references
+        #
+        try:
+            return <list> self._values[varname]
+        except KeyError as e:
+
+            # Either the provenance is the toplevel calling provenance,
+            # or it is the provenance of the direct referee
+            referee_node = self._original.get_node(referee, allowed_types=None, allow_none=True)
+            if referee_node:
+                provenance = referee_node.get_provenance()
+            elif node:
+                provenance = node.get_provenance()
+
+            error_message = "Reference to undefined variable '{}'".format(varname)
+            if provenance:
+                error_message = "{}: {}".format(provenance, error_message)
+            raise LoadError(error_message, LoadErrorReason.UNRESOLVED_VARIABLE) from e
+
+    cdef str _slow_expand_var(self, str name):
+        cdef list value_expression
+        cdef str expanded
+
+        value_expression = self._get_checked_value_expression(name, None, None)
+        if len(value_expression) > 1:
+            expanded = self._slow_expand_value_expression(name, value_expression, None)
+            value_expression = [sys.intern(expanded)]
+            self._values[name] = value_expression
+
+        return <str> value_expression[0]
+
+    cdef str _slow_expand_value_expression(self, str varname, list value_expression, ScalarNode node):
+        cdef ResolutionStep step
+        cdef ResolutionStep new_step
+        cdef ResolutionStep this_step
+        cdef list iter_value_expression
+        cdef Py_ssize_t idx = 0
+        cdef object value
+        cdef str resolved_varname
+        cdef str resolved_value = None
+
+        # We will collect the varnames and value expressions which need
+        # to be resolved in the loop, sorted by dependency, and then
+        # finally reverse through them resolving them one at a time
+        #
+        cdef list resolved_varnames = []
+        cdef list resolved_values = []
+        
+        step = ResolutionStep()
+        step.init(varname, value_expression, None)
+        while step:
+            # Keep a hold of the current overall step
+            this_step = step
+            step = step.prev
+
+            # Check for circular dependencies
+            this_step.check_circular(self._original)
+
+            for idx, value in enumerate(this_step.value_expression):
+
+                # Skip literal parts of the value expression
+                if (idx % 2) == 0:
+                    continue
+
+                iter_value_expression = self._get_checked_value_expression(<str> value, this_step.referee, node)
+
+                # Queue up this value.
+                #
+                # Even if the value was already resolved, we need it in context to resolve
+                # previously enqueued variables
+                resolved_values.append(iter_value_expression)
+                resolved_varnames.append(value)
+
+                # Queue up the values dependencies.
+                #
+                if len(iter_value_expression) > 1:
+                    new_step = ResolutionStep()
+                    new_step.init(<str> value, iter_value_expression, this_step)
+
+                    # Link it to the end of the stack
+                    new_step.prev = step
+                    step = new_step
+
+        # We've now constructed the dependencies queue such that
+        # later dependencies are on the right, we can now safely peddle
+        # backwards and the last (leftmost) resolved value is the one
+        # we want to return.
+        #
+        idx = len(resolved_values) -1
+        while idx >= 0:
+            # Values in, strings out
+            #
+            iter_value_expression = <list> resolved_values[idx]
+            resolved_varname = <str> resolved_varnames[idx]
+
+            # Resolve as needed
+            #
+            if len(iter_value_expression) > 1:
+                resolved_value = self._resolve_value_expression(iter_value_expression)
+                iter_value_expression = [resolved_value]
+                if resolved_varname is not None:
+                    self._values[resolved_varname] = iter_value_expression
+
+            idx -= 1
+
+        return resolved_value
+
+    cdef str _resolve_value_expression(self, list value_expression):
+        cdef Py_ssize_t idx
+        cdef object value
+        cdef list acc = []
+
+        for idx, value in enumerate(value_expression):
+            if (idx % 2) == 0:
+                acc.append(value)
+            else:
+                acc.append(self._values[value][0])
+
+        return "".join(acc)
+
+
+# ResolutionStep()
+#
+# The context for a single iteration in variable resolution.
+#
+# This only exists for better performance than constructing
+# and unpacking tuples.
+#
+cdef class ResolutionStep:
+    cdef str referee
+    cdef list value_expression
+    cdef ResolutionStep parent
+    cdef ResolutionStep prev
+
+    # init()
+    #
+    # Initialize this ResolutionStep
+    #
+    # Args:
+    #    referee (str): The name of the referring variable
+    #    value_expression (list): The parsed value expression to be expanded
+    #    parent (ResolutionStep): The parent ResolutionStep
+    #
+    cdef init(self, str referee, list value_expression, ResolutionStep parent):
+        self.referee = referee
+        self.value_expression = value_expression
+        self.parent = parent
+        self.prev = None
+
+    # check_circular()
+    #
+    # Check for circular references in this step.
+    #
+    # Args:
+    #    original_values (MappingNode): The original MappingNode for the Variables
+    #
+    # Raises:
+    #    (LoadError): Will raise a user facing LoadError with
+    #                 LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE in case
+    #                 circular references were encountered.
+    #
+    cdef check_circular(self, MappingNode original_values):
+        cdef ResolutionStep step = self.parent
+        while step:
+            if self.referee is step.referee:
+                self._raise_circular_reference_error(step, original_values)
+            step = step.parent
+
+    # _raise_circular_reference_error()
+    #
+    # Helper function to construct a full report and raise the circular reference error.
+    #
+    cdef _raise_circular_reference_error(self, ResolutionStep conflict, MappingNode original_values):
+        cdef list error_lines = []
+        cdef ResolutionStep step = self
+        cdef ScalarNode node
+        cdef str referee
+
+        while step is not conflict:
+            if step.parent:
+                referee = step.parent.referee
+            else:
+                referee = self.referee
+
+            node = original_values.get_scalar(referee)
+
+            error_lines.append("{}: Variable '{}' refers to variable '{}'".format(node.get_provenance(), referee, step.referee))
+            step = step.parent
+
+        raise LoadError("Circular dependency detected on variable '{}'".format(self.referee),
+                        LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE,
+                        detail="\n".join(reversed(error_lines)))
 
 
 # Cache for the parsed expansion strings.  While this is nominally
