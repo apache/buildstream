@@ -233,3 +233,13 @@ def test_variables_resolving_errors_in_public_section(cli, datafiles):
 
     result = cli.run(project=project, args=["show", "--format", "%{public}", "public_unresolved.bst"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNRESOLVED_VARIABLE)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "partial_context"))
+def test_partial_context_junctions(cli, datafiles):
+    project = str(datafiles)
+
+    result = cli.run(project=project, args=["show", "--format", "%{vars}", "test.bst"])
+    result.assert_success()
+    result_vars = _yaml.load_data(result.output)
+    assert result_vars.get_str("eltvar") == "/bar/foo/baz"
