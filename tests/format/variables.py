@@ -67,7 +67,7 @@ def test_simple_cyclic_variables(cli, datafiles):
     print_warning("Performing cyclic test, if this test times out it will " + "exit the test sequence")
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=["build", "simple-cyclic.bst"])
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_VARIABLE)
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE)
 
 
 @pytest.mark.timeout(15, method="signal")
@@ -76,7 +76,7 @@ def test_cyclic_variables(cli, datafiles):
     print_warning("Performing cyclic test, if this test times out it will " + "exit the test sequence")
     project = str(datafiles)
     result = cli.run(project=project, silent=True, args=["build", "cyclic.bst"])
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_VARIABLE)
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE)
 
 
 @pytest.mark.parametrize("protected_var", PROTECTED_VARIABLES)
