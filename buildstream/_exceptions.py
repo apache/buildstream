@@ -217,7 +217,7 @@ class LoadErrorReason(Enum):
     RECURSIVE_INCLUDE = 21
 
     # A recursive variable has been encountered
-    RECURSIVE_VARIABLE = 22
+    CIRCULAR_REFERENCE_VARIABLE = 22
 
     # An attempt so set the value of a protected variable
     PROTECTED_VARIABLE_REDEFINED = 23

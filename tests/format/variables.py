@@ -84,9 +84,19 @@ def test_cyclic_variables(cli, datafiles):
     result = cli.run(project=project, silent=True, args=[
         "build", "cyclic.bst"
     ])
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.RECURSIVE_VARIABLE)
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.CIRCULAR_REFERENCE_VARIABLE)
 
 
 def print_warning(msg):
     RED, END = "\033[91m", "\033[0m"
     print(("\n{}{}{}").format(RED, msg, END), file=sys.stderr)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "partial_context"))
+def test_partial_context_junctions(cli, datafiles):
+    project = str(datafiles)
+
+    result = cli.run(project=project, args=["show", "--format", "%{vars}", "test.bst"])
+    result.assert_success()
+    result_vars = _yaml.load_data(result.output)
+    assert result_vars["eltvar"] == "/bar/foo/baz"
