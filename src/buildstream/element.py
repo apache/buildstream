@@ -285,6 +285,8 @@ class Element(Plugin):
         variables = self.__extract_variables(project, meta)
         variables["element-name"] = self.name
         self.__variables = Variables(variables)
+        if not meta.is_junction:
+            self.__variables.check()
 
         # Collect the composited environment now that we have variables
         unexpanded_env = self.__extract_environment(project, meta)

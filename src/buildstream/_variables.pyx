@@ -139,11 +139,6 @@ cdef class Variables:
         #
         self._values = self._init_values(node)
 
-        # Resolve all the values, validating for missing
-        # values and circular references along the way.
-        #
-        self.check()
-
     # __getitem__()
     #
     # Fetches a resolved variable by it's name, allows
