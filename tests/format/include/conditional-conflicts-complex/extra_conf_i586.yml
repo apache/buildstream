@@ -1,0 +1,4 @@
+variables:
+  (?):
+  - build_arch == "i586":
+      size: 4
