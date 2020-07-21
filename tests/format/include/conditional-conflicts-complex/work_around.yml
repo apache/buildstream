@@ -1,0 +1,3 @@
+(?):
+- build_arch == "i586":
+    (@): enable_work_around.yml
