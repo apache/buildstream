@@ -235,6 +235,8 @@ class Element(Plugin):
         variables = self.__extract_variables(meta)
         variables['element-name'] = self.name
         self.__variables = Variables(variables)
+        if not self.__is_junction:
+            self.__variables.check()
 
         # Collect the composited environment now that we have variables
         env = self.__extract_environment(meta)
@@ -481,10 +483,10 @@ class Element(Plugin):
           name = self.node_subst_member(node, 'name')
         """
         value = self.node_get_member(node, str, member_name, default)
+        provenance = _yaml.node_get_provenance(node, key=member_name)
         try:
-            return self.__variables.subst(value)
+            return self.__variables.subst(value, provenance)
         except LoadError as e:
-            provenance = _yaml.node_get_provenance(node, key=member_name)
             raise LoadError(e.reason, '{}: {}'.format(provenance, str(e))) from e
 
     def node_subst_list(self, node, member_name):
@@ -507,10 +509,10 @@ class Element(Plugin):
         value = self.node_get_member(node, list, member_name)
         ret = []
         for index, x in enumerate(value):
+            provenance = _yaml.node_get_provenance(node, key=member_name, indices=[index])
             try:
-                ret.append(self.__variables.subst(x))
+                ret.append(self.__variables.subst(x, provenance))
             except LoadError as e:
-                provenance = _yaml.node_get_provenance(node, key=member_name, indices=[index])
                 raise LoadError(e.reason, '{}: {}'.format(provenance, str(e))) from e
         return ret
 
@@ -549,10 +551,10 @@ class Element(Plugin):
                   node, 'strings', [ i ])
         """
         value = self.node_get_list_element(node, str, member_name, indices)
+        provenance = _yaml.node_get_provenance(node, key=member_name, indices=indices)
         try:
-            return self.__variables.subst(value)
+            return self.__variables.subst(value, provenance)
         except LoadError as e:
-            provenance = _yaml.node_get_provenance(node, key=member_name, indices=indices)
             raise LoadError(e.reason, '{}: {}'.format(provenance, str(e))) from e
 
     def compute_manifest(self, *, include=None, exclude=None, orphans=True):
@@ -884,10 +886,7 @@ class Element(Plugin):
            (str): The resolved value for *varname*, or None if no
            variable was declared with the given name.
         """
-        if varname in self.__variables.variables:
-            return self.__variables.variables[varname]
-
-        return None
+        return self.__variables.get(varname)
 
     #############################################################
     #            Private Methods used in BuildStream            #
@@ -1910,7 +1909,7 @@ class Element(Plugin):
     #    (str): The string after substitutions have occurred
     #
     def _subst_string(self, value):
-        return self.__variables.subst(value)
+        return self.__variables.subst(value, None)
 
     # Returns the element whose sources this element is ultimately derived from.
     #
@@ -2294,11 +2293,15 @@ class Element(Plugin):
         _yaml.node_final_assertions(element_public)
 
         # Also, resolve any variables in the public split rules directly
+        new_base_splits = {}
         for domain, splits in self.node_items(base_splits):
-            base_splits[domain] = [
-                self.__variables.subst(split.strip())
-                for split in splits
-            ]
+            new_splits = []
+            for index, split in enumerate(splits):
+                provenance = _yaml.node_get_provenance(base_splits, key=domain, indices=[index])
+                new_splits.append(
+                    self.__variables.subst(split.strip(), provenance)
+                )
+            base_splits[domain] = new_splits
 
         return element_public
 
@@ -2371,7 +2374,15 @@ class Element(Plugin):
         if not self.__whitelist_regex:
             bstdata = self.get_public_data('bst')
             whitelist = _yaml.node_get(bstdata, list, 'overlap-whitelist', default_value=[])
-            whitelist_expressions = [utils._glob2re(self.__variables.subst(exp.strip())) for exp in whitelist]
+            whitelist_expressions = [
+                utils._glob2re(
+                    self.__variables.subst(
+                        exp.strip(),
+                        _yaml.node_get_provenance(bstdata, key='overlap-whitelist', indices=[index])
+                    )
+                )
+                for index, exp in enumerate(whitelist)
+            ]
             expression = ('^(?:' + '|'.join(whitelist_expressions) + ')$')
             self.__whitelist_regex = re.compile(expression)
         return self.__whitelist_regex.match(path) or self.__whitelist_regex.match(os.path.join(os.sep, path))
