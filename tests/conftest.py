@@ -49,6 +49,7 @@ def pytest_addoption(parser):
     parser.addoption("--integration", action="store_true", default=False, help="Run integration tests")
     parser.addoption("--plugins", action="store_true", default=False, help="Run only plugins tests")
     parser.addoption("--remote-execution", action="store_true", default=False, help="Run remote-execution tests only")
+    parser.addoption("--remote-cache", action="store_true", default=False, help="Run remote-cache tests only")
 
 
 def pytest_runtest_setup(item):
@@ -66,6 +67,16 @@ def pytest_runtest_setup(item):
     else:
         if item.get_closest_marker("remoteexecution"):
             pytest.skip("skipping remote-execution test")
+
+    # With --remote-cache: only run tests marked with 'remotecache'
+    if item.config.getvalue("remote_cache"):
+        if not item.get_closest_marker("remotecache"):
+            pytest.skip("skipping non remote-cache test")
+
+    # Without --remote-cache: skip tests marked with 'remotecache'
+    else:
+        if item.get_closest_marker("remotecache"):
+            pytest.skip("skipping remote-cache test")
 
     # With --plugins only run plugins tests
     if item.config.getvalue("plugins"):
