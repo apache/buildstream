@@ -1,0 +1,44 @@
+##
+# BuildGrid Compose manifest for BuildStream.
+#
+# Spins-up a unnamed and unauthenticated grid:
+#  - Controller + CAS + AC at http://localhost:50051
+#  - Ref. + CAS at: http://localhost:50052
+#
+# BuildStream configuration snippet:
+#
+#    artifacts:
+#      url: http://localhost:50052
+#      push: true
+#    remote-execution:
+#      execution-service:
+#        url: http://localhost:50051
+#      action-cache-service:
+#        url: http://localhost:50051
+#      storage-service:
+#        url: http://localhost:50051
+#
+# Basic usage:
+#  - docker-compose -f buildgrid-compose.yml up
+#  - docker-compose -f buildgrid-compose.yml down
+#
+version: "3.2"
+
+services:
+  controller:
+    image: buildstream/buildstream:dev
+    command: ["bst-artifact-server","--port",
+      "50052",
+      "--enable-push",
+      "/artifacts"
+    ]
+    ports:
+      - 50052:50052
+    networks:
+      - grid
+networks:
+  grid:
+    driver: bridge
+
+volumes:
+  cache:
