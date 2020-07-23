@@ -4,7 +4,7 @@
 import os
 import pytest
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
-from buildstream.exceptions import ErrorDomain
+from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
 from buildstream.plugin import CoreWarnings
 from tests.testutils import generate_junction
@@ -68,6 +68,19 @@ def test_overlaps_whitelist_on_overlapper(cli, datafiles):
     result = cli.run(project=project_dir, silent=True, args=["build", "collect-partially-whitelisted.bst"])
     result.assert_main_error(ErrorDomain.STREAM, None)
     result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_overlaps_whitelist_undefined_variable(cli, datafiles):
+    project_dir = str(datafiles)
+    gen_project(project_dir, False)
+    result = cli.run(project=project_dir, silent=True, args=["build", "whitelist-undefined.bst"])
+
+    # Assert that we get the expected undefined variable error,
+    # and that it has the provenance we expect from whitelist-undefined.bst
+    #
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.UNRESOLVED_VARIABLE)
+    assert "whitelist-undefined.bst [line 13 column 6]" in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
