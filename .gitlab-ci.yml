@@ -345,6 +345,20 @@ docs:
 overnight-tests:
   <<: *overnight-tests-template
   script:
+  - |
+    cat > ~/.config/buildstream.conf << EOF
+    # Get a lot of output in case of errors
+    logging:
+      error-lines: 80
+    #
+    # Artifacts
+    #
+    artifacts:
+    - url: https://cache-test.buildstream.build:11002
+      client-cert: $OVERNIGHT_CACHE_PUSH_CERT
+      client-key: $OVERNIGHT_CACHE_PUSH_KEY
+      push: true
+    EOF
   - make -C freedesktop-sdk
   tags:
   - overnight-tests
