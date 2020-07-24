@@ -738,7 +738,20 @@ def composite_list(target_node, source_node, key):
                             "{}: List cannot overwrite value at: {}"
                             .format(source_key_provenance, target_key_provenance))
 
-        composite_list_overwrite(target_node, key, source_node, key)
+        # Special case: The `project.conf` in some cases needs to composite
+        # include files before having resolved options, so there can be
+        # conditionals that need to be merged at this point.
+        #
+        # This unconditionally appends conditional statements to a matching
+        # conditional in the target so as to preserve them. The precedence
+        # of include files is preserved regardless due to the order in which
+        # included dictionaries are composited.
+        #
+        if key == "(?)":
+            composite_list_append(target_node, key, source_node, key)
+        else:
+            composite_list_overwrite(target_node, key, source_node, key)
+
         return True
 
     # When a composite list is encountered in the source, then

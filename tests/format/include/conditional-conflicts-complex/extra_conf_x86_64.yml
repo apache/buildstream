@@ -1,0 +1,4 @@
+variables:
+  (?):
+  - build_arch == "x86_64":
+      size: 8
