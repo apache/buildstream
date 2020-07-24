@@ -499,21 +499,23 @@ class Element(Plugin):
 
             yield from visit(self, scope, visited)
 
-    def search(self, scope: Scope, name: str) -> Optional["Element"]:
-        """Search for a dependency by name
+    def search(self, scope: Scope, path: str) -> Optional["Element"]:
+        """Search for a dependency by it's element relative search path
+
+        The search path as a relative path to the element, including
+        any junction names leading up to the element which might
+        be in a subproject.
 
         Args:
            scope: The scope to search
-           name: The dependency to search for
+           path: An element relative search path
 
         Returns:
            The dependency element, or None if not found.
         """
-        for dep in self.dependencies(scope):
-            if dep.name == name:
-                return dep
-
-        return None
+        project = self._get_project()
+        load_element = project.loader.search_element(path)
+        return load_element.element
 
     def node_subst_vars(self, node: "ScalarNode") -> str:
         """Replace any variables in the string contained in the node and returns it.
@@ -907,6 +909,10 @@ class Element(Plugin):
 
         element = meta.project.create_element(meta, first_pass=meta.first_pass)
         cls.__instantiated_elements[meta] = element
+
+        # Store a reference on the originating LoadElement, allowing us
+        # to perform optimal Element.search().
+        meta.load_element.element = element
 
         # Instantiate sources and generate their keys
         for meta_source in meta.sources:

@@ -84,6 +84,7 @@ cdef class LoadElement:
     # TODO: if/when pyroaring exports symbols, we could type this statically
     cdef object _dep_cache
     cdef readonly list dependencies
+    cdef readonly object _element
 
     def __cinit__(self, MappingNode node, str filename, object loader):
 
@@ -103,6 +104,7 @@ cdef class LoadElement:
         #
         self._loader = loader   # The Loader object
         self._dep_cache = None  # The dependency cache, to speed up depends()
+        self._element = None    # The instantiated Element, if any
 
         #
         # Initialization
@@ -149,6 +151,19 @@ cdef class LoadElement:
     @property
     def junction(self):
         return self._loader.project.junction
+
+    # element()
+    #
+    # The Element property stores the instantiated Element, if an
+    # Element has been instantiated for this LoadElement
+    #
+    @property
+    def element(self):
+        return self._element
+
+    @element.setter
+    def element(self, value):
+        self._element = value
 
     # depends():
     #

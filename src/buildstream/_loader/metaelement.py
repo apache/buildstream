@@ -39,6 +39,7 @@ class MetaElement:
     #    public: Public domain data dictionary
     #    sandbox: Configuration specific to the sandbox environment
     #    first_pass: The element is to be loaded with first pass configuration (junction)
+    #    load_element (LoadElement): A reference back to the load_element
     #
     def __init__(
         self,
@@ -54,6 +55,7 @@ class MetaElement:
         public=None,
         sandbox=None,
         first_pass=False,
+        load_element=None,
     ):
         self.project = project
         self.name = name
@@ -71,3 +73,4 @@ class MetaElement:
         self.strict_dependencies = []
         self.first_pass = first_pass
         self.is_junction = kind in ("junction", "link")
+        self.load_element = load_element

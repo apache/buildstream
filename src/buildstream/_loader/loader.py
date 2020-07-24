@@ -170,8 +170,6 @@ class Loader:
             #
             ret.append(loader._collect_element(element))
 
-        self._clean_caches()
-
         # Cache how many Elements have just been loaded
         if self.load_context.task:
             # Workaround for task potentially being None (because no State object)
@@ -223,6 +221,24 @@ class Loader:
         del self._loader_search_provenances[name]
 
         return loader
+
+    # search_element()
+    #
+    # Search the project for a given LoadElement
+    #
+    # Args:
+    #    path (str): The relative element path
+    #
+    # Returns:
+    #    (LoadElement): The LoadElement
+    #
+    # Raises:
+    #    (LoadError): In case an element was not found, or would have
+    #                 required loading a project that is not yet loaded.
+    #
+    def search_element(self, path):
+        _, filename, loader = self._parse_name(path, None, load_subprojects=False)
+        return loader._load_file(filename, None, load_subprojects=False)
 
     # ancestors()
     #
@@ -319,6 +335,7 @@ class Loader:
             node.get_mapping(Symbol.PUBLIC, default={}),
             node.get_mapping(Symbol.SANDBOX, default={}),
             element_kind in ("junction", "link"),
+            element,
         )
 
         # Cache it now, make sure it's already there before recursing
@@ -905,20 +922,3 @@ class Loader:
                 ),
                 warning_token=CoreWarnings.BAD_CHARACTERS_IN_NAME,
             )
-
-    # _clean_caches()
-    #
-    # Clean internal loader caches, recursively
-    #
-    # When loading the elements, the loaders use caches in order to not load the
-    # same element twice. These are kept after loading and prevent garbage
-    # collection. Cleaning them explicitely is required.
-    #
-    def _clean_caches(self):
-        for loader in self._loaders.values():
-            # value may be None with nested junctions without overrides
-            if loader is not None:
-                loader._clean_caches()
-
-        self._meta_elements = {}
-        self._elements = {}
