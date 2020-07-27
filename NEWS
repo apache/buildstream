@@ -18,6 +18,14 @@ CLI
   o Add `bst source push` subcommand. This command pushes element sources to a
     remote source cache.
 
+Artifacts
+---------
+
+  o BREAKING CHANGE: Use Remote Asset API for remote artifact and source caches.
+    Existing artifact servers are not compatible and need to be updated to the
+    latest version which will then allow them to be repopulated with new
+    artifacts.
+
 Plugins
 -------
 
