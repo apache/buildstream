@@ -184,14 +184,17 @@ tests-fedora-update-deps:
   services:
     - docker:stable-dind
 
+.docker-variables-boilerplate: &docker-variables
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+  # Required to be able to connect to the docker daemon. See https://gitlab.com/gitlab-org/gitlab-runner/issues/4501
+  DOCKER_TLS_CERTDIR: ""
+
 tests-remote-execution:
   <<: *tests
   <<: *remote-test
   variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_DRIVER: overlay2
-    # Required to be able to connect to the docker daemon. See https://gitlab.com/gitlab-org/gitlab-runner/issues/4501
-    DOCKER_TLS_CERTDIR: ""
+    <<: *docker-variables
     COMPOSE_MANIFEST: .gitlab-ci/buildgrid-remote-execution.yml
     ARTIFACT_CACHE_SERVICE: http://docker:50052
     REMOTE_EXECUTION_SERVICE: http://docker:50051
@@ -202,10 +205,7 @@ tests-remote-cache:
   <<: *tests
   <<: *remote-test
   variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_DRIVER: overlay2
-    # Required to be able to connect to the docker daemon. See https://gitlab.com/gitlab-org/gitlab-runner/issues/4501
-    DOCKER_TLS_CERTDIR: ""
+    <<: *docker-variables
     COMPOSE_MANIFEST: .gitlab-ci/cache-server.yml
     ARTIFACT_CACHE_SERVICE: http://docker:50052
     PYTEST_ARGS: "--color=yes --remote-cache"
