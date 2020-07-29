@@ -185,7 +185,7 @@ class GitMirror(SourceFetcher):
                 fail="Failed to retrieve list of remotes in {}".format(self.mirror),
                 cwd=self.mirror
             )
-            if remote_name not in remotes:
+            if remote_name not in remotes.strip().split():
                 self.source.call(
                     [self.source.host_git, 'remote', 'add', remote_name, url],
                     fail="Failed to add remote {} with url {}".format(remote_name, url),
