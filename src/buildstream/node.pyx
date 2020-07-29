@@ -214,7 +214,7 @@ cdef class Node:
 
     # _is_composite_list
     #
-    # Checks if the node is a Mapping with array composition
+    # Checks if the node is a Mapping with list composition
     # directives.
     #
     # Returns:
@@ -1070,14 +1070,14 @@ cdef class MappingNode(Node):
         cdef str key
 
         for key in self.value.keys():
-            if key in ['(>)', '(<)', '(=)']:
+            if key in ["(>)", "(<)", "(=)"]:
                 has_directives = True
             else:
                 has_keys = True
 
         if has_keys and has_directives:
             provenance = self.get_provenance()
-            raise LoadError("{}: Dictionary contains array composition directives and arbitrary keys"
+            raise LoadError("{}: Dictionary contains list composition directives and arbitrary keys"
                             .format(provenance), LoadErrorReason.INVALID_DATA)
 
         return has_directives
@@ -1412,8 +1412,16 @@ cdef class SequenceNode(Node):
                                   .format(self.get_provenance(),
                                           key,
                                           target_value.get_provenance()))
-        # Looks good, clobber it
-        target.value[key] = self
+
+        # If the target is a list of conditional statements, then we are
+        # also conditional statements, and we need to append ourselves
+        # to that list instead of overwriting it in order to preserve the
+        # conditional for later evaluation.
+        if type(target_value) is SequenceNode and key == "(?)":
+            (<SequenceNode> target.value[key]).value.extend(self.value)
+        else:
+            # Looks good, clobber it
+            target.value[key] = self
 
     cdef bint _is_composite_list(self) except *:
         return False

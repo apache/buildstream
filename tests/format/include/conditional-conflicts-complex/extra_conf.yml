@@ -1,0 +1,5 @@
+(?):
+- build_arch == "i586":
+    (@): extra_conf_i586.yml
+- build_arch == "x86_64":
+    (@): extra_conf_x86_64.yml
