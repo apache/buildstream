@@ -1,0 +1,5 @@
+variables:
+  enable-work-around: "true"
+  (?):
+    - build_arch == "i586":
+        enable-work-around: "false"

@@ -1,0 +1,9 @@
+
+options:
+  build_arch:
+    type: arch
+    description: Architecture
+    variable: build_arch
+    values:
+      - i586
+      - x86_64
