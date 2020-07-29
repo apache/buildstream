@@ -1791,14 +1791,15 @@ class Element(Plugin):
         return not (self.__sourcecache.has_push_remotes(plugin=self) and self._has_all_sources_in_source_cache())
 
     def _source_push(self):
+        pushed = False
+
         # try and push sources if we've got them
         if self.__sourcecache.has_push_remotes(plugin=self) and self._has_all_sources_in_source_cache():
             for source in self.sources():
-                if not self.__sourcecache.push(source):
-                    return False
+                if self.__sourcecache.push(source):
+                    pushed = True
 
-        # Notify successful upload
-        return True
+        return pushed
 
     # _skip_push():
     #
