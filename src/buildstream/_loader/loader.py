@@ -762,7 +762,7 @@ class Loader:
 
         # Handle the case where a subproject needs to be fetched
         #
-        if not element._has_all_sources_in_source_cache():
+        if element._should_fetch():
             self.load_context.fetch_subprojects([element])
 
         sources = list(element.sources())

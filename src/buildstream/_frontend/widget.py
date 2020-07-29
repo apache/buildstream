@@ -356,7 +356,7 @@ class LogLine(Widget):
                         line = p.fmt_subst(line, "state", "failed", fg="red")
                     elif element._cached_success():
                         line = p.fmt_subst(line, "state", "cached", fg="magenta")
-                    elif not element._has_all_sources_in_source_cache() and not element._has_all_sources_cached():
+                    elif element._fetch_needed():
                         line = p.fmt_subst(line, "state", "fetch needed", fg="red")
                     elif element._buildable():
                         line = p.fmt_subst(line, "state", "buildable", fg="green")
