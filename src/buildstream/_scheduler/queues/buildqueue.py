@@ -18,11 +18,8 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 
-from datetime import timedelta
-
 from . import Queue, QueueStatus
 from ..resources import ResourceType
-from ..._message import MessageType
 from ..jobs import JobStatus
 
 
@@ -33,38 +30,6 @@ class BuildQueue(Queue):
     action_name = "Build"
     complete_name = "Built"
     resources = [ResourceType.PROCESS, ResourceType.CACHE]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._tried = set()
-
-    def enqueue(self, elts):
-        to_queue = []
-
-        for element in elts:
-            if not element._cached_failure() or element in self._tried:
-                to_queue.append(element)
-                continue
-
-            # XXX: Fix this, See https://mail.gnome.org/archives/buildstream-list/2018-September/msg00029.html
-            # Bypass queue processing entirely the first time it's tried.
-            self._tried.add(element)
-            _, description, detail = element._get_build_result()
-            logfile = element._get_build_log()
-            self._message(
-                element,
-                MessageType.FAIL,
-                description,
-                detail=detail,
-                action_name=self.action_name,
-                elapsed=timedelta(seconds=0),
-                logfile=logfile,
-            )
-            self._done_queue.append(element)
-            element_name = element._get_full_name()
-            self._task_group.add_failed_task(element_name)
-
-        return super().enqueue(to_queue)
 
     def get_process_func(self):
         return BuildQueue._assemble_element
