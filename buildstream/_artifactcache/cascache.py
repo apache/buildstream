@@ -41,6 +41,9 @@ from .._exceptions import CASError
 # Limit payload to 1 MiB to leave sufficient headroom for metadata.
 _MAX_PAYLOAD_BYTES = 1024 * 1024
 
+# How often is a keepalive ping sent to the server to make sure the transport is still alive
+_KEEPALIVE_TIME_MS = 60000
+
 
 class _Attempt():
 
@@ -1012,7 +1015,8 @@ class CASRemote():
             url = urlparse(self.spec.url)
             if url.scheme == 'http':
                 port = url.port or 80
-                self.channel = grpc.insecure_channel('{}:{}'.format(url.hostname, port))
+                self.channel = grpc.insecure_channel('{}:{}'.format(url.hostname, port),
+                                                     options=[("grpc.keepalive_time_ms", _KEEPALIVE_TIME_MS)])
             elif url.scheme == 'https':
                 port = url.port or 443
 
@@ -1037,7 +1041,8 @@ class CASRemote():
                 credentials = grpc.ssl_channel_credentials(root_certificates=server_cert_bytes,
                                                            private_key=client_key_bytes,
                                                            certificate_chain=client_cert_bytes)
-                self.channel = grpc.secure_channel('{}:{}'.format(url.hostname, port), credentials)
+                self.channel = grpc.secure_channel('{}:{}'.format(url.hostname, port), credentials,
+                                                   options=[("grpc.keepalive_time_ms", _KEEPALIVE_TIME_MS)])
             else:
                 raise CASError("Unsupported URL: {}".format(self.spec.url))
 
