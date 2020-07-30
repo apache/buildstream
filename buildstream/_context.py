@@ -30,7 +30,6 @@ from ._exceptions import LoadError, LoadErrorReason, BstError
 from ._message import Message, MessageType
 from ._profile import Topics, profile_start, profile_end
 from ._artifactcache import ArtifactCache, ArtifactCacheUsage
-from ._artifactcache.cascache import CASCache
 from ._workspaces import Workspaces
 from .plugin import Plugin
 
@@ -246,7 +245,7 @@ class Context():
     @property
     def artifactcache(self):
         if not self._artifactcache:
-            self._artifactcache = CASCache(self)
+            self._artifactcache = ArtifactCache(self)
 
         return self._artifactcache
 

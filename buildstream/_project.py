@@ -221,18 +221,17 @@ class Project():
     # Instantiate and return an element
     #
     # Args:
-    #    artifacts (ArtifactCache): The artifact cache
     #    meta (MetaElement): The loaded MetaElement
     #    first_pass (bool): Whether to use first pass configuration (for junctions)
     #
     # Returns:
     #    (Element): A newly created Element object of the appropriate kind
     #
-    def create_element(self, artifacts, meta, *, first_pass=False):
+    def create_element(self, meta, *, first_pass=False):
         if first_pass:
-            return self.first_pass_config.element_factory.create(self._context, self, artifacts, meta)
+            return self.first_pass_config.element_factory.create(self._context, self, meta)
         else:
-            return self.config.element_factory.create(self._context, self, artifacts, meta)
+            return self.config.element_factory.create(self._context, self, meta)
 
     # create_source()
     #
@@ -302,7 +301,6 @@ class Project():
     #
     # Args:
     #    targets (list): Target names
-    #    artifacts (ArtifactCache): Artifact cache
     #    rewritable (bool): Whether the loaded files should be rewritable
     #                       this is a bit more expensive due to deep copies
     #    fetch_subprojects (bool): Whether we should fetch subprojects as a part of the
@@ -311,7 +309,7 @@ class Project():
     # Returns:
     #    (list): A list of loaded Element
     #
-    def load_elements(self, targets, artifacts, *,
+    def load_elements(self, targets, *,
                       rewritable=False, fetch_subprojects=False):
         with self._context.timed_activity("Loading elements", silent_nested=True):
             meta_elements = self.loader.load(targets, rewritable=rewritable,
@@ -320,7 +318,7 @@ class Project():
 
         with self._context.timed_activity("Resolving elements"):
             elements = [
-                Element._new_from_meta(meta, artifacts)
+                Element._new_from_meta(meta)
                 for meta in meta_elements
             ]
 

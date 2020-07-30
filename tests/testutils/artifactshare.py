@@ -12,8 +12,8 @@ from multiprocessing import Process, Queue
 
 from buildstream import _yaml
 from buildstream._artifactcache.casserver import create_server
-from buildstream._context import Context
-from buildstream._exceptions import ArtifactError
+from buildstream._artifactcache.cascache import CASCache
+from buildstream._exceptions import CASError
 
 
 # ArtifactShare()
@@ -48,11 +48,7 @@ class ArtifactShare():
 
         os.makedirs(self.repodir)
 
-        context = Context()
-        context.artifactdir = self.repodir
-        context.set_message_handler(self._message_handler)
-
-        self.cas = context.artifactcache
+        self.cas = CASCache(self.repodir)
 
         self.total_space = total_space
         self.free_space = free_space
@@ -144,7 +140,7 @@ class ArtifactShare():
                 if not os.path.exists(object_name):
                     return False
             return True
-        except ArtifactError:
+        except CASError:
             return False
 
     # close():

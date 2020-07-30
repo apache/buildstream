@@ -34,8 +34,9 @@ from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remo
 from .._protos.google.bytestream import bytestream_pb2, bytestream_pb2_grpc
 from .._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc
 
-from .._exceptions import ArtifactError
-from .._context import Context
+from .._exceptions import CASError
+
+from .cascache import CASCache
 
 
 # The default limit for gRPC messages is 4 MiB.
@@ -66,29 +67,25 @@ def message_handler(message, context):
 def create_server(repo, *, enable_push,
                   max_head_size=int(10e9),
                   min_head_size=int(2e9)):
-    context = Context()
-    context.artifactdir = os.path.abspath(repo)
-    context.set_message_handler(message_handler)
-
-    artifactcache = context.artifactcache
+    cas = CASCache(os.path.abspath(repo))
 
     # Use max_workers default from Python 3.5+
     max_workers = (os.cpu_count() or 1) * 5
     server = grpc.server(futures.ThreadPoolExecutor(max_workers))
 
-    cache_cleaner = _CacheCleaner(artifactcache, max_head_size, min_head_size)
+    cache_cleaner = _CacheCleaner(cas, max_head_size, min_head_size)
 
     bytestream_pb2_grpc.add_ByteStreamServicer_to_server(
-        _ByteStreamServicer(artifactcache, cache_cleaner, enable_push=enable_push), server)
+        _ByteStreamServicer(cas, cache_cleaner, enable_push=enable_push), server)
 
     remote_execution_pb2_grpc.add_ContentAddressableStorageServicer_to_server(
-        _ContentAddressableStorageServicer(artifactcache, cache_cleaner, enable_push=enable_push), server)
+        _ContentAddressableStorageServicer(cas, cache_cleaner, enable_push=enable_push), server)
 
     remote_execution_pb2_grpc.add_CapabilitiesServicer_to_server(
         _CapabilitiesServicer(), server)
 
     buildstream_pb2_grpc.add_ReferenceStorageServicer_to_server(
-        _ReferenceStorageServicer(artifactcache, enable_push=enable_push), server)
+        _ReferenceStorageServicer(cas, enable_push=enable_push), server)
 
     return server
 
@@ -389,7 +386,7 @@ class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
 
             response.digest.hash = tree.hash
             response.digest.size_bytes = tree.size_bytes
-        except ArtifactError:
+        except CASError:
             context.set_code(grpc.StatusCode.NOT_FOUND)
 
         return response

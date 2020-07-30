@@ -179,7 +179,7 @@ class Element(Plugin):
     *Since: 1.2*
     """
 
-    def __init__(self, context, project, artifacts, meta, plugin_conf):
+    def __init__(self, context, project, meta, plugin_conf):
 
         self.__cache_key_dict = None            # Dict for cache key calculation
         self.__cache_key = None                 # Our cached cache key
@@ -207,7 +207,7 @@ class Element(Plugin):
         self.__sources = []                     # List of Sources
         self.__weak_cache_key = None            # Our cached weak cache key
         self.__strict_cache_key = None          # Our cached cache key for strict builds
-        self.__artifacts = artifacts            # Artifact cache
+        self.__artifacts = context.artifactcache  # Artifact cache
         self.__consistency = Consistency.INCONSISTENT  # Cached overall consistency state
         self.__cached = None                    # Whether we have a cached artifact
         self.__strong_cached = None             # Whether we have a cached artifact
@@ -898,14 +898,13 @@ class Element(Plugin):
     # and it's dependencies from a meta element.
     #
     # Args:
-    #    artifacts (ArtifactCache): The artifact cache
     #    meta (MetaElement): The meta element
     #
     # Returns:
     #    (Element): A newly created Element instance
     #
     @classmethod
-    def _new_from_meta(cls, meta, artifacts):
+    def _new_from_meta(cls, meta):
 
         if not meta.first_pass:
             meta.project.ensure_fully_loaded()
@@ -913,7 +912,7 @@ class Element(Plugin):
         if meta in cls.__instantiated_elements:
             return cls.__instantiated_elements[meta]
 
-        element = meta.project.create_element(artifacts, meta, first_pass=meta.first_pass)
+        element = meta.project.create_element(meta, first_pass=meta.first_pass)
         cls.__instantiated_elements[meta] = element
 
         # Instantiate sources
@@ -930,12 +929,12 @@ class Element(Plugin):
 
         # Instantiate dependencies
         for meta_dep in meta.dependencies:
-            dependency = Element._new_from_meta(meta_dep, artifacts)
+            dependency = Element._new_from_meta(meta_dep)
             element.__runtime_dependencies.append(dependency)
             dependency.__reverse_dependencies.add(element)
 
         for meta_dep in meta.build_dependencies:
-            dependency = Element._new_from_meta(meta_dep, artifacts)
+            dependency = Element._new_from_meta(meta_dep)
             element.__build_dependencies.append(dependency)
             dependency.__reverse_dependencies.add(element)
 
@@ -1995,7 +1994,7 @@ class Element(Plugin):
                 'sources': [s._get_unique_key(workspace is None) for s in self.__sources],
                 'workspace': '' if workspace is None else workspace.get_key(self._get_project()),
                 'public': self.__public,
-                'cache': type(self.__artifacts).__name__
+                'cache': 'CASCache'
             }
 
             self.__cache_key_dict['fatal-warnings'] = sorted(project._fatal_warnings)
