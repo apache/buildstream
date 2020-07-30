@@ -83,6 +83,7 @@ class Stream:
         #
         self._context = context
         self._artifacts = None
+        self._elementsourcescache = None
         self._sourcecache = None
         self._project = None
         self._pipeline = None
@@ -104,6 +105,7 @@ class Stream:
     #
     def init(self):
         self._artifacts = self._context.artifactcache
+        self._elementsourcescache = self._context.elementsourcescache
         self._sourcecache = self._context.sourcecache
 
     # cleanup()
@@ -1176,6 +1178,7 @@ class Stream:
 
         # Connect to remote caches, this needs to be done before resolving element state
         self._artifacts.setup_remotes(use_config=use_artifact_config, remote_url=artifact_url)
+        self._elementsourcescache.setup_remotes(use_config=use_source_config, remote_url=source_url)
         self._sourcecache.setup_remotes(use_config=use_source_config, remote_url=source_url)
 
     # _load_tracking()

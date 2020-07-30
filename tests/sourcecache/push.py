@@ -85,7 +85,7 @@ def test_source_push_split(cli, tmpdir, datafiles):
 
             element = project.load_elements(["push.bst"])[0]
             element._initialize_state()
-            assert not element._has_all_sources_in_source_cache()
+            assert not element._cached_sources()
             source = list(element.sources())[0]
 
             # check we don't have it in the current cache
@@ -135,7 +135,7 @@ def test_source_push(cli, tmpdir, datafiles):
 
             element = project.load_elements(["push.bst"])[0]
             element._initialize_state()
-            assert not element._has_all_sources_in_source_cache()
+            assert not element._cached_sources()
             source = list(element.sources())[0]
 
             # check we don't have it in the current cache
@@ -268,6 +268,7 @@ def test_push_missing_source_after_build(cli, tmpdir, datafiles):
     res.assert_success()
 
     # Delete source but keep artifact in cache
+    shutil.rmtree(os.path.join(cache_dir, "elementsources"))
     shutil.rmtree(os.path.join(cache_dir, "source_protos"))
 
     with create_artifact_share(os.path.join(str(tmpdir), "sourceshare")) as share:

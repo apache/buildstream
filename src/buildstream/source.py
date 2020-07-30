@@ -1150,14 +1150,8 @@ class Source(Plugin):
         else:
             return None
 
-    def _generate_key(self, previous_sources):
-        keys = [self._get_unique_key()]
-
-        if self.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
-            for previous_source in previous_sources:
-                keys.append(previous_source._get_unique_key())
-
-        self.__key = generate_key(keys)
+    def _generate_key(self):
+        self.__key = generate_key(self._get_unique_key())
 
     @property
     def _key(self):

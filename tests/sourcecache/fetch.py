@@ -75,7 +75,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
 
             element = project.load_elements([element_name])[0]
             element._initialize_state()
-            assert not element._has_all_sources_in_source_cache()
+            assert not element._cached_sources()
             source = list(element.sources())[0]
 
             assert not share.get_source_proto(source._get_source_name())
@@ -117,7 +117,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             element._initialize_state()
 
             # check that we have the source in the cas now and it's not fetched
-            assert element._has_all_sources_in_source_cache()
+            assert element._cached_sources()
             assert os.listdir(os.path.join(str(tmpdir), "cache", "sources", "git")) == []
 
 
@@ -135,7 +135,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
 
             element = project.load_elements([element_name])[0]
             element._initialize_state()
-            assert not element._has_all_sources_in_source_cache()
+            assert not element._cached_sources()
             source = list(element.sources())[0]
 
             assert not share.get_source_proto(source._get_source_name())
@@ -151,7 +151,9 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
             assert ("SUCCESS Fetching from {}".format(repo.source_config(ref=ref)["url"])) in res.stderr
 
             # Check that the source in both in the source dir and the local CAS
-            assert element._has_all_sources_in_source_cache()
+            element = project.load_elements([element_name])[0]
+            element._initialize_state()
+            assert element._cached_sources()
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -167,7 +169,7 @@ def test_pull_fail(cli, tmpdir, datafiles):
 
             element = project.load_elements([element_name])[0]
             element._initialize_state()
-            assert not element._has_all_sources_in_source_cache()
+            assert not element._cached_sources()
             source = list(element.sources())[0]
 
             # remove files and check that it doesn't build
@@ -199,7 +201,7 @@ def test_source_pull_partial_fallback_fetch(cli, tmpdir, datafiles):
 
             element = project.load_elements([element_name])[0]
             element._initialize_state()
-            assert not element._has_all_sources_in_source_cache()
+            assert not element._cached_sources()
             source = list(element.sources())[0]
 
             assert not share.get_artifact_proto(source._get_source_name())

@@ -37,12 +37,15 @@ def test_patch_sources_cached_1(cli, datafiles):
     res = cli.run(project=project_dir, args=["build", "source-with-patches-1.bst"])
     res.assert_success()
 
-    # as we have a local, patch, local config, the first local and patch should
-    # be cached together, and the last local on it's own
     source_protos = os.path.join(project_dir, "cache", "source_protos")
+    elementsources_protos = os.path.join(project_dir, "cache", "elementsources")
 
-    assert len(os.listdir(os.path.join(source_protos, "patch"))) == 1
+    # The two local sources can be cached individually,
+    # the patch source cannot be cached on its own
     assert len(os.listdir(os.path.join(source_protos, "local"))) == 2
+    assert not os.path.exists(os.path.join(source_protos, "patch"))
+
+    assert len(os.listdir(elementsources_protos)) == 1
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -52,10 +55,15 @@ def test_patch_sources_cached_2(cli, datafiles):
     res = cli.run(project=project_dir, args=["build", "source-with-patches-2.bst"])
     res.assert_success()
 
-    # As everything is before the patch it should all be cached together
     source_protos = os.path.join(project_dir, "cache", "source_protos")
+    elementsources_protos = os.path.join(project_dir, "cache", "elementsources")
 
-    assert len(os.listdir(os.path.join(source_protos, "patch"))) == 1
+    # The three local sources can be cached individually,
+    # the patch source cannot be cached on its own
+    assert len(os.listdir(os.path.join(source_protos, "local"))) == 3
+    assert not os.path.exists(os.path.join(source_protos, "patch"))
+
+    assert len(os.listdir(elementsources_protos)) == 1
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -67,8 +75,11 @@ def test_sources_without_patch(cli, datafiles):
 
     # No patches so everything should be cached seperately
     source_protos = os.path.join(project_dir, "cache", "source_protos")
+    elementsources_protos = os.path.join(project_dir, "cache", "elementsources")
 
     assert len(os.listdir(os.path.join(source_protos, "local"))) == 3
+
+    assert len(os.listdir(elementsources_protos)) == 1
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -103,9 +114,17 @@ def test_source_cache_key(cli, datafiles):
     res = cli.run(project=project_dir, args=["build", element_name])
     res.assert_success()
 
-    # Should have one source ref
+    # Should have source refs for the two remote sources
+    remote_protos = os.path.join(project_dir, "cache", "source_protos", "remote")
+    assert len(os.listdir(remote_protos)) == 2
+    # Should not have any source refs for the patch source
+    # as that is a transformation of the previous sources,
+    # not cacheable on its own
     patch_protos = os.path.join(project_dir, "cache", "source_protos", "patch")
-    assert len(os.listdir(patch_protos)) == 1
+    assert not os.path.exists(patch_protos)
+    # Should have one element sources ref
+    elementsources_protos = os.path.join(project_dir, "cache", "elementsources")
+    assert len(os.listdir(elementsources_protos)) == 1
 
     # modify hello-patch file and check tracking updates refs
     with open(os.path.join(file_path, "dev-files", "usr", "include", "pony.h"), "a") as f:
@@ -118,5 +137,5 @@ def test_source_cache_key(cli, datafiles):
     res = cli.run(project=project_dir, args=["source", "fetch", element_name])
     res.assert_success()
 
-    # We should have a new source ref
-    assert len(os.listdir(patch_protos)) == 2
+    # We should have a new element sources ref
+    assert len(os.listdir(elementsources_protos)) == 2

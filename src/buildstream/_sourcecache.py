@@ -70,25 +70,17 @@ class SourceCache(AssetCache):
 
     # commit()
     #
-    # Given a source along with previous sources, it stages and commits these
-    # to the local CAS. This is done due to some types of sources being
-    # dependent on previous sources, such as the patch source.
+    # Given a source, it stages and commits it to the local CAS.
     #
     # Args:
     #    source: last source
-    #    previous_sources: rest of the sources.
-    def commit(self, source, previous_sources):
+    def commit(self, source):
         ref = source._get_source_name()
 
-        # Use tmpdir for now
         vdir = CasBasedDirectory(self.cas)
-        for previous_source in previous_sources:
-            vdir.import_files(self.export(previous_source))
 
         if not source.BST_STAGE_VIRTUAL_DIRECTORY:
             with utils._tempdir(dir=self.context.tmpdir, prefix="staging-temp") as tmpdir:
-                if not vdir.is_empty():
-                    vdir.export_files(tmpdir)
                 source._stage(tmpdir)
                 vdir.import_files(tmpdir, can_link=True)
         else:

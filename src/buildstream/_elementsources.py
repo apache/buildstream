@@ -17,29 +17,47 @@
 
 from typing import TYPE_CHECKING, Iterator
 
+from . import _cachekey, utils
 from ._context import Context
+from ._protos.buildstream.v2 import source_pb2
+from .plugin import Plugin
 
 from .storage._casbaseddirectory import CasBasedDirectory
 
 if TYPE_CHECKING:
     from typing import List
 
+    # pylint: disable=cyclic-import
     from .source import Source
+    from ._project import Project
+
+    # pylint: enable=cyclic-import
 
 # An ElementSources object represents the combined sources of an element.
 class ElementSources:
-    def __init__(self, context: Context):
+    def __init__(self, context: Context, project: "Project", plugin: Plugin):
 
         self._context = context
+        self._project = project
+        self._plugin = plugin
         self._sources = []  # type: List[Source]
-        self.vdir = None  # Directory with staged sources
         self._sourcecache = context.sourcecache  # Source cache
+        self._elementsourcescache = context.elementsourcescache  # Cache of staged element sources
         self._is_resolved = False  # Whether the source is fully resolved or not
         self._cached = None  # If the sources are known to be successfully cached in CAS
+        self._cache_key = None  # Our cached cache key
+        self._proto = None  # The cached Source proto
 
         # the index of the last source in this element that requires previous
         # sources for staging
         self._last_source_requires_previous_idx = None
+
+    # get_project():
+    #
+    # Return the project associated with this object
+    #
+    def get_project(self):
+        return self._project
 
     # add_source():
     #
@@ -89,28 +107,34 @@ class ElementSources:
 
         return refs
 
-    # stage():
+    # stage_and_cache():
     #
-    # Stage the element sources to a directory
+    # Stage the element sources to a directory in CAS
+    #
+    def stage_and_cache(self):
+        vdir = self._stage()
+
+        source_proto = source_pb2.Source()
+        source_proto.files.CopyFrom(vdir._get_digest())
+
+        self._elementsourcescache.store_proto(self, source_proto)
+
+        self._proto = source_proto
+        self._cached = True
+
+    # get_files():
+    #
+    # Get a virtual directory for the staged source files
     #
     # Returns:
-    #     (:class:`.storage.Directory`): A virtual directory object to stage sources into.
+    #     (Directory): The virtual directory object
     #
-    def stage(self):
+    def get_files(self):
         # Assert sources are cached
         assert self.cached()
 
-        self.vdir = CasBasedDirectory(self._context.get_cascache())
-
-        if self._sources:
-            # find last required source
-            last_required_previous_idx = self._last_source_requires_previous()
-
-            for source in self._sources[last_required_previous_idx:]:
-                source_dir = self._sourcecache.export(source)
-                self.vdir.import_files(source_dir)
-
-        return self.vdir
+        cas = self._context.get_cascache()
+        return CasBasedDirectory(cas, digest=self._proto.files)
 
     # fetch_done()
     #
@@ -120,6 +144,8 @@ class ElementSources:
     #   fetched_original (bool): Whether the original sources had been asked (and fetched) or not
     #
     def fetch_done(self, fetched_original):
+        self._proto = self._elementsourcescache.load_proto(self)
+        assert self._proto
         self._cached = True
 
         for source in self._sources:
@@ -137,8 +163,14 @@ class ElementSources:
         pushed = False
 
         for source in self.sources():
-            if self._sourcecache.push(source):
+            if source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH or source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
+                continue
+
+            if self._sourcecache.contains(source) and self._sourcecache.push(source):
                 pushed = True
+
+        if self._elementsourcescache.push(self, self._plugin):
+            pushed = True
 
         return pushed
 
@@ -155,35 +187,50 @@ class ElementSources:
 
     # fetch():
     #
-    # Fetch the element sources.
+    # Fetch the combined or individual element sources.
     #
     # Raises:
     #    SourceError: If one of the element sources has an error
     #
-    def fetch(self, fetch_original=False):
+    def fetch(self):
+        if self.cached():
+            return
+
+        # Try to fetch staged sources from remote source cache
+        if self._elementsourcescache.has_fetch_remotes() and self._elementsourcescache.pull(self, self._plugin):
+            self.fetch_done(False)
+            return
+
+        # Otherwise, fetch individual sources
+        self.fetch_sources()
+
+    # fetch_sources():
+    #
+    # Fetch the individual element sources.
+    #
+    # Args:
+    #   fetch_original (bool): Always fetch original source
+    #
+    # Raises:
+    #    SourceError: If one of the element sources has an error
+    #
+    def fetch_sources(self, *, fetch_original=False):
         previous_sources = []
-        fetch_needed = False
-
-        if self._sources and not fetch_original:
-            for source in self._sources:
-                if self._sourcecache.contains(source):
-                    continue
-
-                # try and fetch from source cache
-                if not source._is_cached() and self._sourcecache.has_fetch_remotes():
-                    if self._sourcecache.pull(source):
-                        continue
-
-                fetch_needed = True
-
-        # We need to fetch original sources
-        if fetch_needed or fetch_original:
-            for source in self.sources():
+        for source in self._sources:
+            if (
+                fetch_original
+                or source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH
+                or source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE
+            ):
+                # Source depends on previous sources, it cannot be stored in
+                # CAS-based source cache on its own. Fetch original source
+                # if it's not in the plugin-specific cache yet.
                 if not source._is_cached():
                     source._fetch(previous_sources)
-                previous_sources.append(source)
+            else:
+                self._fetch_source(source)
 
-            self._cache_sources()
+            previous_sources.append(source)
 
     # get_unique_key():
     #
@@ -194,12 +241,35 @@ class ElementSources:
     #    (str, list, dict): A string, list or dictionary as unique identifier
     #
     def get_unique_key(self):
+        assert self.is_resolved()
+
         result = []
 
         for source in self._sources:
             result.append({"key": source._get_unique_key(), "name": source.get_kind()})
 
         return result
+
+    # get_cache_key():
+    #
+    # Return cache key for the combined element sources
+    #
+    def get_cache_key(self):
+        return self._cache_key
+
+    # _get_brief_display_key()
+    #
+    # Returns an abbreviated cache key for display purposes
+    #
+    # Returns:
+    #    (str): An abbreviated hex digest cache key for this Element
+    #
+    def get_brief_display_key(self):
+        context = self._context
+        key = self._cache_key
+
+        length = min(len(key), context.log_key_length)
+        return key[:length]
 
     # cached():
     #
@@ -213,21 +283,19 @@ class ElementSources:
         if self._cached is not None:
             return self._cached
 
-        sourcecache = self._sourcecache
+        cas = self._context.get_cascache()
+        elementsourcescache = self._elementsourcescache
 
-        # Go through sources we'll cache generating keys
-        for ix, source in enumerate(self._sources):
-            if not source._key:
-                if source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
-                    source._generate_key(self._sources[:ix])
-                else:
-                    source._generate_key([])
+        source_proto = elementsourcescache.load_proto(self)
+        if not source_proto:
+            self._cached = False
+            return False
 
-        # Check all sources are in source cache
-        for source in self._sources:
-            if not sourcecache.contains(source):
-                return False
+        if not cas.contains_directory(source_proto.files, with_files=True):
+            self._cached = False
+            return False
 
+        self._proto = source_proto
         self._cached = True
         return True
 
@@ -261,11 +329,22 @@ class ElementSources:
     # from the workspace, is a component of the element's cache keys.
     #
     def update_resolved_state(self):
+        if self._is_resolved:
+            # Already resolved
+            return
+
         for source in self._sources:
             if not source.is_resolved():
-                break
-        else:
-            self._is_resolved = True
+                return
+
+            # Source is resolved, generate its cache key
+            source._generate_key()
+
+        self._is_resolved = True
+
+        # Also generate the cache key for the combined element sources
+        unique_key = self.get_unique_key()
+        self._cache_key = _cachekey.generate_key(unique_key)
 
     # preflight():
     #
@@ -286,34 +365,58 @@ class ElementSources:
         for source in self.sources():
             source._preflight()
 
-    # _cache_sources():
+    # _fetch_source():
     #
-    # Caches the sources into the local CAS
+    # Fetch a single source into the local CAS-based source cache
     #
-    def _cache_sources(self):
-        if self._sources and not self.cached():
-            last_requires_previous = 0
-            # commit all other sources by themselves
-            for idx, source in enumerate(self._sources):
-                if source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
-                    self._sourcecache.commit(source, self._sources[last_requires_previous:idx])
-                    last_requires_previous = idx
-                else:
-                    self._sourcecache.commit(source, [])
+    # Args:
+    #   source (Source): The source to fetch
+    #
+    def _fetch_source(self, source):
+        # Cannot store a source in the CAS-based source cache on its own
+        # if the source depends on previous sources.
+        assert not source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH and not source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE
 
-    # _last_source_requires_previous
+        if self._sourcecache.contains(source):
+            # Already cached
+            return
+
+        cached_original = source._is_cached()
+        if not cached_original:
+            if self._sourcecache.has_fetch_remotes() and self._sourcecache.pull(source):
+                # Successfully fetched individual source from remote source cache
+                return
+
+            # Unable to fetch source from remote source cache, fall back to
+            # fetching the original source.
+            source._fetch([])
+
+        # Stage original source into the local CAS-based source cache
+        self._sourcecache.commit(source)
+
+    # _stage():
     #
-    # This is the last source that requires previous sources to be cached.
-    # Sources listed after this will be cached separately.
+    # Stage the element sources
     #
-    # Returns:
-    #    (int): index of last source that requires previous sources
-    #
-    def _last_source_requires_previous(self):
-        if self._last_source_requires_previous_idx is None:
-            last_requires_previous = 0
-            for idx, source in enumerate(self._sources):
-                if source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
-                    last_requires_previous = idx
-            self._last_source_requires_previous_idx = last_requires_previous
-        return self._last_source_requires_previous_idx
+    def _stage(self):
+        vdir = CasBasedDirectory(self._context.get_cascache())
+
+        for source in self._sources:
+            if source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH or source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
+                if source.BST_STAGE_VIRTUAL_DIRECTORY:
+                    source._stage(vdir)
+                else:
+                    with utils._tempdir(dir=self._context.tmpdir, prefix="staging-temp") as tmpdir:
+                        # Stage previous sources
+                        vdir.export_files(tmpdir)
+
+                        source._stage(tmpdir)
+
+                        # Capture modified tree
+                        vdir._clear()
+                        vdir.import_files(tmpdir)
+            else:
+                source_dir = self._sourcecache.export(source)
+                vdir.import_files(source_dir)
+
+        return vdir
