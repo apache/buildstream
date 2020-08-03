@@ -372,7 +372,7 @@ class Cli:
         with open(os.devnull) as devnull:
             sys.stdin = devnull
             capture_kind = FDCaptureBinary if binary_capture else FDCapture
-            capture = MultiCapture(out=True, err=True, in_=False, Capture=capture_kind)
+            capture = MultiCapture(out=capture_kind(1), err=capture_kind(2), in_=None)
             capture.start_capturing()
 
             try:
