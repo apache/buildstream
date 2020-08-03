@@ -36,9 +36,7 @@ requirements of specific plugins.
 The default plugins with extra host dependencies are:
 
 - bzr
-- deb
 - git
-- ostree
 - patch
 - pip
 - tar
@@ -55,19 +53,7 @@ Install the dependencies with::
 For the default plugins::
 
 
-    sudo pacman -S bzr git lzip patch ostree python-gobject
-
-The package *python-arpy* is required by the deb source plugin. This is not
-obtainable via ``pacman``, you must get
-`python-arpy from AUR <https://aur.archlinux.org/packages/python-arpy/>`_
-
-To install::
-
-
-    wget https://aur.archlinux.org/cgit/aur.git/snapshot/python-arpy.tar.gz
-    tar -xvf python-arpy.tar.gz
-    cd python-arpy
-    makepkg -si
+    sudo pacman -S bzr git lzip patch
 
 
 Debian
@@ -81,37 +67,8 @@ Install the dependencies with::
 
 For the default plugins:
 
-Stretch
-+++++++
-With stretch, you first need to ensure that you have the backports repository
-setup as described `here <https://backports.debian.org/Instructions/>`_
-
-By adding the following line to your sources.list::
-
-
-    deb http://ftp.debian.org/debian stretch-backports main
-
-And then running::
-
-
-    sudo apt update
-
-At this point you should be able to get the system requirements for the default plugins with::
-
-
-    sudo apt install \
-        bzr git lzip patch python3-arpy python3-gi
-    sudo apt install -t stretch-backports \
-        gir1.2-ostree-1.0 ostree
-
-Buster or Sid
-++++++++++++++++
-For debian unstable or testing, only the following line should be enough
-to get the system requirements for the default plugins installed::
-
-
     sudo apt-get install \
-        lzip git bzr patch python3-arpy gir1.2-ostree-1.0 ostree python3-gi
+        lzip git bzr patch
 
 
 Fedora
@@ -128,8 +85,7 @@ For the default plugins::
 
 
     dnf install -y \
-        bzr git lzip patch ostree python3-gobject
-    pip3 install --user arpy
+        bzr git lzip patch
 
 
 Ubuntu
@@ -148,12 +104,12 @@ For the default plugins::
 
 
     sudo apt install \
-        bzr git lzip patch python3-arpy gir1.2-ostree-1.0 ostree python3-gi
+        bzr git lzip patch
 
 Ubuntu 16.04 LTS
 ++++++++++++++++
 On Ubuntu 16.04, `bubblewrap <https://github.com/projectatomic/bubblewrap/>`_
-or `ostree <https://github.com/ostreedev/ostree>`_ are not available in the official repositories)
+is not available in the official repositories
 You will need to install them in whichever way you see fit. Refer the the upstream documentation
 for advice on this.
 
