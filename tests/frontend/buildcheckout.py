@@ -69,6 +69,30 @@ def test_build_checkout(datafiles, cli, strict, hardlinks):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_include_dot_bst_in_checkout_dirname(datafiles, cli):
+    # put '.bst' on the end of the checkout directory
+    # this is a regression test for a bug. The bug would
+    # remove '.bst' if it appeared at the end of of the
+    # "--directory" argument.
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, "checkout.bst")
+
+    # build the artifact
+    result = cli.run(project=project, args=["--no-strict", "build", "target.bst"])
+    result.assert_success()
+
+    # checkout
+    result = cli.run(project=project, args=["artifact", "checkout", "target.bst", "--directory", checkout])
+    result.assert_success()
+
+    # check that the executable hello file is found in the checkout (ie
+    # confirm files were checked out to directory called "checkout.bst"
+    # (as expected) and not to a directory calld "checkout")
+    filename = os.path.join(checkout, "usr", "bin", "hello")
+    assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 def test_non_strict_build_strict_checkout(datafiles, cli):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout")
