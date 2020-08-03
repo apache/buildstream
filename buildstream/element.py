@@ -2254,6 +2254,8 @@ class Element(Plugin):
             project.ensure_fully_loaded()
             sandbox_config = _yaml.node_chain_copy(project._sandbox)
 
+        host_os, _, _, _, host_arch = os.uname()
+
         # The default config is already composited with the project overrides
         sandbox_defaults = _yaml.node_get(self.__defaults, Mapping, 'sandbox', default_value={})
         sandbox_defaults = _yaml.node_chain_copy(sandbox_defaults)
@@ -2263,10 +2265,13 @@ class Element(Plugin):
         _yaml.node_final_assertions(sandbox_config)
 
         # Sandbox config, unlike others, has fixed members so we should validate them
-        _yaml.node_validate(sandbox_config, ['build-uid', 'build-gid'])
+        _yaml.node_validate(sandbox_config, ['build-uid', 'build-gid', 'build-os', 'build-arch'])
 
-        return SandboxConfig(self.node_get_member(sandbox_config, int, 'build-uid'),
-                             self.node_get_member(sandbox_config, int, 'build-gid'))
+        return SandboxConfig(
+            int(self.node_subst_member(sandbox_config, 'build-uid')),
+            int(self.node_subst_member(sandbox_config, 'build-gid')),
+            self.node_subst_member(sandbox_config, 'build-os', default=host_os),
+            self.node_subst_member(sandbox_config, 'build-arch', default=host_arch))
 
     # This makes a special exception for the split rules, which
     # elements may extend but whos defaults are defined in the project.
