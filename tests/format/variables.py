@@ -97,7 +97,7 @@ def test_undefined(cli, datafiles, element, provenance):
     ],
     ids=["simple", "simple-text", "indirect", "self-reference"],
 )
-@pytest.mark.timeout(15, method="signal")
+@pytest.mark.timeout(30, method="signal")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "cyclic_variables"))
 def test_circular_reference(cli, datafiles, element, provenances):
     print_warning("Performing cyclic test, if this test times out it will exit the test sequence")
