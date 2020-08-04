@@ -284,7 +284,7 @@ def test_track_include(cli, tmpdir, datafiles, ref_storage, kind):
     else:
         assert not os.path.exists(os.path.join(project, "project.refs"))
 
-        new_sources = _yaml.load(os.path.join(element_path, "sources.yml"))
+        new_sources = _yaml.load(os.path.join(element_path, "sources.yml"), shortname="sources.yml")
 
         # Get all of the sources
         assert "sources" in new_sources

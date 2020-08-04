@@ -255,7 +255,7 @@ cdef class Representer:
 #
 # Raises: LoadError
 #
-cpdef MappingNode load(str filename, str shortname=None, bint copy_tree=False, object project=None):
+cpdef MappingNode load(str filename, str shortname, bint copy_tree=False, object project=None):
     cdef MappingNode data
 
     if not shortname:

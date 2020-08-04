@@ -255,7 +255,7 @@ def test_mirror_track_upstream_present(cli, tmpdir, datafiles, kind):
     result.assert_success()
 
     # Tracking tries upstream first. Check the ref is from upstream.
-    new_element = _yaml.load(element_path)
+    new_element = _yaml.load(element_path, shortname=element_name)
     source = new_element.get_sequence("sources").mapping_at(0)
     if "ref" in source:
         assert source.get_str("ref") == upstream_ref
@@ -300,7 +300,7 @@ def test_mirror_track_upstream_absent(cli, tmpdir, datafiles, kind):
     result.assert_success()
 
     # Check that tracking fell back to the mirror
-    new_element = _yaml.load(element_path)
+    new_element = _yaml.load(element_path, shortname=element_name)
     source = new_element.get_sequence("sources").mapping_at(0)
     if "ref" in source:
         assert source.get_str("ref") == mirror_ref

@@ -1,6 +1,9 @@
 import os
+from buildstream import _yaml
 
-from buildstream._yaml import roundtrip_dump  # type: ignore
+
+def load_yaml(filename):
+    return _yaml.load(filename, shortname=os.path.basename(filename))
 
 
 def generate_project(project_dir, config=None):
@@ -11,11 +14,11 @@ def generate_project(project_dir, config=None):
         config["name"] = os.path.basename(project_dir)
     if "min-version" not in config:
         config["min-version"] = "2.0"
-    roundtrip_dump(config, project_file)
+    _yaml.roundtrip_dump(config, project_file)
 
 
 def generate_element(element_dir, element_name, config=None):
     if config is None:
         config = {}
     element_path = os.path.join(element_dir, element_name)
-    roundtrip_dump(config, element_path)
+    _yaml.roundtrip_dump(config, element_path)

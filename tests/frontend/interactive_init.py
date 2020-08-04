@@ -36,7 +36,7 @@ def test_init(tmpdir):
     session.close()
 
     # Now assert that a project.conf got created with expected values
-    project_conf = _yaml.load(os.path.join(str(tmpdir), "project.conf"))
+    project_conf = _yaml.load(os.path.join(str(tmpdir), "project.conf"), shortname=None)
     assert project_conf.get_str("name") == name
     assert project_conf.get_str("min-version") == min_version
     assert project_conf.get_str("element-path") == element_path

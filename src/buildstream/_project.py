@@ -747,11 +747,11 @@ class Project:
 
         # Load builtin default
         projectfile = os.path.join(self.directory, _PROJECT_CONF_FILE)
-        self._default_config_node = _yaml.load(_site.default_project_config)
+        self._default_config_node = _yaml.load(_site.default_project_config, shortname="projectconfig.yaml")
 
         # Load project local config and override the builtin
         try:
-            self._project_conf = _yaml.load(projectfile)
+            self._project_conf = _yaml.load(projectfile, shortname=_PROJECT_CONF_FILE, project=self)
         except LoadError as e:
             # Raise a more specific error here
             if e.reason == LoadErrorReason.MISSING_FILE:
