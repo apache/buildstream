@@ -747,7 +747,11 @@ class App:
         # Ensure all status & messages have been processed
         self._render(message_text=self._message_text)
         click.echo("", err=True)
-        self.logger.print_summary(self.stream, self._main_options["log_file"])
+
+        try:
+            self.logger.print_summary(self.stream, self._main_options["log_file"])
+        except BstError as e:
+            self._error_exit(e)
 
     # _error_exit()
     #
