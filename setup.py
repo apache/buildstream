@@ -347,7 +347,14 @@ setup(
     package_dir={"": "src"},
     packages=find_packages(where="src", exclude=("tests", "tests.*")),
     package_data={
-        "buildstream": ["plugins/*/*.py", "plugins/*/*.yaml", "data/*.yaml", "data/*.sh.in", *list_testing_datafiles()]
+        "buildstream": [
+            "py.typed",
+            "plugins/*/*.py",
+            "plugins/*/*.yaml",
+            "data/*.yaml",
+            "data/*.sh.in",
+            *list_testing_datafiles(),
+        ]
     },
     data_files=[
         # This is a weak attempt to integrate with the user nicely,
