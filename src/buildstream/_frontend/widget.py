@@ -486,14 +486,9 @@ class LogLine(Widget):
 
         # Plugins
         text += self._format_plugins(
-            [p for p, _, _ in project.first_pass_config.element_factory.list_plugins()],
-            [p for p, _, _ in project.first_pass_config.source_factory.list_plugins()],
+            [p for p, _, _ in project.element_factory.list_plugins()],
+            [p for p, _, _ in project.source_factory.list_plugins()],
         )
-        if project.config.element_factory and project.config.source_factory:
-            text += self._format_plugins(
-                [p for p, _, _ in project.config.element_factory.list_plugins()],
-                [p for p, _, _ in project.config.source_factory.list_plugins()],
-            )
 
         # Pipeline state
         text += self.content_profile.fmt("Pipeline\n", bold=True)

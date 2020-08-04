@@ -42,9 +42,9 @@ class PluginOriginJunction(PluginOrigin):
         # Now get the appropriate PluginFactory object
         #
         if plugin_type == PluginType.SOURCE:
-            factory = project.config.source_factory
+            factory = project.source_factory
         elif plugin_type == PluginType.ELEMENT:
-            factory = project.config.element_factory
+            factory = project.element_factory
 
         # Now ask for the paths from the subproject PluginFactory
         try:

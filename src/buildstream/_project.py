@@ -74,8 +74,6 @@ class HostMount:
 # Represents project configuration that can have different values for junctions.
 class ProjectConfig:
     def __init__(self):
-        self.element_factory = None
-        self.source_factory = None
         self.options = None  # OptionPool
         self.base_variables = {}  # The base set of variables
         self.element_overrides = {}  # Element specific configurations
@@ -141,6 +139,9 @@ class Project:
         self.artifact_cache_specs = None
         self.source_cache_specs = None
         self.remote_execution_specs = None
+
+        self.element_factory = None  # ElementFactory for loading elements
+        self.source_factory = None  # SourceFactory for loading sources
 
         #
         # Private Members
@@ -345,16 +346,12 @@ class Project:
     #
     # Args:
     #    meta (MetaElement): The loaded MetaElement
-    #    first_pass (bool): Whether to use first pass configuration (for junctions)
     #
     # Returns:
     #    (Element): A newly created Element object of the appropriate kind
     #
-    def create_element(self, meta, *, first_pass=False):
-        if first_pass:
-            return self.first_pass_config.element_factory.create(self._context, self, meta)
-        else:
-            return self.config.element_factory.create(self._context, self, meta)
+    def create_element(self, meta):
+        return self.element_factory.create(self._context, self, meta)
 
     # create_source()
     #
@@ -363,16 +360,12 @@ class Project:
     # Args:
     #    meta (MetaSource): The loaded MetaSource
     #    variables (Variables): The list of variables available to the source
-    #    first_pass (bool): Whether to use first pass configuration (for junctions)
     #
     # Returns:
     #    (Source): A newly created Source object of the appropriate kind
     #
-    def create_source(self, meta, variables, *, first_pass=False):
-        if first_pass:
-            return self.first_pass_config.source_factory.create(self._context, self, meta, variables)
-        else:
-            return self.config.source_factory.create(self._context, self, meta, variables)
+    def create_source(self, meta, variables):
+        return self.source_factory.create(self._context, self, meta, variables)
 
     # get_alias_uri()
     #
@@ -639,8 +632,9 @@ class Project:
     #
     # Args:
     #    node (MappingNode): The toplevel project.conf node
+    #    first_pass (bool): Whether this is the first or second pass
     #
-    def _validate_toplevel_node(self, node):
+    def _validate_toplevel_node(self, node, *, first_pass=False):
         node.validate_keys(
             [
                 "min-version",
@@ -669,6 +663,24 @@ class Project:
                 "(@)",
             ]
         )
+
+        # Keys which are invalid if specified outside of project.conf
+        if not first_pass:
+            invalid_keys = {"name", "element-path", "min-version", "plugins"}
+
+            for invalid_key in invalid_keys:
+                invalid_node = node.get_node(invalid_key, allow_none=True)
+                if invalid_node:
+                    provenance = invalid_node.get_provenance()
+                    if (
+                        provenance._shortname != "project.conf"
+                        and provenance._filename != _site.default_project_config
+                    ):
+                        raise LoadError(
+                            "{}: Unexpected key: {}".format(provenance, invalid_key),
+                            LoadErrorReason.INVALID_DATA,
+                            detail="The '{}' configuration must be specified in project.conf".format(invalid_key),
+                        )
 
     # _validate_version()
     #
@@ -766,7 +778,7 @@ class Project:
         # Assert project's minimum required version early, before validating toplevel keys
         self._validate_version(pre_config_node)
 
-        self._validate_toplevel_node(pre_config_node)
+        self._validate_toplevel_node(pre_config_node, first_pass=True)
 
         # The project name, element path and option declarations
         # are constant and cannot be overridden by option conditional statements
@@ -818,6 +830,9 @@ class Project:
         config_no_include = self._default_config_node.clone()
         project_conf_first_pass._composite(config_no_include)
 
+        # Plugin factories must be defined in project.conf, not included from elsewhere.
+        self._load_plugin_factories(config_no_include)
+
         self._load_pass(config_no_include, self.first_pass_config, ignore_unknown=True)
 
         # Use separate file for storing source references
@@ -845,7 +860,7 @@ class Project:
 
         self._load_pass(config, self.config)
 
-        self._validate_toplevel_node(config)
+        self._validate_toplevel_node(config, first_pass=False)
 
         #
         # Now all YAML composition is done, from here on we just load
@@ -948,8 +963,6 @@ class Project:
     #    ignore_unknown (bool) - Whether option loader shoud ignore unknown options.
     #
     def _load_pass(self, config, output, *, ignore_unknown=False):
-
-        self._load_plugin_factories(config, output)
 
         # Load project options
         options_node = config.get_mapping("options", default={})
@@ -1061,20 +1074,27 @@ class Project:
 
         return project_directory, workspace_element
 
-    def _load_plugin_factories(self, config, output):
+    # _load_plugin_factories()
+    #
+    # Loads the plugin factories
+    #
+    # Args:
+    #    config (MappingNode): The main project.conf node in the first pass
+    #
+    def _load_plugin_factories(self, config):
         # Create the factories
         pluginbase = PluginBase(package="buildstream.plugins")
-        output.element_factory = ElementFactory(pluginbase)
-        output.source_factory = SourceFactory(pluginbase)
+        self.element_factory = ElementFactory(pluginbase)
+        self.source_factory = SourceFactory(pluginbase)
 
         # Load the plugin origins and register them to their factories
         origins = config.get_sequence("plugins", default=[])
         for origin_node in origins:
             origin = load_plugin_origin(self, origin_node)
             for kind, conf in origin.elements.items():
-                output.element_factory.register_plugin_origin(kind, origin, conf.allow_deprecated)
+                self.element_factory.register_plugin_origin(kind, origin, conf.allow_deprecated)
             for kind, conf in origin.sources.items():
-                output.source_factory.register_plugin_origin(kind, origin, conf.allow_deprecated)
+                self.source_factory.register_plugin_origin(kind, origin, conf.allow_deprecated)
 
     # _warning_is_fatal():
     #
