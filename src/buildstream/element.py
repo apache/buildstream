@@ -249,7 +249,6 @@ class Element(Plugin):
         self.__pull_done = False  # Whether pull was attempted
         self.__cached_successfully = None  # If the Element is known to be successfully cached
         self.__has_all_sources_in_source_cache = None  # If the sources are known to be successfully cached
-        self.__has_all_sources_cached = False  # Whether all sources have a local copy of their respective sources
         self.__splits = None  # Resolved regex objects for computing split domains
         self.__whitelist_regex = None  # Resolved regex object to check if file is allowed to overlap
         self.__tainted = None  # Whether the artifact is tainted and should not be shared
@@ -1699,8 +1698,6 @@ class Element(Plugin):
     #
     def _fetch_done(self, fetched_original):
         self.__has_all_sources_in_source_cache = True
-        if fetched_original:
-            self.__has_all_sources_cached = True
 
         for source in self.__sources:
             source._fetch_done(fetched_original)
@@ -2147,9 +2144,7 @@ class Element(Plugin):
     # copy of their sources.
     #
     def _has_all_sources_cached(self):
-        if not self.__has_all_sources_cached:
-            self.__has_all_sources_cached = all(source._is_cached() for source in self.__sources)
-        return self.__has_all_sources_cached
+        return all(source._is_cached() for source in self.__sources)
 
     def _should_fetch(self, fetch_original=False):
         """ return bool of if we need to run the fetch stage for this element
