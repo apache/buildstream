@@ -125,11 +125,26 @@ logging:
 
   # Format string for printing the pipeline at startup, this
   # also determines the default display format for `bst show`
+  #
+  # See `bst show --help` for details on which symbols can be
+  # used in the format string.
   element-format: |
 
     %{state: >12} %{full-key} %{name} %{workspace-dirs}
 
   # Format string for all log messages.
+  #
+  # Following symbols can be used in the format string:
+  #
+  # elapsed       - Time spent on this operation
+  # elapsed-us    - Time spent on this operation (with microsecond precision)
+  # wallclock     - Current wallclock time
+  # wallclock-us  - Current wallclock time (with microsecond precision)
+  # key           - The abbreviated cache key (if all sources are consistent)
+  # element       - Name of the element
+  # action        - Type of the message
+  # message       - The main message text
+  #
   message-format: |
 
     [%{elapsed}][%{key}][%{element}] %{action} %{message}
