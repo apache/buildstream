@@ -33,6 +33,16 @@ For Debian-based systems::
   apt install gcc python3-dev
 
 
+Installing runtime dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To be able to run BuildStream as part of the test suite, BuildStream's runtime
+dependencies must also be installed. Instructions on how to do so can be found
+in :ref:`install-dependencies`.
+
+If you are not interested in running the integration tests, you can skip the
+installation of ``buildbox-run``.
+
+
 Running tests
 ~~~~~~~~~~~~~
 To run the tests, simply navigate to the toplevel directory of your BuildStream
