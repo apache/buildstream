@@ -498,9 +498,8 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
     element = {"kind": "import", "sources": [gitsource]}
     generate_element(project, "target.bst", element)
 
-    # We will not see the warning or error before the first fetch, because
-    # we don't have the repository yet and so we have no knowledge of
-    # the unlisted submodule.
+    # The warning or error is reported during fetch. There should be no
+    # error with `bst show`.
     result = cli.run(project=project, args=["show", "target.bst"])
     result.assert_success()
     assert "git:unlisted-submodule" not in result.stderr
@@ -517,17 +516,10 @@ def test_unlisted_submodule(cli, tmpdir, datafiles, fail):
         result.assert_success()
         assert "git:unlisted-submodule" in result.stderr
 
-    # Now that we've fetched it, `bst show` will discover the unlisted submodule too
+    # Verify that `bst show` will still not error out after fetching.
     result = cli.run(project=project, args=["show", "target.bst"])
-
-    # Assert a warning or an error depending on what we're checking
-    if fail == "error":
-        result.assert_main_error(ErrorDomain.PLUGIN, "git:unlisted-submodule")
-    else:
-        result.assert_success()
-        # We have cached things internally and successfully. Therefore, the plugin
-        # is not involved in checking whether the cache is correct or not.
-        assert "git:unlisted-submodule" not in result.stderr
+    result.assert_success()
+    assert "git:unlisted-submodule" not in result.stderr
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -612,9 +604,8 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
     element = {"kind": "import", "sources": [gitsource]}
     generate_element(project, "target.bst", element)
 
-    # We will not see the warning or error before the first fetch, because
-    # we don't have the repository yet and so we have no knowledge of
-    # the unlisted submodule.
+    # The warning or error is reported during fetch. There should be no
+    # error with `bst show`.
     result = cli.run(project=project, args=["show", "target.bst"])
     result.assert_success()
     assert "git:invalid-submodule" not in result.stderr
@@ -631,17 +622,10 @@ def test_invalid_submodule(cli, tmpdir, datafiles, fail):
         result.assert_success()
         assert "git:invalid-submodule" in result.stderr
 
-    # Now that we've fetched it, `bst show` will discover the unlisted submodule too
+    # Verify that `bst show` will still not error out after fetching.
     result = cli.run(project=project, args=["show", "target.bst"])
-
-    # Assert a warning or an error depending on what we're checking
-    if fail == "error":
-        result.assert_main_error(ErrorDomain.PLUGIN, "git:invalid-submodule")
-    else:
-        result.assert_success()
-        # We have cached things internally and successfully. Therefore, the plugin
-        # is not involved in checking whether the cache is correct or not.
-        assert "git:invalid-submodule" not in result.stderr
+    result.assert_success()
+    assert "git:invalid-submodule" not in result.stderr
 
 
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
@@ -683,12 +667,14 @@ def test_track_invalid_submodule(cli, tmpdir, datafiles, fail):
     result.assert_success()
     assert "git:invalid-submodule" not in result.stderr
 
-    # In this case, we will get the error directly after tracking,
-    # since the new HEAD does not require any submodules which are
-    # not locally cached, the Source will be CACHED directly after
-    # tracking and the validations will occur as a result.
-    #
+    # After tracking we're pointing to a ref, which would trigger an invalid
+    # submodule warning. However, cache validation is only performed as part
+    # of fetch.
     result = cli.run(project=project, args=["source", "track", "target.bst"])
+    result.assert_success()
+
+    # Fetch to trigger cache validation
+    result = cli.run(project=project, args=["source", "fetch", "target.bst"])
     if fail == "error":
         result.assert_main_error(ErrorDomain.STREAM, None)
         result.assert_task_error(ErrorDomain.PLUGIN, "git:invalid-submodule")
