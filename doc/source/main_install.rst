@@ -24,8 +24,6 @@ for installing these dependencies.
 BuildStream requires the following base system requirements:
 
 - python3 >= 3.6
-- bubblewrap >= 0.1.2
-- fuse2
 - pip
 - :ref:`buildbox-casd<install-buildbox>`
 
@@ -47,7 +45,7 @@ Arch Linux
 Install the dependencies with::
 
 
-    sudo pacman -S python fuse2 bubblewrap python-pip
+    sudo pacman -S python python-pip
 
 
 For the default plugins::
@@ -62,8 +60,7 @@ Install the dependencies with::
 
 
     sudo apt-get install \
-        python3 fuse bubblewrap \
-        python3-pip python3-dev
+        python3 python3-pip python3-dev
 
 For the default plugins:
 
@@ -78,8 +75,7 @@ requirements you need::
 
 
     dnf install -y \
-        python3 fuse bubblewrap \
-        python3-pip python3-devel
+        python3 python3-pip python3-devel
 
 For the default plugins::
 
@@ -97,8 +93,7 @@ Install the dependencies with::
 
 
     sudo apt install \
-        python3 fuse bubblewrap \
-        python3-pip python3-dev
+        python3 python3-pip python3-dev
 
 For the default plugins::
 
@@ -106,12 +101,6 @@ For the default plugins::
     sudo apt install \
         bzr git lzip patch
 
-Ubuntu 16.04 LTS
-++++++++++++++++
-On Ubuntu 16.04, `bubblewrap <https://github.com/projectatomic/bubblewrap/>`_
-is not available in the official repositories
-You will need to install them in whichever way you see fit. Refer the the upstream documentation
-for advice on this.
 
 
 .. _install-buildbox:
