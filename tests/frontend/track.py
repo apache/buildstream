@@ -209,8 +209,7 @@ def test_track_consistency_error(cli, datafiles):
 
     # Track the element causing a consistency error
     result = cli.run(project=project, args=["source", "track", "error.bst"])
-    result.assert_main_error(ErrorDomain.STREAM, None)
-    result.assert_task_error(ErrorDomain.SOURCE, "the-consistency-error")
+    result.assert_main_error(ErrorDomain.SOURCE, "the-consistency-error")
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, "consistencyerror"))
@@ -221,7 +220,7 @@ def test_track_consistency_bug(cli, datafiles):
     result = cli.run(project=project, args=["source", "track", "bug.bst"])
 
     # We expect BuildStream to fail gracefully, with no recorded exception.
-    result.assert_main_error(ErrorDomain.STREAM, None)
+    result.assert_main_error(ErrorDomain.PLUGIN, "source-bug")
 
 
 @pytest.mark.datafiles(DATA_DIR)

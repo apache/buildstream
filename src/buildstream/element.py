@@ -1232,13 +1232,6 @@ class Element(Plugin):
         # source state. We need to update source state.
         self.__update_resolved_state()
 
-        # Check whether sources are now cached.
-        # This is done here so that we don't throw an exception trying to show the pipeline at the end
-        # This has for side-effect to cache this fact too, which will change the object's state.
-        # This is done here rather than later so we can validate that the sources are valid locally
-        self._has_all_sources_in_source_cache()
-        self._has_all_sources_cached()
-
     # _track():
     #
     # Calls track() on the Element sources
