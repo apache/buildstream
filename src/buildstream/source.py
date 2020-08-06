@@ -539,10 +539,10 @@ class Source(Plugin):
         """Implement any validations once we know the sources are cached
 
         This is guaranteed to be called only once for a given session
-        once the sources are known to be cached.
-        If source tracking is enabled in the session for this source,
-        then this will only be called if the sources become cached after
-        tracking completes.
+        once the sources are known to be cached, before
+        :func:`Source.stage() <buildstream.source.Source.stage>` or
+        :func:`Source.init_workspace() <buildstream.source.Source.init_workspace>`
+        is called.
         """
 
     def is_cached(self) -> bool:
@@ -780,9 +780,6 @@ class Source(Plugin):
                     reason="source-bug",
                 )
 
-            if self.__is_cached:
-                self.validate_cache()
-
         return self.__is_cached
 
     # Wrapper function around plugin provided fetch method
@@ -799,8 +796,6 @@ class Source(Plugin):
                 self.__do_fetch(previous_sources_dir=self.__ensure_directory(staging_directory))
         else:
             self.__do_fetch()
-
-        self.validate_cache()
 
     # _fetch_done()
     #
@@ -831,6 +826,7 @@ class Source(Plugin):
             cas_dir = CasBasedDirectory(self._get_context().get_cascache(), digest=self.__digest)
             directory.import_files(cas_dir)
         else:
+            self.validate_cache()
             self.stage(directory)
 
     # Wrapper for init_workspace()
@@ -840,6 +836,7 @@ class Source(Plugin):
 
         directory = self.__ensure_directory(directory)
 
+        self.validate_cache()
         self.init_workspace(directory)
 
     # _get_unique_key():

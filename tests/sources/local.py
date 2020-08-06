@@ -129,7 +129,7 @@ def test_stage_file_exists(cli, datafiles):
     # Build, checkout
     result = cli.run(project=project, args=["build", "target.bst"])
     result.assert_main_error(ErrorDomain.STREAM, None)
-    result.assert_task_error(ErrorDomain.ELEMENT, "import-source-files-fail")
+    result.assert_task_error(ErrorDomain.ELEMENT, "stage-sources-fail")
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "directory"))

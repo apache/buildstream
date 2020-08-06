@@ -29,7 +29,7 @@ import click
 from .profile import Profile
 from .. import Scope
 from .. import __version__ as bst_version
-from .._exceptions import ImplError
+from .._exceptions import BstError, ImplError
 from .._message import MessageType
 from ..storage.directory import _FileType
 
@@ -346,21 +346,26 @@ class LogLine(Widget):
             line = p.fmt_subst(line, "key", cache_key, fg="yellow", dim=dim_keys)
             line = p.fmt_subst(line, "full-key", full_key, fg="yellow", dim=dim_keys)
 
-            if not element._has_all_sources_resolved():
-                line = p.fmt_subst(line, "state", "no reference", fg="red")
-            else:
-                if element.get_kind() == "junction":
-                    line = p.fmt_subst(line, "state", "junction", fg="magenta")
-                elif element._cached_failure():
-                    line = p.fmt_subst(line, "state", "failed", fg="red")
-                elif element._cached_success():
-                    line = p.fmt_subst(line, "state", "cached", fg="magenta")
-                elif not element._has_all_sources_in_source_cache() and not element._has_all_sources_cached():
-                    line = p.fmt_subst(line, "state", "fetch needed", fg="red")
-                elif element._buildable():
-                    line = p.fmt_subst(line, "state", "buildable", fg="green")
+            try:
+                if not element._has_all_sources_resolved():
+                    line = p.fmt_subst(line, "state", "no reference", fg="red")
                 else:
-                    line = p.fmt_subst(line, "state", "waiting", fg="blue")
+                    if element.get_kind() == "junction":
+                        line = p.fmt_subst(line, "state", "junction", fg="magenta")
+                    elif element._cached_failure():
+                        line = p.fmt_subst(line, "state", "failed", fg="red")
+                    elif element._cached_success():
+                        line = p.fmt_subst(line, "state", "cached", fg="magenta")
+                    elif element._fetch_needed():
+                        line = p.fmt_subst(line, "state", "fetch needed", fg="red")
+                    elif element._buildable():
+                        line = p.fmt_subst(line, "state", "buildable", fg="green")
+                    else:
+                        line = p.fmt_subst(line, "state", "waiting", fg="blue")
+            except BstError as e:
+                # Provide context to plugin error
+                e.args = ("Failed to determine state for {}: {}".format(element._get_full_name(), str(e)),)
+                raise e
 
             # Element configuration
             if "%{config" in format_:
