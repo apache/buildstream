@@ -439,11 +439,11 @@ class LogLine(Widget):
     # and so on.
     #
     # Args:
-    #    project (Project): The toplevel project we were invoked from
+    #    toplevel_project (Project): The toplevel project we were invoked from
     #    stream (Stream): The stream
     #    log_file (file): An optional file handle for additional logging
     #
-    def print_heading(self, project, stream, *, log_file):
+    def print_heading(self, toplevel_project, stream, *, log_file):
         context = self.context
         starttime = datetime.datetime.now()
         text = ""
@@ -455,7 +455,7 @@ class LogLine(Widget):
         text += self.content_profile.fmt("BuildStream Version {}\n".format(bst_version), bold=True)
         values = OrderedDict()
         values["Session Start"] = starttime.strftime("%A, %d-%m-%Y at %H:%M:%S")
-        values["Project"] = "{} ({})".format(project.name, project.directory)
+        values["Project"] = "{} ({})".format(toplevel_project.name, toplevel_project.directory)
         values["Targets"] = ", ".join([t.name for t in stream.targets])
         text += self._format_values(values)
 
@@ -476,19 +476,55 @@ class LogLine(Widget):
         text += self._format_values(values)
         text += "\n"
 
-        # Project Options
-        values = OrderedDict()
-        project.options.printable_variables(values)
-        if values:
-            text += self.content_profile.fmt("Project Options\n", bold=True)
-            text += self._format_values(values)
+        # Print information about each loaded project
+        #
+        for project_info in toplevel_project.loaded_projects():
+            project = project_info.project
+
+            # Project title line
+            text += (
+                self.content_profile.fmt("Project", bold=True)
+                + self.format_profile.fmt(": ", bold=True)
+                + self.content_profile.fmt(project.name, bold=True)
+            )
             text += "\n"
 
-        # Plugins
-        text += self._format_plugins(
-            [p for p, _, _, _ in project.element_factory.list_plugins()],
-            [p for p, _, _, _ in project.source_factory.list_plugins()],
-        )
+            # Details on how the project was loaded
+            #
+            values = OrderedDict()
+            if project.junction:
+                values["Junction path"] = project_info.project.junction._get_full_name()
+            if project_info.provenance:
+                values["Loaded by"] = str(project_info.provenance)
+            text += self._format_values(values)
+
+            # Print out duplicate declarations
+            if project_info.duplicates:
+                text += self.format_profile.fmt("{}Declared duplicate by:\n".format(self._indent))
+                for duplicate in project_info.duplicates:
+                    text += self.content_profile.fmt("{}{}\n".format(self._indent * 2, duplicate))
+
+            # Print out internal declarations
+            if project_info.internal:
+                text += self.format_profile.fmt("{}Declared internal by:\n".format(self._indent))
+                for internal in project_info.internal:
+                    text += self.content_profile.fmt("{}{}\n".format(self._indent * 2, internal))
+
+            text += "\n"
+
+            # Project Options
+            values = OrderedDict()
+            project.options.printable_variables(values)
+            if values:
+                text += self.format_profile.fmt("{}Project Options\n".format(self._indent))
+                text += self._format_values(values, indent=2)
+                text += "\n"
+
+            # Plugins
+            text += self._format_plugins(
+                {p: d for p, _, _, d in project.element_factory.list_plugins()},
+                {p: d for p, _, _, d in project.source_factory.list_plugins()},
+            )
 
         # Pipeline state
         text += self.content_profile.fmt("Pipeline\n", bold=True)
@@ -726,25 +762,27 @@ class LogLine(Widget):
             lines = log[(end + 1) :].splitlines()
             return "\n".join([line.decode("utf-8") for line in lines]).rstrip()
 
+    # _format_plugins()
+    #
+    # Formats the plugins loaded by a project
+    #
+    # Args:
+    #    element_plugins (dict): Dict of element plugin kind and display string tuples
+    #    source_plugins (dict): Dict of source plugin kind and display string tuples
+    #
+    # Returns:
+    #    (str): The formatted text
+    #
     def _format_plugins(self, element_plugins, source_plugins):
         text = ""
-
-        if not (element_plugins or source_plugins):
-            return text
-
-        text += self.content_profile.fmt("Loaded Plugins\n", bold=True)
-
         if element_plugins:
-            text += self.format_profile.fmt("  Element Plugins\n")
-            for plugin in element_plugins:
-                text += self.content_profile.fmt("    - {}\n".format(plugin))
-
+            text += self.format_profile.fmt("{}Element Plugins\n".format(self._indent))
+            text += self._format_values(element_plugins, style_key=True, indent=2)
+            text += "\n"
         if source_plugins:
-            text += self.format_profile.fmt("  Source Plugins\n")
-            for plugin in source_plugins:
-                text += self.content_profile.fmt("    - {}\n".format(plugin))
-
-        text += "\n"
+            text += self.format_profile.fmt("{}Source Plugins\n".format(self._indent))
+            text += self._format_values(source_plugins, style_key=True, indent=2)
+            text += "\n"
 
         return text
 
@@ -754,25 +792,40 @@ class LogLine(Widget):
     # the values are aligned.
     #
     # Args:
-    #    values: A dictionary, usually an OrderedDict()
-    #    style_value: Whether to use the content profile for the values
+    #    values (dict): A dictionary, usually an OrderedDict()
+    #    style_key (bool): Whether to use the content profile for the keys
+    #    style_value (bool): Whether to use the content profile for the values
+    #    indent (number): Number of initial indentation levels
     #
     # Returns:
     #    (str): The formatted values
     #
-    def _format_values(self, values, style_value=True):
+    def _format_values(self, values, *, style_key=False, style_value=True, indent=1):
         text = ""
         max_key_len = 0
         for key, value in values.items():
             max_key_len = max(len(key), max_key_len)
 
         for key, value in values.items():
+
+            key = str(key)
+            text += self._indent * indent
+            if style_key:
+                text += self.content_profile.fmt(key)
+            else:
+                text += self.format_profile.fmt(key)
+            text += self.format_profile.fmt(":")
+
+            # Special case for values containing newlines
             if isinstance(value, str) and "\n" in value:
-                text += self.format_profile.fmt("  {}:\n".format(key))
-                text += textwrap.indent(value, self._indent)
+                text += "\n"
+                text += textwrap.indent(value, self._indent * indent)
                 continue
 
-            text += self.format_profile.fmt("  {}: {}".format(key, " " * (max_key_len - len(key))))
+            # Alignment spacing
+            text += " {}".format(" " * (max_key_len - len(key)))
+
+            # Print the value
             if style_value:
                 text += self.content_profile.fmt(str(value))
             else:
