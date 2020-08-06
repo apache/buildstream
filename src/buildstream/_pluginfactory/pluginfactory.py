@@ -165,10 +165,11 @@ class PluginFactory:
     #    (str): The plugin kind
     #    (type): The loaded plugin type
     #    (str): The default yaml file, if any
+    #    (str): The display string describing how the plugin was loaded
     #
-    def list_plugins(self) -> Iterator[Tuple[str, Type[Plugin], str]]:
-        for kind, (plugin_type, defaults) in self._types.items():
-            yield kind, plugin_type, defaults
+    def list_plugins(self) -> Iterator[Tuple[str, Type[Plugin], str, str]]:
+        for kind, (plugin_type, defaults, display) in self._types.items():
+            yield kind, plugin_type, defaults, display
 
     # get_plugin_paths():
     #
@@ -183,12 +184,13 @@ class PluginFactory:
     #    (str): The full path to the directory containing the plugin
     #    (str): The full path to the accompanying .yaml file containing
     #           the plugin's preferred defaults.
+    #    (str): The explanatory display string describing how this plugin was loaded
     #
     def get_plugin_paths(self, kind: str):
         try:
             origin = self._origins[kind]
         except KeyError:
-            return None, None
+            return None, None, None
 
         return origin.get_plugin_paths(kind, self._plugin_type)
 
@@ -220,7 +222,7 @@ class PluginFactory:
             # the optional accompanying .yaml file for the plugin, should
             # one have been provided.
             #
-            location, defaults = self.get_plugin_paths(kind)
+            location, defaults, display = self.get_plugin_paths(kind)
 
             if location:
 
@@ -245,10 +247,12 @@ class PluginFactory:
                 defaults = os.path.join(self._site_plugins_path, "{}.yaml".format(kind))
                 if not os.path.exists(defaults):
                     defaults = None
+                display = "core plugin"
 
-            self._types[kind] = (self._load_plugin(source, kind), defaults)
+            self._types[kind] = (self._load_plugin(source, kind), defaults, display)
 
-        return self._types[kind]
+        type_, defaults, _ = self._types[kind]
+        return type_, defaults
 
     # _load_plugin():
     #

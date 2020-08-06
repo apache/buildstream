@@ -27,21 +27,20 @@ class PluginOriginLocal(PluginOrigin):
     def __init__(self):
         super().__init__(PluginOriginType.LOCAL)
 
-        # An absolute path to where plugins from this origin are found
+        # Project relative path to where plugins from this origin are found
         self._path = None
 
     def get_plugin_paths(self, kind, plugin_type):
-        defaults = os.path.join(self._path, "{}.yaml".format(kind))
+        path = os.path.join(self.project.directory, self._path)
+        defaults = os.path.join(path, "{}.yaml".format(kind))
         if not os.path.exists(defaults):
             defaults = None
 
-        return self._path, defaults
+        return path, defaults, "project directory: {}".format(self._path)
 
     def load_config(self, origin_node):
 
         origin_node.validate_keys(["path", *PluginOrigin._COMMON_CONFIG_KEYS])
 
         path_node = origin_node.get_scalar("path")
-        path = self.project.get_path_from_node(path_node, check_is_dir=True)
-
-        self._path = os.path.join(self.project.directory, path)
+        self._path = self.project.get_path_from_node(path_node, check_is_dir=True)
