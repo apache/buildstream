@@ -622,6 +622,23 @@ class Project:
 
         return False
 
+    # loaded_projects()
+    #
+    # A generator which yields all the projects in context of a loaded
+    # pipeline, including the self project.
+    #
+    # Projects will be yielded in the order in which they were loaded
+    # for the current session's pipeline.
+    #
+    # This is used by the frontend to print information about all the
+    # loaded projects.
+    #
+    # Yields:
+    #    (_ProjectInformation): A descriptive project information object
+    #
+    def loaded_projects(self):
+        yield from self.load_context.loaded_projects()
+
     ########################################################
     #                    Private Methods                   #
     ########################################################

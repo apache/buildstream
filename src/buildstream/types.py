@@ -226,6 +226,24 @@ class _PipelineSelection(FastEnum):
         return str(self.value)
 
 
+# _ProjectInformation()
+#
+# A descriptive object about a project.
+#
+# Args:
+#    project (Project): The project instance
+#    provenance (ProvenanceInformation): The provenance information, if any
+#    duplicates (list): List of project descriptions which declared this project as a duplicate
+#    internal (list): List of project descriptions which declared this project as internal
+#
+class _ProjectInformation:
+    def __init__(self, project, provenance, duplicates, internal):
+        self.project = project
+        self.provenance = provenance
+        self.duplicates = duplicates
+        self.internal = internal
+
+
 ########################################
 #           Type aliases               #
 ########################################
