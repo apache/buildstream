@@ -297,7 +297,7 @@ class Plugin:
         Plugin implementors should implement this method to read configuration
         data and store it.
 
-        The :func:`MappingNode.validate_keys() <buildstream._yaml.MappingNode.validate_keys>` method
+        The :func:`MappingNode.validate_keys() <buildstream.node.MappingNode.validate_keys>` method
         should be used to ensure that the user has not specified keys in `node` which are unsupported
         by the plugin.
 
