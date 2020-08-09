@@ -74,6 +74,7 @@ cdef class Dependency:
     cdef readonly str junction  # The junction path of the dependency name, if any
     cdef readonly bint strict  # Whether this is a strict dependency
     cdef Node _node  # The original node of the dependency
+    cdef readonly list config_nodes  # The custom config nodes for Element.configure_dependencies()
 
     def __cinit__(self, LoadElement element = None, int dep_type = DependencyType.ALL):
         self.element = element
@@ -81,6 +82,7 @@ cdef class Dependency:
         self.name = None
         self.junction = None
         self.strict = False
+        self.config_nodes = None
         self._node = None
 
     # provenance
@@ -128,6 +130,7 @@ cdef class Dependency:
     #
     cdef load(self, Node dep, int default_dep_type):
         cdef str parsed_type
+        cdef MappingNode config_node
 
         self._node = dep
         self.element = None
@@ -140,10 +143,10 @@ cdef class Dependency:
 
         elif type(dep) is MappingNode:
             if default_dep_type:
-                (<MappingNode> dep).validate_keys(['filename', 'junction', 'strict'])
+                (<MappingNode> dep).validate_keys([Symbol.FILENAME, Symbol.JUNCTION, Symbol.STRICT, Symbol.CONFIG])
                 self.dep_type = default_dep_type
             else:
-                (<MappingNode> dep).validate_keys(['filename', 'type', 'junction', 'strict'])
+                (<MappingNode> dep).validate_keys([Symbol.FILENAME, Symbol.TYPE, Symbol.JUNCTION, Symbol.STRICT, Symbol.CONFIG])
 
                 # Resolve the DependencyType
                 parsed_type = (<MappingNode> dep).get_str(<str> Symbol.TYPE, None)
@@ -161,6 +164,13 @@ cdef class Dependency:
             self.name = (<MappingNode> dep).get_str(<str> Symbol.FILENAME)
             self.junction = (<MappingNode> dep).get_str(<str> Symbol.JUNCTION, None)
             self.strict = (<MappingNode> dep).get_bool(<str> Symbol.STRICT, False)
+
+            config_node = (<MappingNode> dep).get_mapping(<str> Symbol.CONFIG, None)
+            if config_node:
+                if self.dep_type == DependencyType.RUNTIME:
+                    raise LoadError("{}: Specifying 'config' for a runtime dependency is not allowed"
+                                    .format(config_node.get_provenance()), LoadErrorReason.INVALID_DATA)
+                self.config_nodes = [config_node]
 
             # Here we disallow explicitly setting 'strict' to False.
             #
@@ -208,6 +218,11 @@ cdef class Dependency:
     cdef merge(self, Dependency other):
         self.dep_type = self.dep_type | other.dep_type
         self.strict = self.strict or other.strict
+
+        if self.config_nodes and other.config_nodes:
+            self.config_nodes.extend(other.config_nodes)
+        else:
+            self.config_nodes = self.config_nodes or other.config_nodes
 
 
 # LoadElement():

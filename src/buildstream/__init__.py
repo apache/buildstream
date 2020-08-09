@@ -35,7 +35,7 @@ if "_BST_COMPLETION" not in os.environ:
     from .plugin import Plugin
     from .source import Source, SourceError, SourceFetcher
     from .downloadablefilesource import DownloadableFileSource
-    from .element import Element, ElementError
+    from .element import Element, ElementError, DependencyConfiguration
     from .buildelement import BuildElement
     from .scriptelement import ScriptElement
 

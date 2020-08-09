@@ -115,9 +115,9 @@ from .storage._filebaseddirectory import FileBasedDirectory
 from .storage.directory import VirtualDirectoryError
 
 if TYPE_CHECKING:
+    from typing import Tuple
     from .node import MappingNode, ScalarNode, SequenceNode
     from .types import SourceRef
-    from typing import Tuple
 
     # pylint: disable=cyclic-import
     from .sandbox import Sandbox
@@ -147,6 +147,26 @@ class ElementError(BstError):
         super().__init__(message, detail=detail, domain=ErrorDomain.ELEMENT, reason=reason, temporary=temporary)
 
         self.collect = collect
+
+
+class DependencyConfiguration:
+    """An object representing the configuration of a dependency
+
+    This is used to provide dependency configurations for elements which implement
+    :func:`Element.configure_dependencies() <buildstream.element.Element.configure_dependencies>`
+    """
+
+    def __init__(self, element: "Element", path: str, config: Optional["MappingNode"]):
+
+        self.element = element  # type: Element
+        """The dependency Element"""
+
+        self.path = path  # type: str
+        """The path used to refer to this dependency"""
+
+        self.config = config  # type: Optional[MappingNode]
+        """The custom :term:`dependency configuration <Dependency configuration>`, or ``None``
+        if no custom configuration was provided"""
 
 
 class Element(Plugin):
@@ -336,6 +356,46 @@ class Element(Plugin):
     #############################################################
     #                      Abstract Methods                     #
     #############################################################
+    def configure_dependencies(self, dependencies: List[DependencyConfiguration]) -> None:
+        """Configure the Element with regards to it's build dependencies
+
+        Elements can use this method to parse custom configuration which define their
+        relationship to their build dependencies.
+
+        If this method is implemented, then it will be called with all direct build dependencies
+        specified in their :ref:`element declaration <format_dependencies>` in a list.
+
+        If the dependency was declared with custom configuration, it will be provided along
+        with the dependency element, otherwise `None` will be passed with dependencies which
+        do not have any additional configuration.
+
+        If the user has specified the same build dependency multiple times with differing
+        configurations, then those build dependencies will be provided multiple times
+        in the ``dependencies`` list.
+
+        Args:
+           dependencies (list): A list of :class:`DependencyConfiguration <buildstream.element.DependencyConfiguration>`
+                                objects
+
+        Raises:
+           :class:`.ElementError`: When the element raises an error
+
+        The format of the :class:`MappingNode <buildstream.node.MappingNode>` provided as
+        :attr:`DependencyConfiguration.config <buildstream.element.DependencyConfiguration.config>
+        belongs to the implementing element, and as such the format should be documented by the plugin,
+        and the :func:`MappingNode.validate_keys() <buildstream.node.MappingNode.validate_keys>`
+        method should be called by the implementing plugin in order to validate it.
+
+        .. note::
+
+           It is unnecessary to implement this method if the plugin does not support
+           any custom :term:`dependency configuration <Dependency configuration>`.
+        """
+        # This method is not called on plugins which do not implement it, so it would
+        # be a bug if this accidentally gets called.
+        #
+        assert False, "Code should not be reached"
+
     def configure_sandbox(self, sandbox: "Sandbox") -> None:
         """Configures the the sandbox for execution
 
@@ -1031,6 +1091,15 @@ class Element(Plugin):
         element = load_element.project.create_element(load_element)
         cls.__instantiated_elements[load_element] = element
 
+        # If the element implements configure_dependencies(), we will collect
+        # the dependency configurations for it, otherwise we will consider
+        # it an error to specify `config` on dependencies.
+        #
+        if element.configure_dependencies.__func__ is not Element.configure_dependencies:
+            custom_configurations = []
+        else:
+            custom_configurations = None
+
         # Load the sources from the LoadElement
         element.__load_sources(load_element)
 
@@ -1041,6 +1110,33 @@ class Element(Plugin):
             if dep.dep_type & DependencyType.BUILD:
                 element.__build_dependencies.append(dependency)
                 dependency.__reverse_build_deps.add(element)
+
+                # Configuration data is only collected for build dependencies,
+                # if configuration data is specified on a runtime dependency
+                # then the assertion will be raised by the LoadElement.
+                #
+                if custom_configurations is not None:
+
+                    # Create a proxy for the dependency
+                    dep_proxy = cast("Element", ElementProxy(element, dependency))
+
+                    # Class supports dependency configuration
+                    if dep.config_nodes:
+                        custom_configurations.extend(
+                            [DependencyConfiguration(dep_proxy, dep.path, config) for config in dep.config_nodes]
+                        )
+                    else:
+                        custom_configurations.append(DependencyConfiguration(dep_proxy, dep.path, None))
+
+                elif dep.config_nodes:
+                    # Class does not support dependency configuration
+                    provenance = dep.config_nodes[0].get_provenance()
+                    raise LoadError(
+                        "{}: Custom dependency configuration is not supported by element plugin '{}'".format(
+                            provenance, element.get_kind()
+                        ),
+                        LoadErrorReason.INVALID_DEPENDENCY_CONFIG,
+                    )
 
             if dep.dep_type & DependencyType.RUNTIME:
                 element.__runtime_dependencies.append(dependency)
@@ -1054,6 +1150,9 @@ class Element(Plugin):
 
         no_of_build_deps = len(element.__build_dependencies)
         element.__build_deps_uncached = no_of_build_deps
+
+        if custom_configurations is not None:
+            element.configure_dependencies(custom_configurations)
 
         element.__preflight()
 
