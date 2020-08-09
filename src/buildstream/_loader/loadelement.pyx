@@ -246,7 +246,6 @@ cdef class LoadElement:
             # parse their dependencies we cannot rely on the built-in ElementError.
             deps = extract_depends_from_node(self.node)
             if deps:
-                provenance = self.node
                 raise LoadError(
                     "{}: Dependencies are forbidden for 'link' elements".format(element),
                     LoadErrorReason.LINK_FORBIDDEN_DEPENDENCIES
