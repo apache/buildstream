@@ -58,7 +58,7 @@ cdef class Dependency:
     cdef readonly str name  # The project local dependency name
     cdef readonly str junction  # The junction path of the dependency name, if any
     cdef readonly bint strict  # Whether this is a strict dependency
-    cdef readonly ProvenanceInformation provenance  # The provenance of the dependency
+    cdef Node _node  # The original node of the dependency
 
     def __cinit__(self, element=None, dep_type=None):
         self.element = element
@@ -66,7 +66,16 @@ cdef class Dependency:
         self.name = None
         self.junction = None
         self.strict = False
-        self.provenance = None
+        self._node = None
+
+    # provenance
+    #
+    # A property to return the ProvenanceInformation for this
+    # dependency.
+    #
+    @property
+    def provenance(self):
+        return self._node.get_provenance()
 
     # set_element()
     #
@@ -94,7 +103,7 @@ cdef class Dependency:
     cdef load(self, Node dep, str default_dep_type):
         cdef str dep_type
 
-        self.provenance = dep.get_provenance()
+        self._node = dep
         self.element = None
 
         if type(dep) is ScalarNode:
