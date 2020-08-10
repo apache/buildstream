@@ -255,7 +255,6 @@ class Element(Plugin):
         # Artifact class for direct artifact composite interaction
         self.__artifact = None  # type: Optional[Artifact]
         self.__strict_artifact = None  # Artifact for strict cache key
-        self.__meta_kind = meta.kind  # The kind of this source, required for unpickling
 
         self.__batch_prepare_assemble = False  # Whether batching across prepare()/assemble() is configured
         self.__batch_prepare_assemble_flags = 0  # Sandbox flags for batching across prepare()/assemble()

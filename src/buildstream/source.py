@@ -342,7 +342,6 @@ class Source(Plugin):
         self.__element_index = meta.element_index  # The index of the source in the owning element's source list
         self.__element_kind = meta.element_kind  # The kind of the element owning this source
         self.__directory = meta.directory  # Staging relative directory
-        self.__meta_kind = meta.kind  # The kind of this source, required for unpickling
         self.__variables = variables  # The variables used to resolve the source's config
 
         self.__key = None  # Cache key for source
