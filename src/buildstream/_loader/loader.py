@@ -29,9 +29,9 @@ from .._profile import Topics, PROFILER
 from .._includes import Includes
 
 from ._loader import valid_chars_name
-from .types import Symbol, extract_depends_from_node
+from .types import Symbol
 from . import loadelement
-from .loadelement import Dependency, LoadElement
+from .loadelement import LoadElement, Dependency, extract_depends_from_node
 from .metaelement import MetaElement
 from .metasource import MetaSource
 from ..types import CoreWarnings, _KeyStrength
@@ -145,9 +145,10 @@ class Loader:
         # Set up a dummy element that depends on all top-level targets
         # to resolve potential circular dependencies between them
         dummy_target = LoadElement(Node.from_dict({}), "", self)
+
         # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
         dummy_target.dependencies.extend(  # pylint: disable=no-member
-            Dependency(element, Symbol.RUNTIME, False, None) for element in target_elements
+            Dependency(element, Symbol.RUNTIME) for element in target_elements
         )
 
         with PROFILER.profile(Topics.CIRCULAR_CHECK, "_".join(targets)):
@@ -444,7 +445,7 @@ class Loader:
         dependencies = extract_depends_from_node(top_element.node)
         # The loader queue is a stack of tuples
         # [0] is the LoadElement instance
-        # [1] is a stack of dependencies to load
+        # [1] is a stack of Dependency objects to load
         # [2] is a list of dependency names used to warn when all deps are loaded
         loader_queue = [(top_element, list(reversed(dependencies)), [])]
 
@@ -484,11 +485,11 @@ class Loader:
                     _, filename, loader = self._parse_name(dep_element.link_target, dep_element.link_target_provenance)
                     dep_element = loader._load_file(filename, dep_element.link_target_provenance)
 
-                # All is well, push the dependency onto the LoadElement
-                # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
-                current_element[0].dependencies.append(  # pylint: disable=no-member
-                    Dependency(dep_element, dep.dep_type, dep.strict, dep.provenance)
-                )
+                # We've now resolved the element for this dependency, lets set the resolved
+                # LoadElement on the dependency and append the dependency to the owning
+                # LoadElement dependency list.
+                dep.set_element(dep_element)
+                current_element[0].dependencies.append(dep)
             else:
                 # We do not have any more dependencies to load for this
                 # element on the queue, report any invalid dep names
