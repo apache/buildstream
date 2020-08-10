@@ -17,7 +17,8 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+from .types import Symbol
 from .metasource import MetaSource
-from .metaelement import MetaElement
+from .loadelement import LoadElement, Dependency
 from .loadcontext import LoadContext
 from .loader import Loader

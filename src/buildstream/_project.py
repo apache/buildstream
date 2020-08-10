@@ -345,13 +345,13 @@ class Project:
     # Instantiate and return an element
     #
     # Args:
-    #    meta (MetaElement): The loaded MetaElement
+    #    load_element (LoadElement): The LoadElement
     #
     # Returns:
     #    (Element): A newly created Element object of the appropriate kind
     #
-    def create_element(self, meta):
-        return self.element_factory.create(self._context, self, meta)
+    def create_element(self, load_element):
+        return self.element_factory.create(self._context, self, load_element)
 
     # create_source()
     #
@@ -426,13 +426,13 @@ class Project:
 
         with self._context.messenger.simple_task("Loading elements", silent_nested=True) as task:
             self.load_context.set_task(task)
-            meta_elements = self.loader.load(targets)
+            load_elements = self.loader.load(targets)
             self.load_context.set_task(None)
 
         with self._context.messenger.simple_task("Resolving elements") as task:
             if task:
                 task.set_maximum_progress(self.loader.loaded)
-            elements = [Element._new_from_meta(meta, task) for meta in meta_elements]
+            elements = [Element._new_from_load_element(load_element, task) for load_element in load_elements]
 
         Element._clear_meta_elements_cache()
 

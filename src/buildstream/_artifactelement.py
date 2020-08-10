@@ -22,7 +22,8 @@ from typing import TYPE_CHECKING
 from . import Element
 from . import _cachekey
 from ._exceptions import ArtifactElementError
-from ._loader.metaelement import MetaElement
+from ._loader import LoadElement
+from .node import Node
 from .types import Scope
 
 if TYPE_CHECKING:
@@ -49,10 +50,9 @@ class ArtifactElement(Element):
         self._key = key
 
         project = context.get_toplevel_project()
-        meta = MetaElement(project, element)  # NOTE element has no .bst suffix
-        plugin_conf = None
+        load_element = LoadElement(Node.from_dict({}), element, project.loader)  # NOTE element has no .bst suffix
 
-        super().__init__(context, project, meta, plugin_conf)
+        super().__init__(context, project, load_element, None)
 
     # _new_from_artifact_ref():
     #

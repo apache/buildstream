@@ -39,7 +39,7 @@ class ElementFactory(PluginFactory):
     # Args:
     #    context (object): The Context object for processing
     #    project (object): The project object
-    #    meta (object): The loaded MetaElement
+    #    load_element (object): The LoadElement
     #
     # Returns: A newly created Element object of the appropriate kind
     #
@@ -47,7 +47,7 @@ class ElementFactory(PluginFactory):
     #    PluginError (if the kind lookup failed)
     #    LoadError (if the element itself took issue with the config)
     #
-    def create(self, context, project, meta):
-        element_type, default_config = self.lookup(context.messenger, meta.kind, meta.provenance)
-        element = element_type(context, project, meta, default_config)
+    def create(self, context, project, load_element):
+        element_type, default_config = self.lookup(context.messenger, load_element.kind, load_element.provenance)
+        element = element_type(context, project, load_element, default_config)
         return element

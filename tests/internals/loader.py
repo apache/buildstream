@@ -5,7 +5,7 @@ import pytest
 from buildstream.exceptions import LoadErrorReason
 from buildstream._exceptions import LoadError
 from buildstream._project import Project
-from buildstream._loader import MetaElement
+from buildstream._loader import LoadElement
 
 from tests.testutils import dummy_context
 
@@ -30,7 +30,7 @@ def test_one_file(datafiles):
     with make_loader(basedir) as loader:
         element = loader.load(["elements/onefile.bst"])[0]
 
-        assert isinstance(element, MetaElement)
+        assert isinstance(element, LoadElement)
         assert element.kind == "pony"
 
 

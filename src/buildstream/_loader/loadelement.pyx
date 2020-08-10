@@ -184,9 +184,10 @@ cdef class LoadElement:
 
     cdef readonly MappingNode node
     cdef readonly str name
-    cdef readonly full_name
-    cdef public bint meta_done
+    cdef readonly str full_name
+    cdef readonly str kind
     cdef int node_id
+    cdef readonly bint first_pass
     cdef readonly object _loader
     cdef readonly str link_target
     cdef readonly ProvenanceInformation link_target_provenance
@@ -199,10 +200,10 @@ cdef class LoadElement:
         #
         # Public members
         #
+        self.kind = None        # The Element kind
         self.node = node        # The YAML node
         self.name = filename    # The element name
         self.full_name = None   # The element full name (with associated junction)
-        self.meta_done = False  # If the MetaElement for this LoadElement is done
         self.node_id = _next_synthetic_counter()
         self.link_target = None  # The target of a link element
         self.link_target_provenance = None  # The provenance of the link target
@@ -233,13 +234,15 @@ cdef class LoadElement:
             'build-depends', 'runtime-depends',
         ])
 
+        self.kind = node.get_str(Symbol.KIND, default=None)
+        self.first_pass = self.kind in ("junction", "link")
+
         #
         # If this is a link, resolve it right away and just
         # store the link target and provenance
         #
-        if self.node.get_str(Symbol.KIND, default=None) == 'link':
-            meta_element = self._loader.collect_element_no_deps(self)
-            element = Element._new_from_meta(meta_element)
+        if self.kind == 'link':
+            element = Element._new_from_load_element(self)
             element._initialize_state()
 
             # Custom error for link dependencies, since we don't completely
@@ -254,6 +257,36 @@ cdef class LoadElement:
             self.link_target = element.target
             self.link_target_provenance = element.target_provenance
 
+        # We don't count progress for junction elements or link
+        # as they do not represent real elements in the build graph.
+        #
+        # We check for a `None` kind, to avoid reporting progress for
+        # the virtual toplevel element used to load the pipeline.
+        #
+        if self._loader.load_context.task and self.kind is not None and not self.first_pass:
+            self._loader.load_context.task.add_current_progress()
+
+    # provenance
+    #
+    # A property reporting the ProvenanceInformation of the element
+    #
+    @property
+    def provenance(self):
+        return self.node.get_provenance()
+
+    # project
+    #
+    # A property reporting the Project in which this element resides.
+    #
+    @property
+    def project(self):
+        return self._loader.project
+
+    # junction
+    #
+    # A property reporting the junction element accessing this
+    # element, if any.
+    #
     @property
     def junction(self):
         return self._loader.project.junction

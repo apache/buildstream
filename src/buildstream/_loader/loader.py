@@ -32,8 +32,6 @@ from ._loader import valid_chars_name
 from .types import Symbol
 from . import loadelement
 from .loadelement import LoadElement, Dependency, extract_depends_from_node
-from .metaelement import MetaElement
-from .metasource import MetaSource
 from ..types import CoreWarnings, _KeyStrength
 from .._message import Message, MessageType
 
@@ -41,8 +39,8 @@ from .._message import Message, MessageType
 # Loader():
 #
 # The Loader class does the heavy lifting of parsing target
-# bst files and ultimately transforming them into a list of MetaElements
-# with their own MetaSources, ready for instantiation by the core.
+# bst files and ultimately transforming them into a list of LoadElements
+# ready for instantiation by the core.
 #
 # Args:
 #    project (Project): The toplevel Project object
@@ -112,7 +110,8 @@ class Loader:
     #
     # Raises: LoadError
     #
-    # Returns: The toplevel LoadElement
+    # Returns:
+    #    (list): The corresponding LoadElement instances matching the `targets`
     #
     def load(self, targets):
 
@@ -154,7 +153,6 @@ class Loader:
         with PROFILER.profile(Topics.CIRCULAR_CHECK, "_".join(targets)):
             self._check_circular_deps(dummy_target)
 
-        ret = []
         #
         # Sort direct dependencies of elements by their dependency ordering
         #
@@ -167,18 +165,13 @@ class Loader:
             with PROFILER.profile(Topics.SORT_DEPENDENCIES, element.name):
                 loadelement.sort_dependencies(element, visited_elements)
 
-            # Finally, wrap what we have into LoadElements and return the target
-            #
-            ret.append(loader._collect_element(element))
-
         self._clean_caches()
 
         # Cache how many Elements have just been loaded
         if self.load_context.task:
-            # Workaround for task potentially being None (because no State object)
             self.loaded = self.load_context.task.current_progress
 
-        return ret
+        return target_elements
 
     # get_loader():
     #
@@ -251,83 +244,6 @@ class Loader:
         # overrides in the ancestry.
         for parent in self._alternative_parents:
             yield from foreach_parent(parent)
-
-    # collect_element_no_deps()
-    #
-    # Collect a single element, without its dependencies, into a meta_element
-    #
-    # NOTE: This is declared public in order to share with the LoadElement
-    #       and should not be used outside of that `_loader` module.
-    #
-    # Args:
-    #    element (LoadElement): The element for which to load a MetaElement
-    #    report_progress (bool): Whether to report progress for this element, this is
-    #                            because we ignore junctions and links when counting
-    #                            how many elements we load.
-    #
-    # Returns:
-    #    (MetaElement): A partially loaded MetaElement
-    #
-    def collect_element_no_deps(self, element, *, report_progress=False):
-        # Return the already built one, if we already built it
-        meta_element = self._meta_elements.get(element.name)
-        if meta_element:
-            return meta_element
-
-        node = element.node
-        elt_provenance = node.get_provenance()
-        meta_sources = []
-
-        element_kind = node.get_str(Symbol.KIND)
-
-        # if there's a workspace for this element then just append a dummy workspace
-        # metasource.
-        workspace = self.load_context.context.get_workspaces().get_workspace(element.full_name)
-        skip_workspace = True
-        if workspace:
-            workspace_node = {"kind": "workspace"}
-            workspace_node["path"] = workspace.get_absolute_path()
-            workspace_node["last_build"] = str(workspace.to_dict().get("last_build", ""))
-            node[Symbol.SOURCES] = [workspace_node]
-            skip_workspace = False
-
-        sources = node.get_sequence(Symbol.SOURCES, default=[])
-        for index, source in enumerate(sources):
-            kind = source.get_str(Symbol.KIND)
-            # the workspace source plugin cannot be used unless the element is workspaced
-            if kind == "workspace" and skip_workspace:
-                continue
-
-            del source[Symbol.KIND]
-
-            # Directory is optional
-            directory = source.get_str(Symbol.DIRECTORY, default=None)
-            if directory:
-                del source[Symbol.DIRECTORY]
-            meta_source = MetaSource(element.name, index, element_kind, kind, source, directory)
-            meta_sources.append(meta_source)
-
-        meta_element = MetaElement(
-            self.project,
-            element.name,
-            element_kind,
-            elt_provenance,
-            meta_sources,
-            node.get_mapping(Symbol.CONFIG, default={}),
-            node.get_mapping(Symbol.VARIABLES, default={}),
-            node.get_mapping(Symbol.ENVIRONMENT, default={}),
-            node.get_str_list(Symbol.ENV_NOCACHE, default=[]),
-            node.get_mapping(Symbol.PUBLIC, default={}),
-            node.get_mapping(Symbol.SANDBOX, default={}),
-            element_kind in ("junction", "link"),
-        )
-
-        # Cache it now, make sure it's already there before recursing
-        self._meta_elements[element.name] = meta_element
-        if self.load_context.task and report_progress:
-            self.load_context.task.add_current_progress()
-
-        return meta_element
 
     ###########################################
     #            Private Methods              #
@@ -553,52 +469,6 @@ class Loader:
                 check_elements.remove(this_element)
                 validated.add(this_element)
 
-    # _collect_element()
-    #
-    # Collect the toplevel elements we have
-    #
-    # Args:
-    #    top_element (LoadElement): The element for which to load a MetaElement
-    #
-    # Returns:
-    #    (MetaElement): A fully loaded MetaElement
-    #
-    def _collect_element(self, top_element):
-        element_queue = [top_element]
-        meta_element_queue = [self.collect_element_no_deps(top_element, report_progress=True)]
-
-        while element_queue:
-            element = element_queue.pop()
-            meta_element = meta_element_queue.pop()
-
-            if element.meta_done:
-                # This can happen if there are multiple top level targets
-                # in which case, we simply skip over this element.
-                continue
-
-            for dep in element.dependencies:
-
-                loader = dep.element._loader
-                name = dep.element.name
-
-                try:
-                    meta_dep = loader._meta_elements[name]
-                except KeyError:
-                    meta_dep = loader.collect_element_no_deps(dep.element, report_progress=True)
-                    element_queue.append(dep.element)
-                    meta_element_queue.append(meta_dep)
-
-                if dep.dep_type != "runtime":
-                    meta_element.build_dependencies.append(meta_dep)
-                if dep.dep_type != "build":
-                    meta_element.dependencies.append(meta_dep)
-                if dep.strict:
-                    meta_element.strict_dependencies.append(meta_dep)
-
-            element.meta_done = True
-
-        return self._meta_elements[top_element.name]
-
     # _search_for_override():
     #
     # Search parent projects for an overridden subproject to replace this junction.
@@ -711,20 +581,9 @@ class Loader:
         if not load_subprojects:
             return None
 
-        # meta junction element
-        #
-        # Note that junction elements are not allowed to have
-        # dependencies, so disabling progress reporting here should
-        # have no adverse effects - the junction element itself cannot
-        # be depended on, so it would be confusing for its load to
-        # show up in logs.
-        #
-        # Any task counting *inside* the junction will be handled by
-        # its loader.
-        meta_element = self.collect_element_no_deps(self._elements[filename])
-        if meta_element.kind != "junction":
+        if load_element.kind != "junction":
             raise LoadError(
-                "{}{}: Expected junction but element kind is {}".format(provenance_str, filename, meta_element.kind),
+                "{}{}: Expected junction but element kind is {}".format(provenance_str, filename, load_element.kind),
                 LoadErrorReason.INVALID_DATA,
             )
 
@@ -748,7 +607,7 @@ class Loader:
                 "{}: Dependencies are forbidden for 'junction' elements".format(p), LoadErrorReason.INVALID_JUNCTION
             )
 
-        element = Element._new_from_meta(meta_element)
+        element = Element._new_from_load_element(load_element)
         element._initialize_state()
 
         # Handle the case where a subproject has no ref
