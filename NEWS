@@ -2,6 +2,16 @@
 (unreleased)
 ============
 
+Format
+------
+
+  o BREAKING CHANGE: Some project.conf keys are no longer allowed to be specified outside
+    of the project.conf file (they cannot be specified in an include file), these include:
+    - name
+    - element-path
+    - min-version
+    - plugins
+
 CLI
 ---
 

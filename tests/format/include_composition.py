@@ -23,7 +23,7 @@ def test_main_has_priority(tmpdir):
 
         _yaml.roundtrip_dump({"(@)": ["a.yml"], "test": ["main"]}, str(tmpdir.join("main.yml")))
 
-        main = _yaml.load(str(tmpdir.join("main.yml")))
+        main = _yaml.load(str(tmpdir.join("main.yml")), shortname=None)
 
         _yaml.roundtrip_dump({"test": ["a"]}, str(tmpdir.join("a.yml")))
 
@@ -36,7 +36,7 @@ def test_include_cannot_append(tmpdir):
     with make_includes(str(tmpdir)) as includes:
 
         _yaml.roundtrip_dump({"(@)": ["a.yml"], "test": ["main"]}, str(tmpdir.join("main.yml")))
-        main = _yaml.load(str(tmpdir.join("main.yml")))
+        main = _yaml.load(str(tmpdir.join("main.yml")), shortname=None)
 
         _yaml.roundtrip_dump({"test": {"(>)": ["a"]}}, str(tmpdir.join("a.yml")))
 
@@ -49,7 +49,7 @@ def test_main_can_append(tmpdir):
     with make_includes(str(tmpdir)) as includes:
 
         _yaml.roundtrip_dump({"(@)": ["a.yml"], "test": {"(>)": ["main"]}}, str(tmpdir.join("main.yml")))
-        main = _yaml.load(str(tmpdir.join("main.yml")))
+        main = _yaml.load(str(tmpdir.join("main.yml")), shortname=None)
 
         _yaml.roundtrip_dump({"test": ["a"]}, str(tmpdir.join("a.yml")))
 
@@ -62,7 +62,7 @@ def test_sibling_cannot_append_backward(tmpdir):
     with make_includes(str(tmpdir)) as includes:
 
         _yaml.roundtrip_dump({"(@)": ["a.yml", "b.yml"]}, str(tmpdir.join("main.yml")))
-        main = _yaml.load(str(tmpdir.join("main.yml")))
+        main = _yaml.load(str(tmpdir.join("main.yml")), shortname=None)
 
         _yaml.roundtrip_dump({"test": {"(>)": ["a"]}}, str(tmpdir.join("a.yml")))
         _yaml.roundtrip_dump({"test": ["b"]}, str(tmpdir.join("b.yml")))
@@ -76,7 +76,7 @@ def test_sibling_can_append_forward(tmpdir):
     with make_includes(str(tmpdir)) as includes:
 
         _yaml.roundtrip_dump({"(@)": ["a.yml", "b.yml"]}, str(tmpdir.join("main.yml")))
-        main = _yaml.load(str(tmpdir.join("main.yml")))
+        main = _yaml.load(str(tmpdir.join("main.yml")), shortname=None)
 
         _yaml.roundtrip_dump({"test": ["a"]}, str(tmpdir.join("a.yml")))
         _yaml.roundtrip_dump({"test": {"(>)": ["b"]}}, str(tmpdir.join("b.yml")))
@@ -90,7 +90,7 @@ def test_lastest_sibling_has_priority(tmpdir):
     with make_includes(str(tmpdir)) as includes:
 
         _yaml.roundtrip_dump({"(@)": ["a.yml", "b.yml"]}, str(tmpdir.join("main.yml")))
-        main = _yaml.load(str(tmpdir.join("main.yml")))
+        main = _yaml.load(str(tmpdir.join("main.yml")), shortname=None)
 
         _yaml.roundtrip_dump({"test": ["a"]}, str(tmpdir.join("a.yml")))
         _yaml.roundtrip_dump({"test": ["b"]}, str(tmpdir.join("b.yml")))
@@ -104,7 +104,7 @@ def test_main_keeps_keys(tmpdir):
     with make_includes(str(tmpdir)) as includes:
 
         _yaml.roundtrip_dump({"(@)": ["a.yml"], "something": "else"}, str(tmpdir.join("main.yml")))
-        main = _yaml.load(str(tmpdir.join("main.yml")))
+        main = _yaml.load(str(tmpdir.join("main.yml")), shortname=None)
 
         _yaml.roundtrip_dump({"test": ["a"]}, str(tmpdir.join("a.yml")))
 
@@ -121,7 +121,7 @@ def test_overwrite_directive_on_later_composite(tmpdir):
             {"(@)": ["a.yml", "b.yml"], "test": {"(=)": ["Overwritten"]}}, str(tmpdir.join("main.yml"))
         )
 
-        main = _yaml.load(str(tmpdir.join("main.yml")))
+        main = _yaml.load(str(tmpdir.join("main.yml")), shortname=None)
 
         # a.yml
         _yaml.roundtrip_dump(

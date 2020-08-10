@@ -89,7 +89,11 @@ class PluginOriginPip(PluginOrigin):
             # The plugin didn't have an accompanying YAML file
             defaults = None
 
-        return os.path.dirname(location), defaults
+        return (
+            os.path.dirname(location),
+            defaults,
+            "python package '{}' at: {}".format(package.dist, package.dist.location),
+        )
 
     def load_config(self, origin_node):
 

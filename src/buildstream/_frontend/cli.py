@@ -120,7 +120,7 @@ def complete_target(args, incomplete):
     else:
         project_file = os.path.join(base_directory, project_conf)
         try:
-            project = _yaml.load(project_file)
+            project = _yaml.load(project_file, shortname=project_conf)
         except LoadError:
             # If there is no project conf in context, just dont
             # even bother trying to complete anything.

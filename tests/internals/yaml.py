@@ -16,7 +16,7 @@ def test_load_yaml(datafiles):
 
     filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
 
-    loaded = _yaml.load(filename)
+    loaded = _yaml.load(filename, shortname=None)
     assert loaded.get_str("kind") == "pony"
 
 
@@ -35,7 +35,7 @@ def test_basic_provenance(datafiles):
 
     filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
 
-    loaded = _yaml.load(filename)
+    loaded = _yaml.load(filename, shortname=None)
     assert loaded.get_str("kind") == "pony"
 
     assert_provenance(filename, 1, 0, loaded)
@@ -46,7 +46,7 @@ def test_member_provenance(datafiles):
 
     filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
 
-    loaded = _yaml.load(filename)
+    loaded = _yaml.load(filename, shortname=None)
     assert loaded.get_str("kind") == "pony"
     assert_provenance(filename, 2, 13, loaded.get_scalar("description"))
 
@@ -56,7 +56,7 @@ def test_element_provenance(datafiles):
 
     filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
 
-    loaded = _yaml.load(filename)
+    loaded = _yaml.load(filename, shortname=None)
     assert loaded.get_str("kind") == "pony"
     assert_provenance(filename, 5, 2, loaded.get_sequence("moods").scalar_at(1))
 
@@ -67,11 +67,11 @@ def test_mapping_validate_keys(datafiles):
     valid = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
     invalid = os.path.join(datafiles.dirname, datafiles.basename, "invalid.yaml")
 
-    base = _yaml.load(valid)
+    base = _yaml.load(valid, shortname=None)
 
     base.validate_keys(["kind", "description", "moods", "children", "extra"])
 
-    base = _yaml.load(invalid)
+    base = _yaml.load(invalid, shortname=None)
 
     with pytest.raises(LoadError) as exc:
         base.validate_keys(["kind", "description", "moods", "children", "extra"])
@@ -84,7 +84,7 @@ def test_node_get(datafiles):
 
     filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
 
-    base = _yaml.load(filename)
+    base = _yaml.load(filename, shortname=None)
     assert base.get_str("kind") == "pony"
 
     children = base.get_sequence("children")
@@ -106,7 +106,7 @@ def test_node_set(datafiles):
 
     filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
 
-    base = _yaml.load(filename)
+    base = _yaml.load(filename, shortname=None)
 
     assert "mother" not in base
     base["mother"] = "snow white"
@@ -118,7 +118,7 @@ def test_node_set_overwrite(datafiles):
 
     filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
 
-    base = _yaml.load(filename)
+    base = _yaml.load(filename, shortname=None)
 
     # Overwrite a string
     assert base.get_str("kind") == "pony"
@@ -136,7 +136,7 @@ def test_node_set_list_element(datafiles):
 
     filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
 
-    base = _yaml.load(filename)
+    base = _yaml.load(filename, shortname=None)
 
     assert base.get_str_list("moods") == ["happy", "sad"]
     base.get_sequence("moods")[0] = "confused"
@@ -154,8 +154,8 @@ def test_composite_preserve_originals(datafiles):
     filename = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
     overlayfile = os.path.join(datafiles.dirname, datafiles.basename, "composite.yaml")
 
-    base = _yaml.load(filename)
-    overlay = _yaml.load(overlayfile)
+    base = _yaml.load(filename, shortname=None)
+    overlay = _yaml.load(overlayfile, shortname=None)
     base_copy = base.clone()
     overlay._composite(base_copy)
 
@@ -216,7 +216,7 @@ def test_list_composition(datafiles, filename, tmpdir, index, length, mood, prov
     base_file = os.path.join(datafiles.dirname, datafiles.basename, "basics.yaml")
     overlay_file = os.path.join(datafiles.dirname, datafiles.basename, filename)
 
-    base = _yaml.load(base_file, "basics.yaml")
+    base = _yaml.load(base_file, shortname="basics.yaml")
     overlay = _yaml.load(overlay_file, shortname=filename)
 
     overlay._composite(base)
@@ -369,7 +369,7 @@ def test_convert_value_to_string(datafiles):
     conf_file = os.path.join(datafiles.dirname, datafiles.basename, "convert_value_to_str.yaml")
 
     # Run file through yaml to convert it
-    test_dict = _yaml.load(conf_file)
+    test_dict = _yaml.load(conf_file, shortname=None)
 
     user_config = test_dict.get_str("Test1")
     assert isinstance(user_config, str)
@@ -393,7 +393,7 @@ def test_value_doesnt_match_expected(datafiles):
     conf_file = os.path.join(datafiles.dirname, datafiles.basename, "convert_value_to_str.yaml")
 
     # Run file through yaml to convert it
-    test_dict = _yaml.load(conf_file)
+    test_dict = _yaml.load(conf_file, shortname=None)
 
     with pytest.raises(LoadError) as exc:
         test_dict.get_int("Test4")
@@ -445,7 +445,7 @@ def test_node_find_target(datafiles, case):
     filename = os.path.join(datafiles.dirname, datafiles.basename, "traversal.yaml")
     # We set copy_tree in order to ensure that the nodes in `loaded`
     # are not the same nodes as in `prov.toplevel`
-    loaded = _yaml.load(filename, copy_tree=True)
+    loaded = _yaml.load(filename, shortname=None, copy_tree=True)
 
     prov = loaded.get_provenance()
 
@@ -477,7 +477,7 @@ def test_node_find_target(datafiles, case):
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
 def test_node_find_target_fails(datafiles):
     filename = os.path.join(datafiles.dirname, datafiles.basename, "traversal.yaml")
-    loaded = _yaml.load(filename, copy_tree=True)
+    loaded = _yaml.load(filename, shortname=None, copy_tree=True)
 
     brand_new = Node.from_dict({})
 

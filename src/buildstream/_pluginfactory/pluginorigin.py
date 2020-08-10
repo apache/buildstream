@@ -133,6 +133,7 @@ class PluginOrigin:
     #    (str): The full path to the directory containing the plugin
     #    (str): The full path to the accompanying .yaml file containing
     #           the plugin's preferred defaults.
+    #    (str): The explanatory display string describing how this plugin was loaded
     #
     def get_plugin_paths(self, kind, plugin_type):
         pass

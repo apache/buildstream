@@ -233,11 +233,14 @@ class Context:
 
         # Load default config
         #
-        defaults = _yaml.load(_site.default_user_config)
+        defaults = _yaml.load(_site.default_user_config, shortname="userconfig.yaml")
 
         if config:
             self.config_origin = os.path.abspath(config)
-            user_config = _yaml.load(config)
+
+            # Here we use the fullpath as the shortname as well, as it is useful to have
+            # a fullpath displayed in errors for the user configuration
+            user_config = _yaml.load(config, shortname=config)
             user_config._composite(defaults)
 
         # Give obsoletion warnings

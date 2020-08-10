@@ -19,6 +19,7 @@
 
 from .._exceptions import LoadError
 from ..exceptions import LoadErrorReason
+from ..types import _ProjectInformation
 
 
 # ProjectLoaders()
@@ -73,6 +74,21 @@ class ProjectLoaders:
 
         elif primary and duplicates:
             self._raise_conflict(duplicates, internal)
+
+    # loaded_projects()
+    #
+    # A generator which yeilds all of the instances
+    # of this loaded project.
+    #
+    # Yields:
+    #    (_ProjectInformation): A descriptive project information object
+    #
+    def loaded_projects(self):
+        for loader in self._collect:
+            duplicating, internalizing = self._search_project_relationships(loader)
+            yield _ProjectInformation(
+                loader.project, loader.provenance, [str(l) for l in duplicating], [str(l) for l in internalizing]
+            )
 
     # _search_project_relationships()
     #
@@ -241,3 +257,14 @@ class LoadContext:
             self._loaders[project.name] = project_loaders
 
         project_loaders.register_loader(loader)
+
+    # loaded_projects()
+    #
+    # A generator which yeilds all of the loaded projects
+    #
+    # Yields:
+    #    (_ProjectInformation): A descriptive project information object
+    #
+    def loaded_projects(self):
+        for _, project_loaders in self._loaders.items():
+            yield from project_loaders.loaded_projects()

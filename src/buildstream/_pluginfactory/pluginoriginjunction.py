@@ -42,13 +42,13 @@ class PluginOriginJunction(PluginOrigin):
         # Now get the appropriate PluginFactory object
         #
         if plugin_type == PluginType.SOURCE:
-            factory = project.config.source_factory
+            factory = project.source_factory
         elif plugin_type == PluginType.ELEMENT:
-            factory = project.config.element_factory
+            factory = project.element_factory
 
         # Now ask for the paths from the subproject PluginFactory
         try:
-            location, defaults = factory.get_plugin_paths(kind)
+            location, defaults, display = factory.get_plugin_paths(kind)
         except PluginError as e:
             # Add some context to an error raised by loading a plugin from a subproject
             #
@@ -74,7 +74,12 @@ class PluginOriginJunction(PluginOrigin):
                 reason="junction-plugin-not-found",
             )
 
-        return location, defaults
+        # Use the resolved project path for the display string rather than the user configured junction path
+        project_path = "toplevel project"
+        if project.junction:
+            project_path = project.junction._get_full_name()
+
+        return location, defaults, "junction: {} ({})".format(project_path, display)
 
     def load_config(self, origin_node):
 
