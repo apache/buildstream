@@ -1,0 +1,128 @@
+name: PR Checks
+
+# We don't run these jobs on pull requests because:
+# 1. it is often useful to run tests on one's branch without creating a pull
+#    request, and
+# 2. running on both pushes and pull requests results in the classic problem of
+#    having double jobs.
+on: push
+
+# Left to-do:
+# - coverage
+# - publishing docs to gh-pages
+# - persistent artifact cache
+# - overnight jobs
+# - other one-off jobs like missing-deps, plugin jobs etc
+# - wsl tasks (TODO: Check if GitHub's Windows runners allow WSL)
+#
+# New opportunities:
+# - run tests on mac (GitHub provides MacOS runners)
+# - standardize WSL tasks by using GitHub-provided runners
+#
+#
+# NOTE:
+#
+# * GitHub Actions do not support YAML variables and/or YAML anchors, which
+#   leads to some repetition. Job matrices solve this to some extent but
+#   combined with some other issues, this seems like a ongoing source of
+#   misery.
+# * Not being able to use the standard `container` directive for running our
+#   tests is one such example that makes this situation seem worse.
+#
+# * We have caches etc in GitHub Actions as well, so I don't think we are
+#   missing any killer feature.
+#
+# * Fixing most of the to-do items is mostly mostly a matter of adding more
+#   configuration.
+# * Some of these tasks can probably live in a different yaml file as a
+#   separate workflow.
+#
+# * Similar to GitLab, GitHub also has a container registry, so we can move our
+#   testsuite images there if/when we want to fully migrate off of GitLab.
+
+jobs:
+  tests:
+    runs-on: ubuntu-20.04
+
+    env:
+      CI_IMAGE_PREFIX: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite
+      CI_IMAGE_SUFFIX: master-154893333
+      PYTEST_ARGS: --color=yes --integration -n 4
+      TOXENV: py36,py6-plugins,py37,py37-plugins,py38,py38-plugins
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ci_image_name:
+          - debian:10
+          - fedora:30
+          - fedora:31
+          - ubuntu:18.04
+          - centos:7.7.1908
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+        # BuildStream requires tags to be able to find its version.
+        with:
+          fetch-depth: 0
+      # XXX: Our run command looks like a monstrosity because we need to
+      # specify `--device /dev/fuse` and there's no way to do that using the
+      # `container` directive directly.
+      # This is also why we have forward environment variables by hand.
+      # TODO: In future, we should find a way to simplify this. See some
+      # relevant discussion at:
+      # https://github.community/t/how-to-run-privileged-docker-container/16431.
+      # XXX: Value of `volume` and `workdir` must match how GitHub
+      # Actions sets up paths.
+      # TODO: Have test user pre-created in the test image.
+      - name: Run tox inside a container
+        run: |
+          docker run \
+              --privileged \
+              --device /dev/fuse \
+              --env PYTEST_ARGS \
+              --env TOXENV \
+              --volume /home/runner/work:/__w \
+              --workdir /__w/buildstream/buildstream \
+              "$CI_IMAGE_PREFIX"-${{ matrix.ci_image_name }}-"$CI_IMAGE_SUFFIX" \
+              bash -c 'useradd -Um buildstream && chown -R buildstream:buildstream . && su buildstream -c "tox -- $PYTEST_ARGS"'
+
+  mypy:
+    runs-on: ubuntu-20.04
+    container: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-154893333
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - name: Run tox inside a container
+        run: tox -e mypy
+
+  lint:
+    runs-on: ubuntu-20.04
+    container: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-154893333
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - name: Run tox inside a container
+        run: tox -e format-check,lint
+
+  docs:
+    runs-on: ubuntu-20.04
+    env:
+      CI_IMAGE: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-154893333
+      BST_FORCE_SESSION_REBUILD: 1
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+        # BuildStream requires tags to be able to find its version.
+        with:
+          fetch-depth: 0
+      - name: Run tox inside a container
+        run: |
+          docker run \
+              --privileged \
+              --device /dev/fuse \
+              --volume /home/runner/work:/__w \
+              --workdir /__w/buildstream/buildstream \
+              $CI_IMAGE \
+              tox -e docs
