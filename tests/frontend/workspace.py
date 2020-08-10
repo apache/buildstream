@@ -167,7 +167,7 @@ def test_open_bzr_customize(cli, tmpdir, datafiles):
     assert os.path.isdir(bzrdir)
 
     # Check that the correct origin branch is set
-    element_config = _yaml.load(os.path.join(project, "elements", element_name))
+    element_config = _yaml.load(os.path.join(project, "elements", element_name), shortname=None)
     source_config = element_config.get_sequence("sources").mapping_at(0)
     output = subprocess.check_output(["bzr", "info"], cwd=workspace)
     stripped_url = source_config.get_str("url").lstrip("file:///")
@@ -859,7 +859,7 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
     def parse_dict_as_yaml(node):
         tempfile = os.path.join(str(tmpdir), "yaml_dump")
         _yaml.roundtrip_dump(node, tempfile)
-        return _yaml.load(tempfile).strip_node_info()
+        return _yaml.load(tempfile, shortname=None).strip_node_info()
 
     project = str(datafiles)
     os.makedirs(os.path.join(project, ".bst"))
@@ -871,7 +871,7 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
     result = cli.run(project=project, args=["workspace", "list"])
     result.assert_success()
 
-    loaded_config = _yaml.load(workspace_config_path).strip_node_info()
+    loaded_config = _yaml.load(workspace_config_path, shortname=None).strip_node_info()
 
     # Check that workspace config remains the same if no modifications
     # to workspaces were made
@@ -900,7 +900,7 @@ def test_list_supported_workspace(cli, tmpdir, datafiles, workspace_cfg, expecte
     result.assert_success()
 
     # Check that workspace config is converted correctly if necessary
-    loaded_config = _yaml.load(workspace_config_path).strip_node_info()
+    loaded_config = _yaml.load(workspace_config_path, shortname=None).strip_node_info()
     assert loaded_config == parse_dict_as_yaml(expected)
 
 
@@ -1052,7 +1052,7 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
 
     # Delete the ref from the source so that we can detect if the
     # element has been tracked after closing the workspace
-    element_contents = _yaml.load(element_file)
+    element_contents = _yaml.load(element_file, shortname=None)
     ref1 = element_contents.get_sequence("sources").mapping_at(0).get_str("ref")
     del element_contents.get_sequence("sources").mapping_at(0)["ref"]
     _yaml.roundtrip_dump(element_contents, element_file)
@@ -1061,7 +1061,7 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
     result.assert_success()
 
     # Element is not tracked now
-    element_contents = _yaml.load(element_file)
+    element_contents = _yaml.load(element_file, shortname=None)
     assert "ref" not in element_contents.get_sequence("sources").mapping_at(0)
 
     # close the workspace
@@ -1072,7 +1072,7 @@ def test_external_track(cli, datafiles, tmpdir_factory, guess_element):
     result = cli.run(project=project, args=["source", "track", element_name])
     result.assert_success()
 
-    element_contents = _yaml.load(element_file)
+    element_contents = _yaml.load(element_file, shortname=None)
     ref2 = element_contents.get_sequence("sources").mapping_at(0).get_str("ref")
     # these values should be equivalent
     assert ref1 == ref2

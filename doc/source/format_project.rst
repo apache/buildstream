@@ -36,10 +36,13 @@ of your project.
 
    name: my-project-name
 
-.. note::
+The project name may contain alphanumeric characters, dashes and
+underscores, and may not start with a leading digit.
 
-   The project name may contain alphanumeric characters, dashes and
-   underscores, and may not start with a leading digit.
+.. attention::
+
+   The project name must be specified in the ``project.conf`` and
+   cannot be :ref:`included <format_directives_include>` from a separate file.
 
 
 .. _project_min_version:
@@ -78,6 +81,11 @@ it has been there from the beginning.
    plugins also implement their own YAML configuration fragments and as
    such are revisioned separately from the core format.
 
+.. attention::
+
+   The ``min-version`` must be specified in the ``project.conf`` and
+   cannot be :ref:`included <format_directives_include>` from a separate file.
+
 
 .. _project_element_path:
 
@@ -93,6 +101,11 @@ allows the user to specify a project subdirectory where element
 
 Note that elements are referred to by their relative paths, whenever
 elements are referred to in a ``.bst`` file or on the command line.
+
+.. attention::
+
+   The ``element-path`` can only be specified in the ``project.conf`` and
+   cannot be :ref:`included <format_directives_include>` from a separate file.
 
 
 .. _project_format_ref_storage:
@@ -382,6 +395,11 @@ If your project makes use of any custom :mod:`Element <buildstream.element>` or
 of the plugins it means to make use of and the origin from which they can be loaded.
 
 Note that plugins with the same name from different origins are not permitted.
+
+.. attention::
+
+   The plugins can only be specified in the ``project.conf`` and cannot be
+   :ref:`included <format_directives_include>` from a separate file.
 
 
 .. _project_plugins_local:

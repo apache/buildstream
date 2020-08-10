@@ -539,7 +539,7 @@ class CliIntegration(Cli):
                 with open(temp_project, "w") as f:
                     yaml.safe_dump(project_config, f)
 
-                project_config = _yaml.load(temp_project)
+                project_config = _yaml.load(temp_project, shortname="project.conf")
 
             project_config._composite(base_config)
 

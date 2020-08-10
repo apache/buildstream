@@ -449,7 +449,7 @@ class Workspaces:
     def _load_config(self):
         workspace_file = self._get_filename()
         try:
-            node = _yaml.load(workspace_file)
+            node = _yaml.load(workspace_file, shortname="workspaces.yml")
         except LoadError as e:
             if e.reason == LoadErrorReason.MISSING_FILE:
                 # Return an empty dict if there was no workspace file

@@ -33,7 +33,7 @@ def test_defaults(cli, tmpdir):
     result = cli.run(args=["init", "--project-name", "foo", project])
     result.assert_success()
 
-    project_conf = _yaml.load(project_path)
+    project_conf = _yaml.load(project_path, shortname=None)
     assert project_conf.get_str("name") == "foo"
     assert project_conf.get_str("min-version") == get_default_min_version()
     assert project_conf.get_str("element-path") == "elements"
@@ -48,7 +48,7 @@ def test_all_options(cli, tmpdir):
     )
     result.assert_success()
 
-    project_conf = _yaml.load(project_path)
+    project_conf = _yaml.load(project_path, shortname=None)
     assert project_conf.get_str("name") == "foo"
     assert project_conf.get_str("min-version") == "2.0"
     assert project_conf.get_str("element-path") == "ponies"
@@ -81,7 +81,7 @@ def test_force_overwrite_project(cli, tmpdir):
     result = cli.run(args=["init", "--project-name", "foo", "--force", project])
     result.assert_success()
 
-    project_conf = _yaml.load(project_path)
+    project_conf = _yaml.load(project_path, shortname=None)
     assert project_conf.get_str("name") == "foo"
     assert project_conf.get_str("min-version") == get_default_min_version()
 
@@ -95,7 +95,7 @@ def test_relative_path_directory_as_argument(cli, tmpdir):
     result = cli.run(args=["init", "--project-name", "foo", rel_path])
     result.assert_success()
 
-    project_conf = _yaml.load(project_path)
+    project_conf = _yaml.load(project_path, shortname=None)
     assert project_conf.get_str("name") == "foo"
     assert project_conf.get_str("min-version") == get_default_min_version()
     assert project_conf.get_str("element-path") == "elements"
@@ -149,7 +149,7 @@ def test_element_path_interactive(cli, tmp_path, monkeypatch, element_path):
     full_element_path = project.joinpath(element_path)
     assert full_element_path.exists()
 
-    project_conf = _yaml.load(str(project_conf_path))
+    project_conf = _yaml.load(str(project_conf_path), shortname=None)
     assert project_conf.get_str("name") == "project_name"
     assert project_conf.get_str("min-version") == "2.0"
     assert project_conf.get_str("element-path") == element_path

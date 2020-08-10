@@ -895,13 +895,13 @@ class Element(Plugin):
         if meta in cls.__instantiated_elements:
             return cls.__instantiated_elements[meta]
 
-        element = meta.project.create_element(meta, first_pass=meta.first_pass)
+        element = meta.project.create_element(meta)
         cls.__instantiated_elements[meta] = element
 
         # Instantiate sources and generate their keys
         for meta_source in meta.sources:
             meta_source.first_pass = meta.is_junction
-            source = meta.project.create_source(meta_source, variables=element.__variables, first_pass=meta.first_pass)
+            source = meta.project.create_source(meta_source, variables=element.__variables)
 
             redundant_ref = source._load_ref()
 
