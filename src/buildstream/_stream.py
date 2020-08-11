@@ -258,7 +258,15 @@ class Stream:
     # If `remote` specified as None, then regular configuration will be used
     # to determine where to push artifacts to.
     #
-    def build(self, targets, *, selection=_PipelineSelection.PLAN, ignore_junction_targets=False, remote=None):
+    def build(
+        self,
+        targets,
+        *,
+        selection=_PipelineSelection.PLAN,
+        ignore_junction_targets=False,
+        ignore_cache_for: List[str],
+        remote=None
+    ):
 
         use_config = True
         if remote:
@@ -286,7 +294,10 @@ class Stream:
             if self._context.pull_artifact_files:
                 scope = Scope.ALL if selection == _PipelineSelection.ALL else Scope.RUN
                 for element in self.targets:
-                    element._set_artifact_files_required(scope=scope)
+                    if element not in ignore_cache_for:
+                        element._set_artifact_files_required(value=False)
+                    else:
+                        element._set_artifact_files_required(value=True, scope=scope)
 
         # Now construct the queues
         #

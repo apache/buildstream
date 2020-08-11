@@ -414,9 +414,17 @@ def init(app, project_name, min_version, element_path, force, target_directory):
 @click.option(
     "--remote", "-r", default=None, help="The URL of the remote cache (defaults to the first configured cache)"
 )
+@click.option(
+    "--ignore-cache-for",
+    "-i",
+    default=None,
+    multiple=True,
+    type=click.STRING,
+    help="Project that should be build even if there's a cache entry for it",
+)
 @click.argument("elements", nargs=-1, type=click.Path(readable=False))
 @click.pass_obj
-def build(app, elements, deps, remote):
+def build(app, elements, deps, ignore_cache_for, remote):
     """Build elements in a pipeline
 
     Specifying no elements will result in building the default targets
@@ -444,7 +452,13 @@ def build(app, elements, deps, remote):
             # Junction elements cannot be built, exclude them from default targets
             ignore_junction_targets = True
 
-        app.stream.build(elements, selection=deps, ignore_junction_targets=ignore_junction_targets, remote=remote)
+        app.stream.build(
+            elements,
+            selection=deps,
+            ignore_junction_targets=ignore_junction_targets,
+            remote=remote,
+            ignore_cache_for=ignore_cache_for,
+        )
 
 
 ##################################################################
