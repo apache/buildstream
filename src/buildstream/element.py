@@ -267,7 +267,7 @@ class Element(Plugin):
         self.__buildable_callback = None  # Callback to BuildQueue
 
         self._depth = None  # Depth of Element in its current dependency graph
-        self._resolved_initial_state = False  # Whether the initial state of the Element has been resolved
+        self.__resolved_initial_state = False  # Whether the initial state of the Element has been resolved
 
         # Ensure we have loaded this class's defaults
         self.__init_defaults(project, plugin_conf, meta.kind, meta.is_junction)
@@ -1155,8 +1155,9 @@ class Element(Plugin):
     # the minimum amount of work is done.
     #
     def _initialize_state(self):
-        assert not self._resolved_initial_state, "_initialize_state() should only be called once"
-        self._resolved_initial_state = True
+        if self.__resolved_initial_state:
+            return
+        self.__resolved_initial_state = True
 
         # This will initialize source state.
         self.__sources.update_resolved_state()
