@@ -1234,14 +1234,6 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
         if compression:
             click.echo("ERROR: --compression can only be provided if --tar is provided", err=True)
             sys.exit(-1)
-        else:
-            if directory is None:
-                location = os.path.abspath(os.path.join(os.getcwd(), target))
-                if location[-4:] == ".bst":
-                    location = location[:-4]
-            else:
-                location = directory
-            tar = False
     else:
         location = tar
         try:
@@ -1263,6 +1255,14 @@ def artifact_checkout(app, force, deps, integrate, hardlinks, tar, compression, 
             target = app.project.get_default_target()
             if not target:
                 raise AppError('Missing argument "ELEMENT".')
+
+        if not tar:
+            if directory is None:
+                location = os.path.abspath(os.path.join(os.getcwd(), target))
+                if location[-4:] == ".bst":
+                    location = location[:-4]
+            else:
+                location = directory
 
         app.stream.checkout(
             target,

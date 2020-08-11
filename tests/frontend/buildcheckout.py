@@ -1072,3 +1072,15 @@ def test_partial_checkout_fail(tmpdir, datafiles, cli):
         res = cli.run(project=project, args=["artifact", "checkout", "--pull", build_elt, "--directory", checkout_dir])
         res.assert_main_error(ErrorDomain.STREAM, "uncached-checkout-attempt")
         assert re.findall(r"Remote \((\S+)\) does not have artifact (\S+) cached", res.stderr)
+
+
+# Regression test for https://gitlab.com/BuildStream/buildstream/-/issues/1367.
+# Make sure that `artifact checkout` fails gracefully when no arguments are
+# provided.
+@pytest.mark.datafiles(DATA_DIR)
+def test_fail_no_args(datafiles, cli):
+    project = str(datafiles)
+
+    result = cli.run(project=project, args=["artifact", "checkout"])
+    result.assert_main_error(ErrorDomain.APP, None)
+    assert "Missing argument" in result.stderr
