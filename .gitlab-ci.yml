@@ -171,10 +171,9 @@ tests-fedora-update-deps:
 
     - su buildstream -c "${TEST_COMMAND}"
 
-tests-remote-execution:
+.compose-test-boilerplate: &remote-test
   allow_failure: true
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
-  <<: *tests
   before_script:
     - dnf install -y docker docker-compose
     - docker-compose --file ${COMPOSE_MANIFEST} up --detach
@@ -184,16 +183,32 @@ tests-remote-execution:
     - docker-compose --file ${COMPOSE_MANIFEST} down
   services:
     - docker:stable-dind
+
+.docker-variables-boilerplate: &docker-variables
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+  # Required to be able to connect to the docker daemon. See https://gitlab.com/gitlab-org/gitlab-runner/issues/4501
+  DOCKER_TLS_CERTDIR: ""
+
+tests-remote-execution:
+  <<: *tests
+  <<: *remote-test
   variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_DRIVER: overlay2
-    # Required to be able to connect to the docker daemon. See https://gitlab.com/gitlab-org/gitlab-runner/issues/4501
-    DOCKER_TLS_CERTDIR: ""
-    COMPOSE_MANIFEST: .gitlab-ci/buildgrid-compose.yml
+    <<: *docker-variables
+    COMPOSE_MANIFEST: .gitlab-ci/buildgrid-remote-execution.yml
     ARTIFACT_CACHE_SERVICE: http://docker:50052
     REMOTE_EXECUTION_SERVICE: http://docker:50051
     SOURCE_CACHE_SERVICE: http://docker:50052
     PYTEST_ARGS: "--color=yes --remote-execution"
+
+tests-remote-cache:
+  <<: *tests
+  <<: *remote-test
+  variables:
+    <<: *docker-variables
+    COMPOSE_MANIFEST: .gitlab-ci/cache-server.yml
+    ARTIFACT_CACHE_SERVICE: http://docker:50052
+    PYTEST_ARGS: "--color=yes --remote-cache"
 
 tests-no-usedevelop:
   # Ensure that tests also pass without `--develop` flag.
