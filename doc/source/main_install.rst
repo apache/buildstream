@@ -118,8 +118,8 @@ These components can be installed from binaries, or built from source.
 
 Install binaries
 ~~~~~~~~~~~~~~~~
-| Linux x86-64 users can download statically linked binaries: `buildbox-x86_64-linux.tar.xz <https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-x86_64-linux-0.0.9-983edf11.tar.xz>`_
-| ``sha256sum 983edf113e945ab723a9ddfd4c00dd855db0175c81373dbc0ad809045e5801a3``
+| Linux x86-64 users can download statically linked binaries: `buildbox-x86_64-linux.tar.xz <https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-x86_64-linux-0.0.14-872f221d.tar.xz>`_
+| ``sha256sum 872f221d06752bb3b7815fa8e59929dcdbc275543728ad1485675eace1c3e8ba``
 
 The tarball contains the binaries ``buildbox-casd``, ``buildbox-fuse``,
 ``buildbox-run-bubblewrap`` and the symlink ``buildbox-run``, which should be
@@ -135,16 +135,16 @@ instructions. Make sure that you're installing the correct version of
 each component.
 
 | **Buildbox-common:** See the installation section in:
-| https://gitlab.com/BuildGrid/buildbox/buildbox-common/-/blob/0.0.9/README.rst
-| (Be sure to install from the 0.0.9 tag.)
+| https://gitlab.com/BuildGrid/buildbox/buildbox-common/-/blob/0.0.14/README.rst
+| (Be sure to install from the 0.0.14 tag.)
 
 | **Buildbox-casd:** See the installation section in:
-| https://gitlab.com/BuildGrid/buildbox/buildbox-casd/-/blob/0.0.9/README.rst \
-| (Be sure to install from the 0.0.9 tag.)
+| https://gitlab.com/BuildGrid/buildbox/buildbox-casd/-/blob/0.0.14/README.rst \
+| (Be sure to install from the 0.0.14 tag.)
 
 | **Buildbox-fuse:** See
-| https://gitlab.com/BuildGrid/buildbox/buildbox-fuse/-/blob/0.0.8/INSTALL.rst
-| (Be sure to install from the 0.0.8 tag.)
+| https://gitlab.com/BuildGrid/buildbox/buildbox-fuse/-/blob/0.0.14/INSTALL.rst
+| (Be sure to install from the 0.0.14 tag.)
 
 | **Buildbox-run-bublewrap:** See the installation section in:
 | https://gitlab.com/BuildGrid/buildbox/buildbox-run-bubblewrap/-/blob/master/README.rst
