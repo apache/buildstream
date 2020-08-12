@@ -30,7 +30,7 @@ variables:
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   PYTEST_ARGS: "--color=yes --integration -n 2"
   TEST_COMMAND: "tox -- ${PYTEST_ARGS}"
-  TOXENV: py36, py37, py38, py36-plugins, py37-plugins, py38-plugins
+  TOXENV: py36, py37, py38-nocover, py36-plugins, py37-plugins, py38-plugins-nocover
   COVERAGE_PREFIX: "${CI_JOB_NAME}."
 
 
