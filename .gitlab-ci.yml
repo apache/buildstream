@@ -25,7 +25,7 @@ variables:
   # Our own variables
   # Version of the docker images we should use for all the images.
   # This is taken from buildstream/buildstream-docker-images
-  DOCKER_IMAGE_VERSION: master-154893333
+  DOCKER_IMAGE_VERSION: master-177137613
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   PYTEST_ARGS: "--color=yes --integration -n 2"
@@ -72,6 +72,10 @@ tests-fedora-31:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
+tests-fedora-32:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${DOCKER_IMAGE_VERSION}
+  <<: *tests
+
 tests-ubuntu-18.04:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-${DOCKER_IMAGE_VERSION}
   <<: *tests
@@ -79,19 +83,6 @@ tests-ubuntu-18.04:
 tests-centos-7.7:
   <<: *tests
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.7.1908-${DOCKER_IMAGE_VERSION}
-
-tests-python-3.8-buster:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-python:3.8-buster-${DOCKER_IMAGE_VERSION}
-  <<: *tests
-  variables:
-    # This particular testsuite image has both Python 3.7 and Python 3.8 so we
-    # need to explicitly force the 3.8 environment.
-    # Once Python 3.8 is available in distros, we should switch to such an
-
-    # Our testsuite has issues with coverage on Python 3.8 so disable coverage
-    # in the meantime. For more details, see
-    # https://gitlab.com/BuildStream/buildstream/issues/1173.
-    TOXENV: py38-nocover,py38-plugins-nocover
 
 # Test the master version of some external plugins
 tests-plugins-master:
@@ -135,7 +126,7 @@ tests-userchroot:
 
 tests-fedora-missing-deps:
   # Ensure that tests behave nicely while missing bwrap and ostree
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
   script:
@@ -155,7 +146,7 @@ tests-fedora-update-deps:
   # Check if the tests pass after updating requirements to their latest
   # allowed version.
   allow_failure: true
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
   script:
@@ -169,7 +160,7 @@ tests-fedora-update-deps:
 
 .compose-test-boilerplate: &remote-test
   allow_failure: true
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${DOCKER_IMAGE_VERSION}
   before_script:
     - dnf install -y docker docker-compose
     - docker-compose --file ${COMPOSE_MANIFEST} up --detach
@@ -208,7 +199,7 @@ tests-remote-cache:
 
 tests-no-usedevelop:
   # Ensure that tests also pass without `--develop` flag.
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${DOCKER_IMAGE_VERSION}
   <<: *tests
   variables:
     TOXENV: py36-nocover,py37-nocover,py38-nocover
@@ -225,7 +216,7 @@ mypy:
 
 # Lint separately from testing
 lint:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${DOCKER_IMAGE_VERSION}
   stage: test
 
   before_script:
@@ -279,8 +270,8 @@ tests-wsl-master:
   - PATH=/root/.local/bin:$PATH tox --version
   script:
   # Install static buildbox binaries
-  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-x86_64-linux-0.0.9-983edf11.tar.xz
-  - tar -C /root/.local/bin -xf buildbox-x86_64-linux-0.0.9-983edf11.tar.xz
+  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-x86_64-linux-0.0.14-872f221d.tar.xz
+  - tar -C /root/.local/bin -xf buildbox-x86_64-linux-0.0.14-872f221d.tar.xz
 
   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
   only:
@@ -301,8 +292,8 @@ tests-wsl-non-master:
   - PATH=/root/.local/bin:$PATH tox --version
   script:
   # Install static buildbox binaries
-  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-x86_64-linux-0.0.9-983edf11.tar.xz
-  - tar -C /root/.local/bin -xf buildbox-x86_64-linux-0.0.9-983edf11.tar.xz
+  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-x86_64-linux-0.0.14-872f221d.tar.xz
+  - tar -C /root/.local/bin -xf buildbox-x86_64-linux-0.0.14-872f221d.tar.xz
 
   - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
   when: manual
@@ -326,7 +317,7 @@ docs:
 
 .overnight-tests: &overnight-tests-template
   stage: test
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${DOCKER_IMAGE_VERSION}
   variables:
     FD_SDK_REF: freedesktop-sdk-20.08beta.1-buildstream2
     BST_EXT_REF: 1.93.4
@@ -385,7 +376,7 @@ overnight-tests-no-cache:
 # These tests might be a bit more flaky since they randomize the order
 # They will also take longer to run. Hence run them only nightly
 overnight-randomized:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-master-97748867
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
   script:
@@ -447,8 +438,6 @@ coverage:
   - tests-centos-7.7
   - tests-debian-10
   - tests-fedora-31
-  - tests-fedora-missing-deps
-  - tests-fedora-update-deps
   - tests-remote-execution
   - tests-ubuntu-18.04
   - tests-userchroot
