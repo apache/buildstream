@@ -68,10 +68,6 @@ tests-debian-10:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
-tests-fedora-30:
-  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-${DOCKER_IMAGE_VERSION}
-  <<: *tests
-
 tests-fedora-31:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${DOCKER_IMAGE_VERSION}
   <<: *tests
@@ -450,7 +446,6 @@ coverage:
   dependencies:
   - tests-centos-7.7
   - tests-debian-10
-  - tests-fedora-30
   - tests-fedora-31
   - tests-fedora-missing-deps
   - tests-fedora-update-deps
