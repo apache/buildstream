@@ -38,7 +38,11 @@ except ProgramNotFoundError:
 try:
     BZR = utils.get_host_tool("bzr")  # type: Optional[str]
     HAVE_BZR = True
-    BZR_ENV = {"BZR_EMAIL": "Testy McTesterson <testy.mctesterson@example.com>"}
+    # Breezy 3.0 supports `BRZ_EMAIL` but not `BZR_EMAIL`
+    BZR_ENV = {
+        "BZR_EMAIL": "Testy McTesterson <testy.mctesterson@example.com>",
+        "BRZ_EMAIL": "Testy McTesterson <testy.mctesterson@example.com>",
+    }
 except ProgramNotFoundError:
     BZR = None
     HAVE_BZR = False
