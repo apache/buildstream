@@ -875,7 +875,10 @@ def source_push(app, elements, deps, remote):
     "-d",
     default=_PipelineSelection.NONE,
     show_default=True,
-    type=FastEnumType(_PipelineSelection, [_PipelineSelection.NONE, _PipelineSelection.ALL]),
+    type=FastEnumType(
+        _PipelineSelection,
+        [_PipelineSelection.BUILD, _PipelineSelection.RUN, _PipelineSelection.ALL, _PipelineSelection.NONE],
+    ),
     help="The dependencies to track",
 )
 @click.option("--cross-junctions", "-J", is_flag=True, help="Allow crossing junction boundaries")

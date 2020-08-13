@@ -5,7 +5,7 @@ import stat
 import os
 import pytest
 
-from buildstream.testing import create_repo
+from buildstream.testing import create_repo, generate_project
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
@@ -120,6 +120,45 @@ def test_track_optional(cli, tmpdir, datafiles, ref_storage):
     # Assert that the keys are different when having
     # tracked separate branches
     assert test_key != master_key
+
+
+# Test all possible choices of the `--deps` option.
+#
+# NOTE: Elements used in this test must have sources that are trackable and do
+#       not have a reference already. The kinds of the sources do not matter so
+#       long as they can be tracked from somewhere.
+#       Currently we use remote sources for this purpose.
+#
+@pytest.mark.datafiles(os.path.join(TOP_DIR, "source-track"))
+@pytest.mark.parametrize(
+    "deps, expected_states",
+    [
+        ("build", ("no reference", "buildable", "no reference")),
+        ("none", ("waiting", "no reference", "no reference")),
+        ("run", ("waiting", "no reference", "buildable")),
+        ("all", ("waiting", "buildable", "buildable")),
+    ],
+)
+def test_track_deps(cli, datafiles, deps, expected_states):
+    project = str(datafiles)
+    generate_project(project, {"aliases": {"project-root": "file:///" + project}})
+
+    target = "bananas.bst"
+    build_dep = "apples.bst"
+    runtime_dep = "oranges.bst"
+
+    # Assert that none of the sources have a reference
+    states = cli.get_element_states(project, [target, build_dep, runtime_dep])
+    assert all([state == "no reference" for state in states.values()])
+
+    # Now track the specified sources
+    result = cli.run(project=project, args=["source", "track", "--deps", deps, target])
+    result.assert_success()
+
+    # Finally assert that we have tracked _only_ the desired sources
+    states = cli.get_element_states(project, [target, build_dep, runtime_dep])
+    states_flattened = (states[target], states[build_dep], states[runtime_dep])
+    assert states_flattened == expected_states
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, "track-cross-junction"))
