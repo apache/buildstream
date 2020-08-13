@@ -26,7 +26,7 @@ from .. import _site
 from ..plugin import Plugin
 from ..source import Source
 from ..element import Element
-from ..node import ProvenanceInformation
+from ..node import Node
 from ..utils import UtilError
 from .._exceptions import PluginError
 from .._messenger import Messenger
@@ -122,8 +122,7 @@ class PluginFactory:
     # Args:
     #     messenger (Messenger): The messenger
     #     kind (str): The kind of Plugin to create
-    #     provenance (ProvenanceInformation): The provenance from where
-    #                                         the plugin was referenced
+    #     provenance_node (Node): The node from where the plugin was referenced
     #
     # Returns:
     #     (type): The type associated with the given kind
@@ -131,8 +130,8 @@ class PluginFactory:
     #
     # Raises: PluginError
     #
-    def lookup(self, messenger: Messenger, kind: str, provenance: ProvenanceInformation) -> Tuple[Type[Plugin], str]:
-        plugin_type, defaults = self._ensure_plugin(kind, provenance)
+    def lookup(self, messenger: Messenger, kind: str, provenance_node: Node) -> Tuple[Type[Plugin], str]:
+        plugin_type, defaults = self._ensure_plugin(kind, provenance_node)
 
         # We can be called with None for the messenger here in the
         # case that we've been pickled through the scheduler (see jobpickler.py),
@@ -150,7 +149,7 @@ class PluginFactory:
         if plugin_type.BST_PLUGIN_DEPRECATED and not self._allow_deprecated[kind]:
             message = Message(
                 MessageType.WARN,
-                "{}: Using deprecated plugin '{}'".format(provenance, kind),
+                "{}: Using deprecated plugin '{}'".format(provenance_node.get_provenance(), kind),
                 detail=plugin_type.BST_PLUGIN_DEPRECATION_MESSAGE,
             )
             messenger.message(message)
@@ -214,7 +213,7 @@ class PluginFactory:
     # Raises:
     #    (PluginError): In case something went wrong loading the plugin
     #
-    def _ensure_plugin(self, kind: str, provenance: ProvenanceInformation) -> Tuple[Type[Plugin], str]:
+    def _ensure_plugin(self, kind: str, provenance_node: Node) -> Tuple[Type[Plugin], str]:
 
         if kind not in self._types:
 
@@ -239,7 +238,9 @@ class PluginFactory:
                 # Try getting it from the core plugins
                 if kind not in self._site_source.list_plugins():
                     raise PluginError(
-                        "{}: No {} plugin registered for kind '{}'".format(provenance, self._plugin_type, kind),
+                        "{}: No {} plugin registered for kind '{}'".format(
+                            provenance_node.get_provenance(), self._plugin_type, kind
+                        ),
                         reason="plugin-not-found",
                     )
 

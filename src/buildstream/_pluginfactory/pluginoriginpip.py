@@ -50,27 +50,31 @@ class PluginOriginPip(PluginOrigin):
             package = pkg_resources.get_entry_info(self._package_name, entrypoint_group, kind)
         except pkg_resources.DistributionNotFound as e:
             raise PluginError(
-                "{}: Failed to load {} plugin '{}': {}".format(self.provenance, plugin_type, kind, e),
+                "{}: Failed to load {} plugin '{}': {}".format(
+                    self.provenance_node.get_provenance(), plugin_type, kind, e
+                ),
                 reason="package-not-found",
             ) from e
         except pkg_resources.VersionConflict as e:
             raise PluginError(
                 "{}: Version conflict encountered while loading {} plugin '{}'".format(
-                    self.provenance, plugin_type, kind
+                    self.provenance_node.get_provenance(), plugin_type, kind
                 ),
                 detail=e.report(),
                 reason="package-version-conflict",
             ) from e
         except pkg_resources.RequirementParseError as e:
             raise PluginError(
-                "{}: Malformed package-name '{}' encountered: {}".format(self.provenance, self._package_name, e),
+                "{}: Malformed package-name '{}' encountered: {}".format(
+                    self.provenance_node.get_provenance(), self._package_name, e
+                ),
                 reason="package-malformed-requirement",
             ) from e
 
         if package is None:
             raise PluginError(
                 "{}: Pip package {} does not contain a plugin named '{}'".format(
-                    self.provenance, self._package_name, kind
+                    self.provenance_node.get_provenance(), self._package_name, kind
                 ),
                 reason="plugin-not-found",
             )

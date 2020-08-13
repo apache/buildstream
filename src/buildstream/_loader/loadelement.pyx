@@ -84,8 +84,8 @@ cdef class Dependency:
     cdef readonly str name  # The project local dependency name
     cdef readonly str junction  # The junction path of the dependency name, if any
     cdef readonly bint strict  # Whether this is a strict dependency
-    cdef Node _node  # The original node of the dependency
     cdef readonly list config_nodes  # The custom config nodes for Element.configure_dependencies()
+    cdef readonly Node node  # The original node of the dependency
 
     def __cinit__(self, LoadElement element = None, int dep_type = DependencyType.ALL):
         self.element = element
@@ -94,16 +94,7 @@ cdef class Dependency:
         self.junction = None
         self.strict = False
         self.config_nodes = None
-        self._node = None
-
-    # provenance
-    #
-    # A property to return the ProvenanceInformation for this
-    # dependency.
-    #
-    @property
-    def provenance(self):
-        return self._node.get_provenance()
+        self.node = None
 
     # path
     #
@@ -148,8 +139,8 @@ cdef class Dependency:
 
         self.junction = junction
         self.name = name
+        self.node = dep
         self.element = None
-        self._node = dep
 
         if type(dep) is ScalarNode:
             self.dep_type = default_dep_type or DependencyType.ALL
@@ -197,13 +188,13 @@ cdef class Dependency:
                                 .format(provenance), LoadErrorReason.INVALID_DATA)
 
         else:
-            raise LoadError("{}: Dependency is not specified as a string or a dictionary".format(self.provenance),
+            raise LoadError("{}: Dependency is not specified as a string or a dictionary".format(self.node.get_provenance()),
                             LoadErrorReason.INVALID_DATA)
 
         # Only build dependencies are allowed to be strict
         #
         if self.strict and self.dep_type == DependencyType.RUNTIME:
-            raise LoadError("{}: Runtime dependency {} specified as `strict`.".format(self.provenance, self.name),
+            raise LoadError("{}: Runtime dependency {} specified as `strict`.".format(self.node.get_provenance(), self.name),
                             LoadErrorReason.INVALID_DATA,
                             detail="Only dependencies required at build time may be declared `strict`.")
 
@@ -243,8 +234,7 @@ cdef class LoadElement:
     cdef int node_id
     cdef readonly bint first_pass
     cdef readonly object _loader
-    cdef readonly str link_target
-    cdef readonly ProvenanceInformation link_target_provenance
+    cdef readonly ScalarNode link_target
     # TODO: if/when pyroaring exports symbols, we could type this statically
     cdef object _dep_cache
     cdef readonly list dependencies
@@ -259,8 +249,7 @@ cdef class LoadElement:
         self.name = filename    # The element name
         self.full_name = None   # The element full name (with associated junction)
         self.node_id = _next_synthetic_counter()
-        self.link_target = None  # The target of a link element
-        self.link_target_provenance = None  # The provenance of the link target
+        self.link_target = None  # The target of a link element (ScalarNode)
 
         #
         # Private members
@@ -306,8 +295,7 @@ cdef class LoadElement:
                     LoadErrorReason.LINK_FORBIDDEN_DEPENDENCIES
                 )
 
-            self.link_target = element.target
-            self.link_target_provenance = element.target_provenance
+            self.link_target = element.target_node
 
         # We don't count progress for junction elements or link
         # as they do not represent real elements in the build graph.
@@ -317,14 +305,6 @@ cdef class LoadElement:
         #
         if self._loader.load_context.task and self.kind is not None and not self.first_pass:
             self._loader.load_context.task.add_current_progress()
-
-    # provenance
-    #
-    # A property reporting the ProvenanceInformation of the element
-    #
-    @property
-    def provenance(self):
-        return self.node.get_provenance()
 
     # project
     #

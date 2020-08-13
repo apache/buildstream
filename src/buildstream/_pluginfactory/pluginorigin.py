@@ -79,7 +79,7 @@ class PluginOrigin:
         self.origin_type = origin_type  # The PluginOriginType
         self.elements = {}  # A dictionary of PluginConfiguration
         self.sources = {}  # A dictionary of PluginConfiguration objects
-        self.provenance = None
+        self.provenance_node = None
         self.project = None
 
         # Private
@@ -102,7 +102,7 @@ class PluginOrigin:
     #
     def initialize(self, project, origin_node):
 
-        self.provenance = origin_node.get_provenance()
+        self.provenance_node = origin_node
         self.project = project
         self.load_config(origin_node)
 

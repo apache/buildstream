@@ -48,6 +48,6 @@ class ElementFactory(PluginFactory):
     #    LoadError (if the element itself took issue with the config)
     #
     def create(self, context, project, load_element):
-        element_type, default_config = self.lookup(context.messenger, load_element.kind, load_element.provenance)
+        element_type, default_config = self.lookup(context.messenger, load_element.kind, load_element.node)
         element = element_type(context, project, load_element, default_config)
         return element

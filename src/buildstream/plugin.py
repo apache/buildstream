@@ -120,7 +120,7 @@ from weakref import WeakValueDictionary
 from . import utils
 from ._exceptions import PluginError, ImplError
 from ._message import Message, MessageType
-from .node import MappingNode, ProvenanceInformation
+from .node import Node, MappingNode
 from .types import CoreWarnings, SourceRef
 
 if TYPE_CHECKING:
@@ -217,7 +217,7 @@ class Plugin:
         name: str,
         context: "Context",
         project: "Project",
-        provenance: ProvenanceInformation,
+        provenance_node: Node,
         type_tag: str,
         unique_id: Optional[int] = None,
     ):
@@ -258,7 +258,7 @@ class Plugin:
         # sure to test plugin pickling if this reference is to be removed.
         self.__project = project  # The Project object
 
-        self.__provenance = provenance  # The Provenance information
+        self.__provenance_node = provenance_node  # The originating YAML node
         self.__type_tag = type_tag  # The type of plugin (element or source)
         self.__configuring = False  # Whether we are currently configuring
 
@@ -278,7 +278,7 @@ class Plugin:
 
     def __str__(self):
         return "{kind} {typetag} at {provenance}".format(
-            kind=self.__kind, typetag=self.__type_tag, provenance=self.__provenance
+            kind=self.__kind, typetag=self.__type_tag, provenance=self._get_provenance()
         )
 
     #############################################################
@@ -629,7 +629,7 @@ class Plugin:
     # Fetch bst file, line and column of the entity
     #
     def _get_provenance(self):
-        return self.__provenance
+        return self.__provenance_node.get_provenance()
 
     # Context manager for getting the open file handle to this
     # plugin's log. Used in the child context to add stuff to

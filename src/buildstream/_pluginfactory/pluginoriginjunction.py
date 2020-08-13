@@ -35,7 +35,7 @@ class PluginOriginJunction(PluginOrigin):
         # Get access to the project indicated by the junction,
         # possibly loading it as a side effect.
         #
-        loader = self.project.loader.get_loader(self._junction, self.provenance)
+        loader = self.project.loader.get_loader(self._junction, self.provenance_node)
         project = loader.project
         project.ensure_fully_loaded()
 
@@ -54,7 +54,7 @@ class PluginOriginJunction(PluginOrigin):
             #
             raise PluginError(
                 "{}: Error loading {} plugin '{}' from project '{}' referred to by junction '{}': {}".format(
-                    self.provenance, plugin_type, kind, project.name, self._junction, e
+                    self.provenance_node.get_provenance(), plugin_type, kind, project.name, self._junction, e
                 ),
                 reason="junction-plugin-load-error",
                 detail=e.detail,
@@ -69,7 +69,7 @@ class PluginOriginJunction(PluginOrigin):
             #
             raise PluginError(
                 "{}: project '{}' referred to by junction '{}' does not declare any {} plugin kind: '{}'".format(
-                    self.provenance, project.name, self._junction, plugin_type, kind
+                    self.provenance_node.get_provenance(), project.name, self._junction, plugin_type, kind
                 ),
                 reason="junction-plugin-not-found",
             )
