@@ -17,6 +17,7 @@ CLI
 
   o Add `bst source push` subcommand. This command pushes element sources to a
     remote source cache.
+  o `bst source track` now also accepts "build" and "run" as inputs.
 
 Artifacts
 ---------
