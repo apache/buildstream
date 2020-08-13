@@ -34,10 +34,10 @@ files digests. The digests point to locations in the CAS of relavant files and
 directories, allowing BuildStream to query remote CAS servers for this
 information.
 
-:ref:`bst-artifact-server <artifact_command_reference>` uses grpc to implement a
-remote API for an artifact service, that BuildStream then uses to query,
-retrieve and update artifact files, before using this information to download
-the files and other data from the remote CAS.
+:ref:`bst-artifact-server <artifact_command_reference>` uses grpc to implement
+the Remote Asset API for an artifact service, that BuildStream then uses to
+query, retrieve and update artifact references, before using this information to
+download the files and other data from the remote CAS.
 
 Source caches
 -------------
@@ -53,9 +53,8 @@ artifacts, as they just need to map a source key to a directory digest, with no
 additional metadata.
 
 Similar to artifacts, :ref:`bst-artifact-server <artifact_command_reference>`
-uses grpc to implements a 'reference service' API that allows BuildStream to
-query for these source digests, which can then be used to retrieve sources from
-a CAS.
+uses grpc to implement the Remote Asset API that allows BuildStream to query for
+these source digests, which can then be used to retrieve sources from a CAS.
 
 .. note::
 

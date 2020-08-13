@@ -161,13 +161,13 @@ Instance with push and requiring client authentication:
 
 .. note::
 
-   BuildStream's artifact cache is an extension of `Google's Remote
-   Execution CAS server
+   BuildStream's artifact cache uses `Bazel's Remote Execution CAS and Remote
+   Asset API
    <https://github.com/bazelbuild/remote-apis/>`_.
 
    Sometimes, when using Remote Execution, it is useful to run
    BuildStream with just a basic CAS server, without using the
-   artifact extensions, but BuildStream still needs to store these to
+   Remote Asset API, but BuildStream still needs to store these to
    work correctly.
 
    For this scenario, you can add the `--index-only` flag to the above

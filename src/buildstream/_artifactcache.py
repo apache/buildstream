@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2017-2018 Codethink Limited
-#  Copyright (C) 2019 Bloomberg Finance LP
+#  Copyright (C) 2019-2020 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -21,112 +21,14 @@
 import os
 import grpc
 
-from ._basecache import BaseCache
+from ._assetcache import AssetCache
 from ._cas.casremote import BlobNotFound
-from ._exceptions import ArtifactError, CASError, CacheError, CASRemoteError, RemoteError
-from ._protos.buildstream.v2 import buildstream_pb2, buildstream_pb2_grpc, artifact_pb2, artifact_pb2_grpc
+from ._exceptions import ArtifactError, AssetCacheError, CASError, CASRemoteError
+from ._protos.buildstream.v2 import artifact_pb2
 
-from ._remote import BaseRemote
 from . import utils
 
-
-# ArtifactRemote():
-#
-# Facilitates communication with the BuildStream-specific part of
-# artifact remotes.
-#
-class ArtifactRemote(BaseRemote):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.artifact_service = None
-
-    def close(self):
-        self.artifact_service = None
-        super().close()
-
-    # _configure_protocols():
-    #
-    # Configure the protocols used by this remote as part of the
-    # remote initialization; Note that this should only be used in
-    # Remote.init(), and is expected to fail when called by itself.
-    #
-    def _configure_protocols(self):
-        # Set up artifact stub
-        self.artifact_service = artifact_pb2_grpc.ArtifactServiceStub(self.channel)
-
-    # _check():
-    #
-    # Check if this remote provides everything required for the
-    # particular kind of remote. This is expected to be called as part
-    # of check()
-    #
-    # Raises:
-    #     RemoteError: If the upstream has a problem
-    #
-    def _check(self):
-        capabilities_service = buildstream_pb2_grpc.CapabilitiesStub(self.channel)
-
-        # Check whether the server supports newer proto based artifact.
-        try:
-            request = buildstream_pb2.GetCapabilitiesRequest()
-            if self.instance_name:
-                request.instance_name = self.instance_name
-            response = capabilities_service.GetCapabilities(request)
-        except grpc.RpcError as e:
-            # Check if this remote has the artifact service
-            if e.code() == grpc.StatusCode.UNIMPLEMENTED:
-                raise RemoteError(
-                    "Configured remote does not have the BuildStream "
-                    "capabilities service. Please check remote configuration."
-                )
-            # Else raise exception with details
-            raise RemoteError("Remote initialisation failed with status {}: {}".format(e.code().name, e.details()))
-
-        if not response.artifact_capabilities:
-            raise RemoteError("Configured remote does not support artifact service")
-
-        if self.spec.push and not response.artifact_capabilities.allow_updates:
-            raise RemoteError("Artifact server does not allow push")
-
-    # get_artifact():
-    #
-    # Get an artifact proto for a given cache key from the remote.
-    #
-    # Args:
-    #    cache_key (str): The artifact cache key. NOTE: This "key"
-    #                     is actually the ref/name and its name in
-    #                     the protocol is inaccurate. You have been warned.
-    #
-    # Returns:
-    #    (Artifact): The artifact proto
-    #
-    # Raises:
-    #    grpc.RpcError: If someting goes wrong during the request.
-    #
-    def get_artifact(self, cache_key):
-        artifact_request = artifact_pb2.GetArtifactRequest()
-        artifact_request.cache_key = cache_key
-
-        return self.artifact_service.GetArtifact(artifact_request)
-
-    # update_artifact():
-    #
-    # Update an artifact with the given cache key on the remote with
-    # the given proto.
-    #
-    # Args:
-    #    cache_key (str): The artifact cache key of the artifact to update.
-    #    artifact (ArtifactProto): The artifact proto to send.
-    #
-    # Raises:
-    #     grpc.RpcError: If someting goes wrong during the request.
-    #
-    def update_artifact(self, cache_key, artifact):
-        update_request = artifact_pb2.UpdateArtifactRequest()
-        update_request.cache_key = cache_key
-        update_request.artifact.CopyFrom(artifact)
-
-        self.artifact_service.UpdateArtifact(update_request)
+REMOTE_ASSET_ARTIFACT_URN_TEMPLATE = "urn:fdc:buildstream.build:2020:artifact:{}"
 
 
 # An ArtifactCache manages artifacts.
@@ -134,12 +36,10 @@ class ArtifactRemote(BaseRemote):
 # Args:
 #     context (Context): The BuildStream context
 #
-class ArtifactCache(BaseCache):
+class ArtifactCache(AssetCache):
 
     spec_name = "artifact_cache_specs"
-    spec_error = ArtifactError
     config_node_name = "artifacts"
-    index_remote_class = ArtifactRemote
 
     def __init__(self, context):
         super().__init__(context)
@@ -202,7 +102,7 @@ class ArtifactCache(BaseCache):
     def remove(self, ref):
         try:
             self._remove_ref(ref)
-        except CacheError as e:
+        except AssetCacheError as e:
             raise ArtifactError("{}".format(e)) from e
 
     # push():
@@ -226,14 +126,18 @@ class ArtifactCache(BaseCache):
         index_remotes = [r for r in self._index_remotes[project] if r.push]
         storage_remotes = [r for r in self._storage_remotes[project] if r.push]
 
+        artifact_proto = artifact._get_proto()
+        artifact_digest = self.cas.add_object(buffer=artifact_proto.SerializeToString())
+
         pushed = False
+
         # First push our files to all storage remotes, so that they
         # can perform file checks on their end
         for remote in storage_remotes:
             remote.init()
             element.status("Pushing data from artifact {} -> {}".format(display_key, remote))
 
-            if self._push_artifact_blobs(artifact, remote):
+            if self._push_artifact_blobs(artifact, artifact_digest, remote):
                 element.info("Pushed data from artifact {} -> {}".format(display_key, remote))
             else:
                 element.info(
@@ -246,7 +150,7 @@ class ArtifactCache(BaseCache):
             remote.init()
             element.status("Pushing artifact {} -> {}".format(display_key, remote))
 
-            if self._push_artifact_proto(element, artifact, remote):
+            if self._push_artifact_proto(element, artifact, artifact_digest, remote):
                 element.info("Pushed artifact {} -> {}".format(display_key, remote))
                 pushed = True
             else:
@@ -269,9 +173,12 @@ class ArtifactCache(BaseCache):
     #   (bool): True if pull was successful, False if artifact was not available
     #
     def pull(self, element, key, *, pull_buildtrees=False):
-        artifact = None
+        artifact_digest = None
         display_key = key[: self.context.log_key_length]
         project = element._get_project()
+
+        artifact_name = element.get_artifact_name(key=key)
+        uri = REMOTE_ASSET_ARTIFACT_URN_TEMPLATE.format(artifact_name)
 
         errors = []
         # Start by pulling our artifact proto, so that we know which
@@ -280,23 +187,24 @@ class ArtifactCache(BaseCache):
             remote.init()
             try:
                 element.status("Pulling artifact {} <- {}".format(display_key, remote))
-                artifact = self._pull_artifact_proto(element, key, remote)
-                if artifact:
+                response = remote.fetch_blob([uri])
+                if response:
+                    artifact_digest = response.blob_digest
                     break
 
                 element.info("Remote ({}) does not have artifact {} cached".format(remote, display_key))
-            except CASError as e:
+            except AssetCacheError as e:
                 element.warn("Could not pull from remote {}: {}".format(remote, e))
                 errors.append(e)
 
-        if errors and not artifact:
+        if errors and not artifact_digest:
             raise ArtifactError(
                 "Failed to pull artifact {}".format(display_key), detail="\n".join(str(e) for e in errors)
             )
 
         # If we don't have an artifact, we can't exactly pull our
         # artifact
-        if not artifact:
+        if not artifact_digest:
             return False
 
         errors = []
@@ -306,7 +214,7 @@ class ArtifactCache(BaseCache):
             try:
                 element.status("Pulling data for artifact {} <- {}".format(display_key, remote))
 
-                if self._pull_artifact_storage(element, artifact, remote, pull_buildtrees=pull_buildtrees):
+                if self._pull_artifact_storage(element, key, artifact_digest, remote, pull_buildtrees=pull_buildtrees):
                     element.info("Pulled artifact {} <- {}".format(display_key, remote))
                     return True
 
@@ -484,7 +392,7 @@ class ArtifactCache(BaseCache):
     #    ArtifactError: If we fail to push blobs (*unless* they're
     #    already there or we run out of space on the server).
     #
-    def _push_artifact_blobs(self, artifact, remote):
+    def _push_artifact_blobs(self, artifact, artifact_digest, remote):
         artifact_proto = artifact._get_proto()
 
         try:
@@ -497,7 +405,8 @@ class ArtifactCache(BaseCache):
                 except FileNotFoundError:
                     pass
 
-            digests = []
+            digests = [artifact_digest]
+
             if str(artifact_proto.public_data):
                 digests.append(artifact_proto.public_data)
 
@@ -526,7 +435,7 @@ class ArtifactCache(BaseCache):
     # Args:
     #    element (Element): The element
     #    artifact (Artifact): The related artifact being pushed
-    #    remote (ArtifactRemote): Remote to push to
+    #    remote (AssetRemote): Remote to push to
     #
     # Returns:
     #    (bool): Whether we pushed the artifact.
@@ -535,33 +444,46 @@ class ArtifactCache(BaseCache):
     #    ArtifactError: If the push fails for any reason except the
     #    artifact already existing.
     #
-    def _push_artifact_proto(self, element, artifact, remote):
+    def _push_artifact_proto(self, element, artifact, artifact_digest, remote):
 
         artifact_proto = artifact._get_proto()
 
         keys = list(utils._deduplicate([artifact_proto.strong_key, artifact_proto.weak_key]))
+        artifact_names = [element.get_artifact_name(key=key) for key in keys]
+        uris = [REMOTE_ASSET_ARTIFACT_URN_TEMPLATE.format(artifact_name) for artifact_name in artifact_names]
 
-        pushed = False
+        try:
+            response = remote.fetch_blob(uris)
+            # Skip push if artifact is already on the server
+            if response and response.blob_digest == artifact_digest:
+                return False
+        except grpc.RpcError as e:
+            if e.code() != grpc.StatusCode.NOT_FOUND:
+                raise ArtifactError(
+                    "Error checking artifact cache with status {}: {}".format(e.code().name, e.details())
+                )
 
-        for key in keys:
-            try:
-                remote_artifact = remote.get_artifact(element.get_artifact_name(key=key))
-                # Skip push if artifact is already on the server
-                if remote_artifact == artifact_proto:
-                    continue
-            except grpc.RpcError as e:
-                if e.code() != grpc.StatusCode.NOT_FOUND:
-                    raise ArtifactError(
-                        "Error checking artifact cache with status {}: {}".format(e.code().name, e.details())
-                    )
+        referenced_directories = []
+        if artifact_proto.files:
+            referenced_directories.append(artifact_proto.files)
+        if artifact_proto.buildtree:
+            referenced_directories.append(artifact_proto.buildtree)
+        if artifact_proto.sources:
+            referenced_directories.append(artifact_proto.sources)
 
-            try:
-                remote.update_artifact(element.get_artifact_name(key=key), artifact_proto)
-                pushed = True
-            except grpc.RpcError as e:
-                raise ArtifactError("Failed to push artifact with status {}: {}".format(e.code().name, e.details()))
+        referenced_blobs = [log_file.digest for log_file in artifact_proto.logs]
 
-        return pushed
+        try:
+            remote.push_blob(
+                uris,
+                artifact_digest,
+                references_blobs=referenced_blobs,
+                references_directories=referenced_directories,
+            )
+        except grpc.RpcError as e:
+            raise ArtifactError("Failed to push artifact with status {}: {}".format(e.code().name, e.details()))
+
+        return True
 
     # _pull_artifact_storage():
     #
@@ -580,7 +502,7 @@ class ArtifactCache(BaseCache):
     #    ArtifactError: If the pull failed for any reason except the
     #    blobs not existing on the server.
     #
-    def _pull_artifact_storage(self, element, artifact, remote, pull_buildtrees=False):
+    def _pull_artifact_storage(self, element, key, artifact_digest, remote, pull_buildtrees=False):
         def __pull_digest(digest):
             self.cas._fetch_directory(remote, digest)
             required_blobs = self.cas.required_blobs_for_directory(digest)
@@ -588,7 +510,21 @@ class ArtifactCache(BaseCache):
             if missing_blobs:
                 self.cas.fetch_blobs(remote, missing_blobs)
 
+        artifact_name = element.get_artifact_name(key=key)
+
         try:
+            # Fetch and parse artifact proto
+            self.cas.fetch_blobs(remote, [artifact_digest])
+            artifact = artifact_pb2.Artifact()
+            with open(self.cas.objpath(artifact_digest), "rb") as f:
+                artifact.ParseFromString(f.read())
+
+            # Write the artifact proto to cache
+            artifact_path = os.path.join(self._basedir, artifact_name)
+            os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
+            with utils.save_file_atomic(artifact_path, mode="wb") as f:
+                f.write(artifact.SerializeToString())
+
             if str(artifact.files):
                 __pull_digest(artifact.files)
 
@@ -610,57 +546,22 @@ class ArtifactCache(BaseCache):
 
         return True
 
-    # _pull_artifact_proto():
-    #
-    # Pull an artifact proto from a remote server.
-    #
-    # Args:
-    #    element (Element): The element whose artifact to pull.
-    #    key (str): The specific key for the artifact to pull.
-    #    remote (ArtifactRemote): The remote to pull from.
-    #
-    # Returns:
-    #    (Artifact|None): The artifact proto, or None if the server
-    #    doesn't have it.
-    #
-    # Raises:
-    #    ArtifactError: If the pull fails.
-    #
-    def _pull_artifact_proto(self, element, key, remote):
-        artifact_name = element.get_artifact_name(key=key)
-
-        try:
-            artifact = remote.get_artifact(artifact_name)
-        except grpc.RpcError as e:
-            if e.code() != grpc.StatusCode.NOT_FOUND:
-                raise ArtifactError("Failed to pull artifact with status {}: {}".format(e.code().name, e.details()))
-            return None
-
-        # Write the artifact proto to cache
-        artifact_path = os.path.join(self._basedir, artifact_name)
-        os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
-        with utils.save_file_atomic(artifact_path, mode="wb") as f:
-            f.write(artifact.SerializeToString())
-
-        return artifact
-
     # _query_remote()
     #
     # Args:
     #    ref (str): The artifact ref
-    #    remote (ArtifactRemote): The remote we want to check
+    #    remote (AssetRemote): The remote we want to check
     #
     # Returns:
     #    (bool): True if the ref exists in the remote, False otherwise.
     #
     def _query_remote(self, ref, remote):
-        request = artifact_pb2.GetArtifactRequest()
-        request.cache_key = ref
+        uri = REMOTE_ASSET_ARTIFACT_URN_TEMPLATE.format(ref)
+
         try:
-            remote.artifact_service.GetArtifact(request)
+            response = remote.fetch_blob([uri])
+            return bool(response)
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.NOT_FOUND:
                 raise ArtifactError("Error when querying with status {}: {}".format(e.code().name, e.details()))
             return False
-
-        return True
