@@ -2,6 +2,11 @@
 (unreleased)
 ============
 
+
+==================
+buildstream 1.93.5
+==================
+
 Format
 ------
 
@@ -31,6 +36,9 @@ Plugins
 -------
 
   o tar: filter out 'dev' nodes from the tar archives when extracting them
+
+  o `buildstream.testing` module now requires pytest >= 6.0.1.
+
 
 ==================
 buildstream 1.93.4
