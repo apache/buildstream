@@ -396,3 +396,26 @@ def test_no_needless_overwrite(cli, tmpdir, datafiles):
     track2_mtime = os.path.getmtime(path_to_target)
 
     assert track1_mtime == track2_mtime
+
+
+# Regression test for https://gitlab.com/BuildStream/buildstream/-/issues/1265.
+# Ensure that we can successfully track a `.bst` file that has comments inside
+# one of our YAML directives (like list append, prepend etc).
+@pytest.mark.datafiles(os.path.join(TOP_DIR, "source-track"))
+def test_track_with_comments(cli, datafiles):
+    project = str(datafiles)
+    generate_project(project, {"aliases": {"project-root": "file:///" + project}})
+
+    target = "comments.bst"
+
+    # Assert that it needs to be tracked
+    assert cli.get_element_state(project, target) == "no reference"
+
+    # Track and fetch the sources
+    result = cli.run(project=project, args=["source", "track", target])
+    result.assert_success()
+    result = cli.run(project=project, args=["source", "fetch", target])
+    result.assert_success()
+
+    # Assert that the sources are cached
+    assert cli.get_element_state(project, target) == "buildable"
