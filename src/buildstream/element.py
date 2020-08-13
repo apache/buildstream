@@ -80,7 +80,7 @@ import copy
 import warnings
 from collections import OrderedDict
 import contextlib
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from functools import partial
 from itertools import chain
 import string
@@ -106,6 +106,7 @@ from .sandbox._sandboxremote import SandboxRemote
 from .types import CoreWarnings, Scope, _CacheBuildTrees, _KeyStrength
 from ._artifact import Artifact
 from ._elementsources import ElementSources
+from ._loader import Symbol, MetaSource
 
 from .storage.directory import Directory
 from .storage._filebaseddirectory import FileBasedDirectory
@@ -120,7 +121,7 @@ if TYPE_CHECKING:
     from .sandbox import Sandbox
     from .source import Source
     from ._context import Context
-    from ._loader.metaelement import MetaElement
+    from ._loader import LoadElement
     from ._project import Project
 
     # pylint: enable=cyclic-import
@@ -157,8 +158,8 @@ class Element(Plugin):
 
     # The defaults from the yaml file and project
     __defaults = None
-    # A hash of Element by MetaElement
-    __instantiated_elements = {}  # type: Dict[MetaElement, Element]
+    # A hash of Element by LoadElement
+    __instantiated_elements = {}  # type: Dict[LoadElement, Element]
     # A list of (source, ref) tuples which were redundantly specified
     __redundant_source_refs = []  # type: List[Tuple[Source, SourceRef]]
 
@@ -197,15 +198,17 @@ class Element(Plugin):
     """Whether the element produces an artifact when built.
     """
 
-    def __init__(self, context: "Context", project: "Project", meta: "MetaElement", plugin_conf: Dict[str, Any]):
+    def __init__(
+        self, context: "Context", project: "Project", load_element: "LoadElement", plugin_conf: Dict[str, Any]
+    ):
 
         self.__cache_key_dict = None  # Dict for cache key calculation
         self.__cache_key = None  # Our cached cache key
 
-        super().__init__(meta.name, context, project, meta.provenance, "element")
+        super().__init__(load_element.name, context, project, load_element.provenance, "element")
 
         # Ensure the project is fully loaded here rather than later on
-        if not meta.is_junction:
+        if not load_element.first_pass:
             project.ensure_fully_loaded()
 
         self.project_name = self._get_project().name
@@ -267,47 +270,47 @@ class Element(Plugin):
         self.__buildable_callback = None  # Callback to BuildQueue
 
         self._depth = None  # Depth of Element in its current dependency graph
-        self._resolved_initial_state = False  # Whether the initial state of the Element has been resolved
+        self.__resolved_initial_state = False  # Whether the initial state of the Element has been resolved
 
         # Ensure we have loaded this class's defaults
-        self.__init_defaults(project, plugin_conf, meta.kind, meta.is_junction)
+        self.__init_defaults(project, plugin_conf, load_element.kind, load_element.first_pass)
 
         # Collect the composited variables and resolve them
-        variables = self.__extract_variables(project, meta)
+        variables = self.__extract_variables(project, load_element)
         variables["element-name"] = self.name
         self.__variables = Variables(variables)
-        if not meta.is_junction:
+        if not load_element.first_pass:
             self.__variables.check()
 
         # Collect the composited environment now that we have variables
-        unexpanded_env = self.__extract_environment(project, meta)
+        unexpanded_env = self.__extract_environment(project, load_element)
         self.__variables.expand(unexpanded_env)
         self.__environment = unexpanded_env.strip_node_info()
 
         # Collect the environment nocache blacklist list
-        nocache = self.__extract_env_nocache(project, meta)
+        nocache = self.__extract_env_nocache(project, load_element)
         self.__env_nocache = nocache
 
         # Grab public domain data declared for this instance
-        self.__public = self.__extract_public(meta)
+        self.__public = self.__extract_public(load_element)
         self.__variables.expand(self.__public)
         self.__dynamic_public = None
 
         # Collect the composited element configuration and
         # ask the element to configure itself.
-        self.__config = self.__extract_config(meta)
+        self.__config = self.__extract_config(load_element)
         self.__variables.expand(self.__config)
 
         self._configure(self.__config)
 
         # Extract remote execution URL
-        if meta.is_junction:
+        if load_element.first_pass:
             self.__remote_execution_specs = None
         else:
             self.__remote_execution_specs = project.remote_execution_specs
 
         # Extract Sandbox config
-        sandbox_config = self.__extract_sandbox_config(project, meta)
+        sandbox_config = self.__extract_sandbox_config(project, load_element)
         self.__variables.expand(sandbox_config)
         self.__sandbox_config = SandboxConfig(sandbox_config, context.platform)
 
@@ -874,60 +877,55 @@ class Element(Plugin):
     #            Private Methods used in BuildStream            #
     #############################################################
 
-    # _new_from_meta():
+    # _new_from_load_element():
     #
     # Recursively instantiate a new Element instance, its sources
-    # and its dependencies from a meta element.
+    # and its dependencies from a LoadElement.
+    #
+    # FIXME: Need to use an iterative algorithm here since recursion
+    #        will limit project dependency depth.
     #
     # Args:
-    #    meta (MetaElement): The meta element
+    #    load_element (LoadElement): The LoadElement
     #    task (Task): A task object to report progress to
     #
     # Returns:
     #    (Element): A newly created Element instance
     #
     @classmethod
-    def _new_from_meta(cls, meta, task=None):
+    def _new_from_load_element(cls, load_element, task=None):
 
-        if not meta.first_pass:
-            meta.project.ensure_fully_loaded()
+        if not load_element.first_pass:
+            load_element.project.ensure_fully_loaded()
 
-        if meta in cls.__instantiated_elements:
-            return cls.__instantiated_elements[meta]
+        with suppress(KeyError):
+            return cls.__instantiated_elements[load_element]
 
-        element = meta.project.create_element(meta)
-        cls.__instantiated_elements[meta] = element
+        element = load_element.project.create_element(load_element)
+        cls.__instantiated_elements[load_element] = element
 
-        # Instantiate sources and generate their keys
-        for meta_source in meta.sources:
-            meta_source.first_pass = meta.is_junction
-            source = meta.project.create_source(meta_source, variables=element.__variables)
-
-            redundant_ref = source._load_ref()
-
-            element.__sources.add_source(source)
-
-            # Collect redundant refs which occurred at load time
-            if redundant_ref is not None:
-                cls.__redundant_source_refs.append((source, redundant_ref))
+        # Load the sources from the LoadElement
+        element.__load_sources(load_element)
 
         # Instantiate dependencies
-        for meta_dep in meta.dependencies:
-            dependency = Element._new_from_meta(meta_dep, task)
-            element.__runtime_dependencies.append(dependency)
-            dependency.__reverse_runtime_deps.add(element)
+        for dep in load_element.dependencies:
+            dependency = Element._new_from_load_element(dep.element, task)
+
+            if dep.dep_type != "runtime":
+                element.__build_dependencies.append(dependency)
+                dependency.__reverse_build_deps.add(element)
+
+            if dep.dep_type != "build":
+                element.__runtime_dependencies.append(dependency)
+                dependency.__reverse_runtime_deps.add(element)
+
+            if dep.strict:
+                element.__strict_dependencies.append(dependency)
+
         no_of_runtime_deps = len(element.__runtime_dependencies)
         element.__runtime_deps_without_strict_cache_key = no_of_runtime_deps
         element.__runtime_deps_without_cache_key = no_of_runtime_deps
         element.__runtime_deps_uncached = no_of_runtime_deps
-
-        for meta_dep in meta.build_dependencies:
-            dependency = Element._new_from_meta(meta_dep, task)
-            element.__build_dependencies.append(dependency)
-            dependency.__reverse_build_deps.add(element)
-
-            if meta_dep in meta.strict_dependencies:
-                element.__strict_dependencies.append(dependency)
 
         no_of_build_deps = len(element.__build_dependencies)
         element.__build_deps_without_strict_cache_key = no_of_build_deps
@@ -1155,8 +1153,9 @@ class Element(Plugin):
     # the minimum amount of work is done.
     #
     def _initialize_state(self):
-        assert not self._resolved_initial_state, "_initialize_state() should only be called once"
-        self._resolved_initial_state = True
+        if self.__resolved_initial_state:
+            return
+        self.__resolved_initial_state = True
 
         # This will initialize source state.
         self.__sources.update_resolved_state()
@@ -2202,6 +2201,63 @@ class Element(Plugin):
     #                   Private Local Methods                   #
     #############################################################
 
+    # __load_sources()
+    #
+    # Load the Source objects from the LoadElement
+    #
+    def __load_sources(self, load_element):
+        project = self._get_project()
+        workspace = self._get_workspace()
+        meta_sources = []
+
+        # If there's a workspace for this element then we just load a workspace
+        # source plugin instead of the real plugins
+        if workspace:
+            workspace_node = {"kind": "workspace"}
+            workspace_node["path"] = workspace.get_absolute_path()
+            workspace_node["last_build"] = str(workspace.to_dict().get("last_build", ""))
+            meta = MetaSource(
+                self.name,
+                0,
+                self.get_kind(),
+                "workspace",
+                Node.from_dict(workspace_node),
+                None,
+                load_element.first_pass,
+            )
+            meta_sources.append(meta)
+        else:
+            sources = load_element.node.get_sequence(Symbol.SOURCES, default=[])
+            for index, source in enumerate(sources):
+                kind = source.get_scalar(Symbol.KIND)
+
+                # The workspace source plugin is only valid for internal use
+                if kind.as_str() == "workspace":
+                    raise LoadError(
+                        "{}: Invalid usage of workspace source kind".format(kind.get_provenance()),
+                        LoadErrorReason.INVALID_DATA,
+                    )
+                del source[Symbol.KIND]
+
+                # Directory is optional
+                directory = source.get_str(Symbol.DIRECTORY, default=None)
+                if directory:
+                    del source[Symbol.DIRECTORY]
+                meta_source = MetaSource(
+                    self.name, index, self.get_kind(), kind.as_str(), source, directory, load_element.first_pass
+                )
+                meta_sources.append(meta_source)
+
+        for meta_source in meta_sources:
+            source = project.create_source(meta_source, variables=self.__variables)
+            redundant_ref = source._load_ref()
+
+            self.__sources.add_source(source)
+
+            # Collect redundant refs which occurred at load time
+            if redundant_ref is not None:
+                self.__redundant_source_refs.append((source, redundant_ref))
+
     # __get_dependency_refs()
     #
     # Retrieve the artifact refs of the element's dependencies
@@ -2432,13 +2488,13 @@ class Element(Plugin):
                 yield sandbox
 
     @classmethod
-    def __compose_default_splits(cls, project, defaults, is_junction):
+    def __compose_default_splits(cls, project, defaults, first_pass):
 
-        element_public = defaults.get_mapping("public", default={})
+        element_public = defaults.get_mapping(Symbol.PUBLIC, default={})
         element_bst = element_public.get_mapping("bst", default={})
         element_splits = element_bst.get_mapping("split-rules", default={})
 
-        if is_junction:
+        if first_pass:
             splits = element_splits.clone()
         else:
             assert project._splits is not None
@@ -2449,10 +2505,10 @@ class Element(Plugin):
 
         element_bst["split-rules"] = splits
         element_public["bst"] = element_bst
-        defaults["public"] = element_public
+        defaults[Symbol.PUBLIC] = element_public
 
     @classmethod
-    def __init_defaults(cls, project, plugin_conf, kind, is_junction):
+    def __init_defaults(cls, project, plugin_conf, kind, first_pass):
         # Defaults are loaded once per class and then reused
         #
         if cls.__defaults is None:
@@ -2467,11 +2523,11 @@ class Element(Plugin):
                         raise e
 
             # Special case; compose any element-wide split-rules declarations
-            cls.__compose_default_splits(project, defaults, is_junction)
+            cls.__compose_default_splits(project, defaults, first_pass)
 
             # Override the element's defaults with element specific
             # overrides from the project.conf
-            if is_junction:
+            if first_pass:
                 elements = project.first_pass_config.element_overrides
             else:
                 elements = project.element_overrides
@@ -2487,29 +2543,30 @@ class Element(Plugin):
     # creating sandboxes for this element
     #
     @classmethod
-    def __extract_environment(cls, project, meta):
-        default_env = cls.__defaults.get_mapping("environment", default={})
+    def __extract_environment(cls, project, load_element):
+        default_env = cls.__defaults.get_mapping(Symbol.ENVIRONMENT, default={})
+        element_env = load_element.node.get_mapping(Symbol.ENVIRONMENT, default={}) or Node.from_dict({})
 
-        if meta.is_junction:
+        if load_element.first_pass:
             environment = Node.from_dict({})
         else:
             environment = project.base_environment.clone()
 
         default_env._composite(environment)
-        meta.environment._composite(environment)
+        element_env._composite(environment)
         environment._assert_fully_composited()
 
         return environment
 
     @classmethod
-    def __extract_env_nocache(cls, project, meta):
-        if meta.is_junction:
+    def __extract_env_nocache(cls, project, load_element):
+        if load_element.first_pass:
             project_nocache = []
         else:
             project_nocache = project.base_env_nocache
 
-        default_nocache = cls.__defaults.get_str_list("environment-nocache", default=[])
-        element_nocache = meta.env_nocache
+        default_nocache = cls.__defaults.get_str_list(Symbol.ENV_NOCACHE, default=[])
+        element_nocache = load_element.node.get_str_list(Symbol.ENV_NOCACHE, default=[])
 
         # Accumulate values from the element default, the project and the element
         # itself to form a complete list of nocache env vars.
@@ -2522,16 +2579,17 @@ class Element(Plugin):
     # substituting command strings to be run in the sandbox
     #
     @classmethod
-    def __extract_variables(cls, project, meta):
-        default_vars = cls.__defaults.get_mapping("variables", default={})
+    def __extract_variables(cls, project, load_element):
+        default_vars = cls.__defaults.get_mapping(Symbol.VARIABLES, default={})
+        element_vars = load_element.node.get_mapping(Symbol.VARIABLES, default={}) or Node.from_dict({})
 
-        if meta.is_junction:
+        if load_element.first_pass:
             variables = project.first_pass_config.base_variables.clone()
         else:
             variables = project.base_variables.clone()
 
         default_vars._composite(variables)
-        meta.variables._composite(variables)
+        element_vars._composite(variables)
         variables._assert_fully_composited()
 
         for var in ("project-name", "element-name", "max-jobs"):
@@ -2553,13 +2611,14 @@ class Element(Plugin):
     # off to element.configure()
     #
     @classmethod
-    def __extract_config(cls, meta):
+    def __extract_config(cls, load_element):
+        element_config = load_element.node.get_mapping(Symbol.CONFIG, default={}) or Node.from_dict({})
 
         # The default config is already composited with the project overrides
-        config = cls.__defaults.get_mapping("config", default={})
+        config = cls.__defaults.get_mapping(Symbol.CONFIG, default={})
         config = config.clone()
 
-        meta.config._composite(config)
+        element_config._composite(config)
         config._assert_fully_composited()
 
         return config
@@ -2567,18 +2626,20 @@ class Element(Plugin):
     # Sandbox-specific configuration data, to be passed to the sandbox's constructor.
     #
     @classmethod
-    def __extract_sandbox_config(cls, project, meta):
-        if meta.is_junction:
+    def __extract_sandbox_config(cls, project, load_element):
+        element_sandbox = load_element.node.get_mapping(Symbol.SANDBOX, default={}) or Node.from_dict({})
+
+        if load_element.first_pass:
             sandbox_config = Node.from_dict({})
         else:
             sandbox_config = project._sandbox.clone()
 
         # The default config is already composited with the project overrides
-        sandbox_defaults = cls.__defaults.get_mapping("sandbox", default={})
+        sandbox_defaults = cls.__defaults.get_mapping(Symbol.SANDBOX, default={})
         sandbox_defaults = sandbox_defaults.clone()
 
         sandbox_defaults._composite(sandbox_config)
-        meta.sandbox._composite(sandbox_config)
+        element_sandbox._composite(sandbox_config)
         sandbox_config._assert_fully_composited()
 
         return sandbox_config
@@ -2587,14 +2648,16 @@ class Element(Plugin):
     # elements may extend but whos defaults are defined in the project.
     #
     @classmethod
-    def __extract_public(cls, meta):
-        base_public = cls.__defaults.get_mapping("public", default={})
+    def __extract_public(cls, load_element):
+        element_public = load_element.node.get_mapping(Symbol.PUBLIC, default={}) or Node.from_dict({})
+
+        base_public = cls.__defaults.get_mapping(Symbol.PUBLIC, default={})
         base_public = base_public.clone()
 
         base_bst = base_public.get_mapping("bst", default={})
         base_splits = base_bst.get_mapping("split-rules", default={})
 
-        element_public = meta.public.clone()
+        element_public = element_public.clone()
         element_bst = element_public.get_mapping("bst", default={})
         element_splits = element_bst.get_mapping("split-rules", default={})
 

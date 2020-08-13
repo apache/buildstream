@@ -36,9 +36,7 @@ def _push(cli, cache_dir, project_dir, config_file, target):
         # This is duplicated from Pipeline.resolve_elements()
         # as this test does not use the cli frontend.
         for e in element.dependencies(Scope.ALL):
-            # Determine initial element state.
-            if not element._resolved_initial_state:
-                e._initialize_state()
+            e._initialize_state()
 
         # Manually setup the CAS remotes
         artifactcache.setup_remotes(use_config=True)

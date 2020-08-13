@@ -32,12 +32,12 @@ class MetaSource:
     #    config: The configuration data for the source
     #    first_pass: This source will be used with first project pass configuration (used for junctions).
     #
-    def __init__(self, element_name, element_index, element_kind, kind, config, directory):
+    def __init__(self, element_name, element_index, element_kind, kind, config, directory, first_pass):
         self.element_name = element_name
         self.element_index = element_index
         self.element_kind = element_kind
         self.kind = kind
         self.config = config
         self.directory = directory
-        self.first_pass = False
+        self.first_pass = first_pass
         self.provenance = config.get_provenance()

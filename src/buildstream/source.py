@@ -1213,9 +1213,8 @@ class Source(Plugin):
             self.get_kind(),
             self.__config,
             self.__directory,
+            self.__first_pass,
         )
-
-        meta.first_pass = self.__first_pass
 
         clone = source_kind(
             context, project, meta, self.__variables, alias_override=(alias, uri), unique_id=self._unique_id
