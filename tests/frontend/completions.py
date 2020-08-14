@@ -150,7 +150,7 @@ def test_options(cli, cmd, word_idx, expected):
         ("bst show --deps b", 3, ["build "]),
         ("bst show --deps=b", 2, ["build "]),
         ("bst show --deps r", 3, ["run "]),
-        ("bst source track --deps ", 4, ["all ", "none "]),
+        ("bst source track --deps ", 4, ["all ", "build ", "none ", "run "]),
     ],
 )
 def test_option_choice(cli, cmd, word_idx, expected):
