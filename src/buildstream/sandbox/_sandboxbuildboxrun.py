@@ -95,7 +95,8 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
             buildbox_command = [
                 utils.get_host_tool("buildbox-run"),
-                "--use-localcas",
+                "--verbose",
+                "--local={}".format(cascache.casdir),
                 "--remote={}".format(casd_process_manager._connection_string),
                 "--action={}".format(action_file.name),
                 "--action-result={}".format(result_file.name),

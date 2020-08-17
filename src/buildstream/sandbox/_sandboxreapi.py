@@ -93,6 +93,9 @@ class SandboxREAPI(Sandbox):
             # The whole sandbox is writable
             read_write_directories = [os.path.sep]
 
+        # TEMP
+        read_write_directories = [os.path.sep]
+
         # Generate Action proto
         input_root_digest = vdir._get_digest()
         command_proto = self._create_command(command, cwd, env, read_write_directories, flags)
@@ -184,11 +187,14 @@ class SandboxREAPI(Sandbox):
             root_directory = tree.root.SerializeToString()
             dir_digest = utils._message_digest(root_directory)
 
-            # Create a normalized absolute path (inside the input tree)
-            path = os.path.normpath(os.path.join(working_directory, output_directory.path))
+            if False:
+                # Create a normalized absolute path (inside the input tree)
+                path = os.path.normpath(os.path.join(working_directory, output_directory.path))
 
-            # Get virtual directory at the path of the output directory
-            vsubdir = vdir.descend(*path.split(os.path.sep), create=True)
+                # Get virtual directory at the path of the output directory
+                vsubdir = vdir.descend(*path.split(os.path.sep), create=True)
+            else:
+                vsubdir = vdir
 
             # Replace contents with returned output
             vsubdir._reset(digest=dir_digest)
