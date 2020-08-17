@@ -479,7 +479,7 @@ Dependency types
 The dependency ``type`` attribute defines what the dependency is required for
 and is essential to how BuildStream plots a build plan.
 
-There are two types which one can specify for a dependency:
+There are three types which one can specify for a dependency:
 
 * ``build``
 
@@ -492,10 +492,13 @@ There are two types which one can specify for a dependency:
 
   A ``runtime`` dependency type states that the given element's product
   must be present for the depending element to function. An element's
-  ``runtime`` dependencies need not be staged in order to build the element.
+  ``runtime`` dependencies are not available to the element at build time.
 
-If ``type`` is not specified, then it is assumed that the dependency is
-required both at build time and runtime.
+* ``all``
+
+  An ``all`` dependency is the default dependency type. If ``all`` is specified,
+  or if ``type`` is not specified at all, then it is assumed that the dependency
+  is required both at build time and runtime.
 
 .. note::
 
