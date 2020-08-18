@@ -294,7 +294,7 @@ class Stream:
             if self._context.pull_artifact_files:
                 scope = Scope.ALL if selection == _PipelineSelection.ALL else Scope.RUN
                 for element in self.targets:
-                    if element not in ignore_cache_for:
+                    if element in ignore_cache_for:
                         element._set_artifact_files_required(value=False)
                     else:
                         element._set_artifact_files_required(value=True, scope=scope)
