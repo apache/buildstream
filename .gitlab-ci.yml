@@ -341,12 +341,11 @@ docs:
   artifacts:
     paths:
     - "${HOME}/.cache/buildstream/logs"
-  only:
-  - schedules
 
 overnight-tests:
   <<: *overnight-tests-template
   script:
+  - sed -i '/artifacts:/,+1 d' freedesktop-sdk/project.conf
   - |
     cat > ~/.config/buildstream.conf << EOF
     # Get a lot of output in case of errors
@@ -356,10 +355,17 @@ overnight-tests:
     # Artifacts
     #
     artifacts:
-    - url: https://cache-test.buildstream.build:11002
+    - url: https://bb-cache.buildstream.build:11002
+      type: index
+      push: true
       client-cert: $OVERNIGHT_CACHE_PUSH_CERT
       client-key: $OVERNIGHT_CACHE_PUSH_KEY
+    - url: https://bb-cache.buildstream.build:11002
+      type: storage
       push: true
+      client-cert: $OVERNIGHT_CACHE_PUSH_CERT
+      client-key: $OVERNIGHT_CACHE_PUSH_KEY
+
     EOF
   - make -C freedesktop-sdk
   tags:
@@ -372,6 +378,8 @@ overnight-tests-no-cache:
   - make -C freedesktop-sdk
   tags:
   - overnight-tests
+  only:
+  - schedules
 
 # These tests might be a bit more flaky since they randomize the order
 # They will also take longer to run. Hence run them only nightly
