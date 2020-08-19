@@ -1,4 +1,27 @@
 =================
+buildstream 1.5.1
+=================
+
+  o Support `buildstream1.conf` as well as `buildstream.conf` for
+    parallel installations.
+
+  o Lazy resolution of variables, this allows junctions to use variables
+    without requiring the project to have fully resolved variables, while
+    still reporting the right error messages if a junction uses unresolved
+    variables.
+
+  o Fix an issue where conditional statements were being lost instead of
+    processed at include time, only when the include happens in project.conf
+
+  o Backport some artifact cache related structural changes, and allow
+    BuildStream 1 clients to interface with BuildStream 2 remote asset
+    caches, while still allowing BuildStream 1 to interface with its own
+    bst-artifact-server implementation.
+
+  o Added sandbox configuration for `os` and `architecture` to mirror
+    the added options in BuildStream 2, fixing issue #523.
+
+=================
 buildstream 1.5.0
 =================
 
