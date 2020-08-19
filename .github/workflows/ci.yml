@@ -35,12 +35,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ci_image_name:
+
+        # Main test targets, the name defines the image that will be used as
+        # the base for running tests.
+        test-name:
           - debian:10
           - fedora:30
           - fedora:31
           - ubuntu:18.04
           - centos:7.7.1908
+
+        # Ensure that tests also pass without `--develop` flag.
+        include:
+          - test-name: no-usedevelop
+            toxenv: py36-nocover,py37-nocover,py38-nocover
+            image-name: fedora:31
 
     steps:
       - name: Check out repository
@@ -64,10 +73,10 @@ jobs:
               --privileged \
               --device /dev/fuse \
               --env PYTEST_ARGS \
-              --env TOXENV \
+              --env TOXENV=${{ matrix.toxenv || env.TOXENV }} \
               --volume /home/runner/work:/__w \
               --workdir /__w/buildstream/buildstream \
-              "$CI_IMAGE_PREFIX"-${{ matrix.ci_image_name }}-"$CI_IMAGE_SUFFIX" \
+              "$CI_IMAGE_PREFIX"-${{ matrix.image-name || matrix.test-name }}-"$CI_IMAGE_SUFFIX" \
               bash -c 'useradd -Um buildstream && chown -R buildstream:buildstream . && su buildstream -c "tox -- $PYTEST_ARGS"'
 
   mypy:
