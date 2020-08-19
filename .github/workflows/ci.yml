@@ -25,12 +25,15 @@ env:
 jobs:
   tests:
     runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.allow-failure || false }}
 
     env:
       CI_IMAGE_PREFIX: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite
       CI_IMAGE_SUFFIX: master-154893333
       PYTEST_ARGS: --color=yes --integration -n 4
       TOXENV: py36,py6-plugins,py37,py37-plugins,py38,py38-plugins
+      # FIXME: De-duplicate against tox.ini
+      BST_PLUGINS_EXPERIMENTAL_VERSION: 1.93.4
 
     strategy:
       fail-fast: false
@@ -45,11 +48,17 @@ jobs:
           - ubuntu:18.04
           - centos:7.7.1908
 
-        # Ensure that tests also pass without `--develop` flag.
         include:
+          # Ensure that tests also pass without `--develop` flag.
           - test-name: no-usedevelop
-            toxenv: py36-nocover,py37-nocover,py38-nocover
             image-name: fedora:31
+            toxenv: py36-nocover,py37-nocover,py38-nocover
+
+          # Test the master version of some external plugins
+          - test-name: plugins-master
+            image-name: fedora:31
+            bst-plugins-experimental-version: master
+            allow-failure: true
 
     steps:
       - name: Check out repository
@@ -74,6 +83,7 @@ jobs:
               --device /dev/fuse \
               --env PYTEST_ARGS \
               --env TOXENV=${{ matrix.toxenv || env.TOXENV }} \
+              --env BST_PLUGINS_EXPERIMENTAL_VERSION=${{ matrix.bst-plugins-experimental-version || env.BST_PLUGINS_EXPERIMENTAL_VERSION }} \
               --volume /home/runner/work:/__w \
               --workdir /__w/buildstream/buildstream \
               "$CI_IMAGE_PREFIX"-${{ matrix.image-name || matrix.test-name }}-"$CI_IMAGE_SUFFIX" \
