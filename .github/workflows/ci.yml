@@ -19,6 +19,9 @@ on: push
 # - run tests on mac (GitHub provides MacOS runners)
 # - standardize WSL tasks by using GitHub-provided runners
 
+env:
+  CI_IMAGE: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-154893333
+
 jobs:
   tests:
     runs-on: ubuntu-20.04
@@ -88,7 +91,6 @@ jobs:
   docs:
     runs-on: ubuntu-20.04
     env:
-      CI_IMAGE: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-154893333
       BST_FORCE_SESSION_REBUILD: 1
     steps:
       - name: Check out repository
