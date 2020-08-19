@@ -15,6 +15,8 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
+import os
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Iterator
 
 from . import _cachekey, utils
@@ -47,10 +49,6 @@ class ElementSources:
         self._cached = None  # If the sources are known to be successfully cached in CAS
         self._cache_key = None  # Our cached cache key
         self._proto = None  # The cached Source proto
-
-        # the index of the last source in this element that requires previous
-        # sources for staging
-        self._last_source_requires_previous_idx = None
 
     # get_project():
     #
@@ -92,9 +90,15 @@ class ElementSources:
     #
     def track(self, workspace):
         refs = []
-        for index, source in enumerate(self._sources):
+        for source in self._sources:
             old_ref = source.get_ref()
-            new_ref = source._track(self._sources[0:index])
+
+            if source.BST_REQUIRES_PREVIOUS_SOURCES_TRACK:
+                with self._stage_previous_sources(source) as staging_directory:
+                    new_ref = source._track(previous_sources_dir=staging_directory)
+            else:
+                new_ref = source._track()
+
             refs.append((source._unique_id, new_ref))
 
             # Complimentary warning that the new ref will be unused.
@@ -183,7 +187,14 @@ class ElementSources:
     #
     def init_workspace(self, directory: str):
         for source in self.sources():
-            source._init_workspace(directory)
+            if source._directory:
+                srcdir = os.path.join(directory, source._directory)
+            else:
+                srcdir = directory
+
+            os.makedirs(srcdir, exist_ok=True)
+
+            source._init_workspace(srcdir)
 
     # fetch():
     #
@@ -210,13 +221,16 @@ class ElementSources:
     #
     # Args:
     #   fetch_original (bool): Always fetch original source
+    #   stop (Source): Only fetch sources listed before this source
     #
     # Raises:
     #    SourceError: If one of the element sources has an error
     #
-    def fetch_sources(self, *, fetch_original=False):
-        previous_sources = []
+    def fetch_sources(self, *, fetch_original=False, stop=None):
         for source in self._sources:
+            if source == stop:
+                break
+
             if (
                 fetch_original
                 or source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH
@@ -226,11 +240,9 @@ class ElementSources:
                 # CAS-based source cache on its own. Fetch original source
                 # if it's not in the plugin-specific cache yet.
                 if not source._is_cached():
-                    source._fetch(previous_sources)
+                    self._fetch_original_source(source)
             else:
                 self._fetch_source(source)
-
-            previous_sources.append(source)
 
     # get_unique_key():
     #
@@ -246,7 +258,10 @@ class ElementSources:
         result = []
 
         for source in self._sources:
-            result.append({"key": source._get_unique_key(), "name": source.get_kind()})
+            key_dict = {"key": source._get_unique_key(), "name": source.get_kind()}
+            if source._directory:
+                key_dict["directory"] = source._directory
+            result.append(key_dict)
 
         return result
 
@@ -389,34 +404,76 @@ class ElementSources:
 
             # Unable to fetch source from remote source cache, fall back to
             # fetching the original source.
-            source._fetch([])
+            source._fetch()
 
         # Stage original source into the local CAS-based source cache
         self._sourcecache.commit(source)
+
+    # _fetch_source():
+    #
+    # Fetch a single original source
+    #
+    # Args:
+    #   source (Source): The source to fetch
+    #
+    def _fetch_original_source(self, source):
+        if source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH:
+            with self._stage_previous_sources(source) as staging_directory:
+                source._fetch(previous_sources_dir=staging_directory)
+        else:
+            source._fetch()
 
     # _stage():
     #
     # Stage the element sources
     #
-    def _stage(self):
+    # Args:
+    #   stop (Source): Only stage sources listed before this source
+    #
+    def _stage(self, *, stop=None):
         vdir = CasBasedDirectory(self._context.get_cascache())
 
         for source in self._sources:
+            if source == stop:
+                break
+
+            if source._directory:
+                vsubdir = vdir.descend(*source._directory.split(os.sep), create=True)
+            else:
+                vsubdir = vdir
+
             if source.BST_REQUIRES_PREVIOUS_SOURCES_FETCH or source.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
                 if source.BST_STAGE_VIRTUAL_DIRECTORY:
-                    source._stage(vdir)
+                    source._stage(vsubdir)
                 else:
                     with utils._tempdir(dir=self._context.tmpdir, prefix="staging-temp") as tmpdir:
                         # Stage previous sources
-                        vdir.export_files(tmpdir)
+                        vsubdir.export_files(tmpdir)
 
                         source._stage(tmpdir)
 
                         # Capture modified tree
-                        vdir._clear()
-                        vdir.import_files(tmpdir)
+                        vsubdir._clear()
+                        vsubdir.import_files(tmpdir)
             else:
                 source_dir = self._sourcecache.export(source)
-                vdir.import_files(source_dir)
+                vsubdir.import_files(source_dir)
 
         return vdir
+
+    # Context manager that stages sources in a cas based or temporary file
+    # based directory
+    @contextmanager
+    def _stage_previous_sources(self, source):
+        self.fetch_sources(stop=source)
+        vdir = self._stage(stop=source)
+
+        if source._directory:
+            vdir = vdir.descend(*source._directory.split(os.sep), create=True)
+
+        if source.BST_STAGE_VIRTUAL_DIRECTORY:
+            yield vdir
+        else:
+            with source.tempdir() as tempdir:
+                vdir.export_files(tempdir)
+                yield tempdir
