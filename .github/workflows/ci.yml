@@ -18,27 +18,6 @@ on: push
 # New opportunities:
 # - run tests on mac (GitHub provides MacOS runners)
 # - standardize WSL tasks by using GitHub-provided runners
-#
-#
-# NOTE:
-#
-# * GitHub Actions do not support YAML variables and/or YAML anchors, which
-#   leads to some repetition. Job matrices solve this to some extent but
-#   combined with some other issues, this seems like a ongoing source of
-#   misery.
-# * Not being able to use the standard `container` directive for running our
-#   tests is one such example that makes this situation seem worse.
-#
-# * We have caches etc in GitHub Actions as well, so I don't think we are
-#   missing any killer feature.
-#
-# * Fixing most of the to-do items is mostly mostly a matter of adding more
-#   configuration.
-# * Some of these tasks can probably live in a different yaml file as a
-#   separate workflow.
-#
-# * Similar to GitLab, GitHub also has a container registry, so we can move our
-#   testsuite images there if/when we want to fully migrate off of GitLab.
 
 jobs:
   tests:
