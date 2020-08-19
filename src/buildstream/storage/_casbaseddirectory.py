@@ -147,9 +147,24 @@ class CasBasedDirectory(Directory):
         if digest:
             self._populate_index(digest)
 
-    def _reset(self, *, digest=None):
+    # _clear():
+    #
+    # Remove all entries from this directory.
+    #
+    def _clear(self):
         self.__invalidate_digest()
         self.index = {}
+
+    # _reset():
+    #
+    # Replace the contents of this directory with the entries from the specified
+    # directory digest.
+    #
+    # Args:
+    #     digest (Digest): The digest of the replacement directory
+    #
+    def _reset(self, *, digest=None):
+        self._clear()
 
         if digest:
             self.__digest = digest
