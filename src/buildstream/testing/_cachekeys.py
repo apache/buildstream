@@ -143,6 +143,6 @@ def _assert_cache_keys(project_dir, output):
 
         raise AssertionError(
             "Cache key mismatches occurred:\n{}\n".format(info)
-            + "Use python3 -m buildstream.testing._update_cachekeys  in the project's"
+            + "Use python3 -m buildstream.testing._update_cachekeys in the project's "
             + "directory to automatically update this test case"
         )
