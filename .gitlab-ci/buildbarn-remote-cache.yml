@@ -1,0 +1,59 @@
+##
+# Buildbarn Compose manifest for BuildStream.
+#
+# Spins-up a unnamed and unauthenticated cache server:
+#  - STORAGE at http://localhost:7982
+#  - INDEX at: http://localhost:7981
+#
+# BuildStream configuration snippet:
+#
+# artifacts:
+#   - url: https://localhost:7981
+#     type: index
+#     push: true
+#   - url: https://localhost:7982
+#     type: storage
+#     push: true
+#
+# Basic usage:
+#  - docker-compose -f buildbarn-remote-cache.yml up
+#  - docker-compose -f buildbarn-remote-cache.yml down
+
+version: '3.4'
+
+services:
+  bb-asset:
+    image: qinusty/bb-asset-hub:20200814T141139Z-5e72dd1
+    command: /config/asset.jsonnet
+    restart: unless-stopped
+    expose:
+    - "7981"
+    ports:
+    - "7981:7981"
+    volumes:
+    - type: volume
+      source: assets
+      target: /storage
+    - type: bind
+      source: ./config/
+      target: /config
+
+  bb-storage:
+    image: buildbarn/bb-storage:20200810T194216Z-94a85b4
+    command: /config/storage.jsonnet
+    restart: unless-stopped
+    expose:
+    - "7982"
+    ports:
+    - "7982:7982"
+    volumes:
+    - type: volume
+      source: cas
+      target: /cas
+    - type: bind
+      source: ./config/
+      target: /config
+
+volumes:
+  assets:
+  cas:

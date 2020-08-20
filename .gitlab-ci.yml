@@ -197,6 +197,16 @@ tests-remote-cache:
     ARTIFACT_CACHE_SERVICE: http://docker:50052
     PYTEST_ARGS: "--color=yes --remote-cache"
 
+tests-bb-remote-cache:
+  <<: *tests
+  <<: *remote-test
+  variables:
+    <<: *docker-variables
+    COMPOSE_MANIFEST: .gitlab-ci/buildbarn-remote-cache.yml
+    ARTIFACT_INDEX_SERVICE: http://docker:7981
+    ARTIFACT_STORAGE_SERVICE: http://docker:7982
+    PYTEST_ARGS: "--color=yes --remote-cache"
+
 tests-no-usedevelop:
   # Ensure that tests also pass without `--develop` flag.
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${DOCKER_IMAGE_VERSION}
