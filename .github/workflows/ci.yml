@@ -21,6 +21,7 @@ on: push
 
 env:
   CI_IMAGE: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:30-master-154893333
+  PYTEST_ARGS: --color=yes --integration -n 4
 
 jobs:
   tests:
@@ -30,7 +31,6 @@ jobs:
     env:
       CI_IMAGE_PREFIX: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite
       CI_IMAGE_SUFFIX: master-154893333
-      PYTEST_ARGS: --color=yes --integration -n 4
       TOXENV: py36,py6-plugins,py37,py37-plugins,py38,py38-plugins
       # FIXME: De-duplicate against tox.ini
       BST_PLUGINS_EXPERIMENTAL_VERSION: 1.93.4
