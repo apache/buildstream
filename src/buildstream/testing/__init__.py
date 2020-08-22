@@ -30,6 +30,7 @@ from .integration import integration_cache
 from ._cachekeys import check_cache_key_stability
 
 __all__ = [
+    "SourceTests",
     "check_cache_key_stability",
     "create_repo",
     "register_repo_kind",
@@ -133,3 +134,10 @@ def sourcetests_collection_hook(session):
     # automatically collect templated tests.
     if should_collect_tests(session.config):
         session.config.args.append(source_test_path)
+
+
+# XXX: this needs to be imported last, as it depends on things from
+#      this module. We should move that back up once we've finished the
+#      refactor of the source tests
+# pylint: disable=wrong-import-position
+from ._sourcetests import SourceTests

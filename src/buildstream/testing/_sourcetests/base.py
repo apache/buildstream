@@ -15,14 +15,22 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 
-# XXX: we should reorganize those modules after the source tests have
-#      been refactored
-# pylint: disable=cyclic-import
+import os
+from abc import ABC, abstractmethod
+from typing import Type
 
-from .fetch import FetchSourceTests
-
-__all__ = ["SourceTests"]
+from ..repo import Repo
 
 
-class SourceTests(FetchSourceTests):
-    """Definition of standardized tests that each source should pass."""
+class BaseSourceTests(ABC):
+    @property
+    @classmethod
+    @abstractmethod
+    def KIND(cls) -> str:
+        """Human readable name of the source currently being tested."""
+
+    @property
+    @classmethod
+    @abstractmethod
+    def REPO(cls) -> Type[Repo]:
+        """Get the repo implementation for the currently tested source."""

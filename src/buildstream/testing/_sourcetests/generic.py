@@ -15,14 +15,11 @@
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 #
 
-# XXX: we should reorganize those modules after the source tests have
-#      been refactored
-# pylint: disable=cyclic-import
 
-from .fetch import FetchSourceTests
-
-__all__ = ["SourceTests"]
+from . import SourceTests
+from .. import ALL_REPO_KINDS
 
 
-class SourceTests(FetchSourceTests):
-    """Definition of standardized tests that each source should pass."""
+for kind, (repo_cls, _) in ALL_REPO_KINDS.items():
+    cls_name = "Test{}Source".format(kind.upper())
+    globals()[cls_name] = type(cls_name, (SourceTests,), {"KIND": cls_name, "REPO": repo_cls})

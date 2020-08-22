@@ -9,7 +9,7 @@ from buildstream.testing._utils.site import GIT, GIT_ENV, HAVE_GIT
 
 
 class Git(Repo):
-    def __init__(self, directory, subdir):
+    def __init__(self, directory, subdir="repo"):
         if not HAVE_GIT:
             pytest.skip("git is not available")
 
