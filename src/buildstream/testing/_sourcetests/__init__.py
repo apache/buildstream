@@ -19,10 +19,11 @@
 #      been refactored
 # pylint: disable=cyclic-import
 
+from .build_checkout import BuildCheckoutSourceTests
 from .fetch import FetchSourceTests
 
 __all__ = ["SourceTests"]
 
 
-class SourceTests(FetchSourceTests):
+class SourceTests(BuildCheckoutSourceTests, FetchSourceTests):
     """Definition of standardized tests that each source should pass."""
