@@ -160,7 +160,7 @@ class Messenger:
     #
     @contextmanager
     def timed_activity(self, activity_name, *, element_name=None, detail=None, silent_nested=False):
-        with self._timed_suspendable() as timedata:
+        with self.timed_suspendable() as timedata:
             try:
                 # Push activity depth for status messages
                 message = Message(MessageType.START, activity_name, detail=detail, element_name=element_name)
@@ -204,7 +204,7 @@ class Messenger:
         if not full_name:
             full_name = activity_name
 
-        with self._timed_suspendable() as timedata:
+        with self.timed_suspendable() as timedata:
             try:
                 message = Message(MessageType.START, activity_name, element_name=element_name)
                 self.message(message)
@@ -326,6 +326,34 @@ class Messenger:
     def get_log_filename(self):
         return self._log_filename
 
+    # timed_suspendable()
+    #
+    # A contextmanager that allows an activity to be suspended and can
+    # adjust for clock drift caused by suspending
+    #
+    # Yields:
+    #    TimeData: An object that contains the time the activity started
+    #
+    @contextmanager
+    def timed_suspendable(self):
+        # Note: timedata needs to be in a namedtuple so that values can be
+        # yielded that will change
+        timedata = _TimeData(start_time=datetime.datetime.now())
+        stopped_time = None
+
+        def stop_time():
+            nonlocal stopped_time
+            stopped_time = datetime.datetime.now()
+
+        def resume_time():
+            nonlocal timedata
+            nonlocal stopped_time
+            sleep_time = datetime.datetime.now() - stopped_time
+            timedata.start_time += sleep_time
+
+        with _signals.suspendable(stop_time, resume_time):
+            yield timedata
+
     # _record_message()
     #
     # Records the message if recording is enabled
@@ -388,31 +416,3 @@ class Messenger:
         if self._render_status_cb and now >= self._next_render:
             self._render_status_cb()
             self._next_render = now + _RENDER_INTERVAL
-
-    # _timed_suspendable()
-    #
-    # A contextmanager that allows an activity to be suspended and can
-    # adjust for clock drift caused by suspending
-    #
-    # Yields:
-    #    TimeData: An object that contains the time the activity started
-    #
-    @contextmanager
-    def _timed_suspendable(self):
-        # Note: timedata needs to be in a namedtuple so that values can be
-        # yielded that will change
-        timedata = _TimeData(start_time=datetime.datetime.now())
-        stopped_time = None
-
-        def stop_time():
-            nonlocal stopped_time
-            stopped_time = datetime.datetime.now()
-
-        def resume_time():
-            nonlocal timedata
-            nonlocal stopped_time
-            sleep_time = datetime.datetime.now() - stopped_time
-            timedata.start_time += sleep_time
-
-        with _signals.suspendable(stop_time, resume_time):
-            yield timedata

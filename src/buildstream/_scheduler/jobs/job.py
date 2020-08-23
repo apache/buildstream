@@ -675,41 +675,30 @@ class ChildJob:
         self._pipe_w = pipe_w
         self._messenger.set_message_handler(self._child_message_handler)
 
-        starttime = datetime.datetime.now()
-        stopped_time = None
-
-        def stop_time():
-            nonlocal stopped_time
-            stopped_time = datetime.datetime.now()
-
-        def resume_time():
-            nonlocal stopped_time
-            nonlocal starttime
-            starttime += datetime.datetime.now() - stopped_time
-
         # Graciously handle sigterms.
         def handle_sigterm():
             self._child_shutdown(_ReturnCode.TERMINATED)
 
         # Time, log and and run the action function
         #
-        with _signals.terminator(handle_sigterm), _signals.suspendable(
-            stop_time, resume_time
-        ), self._messenger.recorded_messages(self._logfile, self._logdir) as filename:
-
+        with _signals.terminator(
+            handle_sigterm
+        ), self._messenger.timed_suspendable() as timeinfo, self._messenger.recorded_messages(
+            self._logfile, self._logdir
+        ) as filename:
             self.message(MessageType.START, self.action_name, logfile=filename)
 
             try:
                 # Try the task action
                 result = self.child_process()  # pylint: disable=assignment-from-no-return
             except SkipJob as e:
-                elapsed = datetime.datetime.now() - starttime
+                elapsed = datetime.datetime.now() - timeinfo.start_time
                 self.message(MessageType.SKIPPED, str(e), elapsed=elapsed, logfile=filename)
 
                 # Alert parent of skip by return code
                 self._child_shutdown(_ReturnCode.SKIPPED)
             except BstError as e:
-                elapsed = datetime.datetime.now() - starttime
+                elapsed = datetime.datetime.now() - timeinfo.start_time
                 retry_flag = e.temporary
 
                 if retry_flag and (self._tries <= self._max_retries):
@@ -739,7 +728,7 @@ class ChildJob:
                 # send the traceback and formatted exception back to the frontend
                 # and print it to the log file.
                 #
-                elapsed = datetime.datetime.now() - starttime
+                elapsed = datetime.datetime.now() - timeinfo.start_time
                 detail = "An unhandled exception occured:\n\n{}".format(traceback.format_exc())
 
                 self.message(MessageType.BUG, self.action_name, elapsed=elapsed, detail=detail, logfile=filename)
@@ -751,7 +740,7 @@ class ChildJob:
                 self._send_message(_MessageType.CHILD_DATA, self.child_process_data())
                 self._child_send_result(result)
 
-                elapsed = datetime.datetime.now() - starttime
+                elapsed = datetime.datetime.now() - timeinfo.start_time
                 self.message(MessageType.SUCCESS, self.action_name, elapsed=elapsed, logfile=filename)
 
                 # Shutdown needs to stay outside of the above context manager,
