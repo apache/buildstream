@@ -14,19 +14,26 @@
 #  You should have received a copy of the GNU Lesser General Public
 #  License along with this library. If not, see <http://www.gnu.org/licenses/>.
 
+# pylint: disable=redefined-outer-name
+
 import psutil
 import pytest
 
 from buildstream import node, utils
 
-# Catch tests that don't shut down background threads, which could then lead
-# to other tests hanging when BuildStream uses fork().
-@pytest.fixture(autouse=True)
-def thread_check():
+
+@pytest.fixture(autouse=True, scope="session")
+def default_thread_number():
     # xdist/execnet has its own helper thread.
     # Ignore that for `utils._is_single_threaded` checks.
     utils._INITIAL_NUM_THREADS_IN_MAIN_PROCESS = psutil.Process().num_threads()
 
+
+# Catch tests that don't shut down background threads, which could then lead
+# to other tests hanging when BuildStream uses fork().
+@pytest.fixture(autouse=True)
+def thread_check(default_thread_number):
+    assert utils._is_single_threaded()
     yield
     assert utils._is_single_threaded()
 
