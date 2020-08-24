@@ -158,6 +158,8 @@ tests-fedora-update-deps:
 
     - su buildstream -c "${TEST_COMMAND}"
 
+# This template ensures that the server stack defined in COMPOSE_MANIFEST is spun up for script execution
+# and cleaned up after the script is completed.
 .compose-test-boilerplate: &remote-test
   allow_failure: true
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${DOCKER_IMAGE_VERSION}
@@ -179,10 +181,10 @@ tests-fedora-update-deps:
 
 tests-remote-execution:
   <<: *tests
-  <<: *remote-test
+  <<: *remote-test # Spin up server stack
   variables:
     <<: *docker-variables
-    COMPOSE_MANIFEST: .gitlab-ci/buildgrid-remote-execution.yml
+    COMPOSE_MANIFEST: .gitlab-ci/buildgrid-remote-execution.yml # < *remote-test
     ARTIFACT_CACHE_SERVICE: http://docker:50052
     REMOTE_EXECUTION_SERVICE: http://docker:50051
     SOURCE_CACHE_SERVICE: http://docker:50052
@@ -190,19 +192,19 @@ tests-remote-execution:
 
 tests-remote-cache:
   <<: *tests
-  <<: *remote-test
+  <<: *remote-test # Spin up/down server stack
   variables:
     <<: *docker-variables
-    COMPOSE_MANIFEST: .gitlab-ci/cache-server.yml
+    COMPOSE_MANIFEST: .gitlab-ci/cache-server.yml # < *remote-test
     ARTIFACT_CACHE_SERVICE: http://docker:50052
     PYTEST_ARGS: "--color=yes --remote-cache"
 
 tests-bb-remote-cache:
   <<: *tests
-  <<: *remote-test
+  <<: *remote-test # Spin up/down server stack
   variables:
     <<: *docker-variables
-    COMPOSE_MANIFEST: .gitlab-ci/buildbarn-remote-cache.yml
+    COMPOSE_MANIFEST: .gitlab-ci/buildbarn-remote-cache.yml # < *remote-test
     ARTIFACT_INDEX_SERVICE: http://docker:7981
     ARTIFACT_STORAGE_SERVICE: http://docker:7982
     PYTEST_ARGS: "--color=yes --remote-cache"
