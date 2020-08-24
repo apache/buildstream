@@ -36,20 +36,22 @@ from ..utils import FileListResult, list_relative_paths
 
 
 class IndexEntry():
-    """ Used in our index of names to objects to store the 'modified' flag
-    for directory entries. Because we need both the remote_execution_pb2 object
-    and our own Directory object for directory entries, we store both. For files
-    and symlinks, only pb_object is used. """
-    def __init__(self, pb_object, entrytype, buildstream_object=None, modified=False):
-        self.pb_object = pb_object  # Short for 'protocol buffer object')
+    """ Directory entry used in CasBasedDirectory.index """
+    def __init__(self, name, entrytype, *, digest=None, target=None, is_executable=False,
+                 buildstream_object=None, modified=False):
+        self.name = name
         self.type = entrytype
+        self.digest = digest
+        self.target = target
+        self.is_executable = is_executable
         self.buildstream_object = buildstream_object
         self.modified = modified
 
     def get_directory(self, parent):
         if not self.buildstream_object:
-            self.buildstream_object = CasBasedDirectory(parent.cas_cache, digest=self.pb_object.digest,
-                                                        parent=parent, filename=self.pb_object.name)
+            self.buildstream_object = CasBasedDirectory(parent.cas_cache, digest=self.digest,
+                                                        parent=parent, filename=self.name)
+            self.digest = None
 
         return self.buildstream_object
 
@@ -129,27 +131,26 @@ class _Resolver():
 
         # First check for nonexistent things or 'normal' objects and return them
         if name not in directory.index:
-            return None
+            return None, None
         index_entry = directory.index[name]
         if index_entry.type == _FileType.DIRECTORY:
-            return index_entry.get_directory(directory)
+            return index_entry.type, index_entry.get_directory(directory)
         elif index_entry.type == _FileType.REGULAR_FILE:
-            return index_entry.pb_object
+            return index_entry.type, None
 
         # Now we must be dealing with a symlink.
         assert index_entry.type == _FileType.SYMLINK
 
-        symlink_object = index_entry.pb_object
-        if symlink_object in self.seen_objects:
+        if index_entry in self.seen_objects:
             # Infinite symlink loop detected
             message = ("Infinite symlink loop found during resolution. " +
                        "First repeated element is {}".format(name))
             raise InfiniteSymlinkException(message=message)
 
-        self.seen_objects.append(symlink_object)
+        self.seen_objects.append(index_entry)
 
-        components = symlink_object.target.split(CasBasedDirectory._pb2_path_sep)
-        absolute = symlink_object.target.startswith(CasBasedDirectory._pb2_absolute_path_prefix)
+        components = index_entry.target.split(CasBasedDirectory._pb2_path_sep)
+        absolute = index_entry.target.startswith(CasBasedDirectory._pb2_absolute_path_prefix)
 
         if absolute:
             if self.absolute_symlinks_resolve:
@@ -162,20 +163,22 @@ class _Resolver():
                 raise AbsoluteSymlinkException(message=message)
 
         resolution = directory
-        while components and isinstance(resolution, CasBasedDirectory):
+        resolution_type = _FileType.DIRECTORY
+        while components and resolution_type == _FileType.DIRECTORY:
             c = components.pop(0)
             directory = resolution
 
             try:
-                resolution = self._resolve_path_component(c, directory, components)
+                resolution_type, resolution = self._resolve_path_component(c, directory, components)
             except UnexpectedFileException as original:
                 errormsg = ("Reached a file called {} while trying to resolve a symlink; " +
                             "cannot proceed. The remaining path components are {}.")
                 raise UnexpectedFileException(errormsg.format(c, components)) from original
 
-        return resolution
+        return resolution_type, resolution
 
     def _resolve_path_component(self, c, directory, components_remaining):
+        resolution_type = _FileType.DIRECTORY
         if c == ".":
             resolution = directory
         elif c == "..":
@@ -188,7 +191,7 @@ class _Resolver():
                 resolution = directory
         elif c in directory.index:
             try:
-                resolution = self._resolve_through_files(c, directory, components_remaining)
+                resolution_type, resolution = self._resolve_through_files(c, directory, components_remaining)
             except UnexpectedFileException as original:
                 errormsg = ("Reached a file called {} while trying to resolve a symlink; " +
                             "cannot proceed. The remaining path components are {}.")
@@ -199,7 +202,8 @@ class _Resolver():
                 resolution = directory.descend(c, create=True)
             else:
                 resolution = None
-        return resolution
+                resolution_type = None
+        return resolution_type, resolution
 
     def _resolve_through_files(self, c, directory, require_traversable):
         """A wrapper to resolve() which deals with files being found
@@ -212,15 +216,16 @@ class _Resolver():
         force_create is off, throws ResolutionException.
 
         """
-        resolved_thing = self.resolve(c, directory)
+        resolved_type, resolved_thing = self.resolve(c, directory)
 
-        if isinstance(resolved_thing, remote_execution_pb2.FileNode):
+        if resolved_type == _FileType.REGULAR_FILE:
             if require_traversable:
                 # We have components still to resolve, but one of the path components
                 # is a file.
                 if self.force_create:
                     directory.delete_entry(c)
                     resolved_thing = directory.descend(c, create=True)
+                    resolved_type = _FileType.DIRECTORY
                 else:
                     # This is a signal that we hit a file, but don't
                     # have the data to give a proper message, so the
@@ -228,7 +233,7 @@ class _Resolver():
                     # description.
                     raise UnexpectedFileException()
 
-        return resolved_thing
+        return resolved_type, resolved_thing
 
 
 # CasBasedDirectory intentionally doesn't call its superclass constuctor,
@@ -256,28 +261,28 @@ class CasBasedDirectory(Directory):
     def __init__(self, cas_cache, *, digest=None, parent=None, common_name="untitled", filename=None):
         self.filename = filename
         self.common_name = common_name
-        self.pb2_directory = remote_execution_pb2.Directory()
         self.cas_cache = cas_cache
-        if digest:
-            with open(self.cas_cache.objpath(digest), 'rb') as f:
-                self.pb2_directory.ParseFromString(f.read())
-
         self.__digest = digest
         self.index = {}
         self.parent = parent
-        self._directory_read = False
-        self._populate_index()
+        if digest:
+            self._populate_index(digest)
 
-    def _populate_index(self):
-        if self._directory_read:
-            return
-        for entry in self.pb2_directory.directories:
-            self.index[entry.name] = IndexEntry(entry, _FileType.DIRECTORY)
-        for entry in self.pb2_directory.files:
-            self.index[entry.name] = IndexEntry(entry, _FileType.REGULAR_FILE)
-        for entry in self.pb2_directory.symlinks:
-            self.index[entry.name] = IndexEntry(entry, _FileType.SYMLINK)
-        self._directory_read = True
+    def _populate_index(self, digest):
+        pb2_directory = remote_execution_pb2.Directory()
+        with open(self.cas_cache.objpath(digest), 'rb') as f:
+            pb2_directory.ParseFromString(f.read())
+
+        for entry in pb2_directory.directories:
+            self.index[entry.name] = IndexEntry(entry.name, _FileType.DIRECTORY,
+                                                digest=entry.digest)
+        for entry in pb2_directory.files:
+            self.index[entry.name] = IndexEntry(entry.name, _FileType.REGULAR_FILE,
+                                                digest=entry.digest,
+                                                is_executable=entry.is_executable)
+        for entry in pb2_directory.symlinks:
+            self.index[entry.name] = IndexEntry(entry.name, _FileType.SYMLINK,
+                                                target=entry.target)
 
     def _find_self_in_parent(self):
         assert self.parent is not None
@@ -291,23 +296,19 @@ class CasBasedDirectory(Directory):
         assert name not in self.index
 
         newdir = CasBasedDirectory(self.cas_cache, parent=self, filename=name)
-        dirnode = self.pb2_directory.directories.add()
-        dirnode.name = name
 
-        self.index[name] = IndexEntry(dirnode, _FileType.DIRECTORY, buildstream_object=newdir)
+        self.index[name] = IndexEntry(name, _FileType.DIRECTORY, buildstream_object=newdir)
 
         self.__invalidate_digest()
 
         return newdir
 
     def _add_file(self, basename, filename, modified=False):
-        filenode = self.pb2_directory.files.add()
-        filenode.name = filename
-        self.cas_cache.add_object(digest=filenode.digest, path=os.path.join(basename, filename))
-        is_executable = os.access(os.path.join(basename, filename), os.X_OK)
-        filenode.is_executable = is_executable
-        self.index[filename] = IndexEntry(filenode, _FileType.REGULAR_FILE,
-                                          modified=modified or filename in self.index)
+        entry = IndexEntry(filename, _FileType.REGULAR_FILE,
+                           modified=modified or filename in self.index)
+        entry.digest = self.cas_cache.add_object(path=os.path.join(basename, filename))
+        entry.is_executable = os.access(os.path.join(basename, filename), os.X_OK)
+        self.index[filename] = entry
 
         self.__invalidate_digest()
 
@@ -315,23 +316,11 @@ class CasBasedDirectory(Directory):
         self._add_new_link_direct(filename, os.readlink(os.path.join(basename, filename)))
 
     def _add_new_link_direct(self, name, target):
-        entry = self.index.get(name)
-        if entry:
-            symlinknode = entry.pb_object
-        else:
-            symlinknode = self.pb2_directory.symlinks.add()
-        symlinknode.name = name
-        # A symlink node has no digest.
-        symlinknode.target = target
-        self.index[name] = IndexEntry(symlinknode, _FileType.SYMLINK, modified=(entry is not None))
+        self.index[name] = IndexEntry(name, _FileType.SYMLINK, target=target, modified=name in self.index)
 
         self.__invalidate_digest()
 
     def delete_entry(self, name):
-        for collection in [self.pb2_directory.files, self.pb2_directory.symlinks, self.pb2_directory.directories]:
-            for thing in collection:
-                if thing.name == name:
-                    collection.remove(thing)
         if name in self.index:
             del self.index[name]
 
@@ -376,13 +365,11 @@ class CasBasedDirectory(Directory):
                 return subdir.descend(subdirectory_spec[1:], create)
             else:
                 # May be a symlink
-                target = self._resolve(subdirectory_spec[0], force_create=create)
-                if isinstance(target, CasBasedDirectory):
+                type, target = self._resolve(subdirectory_spec[0], force_create=create)
+                if type == _FileType.DIRECTORY:
                     return target
                 error = "Cannot descend into {}, which is a '{}' in the directory {}"
-                raise VirtualDirectoryError(error.format(subdirectory_spec[0],
-                                                         type(self.index[subdirectory_spec[0]].pb_object).__name__,
-                                                         self))
+                raise VirtualDirectoryError(error.format(subdirectory_spec[0], type, self))
         else:
             if create:
                 newdir = self._add_directory(subdirectory_spec[0])
@@ -444,15 +431,15 @@ class CasBasedDirectory(Directory):
 
         def _ensure_followable(name, path_prefix):
             """ Makes sure 'name' is a directory or symlink to a directory which can be descended into. """
-            if isinstance(self.index[name].buildstream_object, Directory):
+            if self.index[name].type == _FileType.DIRECTORY:
                 return self.descend(name)
             try:
-                target = self._resolve(name, force_create=True)
+                type, target = self._resolve(name, force_create=True)
             except InfiniteSymlinkException:
                 return self._replace_anything_with_dir(name, path_prefix, result.overwritten)
-            if isinstance(target, CasBasedDirectory):
+            if type == _FileType.DIRECTORY:
                 return target
-            elif isinstance(target, remote_execution_pb2.FileNode):
+            elif type == _FileType.REGULAR_FILE:
                 return self._replace_anything_with_dir(name, path_prefix, result.overwritten)
             return target
 
@@ -533,8 +520,8 @@ class CasBasedDirectory(Directory):
                     subcomponents = CasBasedDirectory._files_in_subdir(files, dirname)
                     # We will fail at this point if there is a file or symlink to file called 'dirname'.
                     if dirname in self.index:
-                        resolved_component = self._resolve(dirname, force_create=True)
-                        if isinstance(resolved_component, remote_execution_pb2.FileNode):
+                        resolved_type, resolved_component = self._resolve(dirname, force_create=True)
+                        if resolved_type == _FileType.REGULAR_FILE:
                             dest_subdir = self._replace_anything_with_dir(dirname, path_prefix, result.overwritten)
                         else:
                             dest_subdir = resolved_component
@@ -558,15 +545,15 @@ class CasBasedDirectory(Directory):
                 importable = self._check_replacement(f, path_prefix, result)
                 if importable:
                     entry = source_directory.index[f]
-                    item = entry.pb_object
                     if entry.type == _FileType.REGULAR_FILE:
-                        filenode = self.pb2_directory.files.add(digest=item.digest, name=f,
-                                                                is_executable=item.is_executable)
-                        self.index[f] = IndexEntry(filenode, _FileType.REGULAR_FILE, modified=True)
+                        self.index[f] = IndexEntry(entry.name, _FileType.REGULAR_FILE,
+                                                   digest=entry.digest,
+                                                   is_executable=entry.is_executable,
+                                                   modified=True)
                         self.__invalidate_digest()
                     else:
                         assert entry.type == _FileType.SYMLINK
-                        self._add_new_link_direct(name=f, target=item.target)
+                        self._add_new_link_direct(name=f, target=entry.target)
                     result.files_written.append(os.path.join(path_prefix, f))
                 else:
                     result.ignored.append(os.path.join(path_prefix, f))
@@ -724,8 +711,8 @@ class CasBasedDirectory(Directory):
         # broken symlinks count as files. os.walk doesn't follow
         # symlinks, so we don't recurse.
         for (k, v) in sorted(symlink_list):
-            target = self._resolve(k, absolute_symlinks_resolve=True)
-            if isinstance(target, CasBasedDirectory):
+            type, target = self._resolve(k, absolute_symlinks_resolve=True)
+            if type == _FileType.DIRECTORY:
                 yield os.path.join(relpath, k)
             else:
                 file_list.append((k, v))
@@ -741,13 +728,14 @@ class CasBasedDirectory(Directory):
             yield from subdir.list_relative_paths(relpath=os.path.join(relpath, k))
 
     def get_size(self):
-        total = len(self.pb2_directory.SerializeToString())
+        digest = self._get_digest()
+        total = digest.size_bytes
         for i in self.index.values():
             if i.type == _FileType.DIRECTORY:
                 subdir = i.get_directory(self)
                 total += subdir.get_size()
             elif i.type == _FileType.REGULAR_FILE:
-                src_name = self.cas_cache.objpath(i.pb_object.digest)
+                src_name = self.cas_cache.objpath(i.digest)
                 filesize = os.stat(src_name).st_size
                 total += filesize
             # Symlink nodes are encoded as part of the directory serialization.
@@ -781,23 +769,40 @@ class CasBasedDirectory(Directory):
     #
     def _get_digest(self):
         if not self.__digest:
-            # Update digests for subdirectories in DirectoryNodes
-            for name, entry in self.index.items():
+            # Create updated Directory proto
+            pb2_directory = remote_execution_pb2.Directory()
+
+            for name, entry in sorted(self.index.items()):
                 if entry.type == _FileType.DIRECTORY:
+                    dirnode = pb2_directory.directories.add()
+                    dirnode.name = name
+
+                    # Update digests for subdirectories in DirectoryNodes.
                     # No need to call entry.get_directory().
                     # If it hasn't been instantiated, digest must be up-to-date.
                     subdir = entry.buildstream_object
                     if subdir:
-                        entry.pb_object.digest.CopyFrom(subdir._get_digest())
+                        dirnode.digest.CopyFrom(subdir._get_digest())
+                    else:
+                        dirnode.digest.CopyFrom(entry.digest)
+                elif entry.type == _FileType.REGULAR_FILE:
+                    filenode = pb2_directory.files.add()
+                    filenode.name = name
+                    filenode.digest.CopyFrom(entry.digest)
+                    filenode.is_executable = entry.is_executable
+                elif entry.type == _FileType.SYMLINK:
+                    symlinknode = pb2_directory.symlinks.add()
+                    symlinknode.name = name
+                    symlinknode.target = entry.target
 
-            self.__digest = self.cas_cache.add_object(buffer=self.pb2_directory.SerializeToString())
+            self.__digest = self.cas_cache.add_object(buffer=pb2_directory.SerializeToString())
 
         return self.__digest
 
     def _objpath(self, path):
         subdir = self.descend(path[:-1])
         entry = subdir.index[path[-1]]
-        return self.cas_cache.objpath(entry.pb_object.digest)
+        return self.cas_cache.objpath(entry.digest)
 
     def _exists(self, path):
         try:

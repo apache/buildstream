@@ -248,7 +248,6 @@ class FileBasedDirectory(Directory):
             _ensure_real_directory(self.external_directory, os.path.dirname(destpath))
 
             entry = source_directory._lightweight_resolve_to_index(path)
-            item = entry.pb_object
 
             if entry.type == _FileType.DIRECTORY:
                 # Ensure directory exists in destination
@@ -265,7 +264,7 @@ class FileBasedDirectory(Directory):
                     result.ignored.append(path)
                     continue
 
-                target = item.target
+                target = entry.target
                 target = _relative_symlink_target(self.external_directory, destpath, target)
                 os.symlink(target, destpath)
 
@@ -275,10 +274,10 @@ class FileBasedDirectory(Directory):
                     result.ignored.append(path)
                     continue
 
-                src_path = source_directory.cas_cache.objpath(item.digest)
+                src_path = source_directory.cas_cache.objpath(entry.digest)
                 actionfunc(src_path, destpath, result=result)
 
-                if item.is_executable:
+                if entry.is_executable:
                     os.chmod(destpath, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
                              stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 
