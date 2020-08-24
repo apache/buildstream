@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import sys
 from functools import partial
@@ -9,6 +10,33 @@ from .._exceptions import BstError, LoadError, AppError
 from .complete import main_bashcomplete, complete_path, CompleteUnhandled
 from ..types import _CacheBuildTrees, _SchedulerErrorAction, _PipelineSelection
 from ..utils import UtilError
+
+
+##################################################################
+#                   Setup multiprocessing                        #
+##################################################################
+
+# _setup_multiprocessing()
+#
+# Since Python 3.8, the multiprocessing module defaults to
+# the spawn method on MacOS, since the fork method is considered
+# unsafe.
+#
+# However, BuildStream is not compatible with spawn mode so we
+# force the default to fork (if available) which works for the most part.
+#
+# Args:
+#    force (bool): Whether to force our configuration; useful when being called
+#                  from the test suite.
+#
+def _setup_multiprocessing(force=False):
+    # Our tests will not invoke the CLI as a subprocess, but directly from
+    # Python via Cli.run(). So, we allow `force` to be true in this case, but
+    # it is not needed when using the CLI normally.
+    force = "BST_TEST_SUITE" in os.environ
+
+    if multiprocessing.get_start_method() == "spawn" and "fork" in multiprocessing.get_all_start_methods():
+        multiprocessing.set_start_method("fork", force=force)
 
 
 ##################################################################
@@ -331,6 +359,10 @@ def cli(context, **kwargs):
     Most of the main options override options in the
     user preferences configuration file.
     """
+
+    # Configuration for multiprocessing module, that we want to do
+    # as early as possible.
+    _setup_multiprocessing()
 
     from .app import App
 
