@@ -415,7 +415,7 @@ class Element(Plugin):
         Yields:
            The sources of this element
         """
-        return self.__sources.sources()
+        yield from self.__sources.sources()
 
     def dependencies(self, scope: Scope, *, recurse: bool = True, visited=None) -> Iterator["Element"]:
         """dependencies(scope, *, recurse=True)
