@@ -105,6 +105,7 @@ from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
 from .types import CoreWarnings, Scope, _CacheBuildTrees, _KeyStrength
 from ._artifact import Artifact
+from ._elementproxy import ElementProxy
 from ._elementsources import ElementSources
 from ._loader import Symbol, MetaSource
 
@@ -435,65 +436,13 @@ class Element(Plugin):
         Yields:
            The dependencies in `scope`, in deterministic staging order
         """
-        # The format of visited is (BitMap(), BitMap()), with the first BitMap
-        # containing element that have been visited for the `Scope.BUILD` case
-        # and the second one relating to the `Scope.RUN` case.
-        if not recurse:
-            result: Set[Element] = set()
-            if scope in (Scope.BUILD, Scope.ALL):
-                for dep in self.__build_dependencies:
-                    if dep not in result:
-                        result.add(dep)
-                        yield dep
-            if scope in (Scope.RUN, Scope.ALL):
-                for dep in self.__runtime_dependencies:
-                    if dep not in result:
-                        result.add(dep)
-                        yield dep
-        else:
-
-            def visit(element, scope, visited):
-                if scope == Scope.ALL:
-                    visited[0].add(element._unique_id)
-                    visited[1].add(element._unique_id)
-
-                    for dep in chain(element.__build_dependencies, element.__runtime_dependencies):
-                        if dep._unique_id not in visited[0] and dep._unique_id not in visited[1]:
-                            yield from visit(dep, Scope.ALL, visited)
-
-                    yield element
-                elif scope == Scope.BUILD:
-                    visited[0].add(element._unique_id)
-
-                    for dep in element.__build_dependencies:
-                        if dep._unique_id not in visited[1]:
-                            yield from visit(dep, Scope.RUN, visited)
-
-                elif scope == Scope.RUN:
-                    visited[1].add(element._unique_id)
-
-                    for dep in element.__runtime_dependencies:
-                        if dep._unique_id not in visited[1]:
-                            yield from visit(dep, Scope.RUN, visited)
-
-                    yield element
-                else:
-                    yield element
-
-            if visited is None:
-                # Visited is of the form (Visited for Scope.BUILD, Visited for Scope.RUN)
-                visited = (BitMap(), BitMap())
-            else:
-                # We have already a visited set passed. we might be able to short-circuit
-                if scope in (Scope.BUILD, Scope.ALL) and self._unique_id in visited[0]:
-                    return
-                if scope in (Scope.RUN, Scope.ALL) and self._unique_id in visited[1]:
-                    return
-
-            yield from visit(self, scope, visited)
+        for dep in self._dependencies(scope, recurse=recurse):
+            yield cast("Element", ElementProxy(self, dep))
 
     def search(self, scope: Scope, name: str) -> Optional["Element"]:
-        """Search for a dependency by name
+        """search(scope, *, name)
+
+        Search for a dependency by name
 
         Args:
            scope: The scope to search
@@ -502,9 +451,9 @@ class Element(Plugin):
         Returns:
            The dependency element, or None if not found.
         """
-        for dep in self.dependencies(scope):
-            if dep.name == name:
-                return dep
+        search = self._search(scope, name)
+        if search:
+            return cast("Element", ElementProxy(self, search))
 
         return None
 
@@ -732,7 +681,7 @@ class Element(Plugin):
                 # The bottom item overlaps nothing
                 overlapping_elements = elements[1:]
                 for elm in overlapping_elements:
-                    element = cast(Element, self.search(scope, elm))
+                    element = cast(Element, self._search(scope, elm))
                     if not element.__file_is_whitelisted(f):
                         overlap_warning_elements.append(elm)
                         overlap_warning = True
@@ -876,6 +825,101 @@ class Element(Plugin):
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
+
+    # _dependencies()
+    #
+    # A generator function which yields the dependencies of the given element.
+    #
+    # If `recurse` is specified (the default), the full dependencies will be listed
+    # in deterministic staging order, starting with the basemost elements in the
+    # given `scope`. Otherwise, if `recurse` is not specified then only the direct
+    # dependencies in the given `scope` will be traversed, and the element itself
+    # will be omitted.
+    #
+    # Args:
+    #    scope (Scope): The scope to iterate in
+    #    recurse (bool): Whether to recurse
+    #
+    # Yields:
+    #    (Element): The dependencies in `scope`, in deterministic staging order
+    #
+    def _dependencies(self, scope: Scope, *, recurse: bool = True, visited=None) -> Iterator["Element"]:
+
+        # The format of visited is (BitMap(), BitMap()), with the first BitMap
+        # containing element that have been visited for the `Scope.BUILD` case
+        # and the second one relating to the `Scope.RUN` case.
+        if not recurse:
+            result: Set[Element] = set()
+            if scope in (Scope.BUILD, Scope.ALL):
+                for dep in self.__build_dependencies:
+                    if dep not in result:
+                        result.add(dep)
+                        yield dep
+            if scope in (Scope.RUN, Scope.ALL):
+                for dep in self.__runtime_dependencies:
+                    if dep not in result:
+                        result.add(dep)
+                        yield dep
+        else:
+
+            def visit(element, scope, visited):
+                if scope == Scope.ALL:
+                    visited[0].add(element._unique_id)
+                    visited[1].add(element._unique_id)
+
+                    for dep in chain(element.__build_dependencies, element.__runtime_dependencies):
+                        if dep._unique_id not in visited[0] and dep._unique_id not in visited[1]:
+                            yield from visit(dep, Scope.ALL, visited)
+
+                    yield element
+                elif scope == Scope.BUILD:
+                    visited[0].add(element._unique_id)
+
+                    for dep in element.__build_dependencies:
+                        if dep._unique_id not in visited[1]:
+                            yield from visit(dep, Scope.RUN, visited)
+
+                elif scope == Scope.RUN:
+                    visited[1].add(element._unique_id)
+
+                    for dep in element.__runtime_dependencies:
+                        if dep._unique_id not in visited[1]:
+                            yield from visit(dep, Scope.RUN, visited)
+
+                    yield element
+                else:
+                    yield element
+
+            if visited is None:
+                # Visited is of the form (Visited for Scope.BUILD, Visited for Scope.RUN)
+                visited = (BitMap(), BitMap())
+            else:
+                # We have already a visited set passed. we might be able to short-circuit
+                if scope in (Scope.BUILD, Scope.ALL) and self._unique_id in visited[0]:
+                    return
+                if scope in (Scope.RUN, Scope.ALL) and self._unique_id in visited[1]:
+                    return
+
+            yield from visit(self, scope, visited)
+
+    # _search()
+    #
+    # Search for a dependency by name
+    #
+    # Args:
+    #    scope (Scope): The scope to search
+    #    name (str): The dependency to search for
+    #
+    # Returns:
+    #    (Element): The dependency element, or None if not found.
+    #
+    def _search(self, scope: Scope, name: str) -> Optional["Element"]:
+
+        for dep in self._dependencies(scope):
+            if dep.name == name:
+                return dep
+
+        return None
 
     # _new_from_load_element():
     #
@@ -1349,7 +1393,7 @@ class Element(Plugin):
         self.__required = True
 
         # Request artifacts of runtime dependencies
-        for dep in self.dependencies(Scope.RUN, recurse=False):
+        for dep in self._dependencies(Scope.RUN, recurse=False):
             dep._set_required()
 
         # When an element becomes required, it must be assembled for
@@ -1384,7 +1428,7 @@ class Element(Plugin):
         self.__artifact_files_required = True
 
         # Request artifact files of runtime dependencies
-        for dep in self.dependencies(scope, recurse=False):
+        for dep in self._dependencies(scope, recurse=False):
             dep._set_artifact_files_required(scope=scope)
 
     # _artifact_files_required():
@@ -1437,7 +1481,7 @@ class Element(Plugin):
         self.__assemble_scheduled = True
 
         # Requests artifacts of build dependencies
-        for dep in self.dependencies(Scope.BUILD, recurse=False):
+        for dep in self._dependencies(Scope.BUILD, recurse=False):
             dep._set_required()
 
         # Once we schedule an element for assembly, we know that our
@@ -2276,7 +2320,7 @@ class Element(Plugin):
     def __get_dependency_artifact_names(self):
         return [
             os.path.join(dep.project_name, _get_normal_name(dep.name), dep._get_cache_key())
-            for dep in self.dependencies(Scope.BUILD)
+            for dep in self._dependencies(Scope.BUILD)
         ]
 
     # __get_last_build_artifact()
@@ -2340,21 +2384,23 @@ class Element(Plugin):
     def __preflight(self):
 
         if self.BST_FORBID_RDEPENDS and self.BST_FORBID_BDEPENDS:
-            if any(self.dependencies(Scope.RUN, recurse=False)) or any(self.dependencies(Scope.BUILD, recurse=False)):
+            if any(self._dependencies(Scope.RUN, recurse=False)) or any(
+                self._dependencies(Scope.BUILD, recurse=False)
+            ):
                 raise ElementError(
                     "{}: Dependencies are forbidden for '{}' elements".format(self, self.get_kind()),
                     reason="element-forbidden-depends",
                 )
 
         if self.BST_FORBID_RDEPENDS:
-            if any(self.dependencies(Scope.RUN, recurse=False)):
+            if any(self._dependencies(Scope.RUN, recurse=False)):
                 raise ElementError(
                     "{}: Runtime dependencies are forbidden for '{}' elements".format(self, self.get_kind()),
                     reason="element-forbidden-rdepends",
                 )
 
         if self.BST_FORBID_BDEPENDS:
-            if any(self.dependencies(Scope.BUILD, recurse=False)):
+            if any(self._dependencies(Scope.BUILD, recurse=False)):
                 raise ElementError(
                     "{}: Build dependencies are forbidden for '{}' elements".format(self, self.get_kind()),
                     reason="element-forbidden-bdepends",
@@ -2911,7 +2957,7 @@ class Element(Plugin):
                 [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
                 if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
                 else [e.project_name, e.name]
-                for e in self.dependencies(Scope.BUILD)
+                for e in self._dependencies(Scope.BUILD)
             ]
 
             self.__weak_cache_key = self._calculate_cache_key(dependencies)
@@ -2924,7 +2970,7 @@ class Element(Plugin):
         if self.__strict_cache_key is None:
             dependencies = [
                 [e.project_name, e.name, e.__strict_cache_key] if e.__strict_cache_key is not None else None
-                for e in self.dependencies(Scope.BUILD)
+                for e in self._dependencies(Scope.BUILD)
             ]
             self.__strict_cache_key = self._calculate_cache_key(dependencies)
 
@@ -3014,7 +3060,7 @@ class Element(Plugin):
                 self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
                 # Artifact will or has been built, not downloaded
-                dependencies = [[e.project_name, e.name, e._get_cache_key()] for e in self.dependencies(Scope.BUILD)]
+                dependencies = [[e.project_name, e.name, e._get_cache_key()] for e in self._dependencies(Scope.BUILD)]
                 self.__cache_key = self._calculate_cache_key(dependencies)
 
             if self.__cache_key is None:

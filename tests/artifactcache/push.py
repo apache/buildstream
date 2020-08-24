@@ -35,7 +35,7 @@ def _push(cli, cache_dir, project_dir, config_file, target):
         # Ensure the element's artifact memeber is initialised
         # This is duplicated from Pipeline.resolve_elements()
         # as this test does not use the cli frontend.
-        for e in element.dependencies(Scope.ALL):
+        for e in element._dependencies(Scope.ALL):
             e._initialize_state()
 
         # Manually setup the CAS remotes

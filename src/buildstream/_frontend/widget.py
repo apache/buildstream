@@ -413,17 +413,17 @@ class LogLine(Widget):
 
             # Dependencies
             if "%{deps" in format_:
-                deps = [e.name for e in element.dependencies(Scope.ALL, recurse=False)]
+                deps = [e.name for e in element._dependencies(Scope.ALL, recurse=False)]
                 line = p.fmt_subst(line, "deps", yaml.safe_dump(deps, default_style=None).rstrip("\n"))
 
             # Build Dependencies
             if "%{build-deps" in format_:
-                build_deps = [e.name for e in element.dependencies(Scope.BUILD, recurse=False)]
+                build_deps = [e.name for e in element._dependencies(Scope.BUILD, recurse=False)]
                 line = p.fmt_subst(line, "build-deps", yaml.safe_dump(build_deps, default_style=False).rstrip("\n"))
 
             # Runtime Dependencies
             if "%{runtime-deps" in format_:
-                runtime_deps = [e.name for e in element.dependencies(Scope.RUN, recurse=False)]
+                runtime_deps = [e.name for e in element._dependencies(Scope.RUN, recurse=False)]
                 line = p.fmt_subst(
                     line, "runtime-deps", yaml.safe_dump(runtime_deps, default_style=False).rstrip("\n")
                 )

@@ -820,7 +820,7 @@ class Stream:
         for target in elements:
 
             if not list(target.sources()):
-                build_depends = [x.name for x in target.dependencies(Scope.BUILD, recurse=False)]
+                build_depends = [x.name for x in target._dependencies(Scope.BUILD, recurse=False)]
                 if not build_depends:
                     raise StreamError("The element {}  has no sources".format(target.name))
                 detail = "Try opening a workspace on one of its dependencies instead:\n"

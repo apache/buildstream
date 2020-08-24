@@ -157,7 +157,7 @@ class Pipeline:
         visited = (BitMap(), BitMap())
 
         for target in targets:
-            for element in target.dependencies(scope, recurse=recurse, visited=visited):
+            for element in target._dependencies(scope, recurse=recurse, visited=visited):
                 yield element
 
     # plan()
@@ -251,7 +251,7 @@ class Pipeline:
             if element in targeted:
                 yield element
             else:
-                for dep in element.dependencies(Scope.ALL, recurse=False):
+                for dep in element._dependencies(Scope.ALL, recurse=False):
                     yield from find_intersection(dep)
 
         # Build a list of 'intersection' elements, i.e. the set of
@@ -272,7 +272,7 @@ class Pipeline:
                 continue
             visited.append(element)
 
-            queue.extend(element.dependencies(Scope.ALL, recurse=False))
+            queue.extend(element._dependencies(Scope.ALL, recurse=False))
 
         # That looks like a lot, but overall we only traverse (part
         # of) the graph twice. This could be reduced to once if we
@@ -474,12 +474,12 @@ class _Planner:
             return
 
         self.visiting_elements.add(element)
-        for dep in element.dependencies(Scope.RUN, recurse=False):
+        for dep in element._dependencies(Scope.RUN, recurse=False):
             self.plan_element(dep, depth)
 
         # Dont try to plan builds of elements that are cached already
         if not element._cached_success():
-            for dep in element.dependencies(Scope.BUILD, recurse=False):
+            for dep in element._dependencies(Scope.BUILD, recurse=False):
                 self.plan_element(dep, depth + 1)
 
         self.depth_map[element] = depth
