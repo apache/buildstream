@@ -197,7 +197,7 @@ class ElementSources:
         result = []
 
         for source in self._sources:
-            result.append({"key": source._get_unique_key(), "name": source._get_source_name()})
+            result.append({"key": source._get_unique_key(), "name": source.get_kind()})
 
         return result
 
