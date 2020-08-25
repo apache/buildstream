@@ -74,6 +74,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements([element_name])[0]
+            element._initialize_state()
             assert not element._has_all_sources_in_source_cache()
             source = list(element.sources())[0]
 
@@ -113,6 +114,7 @@ def test_source_fetch(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements([element_name])[0]
+            element._initialize_state()
 
             # check that we have the source in the cas now and it's not fetched
             assert element._has_all_sources_in_source_cache()
@@ -132,6 +134,7 @@ def test_fetch_fallback(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements([element_name])[0]
+            element._initialize_state()
             assert not element._has_all_sources_in_source_cache()
             source = list(element.sources())[0]
 
@@ -163,6 +166,7 @@ def test_pull_fail(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements([element_name])[0]
+            element._initialize_state()
             assert not element._has_all_sources_in_source_cache()
             source = list(element.sources())[0]
 
@@ -194,6 +198,7 @@ def test_source_pull_partial_fallback_fetch(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements([element_name])[0]
+            element._initialize_state()
             assert not element._has_all_sources_in_source_cache()
             source = list(element.sources())[0]
 
