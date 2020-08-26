@@ -101,6 +101,8 @@ class RemoteServices:
         self.exec_service = kwargs.get("exec_service")
         self.source_service = kwargs.get("source_service")
         self.storage_service = kwargs.get("storage_service")
+        self.artifact_index_service = kwargs.get("artifact_index_service")
+        self.artifact_storage_service = kwargs.get("artifact_storage_service")
 
 
 @pytest.fixture(scope="session")
@@ -109,6 +111,12 @@ def remote_services(request):
     # Look for remote services configuration in environment.
     if "ARTIFACT_CACHE_SERVICE" in os.environ:
         kwargs["artifact_service"] = os.environ.get("ARTIFACT_CACHE_SERVICE")
+
+    if "ARTIFACT_INDEX_SERVICE" in os.environ:
+        kwargs["artifact_index_service"] = os.environ.get("ARTIFACT_INDEX_SERVICE")
+
+    if "ARTIFACT_STORAGE_SERVICE" in os.environ:
+        kwargs["artifact_storage_service"] = os.environ.get("ARTIFACT_STORAGE_SERVICE")
 
     if "REMOTE_EXECUTION_SERVICE" in os.environ:
         kwargs["action_service"] = os.environ.get("REMOTE_EXECUTION_SERVICE")

@@ -775,8 +775,15 @@ def cli_remote_execution(tmpdir, remote_services):
 
     fixture = CliRemote(directory)
 
+    artifacts = []
     if remote_services.artifact_service:
-        fixture.configure({"artifacts": [{"url": remote_services.artifact_service, "push": True,}]})
+        artifacts.append({"url": remote_services.artifact_service, "push": True})
+    if remote_services.artifact_index_service:
+        artifacts.append({"url": remote_services.artifact_index_service, "push": True, "type": "index"})
+    if remote_services.artifact_storage_service:
+        artifacts.append({"url": remote_services.artifact_storage_service, "push": True, "type": "storage"})
+    if artifacts:
+        fixture.configure({"artifacts": artifacts})
 
     remote_execution = {}
     if remote_services.action_service:
