@@ -368,7 +368,7 @@ overnight-tests:
     # Artifacts
     #
     artifacts:
-    - url: https://cache-test.buildstream.build:11002
+    - url: https://bb-cache.buildstream.build:11002
       client-cert: $OVERNIGHT_CACHE_PUSH_CERT
       client-key: $OVERNIGHT_CACHE_PUSH_KEY
       push: true
