@@ -1425,7 +1425,7 @@ def _call(*popenargs, terminate=False, **kwargs):
 #
 def _glob2re(pat):
     i, n = 0, len(pat)
-    res = "(?ms)"
+    res = ""
     while i < n:
         c = pat[i]
         i = i + 1
