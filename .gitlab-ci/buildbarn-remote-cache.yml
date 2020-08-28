@@ -23,7 +23,7 @@ version: '3.4'
 
 services:
   bb-asset:
-    image: qinusty/bb-asset-hub:20200814T141139Z-5e72dd1
+    image: buildbarn/bb-remote-asset:20200827T183044Z-32cd7ae
     command: /config/asset.jsonnet
     restart: unless-stopped
     expose:
