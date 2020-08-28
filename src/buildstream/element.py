@@ -2391,7 +2391,7 @@ class Element(Plugin):
             whitelist = bstdata.get_sequence("overlap-whitelist", default=[])
             whitelist_expressions = [utils._glob2re(self.__variables.subst(node)) for node in whitelist]
             expression = "^(?:" + "|".join(whitelist_expressions) + ")$"
-            self.__whitelist_regex = re.compile(expression)
+            self.__whitelist_regex = re.compile(expression, re.MULTILINE | re.DOTALL)
         return self.__whitelist_regex.match(os.path.join(os.sep, path))
 
     # _get_logs()
@@ -2994,7 +2994,9 @@ class Element(Plugin):
         bstdata = self.get_public_data("bst")
         splits = bstdata.get_mapping("split-rules")
         self.__splits = {
-            domain: re.compile("^(?:" + "|".join([utils._glob2re(r) for r in rules.as_str_list()]) + ")$")
+            domain: re.compile(
+                "^(?:" + "|".join([utils._glob2re(r) for r in rules.as_str_list()]) + ")$", re.MULTILINE | re.DOTALL
+            )
             for domain, rules in splits.items()
         }
 

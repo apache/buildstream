@@ -323,7 +323,7 @@ def glob(paths: Iterable[str], pattern: str) -> Iterator[str]:
         pattern = os.sep + pattern
 
     expression = _glob2re(pattern)
-    regexer = re.compile(expression)
+    regexer = re.compile(expression, re.MULTILINE | re.DOTALL)
 
     for filename in paths:
         filename_try = filename
@@ -1432,7 +1432,7 @@ def _call(*popenargs, terminate=False, **kwargs):
 #
 def _glob2re(pat):
     i, n = 0, len(pat)
-    res = "(?ms)"
+    res = ""
     while i < n:
         c = pat[i]
         i = i + 1
