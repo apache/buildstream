@@ -32,6 +32,7 @@ import signal
 import stat
 from stat import S_ISDIR
 import subprocess
+from subprocess import TimeoutExpired
 import tempfile
 import time
 import datetime
@@ -1392,7 +1393,20 @@ def _call(*popenargs, terminate=False, **kwargs):
         process = subprocess.Popen(  # pylint: disable=subprocess-popen-preexec-fn
             *popenargs, preexec_fn=preexec_fn, universal_newlines=True, **kwargs
         )
-        output, _ = process.communicate()
+        # Here, we don't use `process.communicate()` directly without a timeout
+        # This is because, if we were to do that, and the process would never
+        # output anything, the control would never be given back to the python
+        # process, which might thus not be able to check for request to
+        # shutdown, or kill the process.
+        # We therefore loop with a timeout, to ensure the python process
+        # can act if it needs.
+        while True:
+            try:
+                output, _ = process.communicate(timeout=1)
+                break
+            except TimeoutExpired:
+                continue
+
         exit_code = process.poll()
 
     return (exit_code, output)
