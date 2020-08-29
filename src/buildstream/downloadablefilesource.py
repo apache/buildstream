@@ -47,16 +47,6 @@ class _NetrcFTPOpener(urllib.request.FTPHandler):
     def __init__(self, netrc_config):
         self.netrc = netrc_config
 
-    def _split(self, netloc):
-        userpass, hostport = urllib.parse.splituser(netloc)
-        host, port = urllib.parse.splitport(hostport)
-        if userpass:
-            user, passwd = urllib.parse.splitpasswd(userpass)
-        else:
-            user = None
-            passwd = None
-        return host, port, user, passwd
-
     def _unsplit(self, host, port, user, passwd):
         if port:
             host = "{}:{}".format(host, port)
@@ -68,14 +58,17 @@ class _NetrcFTPOpener(urllib.request.FTPHandler):
         return host
 
     def ftp_open(self, req):
-        host, port, user, passwd = self._split(req.host)
+        uri = urllib.parse.urlparse(req.full_url)
 
-        if user is None and self.netrc:
-            entry = self.netrc.authenticators(host)
+        username = uri.username
+        password = uri.password
+
+        if uri.username is None and self.netrc:
+            entry = self.netrc.authenticators(uri.hostname)
             if entry:
-                user, _, passwd = entry
+                username, _, password = entry
 
-        req.host = self._unsplit(host, port, user, passwd)
+        req.host = self._unsplit(uri.hostname, uri.port, username, password)
 
         return super().ftp_open(req)
 
