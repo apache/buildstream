@@ -252,6 +252,11 @@ class DownloadableFileSource(Source):
 
         return self.__default_mirror_file
 
+    @classmethod
+    def _reset_url_opener(cls):
+        # Needed for tests, in order to cleanup the `netrc` configuration.
+        cls.__urlopener = None
+
     def __get_urlopener(self):
         if not DownloadableFileSource.__urlopener:
             try:

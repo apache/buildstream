@@ -19,7 +19,7 @@
 import psutil
 import pytest
 
-from buildstream import node, utils
+from buildstream import node, utils, DownloadableFileSource
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -42,3 +42,4 @@ def thread_check(default_thread_number):
 @pytest.fixture(autouse=True)
 def reset_global_node_state():
     node._reset_global_state()
+    DownloadableFileSource._reset_url_opener()
