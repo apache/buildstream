@@ -467,16 +467,9 @@ class Project:
     #
     def load_artifacts(self, targets):
         with self._context.messenger.simple_task("Loading artifacts") as task:
-            # XXX: Here, we are explicitly checking for refs in the artifactdir
-            #      for two reasons:
-            #          1. The Project, or the Context, do not currently have
-            #             access to the ArtifactCache
-            #          2. The ArtifactCache.contains() method expects an Element
-            #             and a key, not a ref.
-            #
             artifacts = []
             for ref in targets:
-                artifacts.append(ArtifactElement._new_from_artifact_ref(ref, self._context, task))
+                artifacts.append(ArtifactElement._new_from_artifact_name(ref, self._context, task))
 
         ArtifactElement._clear_artifact_refs_cache()
 

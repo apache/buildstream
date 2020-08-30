@@ -24,7 +24,6 @@ from . import _cachekey
 from ._exceptions import ArtifactElementError
 from ._loader import LoadElement
 from .node import Node
-from .types import Scope
 
 if TYPE_CHECKING:
     from typing import Dict
@@ -54,10 +53,10 @@ class ArtifactElement(Element):
 
         super().__init__(context, project, load_element, None)
 
-    # _new_from_artifact_ref():
+    # _new_from_artifact_name():
     #
     # Recursively instantiate a new ArtifactElement instance, and its
-    # dependencies from an artifact ref
+    # dependencies from an artifact name
     #
     # Args:
     #    ref (String): The artifact ref
@@ -68,7 +67,7 @@ class ArtifactElement(Element):
     #    (ArtifactElement): A newly created Element instance
     #
     @classmethod
-    def _new_from_artifact_ref(cls, ref, context, task=None):
+    def _new_from_artifact_name(cls, ref, context, task=None):
 
         if ref in cls.__instantiated_artifacts:
             return cls.__instantiated_artifacts[ref]
@@ -79,8 +78,8 @@ class ArtifactElement(Element):
         artifact_element._initialize_state()
         cls.__instantiated_artifacts[ref] = artifact_element
 
-        for dep_ref in artifact_element.get_dependency_refs(Scope.BUILD):
-            dependency = ArtifactElement._new_from_artifact_ref(dep_ref, context, task)
+        for dep_ref in artifact_element.get_dependency_artifact_names():
+            dependency = ArtifactElement._new_from_artifact_name(dep_ref, context, task)
             artifact_element._add_build_dependency(dependency)
 
         return artifact_element
@@ -112,19 +111,16 @@ class ArtifactElement(Element):
     def preflight(self):
         pass
 
-    # get_dependency_refs()
+    # get_dependency_artifact_names()
     #
-    # Obtain the refs of a particular scope of dependencies
-    #
-    # Args:
-    #   scope (Scope): The scope of dependencies for which we want to obtain the refs
+    # Retrieve the artifact names of all of the dependencies in Scope.BUILD
     #
     # Returns:
     #   (list [str]): A list of artifact refs
     #
-    def get_dependency_refs(self, scope=Scope.BUILD):
+    def get_dependency_artifact_names(self):
         artifact = self._get_artifact()
-        return artifact.get_dependency_refs(deps=scope)
+        return artifact.get_dependency_artifact_names()
 
     # configure_sandbox()
     #
