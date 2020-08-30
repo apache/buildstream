@@ -219,16 +219,16 @@ class ScriptElement(Element):
 
         # Stage the elements, and run integration commands where appropriate.
         if not self.__layout:
-            # if no layout set, stage all dependencies into /
-            for build_dep in self.dependencies(Scope.BUILD, recurse=False):
-                with self.timed_activity("Staging {} at /".format(build_dep.name), silent_nested=True):
-                    build_dep.stage_dependency_artifacts(sandbox, Scope.RUN, path="/")
 
-            with sandbox.batch(SandboxFlags.NONE):
-                for build_dep in self.dependencies(Scope.BUILD, recurse=False):
-                    with self.timed_activity("Integrating {}".format(build_dep.name), silent_nested=True):
-                        for dep in build_dep.dependencies(Scope.RUN):
-                            dep.integrate(sandbox)
+            # if no layout set, stage all dependencies into the sandbox root
+            with self.timed_activity("Staging dependencies", silent_nested=True):
+                self.stage_dependency_artifacts(sandbox, Scope.BUILD)
+
+            # Run any integration commands provided by the dependencies
+            # once they are all staged and ready
+            with sandbox.batch(SandboxFlags.NONE, label="Integrating sandbox"):
+                for dep in self.dependencies(Scope.BUILD):
+                    dep.integrate(sandbox)
         else:
             # If layout, follow its rules.
             for item in self.__layout:
