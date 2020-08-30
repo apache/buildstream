@@ -88,32 +88,6 @@ class FastEnum(metaclass=MetaFastEnum):
         return self.__class__, (self.value,)
 
 
-class Scope(FastEnum):
-    """Defines the scope of dependencies to include for a given element
-    when iterating over the dependency graph in APIs like
-    :func:`Element.dependencies() <buildstream.element.Element.dependencies>`
-    """
-
-    ALL = 1
-    """All elements which the given element depends on, following
-    all elements required for building. Including the element itself.
-    """
-
-    BUILD = 2
-    """All elements required for building the element, including their
-    respective run dependencies. Not including the given element itself.
-    """
-
-    RUN = 3
-    """All elements required for running the element. Including the element
-    itself.
-    """
-
-    NONE = 4
-    """Just the element itself, no dependencies.
-    """
-
-
 class CoreWarnings:
     """CoreWarnings()
 
@@ -143,6 +117,34 @@ class CoreWarnings:
     This warning will be produces when filename for a target contains invalid
     characters in its name.
     """
+
+
+# _Scope():
+#
+# Defines the scope of dependencies to include for a given element
+# when iterating over the dependency graph in APIs like
+# Element._dependencies().
+#
+class _Scope(FastEnum):
+
+    # All elements which the given element depends on, following
+    # all elements required for building. Including the element itself.
+    #
+    ALL = 1
+
+    # All elements required for building the element, including their
+    # respective run dependencies. Not including the given element itself.
+    #
+    BUILD = 2
+
+    # All elements required for running the element. Including the element
+    # itself.
+    #
+    RUN = 3
+
+    # Just the element itself, no dependencies.
+    #
+    NONE = 4
 
 
 # _KeyStrength():

@@ -614,10 +614,10 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
     If no COMMAND is specified, the default is to attempt
     to run an interactive shell.
     """
-    from ..element import Scope
+    from ..element import _Scope
     from .._project import HostMount
 
-    scope = Scope.BUILD if build_ else Scope.RUN
+    scope = _Scope.BUILD if build_ else _Scope.RUN
 
     # We may need to fetch dependency artifacts if we're pulling the artifact
     selection = _PipelineSelection.ALL if pull_ else _PipelineSelection.NONE

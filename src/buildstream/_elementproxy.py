@@ -16,9 +16,9 @@
 #
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
-from typing import TYPE_CHECKING, cast, Optional, Iterator, Dict, List
+from typing import TYPE_CHECKING, cast, Optional, Iterator, Dict, List, Sequence
 
-from .types import Scope
+from .types import _Scope
 from .utils import FileListResult
 from ._pluginproxy import PluginProxy
 
@@ -55,15 +55,27 @@ class ElementProxy(PluginProxy):
     def sources(self) -> Iterator["Source"]:
         return cast("Element", self._plugin).sources()
 
-    def dependencies(self, scope: Scope, *, recurse: bool = True, visited=None) -> Iterator["Element"]:
+    def dependencies(self, selection: Sequence["Element"] = None, *, recurse: bool = True) -> Iterator["Element"]:
         #
-        # FIXME: In the next phase, we will ensure that returned ElementProxy objects here are always
-        # in the Scope.BUILD scope of the toplevel concrete Element class.
+        # When dependencies() is called on a dependency of the main plugin Element,
+        # we simply reroute the call to the original owning element, while specifying
+        # this element as the selection.
         #
-        return cast("Element", self._plugin).dependencies(scope, recurse=recurse, visited=visited)
+        # This ensures we only allow returning dependencies in the _Scope.RUN scope
+        # of this element.
+        #
+        if selection is None:
+            selection = [cast("Element", self._plugin)]
 
-    def search(self, scope: Scope, name: str) -> Optional["Element"]:
-        return cast("Element", self._plugin).search(scope, name)
+        # Return the iterable from the called generator, this is more performant than yielding from it
+        return cast("Element", self._owner).dependencies(selection, recurse=recurse)
+
+    def search(self, name: str) -> Optional["Element"]:
+        #
+        # Similarly to dependencies() above, we only search in the _Scope.RUN
+        # of dependencies of the active element plugin.
+        #
+        return cast("Element", self._plugin)._search(_Scope.RUN, name)
 
     def node_subst_vars(self, node: "ScalarNode") -> str:
         return cast("Element", self._plugin).node_subst_vars(node)
@@ -95,15 +107,20 @@ class ElementProxy(PluginProxy):
     def stage_dependency_artifacts(
         self,
         sandbox: "Sandbox",
-        scope: Scope,
+        selection: Sequence["Element"] = None,
         *,
         path: str = None,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         orphans: bool = True
     ) -> None:
-        return cast("Element", self._plugin).stage_dependency_artifacts(
-            sandbox, scope, path=path, include=include, exclude=exclude, orphans=orphans
+        #
+        # Same approach used here as in Element.dependencies()
+        #
+        if selection is None:
+            selection = [cast("Element", self._plugin)]
+        cast("Element", self._owner).stage_dependency_artifacts(
+            sandbox, selection, path=path, include=include, exclude=exclude, orphans=orphans
         )
 
     def integrate(self, sandbox: "Sandbox") -> None:
@@ -120,3 +137,20 @@ class ElementProxy(PluginProxy):
 
     def get_logs(self) -> List[str]:
         return cast("Element", self._plugin).get_logs()
+
+    ##############################################################
+    #                   Element Internal APIs                    #
+    ##############################################################
+    #
+    # Some functions the Element expects to call directly on the
+    # proxy.
+    #
+    def _dependencies(self, scope, *, recurse=True, visited=None):
+        #
+        # We use a return statement even though this is a generator, simply
+        # to avoid the generator overhead of yielding each element.
+        #
+        return cast("Element", self._plugin)._dependencies(scope, recurse=recurse, visited=visited)
+
+    def _file_is_whitelisted(self, path):
+        return cast("Element", self._plugin)._file_is_whitelisted(path)

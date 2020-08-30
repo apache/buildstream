@@ -34,7 +34,7 @@ The default configuration and possible options are as such:
 """
 
 import os
-from buildstream import Element, Scope
+from buildstream import Element
 
 
 # Element implementation for the 'compose' kind.
@@ -90,12 +90,12 @@ class ComposeElement(Element):
 
         # Stage deps in the sandbox root
         with self.timed_activity("Staging dependencies", silent_nested=True):
-            self.stage_dependency_artifacts(sandbox, Scope.BUILD)
+            self.stage_dependency_artifacts(sandbox)
 
         manifest = set()
         if require_split:
             with self.timed_activity("Computing split", silent_nested=True):
-                for dep in self.dependencies(Scope.BUILD):
+                for dep in self.dependencies():
                     files = dep.compute_manifest(
                         include=self.include, exclude=self.exclude, orphans=self.include_orphans
                     )
@@ -118,7 +118,7 @@ class ComposeElement(Element):
                     vbasedir.mark_unmodified()
 
                 with sandbox.batch(0):
-                    for dep in self.dependencies(Scope.BUILD):
+                    for dep in self.dependencies():
                         dep.integrate(sandbox)
 
                 if require_split:

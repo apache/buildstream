@@ -48,10 +48,9 @@ from .element import Element
 from ._pipeline import Pipeline
 from ._profile import Topics, PROFILER
 from ._state import State
-from .types import _KeyStrength, _PipelineSelection, _SchedulerErrorAction
+from .types import _KeyStrength, _PipelineSelection, _SchedulerErrorAction, _Scope
 from .plugin import Plugin
 from . import utils, _yaml, _site
-from . import Scope
 
 
 # Stream()
@@ -169,7 +168,7 @@ class Stream:
     #
     # Args:
     #    element (Element): An Element object to run the shell for
-    #    scope (Scope): The scope for the shell (Scope.BUILD or Scope.RUN)
+    #    scope (_Scope): The scope for the shell (_Scope.BUILD or _Scope.RUN)
     #    prompt (str): The prompt to display in the shell
     #    mounts (list of HostMount): Additional directories to mount into the sandbox
     #    isolate (bool): Whether to isolate the environment like we do in builds
@@ -239,7 +238,7 @@ class Stream:
                 buildtree = True
 
         # Ensure we have our sources if we are launching a build shell
-        if scope == Scope.BUILD and not buildtree:
+        if scope == _Scope.BUILD and not buildtree:
             self._fetch([element])
             self._pipeline.assert_sources_cached([element])
 
@@ -286,7 +285,7 @@ class Stream:
 
             # fetch blobs of targets if options set
             if self._context.pull_artifact_files:
-                scope = Scope.ALL if selection == _PipelineSelection.ALL else Scope.RUN
+                scope = _Scope.ALL if selection == _PipelineSelection.ALL else _Scope.RUN
                 for element in self.targets:
                     element._set_artifact_files_required(scope=scope)
 
@@ -583,10 +582,10 @@ class Stream:
 
         try:
             scope = {
-                _PipelineSelection.RUN: Scope.RUN,
-                _PipelineSelection.BUILD: Scope.BUILD,
-                _PipelineSelection.NONE: Scope.NONE,
-                _PipelineSelection.ALL: Scope.ALL,
+                _PipelineSelection.RUN: _Scope.RUN,
+                _PipelineSelection.BUILD: _Scope.BUILD,
+                _PipelineSelection.NONE: _Scope.NONE,
+                _PipelineSelection.ALL: _Scope.ALL,
             }
             with target._prepare_sandbox(scope=scope[selection], integrate=integrate) as sandbox:
                 # Copy or move the sandbox to the target directory
@@ -820,7 +819,7 @@ class Stream:
         for target in elements:
 
             if not list(target.sources()):
-                build_depends = [x.name for x in target._dependencies(Scope.BUILD, recurse=False)]
+                build_depends = [x.name for x in target._dependencies(_Scope.BUILD, recurse=False)]
                 if not build_depends:
                     raise StreamError("The element {}  has no sources".format(target.name))
                 detail = "Try opening a workspace on one of its dependencies instead:\n"
@@ -1365,7 +1364,7 @@ class Stream:
         # Inform the frontend of the full list of elements
         # and the list of elements which will be processed in this run
         #
-        self.total_elements = list(self._pipeline.dependencies(self.targets, Scope.ALL))
+        self.total_elements = list(self._pipeline.dependencies(self.targets, _Scope.ALL))
 
         if announce_session and self._session_start_callback is not None:
             self._session_start_callback()

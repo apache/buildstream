@@ -38,7 +38,6 @@ from typing import List, Optional, TYPE_CHECKING
 
 from .element import Element, ElementError
 from .sandbox import SandboxFlags
-from .types import Scope
 
 if TYPE_CHECKING:
     from typing import Dict
@@ -128,8 +127,8 @@ class ScriptElement(Element):
                        commands will not be run.
 
         If this function is never called, then the default behavior is to just
-        stage the Scope.BUILD dependencies of the element in question at the
-        sandbox root. Otherwise, the Scope.RUN dependencies of each specified
+        stage the build dependencies of the element in question at the
+        sandbox root. Otherwise, the runtime dependencies of each specified
         element will be staged in their specified destination directories.
 
         .. note::
@@ -222,12 +221,12 @@ class ScriptElement(Element):
 
             # if no layout set, stage all dependencies into the sandbox root
             with self.timed_activity("Staging dependencies", silent_nested=True):
-                self.stage_dependency_artifacts(sandbox, Scope.BUILD)
+                self.stage_dependency_artifacts(sandbox)
 
             # Run any integration commands provided by the dependencies
             # once they are all staged and ready
             with sandbox.batch(SandboxFlags.NONE, label="Integrating sandbox"):
-                for dep in self.dependencies(Scope.BUILD):
+                for dep in self.dependencies():
                     dep.integrate(sandbox)
         else:
             # If layout, follow its rules.
@@ -237,11 +236,11 @@ class ScriptElement(Element):
                 if not item["element"]:
                     continue
 
-                element = self.search(Scope.BUILD, item["element"])
+                element = self.search(item["element"])
                 with self.timed_activity(
                     "Staging {} at {}".format(element.name, item["destination"]), silent_nested=True
                 ):
-                    element.stage_dependency_artifacts(sandbox, Scope.RUN, path=item["destination"])
+                    element.stage_dependency_artifacts(sandbox, [element], path=item["destination"])
 
             with sandbox.batch(SandboxFlags.NONE):
                 for item in self.__layout:
@@ -250,12 +249,12 @@ class ScriptElement(Element):
                     if not item["element"]:
                         continue
 
-                    element = self.search(Scope.BUILD, item["element"])
+                    element = self.search(item["element"])
 
                     # Integration commands can only be run for elements staged to /
                     if item["destination"] == "/":
                         with self.timed_activity("Integrating {}".format(element.name), silent_nested=True):
-                            for dep in element.dependencies(Scope.RUN):
+                            for dep in element.dependencies():
                                 dep.integrate(sandbox)
 
         install_root_path_components = self.__install_root.lstrip(os.sep).split(os.sep)
@@ -293,7 +292,7 @@ class ScriptElement(Element):
             # of the dependencies.
             for item in self.__layout:
                 if item["element"]:
-                    if not self.search(Scope.BUILD, item["element"]):
+                    if not self.search(item["element"]):
                         raise ElementError(
                             "{}: '{}' in layout not found in dependencies".format(self, item["element"])
                         )

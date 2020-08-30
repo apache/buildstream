@@ -29,9 +29,8 @@ from pyroaring import BitMap  # pylint: disable=no-name-in-module
 from ._exceptions import PipelineError
 from ._message import Message, MessageType
 from ._profile import Topics, PROFILER
-from . import Scope
 from ._project import ProjectRefStorage
-from .types import _PipelineSelection
+from .types import _PipelineSelection, _Scope
 
 
 # Pipeline()
@@ -113,7 +112,7 @@ class Pipeline:
             # to happen, even for large projects (tested with the Debian stack). Although,
             # if it does become a problem we may have to set the recursion limit to a
             # greater value.
-            for element in self.dependencies(targets, Scope.ALL):
+            for element in self.dependencies(targets, _Scope.ALL):
                 # Determine initial element state.
                 element._initialize_state()
 
@@ -148,7 +147,7 @@ class Pipeline:
     #
     # Args:
     #    targets (list of Element): The target Elements to loop over
-    #    scope (Scope): The scope to iterate over
+    #    scope (_Scope): The scope to iterate over
     #    recurse (bool): Whether to recurse into dependencies
     #
     def dependencies(self, targets, scope, *, recurse=True):
@@ -214,9 +213,9 @@ class Pipeline:
             _PipelineSelection.NONE: lambda: targets,
             _PipelineSelection.REDIRECT: redirect_and_log,
             _PipelineSelection.PLAN: lambda: self.plan(targets),
-            _PipelineSelection.ALL: lambda: list(self.dependencies(targets, Scope.ALL)),
-            _PipelineSelection.BUILD: lambda: list(self.dependencies(targets, Scope.BUILD)),
-            _PipelineSelection.RUN: lambda: list(self.dependencies(targets, Scope.RUN)),
+            _PipelineSelection.ALL: lambda: list(self.dependencies(targets, _Scope.ALL)),
+            _PipelineSelection.BUILD: lambda: list(self.dependencies(targets, _Scope.BUILD)),
+            _PipelineSelection.RUN: lambda: list(self.dependencies(targets, _Scope.RUN)),
         }[mode]()
 
     # except_elements():
@@ -238,7 +237,7 @@ class Pipeline:
         if not except_targets:
             return elements
 
-        targeted = list(self.dependencies(targets, Scope.ALL))
+        targeted = list(self.dependencies(targets, _Scope.ALL))
         visited = []
 
         def find_intersection(element):
@@ -251,7 +250,7 @@ class Pipeline:
             if element in targeted:
                 yield element
             else:
-                for dep in element._dependencies(Scope.ALL, recurse=False):
+                for dep in element._dependencies(_Scope.ALL, recurse=False):
                     yield from find_intersection(dep)
 
         # Build a list of 'intersection' elements, i.e. the set of
@@ -272,7 +271,7 @@ class Pipeline:
                 continue
             visited.append(element)
 
-            queue.extend(element._dependencies(Scope.ALL, recurse=False))
+            queue.extend(element._dependencies(_Scope.ALL, recurse=False))
 
         # That looks like a lot, but overall we only traverse (part
         # of) the graph twice. This could be reduced to once if we
@@ -474,12 +473,12 @@ class _Planner:
             return
 
         self.visiting_elements.add(element)
-        for dep in element._dependencies(Scope.RUN, recurse=False):
+        for dep in element._dependencies(_Scope.RUN, recurse=False):
             self.plan_element(dep, depth)
 
         # Dont try to plan builds of elements that are cached already
         if not element._cached_success():
-            for dep in element._dependencies(Scope.BUILD, recurse=False):
+            for dep in element._dependencies(_Scope.BUILD, recurse=False):
                 self.plan_element(dep, depth + 1)
 
         self.depth_map[element] = depth
