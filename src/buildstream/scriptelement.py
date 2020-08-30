@@ -238,16 +238,10 @@ class ScriptElement(Element):
                     continue
 
                 element = self.search(Scope.BUILD, item["element"])
-                if item["destination"] == "/":
-                    with self.timed_activity("Staging {} at /".format(element.name), silent_nested=True):
-                        element.stage_dependency_artifacts(sandbox, Scope.RUN)
-                else:
-                    with self.timed_activity(
-                        "Staging {} at {}".format(element.name, item["destination"]), silent_nested=True
-                    ):
-                        virtual_dstdir = sandbox.get_virtual_directory()
-                        virtual_dstdir.descend(*item["destination"].lstrip(os.sep).split(os.sep), create=True)
-                        element.stage_dependency_artifacts(sandbox, Scope.RUN, path=item["destination"])
+                with self.timed_activity(
+                    "Staging {} at {}".format(element.name, item["destination"]), silent_nested=True
+                ):
+                    element.stage_dependency_artifacts(sandbox, Scope.RUN, path=item["destination"])
 
             with sandbox.batch(SandboxFlags.NONE):
                 for item in self.__layout:
