@@ -2259,20 +2259,17 @@ class Element(Plugin):
             if redundant_ref is not None:
                 self.__redundant_source_refs.append((source, redundant_ref))
 
-    # __get_dependency_refs()
+    # __get_dependency_artifact_names()
     #
-    # Retrieve the artifact refs of the element's dependencies
-    #
-    # Args:
-    #    scope (Scope): The scope of dependencies
+    # Retrieve the artifact names of all of the dependencies in Scope.BUILD
     #
     # Returns:
     #    (list [str]): A list of refs of all dependencies in staging order.
     #
-    def __get_dependency_refs(self, scope):
+    def __get_dependency_artifact_names(self):
         return [
             os.path.join(dep.project_name, _get_normal_name(dep.name), dep._get_cache_key())
-            for dep in self.dependencies(scope)
+            for dep in self.dependencies(Scope.BUILD)
         ]
 
     # __get_last_build_artifact()
@@ -2305,8 +2302,8 @@ class Element(Plugin):
 
         # Don't perform an incremental build if there has been a change in
         # build dependencies.
-        old_dep_refs = artifact.get_dependency_refs(Scope.BUILD)
-        new_dep_refs = self.__get_dependency_refs(Scope.BUILD)
+        old_dep_refs = artifact.get_dependency_artifact_names()
+        new_dep_refs = self.__get_dependency_artifact_names()
         if old_dep_refs != new_dep_refs:
             return None
 
