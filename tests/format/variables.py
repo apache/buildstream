@@ -24,7 +24,7 @@ DATA_DIR = os.path.join(
     ('distutils.bst', 'python-install',
      "python3 setup.py install --prefix \"/usr\" \\\n" +
      "--root \"/buildstream-install\""),
-    ('makemaker.bst', 'configure', "perl Makefile.PL PREFIX=/buildstream-install/usr"),
+    ('makemaker.bst', 'configure', "perl Makefile.PL PREFIX=/usr DESTDIR=/buildstream-install"),
     ('modulebuild.bst', 'configure', "perl Build.PL --prefix \"/buildstream-install/usr\""),
     ('qmake.bst', 'make-install', "make -j1 INSTALL_ROOT=\"/buildstream-install\" install"),
 ])
@@ -50,7 +50,7 @@ def test_defaults(cli, datafiles, tmpdir, target, varname, expected):
     ('distutils.bst', 'python-install',
      "python3 setup.py install --prefix \"/opt\" \\\n" +
      "--root \"/custom/install/root\""),
-    ('makemaker.bst', 'configure', "perl Makefile.PL PREFIX=/custom/install/root/opt"),
+    ('makemaker.bst', 'configure', "perl Makefile.PL PREFIX=/opt DESTDIR=/custom/install/root"),
     ('modulebuild.bst', 'configure', "perl Build.PL --prefix \"/custom/install/root/opt\""),
     ('qmake.bst', 'make-install', "make -j1 INSTALL_ROOT=\"/custom/install/root\" install"),
 ])

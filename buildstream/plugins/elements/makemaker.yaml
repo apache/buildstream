@@ -14,7 +14,7 @@ variables:
   # and ExtUtil::MakeMaker's documentation for more details.
   configure: |
 
-    perl Makefile.PL PREFIX=%{install-root}%{prefix}
+    perl Makefile.PL PREFIX=%{prefix} DESTDIR=%{install-root}
 
   make: make
   make-install: make install
