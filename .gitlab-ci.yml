@@ -269,49 +269,6 @@ tests-win32-non-master:
   - master
   when: manual
 
-tests-wsl-master:
-  stage: test
-  variables:
-    LC_ALL: C.UTF-8
-    LANG: C.UTF-8
-  tags:
-  - wsl
-  before_script:
-  - mount
-  - df -h
-  - PATH=/root/.local/bin:$PATH tox --version
-  script:
-  # Install static buildbox binaries
-  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-x86_64-linux-0.0.14-872f221d.tar.xz
-  - tar -C /root/.local/bin -xf buildbox-x86_64-linux-0.0.14-872f221d.tar.xz
-
-  - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
-  only:
-  - master
-  except:
-  - schedules
-
-tests-wsl-non-master:
-  stage: test
-  variables:
-    LC_ALL: C.UTF-8
-    LANG: C.UTF-8
-  tags:
-  - wsl
-  before_script:
-  - mount
-  - df -h
-  - PATH=/root/.local/bin:$PATH tox --version
-  script:
-  # Install static buildbox binaries
-  - wget https://buildbox-casd-binaries.nyc3.cdn.digitaloceanspaces.com/buildbox-x86_64-linux-0.0.14-872f221d.tar.xz
-  - tar -C /root/.local/bin -xf buildbox-x86_64-linux-0.0.14-872f221d.tar.xz
-
-  - PATH=/root/.local/bin:$PATH ${TEST_COMMAND}
-  when: manual
-  except:
-  - master
-
 # Automatically build documentation for every commit, we want to know
 # if building documentation fails even if we're not deploying it.
 docs:
