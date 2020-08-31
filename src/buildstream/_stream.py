@@ -402,7 +402,7 @@ class Stream:
 
         self._pipeline.assert_consistent(elements)
 
-        self._add_queue(FetchQueue(self._scheduler, skip_cached=True))
+        self._add_queue(FetchQueue(self._scheduler))
 
         self._add_queue(SourcePushQueue(self._scheduler))
 
