@@ -252,3 +252,33 @@ def test_source_push_build_fail(cli, tmpdir, datafiles):
         # Sources are not pushed as the build queue is before the source push
         # queue.
         assert "Pushed source " not in res.stderr
+
+
+# Test that source push succeeds if the source needs to be fetched
+# even if the artifact of the corresponding element is already cached.
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_missing_source_after_build(cli, tmpdir, datafiles):
+    cache_dir = os.path.join(str(tmpdir), "cache")
+    project_dir = str(datafiles)
+    element_name = "import-bin.bst"
+
+    res = cli.run(project=project_dir, args=["build", element_name])
+    res.assert_success()
+
+    # Delete source but keep artifact in cache
+    shutil.rmtree(os.path.join(cache_dir, "source_protos"))
+
+    with create_artifact_share(os.path.join(str(tmpdir), "sourceshare")) as share:
+        user_config_file = str(tmpdir.join("buildstream.conf"))
+        user_config = {
+            "scheduler": {"pushers": 1},
+            "source-caches": {"url": share.repo, "push": True,},
+            "cachedir": cache_dir,
+        }
+        _yaml.roundtrip_dump(user_config, file=user_config_file)
+        cli.configure(user_config)
+
+        res = cli.run(project=project_dir, args=["source", "push", element_name])
+        res.assert_success()
+        assert "fetch:{}".format(element_name) in res.stderr
+        assert "Pushed source" in res.stderr
