@@ -107,7 +107,7 @@ from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction
 from ._artifact import Artifact
 from ._elementproxy import ElementProxy
 from ._elementsources import ElementSources
-from ._loader import Symbol, MetaSource
+from ._loader import Symbol, DependencyType, MetaSource
 from ._overlapcollector import OverlapCollector
 
 from .storage.directory import Directory
@@ -1038,11 +1038,11 @@ class Element(Plugin):
         for dep in load_element.dependencies:
             dependency = Element._new_from_load_element(dep.element, task)
 
-            if dep.dep_type != "runtime":
+            if dep.dep_type & DependencyType.BUILD:
                 element.__build_dependencies.append(dependency)
                 dependency.__reverse_build_deps.add(element)
 
-            if dep.dep_type != "build":
+            if dep.dep_type & DependencyType.RUNTIME:
                 element.__runtime_dependencies.append(dependency)
                 dependency.__reverse_runtime_deps.add(element)
 
