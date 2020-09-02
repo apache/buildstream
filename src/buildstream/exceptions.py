@@ -137,9 +137,6 @@ class LoadErrorReason(Enum):
     PROTECTED_VARIABLE_REDEFINED = 23
     """An attempt was made to set the value of a protected variable"""
 
-    DUPLICATE_DEPENDENCY = 24
-    """A duplicate dependency was detected"""
-
     LINK_FORBIDDEN_DEPENDENCIES = 25
     """A link element declared dependencies"""
 

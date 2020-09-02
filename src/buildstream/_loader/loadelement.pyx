@@ -187,6 +187,17 @@ cdef class Dependency:
         if not self.junction and ':' in self.name:
             self.junction, self.name = self.name.rsplit(':', maxsplit=1)
 
+    # merge()
+    #
+    # Merge the attributes of an existing dependency into this dependency
+    #
+    # Args:
+    #    other (Dependency): The dependency to merge into this one
+    #
+    cdef merge(self, Dependency other):
+        self.dep_type = self.dep_type | other.dep_type
+        self.strict = self.strict or other.strict
+
 
 # LoadElement():
 #
@@ -446,12 +457,11 @@ def sort_dependencies(LoadElement element, set visited):
 #    node (Node): A YAML loaded dictionary
 #    key (str): the key on the Node corresponding to the dependency type
 #    default_dep_type (DependencyType): type to give to the dependency
-#    acc (list): a list in which to add the loaded dependencies
-#    rundeps (dict): a dictionary mapping dependency (junction, name) to dependency for runtime deps
-#    builddeps (dict): a dictionary mapping dependency (junction, name) to dependency for build deps
+#    acc (dict): a dict in which to add the loaded dependencies
 #
-cdef void _extract_depends_from_node(Node node, str key, int default_dep_type, list acc, dict rundeps, dict builddeps) except *:
+cdef void _extract_depends_from_node(Node node, str key, int default_dep_type, dict acc) except *:
     cdef SequenceNode depends = node.get_sequence(key, [])
+    cdef Dependency existing_dep
     cdef Node dep_node
     cdef tuple deptup
 
@@ -459,21 +469,13 @@ cdef void _extract_depends_from_node(Node node, str key, int default_dep_type, l
         dependency = Dependency()
         dependency.load(dep_node, default_dep_type)
         deptup = (dependency.junction, dependency.name)
-        if dependency.dep_type & DependencyType.BUILD:
-            if deptup in builddeps:
-                raise LoadError("{}: Duplicate build dependency found at {}."
-                                .format(dependency.provenance, builddeps[deptup].provenance),
-                                LoadErrorReason.DUPLICATE_DEPENDENCY)
-            else:
-                builddeps[deptup] = dependency
-        if dependency.dep_type & DependencyType.RUNTIME:
-            if deptup in rundeps:
-                raise LoadError("{}: Duplicate runtime dependency found at {}."
-                                .format(dependency.provenance, rundeps[deptup].provenance),
-                                LoadErrorReason.DUPLICATE_DEPENDENCY)
-            else:
-                rundeps[deptup] = dependency
-        acc.append(dependency)
+
+        # Accumulate dependencies, merging any matching elements along the way
+        existing_dep = <Dependency> acc.get(deptup, None)
+        if existing_dep is not None:
+            existing_dep.merge(dependency)
+        else:
+            acc[deptup] = dependency
 
     # Now delete the field, we dont want it anymore
     node.safe_del(key)
@@ -494,10 +496,8 @@ cdef void _extract_depends_from_node(Node node, str key, int default_dep_type, l
 #    (list): a list of Dependency objects
 #
 def extract_depends_from_node(Node node):
-    cdef list acc = []
-    cdef dict rundeps = {}
-    cdef dict builddeps = {}
-    _extract_depends_from_node(node, <str> Symbol.BUILD_DEPENDS, <int> DependencyType.BUILD, acc, rundeps, builddeps)
-    _extract_depends_from_node(node, <str> Symbol.RUNTIME_DEPENDS, <int> DependencyType.RUNTIME, acc, rundeps, builddeps)
-    _extract_depends_from_node(node, <str> Symbol.DEPENDS, <int> 0, acc, rundeps, builddeps)
-    return acc
+    cdef dict acc = {}
+    _extract_depends_from_node(node, <str> Symbol.BUILD_DEPENDS, <int> DependencyType.BUILD, acc)
+    _extract_depends_from_node(node, <str> Symbol.RUNTIME_DEPENDS, <int> DependencyType.RUNTIME, acc)
+    _extract_depends_from_node(node, <str> Symbol.DEPENDS, <int> 0, acc)
+    return [dep for dep in acc.values()]
