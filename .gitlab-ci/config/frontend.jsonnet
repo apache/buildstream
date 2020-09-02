@@ -1,3 +1,5 @@
+local common = import 'common.libsonnet';
+
 {
   blobstore: {
     contentAddressableStorage: {
@@ -10,17 +12,24 @@
       },
     },
     actionCache: {
-      'error': {
-          code: 12, # UNIMPLEMENTED
-          message: "AC requests are not supported for this endpoint.",
-        }
+      circular: {
+        directory: '/ac',
+        offsetFileSizeBytes: 1024 * 1024,
+        offsetCacheSize: 1000,
+        dataFileSizeBytes: 100 * 1024 * 1024,
+        dataAllocationChunkSizeBytes: 1048576,
+        instances: [''],
+      },
     },
   },
-  httpListenAddress: ':6981',
+  httpListenAddress: ':7980',
   grpcServers: [{
     listenAddresses: [':8980'],
     authenticationPolicy: { allow: {} },
   }],
+  schedulers: {
+    '': { endpoint: { address: 'scheduler:8981'} },
+  },
   allowAcUpdatesForInstanceNamePrefixes: [''],
-  maximumMessageSizeBytes: 16 * 1024 * 1024,
+  maximumMessageSizeBytes: common.maximumMessageSizeBytes,
 }

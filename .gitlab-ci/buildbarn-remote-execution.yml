@@ -1,0 +1,83 @@
+version: '3'
+services:
+  frontend:
+    image: buildbarn/bb-storage:20200810T194216Z-94a85b4
+    command:
+    - /config/frontend.jsonnet
+    ports:
+    - 7980:7980
+    - 8980:8980
+    volumes:
+    - ./config:/config
+    - ac:/ac
+    - cas:/cas
+
+  scheduler:
+    image: buildbarn/bb-scheduler:20200816T115954Z-9fae5ec
+    command:
+    - /config/scheduler.jsonnet
+    expose:
+    - 8982
+    - 8983
+    ports:
+    - 7982:7982
+    volumes:
+    - ./config:/config
+
+  worker-ubuntu16-04:
+    image: buildbarn/bb-worker:20200816T115954Z-9fae5ec
+    command:
+    - /config/worker.jsonnet
+    ports:
+    - 7986:7986
+    volumes:
+    - ./config:/config
+    - ./worker:/worker
+    depends_on:
+    - worker-setup
+
+  runner-ubuntu16-04:
+    image: l.gcr.io/google/rbe-ubuntu16-04@sha256:b516a2d69537cb40a7c6a7d92d0008abb29fba8725243772bdaf2c83f1be2272
+    command:
+    - sh
+    - -c
+    - while ! test -f /bb/installed; do sleep 1; done; exec /bb/tini -v -g -- /bb/bb_runner /config/runner.jsonnet
+    network_mode: none
+    volumes:
+    - ./config:/config
+    - ./bb:/bb
+    - ./worker:/worker
+    depends_on:
+    - runner-installer
+    - worker-setup
+    - worker-ubuntu16-04
+
+  runner-installer:
+    image: buildbarn/bb-runner-installer:20200801T202247Z-4ea244f
+    volumes:
+    - ./bb:/bb
+
+  worker-setup:
+    image: busybox
+    volumes:
+    - ./worker:/worker
+    command:
+    - sh
+    - -c
+    - mkdir -m 0777 /worker/build && mkdir -m 0700 /worker/cache
+
+  bb-asset:
+      image: buildbarn/bb-remote-asset:20200828T155422Z-9226c9e
+      command: /config/asset.jsonnet
+      restart: unless-stopped
+      ports:
+      - 8979:8979
+      - 7981:7981
+      volumes:
+      - assets:/storage
+      - ./config/:/config
+
+volumes:
+  assets:
+  ac:
+  cas:

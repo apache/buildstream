@@ -23,7 +23,7 @@
   },
   httpListenAddress: ':1111',
   grpcServers: [{
-    listenAddresses: [':7981'],
+    listenAddresses: [':8979'],
     authenticationPolicy: { allow: {} },
   }],
   allowUpdatesForInstances: [''],

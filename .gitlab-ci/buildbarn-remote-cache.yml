@@ -23,13 +23,11 @@ version: '3.4'
 
 services:
   bb-asset:
-    image: qinusty/bb-asset-hub:20200814T141139Z-5e72dd1
+    image: buildbarn/bb-remote-asset:20200828T155422Z-9226c9e
     command: /config/asset.jsonnet
     restart: unless-stopped
-    expose:
-    - "7981"
     ports:
-    - "7981:7981"
+    - "8979:8979"
     volumes:
     - type: volume
       source: assets
@@ -42,10 +40,8 @@ services:
     image: buildbarn/bb-storage:20200810T194216Z-94a85b4
     command: /config/storage.jsonnet
     restart: unless-stopped
-    expose:
-    - "7982"
     ports:
-    - "7982:7982"
+    - 8980:8980
     volumes:
     - type: volume
       source: cas
