@@ -171,11 +171,19 @@ class Stream:
     #    elements (list of Element): The elements to check
     #
     def query_cache(self, elements):
-        # Artifact cache is implicitly queried on demand
+        # Enqueue complete build plan as this is required to determine `buildable` status.
+        plan = self._pipeline.plan(elements)
+
         self._scheduler.clear_queues()
+        self._add_queue(PullQueue(self._scheduler, check_remotes=False))
         self._add_queue(FetchQueue(self._scheduler, skip_cached=True, check_only=True))
-        self._enqueue_plan(elements)
+        self._enqueue_plan(plan)
         self._run()
+
+        # In non-strict mode, the above may not calculate all strong cache keys.
+        if not self._context.get_strict():
+            for element in plan:
+                element._update_cache_key_non_strict()
 
     # shell()
     #
@@ -223,12 +231,11 @@ class Stream:
             element = self.targets[0]
             element._set_required(scope)
 
-            if pull_:
-                self._scheduler.clear_queues()
-                self._add_queue(PullQueue(self._scheduler))
-                plan = self._pipeline.add_elements([element], elements)
-                self._enqueue_plan(plan)
-                self._run()
+            self._scheduler.clear_queues()
+            self._add_queue(PullQueue(self._scheduler, check_remotes=pull_))
+            plan = self._pipeline.add_elements([element], elements)
+            self._enqueue_plan(plan)
+            self._run()
 
         missing_deps = [dep for dep in self._pipeline.dependencies([element], scope) if not dep._cached()]
         if missing_deps:
@@ -309,8 +316,7 @@ class Stream:
         #
         self._scheduler.clear_queues()
 
-        if self._artifacts.has_fetch_remotes():
-            self._add_queue(PullQueue(self._scheduler))
+        self._add_queue(PullQueue(self._scheduler))
 
         self._add_queue(FetchQueue(self._scheduler, skip_cached=True))
 
@@ -550,13 +556,10 @@ class Stream:
 
         self._check_location_writable(location, force=force, tar=tar)
 
-        uncached_elts = [elt for elt in elements if not elt._cached()]
-        if uncached_elts and pull:
-            self._message(MessageType.INFO, "Attempting to fetch missing or incomplete artifact")
-            self._scheduler.clear_queues()
-            self._add_queue(PullQueue(self._scheduler))
-            self._enqueue_plan(uncached_elts)
-            self._run(announce_session=True)
+        self._scheduler.clear_queues()
+        self._add_queue(PullQueue(self._scheduler, check_remotes=pull))
+        self._enqueue_plan(elements)
+        self._run(announce_session=True)
 
         try:
             scope = {
