@@ -250,3 +250,34 @@ def test_merge(cli, datafiles, target):
 
     element_list = cli.get_pipeline(project, [target], scope="run")
     assert element_list == ["run-build.bst", target]
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_config_unsupported(cli, datafiles):
+    project = os.path.join(str(datafiles), "dependencies3")
+
+    result = cli.run(project=project, args=["show", "unsupported.bst"])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DEPENDENCY_CONFIG)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target,number", [("supported1.bst", 1), ("supported2.bst", 2),], ids=["one", "two"],
+)
+def test_config_supported(cli, datafiles, target, number):
+    project = os.path.join(str(datafiles), "dependencies3")
+
+    result = cli.run(project=project, args=["show", target])
+    result.assert_success()
+
+    assert "TEST PLUGIN FOUND {} ENABLED DEPENDENCIES".format(number) in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_config_runtime_error(cli, datafiles):
+    project = os.path.join(str(datafiles), "dependencies3")
+
+    # Test that it is considered an error to specify `config` on runtime-only dependencies
+    #
+    result = cli.run(project=project, args=["show", "runtime-error.bst"])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
