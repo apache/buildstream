@@ -214,8 +214,6 @@ class SandboxRemote(SandboxREAPI):
 
             except grpc.RpcError as e:
                 status_code = e.code()
-                if status_code == grpc.StatusCode.UNAVAILABLE:
-                    raise SandboxError("Failed contacting remote execution server at {}.".format(self.exec_url))
 
                 if status_code in (
                     grpc.StatusCode.INVALID_ARGUMENT,
@@ -223,8 +221,12 @@ class SandboxRemote(SandboxREAPI):
                     grpc.StatusCode.RESOURCE_EXHAUSTED,
                     grpc.StatusCode.INTERNAL,
                     grpc.StatusCode.DEADLINE_EXCEEDED,
+                    grpc.StatusCode.UNAVAILABLE,
                 ):
-                    raise SandboxError("{} ({}).".format(e.details(), status_code.name))
+                    raise SandboxError(
+                        "Failed contacting remote execution server at {}."
+                        "{}: {}".format(self.exec_url, status_code.name, e.details())
+                    )
 
                 if running_operation and status_code == grpc.StatusCode.UNIMPLEMENTED:
                     raise SandboxError(
