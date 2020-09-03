@@ -232,3 +232,21 @@ def test_no_recurse(cli, datafiles):
         "dep-two.bst",
         "target.bst",
     ]
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target", ["merge-separate-lists.bst", "merge-single-list.bst",], ids=["separate-lists", "single-list"],
+)
+def test_merge(cli, datafiles, target):
+    project = os.path.join(str(datafiles), "dependencies2")
+
+    # Test both build and run scopes, showing that the two dependencies
+    # have been merged and the run-build.bst is both a runtime and build
+    # time dependency, and is not loaded twice into the build graph.
+    #
+    element_list = cli.get_pipeline(project, [target], scope="build")
+    assert element_list == ["run-build.bst"]
+
+    element_list = cli.get_pipeline(project, [target], scope="run")
+    assert element_list == ["run-build.bst", target]
