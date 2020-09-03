@@ -64,8 +64,9 @@ def test_source_staged(tmpdir, cli, datafiles):
         # now check that the source is in the refs file, this is pretty messy but
         # seems to be the only way to get the sources?
         element = project.load_elements(["import-bin.bst"])[0]
+        element._initialize_state()
         source = list(element.sources())[0]
-        assert element._has_all_sources_in_source_cache()
+        assert element._cached_sources()
         assert sourcecache.contains(source)
 
         # Extract the file and check it's the same as the one we imported
@@ -98,8 +99,9 @@ def test_source_fetch(tmpdir, cli, datafiles):
         sourcecache = context.sourcecache
 
         element = project.load_elements(["import-dev.bst"])[0]
+        element._initialize_state()
         source = list(element.sources())[0]
-        assert element._has_all_sources_in_source_cache()
+        assert element._cached_sources()
 
         # check that the directory structures are identical
         digest = sourcecache.export(source)._get_digest()
@@ -118,6 +120,7 @@ def test_staged_source_build(tmpdir, datafiles, cli):
     cachedir = os.path.join(str(tmpdir), "cache")
     element_path = "elements"
     source_protos = os.path.join(str(tmpdir), "cache", "source_protos")
+    elementsources = os.path.join(str(tmpdir), "cache", "elementsources")
     source_dir = os.path.join(str(tmpdir), "cache", "sources")
 
     cli.configure({"cachedir": cachedir})
@@ -130,9 +133,10 @@ def test_staged_source_build(tmpdir, datafiles, cli):
         project.ensure_fully_loaded()
 
         element = project.load_elements(["import-dev.bst"])[0]
+        element._initialize_state()
 
         # check consistency of the source
-        assert not element._has_all_sources_in_source_cache()
+        assert not element._cached_sources()
 
     res = cli.run(project=project_dir, args=["build", "target.bst"])
     res.assert_success()
@@ -161,6 +165,7 @@ def test_staged_source_build(tmpdir, datafiles, cli):
 
     # Now remove the source refs and check the state
     shutil.rmtree(source_protos)
+    shutil.rmtree(elementsources)
     cli.remove_artifact_from_cache(project_dir, "target.bst")
     states = cli.get_element_states(project_dir, ["target.bst"])
     assert states["target.bst"] == "fetch needed"

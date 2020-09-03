@@ -28,6 +28,7 @@ from ._messenger import Messenger
 from ._profile import Topics, PROFILER
 from ._platform import Platform
 from ._artifactcache import ArtifactCache
+from ._elementsourcescache import ElementSourcesCache
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASLogLevel
 from .types import _CacheBuildTrees, _PipelineSelection, _SchedulerErrorAction
@@ -171,6 +172,7 @@ class Context:
         # Private variables
         self._platform = None
         self._artifactcache = None
+        self._elementsourcescache = None
         self._sourcecache = None
         self._projects = []
         self._project_overrides = Node.from_dict({})
@@ -192,6 +194,9 @@ class Context:
     def __exit__(self, exc_type, exc_value, traceback):
         if self._artifactcache:
             self._artifactcache.release_resources()
+
+        if self._elementsourcescache:
+            self._elementsourcescache.release_resources()
 
         if self._sourcecache:
             self._sourcecache.release_resources()
@@ -419,6 +424,13 @@ class Context:
             self._artifactcache = ArtifactCache(self)
 
         return self._artifactcache
+
+    @property
+    def elementsourcescache(self):
+        if not self._elementsourcescache:
+            self._elementsourcescache = ElementSourcesCache(self)
+
+        return self._elementsourcescache
 
     @property
     def sourcecache(self):

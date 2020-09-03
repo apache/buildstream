@@ -240,7 +240,7 @@ class Element(Plugin):
         self.__ready_for_runtime = False  # Whether the element and its runtime dependencies have cache keys
         self.__ready_for_runtime_and_cached = False  # Whether all runtime deps are cached, as well as the element
         self.__cached_remotely = None  # Whether the element is cached remotely
-        self.__sources = ElementSources(context)  # The element sources
+        self.__sources = ElementSources(context, project, self)  # The element sources
         self.__weak_cache_key = None  # Our cached weak cache key
         self.__strict_cache_key = None  # Our cached cache key for strict builds
         self.__artifacts = context.artifactcache  # Artifact cache
@@ -1317,12 +1317,7 @@ class Element(Plugin):
 
             # No cached buildtree, stage source from source cache
             else:
-                try:
-                    staged_sources = self.__sources.stage()
-                except (SourceCacheError, VirtualDirectoryError) as e:
-                    raise ElementError(
-                        "Error trying to stage sources for {}: {}".format(self.name, e), reason="stage-sources-fail"
-                    )
+                staged_sources = self.__sources.get_files()
 
                 # incremental builds should merge the source into the last artifact before staging
                 last_build_artifact = self.__get_last_build_artifact()
@@ -1628,7 +1623,7 @@ class Element(Plugin):
                 # if the directory could not be found.
                 pass
 
-            sourcesvdir = self.__sources.vdir
+            sourcesvdir = self.__sources.get_files()
 
         if collect is not None:
             try:
@@ -1747,7 +1742,7 @@ class Element(Plugin):
     def _skip_source_push(self):
         if not self.sources() or self._get_workspace():
             return True
-        return not (self.__sourcecache.has_push_remotes(plugin=self) and self._has_all_sources_in_source_cache())
+        return not (self.__sourcecache.has_push_remotes(plugin=self) and self._cached_sources())
 
     def _source_push(self):
         return self.__sources.push()
@@ -1989,7 +1984,19 @@ class Element(Plugin):
     #    SourceError: If one of the element sources has an error
     #
     def _fetch(self, fetch_original=False):
-        self.__sources.fetch(fetch_original=fetch_original)
+        if fetch_original:
+            self.__sources.fetch_sources(fetch_original=True)
+
+        self.__sources.fetch()
+
+        if not self.__sources.cached():
+            try:
+                # Stage all element sources into CAS
+                self.__sources.stage_and_cache()
+            except (SourceCacheError, VirtualDirectoryError) as e:
+                raise ElementError(
+                    "Error trying to stage sources for {}: {}".format(self.name, e), reason="stage-sources-fail"
+                )
 
     # _calculate_cache_key():
     #
@@ -2032,14 +2039,14 @@ class Element(Plugin):
 
         return _cachekey.generate_key(cache_key_dict)
 
-    # _has_all_sources_in_source_cache()
+    # _cached_sources()
     #
-    # Get whether all sources of the element are cached in CAS
+    # Get whether the staged element sources are cached in CAS
     #
     # Returns:
     #    (bool): True if the element sources are in CAS
     #
-    def _has_all_sources_in_source_cache(self):
+    def _cached_sources(self):
         return self.__sources.cached()
 
     # _has_all_sources_resolved()

@@ -164,7 +164,7 @@ from typing import Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
 from . import _yaml, utils
 from .node import MappingNode
 from .plugin import Plugin
-from .types import SourceRef, Union, List
+from .types import SourceRef, Union
 from ._exceptions import BstError, ImplError, PluginError
 from .exceptions import ErrorDomain
 from ._loader.metasource import MetaSource
@@ -172,7 +172,7 @@ from ._projectrefs import ProjectRefStorage
 from ._cachekey import generate_key
 from .storage import CasBasedDirectory
 from .storage import FileBasedDirectory
-from .storage.directory import Directory, VirtualDirectoryError
+from .storage.directory import Directory
 from ._variables import Variables
 
 if TYPE_CHECKING:
@@ -341,7 +341,7 @@ class Source(Plugin):
 
         self.__element_index = meta.element_index  # The index of the source in the owning element's source list
         self.__element_kind = meta.element_kind  # The kind of the element owning this source
-        self.__directory = meta.directory  # Staging relative directory
+        self._directory = meta.directory  # Staging relative directory
         self.__variables = variables  # The variables used to resolve the source's config
 
         self.__key = None  # Cache key for source
@@ -784,15 +784,11 @@ class Source(Plugin):
     # Wrapper function around plugin provided fetch method
     #
     # Args:
-    #   previous_sources (list): List of Sources listed prior to this source
-    #   fetch_original (bool): whether to fetch full source, or use local CAS
+    #   previous_sources_dir (str): directory where previous sources are staged
     #
-    def _fetch(self, previous_sources):
-
+    def _fetch(self, previous_sources_dir=None):
         if self.BST_REQUIRES_PREVIOUS_SOURCES_FETCH:
-            self.__ensure_previous_sources(previous_sources)
-            with self.__stage_previous_sources(previous_sources) as staging_directory:
-                self.__do_fetch(previous_sources_dir=self.__ensure_directory(staging_directory))
+            self.__do_fetch(previous_sources_dir=previous_sources_dir)
         else:
             self.__do_fetch()
 
@@ -817,8 +813,6 @@ class Source(Plugin):
     # 'directory' option
     #
     def _stage(self, directory):
-        directory = self.__ensure_directory(directory)
-
         if self.BST_KEY_REQUIRES_STAGE:
             # _get_unique_key should be called before _stage
             assert self.__digest is not None
@@ -833,8 +827,6 @@ class Source(Plugin):
         if self.BST_STAGE_VIRTUAL_DIRECTORY:
             directory = FileBasedDirectory(external_directory=directory)
 
-        directory = self.__ensure_directory(directory)
-
         self.validate_cache()
         self.init_workspace(directory)
 
@@ -843,13 +835,10 @@ class Source(Plugin):
     # Wrapper for get_unique_key() api
     #
     def _get_unique_key(self):
-        key = {}
-        key["directory"] = self.__directory
         if self.BST_KEY_REQUIRES_STAGE:
-            key["unique"] = self._stage_into_cas()
+            return self._stage_into_cas()
         else:
-            key["unique"] = self.get_unique_key()  # pylint: disable=assignment-from-no-return
-        return key
+            return self.get_unique_key()
 
     # _project_refs():
     #
@@ -1089,18 +1078,16 @@ class Source(Plugin):
     # Wrapper for track()
     #
     # Args:
-    #   previous_sources (list): List of Sources listed prior to this source
+    #   previous_sources_dir (str): directory where previous sources are staged
     #
-    def _track(self, previous_sources: List["Source"]) -> SourceRef:
+    def _track(self, previous_sources_dir: str = None) -> SourceRef:
         if self.BST_KEY_REQUIRES_STAGE:
             # ensure that these sources have a key after tracking
-            self._get_unique_key()
+            self._generate_key()
             return None
 
         if self.BST_REQUIRES_PREVIOUS_SOURCES_TRACK:
-            self.__ensure_previous_sources(previous_sources)
-            with self.__stage_previous_sources(previous_sources) as staging_directory:
-                new_ref = self.__do_track(previous_sources_dir=self.__ensure_directory(staging_directory))
+            new_ref = self.__do_track(previous_sources_dir=previous_sources_dir)
         else:
             new_ref = self.__do_track()
 
@@ -1115,6 +1102,8 @@ class Source(Plugin):
 
             # Save ref in local process for subsequent sources
             self._set_ref(new_ref, save=False)
+
+        self._generate_key()
 
         return new_ref
 
@@ -1150,14 +1139,8 @@ class Source(Plugin):
         else:
             return None
 
-    def _generate_key(self, previous_sources):
-        keys = [self._get_unique_key()]
-
-        if self.BST_REQUIRES_PREVIOUS_SOURCES_STAGE:
-            for previous_source in previous_sources:
-                keys.append(previous_source._get_unique_key())
-
-        self.__key = generate_key(keys)
+    def _generate_key(self):
+        self.__key = generate_key(self._get_unique_key())
 
     @property
     def _key(self):
@@ -1212,7 +1195,7 @@ class Source(Plugin):
             self.__element_kind,
             self.get_kind(),
             self.__config,
-            self.__directory,
+            self._directory,
             self.__first_pass,
         )
 
@@ -1226,24 +1209,6 @@ class Source(Plugin):
         clone._load_ref()
 
         return clone
-
-    # Context manager that stages sources in a cas based or temporary file
-    # based directory
-    @contextmanager
-    def __stage_previous_sources(self, sources):
-        with self.tempdir() as tempdir:
-            directory = FileBasedDirectory(external_directory=tempdir)
-
-            for src in sources:
-                if src.BST_STAGE_VIRTUAL_DIRECTORY:
-                    src._stage(directory)
-                else:
-                    src._stage(tempdir)
-
-            if self.BST_STAGE_VIRTUAL_DIRECTORY:
-                yield directory
-            else:
-                yield tempdir
 
     # Tries to call fetch for every mirror, stopping once it succeeds
     def __do_fetch(self, **kwargs):
@@ -1347,31 +1312,6 @@ class Source(Plugin):
             return ref
         raise last_error
 
-    # Ensures a fully constructed path and returns it
-    def __ensure_directory(self, directory):
-
-        if not isinstance(directory, Directory):
-            if self.__directory is not None:
-                directory = os.path.join(directory, self.__directory.lstrip(os.sep))
-
-            try:
-                os.makedirs(directory, exist_ok=True)
-            except OSError as e:
-                raise SourceError(
-                    "Failed to create staging directory: {}".format(e), reason="ensure-stage-dir-fail"
-                ) from e
-
-        else:
-            if self.__directory is not None:
-                try:
-                    directory = directory.descend(*self.__directory.lstrip(os.sep).split(os.sep), create=True)
-                except VirtualDirectoryError as e:
-                    raise SourceError(
-                        "Failed to descend into staging directory: {}".format(e), reason="ensure-stage-dir-fail"
-                    ) from e
-
-        return directory
-
     @classmethod
     def __init_defaults(cls, project, meta):
         if cls.__defaults is None:
@@ -1393,17 +1333,6 @@ class Source(Plugin):
         config._assert_fully_composited()
 
         return config
-
-    # Ensures that previous sources have been tracked and fetched.
-    #
-    def __ensure_previous_sources(self, previous_sources):
-        for index, src in enumerate(previous_sources):
-            # BuildStream should track sources in the order they appear so
-            # previous sources should never be in an inconsistent state
-            assert src.is_resolved()
-
-            if not src._is_cached():
-                src._fetch(previous_sources[0:index])
 
 
 def _extract_alias(url):

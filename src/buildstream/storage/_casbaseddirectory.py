@@ -139,16 +139,35 @@ class CasBasedDirectory(Directory):
         self.filename = filename
         self.common_name = common_name
         self.cas_cache = cas_cache
-        self.__digest = None
+        self.__digest = digest
         self.index = {}
         self.parent = parent
         self.__subtree_read_only = None
-        self._reset(digest=digest)
 
-    def _reset(self, *, digest=None):
-        self.__digest = digest
-        self.index = {}
         if digest:
+            self._populate_index(digest)
+
+    # _clear():
+    #
+    # Remove all entries from this directory.
+    #
+    def _clear(self):
+        self.__invalidate_digest()
+        self.index = {}
+
+    # _reset():
+    #
+    # Replace the contents of this directory with the entries from the specified
+    # directory digest.
+    #
+    # Args:
+    #     digest (Digest): The digest of the replacement directory
+    #
+    def _reset(self, *, digest=None):
+        self._clear()
+
+        if digest:
+            self.__digest = digest
             self._populate_index(digest)
 
     def _populate_index(self, digest):
