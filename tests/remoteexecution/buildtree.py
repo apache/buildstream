@@ -37,34 +37,33 @@ def test_buildtree_remote(cli, tmpdir, datafiles):
     element_name = "build-shell/buildtree.bst"
     share_path = os.path.join(str(tmpdir), "share")
 
-    services = cli.ensure_services()
-    assert set(services) == set(["action-cache", "execution", "storage"])
+    services = cli.ensure_services(artifacts=True)
+    assert set(services) == set(["action-cache", "execution", "storage", "artifact-cache"])
 
-    with create_artifact_share(share_path) as share:
-        cli.configure({"artifacts": {"url": share.repo, "push": True}, "cache": {"pull-buildtrees": False}})
+    cli.configure("cache": {"pull-buildtrees": False}})
 
-        res = cli.run(project=project, args=["--cache-buildtrees", "always", "build", element_name])
-        res.assert_success()
+    res = cli.run(project=project, args=["--cache-buildtrees", "always", "build", element_name])
+    res.assert_success()
 
-        # remove local cache
-        shutil.rmtree(os.path.join(str(tmpdir), "cache", "cas"))
-        shutil.rmtree(os.path.join(str(tmpdir), "cache", "artifacts"))
+    # remove local cache
+    shutil.rmtree(os.path.join(str(tmpdir), "cache", "cas"))
+    shutil.rmtree(os.path.join(str(tmpdir), "cache", "artifacts"))
 
-        # pull without buildtree
-        res = cli.run(project=project, args=["artifact", "pull", "--deps", "all", element_name])
-        res.assert_success()
+    # pull without buildtree
+    res = cli.run(project=project, args=["artifact", "pull", "--deps", "all", element_name])
+    res.assert_success()
 
-        # check shell doesn't work
-        res = cli.run(project=project, args=["shell", "--build", element_name, "--", "cat", "test"])
-        res.assert_shell_error()
+    # check shell doesn't work
+    res = cli.run(project=project, args=["shell", "--build", element_name, "--", "cat", "test"])
+    res.assert_shell_error()
 
-        # pull with buildtree
-        res = cli.run(project=project, args=["--pull-buildtrees", "artifact", "pull", "--deps", "all", element_name])
-        res.assert_success()
+    # pull with buildtree
+    res = cli.run(project=project, args=["--pull-buildtrees", "artifact", "pull", "--deps", "all", element_name])
+    res.assert_success()
 
-        # check it works this time
-        res = cli.run(
-            project=project, args=["shell", "--build", element_name, "--use-buildtree", "always", "--", "cat", "test"]
-        )
-        res.assert_success()
-        assert "Hi" in res.output
+    # check it works this time
+    res = cli.run(
+        project=project, args=["shell", "--build", element_name, "--use-buildtree", "always", "--", "cat", "test"]
+    )
+    res.assert_success()
+    assert "Hi" in res.output
