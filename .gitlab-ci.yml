@@ -205,8 +205,8 @@ tests-bb-remote-cache:
   variables:
     <<: *docker-variables
     COMPOSE_MANIFEST: .gitlab-ci/buildbarn-remote-cache.yml # < *remote-test
-    ARTIFACT_INDEX_SERVICE: http://docker:7981
-    ARTIFACT_STORAGE_SERVICE: http://docker:7982
+    ARTIFACT_INDEX_SERVICE: http://docker:8979
+    ARTIFACT_STORAGE_SERVICE: http://docker:8980
     PYTEST_ARGS: "--color=yes --remote-cache"
 
 tests-no-usedevelop:

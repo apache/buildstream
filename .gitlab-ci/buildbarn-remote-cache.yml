@@ -27,9 +27,9 @@ services:
     command: /config/asset.jsonnet
     restart: unless-stopped
     expose:
-    - "7981"
+    - 8979
     ports:
-    - "7981:7981"
+    - "8979:8979"
     volumes:
     - type: volume
       source: assets
@@ -43,9 +43,9 @@ services:
     command: /config/storage.jsonnet
     restart: unless-stopped
     expose:
-    - "7982"
+    - 8980
     ports:
-    - "7982:7982"
+    - "8980:8980"
     volumes:
     - type: volume
       source: cas
