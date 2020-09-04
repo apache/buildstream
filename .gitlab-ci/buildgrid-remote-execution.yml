@@ -59,9 +59,23 @@ services:
     networks:
       - grid
 
+  bb-asset:
+    image: buildbarn/bb-remote-asset:20200828T155422Z-9226c9e
+    command: /config/asset.jsonnet
+    restart: unless-stopped
+    ports:
+    - 8979:8979
+    - 7981:7981
+    volumes:
+    - assets:/storage
+    - ./config/:/config
+    networks:
+    - grid
+
 networks:
   grid:
     driver: bridge
 
 volumes:
   cache:
+  assets:

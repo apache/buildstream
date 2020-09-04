@@ -185,7 +185,8 @@ tests-remote-execution:
   variables:
     <<: *docker-variables
     COMPOSE_MANIFEST: .gitlab-ci/buildgrid-remote-execution.yml # < *remote-test
-    ARTIFACT_CACHE_SERVICE: http://docker:50052
+    ARTIFACT_INDEX_SERVICE: http://docker:8979
+    ARTIFACT_STORAGE_SERVICE: http://docker:50052
     REMOTE_EXECUTION_SERVICE: http://docker:50051
     SOURCE_CACHE_SERVICE: http://docker:50052
     PYTEST_ARGS: "--color=yes --remote-execution"
