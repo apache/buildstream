@@ -1,10 +1,8 @@
 kind: script
 
-depends:
-- filename: base.bst
-  type: build
-- filename: script/corruption-image.bst
-  type: build
+build-depends:
+- base.bst
+- script/corruption-image.bst
 
 config:
   commands:

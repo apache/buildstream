@@ -1,3 +1,21 @@
+# The script element allows staging elements into specific locations
+# via it's "location" dependency configuration
+#
+# For example, if you want to stage "foo-tools.bst" into the "/" of
+# the sandbox at buildtime, and the "foo-system.bst" element into
+# the %{build-root}, you can do so as follows:
+#
+# build-depends:
+# - foo-tools.bst
+# - filename: foo-system.bst
+#   config:
+#     location: "%{build-root}"
+#
+# Note: the default of the "location" parameter is "/", so it is not
+#       necessary to specify the location if you want to stage the
+#       element in "/"
+#
+
 # Common script element variables
 variables:
   # Defines the directory commands will be run from.
@@ -9,16 +27,6 @@ config:
   # Defines whether to run the sandbox with '/' read-only.
   # It is recommended to set root as read-only wherever possible.
   root-read-only: False
-
-  # Defines where to stage elements which are direct or indirect dependencies.
-  # By default, all direct dependencies are staged to '/'.
-  # This is also commonly used to take one element as an environment
-  # containing the tools used to operate on the other element.
-  # layout:
-  # - element: foo-tools.bst
-  #   destination: /
-  # - element: foo-system.bst
-  #   destination: %{build-root}
 
   # List of commands to run in the sandbox.
   commands: []

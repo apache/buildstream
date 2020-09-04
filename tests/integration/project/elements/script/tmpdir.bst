@@ -1,8 +1,7 @@
 kind: script
 
-depends:
-- filename: script/no-tmpdir.bst
-  type: build
+build-depends:
+- script/no-tmpdir.bst
 
 config:
   commands:

@@ -36,11 +36,11 @@ import os
 from collections import OrderedDict
 from typing import List, Optional, TYPE_CHECKING
 
-from .element import Element, ElementError
+from .element import Element
 from .sandbox import SandboxFlags
 
 if TYPE_CHECKING:
-    from typing import Dict
+    from typing import Dict, Tuple
 
 
 class ScriptElement(Element):
@@ -48,7 +48,7 @@ class ScriptElement(Element):
     __cwd = "/"
     __root_read_only = False
     __commands = None  # type: OrderedDict[str, List[str]]
-    __layout = []  # type: List[Dict[str, Optional[str]]]
+    __layout = {}  # type: Dict[str, List[Tuple[Element, str]]]
 
     # The compose element's output is its dependencies, so
     # we must rebuild if the dependencies change even when
@@ -75,8 +75,8 @@ class ScriptElement(Element):
         called from.
 
         Args:
-          work_dir: The working directory. If called without this argument
-          set, it'll default to the value of the variable ``cwd``.
+           work_dir: The working directory. If called without this argument
+                     set, it'll default to the value of the variable ``cwd``.
         """
         if work_dir is None:
             self.__cwd = self.get_variable("cwd") or "/"
@@ -90,8 +90,8 @@ class ScriptElement(Element):
         once the commands have been run.
 
         Args:
-          install_root: The install root. If called without this argument
-          set, it'll default to the value of the variable ``install-root``.
+           install_root: The install root. If called without this argument
+                         set, it'll default to the value of the variable ``install-root``.
         """
         if install_root is None:
             self.__install_root = self.get_variable("install-root") or "/"
@@ -108,47 +108,54 @@ class ScriptElement(Element):
         If this variable is not set, the default permission is read-write.
 
         Args:
-          root_read_only: Whether to mark the root filesystem as read-only.
+           root_read_only: Whether to mark the root filesystem as read-only.
         """
         self.__root_read_only = root_read_only
 
-    def layout_add(self, element: Optional[str], destination: str) -> None:
-        """Adds an element-destination pair to the layout.
+    def layout_add(self, element: Element, dependency_path: str, location: str) -> None:
+        """Adds an element to the layout.
 
         Layout is a way of defining how dependencies should be added to the
         staging area for running commands.
 
         Args:
-          element: The name of the element to stage, or None. This may be any
-                   element found in the dependencies, whether it is a direct
-                   or indirect dependency.
-          destination: The path inside the staging area for where to
-                       stage this element. If it is not "/", then integration
-                       commands will not be run.
+           element (Element): The element to stage.
+           dependency_path (str): The element relative path to the dependency, usually obtained via
+                                  :attr:`the dependency configuration <buildstream.element.DependencyConfiguration.path>`
+           location (str): The path inside the staging area for where to
+                          stage this element. If it is not "/", then integration
+                          commands will not be run.
 
         If this function is never called, then the default behavior is to just
         stage the build dependencies of the element in question at the
-        sandbox root. Otherwise, the runtime dependencies of each specified
-        element will be staged in their specified destination directories.
+        sandbox root. Otherwise, the specified elements including their
+        runtime dependencies will be staged in their respective locations.
 
         .. note::
 
-           The order of directories in the layout is significant as they
-           will be mounted into the sandbox. It is an error to specify a parent
-           directory which will shadow a directory already present in the layout.
+           The order of directories in the layout is not significant.
 
-        .. note::
+           The paths in the layout will be sorted so that elements are staged in parent
+           directories before subdirectories.
 
-           In the case that no element is specified, a read-write directory will
-           be made available at the specified location.
+           The elements for each respective staging directory in the layout will be staged
+           in the predetermined deterministic staging order.
         """
         #
-        # Even if this is an empty list by default, make sure that its
+        # Even if this is an empty dict by default, make sure that it is
         # instance data instead of appending stuff directly onto class data.
         #
         if not self.__layout:
-            self.__layout = []
-        self.__layout.append({"element": element, "destination": destination})
+            self.__layout = {}
+
+        # Get or create the element list
+        try:
+            element_list = self.__layout[location]
+        except KeyError:
+            element_list = []
+            self.__layout[location] = element_list
+
+        element_list.append((element, dependency_path))
 
     def add_commands(self, group_name: str, command_list: List[str]) -> None:
         """Adds a list of commands under the group-name.
@@ -164,8 +171,8 @@ class ScriptElement(Element):
            :func:`~buildstream.element.Element.node_subst_list`)
 
         Args:
-          group_name (str): The name of the group of commands.
-          command_list (list): The list of commands to be run.
+           group_name (str): The name of the group of commands.
+           command_list (list): The list of commands to be run.
         """
         if not self.__commands:
             self.__commands = OrderedDict()
@@ -174,17 +181,20 @@ class ScriptElement(Element):
     #############################################################
     #             Abstract Method Implementations               #
     #############################################################
-
     def preflight(self):
-        # The layout, if set, must make sense.
-        self.__validate_layout()
+        pass
 
     def get_unique_key(self):
+        sorted_locations = sorted(self.__layout)
+        layout_key = {
+            location: [dependency_path for _, dependency_path in self.__layout[location]]
+            for location in sorted_locations
+        }
         return {
             "commands": self.__commands,
             "cwd": self.__cwd,
             "install-root": self.__install_root,
-            "layout": self.__layout,
+            "layout": layout_key,
             "root-read-only": self.__root_read_only,
         }
 
@@ -196,67 +206,46 @@ class ScriptElement(Element):
         # Setup environment
         sandbox.set_environment(self.get_environment())
 
-        # Tell the sandbox to mount the install root
-        directories = {self.__install_root: False}
-
-        # set the output directory
-        sandbox.set_output_directory(self.__install_root)
+        # Mark the install root
+        sandbox.mark_directory(self.__install_root, artifact=False)
 
         # Mark the artifact directories in the layout
-        for item in self.__layout:
-            destination = item["destination"]
-            was_artifact = directories.get(destination, False)
-            directories[destination] = item["element"] or was_artifact
-
-        for directory, artifact in directories.items():
-            # Root does not need to be marked as it is always mounted
-            # with artifact (unless explicitly marked non-artifact)
-            if directory != "/":
-                sandbox.mark_directory(directory, artifact=artifact)
+        for location in self.__layout:
+            sandbox.mark_directory(location, artifact=True)
 
     def stage(self, sandbox):
 
-        # Stage the elements, and run integration commands where appropriate.
+        # If self.layout_add() was never called, do the default staging of
+        # everything in "/" and run the integration commands
         if not self.__layout:
 
-            # if no layout set, stage all dependencies into the sandbox root
             with self.timed_activity("Staging dependencies", silent_nested=True):
                 self.stage_dependency_artifacts(sandbox)
 
-            # Run any integration commands provided by the dependencies
-            # once they are all staged and ready
             with sandbox.batch(SandboxFlags.NONE, label="Integrating sandbox"):
                 for dep in self.dependencies():
                     dep.integrate(sandbox)
+
         else:
-            # If layout, follow its rules.
-            for item in self.__layout:
+            # First stage it all
+            #
+            sorted_locations = sorted(self.__layout)
 
-                # Skip layout members which dont stage an element
-                if not item["element"]:
-                    continue
+            for location in sorted_locations:
+                element_list = [element for element, _ in self.__layout[location]]
+                self.stage_dependency_artifacts(sandbox, element_list, path=location)
 
-                element = self.search(item["element"])
-                with self.timed_activity(
-                    "Staging {} at {}".format(element.name, item["destination"]), silent_nested=True
-                ):
-                    element.stage_dependency_artifacts(sandbox, [element], path=item["destination"])
+            # Now integrate any elements staged in the root
+            #
+            root_list = self.__layout.get("/", None)
+            if root_list:
+                element_list = [element for element, _ in root_list]
+                with sandbox.batch(SandboxFlags.NONE), self.timed_activity("Integrating sandbox", silent_nested=True):
+                    for dep in self.dependencies(element_list):
+                        dep.integrate(sandbox)
 
-            with sandbox.batch(SandboxFlags.NONE):
-                for item in self.__layout:
-
-                    # Skip layout members which dont stage an element
-                    if not item["element"]:
-                        continue
-
-                    element = self.search(item["element"])
-
-                    # Integration commands can only be run for elements staged to /
-                    if item["destination"] == "/":
-                        with self.timed_activity("Integrating {}".format(element.name), silent_nested=True):
-                            for dep in element.dependencies():
-                                dep.integrate(sandbox)
-
+        # Ensure the install root exists
+        #
         install_root_path_components = self.__install_root.lstrip(os.sep).split(os.sep)
         sandbox.get_virtual_directory().descend(*install_root_path_components, create=True)
 
@@ -276,26 +265,6 @@ class ScriptElement(Element):
 
         # Return where the result can be collected from
         return self.__install_root
-
-    #############################################################
-    #                   Private Local Methods                   #
-    #############################################################
-
-    def __validate_layout(self):
-        if self.__layout:
-            # Cannot proceeed if layout is used, but none are for "/"
-            root_defined = any([(entry["destination"] == "/") for entry in self.__layout])
-            if not root_defined:
-                raise ElementError("{}: Using layout, but none are staged as '/'".format(self))
-
-            # Cannot proceed if layout specifies an element that isn't part
-            # of the dependencies.
-            for item in self.__layout:
-                if item["element"]:
-                    if not self.search(item["element"]):
-                        raise ElementError(
-                            "{}: '{}' in layout not found in dependencies".format(self, item["element"])
-                        )
 
 
 def setup():
