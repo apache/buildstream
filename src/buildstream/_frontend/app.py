@@ -26,9 +26,6 @@ from textwrap import TextWrapper
 import click
 from click import UsageError
 
-# Import buildstream public symbols
-from .. import Scope
-
 # Import various buildstream internals
 from .._context import Context
 from .._project import Project
@@ -36,7 +33,7 @@ from .._exceptions import BstError, StreamError, LoadError, AppError
 from ..exceptions import LoadErrorReason
 from .._message import Message, MessageType, unconditional_messages
 from .._stream import Stream
-from ..types import _SchedulerErrorAction
+from ..types import _SchedulerErrorAction, _Scope
 from .. import node
 from .. import utils
 from ..utils import UtilError
@@ -708,7 +705,7 @@ class App:
                         unique_id, element_key = element
                         prompt = self.shell_prompt(full_name, element_key)
                         self.stream.shell(
-                            None, Scope.BUILD, prompt, isolate=True, usebuildtree="always", unique_id=unique_id
+                            None, _Scope.BUILD, prompt, isolate=True, usebuildtree="always", unique_id=unique_id
                         )
                     except BstError as e:
                         click.echo("Error while attempting to create interactive shell: {}".format(e), err=True)

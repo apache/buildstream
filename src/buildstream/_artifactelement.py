@@ -113,7 +113,7 @@ class ArtifactElement(Element):
 
     # get_dependency_artifact_names()
     #
-    # Retrieve the artifact names of all of the dependencies in Scope.BUILD
+    # Retrieve the artifact names of all of the dependencies in _Scope.BUILD
     #
     # Returns:
     #   (list [str]): A list of artifact refs

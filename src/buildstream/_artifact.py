@@ -33,7 +33,7 @@ import os
 from ._protos.buildstream.v2.artifact_pb2 import Artifact as ArtifactProto
 from . import _yaml
 from . import utils
-from .types import Scope
+from .types import _Scope
 from .storage._casbaseddirectory import CasBasedDirectory
 
 
@@ -181,7 +181,7 @@ class Artifact:
             size += public_data_digest.size_bytes
 
         # store build dependencies
-        for e in element.dependencies(Scope.BUILD):
+        for e in element._dependencies(_Scope.BUILD):
             new_build = artifact.build_deps.add()
             new_build.project_name = e.project_name
             new_build.element_name = e.name
@@ -363,7 +363,7 @@ class Artifact:
 
     # get_dependency_artifact_names()
     #
-    # Retrieve the artifact names of all of the dependencies in Scope.BUILD
+    # Retrieve the artifact names of all of the dependencies in _Scope.BUILD
     #
     # Returns:
     #    (list [str]): A list of refs of all build dependencies in staging order.

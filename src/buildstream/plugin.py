@@ -364,7 +364,7 @@ class Plugin:
         """
         return self.__kind
 
-    def node_get_project_path(self, node, *, check_is_file=False, check_is_dir=False):
+    def node_get_project_path(self, node, *, check_is_file=False, check_is_dir=False) -> str:
         """Fetches a project path from a dictionary node and validates it
 
         Paths are asserted to never lead to a directory outside of the

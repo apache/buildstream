@@ -1,4 +1,4 @@
-from buildstream import Element, Scope
+from buildstream import Element
 
 
 # Copies files from the dependent element but inserts split-rules using dynamic data
@@ -24,7 +24,7 @@ class DynamicElement(Element):
 
     def assemble(self, sandbox):
         with self.timed_activity("Staging artifact", silent_nested=True):
-            for dep in self.dependencies(Scope.BUILD):
+            for dep in self.dependencies():
                 dep.stage_artifact(sandbox)
 
         bstdata = self.get_public_data("bst")

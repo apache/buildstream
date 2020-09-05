@@ -134,7 +134,8 @@ of the filter element:
    :language: yaml
 """
 
-from buildstream import Element, ElementError, Scope
+from buildstream import Element, ElementError
+from buildstream.types import _Scope
 
 
 class FilterElement(Element):
@@ -169,7 +170,7 @@ class FilterElement(Element):
 
     def preflight(self):
         # Exactly one build-depend is permitted
-        build_deps = list(self.dependencies(Scope.BUILD, recurse=False))
+        build_deps = list(self._dependencies(_Scope.BUILD, recurse=False))
         if len(build_deps) != 1:
             detail = "Full list of build-depends:\n"
             deps_list = "  \n".join([x.name for x in build_deps])
@@ -183,7 +184,7 @@ class FilterElement(Element):
             )
 
         # That build-depend must not also be a runtime-depend
-        runtime_deps = list(self.dependencies(Scope.RUN, recurse=False))
+        runtime_deps = list(self._dependencies(_Scope.RUN, recurse=False))
         if build_deps[0] in runtime_deps:
             detail = "Full list of runtime depends:\n"
             deps_list = "  \n".join([x.name for x in runtime_deps])
@@ -222,7 +223,7 @@ class FilterElement(Element):
 
     def assemble(self, sandbox):
         with self.timed_activity("Staging artifact", silent_nested=True):
-            for dep in self.dependencies(Scope.BUILD, recurse=False):
+            for dep in self.dependencies(recurse=False):
                 # Check that all the included/excluded domains exist
                 pub_data = dep.get_public_data("bst")
                 split_rules = pub_data.get_mapping("split-rules", {})
@@ -253,14 +254,15 @@ class FilterElement(Element):
 
     def _get_source_element(self):
         # Filter elements act as proxies for their sole build-dependency
-        build_deps = list(self.dependencies(Scope.BUILD, recurse=False))
+        #
+        build_deps = list(self._dependencies(_Scope.BUILD, recurse=False))
         assert len(build_deps) == 1
         output_elm = build_deps[0]._get_source_element()
         return output_elm
 
     def integrate(self, sandbox):
         if self.pass_integration:
-            for dep in self.dependencies(Scope.BUILD, recurse=False):
+            for dep in self.dependencies(recurse=False):
                 dep.integrate(sandbox)
         super().integrate(sandbox)
 

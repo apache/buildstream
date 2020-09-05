@@ -2,6 +2,14 @@
 (unreleased)
 ============
 
+Core
+----
+
+  o BREAKING CHANGE: Changed API signatures to remove Scope type from the API
+    - Element.dependencies()
+    - Element.stage_dependency_artifacts()
+    - Element.search()
+    Elements now can only ever see dependencies in their build scope.
 
 ==================
 buildstream 1.93.5

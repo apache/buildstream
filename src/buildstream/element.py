@@ -84,7 +84,7 @@ from contextlib import contextmanager, suppress
 from functools import partial
 from itertools import chain
 import string
-from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Set
+from typing import cast, TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Set, Sequence
 
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 from ruamel import yaml
@@ -103,8 +103,9 @@ from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import CoreWarnings, Scope, _CacheBuildTrees, _KeyStrength
+from .types import CoreWarnings, _Scope, _CacheBuildTrees, _KeyStrength
 from ._artifact import Artifact
+from ._elementproxy import ElementProxy
 from ._elementsources import ElementSources
 from ._loader import Symbol, MetaSource
 
@@ -417,83 +418,59 @@ class Element(Plugin):
         """
         return self.__sources.sources()
 
-    def dependencies(self, scope: Scope, *, recurse: bool = True, visited=None) -> Iterator["Element"]:
-        """dependencies(scope, *, recurse=True)
+    def dependencies(self, selection: Sequence["Element"] = None, *, recurse: bool = True) -> Iterator["Element"]:
+        """A generator function which yields the build dependencies of the given element.
 
-        A generator function which yields the dependencies of the given element.
+        This generator gives the Element access to all of the dependencies which it is has
+        access to at build time. As explained in :ref:`the dependency type documentation <format_dependencies_types>`,
+        this includes the direct build dependencies of the element being built, along with any
+        transient runtime dependencies of those build dependencies.
+
+        Subsets of the dependency graph can be selected using the `selection` argument,, which
+        must consist of dependencies of this element. If the `selection` argument is specified as
+        `None`, then the `self` element on which this is called is used as the `selection`.
 
         If `recurse` is specified (the default), the full dependencies will be listed
-        in deterministic staging order, starting with the basemost elements in the
-        given `scope`. Otherwise, if `recurse` is not specified then only the direct
-        dependencies in the given `scope` will be traversed, and the element itself
-        will be omitted.
+        in deterministic staging order, starting with the basemost elements. Otherwise,
+        if `recurse` is not specified then only the direct dependencies will be traversed.
 
         Args:
-           scope: The scope to iterate in
-           recurse: Whether to recurse
+           selection (Sequence[Element]): A list of dependencies to select, or None
+           recurse (bool): Whether to recurse
 
         Yields:
-           The dependencies in `scope`, in deterministic staging order
+           The dependencies of the selection, in deterministic staging order
         """
-        # The format of visited is (BitMap(), BitMap()), with the first BitMap
-        # containing element that have been visited for the `Scope.BUILD` case
-        # and the second one relating to the `Scope.RUN` case.
-        if not recurse:
-            result: Set[Element] = set()
-            if scope in (Scope.BUILD, Scope.ALL):
-                for dep in self.__build_dependencies:
-                    if dep not in result:
-                        result.add(dep)
-                        yield dep
-            if scope in (Scope.RUN, Scope.ALL):
-                for dep in self.__runtime_dependencies:
-                    if dep not in result:
-                        result.add(dep)
-                        yield dep
-        else:
+        #
+        # In this public API, we ensure the invariant that an element can only
+        # ever see elements in it's own _Scope.BUILD scope.
+        #
+        #  - Yield ElementProxy objects for every element except for the self element
+        #  - When a selection is provided, ensure that we call the real _dependencies()
+        #    method using _Scope.RUNTIME
+        #  - When iterating over the self element, use _Scope.BUILD
+        #
+        visited = (BitMap(), BitMap())
+        if selection is None:
+            selection = [self]
 
-            def visit(element, scope, visited):
-                if scope == Scope.ALL:
-                    visited[0].add(element._unique_id)
-                    visited[1].add(element._unique_id)
-
-                    for dep in chain(element.__build_dependencies, element.__runtime_dependencies):
-                        if dep._unique_id not in visited[0] and dep._unique_id not in visited[1]:
-                            yield from visit(dep, Scope.ALL, visited)
-
-                    yield element
-                elif scope == Scope.BUILD:
-                    visited[0].add(element._unique_id)
-
-                    for dep in element.__build_dependencies:
-                        if dep._unique_id not in visited[1]:
-                            yield from visit(dep, Scope.RUN, visited)
-
-                elif scope == Scope.RUN:
-                    visited[1].add(element._unique_id)
-
-                    for dep in element.__runtime_dependencies:
-                        if dep._unique_id not in visited[1]:
-                            yield from visit(dep, Scope.RUN, visited)
-
-                    yield element
-                else:
-                    yield element
-
-            if visited is None:
-                # Visited is of the form (Visited for Scope.BUILD, Visited for Scope.RUN)
-                visited = (BitMap(), BitMap())
+        for element in selection:
+            if element is self:
+                scope = _Scope.BUILD
             else:
-                # We have already a visited set passed. we might be able to short-circuit
-                if scope in (Scope.BUILD, Scope.ALL) and self._unique_id in visited[0]:
-                    return
-                if scope in (Scope.RUN, Scope.ALL) and self._unique_id in visited[1]:
-                    return
+                scope = _Scope.RUN
 
-            yield from visit(self, scope, visited)
+            # Elements in the `selection` will actually be `ElementProxy` objects, but
+            # those calls will be forwarded to their actual internal `_dependencies()`
+            # methods.
+            #
+            for dep in element._dependencies(scope, recurse=recurse, visited=visited):
+                yield cast("Element", ElementProxy(self, dep))
 
-    def search(self, scope: Scope, name: str) -> Optional["Element"]:
-        """Search for a dependency by name
+    def search(self, name: str) -> Optional["Element"]:
+        """search(scope, *, name)
+
+        Search for a dependency by name
 
         Args:
            scope: The scope to search
@@ -502,9 +479,11 @@ class Element(Plugin):
         Returns:
            The dependency element, or None if not found.
         """
-        for dep in self.dependencies(scope):
-            if dep.name == name:
-                return dep
+        search = self._search(_Scope.BUILD, name)
+        if search is self:
+            return self
+        elif search:
+            return cast("Element", ElementProxy(self, search))
 
         return None
 
@@ -642,7 +621,7 @@ class Element(Plugin):
         .. code:: python
 
           # Stage the dependencies for a build of 'self'
-          for dep in self.dependencies(Scope.BUILD):
+          for dep in self.dependencies():
               dep.stage_artifact(sandbox)
         """
 
@@ -675,7 +654,7 @@ class Element(Plugin):
     def stage_dependency_artifacts(
         self,
         sandbox: "Sandbox",
-        scope: Scope,
+        selection: Sequence["Element"] = None,
         *,
         path: str = None,
         include: Optional[List[str]] = None,
@@ -686,70 +665,32 @@ class Element(Plugin):
 
         This is primarily a convenience wrapper around
         :func:`Element.stage_artifact() <buildstream.element.Element.stage_artifact>`
-        which takes care of staging all the dependencies in `scope` and issueing the
+        which takes care of staging all the dependencies in staging order and issueing the
         appropriate warnings.
+
+        The `selection` argument will behave in the same was as specified by
+        :func:`Element.dependencies() <buildstream.element.Element.dependencies>`,
+        If the `selection` argument is specified as `None`, then the `self` element on which this
+        is called is used as the `selection`.
 
         Args:
            sandbox: The build sandbox
-           scope: The scope to stage dependencies in
+           selection (Sequence[Element]): A list of dependencies to select, or None
            path An optional sandbox relative path
            include: An optional list of domains to include files from
            exclude: An optional list of domains to exclude files from
            orphans: Whether to include files not spoken for by split domains
 
         Raises:
-           (:class:`.ElementError`): If any of the dependencies in `scope` have not
-                                     yet produced artifacts, or if forbidden overlaps
-                                     occur.
+           (:class:`.ElementError`): if forbidden overlaps occur.
         """
-        ignored = {}
-        overlaps = OrderedDict()  # type: OrderedDict[str, List[str]]
-        files_written = {}  # type: Dict[str, List[str]]
+        overlaps = _OverlapCollector(self)
 
-        for dep in self.dependencies(scope):
+        for dep in self.dependencies(selection):
             result = dep.stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans)
-            if result.overwritten:
-                for overwrite in result.overwritten:
-                    # Completely new overwrite
-                    if overwrite not in overlaps:
-                        # Find the overwritten element by checking where we've
-                        # written the element before
-                        for elm, contents in files_written.items():
-                            if overwrite in contents:
-                                overlaps[overwrite] = [elm, dep.name]
-                    else:
-                        overlaps[overwrite].append(dep.name)
-            files_written[dep.name] = result.files_written
+            overlaps.collect_stage_result(dep.name, result)
 
-            if result.ignored:
-                ignored[dep.name] = result.ignored
-
-        if overlaps:
-            overlap_warning = False
-            warning_detail = "Staged files overwrite existing files in staging area:\n"
-            for f, elements in overlaps.items():
-                overlap_warning_elements = []
-                # The bottom item overlaps nothing
-                overlapping_elements = elements[1:]
-                for elm in overlapping_elements:
-                    element = cast(Element, self.search(scope, elm))
-                    if not element.__file_is_whitelisted(f):
-                        overlap_warning_elements.append(elm)
-                        overlap_warning = True
-
-                warning_detail += _overlap_error_detail(f, overlap_warning_elements, elements)
-
-            if overlap_warning:
-                self.warn(
-                    "Non-whitelisted overlaps detected", detail=warning_detail, warning_token=CoreWarnings.OVERLAPS
-                )
-
-        if ignored:
-            detail = "Not staging files which would replace non-empty directories:\n"
-            for key, value in ignored.items():
-                detail += "\nFrom {}:\n".format(key)
-                detail += "  " + "  ".join(["/" + f + "\n" for f in value])
-            self.warn("Ignored files", detail=detail)
+        overlaps.overlap_warnings()
 
     def integrate(self, sandbox: "Sandbox") -> None:
         """Integrate currently staged filesystem against this artifact.
@@ -876,6 +817,129 @@ class Element(Plugin):
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
+
+    # _dependencies()
+    #
+    # A generator function which yields the dependencies of the given element.
+    #
+    # If `recurse` is specified (the default), the full dependencies will be listed
+    # in deterministic staging order, starting with the basemost elements in the
+    # given `scope`. Otherwise, if `recurse` is not specified then only the direct
+    # dependencies in the given `scope` will be traversed, and the element itself
+    # will be omitted.
+    #
+    # Args:
+    #    scope (_Scope): The scope to iterate in
+    #    recurse (bool): Whether to recurse
+    #
+    # Yields:
+    #    (Element): The dependencies in `scope`, in deterministic staging order
+    #
+    def _dependencies(self, scope, *, recurse=True, visited=None):
+
+        # The format of visited is (BitMap(), BitMap()), with the first BitMap
+        # containing element that have been visited for the `_Scope.BUILD` case
+        # and the second one relating to the `_Scope.RUN` case.
+        if not recurse:
+            result: Set[Element] = set()
+            if scope in (_Scope.BUILD, _Scope.ALL):
+                for dep in self.__build_dependencies:
+                    if dep not in result:
+                        result.add(dep)
+                        yield dep
+            if scope in (_Scope.RUN, _Scope.ALL):
+                for dep in self.__runtime_dependencies:
+                    if dep not in result:
+                        result.add(dep)
+                        yield dep
+        else:
+
+            def visit(element, scope, visited):
+                if scope == _Scope.ALL:
+                    visited[0].add(element._unique_id)
+                    visited[1].add(element._unique_id)
+
+                    for dep in chain(element.__build_dependencies, element.__runtime_dependencies):
+                        if dep._unique_id not in visited[0] and dep._unique_id not in visited[1]:
+                            yield from visit(dep, _Scope.ALL, visited)
+
+                    yield element
+                elif scope == _Scope.BUILD:
+                    visited[0].add(element._unique_id)
+
+                    for dep in element.__build_dependencies:
+                        if dep._unique_id not in visited[1]:
+                            yield from visit(dep, _Scope.RUN, visited)
+
+                elif scope == _Scope.RUN:
+                    visited[1].add(element._unique_id)
+
+                    for dep in element.__runtime_dependencies:
+                        if dep._unique_id not in visited[1]:
+                            yield from visit(dep, _Scope.RUN, visited)
+
+                    yield element
+                else:
+                    yield element
+
+            if visited is None:
+                # Visited is of the form (Visited for _Scope.BUILD, Visited for _Scope.RUN)
+                visited = (BitMap(), BitMap())
+            else:
+                # We have already a visited set passed. we might be able to short-circuit
+                if scope in (_Scope.BUILD, _Scope.ALL) and self._unique_id in visited[0]:
+                    return
+                if scope in (_Scope.RUN, _Scope.ALL) and self._unique_id in visited[1]:
+                    return
+
+            yield from visit(self, scope, visited)
+
+    # _search()
+    #
+    # Search for a dependency by name
+    #
+    # Args:
+    #    scope (_Scope): The scope to search
+    #    name (str): The dependency to search for
+    #
+    # Returns:
+    #    (Element): The dependency element, or None if not found.
+    #
+    def _search(self, scope, name):
+
+        for dep in self._dependencies(scope):
+            if dep.name == name:
+                return dep
+
+        return None
+
+    # _stage_dependency_artifacts()
+    #
+    # Stage element dependencies in scope, this is used for core
+    # functionality especially in the CLI which wants to stage specifically
+    # build or runtime dependencies.
+    #
+    # Args:
+    #    sandbox: The build sandbox
+    #    scope (_Scope): The scope of artifacts to stage
+    #    path An optional sandbox relative path
+    #    include: An optional list of domains to include files from
+    #    exclude: An optional list of domains to exclude files from
+    #    orphans: Whether to include files not spoken for by split domains
+    #
+    # Raises:
+    #    (:class:`.ElementError`): If any of the dependencies in `scope` have not
+    #                              yet produced artifacts, or if forbidden overlaps
+    #                              occur.
+    #
+    def _stage_dependency_artifacts(self, sandbox, scope, *, path=None, include=None, exclude=None, orphans=True):
+        overlaps = _OverlapCollector(self)
+
+        for dep in self._dependencies(scope):
+            result = dep.stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans)
+            overlaps.collect_stage_result(dep.name, result)
+
+        overlaps.overlap_warnings()
 
     # _new_from_load_element():
     #
@@ -1252,18 +1316,18 @@ class Element(Plugin):
             self.__configure_sandbox(sandbox)
 
             # Stage what we need
-            if shell and scope == Scope.BUILD:
+            if shell and scope == _Scope.BUILD:
                 self.stage(sandbox)
             else:
                 # Stage deps in the sandbox root
                 with self.timed_activity("Staging dependencies", silent_nested=True):
-                    self.stage_dependency_artifacts(sandbox, scope)
+                    self._stage_dependency_artifacts(sandbox, scope)
 
                 # Run any integration commands provided by the dependencies
                 # once they are all staged and ready
                 if integrate:
                     with self.timed_activity("Integrating sandbox"):
-                        for dep in self.dependencies(scope):
+                        for dep in self._dependencies(scope):
                             dep.integrate(sandbox)
 
             yield sandbox
@@ -1349,7 +1413,7 @@ class Element(Plugin):
         self.__required = True
 
         # Request artifacts of runtime dependencies
-        for dep in self.dependencies(Scope.RUN, recurse=False):
+        for dep in self._dependencies(_Scope.RUN, recurse=False):
             dep._set_required()
 
         # When an element becomes required, it must be assembled for
@@ -1376,7 +1440,7 @@ class Element(Plugin):
     # Mark artifact files for this element and its runtime dependencies as
     # required in the local cache.
     #
-    def _set_artifact_files_required(self, scope=Scope.RUN):
+    def _set_artifact_files_required(self, scope=_Scope.RUN):
         if self.__artifact_files_required:
             # Already done
             return
@@ -1384,7 +1448,7 @@ class Element(Plugin):
         self.__artifact_files_required = True
 
         # Request artifact files of runtime dependencies
-        for dep in self.dependencies(scope, recurse=False):
+        for dep in self._dependencies(scope, recurse=False):
             dep._set_artifact_files_required(scope=scope)
 
     # _artifact_files_required():
@@ -1437,7 +1501,7 @@ class Element(Plugin):
         self.__assemble_scheduled = True
 
         # Requests artifacts of build dependencies
-        for dep in self.dependencies(Scope.BUILD, recurse=False):
+        for dep in self._dependencies(_Scope.BUILD, recurse=False):
             dep._set_required()
 
         # Once we schedule an element for assembly, we know that our
@@ -1799,7 +1863,7 @@ class Element(Plugin):
     # environment
     #
     # Args:
-    #    scope (Scope): Either BUILD or RUN scopes are valid, or None
+    #    scope (_Scope): Either BUILD or RUN scopes are valid, or None
     #    mounts (list): A list of (str, str) tuples, representing host/target paths to mount
     #    isolate (bool): Whether to isolate the environment like we do in builds
     #    prompt (str): A suitable prompt string for PS1
@@ -2205,6 +2269,33 @@ class Element(Plugin):
     def _add_build_dependency(self, dependency):
         self.__build_dependencies.append(dependency)
 
+    # _file_is_whitelisted()
+    #
+    # Checks if a file is whitelisted in the overlap whitelist
+    #
+    # This is only internal (one underscore) and not locally private
+    # because it needs to be proxied through ElementProxy.
+    #
+    # Args:
+    #    path (str): The path to check
+    #
+    # Returns:
+    #    (bool): True of the specified `path` is whitelisted
+    #
+    def _file_is_whitelisted(self, path):
+        # Considered storing the whitelist regex for re-use, but public data
+        # can be altered mid-build.
+        # Public data is not guaranteed to stay the same for the duration of
+        # the build, but I can think of no reason to change it mid-build.
+        # If this ever changes, things will go wrong unexpectedly.
+        if not self.__whitelist_regex:
+            bstdata = self.get_public_data("bst")
+            whitelist = bstdata.get_sequence("overlap-whitelist", default=[])
+            whitelist_expressions = [utils._glob2re(self.__variables.subst(node)) for node in whitelist]
+            expression = "^(?:" + "|".join(whitelist_expressions) + ")$"
+            self.__whitelist_regex = re.compile(expression)
+        return self.__whitelist_regex.match(os.path.join(os.sep, path))
+
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
@@ -2268,7 +2359,7 @@ class Element(Plugin):
 
     # __get_dependency_artifact_names()
     #
-    # Retrieve the artifact names of all of the dependencies in Scope.BUILD
+    # Retrieve the artifact names of all of the dependencies in _Scope.BUILD
     #
     # Returns:
     #    (list [str]): A list of refs of all dependencies in staging order.
@@ -2276,7 +2367,7 @@ class Element(Plugin):
     def __get_dependency_artifact_names(self):
         return [
             os.path.join(dep.project_name, _get_normal_name(dep.name), dep._get_cache_key())
-            for dep in self.dependencies(Scope.BUILD)
+            for dep in self._dependencies(_Scope.BUILD)
         ]
 
     # __get_last_build_artifact()
@@ -2340,21 +2431,23 @@ class Element(Plugin):
     def __preflight(self):
 
         if self.BST_FORBID_RDEPENDS and self.BST_FORBID_BDEPENDS:
-            if any(self.dependencies(Scope.RUN, recurse=False)) or any(self.dependencies(Scope.BUILD, recurse=False)):
+            if any(self._dependencies(_Scope.RUN, recurse=False)) or any(
+                self._dependencies(_Scope.BUILD, recurse=False)
+            ):
                 raise ElementError(
                     "{}: Dependencies are forbidden for '{}' elements".format(self, self.get_kind()),
                     reason="element-forbidden-depends",
                 )
 
         if self.BST_FORBID_RDEPENDS:
-            if any(self.dependencies(Scope.RUN, recurse=False)):
+            if any(self._dependencies(_Scope.RUN, recurse=False)):
                 raise ElementError(
                     "{}: Runtime dependencies are forbidden for '{}' elements".format(self, self.get_kind()),
                     reason="element-forbidden-rdepends",
                 )
 
         if self.BST_FORBID_BDEPENDS:
-            if any(self.dependencies(Scope.BUILD, recurse=False)):
+            if any(self._dependencies(_Scope.BUILD, recurse=False)):
                 raise ElementError(
                     "{}: Build dependencies are forbidden for '{}' elements".format(self, self.get_kind()),
                     reason="element-forbidden-bdepends",
@@ -2786,20 +2879,6 @@ class Element(Plugin):
                 if filter_func(filename):
                     yield filename
 
-    def __file_is_whitelisted(self, path):
-        # Considered storing the whitelist regex for re-use, but public data
-        # can be altered mid-build.
-        # Public data is not guaranteed to stay the same for the duration of
-        # the build, but I can think of no reason to change it mid-build.
-        # If this ever changes, things will go wrong unexpectedly.
-        if not self.__whitelist_regex:
-            bstdata = self.get_public_data("bst")
-            whitelist = bstdata.get_sequence("overlap-whitelist", default=[])
-            whitelist_expressions = [utils._glob2re(self.__variables.subst(node)) for node in whitelist]
-            expression = "^(?:" + "|".join(whitelist_expressions) + ")$"
-            self.__whitelist_regex = re.compile(expression)
-        return self.__whitelist_regex.match(os.path.join(os.sep, path))
-
     # __load_public_data():
     #
     # Loads the public data from the cached artifact
@@ -2911,7 +2990,7 @@ class Element(Plugin):
                 [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
                 if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
                 else [e.project_name, e.name]
-                for e in self.dependencies(Scope.BUILD)
+                for e in self._dependencies(_Scope.BUILD)
             ]
 
             self.__weak_cache_key = self._calculate_cache_key(dependencies)
@@ -2924,7 +3003,7 @@ class Element(Plugin):
         if self.__strict_cache_key is None:
             dependencies = [
                 [e.project_name, e.name, e.__strict_cache_key] if e.__strict_cache_key is not None else None
-                for e in self.dependencies(Scope.BUILD)
+                for e in self._dependencies(_Scope.BUILD)
             ]
             self.__strict_cache_key = self._calculate_cache_key(dependencies)
 
@@ -3014,7 +3093,7 @@ class Element(Plugin):
                 self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
                 # Artifact will or has been built, not downloaded
-                dependencies = [[e.project_name, e.name, e._get_cache_key()] for e in self.dependencies(Scope.BUILD)]
+                dependencies = [[e.project_name, e.name, e._get_cache_key()] for e in self._dependencies(_Scope.BUILD)]
                 self.__cache_key = self._calculate_cache_key(dependencies)
 
             if self.__cache_key is None:
@@ -3118,16 +3197,90 @@ class Element(Plugin):
         self._update_ready_for_runtime_and_cached()
 
 
-def _overlap_error_detail(f, forbidden_overlap_elements, elements):
-    if forbidden_overlap_elements:
-        return "/{}: {} {} not permitted to overlap other elements, order {} \n".format(
-            f,
-            " and ".join(forbidden_overlap_elements),
-            "is" if len(forbidden_overlap_elements) == 1 else "are",
-            " above ".join(reversed(elements)),
-        )
-    else:
-        return ""
+# _OverlapCollector()
+#
+# Collects results of Element.stage_artifact() and saves
+# them in order to raise a proper overlap error at the end
+# of staging.
+#
+# Args:
+#    element (Element): The element for which we are staging artifacts
+#
+class _OverlapCollector:
+    def __init__(self, element):
+        self.element = element
+        self.ignored = {}
+        self.overlaps = {}  # type: Dict[str, List[str]]
+        self.files_written = {}  # type: Dict[str, List[str]]
+
+    # collect_stage_result()
+    #
+    # Collect and accumulate results of Element.stage_artifact()
+    #
+    # Args:
+    #    element_name (str): The name of the element staged
+    #    result (FileListResult): The result of Element.stage_artifact()
+    #
+    def collect_stage_result(self, element_name: str, result: FileListResult):
+        if result.overwritten:
+            for overwrite in result.overwritten:
+                # Completely new overwrite
+                if overwrite not in self.overlaps:
+                    # Find the overwritten element by checking where we've
+                    # written the element before
+                    for elm, contents in self.files_written.items():
+                        if overwrite in contents:
+                            self.overlaps[overwrite] = [elm, element_name]
+                else:
+                    self.overlaps[overwrite].append(element_name)
+
+        self.files_written[element_name] = result.files_written
+        if result.ignored:
+            self.ignored[element_name] = result.ignored
+
+    # overlap_warnings()
+    #
+    # Issue any warnings as a batch as a result of staging artifacts,
+    # based on the results collected with collect_stage_result().
+    #
+    def overlap_warnings(self):
+        if self.overlaps:
+            overlap_warning = False
+            warning_detail = "Staged files overwrite existing files in staging area:\n"
+            for f, elements in self.overlaps.items():
+                overlap_warning_elements = []
+                # The bottom item overlaps nothing
+                overlapping_elements = elements[1:]
+                for elm in overlapping_elements:
+                    element = cast(Element, self.element.search(elm))
+                    if not element._file_is_whitelisted(f):
+                        overlap_warning_elements.append(elm)
+                        overlap_warning = True
+
+                warning_detail += self._overlap_error_detail(f, overlap_warning_elements, elements)
+
+            if overlap_warning:
+                self.element.warn(
+                    "Non-whitelisted overlaps detected", detail=warning_detail, warning_token=CoreWarnings.OVERLAPS
+                )
+
+        if self.ignored:
+            detail = "Not staging files which would replace non-empty directories:\n"
+            for key, value in self.ignored.items():
+                detail += "\nFrom {}:\n".format(key)
+                detail += "  " + "  ".join(["/" + f + "\n" for f in value])
+            self.element.warn("Ignored files", detail=detail)
+
+    def _overlap_error_detail(self, f, forbidden_overlap_elements, elements):
+        if forbidden_overlap_elements:
+            return "/{}: {} {} not permitted to overlap other elements, order {} \n".format(
+                f,
+                " and ".join(forbidden_overlap_elements),
+                "is" if len(forbidden_overlap_elements) == 1 else "are",
+                " above ".join(reversed(elements)),
+            )
+        else:
+            return ""
 
 
 # _get_normal_name():

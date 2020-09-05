@@ -99,8 +99,7 @@ Element.stage()
 In :func:`Element.stage() <buildstream.element.Element.stage>`, the BuildElement
 will do the following operations:
 
-* Stage all the dependencies in the :func:`Scope.BUILD <buildstream.element.Scope.BUILD>`
-  scope into the sandbox root.
+* Stage all of the build dependencies into the sandbox root.
 
 * Run the integration commands for all staged dependencies using
   :func:`Element.integrate() <buildstream.element.Element.integrate>`
@@ -139,7 +138,6 @@ import os
 
 from .element import Element
 from .sandbox import SandboxFlags
-from .types import Scope
 
 
 # This list is preserved because of an unfortunate situation, we
@@ -222,12 +220,12 @@ class BuildElement(Element):
 
         # Stage deps in the sandbox root
         with self.timed_activity("Staging dependencies", silent_nested=True):
-            self.stage_dependency_artifacts(sandbox, Scope.BUILD)
+            self.stage_dependency_artifacts(sandbox)
 
         # Run any integration commands provided by the dependencies
         # once they are all staged and ready
         with sandbox.batch(SandboxFlags.NONE, label="Integrating sandbox"):
-            for dep in self.dependencies(Scope.BUILD):
+            for dep in self.dependencies():
                 dep.integrate(sandbox)
 
         # Stage sources in the build root
