@@ -7,6 +7,9 @@ Format
   o The `script` element no longer has a `layout` configuration directly, and now
     exposes a new `location` dependency configuration instead.
 
+  o The BuildElement now has a new `location` dependency configuration, allowing
+    BuildElement plugins to also stage dependencies into custom locations in
+    the sandbox.
 
 Core
 ----
