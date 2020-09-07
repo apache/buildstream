@@ -84,3 +84,7 @@ class PluginProxy:
 
     def get_kind(self) -> str:
         return self._plugin.get_kind()
+
+    @property
+    def _unique_id(self):
+        return self._plugin._unique_id

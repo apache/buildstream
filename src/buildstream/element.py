@@ -688,7 +688,7 @@ class Element(Plugin):
 
         for dep in self.dependencies(selection):
             result = dep.stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans)
-            overlaps.collect_stage_result(dep.name, result)
+            overlaps.collect_stage_result(dep, result)
 
         overlaps.overlap_warnings()
 
@@ -937,7 +937,7 @@ class Element(Plugin):
 
         for dep in self._dependencies(scope):
             result = dep.stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans)
-            overlaps.collect_stage_result(dep.name, result)
+            overlaps.collect_stage_result(dep, result)
 
         overlaps.overlap_warnings()
 
@@ -3209,34 +3209,41 @@ class Element(Plugin):
 class _OverlapCollector:
     def __init__(self, element):
         self.element = element
-        self.ignored = {}
-        self.overlaps = {}  # type: Dict[str, List[str]]
-        self.files_written = {}  # type: Dict[str, List[str]]
+
+        # Dictionary of files which were ignored (See FileListResult()), keyed by element unique ID
+        self.ignored = {}  # type: Dict[int, List[str]]
+
+        # Dictionary of files which were staged, keyed by element unique ID
+        self.files_written = {}  # type: Dict[int, List[str]]
+
+        # Dictionary of element IDs which overlapped, keyed by the file they overlap on
+        self.overlaps = {}  # type: Dict[str, List[int]]
 
     # collect_stage_result()
     #
     # Collect and accumulate results of Element.stage_artifact()
     #
     # Args:
-    #    element_name (str): The name of the element staged
+    #    element (Element): The name of the element staged
     #    result (FileListResult): The result of Element.stage_artifact()
     #
-    def collect_stage_result(self, element_name: str, result: FileListResult):
+    def collect_stage_result(self, element: Element, result: FileListResult):
         if result.overwritten:
-            for overwrite in result.overwritten:
+            for overwritten_file in result.overwritten:
                 # Completely new overwrite
-                if overwrite not in self.overlaps:
-                    # Find the overwritten element by checking where we've
-                    # written the element before
-                    for elm, contents in self.files_written.items():
-                        if overwrite in contents:
-                            self.overlaps[overwrite] = [elm, element_name]
+                if overwritten_file not in self.overlaps:
+                    # Search for the element we've overwritten in self.written_files
+                    for element_id, staged_files in self.files_written.items():
+                        if overwritten_file in staged_files:
+                            self.overlaps[overwritten_file] = [element_id, element._unique_id]
+                            break
+                # Record the new overwrite in the list
                 else:
-                    self.overlaps[overwrite].append(element_name)
+                    self.overlaps[overwritten_file].append(element._unique_id)
 
-        self.files_written[element_name] = result.files_written
+        self.files_written[element._unique_id] = result.files_written
         if result.ignored:
-            self.ignored[element_name] = result.ignored
+            self.ignored[element._unique_id] = result.ignored
 
     # overlap_warnings()
     #
@@ -3247,17 +3254,17 @@ class _OverlapCollector:
         if self.overlaps:
             overlap_warning = False
             warning_detail = "Staged files overwrite existing files in staging area:\n"
-            for f, elements in self.overlaps.items():
+            for filename, element_ids in self.overlaps.items():
                 overlap_warning_elements = []
                 # The bottom item overlaps nothing
-                overlapping_elements = elements[1:]
-                for elm in overlapping_elements:
-                    element = cast(Element, self.element.search(elm))
-                    if not element._file_is_whitelisted(f):
-                        overlap_warning_elements.append(elm)
+                overlapping_element_ids = element_ids[1:]
+                for element_id in overlapping_element_ids:
+                    element = Plugin._lookup(element_id)
+                    if not element._file_is_whitelisted(filename):
+                        overlap_warning_elements.append(element)
                         overlap_warning = True
 
-                warning_detail += self._overlap_error_detail(f, overlap_warning_elements, elements)
+                warning_detail += self._overlap_error_detail(filename, overlap_warning_elements, element_ids)
 
             if overlap_warning:
                 self.element.warn(
@@ -3266,18 +3273,31 @@ class _OverlapCollector:
 
         if self.ignored:
             detail = "Not staging files which would replace non-empty directories:\n"
-            for key, value in self.ignored.items():
-                detail += "\nFrom {}:\n".format(key)
-                detail += "  " + "  ".join(["/" + f + "\n" for f in value])
+            for element_id, ignored_filenames in self.ignored.items():
+                element = Plugin._lookup(element_id)
+                detail += "\nFrom {}:\n".format(element._get_full_name())
+                detail += "  " + "  ".join(["/" + filename + "\n" for filename in ignored_filenames])
             self.element.warn("Ignored files", detail=detail)
 
-    def _overlap_error_detail(self, f, forbidden_overlap_elements, elements):
-        if forbidden_overlap_elements:
+    # _overlap_error_detail()
+    #
+    # Get a string to describe overlaps on a filename
+    #
+    # Args:
+    #    filename (str): The filename being overlapped
+    #    overlap_elements (List[Element]): A list of Elements overlapping
+    #    element_ids (List[int]): The ordered ID list of elements which staged this file
+    #
+    def _overlap_error_detail(self, filename, overlap_elements, element_ids):
+        if overlap_elements:
+            overlap_element_names = [element._get_full_name() for element in overlap_elements]
+            overlap_order_elements = [Plugin._lookup(element_id) for element_id in element_ids]
+            overlap_order_names = [element._get_full_name() for element in overlap_order_elements]
             return "/{}: {} {} not permitted to overlap other elements, order {} \n".format(
-                f,
-                " and ".join(forbidden_overlap_elements),
-                "is" if len(forbidden_overlap_elements) == 1 else "are",
-                " above ".join(reversed(elements)),
+                filename,
+                " and ".join(overlap_element_names),
+                "is" if len(overlap_element_names) == 1 else "are",
+                " above ".join(reversed(overlap_order_names)),
             )
         else:
             return ""
