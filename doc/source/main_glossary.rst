@@ -44,6 +44,15 @@ Glossary
        See :ref:`Dependencies document <format_dependencies>` for more
        details.
 
+   Dependency configuration
+       Additional custom YAML configuration which is used to define
+       an :term:`Element's <Element>` relationship with it's :term:`Dependency <Dependency>`.
+
+       This is supported on limited :term:`Element <Element>` implementations, and
+       each :term:`Element <Element>` defines what configuration it supports.
+
+       See the :ref:`dependency documentation <format_dependencies>` for details
+       on dependency configuration.
 
    Element
        An atom of a :term:`BuildStream project <Project>`. Projects consist of
