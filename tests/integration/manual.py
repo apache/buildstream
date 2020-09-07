@@ -204,3 +204,22 @@ def test_manual_command_subdir(cli, datafiles):
     result.assert_success()
     with open(os.path.join(checkout, "hello")) as f:
         assert f.read() == "hello from subdir\n"
+
+
+# Test staging artifacts into subdirectories
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.skipif(not HAVE_SANDBOX, reason="Only available with a functioning sandbox")
+def test_manual_stage_custom(cli, datafiles):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, "checkout")
+
+    # Verify that the element builds, and has the correct expected output.
+    result = cli.run(project=project, args=["build", "manual/manual-stage-custom.bst"])
+    result.assert_success()
+    result = cli.run(
+        project=project, args=["artifact", "checkout", "manual/manual-stage-custom.bst", "--directory", checkout]
+    )
+    result.assert_success()
+
+    with open(os.path.join(checkout, "test.txt")) as f:
+        assert f.read() == "This is another test\n"
