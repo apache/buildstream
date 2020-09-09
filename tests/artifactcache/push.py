@@ -43,6 +43,10 @@ def _push(cli, cache_dir, project_dir, config_file, target):
         artifactcache.setup_remotes(use_config=True)
         artifactcache.initialize_remotes()
 
+        # Query local cache
+        artifact = element._pull(check_remotes=False)
+        element._pull_done(artifact)
+
         assert artifactcache.has_push_remotes(plugin=element), "No remote configured for element target.bst"
         assert element._push(), "Push operation failed"
 

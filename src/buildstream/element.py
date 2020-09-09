@@ -257,6 +257,8 @@ class Element(Plugin):
         self._depth = None  # Depth of Element in its current dependency graph
         self._overlap_collector = None  # type: Optional[OverlapCollector]
 
+        self._temp_job_result = None
+
         #
         # Private instance properties
         #
@@ -302,7 +304,7 @@ class Element(Plugin):
 
         # Callbacks
         self.__required_callback = None  # Callback to Queues
-        self.__can_query_cache_callback = None  # Callback to PullQueue/FetchQueue
+        self.__can_query_cache_callback = None  # Callback to FetchQueue
         self.__buildable_callback = None  # Callback to BuildQueue
 
         self.__resolved_initial_state = False  # Whether the initial state of the Element has been resolved
@@ -1338,7 +1340,7 @@ class Element(Plugin):
 
     # _initialize_state()
     #
-    # Compute up the elment's initial state. Element state contains
+    # Compute up the element's initial state. Element state contains
     # the following mutable sub-states:
     #
     # - Source state in `ElementSources`
@@ -1362,9 +1364,6 @@ class Element(Plugin):
     #
     # - __update_cache_keys()
     #   - Computes the strong and weak cache keys.
-    # - _update_artifact_state()
-    #   - Computes the state of the element's artifact using the
-    #     cache key.
     # - __schedule_assembly_when_necessary()
     #   - Schedules assembly of an element, iff its current state
     #     allows/necessitates it
@@ -1884,31 +1883,39 @@ class Element(Plugin):
 
     # _pull_done()
     #
-    # Indicate that pull was attempted.
+    # Indicate that pull job completed successfully.
     #
-    # This needs to be called in the main process after a pull
-    # succeeds or fails so that we properly update the main
+    # This needs to be called in the main thread after a pull job completes
+    # successfully or is skipped so that we properly update the main
     # process data model
     #
     # This will result in updating the element state.
     #
-    def _pull_done(self):
+    # Args:
+    #     artifact (Artifact): The Artifact object incl. cache key and status
+    #
+    def _pull_done(self, artifact):
         assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
+
+        context = self._get_context()
 
         self.__pull_done = True
 
-        # Artifact may become cached after pulling, so let it query the
-        # filesystem again to check
-        self.__artifact.query_cache()
+        assert artifact
+        self.__artifact = artifact
 
-        # We may not have actually pulled an artifact - the pull may
-        # have failed. We might therefore need to schedule assembly.
-        self.__schedule_assembly_when_necessary()
-        # If we've finished pulling, an artifact might now exist
-        # locally, so we might need to update a non-strict strong
-        # cache key.
-        self._update_cache_key_non_strict()
+        if not context.get_strict() and self.__artifact.cached():
+            # In non-strict mode, strong cache key becomes available when
+            # the artifact is cached
+            self._update_cache_key_non_strict()
+
         self._update_ready_for_runtime_and_cached()
+
+        self.__schedule_assembly_when_necessary()
+
+        if self.__can_query_cache_callback is not None:
+            self.__can_query_cache_callback(self)
+            self.__can_query_cache_callback = None
 
     # _pull():
     #
@@ -1919,38 +1926,45 @@ class Element(Plugin):
     def _pull(self, *, check_remotes=True):
         context = self._get_context()
 
-        if self._get_workspace():
-            # Workspace builds are never pushed to artifact servers
-            return False
+        pull_buildtrees = context.pull_buildtrees and not self._get_workspace()
 
-        pull_buildtrees = self._get_context().pull_buildtrees
+        # First check whether we already have the strict artifact in the local cache
+        artifact = Artifact(self, context, strong_key=self.__strict_cache_key, weak_key=self.__weak_cache_key)
+        artifact.query_cache()
 
-        if self._cached() and self.__artifact._cache_key == self.__strict_cache_key:
+        if artifact.cached():
             if pull_buildtrees:
                 # If we want to pull buildtrees, also pull if we're only missing the buildtree
-                if self._cached_buildtree() or not self._buildtree_exists():
-                    return False
+                if artifact.cached_buildtree() or not artifact.buildtree_exists():
+                    return artifact
             else:
-                return False
+                return artifact
 
-        # Pull is pending if artifact remote server available
-        if not check_remotes or not self.__artifacts.has_fetch_remotes(plugin=self):
-            return False
+        # Check remotes if requested and artifact remote server available.
+        # Workspace builds are never pushed to artifact servers
+        check_remotes = check_remotes and self.__artifacts.has_fetch_remotes(plugin=self) and not self._get_workspace()
 
-        # Attempt to pull artifact without knowing whether it's available
-        strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key, weak_key=self.__weak_cache_key)
-        if strict_artifact.pull(pull_buildtrees=pull_buildtrees):
-            # Notify successful download
-            return True
+        # Attempt to pull artifact with the strict cache key
+        if check_remotes and artifact.pull(pull_buildtrees=pull_buildtrees):
+            return artifact
 
-        if not context.get_strict() and not self._cached():
-            # In non-strict mode also try pulling weak artifact
-            # if no weak artifact is cached yet.
+        if not context.get_strict():
+            # In non-strict mode retry with weak cache key
             artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
-            return artifact.pull(pull_buildtrees=pull_buildtrees)
-        else:
-            # No artifact has been downloaded
-            return False
+            artifact.query_cache()
+
+            if artifact.cached():
+                if pull_buildtrees:
+                    # If we want to pull buildtrees, also pull if we're only missing the buildtree
+                    if artifact.cached_buildtree() or not artifact.buildtree_exists():
+                        return artifact
+                else:
+                    return artifact
+
+            if check_remotes and artifact.pull(pull_buildtrees=pull_buildtrees):
+                return artifact
+
+        return artifact
 
     def _skip_source_push(self):
         if not self.sources() or self._get_workspace():
@@ -2345,7 +2359,7 @@ class Element(Plugin):
 
     # _set_can_query_cache_callback()
     #
-    # Notify the pull/fetch queue that the element is potentially
+    # Notify the fetch queue that the element is potentially
     # ready to be processed.
     #
     # Set the _can_query_cache_callback - the _can_query_cache_callback is
@@ -2406,7 +2420,7 @@ class Element(Plugin):
         assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
         if not self.__ready_for_runtime_and_cached:
-            if self.__runtime_deps_uncached == 0 and self.__cache_key and self._cached_success():
+            if self.__runtime_deps_uncached == 0 and self.__pull_done and self.__cache_key and self._cached_success():
                 self.__ready_for_runtime_and_cached = True
 
                 # Notify reverse dependencies
@@ -3200,52 +3214,8 @@ class Element(Plugin):
             # In strict mode, the strong cache key always matches the strict cache key
             self.__cache_key = self.__strict_cache_key
 
-        # If we've newly calculated a cache key, our artifact's
-        # current state will also change - after all, we can now find
-        # a potential existing artifact.
-        self.__update_artifact_state()
-
-        # Update the message kwargs in use for this plugin to dispatch messages with
-        #
-        self._message_kwargs["element_key"] = self._get_display_key()
-
-    # __update_artifact_state()
-    #
-    # Updates the data involved in knowing about the artifact corresponding
-    # to this element.
-    #
-    # If the state changes, this will subsequently call
-    # `self.__schedule_assembly_when_necessary()` to schedule assembly if it becomes
-    # possible.
-    #
-    # Element.__update_cache_keys() must be called before this to have
-    # meaningful results, because the element must know its cache key before
-    # it can check whether an artifact exists for that cache key.
-    #
-    def __update_artifact_state(self):
-        assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
-        assert self.__artifact is None
-
-        context = self._get_context()
-
-        strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key, weak_key=self.__weak_cache_key)
-        strict_artifact.query_cache()
-        if context.get_strict() or strict_artifact.cached():
-            self.__artifact = strict_artifact
-        else:
-            self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
-            self.__artifact.query_cache()
-
-        if not context.get_strict() and self.__artifact.cached():
-            # In non-strict mode, strong cache key becomes available when
-            # the artifact is cached
-            self._update_cache_key_non_strict()
-
-        self.__schedule_assembly_when_necessary()
-
-        if self.__can_query_cache_callback is not None:
-            self.__can_query_cache_callback(self)
-            self.__can_query_cache_callback = None
+            # Update the message kwargs in use for this plugin to dispatch messages with
+            self._message_kwargs["element_key"] = self._get_display_key()
 
     # _update_cache_key_non_strict()
     #
@@ -3255,7 +3225,7 @@ class Element(Plugin):
     # strict cache key, so no work needs to be done.
     #
     # When buildstream is not run in strict mode, this requires the artifact
-    # state (as set in Element.__update_artifact_state()) to be set accordingly,
+    # state (as set in Element._pull_done()) to be set accordingly,
     # as the cache key can be loaded from the cache (possibly pulling from
     # a remote cache).
     #

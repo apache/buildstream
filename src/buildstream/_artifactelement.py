@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 
 from . import Element
 from . import _cachekey
+from ._artifact import Artifact
 from ._exceptions import ArtifactElementError
 from ._loader import LoadElement
 from .node import Node
@@ -73,10 +74,13 @@ class ArtifactElement(Element):
             return cls.__instantiated_artifacts[ref]
 
         artifact_element = ArtifactElement(context, ref)
-        # XXX: We need to call initialize_state as it is responsible for
-        # initialising an Element/ArtifactElement's Artifact (__artifact)
         artifact_element._initialize_state()
         cls.__instantiated_artifacts[ref] = artifact_element
+
+        key = artifact_element._key
+        artifact = Artifact(artifact_element, context, strong_key=key, weak_key=key)
+        artifact.query_cache()
+        artifact_element._pull_done(artifact)
 
         for dep_ref in artifact_element.get_dependency_artifact_names():
             dependency = ArtifactElement._new_from_artifact_name(dep_ref, context, task)
