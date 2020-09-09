@@ -115,6 +115,40 @@ def test_non_strict_build_strict_checkout(datafiles, cli):
 
 
 @pytest.mark.datafiles(DATA_DIR)
+def test_non_strict_pull_build_strict_checkout(datafiles, cli, tmpdir):
+    project = str(datafiles)
+    checkout = os.path.join(cli.directory, "checkout")
+
+    # Target with at least one (indirect) build-only dependency
+    element_name = "target.bst"
+
+    with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
+
+        cli.configure({"artifacts": {"url": share.repo}})
+
+        # First build it in non-strict mode with an artifact server configured.
+        # With this configuration BuildStream will attempt to pull the build-only
+        # dependencies after attempting to pull the target element. This means
+        # that the cache key calculation of the target element has to be deferred
+        # until the pull attempt of the build-only dependencies, exercising a
+        # different code path.
+        # As this is a clean build from scratch, the result and also the cache keys
+        # should be identical to a build in strict mode.
+        result = cli.run(project=project, args=["--no-strict", "build", element_name])
+        result.assert_success()
+
+        # Now check it out in strict mode.
+        # This verifies that the clean build in non-strict mode produced an artifact
+        # matching the strict cache key.
+        result = cli.run(project=project, args=["artifact", "checkout", element_name, "--directory", checkout])
+        result.assert_success()
+
+        # Check that the executable hello file is found in the checkout
+        filename = os.path.join(checkout, "usr", "bin", "hello")
+        assert os.path.exists(filename)
+
+
+@pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("strict,hardlinks", [("non-strict", "hardlinks"),])
 def test_build_invalid_suffix(datafiles, cli, strict, hardlinks):
     project = str(datafiles)

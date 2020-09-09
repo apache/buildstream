@@ -2066,6 +2066,10 @@ class Element(Plugin):
     #
     # Calculates the cache key
     #
+    # Args:
+    #    dependencies (List[List[str]]): list of dependencies with project name,
+    #                                    element name and optional cache key
+    #
     # Returns:
     #    (str): A hex digest cache key for this Element, or None
     #
@@ -2073,7 +2077,7 @@ class Element(Plugin):
     #
     def _calculate_cache_key(self, dependencies):
         # No cache keys for dependencies which have no cache keys
-        if None in dependencies:
+        if any(not all(dep) for dep in dependencies):
             return None
 
         # Generate dict that is used as base for all cache keys
@@ -3001,10 +3005,7 @@ class Element(Plugin):
                 return
 
         if self.__strict_cache_key is None:
-            dependencies = [
-                [e.project_name, e.name, e.__strict_cache_key] if e.__strict_cache_key is not None else None
-                for e in self._dependencies(_Scope.BUILD)
-            ]
+            dependencies = [[e.project_name, e.name, e.__strict_cache_key] for e in self._dependencies(_Scope.BUILD)]
             self.__strict_cache_key = self._calculate_cache_key(dependencies)
 
             if self.__strict_cache_key is not None:
