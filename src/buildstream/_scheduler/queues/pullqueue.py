@@ -23,6 +23,7 @@ from . import Queue, QueueStatus
 from ..resources import ResourceType
 from ..jobs import JobStatus
 from ..._exceptions import SkipJob
+from ...types import _KeyStrength
 
 
 # A queue which pulls element artifacts
@@ -45,8 +46,10 @@ class PullQueue(Queue):
             return PullQueue._check
 
     def status(self, element):
-        if not element._can_query_cache():
-            return QueueStatus.PENDING
+        if not element._get_cache_key(strength=_KeyStrength.WEAK):
+            # Strict and weak cache keys are unavailable if the element or
+            # a dependency has an unresolved source
+            return QueueStatus.SKIP
 
         return QueueStatus.READY
 
@@ -56,12 +59,6 @@ class PullQueue(Queue):
             return
 
         element._pull_done()
-
-    def register_pending_element(self, element):
-        # Set a "can_query_cache"_callback for an element which is not
-        # immediately ready to query the artifact cache so that it
-        # may be pulled.
-        element._set_can_query_cache_callback(self._enqueue_element)
 
     @staticmethod
     def _pull_or_skip(element):

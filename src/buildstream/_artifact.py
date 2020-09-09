@@ -640,6 +640,15 @@ class Artifact:
     def pull(self, *, pull_buildtrees):
         artifacts = self._context.artifactcache
 
+        # Attempt pull only if anything is missing
+        if self.cached():
+            if pull_buildtrees:
+                # If we want to pull buildtrees, also pull if we're only missing the buildtree
+                if self.cached_buildtree() or not self.buildtree_exists():
+                    return False
+            else:
+                return False
+
         pull_key = self.get_extract_key()
 
         if not artifacts.pull(self._element, pull_key, pull_buildtrees=pull_buildtrees):
