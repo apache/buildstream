@@ -221,6 +221,15 @@ class Element(Plugin):
         and creating directory names and such.
         """
 
+        #
+        # Internal instance properties
+        #
+        self._depth = None  # Depth of Element in its current dependency graph
+
+        #
+        # Private instance properties
+        #
+
         # Direct runtime dependency Elements
         self.__runtime_dependencies = []  # type: List[Element]
         # Direct build dependency Elements
@@ -270,7 +279,6 @@ class Element(Plugin):
         self.__can_query_cache_callback = None  # Callback to PullQueue/FetchQueue
         self.__buildable_callback = None  # Callback to BuildQueue
 
-        self._depth = None  # Depth of Element in its current dependency graph
         self.__resolved_initial_state = False  # Whether the initial state of the Element has been resolved
 
         # Ensure we have loaded this class's defaults
