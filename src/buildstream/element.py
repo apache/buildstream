@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2018 Codethink Limited
+#  Copyright (C) 2016-2020 Codethink Limited
 #  Copyright (C) 2017-2020 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
@@ -103,11 +103,12 @@ from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import CoreWarnings, _Scope, _CacheBuildTrees, _KeyStrength
+from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction
 from ._artifact import Artifact
 from ._elementproxy import ElementProxy
 from ._elementsources import ElementSources
 from ._loader import Symbol, MetaSource
+from ._overlapcollector import OverlapCollector
 
 from .storage.directory import Directory
 from .storage._filebaseddirectory import FileBasedDirectory
@@ -235,6 +236,7 @@ class Element(Plugin):
         # Internal instance properties
         #
         self._depth = None  # Depth of Element in its current dependency graph
+        self._overlap_collector = None  # type: Optional[OverlapCollector]
 
         #
         # Private instance properties
@@ -601,9 +603,10 @@ class Element(Plugin):
         sandbox: "Sandbox",
         *,
         path: str = None,
+        action: str = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
-        orphans: bool = True
+        orphans: bool = True,
     ) -> FileListResult:
         """Stage this element's output artifact in the sandbox
 
@@ -615,6 +618,7 @@ class Element(Plugin):
         Args:
            sandbox: The build sandbox
            path: An optional sandbox relative path
+           action (OverlapAction): The action to take when overlapping with previous invocations
            include: An optional list of domains to include files from
            exclude: An optional list of domains to exclude files from
            orphans: Whether to include files not spoken for by split domains
@@ -631,38 +635,24 @@ class Element(Plugin):
            unless the existing directory in `dest` is not empty in
            which case the path will be reported in the return value.
 
-        **Example:**
+        .. attention::
 
-        .. code:: python
-
-          # Stage the dependencies for a build of 'self'
-          for dep in self.dependencies():
-              dep.stage_artifact(sandbox)
+           When staging artifacts with their dependencies, use
+           :func:`Element.stage_dependency_artifacts() <buildstream.element.Element.stage_dependency_artifacts>`
+           instead.
         """
+        assert self._overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
 
-        if not self._cached():
-            detail = (
-                "No artifacts have been cached yet for that element\n"
-                + "Try building the element first with `bst build`\n"
-            )
-            raise ElementError("No artifacts to stage", detail=detail, reason="uncached-checkout-attempt")
-
-        # Time to use the artifact, check once more that it's there
-        self.__assert_cached()
-
-        self.status("Staging {}/{}".format(self.name, self._get_brief_display_key()))
-        # Disable type checking since we can't easily tell mypy that
-        # `self.__artifact` can't be None at this stage.
-        files_vdir = self.__artifact.get_files()  # type: ignore
-
-        # Hard link it into the staging area
         #
-        vbasedir = sandbox.get_virtual_directory()
-        vstagedir = vbasedir if path is None else vbasedir.descend(*path.lstrip(os.sep).split(os.sep), create=True)
-
-        split_filter = self.__split_filter_func(include, exclude, orphans)
-
-        result = vstagedir.import_files(files_vdir, filter_callback=split_filter, report_written=True, can_link=True)
+        # The public API can only be called on the implementing plugin itself.
+        #
+        # ElementProxy calls to stage_artifact() are routed directly to _stage_artifact(),
+        # and the ElementProxy takes care of starting and ending the OverlapCollector session.
+        #
+        with self._overlap_collector.session(action, path):
+            result = self._stage_artifact(
+                sandbox, path=path, action=action, include=include, exclude=exclude, orphans=orphans
+            )
 
         return result
 
@@ -672,9 +662,10 @@ class Element(Plugin):
         selection: Sequence["Element"] = None,
         *,
         path: str = None,
+        action: str = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
-        orphans: bool = True
+        orphans: bool = True,
     ) -> None:
         """Stage element dependencies in scope
 
@@ -689,23 +680,22 @@ class Element(Plugin):
         is called is used as the `selection`.
 
         Args:
-           sandbox: The build sandbox
+           sandbox (Sandbox): The build sandbox
            selection (Sequence[Element]): A list of dependencies to select, or None
-           path An optional sandbox relative path
-           include: An optional list of domains to include files from
-           exclude: An optional list of domains to exclude files from
-           orphans: Whether to include files not spoken for by split domains
+           path (str): An optional sandbox relative path
+           action (OverlapAction): The action to take when overlapping with previous invocations
+           include (List[str]): An optional list of domains to include files from
+           exclude (List[str]): An optional list of domains to exclude files from
+           orphans (bool): Whether to include files not spoken for by split domains
 
         Raises:
            (:class:`.ElementError`): if forbidden overlaps occur.
         """
-        overlaps = _OverlapCollector(self)
+        assert self._overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
 
-        for dep in self.dependencies(selection):
-            result = dep.stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans)
-            overlaps.collect_stage_result(dep, result)
-
-        overlaps.overlap_warnings()
+        with self._overlap_collector.session(action, path):
+            for dep in self.dependencies(selection):
+                dep._stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans, owner=self)
 
     def integrate(self, sandbox: "Sandbox") -> None:
         """Integrate currently staged filesystem against this artifact.
@@ -928,6 +918,73 @@ class Element(Plugin):
 
         return None
 
+    # _stage_artifact()
+    #
+    # Stage this element's output artifact in the sandbox
+    #
+    # This will stage the files from the artifact to the sandbox at specified location.
+    # The files are selected for staging according to the `include`, `exclude` and `orphans`
+    # parameters; if `include` is not specified then all files spoken for by any domain
+    # are included unless explicitly excluded with an `exclude` domain.
+    #
+    # Args:
+    #    sandbox: The build sandbox
+    #    path: An optional sandbox relative path
+    #    action (OverlapAction): The action to take when overlapping with previous invocations
+    #    include: An optional list of domains to include files from
+    #    exclude: An optional list of domains to exclude files from
+    #    orphans: Whether to include files not spoken for by split domains
+    #    owner: The session element currently running Element.stage()
+    #
+    # Raises:
+    #    (:class:`.ElementError`): If the element has not yet produced an artifact.
+    #
+    # Returns:
+    #    The result describing what happened while staging
+    #
+    def _stage_artifact(
+        self,
+        sandbox: "Sandbox",
+        *,
+        path: str = None,
+        action: str = OverlapAction.WARNING,
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
+        orphans: bool = True,
+        owner: Optional["Element"] = None,
+    ) -> FileListResult:
+
+        owner = owner or self
+        assert owner._overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
+
+        if not self._cached():
+            detail = (
+                "No artifacts have been cached yet for that element\n"
+                + "Try building the element first with `bst build`\n"
+            )
+            raise ElementError("No artifacts to stage", detail=detail, reason="uncached-checkout-attempt")
+
+        # Time to use the artifact, check once more that it's there
+        self.__assert_cached()
+
+        self.status("Staging {}/{}".format(self.name, self._get_brief_display_key()))
+        # Disable type checking since we can't easily tell mypy that
+        # `self.__artifact` can't be None at this stage.
+        files_vdir = self.__artifact.get_files()  # type: ignore
+
+        # Hard link it into the staging area
+        #
+        vbasedir = sandbox.get_virtual_directory()
+        vstagedir = vbasedir if path is None else vbasedir.descend(*path.lstrip(os.sep).split(os.sep), create=True)
+
+        split_filter = self.__split_filter_func(include, exclude, orphans)
+
+        result = vstagedir.import_files(files_vdir, filter_callback=split_filter, report_written=True, can_link=True)
+
+        owner._overlap_collector.collect_stage_result(self, result)
+
+        return result
+
     # _stage_dependency_artifacts()
     #
     # Stage element dependencies in scope, this is used for core
@@ -948,13 +1005,9 @@ class Element(Plugin):
     #                              occur.
     #
     def _stage_dependency_artifacts(self, sandbox, scope, *, path=None, include=None, exclude=None, orphans=True):
-        overlaps = _OverlapCollector(self)
-
-        for dep in self._dependencies(scope):
-            result = dep.stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans)
-            overlaps.collect_stage_result(dep, result)
-
-        overlaps.overlap_warnings()
+        with self._overlap_collector.session(OverlapAction.WARNING, path):
+            for dep in self._dependencies(scope):
+                dep._stage_artifact(sandbox, path=path, include=include, exclude=exclude, orphans=orphans, owner=self)
 
     # _new_from_load_element():
     #
@@ -1332,10 +1385,10 @@ class Element(Plugin):
 
             # Stage what we need
             if shell and scope == _Scope.BUILD:
-                self.stage(sandbox)
+                self.__stage(sandbox)
             else:
                 # Stage deps in the sandbox root
-                with self.timed_activity("Staging dependencies", silent_nested=True):
+                with self.timed_activity("Staging dependencies", silent_nested=True), self.__collect_overlaps():
                     self._stage_dependency_artifacts(sandbox, scope)
 
                 # Run any integration commands provided by the dependencies
@@ -1642,7 +1695,7 @@ class Element(Plugin):
                 # Step 1 - Configure
                 self.__configure_sandbox(sandbox)
                 # Step 2 - Stage
-                self.stage(sandbox)
+                self.__stage(sandbox)
                 try:
                     if self.__batch_prepare_assemble:
                         cm = sandbox.batch(
@@ -2435,6 +2488,16 @@ class Element(Plugin):
 
         self.configure_sandbox(sandbox)
 
+    # __stage():
+    #
+    # Internal method for calling public abstract stage() method.
+    #
+    def __stage(self, sandbox):
+
+        # Enable the overlap collector during the staging process
+        with self.__collect_overlaps():
+            self.stage(sandbox)
+
     # __prepare():
     #
     # Internal method for calling public abstract prepare() method.
@@ -2540,6 +2603,20 @@ class Element(Plugin):
     #
     def __use_remote_execution(self):
         return bool(self.__remote_execution_specs)
+
+    # __collect_overlaps():
+    #
+    # A context manager for collecting overlap warnings and errors.
+    #
+    # Any places where code might call Element.stage_artifact()
+    # or Element.stage_dependency_artifacts() should be run in
+    # this context manager.
+    #
+    @contextmanager
+    def __collect_overlaps(self):
+        self._overlap_collector = OverlapCollector(self)
+        yield
+        self._overlap_collector = None
 
     # __sandbox():
     #
@@ -3211,112 +3288,6 @@ class Element(Plugin):
         # now that we have the cache key, we are able to notify reverse dependencies
         # that the element it ready. This is a likely trigger for workspaced elements.
         self._update_ready_for_runtime_and_cached()
-
-
-# _OverlapCollector()
-#
-# Collects results of Element.stage_artifact() and saves
-# them in order to raise a proper overlap error at the end
-# of staging.
-#
-# Args:
-#    element (Element): The element for which we are staging artifacts
-#
-class _OverlapCollector:
-    def __init__(self, element):
-        self.element = element
-
-        # Dictionary of files which were ignored (See FileListResult()), keyed by element unique ID
-        self.ignored = {}  # type: Dict[int, List[str]]
-
-        # Dictionary of files which were staged, keyed by element unique ID
-        self.files_written = {}  # type: Dict[int, List[str]]
-
-        # Dictionary of element IDs which overlapped, keyed by the file they overlap on
-        self.overlaps = {}  # type: Dict[str, List[int]]
-
-    # collect_stage_result()
-    #
-    # Collect and accumulate results of Element.stage_artifact()
-    #
-    # Args:
-    #    element (Element): The name of the element staged
-    #    result (FileListResult): The result of Element.stage_artifact()
-    #
-    def collect_stage_result(self, element: Element, result: FileListResult):
-        if result.overwritten:
-            for overwritten_file in result.overwritten:
-                # Completely new overwrite
-                if overwritten_file not in self.overlaps:
-                    # Search for the element we've overwritten in self.written_files
-                    for element_id, staged_files in self.files_written.items():
-                        if overwritten_file in staged_files:
-                            self.overlaps[overwritten_file] = [element_id, element._unique_id]
-                            break
-                # Record the new overwrite in the list
-                else:
-                    self.overlaps[overwritten_file].append(element._unique_id)
-
-        self.files_written[element._unique_id] = result.files_written
-        if result.ignored:
-            self.ignored[element._unique_id] = result.ignored
-
-    # overlap_warnings()
-    #
-    # Issue any warnings as a batch as a result of staging artifacts,
-    # based on the results collected with collect_stage_result().
-    #
-    def overlap_warnings(self):
-        if self.overlaps:
-            overlap_warning = False
-            warning_detail = "Staged files overwrite existing files in staging area:\n"
-            for filename, element_ids in self.overlaps.items():
-                overlap_warning_elements = []
-                # The bottom item overlaps nothing
-                overlapping_element_ids = element_ids[1:]
-                for element_id in overlapping_element_ids:
-                    element = Plugin._lookup(element_id)
-                    if not element._file_is_whitelisted(filename):
-                        overlap_warning_elements.append(element)
-                        overlap_warning = True
-
-                warning_detail += self._overlap_error_detail(filename, overlap_warning_elements, element_ids)
-
-            if overlap_warning:
-                self.element.warn(
-                    "Non-whitelisted overlaps detected", detail=warning_detail, warning_token=CoreWarnings.OVERLAPS
-                )
-
-        if self.ignored:
-            detail = "Not staging files which would replace non-empty directories:\n"
-            for element_id, ignored_filenames in self.ignored.items():
-                element = Plugin._lookup(element_id)
-                detail += "\nFrom {}:\n".format(element._get_full_name())
-                detail += "  " + "  ".join(["/" + filename + "\n" for filename in ignored_filenames])
-            self.element.warn("Ignored files", detail=detail)
-
-    # _overlap_error_detail()
-    #
-    # Get a string to describe overlaps on a filename
-    #
-    # Args:
-    #    filename (str): The filename being overlapped
-    #    overlap_elements (List[Element]): A list of Elements overlapping
-    #    element_ids (List[int]): The ordered ID list of elements which staged this file
-    #
-    def _overlap_error_detail(self, filename, overlap_elements, element_ids):
-        if overlap_elements:
-            overlap_element_names = [element._get_full_name() for element in overlap_elements]
-            overlap_order_elements = [Plugin._lookup(element_id) for element_id in element_ids]
-            overlap_order_names = [element._get_full_name() for element in overlap_order_elements]
-            return "/{}: {} {} not permitted to overlap other elements, order {} \n".format(
-                filename,
-                " and ".join(overlap_element_names),
-                "is" if len(overlap_element_names) == 1 else "are",
-                " above ".join(reversed(overlap_order_names)),
-            )
-        else:
-            return ""
 
 
 # _get_normal_name():
