@@ -142,6 +142,36 @@ def test_push_artifact(cli, tmpdir, datafiles):
         assert_shared(cli, share, project, element)
 
 
+@pytest.mark.datafiles(DATA_DIR)
+def test_push_artifact_glob(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    element = "target.bst"
+
+    # Configure a local cache
+    local_cache = os.path.join(str(tmpdir), "cache")
+    cli.configure({"cachedir": local_cache})
+
+    with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
+
+        # First build it without the artifact cache configured
+        result = cli.run(project=project, args=["build", element])
+        result.assert_success()
+
+        # Assert that the *artifact* is cached locally
+        cache_key = cli.get_element_key(project, element)
+        artifact_ref = os.path.join("test", os.path.splitext(element)[0], cache_key)
+        assert os.path.exists(os.path.join(local_cache, "artifacts", "refs", artifact_ref))
+
+        # Configure artifact share
+        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+
+        # Run bst artifact push with a wildcard.
+        # This matches two artifact refs (weak and strong cache keys).
+        result = cli.run(project=project, args=["artifact", "push", "test/target/*"])
+        result.assert_success()
+        assert len(result.get_pushed_elements()) == 2
+
+
 # Tests that:
 #
 #  * `bst artifact push` fails if the element is not cached locally
