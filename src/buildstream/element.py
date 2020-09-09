@@ -476,12 +476,9 @@ class Element(Plugin):
                 yield cast("Element", ElementProxy(self, dep))
 
     def search(self, name: str) -> Optional["Element"]:
-        """search(scope, *, name)
-
-        Search for a dependency by name
+        """Search for a dependency by name
 
         Args:
-           scope: The scope to search
            name: The dependency to search for
 
         Returns:
