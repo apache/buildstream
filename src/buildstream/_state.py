@@ -126,10 +126,7 @@ class State:
     #    callback (function): The callback to be notified
     #
     # Callback Args:
-    #    action_name (str): The name of the action, e.g. 'build'
-    #    full_name (str): The full name of the task, distinguishing
-    #                     it from other tasks with the same action name
-    #                     e.g. an element's name.
+    #    task_id (str): The unique identifier of the task
     #
     def register_task_added_callback(self, callback):
         self._task_added_cbs.append(callback)
@@ -153,10 +150,7 @@ class State:
     #    callback (function): The callback to be notified
     #
     # Callback Args:
-    #    action_name (str): The name of the action, e.g. 'build'
-    #    full_name (str): The full name of the task, distinguishing
-    #                     it from other tasks with the same action name
-    #                     e.g. an element's name.
+    #    task_id (str): The unique identifier of the task
     #
     def register_task_removed_callback(self, callback):
         self._task_removed_cbs.append(callback)
@@ -180,10 +174,7 @@ class State:
     #    callback (function): The callback to be notified
     #
     # Callback Args:
-    #    action_name (str): The name of the action, e.g. 'build'
-    #    full_name (str): The full name of the task, distinguishing
-    #                     it from other tasks with the same action name
-    #                     e.g. an element's name.
+    #    task_id (str): The unique identifier of the task
     #
     def register_task_changed_callback(self, callback):
         self._task_changed_cbs.append(callback)
@@ -207,11 +198,9 @@ class State:
     #    callback (function): The callback to be notified
     #
     # Callback Args:
-    #    action_name (str): The name of the action, e.g. 'build'
-    #    full_name (str): The full name of the task, distinguishing
-    #                     it from other tasks with the same action name
-    #                     e.g. an element's name.
-    #    element_job (bool): (optionally) If an element job failed.
+    #    task_id (str): The unique identifier of the task
+    #    element (tuple): (optionally) The element unique_id and display keys if an
+    #                                  element job
     #
     def register_task_failed_callback(self, callback):
         self._task_failed_cbs.append(callback)
@@ -235,11 +224,8 @@ class State:
     #    callback (function): The callback to be notified
     #
     # Callback Args:
-    #    action_name (str): The name of the action, e.g. 'build'
-    #    full_name (str): The full name of the task, distinguishing
-    #                     it from other tasks with the same action name
-    #                     e.g. an element's name.
-    #    element_job (bool): (optionally) If an element job failed.
+    #    task_id (str): The unique identifier of the task
+    #    unique_id: The unique id of the plugin instance to look up
     #
     def register_task_retry_callback(self, callback):
         self._task_retry_cbs.append(callback)
@@ -288,6 +274,7 @@ class State:
     # This is a core-facing API and should not be called from the frontend
     #
     # Args:
+    #    task_id (str): The unique identifier of the task
     #    action_name (str): The name of the action, e.g. 'build'
     #    full_name (str): The full name of the task, distinguishing
     #                     it from other tasks with the same action name
@@ -297,20 +284,19 @@ class State:
     #                                use this as they don't report relative to wallclock time
     #                                if the Scheduler has been suspended.
     #
-    def add_task(self, action_name, full_name, elapsed_offset=None):
-        task_key = (action_name, full_name)
-        assert task_key not in self.tasks, "Trying to add task '{}:{}' to '{}'".format(
-            action_name, full_name, self.tasks
+    def add_task(self, task_id, action_name, full_name, elapsed_offset=None):
+        assert task_id not in self.tasks, "Trying to add task '{}:{}' with ID '{}' to '{}'".format(
+            action_name, full_name, task_id, self.tasks
         )
 
         if not elapsed_offset:
             elapsed_offset = self.elapsed_time()
 
-        task = _Task(self, action_name, full_name, elapsed_offset)
-        self.tasks[task_key] = task
+        task = _Task(self, task_id, action_name, full_name, elapsed_offset)
+        self.tasks[task_id] = task
 
         for cb in self._task_added_cbs:
-            cb(action_name, full_name)
+            cb(task_id)
 
         return task
 
@@ -321,17 +307,14 @@ class State:
     # This is a core-facing API and should not be called from the frontend
     #
     # Args:
-    #    action_name (str): The name of the action, e.g. 'build'
-    #    full_name (str): The full name of the task, distinguishing
-    #                     it from other tasks with the same action name
-    #                     e.g. an element's name.
+    #    task_id (str): The unique identifier of the task
     #
-    def remove_task(self, action_name, full_name):
+    def remove_task(self, task_id):
         # Rely on 'del' to raise an error when removing nonexistent tasks
-        del self.tasks[(action_name, full_name)]
+        del self.tasks[task_id]
 
         for cb in self._task_removed_cbs:
-            cb(action_name, full_name)
+            cb(task_id)
 
     # fail_task()
     #
@@ -343,16 +326,13 @@ class State:
     # This is a core-facing API and should not be called from the frontend
     #
     # Args:
-    #    action_name (str): The name of the action, e.g. 'build'
-    #    full_name (str): The full name of the task, distinguishing
-    #                     it from other tasks with the same action name
-    #                     e.g. an element's name.
+    #    task_id (str): The unique identifier of the task
     #    element (tuple): (optionally) The element unique_id and display keys if an
     #                                  element job
     #
-    def fail_task(self, action_name, full_name, element=None):
+    def fail_task(self, task_id, element=None):
         for cb in self._task_failed_cbs:
-            cb(action_name, full_name, element)
+            cb(task_id, element)
 
     # retry_task()
     #
@@ -361,12 +341,12 @@ class State:
     # This is a core-facing API and should not be called from the frontend
     #
     # Args:
-    #    action_name: The name of the action, e.g. 'build'
+    #    task_id (str): The unique identifier of the task
     #    unique_id: The unique id of the plugin instance to look up
     #
-    def retry_task(self, action_name: str, unique_id: str) -> None:
+    def retry_task(self, task_id: str, unique_id: str) -> None:
         for cb in self._task_retry_cbs:
-            cb(action_name, unique_id)
+            cb(task_id, unique_id)
 
     # elapsed_time()
     #
@@ -407,6 +387,7 @@ class State:
 #
 # Args:
 #    state (State): The State object
+#    task_id (str): The unique identifier of the task
 #    action_name (str): The name of the action, e.g. 'build'
 #    full_name (str): The full name of the task, distinguishing
 #                     it from other tasks with the same action name
@@ -414,8 +395,9 @@ class State:
 #    elapsed_offset (timedelta): The time the task started, relative to
 #                                buildstream's start time.
 class _Task:
-    def __init__(self, state, action_name, full_name, elapsed_offset):
+    def __init__(self, state, task_id, action_name, full_name, elapsed_offset):
         self._state = state
+        self.id = task_id
         self.action_name = action_name
         self.full_name = full_name
         self.elapsed_offset = elapsed_offset
@@ -437,14 +419,14 @@ class _Task:
     def set_current_progress(self, progress):
         self.current_progress = progress
         for cb in self._state._task_changed_cbs:
-            cb(self.action_name, self.full_name)
+            cb(self.id)
         if self._render_cb:
             self._render_cb()
 
     def set_maximum_progress(self, progress):
         self.maximum_progress = progress
         for cb in self._state._task_changed_cbs:
-            cb(self.action_name, self.full_name)
+            cb(self.id)
 
         if self._render_cb:
             self._render_cb()

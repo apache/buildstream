@@ -261,9 +261,9 @@ class Scheduler:
             else:
                 element_info = None
 
-            self._state.fail_task(job.action_name, job.name, element_info)
+            self._state.fail_task(job.id, element_info)
 
-        self._state.remove_task(job.action_name, job.name)
+        self._state.remove_task(job.id)
 
         self._sched()
 
@@ -306,7 +306,7 @@ class Scheduler:
         self._active_jobs.append(job)
         job.start()
 
-        self._state.add_task(job.action_name, job.name, self._state.elapsed_time())
+        self._state.add_task(job.id, job.action_name, job.name, self._state.elapsed_time())
 
     # _sched_queue_jobs()
     #
@@ -497,10 +497,12 @@ class Scheduler:
         self._ticker_callback()
         self.loop.call_later(1, self._tick)
 
-    def _failure_retry(self, action_name, unique_id):
+    def _failure_retry(self, task_id, unique_id):
+        task = self._state.tasks[task_id]
+
         queue = None
         for q in self.queues:
-            if q.action_name == action_name:
+            if q.action_name == task.action_name:
                 queue = q
                 break
         # Assert queue found, we should only be retrying a queued job

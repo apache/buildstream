@@ -209,7 +209,7 @@ class Messenger:
                 message = Message(MessageType.START, activity_name, element_name=element_name)
                 self.message(message)
 
-                task = self._state.add_task(activity_name, full_name)
+                task = self._state.add_task(full_name, activity_name, full_name)
                 task.set_render_cb(self._render_status)
                 self._active_simple_tasks += 1
                 if not self._next_render:
@@ -224,7 +224,7 @@ class Messenger:
                 self.message(message)
                 raise
             finally:
-                self._state.remove_task(activity_name, full_name)
+                self._state.remove_task(full_name)
                 self._active_simple_tasks -= 1
                 if self._active_simple_tasks == 0:
                     self._next_render = None
