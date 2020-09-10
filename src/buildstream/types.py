@@ -119,6 +119,46 @@ class CoreWarnings:
     """
 
 
+class OverlapAction(FastEnum):
+    """OverlapAction()
+
+    Defines what action to take when files staged into the sandbox overlap.
+
+    .. note::
+
+       This only dictates what happens when functions such as
+       :func:`Element.stage_artifact() <buildstream.element.Element.stage_artifact>` and
+       :func:`Element.stage_dependency_artifacts() <buildstream.element.Element.stage_dependency_artifacts>`
+       are called multiple times in an Element's :func:`Element.stage() <buildstream.element.Element.stage>`
+       implementation, and the files staged from one function call result in overlapping files staged
+       from previous invocations.
+
+       If multiple staged elements overlap eachother within a single call to
+       :func:`Element.stage_dependency_artifacts() <buildstream.element.Element.stage_dependency_artifacts>`,
+       then the :ref:`overlap whitelist <public_overlap_whitelist>` will be ovserved, and warnings will
+       be issued for overlapping files, which will be fatal warnings if
+       :attr:`CoreWarnings.OVERLAPS <buildstream.types.CoreWarnings.OVERLAPS>` is specified
+       as a :ref:`fatal warning <configurable_warnings>`.
+    """
+
+    ERROR = "error"
+    """
+    It is an error to overlap previously staged files
+    """
+
+    WARNING = "warning"
+    """
+    A warning will be issued for previously staged files, which will fatal if
+    :attr:`CoreWarnings.OVERLAPS <buildstream.types.CoreWarnings.OVERLAPS>` is specified
+    as a :ref:`fatal warning <configurable_warnings>` in the project.
+    """
+
+    IGNORE = "ignore"
+    """
+    Overlapping files are acceptable, and do not cause any warning or error.
+    """
+
+
 # _Scope():
 #
 # Defines the scope of dependencies to include for a given element
