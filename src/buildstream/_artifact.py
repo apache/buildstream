@@ -616,10 +616,20 @@ class Artifact:
     # Mark the artifact as cached without querying the filesystem.
     # This is used as optimization when we know the artifact is available.
     #
-    def set_cached(self):
-        self._proto = self._load_proto()
-        assert self._proto
-        self._cached = True
+    def set_cached(self, cached=True, *, strong_key=None):
+        if strong_key:
+            assert not self._cache_key or self._cache_key == strong_key
+            self._cache_key = strong_key
+
+        if cached:
+            self._proto = self._load_proto()
+            assert self._proto
+            if self._cache_key:
+                assert self._cache_key == self._proto.strong_key
+            else:
+                self._cache_key = self._proto.strong_key
+
+        self._cached = cached
 
     # pull()
     #
