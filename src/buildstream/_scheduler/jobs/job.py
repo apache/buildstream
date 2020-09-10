@@ -23,6 +23,7 @@
 # System imports
 import asyncio
 import datetime
+import itertools
 import multiprocessing
 import os
 import signal
@@ -109,11 +110,17 @@ class _MessageType(FastEnum):
 #    max_retries (int): The maximum number of retries
 #
 class Job:
+    # Unique id generator for jobs
+    #
+    # This is used to identify tasks in the `State` class
+    _id_generator = itertools.count(1)
+
     def __init__(self, scheduler, action_name, logfile, *, max_retries=0):
 
         #
         # Public members
         #
+        self.id = "{}-{}".format(action_name, next(Job._id_generator))
         self.name = None  # The name of the job, set by the job's subclass
         self.action_name = action_name  # The action name for the Queue
         self.child_data = None  # Data to be sent to the main process

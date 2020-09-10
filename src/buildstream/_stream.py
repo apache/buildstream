@@ -1346,11 +1346,11 @@ class Stream:
     # failed task from the tasks group.
     #
     # Args:
-    #    action_name: The name of the action being performed
+    #    task_id (str): The unique identifier of the task
     #    unique_id: A unique_id to load an Element instance
     #
-    def _failure_retry(self, action_name: str, unique_id: str) -> None:
-        self._state.retry_task(action_name, unique_id)
+    def _failure_retry(self, task_id: str, unique_id: str) -> None:
+        self._state.retry_task(task_id, unique_id)
 
     # _run()
     #

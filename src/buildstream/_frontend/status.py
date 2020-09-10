@@ -159,13 +159,11 @@ class Status:
     # Reacts to a specified job being changed
     #
     # Args:
-    #    action_name (str): The action name for this job
-    #    full_name (str): The name of this specific job (e.g. element name)
+    #    task_id (str): The unique identifier of the task
     #
-    def _job_changed(self, action_name, full_name):
-        job_key = (action_name, full_name)
-        task = self._state.tasks[job_key]
-        job = self._jobs[job_key]
+    def _job_changed(self, task_id):
+        task = self._state.tasks[task_id]
+        job = self._jobs[task_id]
         if job.update(task):
             self._need_alloc = True
 
@@ -293,14 +291,15 @@ class Status:
     # Adds a job to track in the status area
     #
     # Args:
-    #    action_name (str): The action name for this job
-    #    full_name (str): The name of this specific job (e.g. element name)
+    #    task_id (str): The unique identifier of the task
     #
-    def _add_job(self, action_name, full_name):
-        task = self._state.tasks[(action_name, full_name)]
+    def _add_job(self, task_id):
+        task = self._state.tasks[task_id]
         elapsed = task.elapsed_offset
-        job = _StatusJob(self._context, action_name, full_name, self._content_profile, self._format_profile, elapsed)
-        self._jobs[(action_name, full_name)] = job
+        job = _StatusJob(
+            self._context, task.action_name, task.full_name, self._content_profile, self._format_profile, elapsed
+        )
+        self._jobs[task_id] = job
         self._need_alloc = True
 
     # _remove_job()
@@ -308,11 +307,10 @@ class Status:
     # Removes a job currently being tracked in the status area
     #
     # Args:
-    #    action_name (str): The action name for this job
-    #    full_name (str): The name of this specific job (e.g. element name)
+    #    task_id (str): The unique identifier of the task
     #
-    def _remove_job(self, action_name, full_name):
-        del self._jobs[(action_name, full_name)]
+    def _remove_job(self, task_id):
+        del self._jobs[task_id]
         self._need_alloc = True
 
 

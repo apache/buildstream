@@ -612,18 +612,18 @@ class App:
     #      the creation of an interactive shell, and the retrying of jobs.
     #
     # Args:
-    #    action_name (str): The name of the action being performed,
-    #                       same as the task group, if it exists
-    #    full_name (str): The name of this specific task, e.g. the element full name
+    #    task_id (str): The unique identifier of the task
     #    element (tuple): If an element job failed a tuple of Element instance unique_id & display key
     #
-    def _job_failed(self, action_name, full_name, element=None):
+    def _job_failed(self, task_id, element=None):
+        task = self._state.tasks[task_id]
+
         # Dont attempt to handle a failure if the user has already opted to
         # terminate
         if not self.stream.terminated:
             if element:
                 # Get the last failure message for additional context
-                failure = self._fail_messages.get(full_name)
+                failure = self._fail_messages.get(task.full_name)
 
                 # XXX This is dangerous, sometimes we get the job completed *before*
                 # the failure message reaches us ??
@@ -631,18 +631,19 @@ class App:
                     self._status.clear()
                     click.echo(
                         "\n\n\nBUG: Message handling out of sync, "
-                        + "unable to retrieve failure message for element {}\n\n\n\n\n".format(full_name),
+                        + "unable to retrieve failure message for element {}\n\n\n\n\n".format(task.full_name),
                         err=True,
                     )
                 else:
-                    self._handle_failure(element, action_name, failure, full_name)
+                    self._handle_failure(element, task, failure)
 
             else:
                 # Not an element_job, we don't handle the failure
                 click.echo("\nTerminating all jobs\n", err=True)
                 self.stream.terminate()
 
-    def _handle_failure(self, element, action_name, failure, full_name):
+    def _handle_failure(self, element, task, failure):
+        full_name = task.full_name
 
         # Handle non interactive mode setting of what to do when a job fails.
         if not self._interactive_failures:
@@ -726,7 +727,7 @@ class App:
                 elif choice == "retry":
                     click.echo("\nRetrying failed job\n", err=True)
                     unique_id = element[0]
-                    self.stream._failure_retry(action_name, unique_id)
+                    self.stream._failure_retry(task.id, unique_id)
 
     #
     # Print the session heading if we've loaded a pipeline and there
