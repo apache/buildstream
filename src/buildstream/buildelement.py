@@ -140,18 +140,6 @@ from .element import Element
 from .sandbox import SandboxFlags
 
 
-# This list is preserved because of an unfortunate situation, we
-# need to remove these older commands which were secret and never
-# documented, but without breaking the cache keys.
-_legacy_command_steps = [
-    "bootstrap-commands",
-    "configure-commands",
-    "build-commands",
-    "test-commands",
-    "install-commands",
-    "strip-commands",
-]
-
 _command_steps = ["configure-commands", "build-commands", "install-commands", "strip-commands"]
 
 
@@ -171,7 +159,7 @@ class BuildElement(Element):
 
         self._command_subdir = self.get_variable("command-subdir")  # pylint: disable=attribute-defined-outside-init
 
-        for command_name in _legacy_command_steps:
+        for command_name in _command_steps:
             self.__commands[command_name] = node.get_str_list(command_name, [])
 
     def preflight(self):
