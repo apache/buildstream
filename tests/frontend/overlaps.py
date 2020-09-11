@@ -13,68 +13,64 @@ from tests.testutils import generate_junction
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "overlaps")
 
 
-def gen_project(project_dir, fail_on_overlap, use_fatal_warnings=True, project_name="test"):
+def gen_project(project_dir, fail_on_overlap, *, project_name="test"):
     template = {"name": project_name, "min-version": "2.0"}
-    if use_fatal_warnings:
-        template["fatal-warnings"] = [CoreWarnings.OVERLAPS] if fail_on_overlap else []
-    else:
-        template["fail-on-overlap"] = fail_on_overlap
+    template["fatal-warnings"] = [CoreWarnings.OVERLAPS] if fail_on_overlap else []
     projectfile = os.path.join(project_dir, "project.conf")
     _yaml.roundtrip_dump(template, projectfile)
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("use_fatal_warnings", [True, False])
-def test_overlaps(cli, datafiles, use_fatal_warnings):
+@pytest.mark.parametrize("error", [False, True], ids=["warning", "error"])
+def test_overlaps(cli, datafiles, error):
     project_dir = str(datafiles)
-    gen_project(project_dir, False, use_fatal_warnings)
+    gen_project(project_dir, error)
     result = cli.run(project=project_dir, silent=True, args=["build", "collect.bst"])
-    result.assert_success()
+    if error:
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
+    else:
+        result.assert_success()
+        assert "WARNING [overlaps]" in result.stderr
 
 
+#
+# When the overlap is whitelisted, there is no warning or error.
+#
+# Still test this in fatal/nonfatal warning modes
+#
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("use_fatal_warnings", [True, False])
-def test_overlaps_error(cli, datafiles, use_fatal_warnings):
+@pytest.mark.parametrize("error", [False, True], ids=["warning", "error"])
+def test_overlaps_whitelisted(cli, datafiles, error):
     project_dir = str(datafiles)
-    gen_project(project_dir, True, use_fatal_warnings)
-    result = cli.run(project=project_dir, silent=True, args=["build", "collect.bst"])
-    result.assert_main_error(ErrorDomain.STREAM, None)
-    result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
-
-
-@pytest.mark.datafiles(DATA_DIR)
-def test_overlaps_whitelist(cli, datafiles):
-    project_dir = str(datafiles)
-    gen_project(project_dir, True)
+    gen_project(project_dir, error)
     result = cli.run(project=project_dir, silent=True, args=["build", "collect-whitelisted.bst"])
     result.assert_success()
+    assert "WARNING [overlaps]" not in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_overlaps_whitelist_ignored(cli, datafiles):
-    project_dir = str(datafiles)
-    gen_project(project_dir, False)
-    result = cli.run(project=project_dir, silent=True, args=["build", "collect-whitelisted.bst"])
-    result.assert_success()
-
-
-@pytest.mark.datafiles(DATA_DIR)
-def test_overlaps_whitelist_on_overlapper(cli, datafiles):
+@pytest.mark.parametrize("error", [False, True], ids=["warning", "error"])
+def test_overlaps_whitelist_on_overlapper(cli, datafiles, error):
     # Tests that the overlapping element is responsible for whitelisting,
     # i.e. that if A overlaps B overlaps C, and the B->C overlap is permitted,
     # it'll still fail because A doesn't permit overlaps.
     project_dir = str(datafiles)
-    gen_project(project_dir, True)
+    gen_project(project_dir, error)
     result = cli.run(project=project_dir, silent=True, args=["build", "collect-partially-whitelisted.bst"])
-    result.assert_main_error(ErrorDomain.STREAM, None)
-    result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
+    if error:
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
+    else:
+        result.assert_success()
+        assert "WARNING [overlaps]" in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_overlaps_whitelist_undefined_variable(cli, datafiles):
     project_dir = str(datafiles)
     gen_project(project_dir, False)
-    result = cli.run(project=project_dir, silent=True, args=["build", "whitelist-undefined.bst"])
+    result = cli.run(project=project_dir, silent=True, args=["show", "whitelist-undefined.bst"])
 
     # Assert that we get the expected undefined variable error,
     # and that it has the provenance we expect from whitelist-undefined.bst
@@ -84,12 +80,11 @@ def test_overlaps_whitelist_undefined_variable(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("use_fatal_warnings", [True, False])
-def test_overlaps_script(cli, datafiles, use_fatal_warnings):
+def test_overlaps_script(cli, datafiles):
     # Test overlaps with script element to test
     # Element.stage_dependency_artifacts() with Scope.RUN
     project_dir = str(datafiles)
-    gen_project(project_dir, False, use_fatal_warnings)
+    gen_project(project_dir, False)
     result = cli.run(project=project_dir, silent=True, args=["build", "script.bst"])
     result.assert_success()
 
