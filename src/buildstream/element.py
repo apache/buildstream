@@ -213,6 +213,16 @@ class Element(Plugin):
             project.ensure_fully_loaded()
 
         self.project_name = self._get_project().name
+        """The :ref:`name <project_format_name>` of the owning project
+
+        .. attention::
+
+           Combining this attribute with :attr:`Plugin.name <buildstream.plugin.Plugin.name>`
+           does not provide a unique identifier for an element within a project, this is because
+           multiple :mod:`junction <elements.junction>` elements can be used specify the same
+           project as a subproject.
+        """
+
         self.normal_name = _get_normal_name(self.name)
         """A normalized element name
 
