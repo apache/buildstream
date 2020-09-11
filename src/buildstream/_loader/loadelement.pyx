@@ -92,6 +92,17 @@ cdef class Dependency:
     def provenance(self):
         return self._node.get_provenance()
 
+    # path
+    #
+    # The path of the dependency represented as a single string,
+    # instead of junction and name being separate.
+    #
+    @property
+    def path(self):
+        if self.junction is not None:
+            return "{}:{}".format(self.junction, self.name)
+        return self.name
+
     # set_element()
     #
     # Sets the resolved LoadElement
