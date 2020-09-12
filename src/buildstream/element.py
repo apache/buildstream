@@ -213,6 +213,16 @@ class Element(Plugin):
             project.ensure_fully_loaded()
 
         self.project_name = self._get_project().name
+        """The :ref:`name <project_format_name>` of the owning project
+
+        .. attention::
+
+           Combining this attribute with :attr:`Plugin.name <buildstream.plugin.Plugin.name>`
+           does not provide a unique identifier for an element within a project, this is because
+           multiple :mod:`junction <elements.junction>` elements can be used specify the same
+           project as a subproject.
+        """
+
         self.normal_name = _get_normal_name(self.name)
         """A normalized element name
 
@@ -220,6 +230,15 @@ class Element(Plugin):
         the extension, it's used mainly for composing log file names
         and creating directory names and such.
         """
+
+        #
+        # Internal instance properties
+        #
+        self._depth = None  # Depth of Element in its current dependency graph
+
+        #
+        # Private instance properties
+        #
 
         # Direct runtime dependency Elements
         self.__runtime_dependencies = []  # type: List[Element]
@@ -270,7 +289,6 @@ class Element(Plugin):
         self.__can_query_cache_callback = None  # Callback to PullQueue/FetchQueue
         self.__buildable_callback = None  # Callback to BuildQueue
 
-        self._depth = None  # Depth of Element in its current dependency graph
         self.__resolved_initial_state = False  # Whether the initial state of the Element has been resolved
 
         # Ensure we have loaded this class's defaults
@@ -468,12 +486,9 @@ class Element(Plugin):
                 yield cast("Element", ElementProxy(self, dep))
 
     def search(self, name: str) -> Optional["Element"]:
-        """search(scope, *, name)
-
-        Search for a dependency by name
+        """Search for a dependency by name
 
         Args:
-           scope: The scope to search
            name: The dependency to search for
 
         Returns:
