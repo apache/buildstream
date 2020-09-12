@@ -561,7 +561,16 @@ class ArtifactCache():
     def contains(self, element, key):
         ref = self.get_artifact_fullname(element, key)
 
-        return self.cas.contains(ref)
+        if not self.cas.contains(ref):
+            return False
+
+        try:
+            tree = self.cas.resolve_ref(ref, update_mtime=True)
+            self.cas.update_tree_mtime(tree)
+            return True
+        except (CASError, FileNotFoundError):
+            self.remove(ref)
+            return False
 
     # list_artifacts():
     #
