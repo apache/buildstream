@@ -100,6 +100,12 @@ class CoreWarnings:
         which is not whitelisted. See :ref:`Overlap Whitelist <public_overlap_whitelist>`
     """
 
+    UNSTAGED_FILES = "unstaged-files"
+    """
+    This warning will be produced when a file cannot be staged. This can happen when
+    a file overlaps with a directory in the sandbox that is not empty.
+    """
+
     REF_NOT_IN_TRACK = "ref-not-in-track"
     """
     This warning will be produced when a source is configured with a reference
@@ -114,7 +120,7 @@ class CoreWarnings:
 
     BAD_CHARACTERS_IN_NAME = "bad-characters-in-name"
     """
-    This warning will be produces when filename for a target contains invalid
+    This warning will be produced when a filename for a target contains invalid
     characters in its name.
     """
 
