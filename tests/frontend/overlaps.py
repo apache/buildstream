@@ -13,11 +13,25 @@ from tests.testutils import generate_junction
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "overlaps")
 
 
-def gen_project(project_dir, fail_on_overlap, *, project_name="test"):
+def gen_project(project_dir, fatal_warnings, *, project_name="test"):
     template = {"name": project_name, "min-version": "2.0"}
-    template["fatal-warnings"] = [CoreWarnings.OVERLAPS] if fail_on_overlap else []
+    template["fatal-warnings"] = [CoreWarnings.OVERLAPS, CoreWarnings.UNSTAGED_FILES] if fatal_warnings else []
     projectfile = os.path.join(project_dir, "project.conf")
     _yaml.roundtrip_dump(template, projectfile)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("error", [False, True], ids=["warning", "error"])
+def test_unstaged_files(cli, datafiles, error):
+    project_dir = str(datafiles)
+    gen_project(project_dir, error)
+    result = cli.run(project=project_dir, silent=True, args=["build", "unstaged.bst"])
+    if error:
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.UNSTAGED_FILES)
+    else:
+        result.assert_success()
+        assert "WARNING [unstaged-files]" in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
