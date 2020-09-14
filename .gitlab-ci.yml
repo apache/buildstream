@@ -370,6 +370,8 @@ analysis:
   stage: post
   script:
   - |
+    # Workaround radon issue not requiring it's dependency
+    pip3 install flake8_polyfill
     pip3 install radon
     mkdir analysis
 
