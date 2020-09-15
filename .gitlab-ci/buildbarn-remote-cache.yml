@@ -23,7 +23,7 @@ version: '3.4'
 
 services:
   bb-asset:
-    image: qinusty/bb-asset-hub:20200814T141139Z-5e72dd1
+    image: buildbarn/bb-remote-asset:20200903T103837Z-90136c4
     command: /config/asset.jsonnet
     restart: unless-stopped
     expose:
@@ -39,7 +39,7 @@ services:
       target: /config
 
   bb-storage:
-    image: buildbarn/bb-storage:20200810T194216Z-94a85b4
+    image: buildbarn/bb-storage:20200816T115912Z-d83e1f0
     command: /config/storage.jsonnet
     restart: unless-stopped
     expose:
