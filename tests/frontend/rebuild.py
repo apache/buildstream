@@ -33,3 +33,11 @@ def test_rebuild(datafiles, cli, strict):
     # which means that a weakly cached target.bst will be staged as dependency.
     result = cli.run(project=project, args=strict_args(["build", "rebuild-target.bst"], strict))
     result.assert_success()
+
+    built_elements = result.get_built_elements()
+
+    assert "rebuild-target.bst" in built_elements
+    if strict == "strict":
+        assert "target.bst" in built_elements
+    else:
+        assert "target.bst" not in built_elements
