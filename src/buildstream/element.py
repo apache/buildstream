@@ -2969,55 +2969,62 @@ class Element(Plugin):
     # dependency has changed.
     #
     def __update_cache_keys(self):
+        if self.__strict_cache_key is not None:
+            # Cache keys already calculated
+            assert self.__weak_cache_key is not None
+            return
+
         if not self._has_all_sources_resolved():
             # Tracking may still be pending
             return
 
         context = self._get_context()
 
-        if self.__weak_cache_key is None:
-            # Calculate weak cache key
-            #
-            # Weak cache key includes names of direct build dependencies
-            # so as to only trigger rebuilds when the shape of the
-            # dependencies change.
-            #
-            # Some conditions cause dependencies to be strict, such
-            # that this element will be rebuilt anyway if the dependency
-            # changes even in non strict mode, for these cases we just
-            # encode the dependency's weak cache key instead of it's name.
-            #
-            dependencies = [
-                [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
-                if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
-                else [e.project_name, e.name]
-                for e in self._dependencies(_Scope.BUILD)
-            ]
-
-            self.__weak_cache_key = self._calculate_cache_key(dependencies)
-
-            if self.__weak_cache_key is None:
-                # Weak cache key could not be calculated yet, therefore
-                # the Strict cache key also can't be calculated yet.
-                return
+        # Calculate the strict cache key
+        dependencies = [[e.project_name, e.name, e.__strict_cache_key] for e in self._dependencies(_Scope.BUILD)]
+        self.__strict_cache_key = self._calculate_cache_key(dependencies)
 
         if self.__strict_cache_key is None:
-            dependencies = [[e.project_name, e.name, e.__strict_cache_key] for e in self._dependencies(_Scope.BUILD)]
-            self.__strict_cache_key = self._calculate_cache_key(dependencies)
+            # Cache keys cannot be calculated yet as a build dependency doesn't
+            # have a cache key yet.
+            return
 
-            if self.__strict_cache_key is not None and context.get_strict():
-                # In strict mode, the strong cache key always matches the strict cache key
-                self.__cache_key = self.__strict_cache_key
+        # Calculate weak cache key
+        #
+        # Weak cache key includes names of direct build dependencies
+        # so as to only trigger rebuilds when the shape of the
+        # dependencies change.
+        #
+        # Some conditions cause dependencies to be strict, such
+        # that this element will be rebuilt anyway if the dependency
+        # changes even in non strict mode, for these cases we just
+        # encode the dependency's weak cache key instead of it's name.
+        #
+        dependencies = [
+            [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
+            if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
+            else [e.project_name, e.name]
+            for e in self._dependencies(_Scope.BUILD)
+        ]
 
-        if self.__strict_cache_key is not None and self.__can_query_cache_callback is not None:
+        self.__weak_cache_key = self._calculate_cache_key(dependencies)
+
+        # As the strict cache key has already been calculated, it should always
+        # be possible to calculate the weak cache key as well.
+        assert self.__weak_cache_key is not None
+
+        if context.get_strict():
+            # In strict mode, the strong cache key always matches the strict cache key
+            self.__cache_key = self.__strict_cache_key
+
+        if self.__can_query_cache_callback is not None:
             self.__can_query_cache_callback(self)
             self.__can_query_cache_callback = None
 
         # If we've newly calculated a cache key, our artifact's
         # current state will also change - after all, we can now find
         # a potential existing artifact.
-        if self.__weak_cache_key is not None or self.__strict_cache_key is not None:
-            self.__update_artifact_state()
+        self.__update_artifact_state()
 
     # __update_artifact_state()
     #
@@ -3035,16 +3042,10 @@ class Element(Plugin):
     def __update_artifact_state(self):
         context = self._get_context()
 
-        if not self.__weak_cache_key:
-            return
-
         if not context.get_strict() and not self.__artifact:
             # We've calculated the weak_key, so instantiate artifact instance member
             self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
             self.__schedule_assembly_when_necessary()
-
-        if not self.__strict_cache_key:
-            return
 
         if not self.__strict_artifact:
             self.__strict_artifact = Artifact(
