@@ -540,7 +540,7 @@ class Artifact:
 
         return dependency_refs
 
-    # cached():
+    # query_cache():
     #
     # Check whether the artifact corresponding to the stored cache key is
     # available. This also checks whether all required parts of the artifact
@@ -550,11 +550,7 @@ class Artifact:
     # Returns:
     #     (bool): Whether artifact is in local cache
     #
-    def cached(self):
-
-        if self._cached is not None:
-            return self._cached
-
+    def query_cache(self):
         context = self._context
 
         artifact = self._load_proto()
@@ -587,6 +583,18 @@ class Artifact:
         self._cached = True
         return True
 
+    # cached()
+    #
+    # Return whether the artifact is available in the local cache. This must
+    # be called after `query_cache()` or `set_cached()`.
+    #
+    # Returns:
+    #     (bool): Whether artifact is in local cache
+    #
+    def cached(self):
+        assert self._cached is not None
+        return self._cached
+
     # cached_logs()
     #
     # Check if the artifact is cached with log files.
@@ -599,15 +607,6 @@ class Artifact:
         # Log files are currently considered an essential part of an artifact.
         # If the artifact is cached, its log files are available as well.
         return self._element._cached()
-
-    # reset_cached()
-    #
-    # Allow the Artifact to query the filesystem to determine whether it
-    # is cached or not.
-    #
-    def reset_cached(self):
-        self._proto = None
-        self._cached = None
 
     # set_cached()
     #

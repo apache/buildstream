@@ -1182,9 +1182,6 @@ class Element(Plugin):
     #            the artifact cache
     #
     def _cached(self):
-        if not self.__artifact:
-            return False
-
         return self.__artifact.cached()
 
     # _cached_remotely():
@@ -1300,7 +1297,7 @@ class Element(Plugin):
     #
     def _can_query_cache(self):
         # cache cannot be queried until strict cache key is available
-        return self.__strict_cache_key is not None
+        return self.__artifact is not None
 
     # _initialize_state()
     #
@@ -1588,7 +1585,9 @@ class Element(Plugin):
     def __should_schedule(self):
         # We're processing if we're already scheduled, we've
         # finished assembling or if we're waiting to pull.
-        processing = self.__assemble_scheduled or self.__assemble_done or self._pull_pending()
+        processing = (
+            self.__assemble_scheduled or self.__assemble_done or (self._can_query_cache() and self._pull_pending())
+        )
 
         # We should schedule a build when
         return (
@@ -1654,7 +1653,7 @@ class Element(Plugin):
             self.__artifact.set_cached()
             self.__cached_successfully = True
         else:
-            self.__artifact.reset_cached()
+            self.__artifact.query_cache()
 
         # When we're building in non-strict mode, we may have
         # assembled everything to this point without a strong cache
@@ -1901,7 +1900,7 @@ class Element(Plugin):
 
         # Artifact may become cached after pulling, so let it query the
         # filesystem again to check
-        self.__artifact.reset_cached()
+        self.__artifact.query_cache()
 
         # We may not have actually pulled an artifact - the pull may
         # have failed. We might therefore need to schedule assembly.
@@ -2595,6 +2594,7 @@ class Element(Plugin):
             return None
 
         artifact = Artifact(self, self._get_context(), strong_key=workspace.last_build)
+        artifact.query_cache()
 
         if not artifact.cached():
             return None
@@ -2868,6 +2868,7 @@ class Element(Plugin):
     #
     def __initialize_from_artifact(self, artifact: Artifact):
         self.__artifact = artifact
+        artifact.query_cache()
         self._mimic_artifact()
 
     @classmethod
@@ -3279,12 +3280,14 @@ class Element(Plugin):
             strict_key=self.__strict_cache_key,
             weak_key=self.__weak_cache_key,
         )
+        strict_artifact.query_cache()
         if context.get_strict() or strict_artifact.cached():
             self.__artifact = strict_artifact
         else:
             self.__artifact = Artifact(
                 self, context, strict_key=self.__strict_cache_key, weak_key=self.__weak_cache_key
             )
+            self.__artifact.query_cache()
 
         if not context.get_strict() and self.__artifact.cached():
             # In non-strict mode, strong cache key becomes available when
