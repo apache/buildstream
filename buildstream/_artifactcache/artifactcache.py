@@ -21,6 +21,7 @@ import multiprocessing
 import os
 import signal
 import string
+import time
 from collections import Mapping, namedtuple
 
 from ..types import _KeyStrength
@@ -137,6 +138,7 @@ class ArtifactCache():
         self.project_remote_specs = {}
 
         self._required_elements = set()       # The elements required for this session
+        self._start_time = time.time()        # The start time of the current session
         self._cache_size = None               # The current cache size, sometimes it's an estimate
         self._cache_quota = None              # The cache quota
         self._cache_quota_original = None     # The cache quota as specified by the user, in bytes
@@ -279,7 +281,8 @@ class ArtifactCache():
                     try:
                         ref = self.get_artifact_fullname(element, key)
 
-                        self.cas.update_mtime(ref)
+                        tree = self.cas.resolve_ref(ref, update_mtime=True)
+                        self.cas.update_tree_mtime(tree)
                     except CASError:
                         pass
 
@@ -315,73 +318,77 @@ class ArtifactCache():
                               utils._pretty_size(volume_size, dec_places=2),
                               utils._pretty_size(volume_avail, dec_places=2)))
 
-        # Build a set of the cache keys which are required
-        # based on the required elements at cleanup time
-        #
-        # We lock both strong and weak keys - deleting one but not the
-        # other won't save space, but would be a user inconvenience.
-        required_artifacts = set()
+        # Update the mtimes for the artifacts required by the current session.
+        # This makes sure they aren't deleted as part of the cleanup
         for element in self._required_elements:
-            required_artifacts.update([
-                element._get_cache_key(strength=_KeyStrength.STRONG),
-                element._get_cache_key(strength=_KeyStrength.WEAK)
-            ])
+            strong_key = element._get_cache_key(strength=_KeyStrength.STRONG)
+            weak_key = element._get_cache_key(strength=_KeyStrength.WEAK)
+            for key in (strong_key, weak_key):
+                if key:
+                    try:
+                        ref = self.get_artifact_fullname(element, key)
+
+                        tree = self.cas.resolve_ref(ref, update_mtime=True)
+                        self.cas.update_tree_mtime(tree)
+                    except CASError:
+                        pass
 
         # Do a real computation of the cache size once, just in case
         self.compute_cache_size()
 
-        while self.get_cache_size() >= self._cache_lower_threshold:
+        last_mtime = 0
+        for mtime, to_remove in self.cas.list_objects():
+            if mtime >= self._start_time:
+                break
+
             try:
-                to_remove = artifacts.pop(0)
-            except IndexError:
-                # If too many artifacts are required, and we therefore
-                # can't remove them, we have to abort the build.
-                #
-                # FIXME: Asking the user what to do may be neater
-                #
-                default_conf = os.path.join(os.environ['XDG_CONFIG_HOME'],
-                                            'buildstream.conf')
-                detail = ("Aborted after removing {} refs and saving {} disk space.\n"
-                          "The remaining {} in the cache is required by the {} elements in your build plan\n\n"
-                          "There is not enough space to complete the build.\n"
-                          "Please increase the cache-quota in {} and/or make more disk space."
-                          .format(removed_ref_count,
-                                  utils._pretty_size(space_saved, dec_places=2),
-                                  utils._pretty_size(self.get_cache_size(), dec_places=2),
-                                  len(self._required_elements),
-                                  (context.config_origin or default_conf)))
+                st = os.stat(to_remove)
+                if st.st_mtime >= self._start_time:
+                    continue
+                os.unlink(to_remove)
 
-                if self.has_quota_exceeded():
-                    raise ArtifactError("Cache too full. Aborting.",
-                                        detail=detail,
-                                        reason="cache-too-full")
-                else:
-                    break
+                space_saved += st.st_size
+                self._cache_size -= st.st_size
+                last_mtime = mtime
+            except FileNotFoundError:
+                pass
 
-            key = to_remove.rpartition('/')[2]
-            if key not in required_artifacts:
+            if self.get_cache_size() < self._cache_lower_threshold:
+                break
 
-                # Remove the actual artifact, if it's not required.
-                size = self.remove(to_remove)
+            # User callback
+            #
+            # Currently this process is fairly slow, but we should
+            # think about throttling this progress() callback if this
+            # becomes too intense.
+            if progress:
+                progress()
 
-                removed_ref_count += 1
-                space_saved += size
+        for mtime, ref in self.cas.list_refs():
+            if mtime > last_mtime:
+                break
 
-                self._message(MessageType.STATUS,
-                              "Freed {: <7} {}".format(
-                                  utils._pretty_size(size, dec_places=2),
-                                  to_remove))
+            self.remove(ref)
+            removed_ref_count += 1
 
-                # Remove the size from the removed size
-                self.set_cache_size(self._cache_size - size)
+        # If too many artifacts are required, and we therefore
+        # can't remove them, we have to abort the build.
+        default_conf = os.path.join(os.environ['XDG_CONFIG_HOME'],
+                                    'buildstream.conf')
+        detail = ("Aborted after removing {} refs and saving {} disk space.\n"
+                  "The remaining {} in the cache is required by the {} elements in your build plan\n\n"
+                  "There is not enough space to complete the build.\n"
+                  "Please increase the cache-quota in {} and/or make more disk space."
+                  .format(removed_ref_count,
+                          utils._pretty_size(space_saved, dec_places=2),
+                          utils._pretty_size(self.get_cache_size(), dec_places=2),
+                          len(self._required_elements),
+                          (context.config_origin or default_conf)))
 
-                # User callback
-                #
-                # Currently this process is fairly slow, but we should
-                # think about throttling this progress() callback if this
-                # becomes too intense.
-                if progress:
-                    progress()
+        if self.has_quota_exceeded():
+            raise ArtifactError("Cache too full. Aborting.",
+                                detail=detail,
+                                reason="cache-too-full")
 
         # Informational message about the side effects of the cleanup
         self._message(MessageType.INFO, "Cleanup completed",
@@ -617,7 +624,7 @@ class ArtifactCache():
             if remove_extract:
                 utils._force_rmtree(extract)
 
-        return self.cas.remove(ref)
+        return self.cas.remove(ref, defer_prune=True)
 
     # extract():
     #

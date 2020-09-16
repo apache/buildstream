@@ -535,9 +535,7 @@ class CASCache():
                 # Obtain the mtime (the time a file was last modified)
                 mtimes.append(os.path.getmtime(ref_path))
 
-        # NOTE: Sorted will sort from earliest to latest, thus the
-        # first ref of this list will be the file modified earliest.
-        return [ref for _, ref in sorted(zip(mtimes, refs))]
+        return sorted(zip(mtimes, refs))
 
     # list_objects():
     #
