@@ -380,7 +380,7 @@ class _ReferenceStorageServicer(buildstream_pb2_grpc.ReferenceStorageServicer):
             try:
                 self.cas.update_tree_mtime(tree)
             except FileNotFoundError:
-                self.cas.remove(request.key, defer_prune=True)
+                self.cas.remove(request.key)
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 return response
 

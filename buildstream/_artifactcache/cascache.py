@@ -578,15 +578,8 @@ class CASCache():
     #
     # Args:
     #    ref (str): A symbolic ref
-    #    defer_prune (bool): Whether to defer pruning to the caller. NOTE:
-    #                        The space won't be freed until you manually
-    #                        call prune.
     #
-    # Returns:
-    #    (int|None) The amount of space pruned from the repository in
-    #               Bytes, or None if defer_prune is True
-    #
-    def remove(self, ref, *, defer_prune=False):
+    def remove(self, ref):
 
         # Remove cache ref
         refpath = self._refpath(ref)
@@ -594,42 +587,6 @@ class CASCache():
             raise CASError("Could not find ref '{}'".format(ref))
 
         os.unlink(refpath)
-
-        if not defer_prune:
-            pruned = self.prune()
-            return pruned
-
-        return None
-
-    # prune():
-    #
-    # Prune unreachable objects from the repo.
-    #
-    def prune(self):
-        ref_heads = os.path.join(self.casdir, 'refs', 'heads')
-
-        pruned = 0
-        reachable = set()
-
-        # Check which objects are reachable
-        for root, _, files in os.walk(ref_heads):
-            for filename in files:
-                ref_path = os.path.join(root, filename)
-                ref = os.path.relpath(ref_path, ref_heads)
-
-                tree = self.resolve_ref(ref)
-                self._reachable_refs_dir(reachable, tree)
-
-        # Prune unreachable objects
-        for root, _, files in os.walk(os.path.join(self.casdir, 'objects')):
-            for filename in files:
-                objhash = os.path.basename(root) + filename
-                if objhash not in reachable:
-                    obj_path = os.path.join(root, filename)
-                    pruned += os.stat(obj_path).st_size
-                    os.unlink(obj_path)
-
-        return pruned
 
     def update_tree_mtime(self, tree):
         reachable = set()
