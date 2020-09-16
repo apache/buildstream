@@ -35,7 +35,6 @@ import subprocess
 from subprocess import TimeoutExpired
 import tempfile
 import threading
-import time
 import datetime
 import itertools
 from contextlib import contextmanager
@@ -61,16 +60,6 @@ BST_ARBITRARY_TIMESTAMP = calendar.timegm((2011, 11, 11, 11, 11, 11))
 # The separator we use for user specified aliases
 _ALIAS_SEPARATOR = ":"
 _URI_SCHEMES = ["http", "https", "ftp", "file", "git", "sftp", "ssh"]
-
-# Main process pid
-_MAIN_PID = os.getpid()
-
-# The number of threads in the main process at startup.
-# This is 1 except for certain test environments (xdist/execnet).
-_INITIAL_NUM_THREADS_IN_MAIN_PROCESS = 1
-
-# Number of seconds to wait for background threads to exit.
-_AWAIT_THREADS_TIMEOUT_SECONDS = 5
 
 # The process's file mode creation mask.
 # Impossible to retrieve without temporarily changing it on POSIX.
@@ -1598,30 +1587,6 @@ def _get_compression(tar):
 
         # Assume just an unconventional name was provided, default to uncompressed
         return ""
-
-
-# _is_single_threaded()
-#
-# Return whether the current Process is single-threaded. Don't count threads
-# in the main process that were created by a test environment (xdist/execnet)
-# before BuildStream was executed.
-#
-def _is_single_threaded():
-    # Use psutil as threading.active_count() doesn't include gRPC threads.
-    process = psutil.Process()
-
-    if process.pid == _MAIN_PID:
-        expected_num_threads = _INITIAL_NUM_THREADS_IN_MAIN_PROCESS
-    else:
-        expected_num_threads = 1
-
-    # gRPC threads are not joined when shut down. Wait for them to exit.
-    wait = 0.1
-    for _ in range(0, int(_AWAIT_THREADS_TIMEOUT_SECONDS / wait)):
-        if process.num_threads() == expected_num_threads:
-            return True
-        time.sleep(wait)
-    return False
 
 
 # _parse_version():
