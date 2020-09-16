@@ -250,13 +250,10 @@ class Element(Plugin):
         self.__reverse_build_deps = set()  # type: Set[Element]
         # Direct reverse runtime dependency Elements
         self.__reverse_runtime_deps = set()  # type: Set[Element]
-        self.__build_deps_without_strict_cache_key = None  # Number of build dependencies without a strict key
-        self.__runtime_deps_without_strict_cache_key = None  # Number of runtime dependencies without a strict key
         self.__build_deps_without_cache_key = None  # Number of build dependencies without a cache key
         self.__runtime_deps_without_cache_key = None  # Number of runtime dependencies without a cache key
         self.__build_deps_uncached = None  # Build dependencies which are not yet cached
         self.__runtime_deps_uncached = None  # Runtime dependencies which are not yet cached
-        self.__updated_strict_cache_keys_of_rdeps = False  # Whether we've updated strict cache keys of rdeps
         self.__ready_for_runtime = False  # Whether the element and its runtime dependencies have cache keys
         self.__ready_for_runtime_and_cached = False  # Whether all runtime deps are cached, as well as the element
         self.__cached_remotely = None  # Whether the element is cached remotely
@@ -1002,12 +999,10 @@ class Element(Plugin):
                 element.__strict_dependencies.append(dependency)
 
         no_of_runtime_deps = len(element.__runtime_dependencies)
-        element.__runtime_deps_without_strict_cache_key = no_of_runtime_deps
         element.__runtime_deps_without_cache_key = no_of_runtime_deps
         element.__runtime_deps_uncached = no_of_runtime_deps
 
         no_of_build_deps = len(element.__build_dependencies)
-        element.__build_deps_without_strict_cache_key = no_of_build_deps
         element.__build_deps_without_cache_key = no_of_build_deps
         element.__build_deps_uncached = no_of_build_deps
 
@@ -1243,14 +1238,6 @@ class Element(Plugin):
         # elements recursively initialize anything else (because it
         # will become considered outdated after cache keys are
         # updated).
-        #
-        # FIXME: Currently this method may cause recursion through
-        # `self.__update_strict_cache_key_of_rdeps()`, since this may
-        # invoke reverse dependencies' cache key updates
-        # recursively. This is necessary when we update keys after a
-        # pull/build, however should not occur during initialization
-        # (since we will eventualyl visit reverse dependencies during
-        # our initialization anyway).
         self.__update_cache_keys()
 
     # _get_display_key():
@@ -3031,8 +3018,6 @@ class Element(Plugin):
                     # The Element may have just become ready for runtime now that the
                     # strong cache key has just been set
                     self.__update_ready_for_runtime()
-                else:
-                    self.__update_strict_cache_key_of_rdeps()
 
         if self.__strict_cache_key is not None and self.__can_query_cache_callback is not None:
             self.__can_query_cache_callback(self)
@@ -3122,44 +3107,6 @@ class Element(Plugin):
 
             # Now we have the strong cache key, update the Artifact
             self.__artifact._cache_key = self.__cache_key
-
-    # __update_strict_cache_key_of_rdeps()
-    #
-    # Once an Element is given its strict cache key, immediately inform
-    # its reverse dependencies and see if their strict cache key can be
-    # obtained
-    #
-    def __update_strict_cache_key_of_rdeps(self):
-        if any(
-            (
-                # If we've previously updated these we don't need to do so
-                # again.
-                self.__updated_strict_cache_keys_of_rdeps,
-                # We can't do this until none of *our* rdeps are lacking a
-                # strict cache key.
-                not self.__runtime_deps_without_strict_cache_key == 0,
-                # If we don't have a strict cache key we can't do this either.
-                self.__strict_cache_key is None,
-            )
-        ):
-            return
-
-        self.__updated_strict_cache_keys_of_rdeps = True
-
-        # Notify reverse dependencies
-        for rdep in self.__reverse_runtime_deps:
-            rdep.__runtime_deps_without_strict_cache_key -= 1
-            assert not rdep.__runtime_deps_without_strict_cache_key < 0
-
-            if rdep.__runtime_deps_without_strict_cache_key == 0:
-                rdep.__update_strict_cache_key_of_rdeps()
-
-        for rdep in self.__reverse_build_deps:
-            rdep.__build_deps_without_strict_cache_key -= 1
-            assert not rdep.__build_deps_without_strict_cache_key < 0
-
-            if rdep.__build_deps_without_strict_cache_key == 0:
-                rdep.__update_cache_keys()
 
     # __update_ready_for_runtime()
     #
