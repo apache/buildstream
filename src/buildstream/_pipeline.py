@@ -162,9 +162,8 @@ class Pipeline:
     # plan()
     #
     # Generator function to iterate over only the elements
-    # which are required to build the pipeline target, omitting
-    # cached elements. The elements are yielded in a depth sorted
-    # ordering for optimal build plans
+    # which are required to build the pipeline target The elements are
+    # yielded in a depth sorted ordering for optimal build plans
     #
     # Args:
     #    elements (list of Element): List of target elements to plan
@@ -173,11 +172,7 @@ class Pipeline:
     #    (list of Element): A depth sorted list of the build plan
     #
     def plan(self, elements):
-        # Keep locally cached elements in the plan if remote artifact cache is used
-        # to allow pulling artifact with strict cache key, if available.
-        plan_cached = not self._context.get_strict() and self._artifacts.has_fetch_remotes()
-
-        return _Planner().plan(elements, plan_cached)
+        return _Planner().plan(elements)
 
     # get_selection()
     #
@@ -450,9 +445,8 @@ class Pipeline:
 # _Planner()
 #
 # An internal object used for constructing build plan
-# from a given resolved toplevel element, while considering what
-# parts need to be built depending on build only dependencies
-# being cached, and depth sorting for more efficient processing.
+# from a given resolved toplevel element, using depth
+# sorting for more efficient processing.
 #
 class _Planner:
     def __init__(self):
@@ -476,15 +470,13 @@ class _Planner:
         for dep in element._dependencies(_Scope.RUN, recurse=False):
             self.plan_element(dep, depth)
 
-        # Dont try to plan builds of elements that are cached already
-        if not element._cached_success():
-            for dep in element._dependencies(_Scope.BUILD, recurse=False):
-                self.plan_element(dep, depth + 1)
+        for dep in element._dependencies(_Scope.BUILD, recurse=False):
+            self.plan_element(dep, depth + 1)
 
         self.depth_map[element] = depth
         self.visiting_elements.remove(element)
 
-    def plan(self, roots, plan_cached):
+    def plan(self, roots):
         for root in roots:
             self.plan_element(root, 0)
 
@@ -494,4 +486,4 @@ class _Planner:
         for index, item in enumerate(depth_sorted):
             item[0]._set_depth(index)
 
-        return [item[0] for item in depth_sorted if plan_cached or not item[0]._cached_success()]
+        return [item[0] for item in depth_sorted]
