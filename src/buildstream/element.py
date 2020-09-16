@@ -271,7 +271,6 @@ class Element(Plugin):
         self.__build_result = None  # The result of assembling this Element (success, description, detail)
         # Artifact class for direct artifact composite interaction
         self.__artifact = None  # type: Optional[Artifact]
-        self.__strict_artifact = None  # Artifact for strict cache key
 
         self.__batch_prepare_assemble = False  # Whether batching across prepare()/assemble() is configured
         self.__batch_prepare_assemble_flags = 0  # Sandbox flags for batching across prepare()/assemble()
@@ -1520,8 +1519,6 @@ class Element(Plugin):
 
         self.__assemble_done = True
 
-        self.__strict_artifact.reset_cached()
-
         if successful:
             # Directly set known cached status as optimization to avoid
             # querying buildbox-casd and the filesystem.
@@ -1735,13 +1732,13 @@ class Element(Plugin):
         # in user context, as to complete a partial artifact
         pull_buildtrees = self._get_context().pull_buildtrees
 
-        if self.__strict_artifact:
-            if self.__strict_artifact.cached() and pull_buildtrees:
+        if self._cached() and self.__artifact._cache_key == self.__strict_cache_key:
+            if pull_buildtrees:
                 # If we've specified a subdir, check if the subdir is cached locally
                 # or if it's possible to get
                 if self._cached_buildtree() or not self._buildtree_exists():
                     return False
-            elif self.__strict_artifact.cached():
+            else:
                 return False
 
         # Pull is pending if artifact remote server available
@@ -1763,7 +1760,6 @@ class Element(Plugin):
 
         # Artifact may become cached after pulling, so let it query the
         # filesystem again to check
-        self.__strict_artifact.reset_cached()
         self.__artifact.reset_cached()
 
         # We may not have actually pulled an artifact - the pull may
@@ -3017,10 +3013,6 @@ class Element(Plugin):
             # In strict mode, the strong cache key always matches the strict cache key
             self.__cache_key = self.__strict_cache_key
 
-        if self.__can_query_cache_callback is not None:
-            self.__can_query_cache_callback(self)
-            self.__can_query_cache_callback = None
-
         # If we've newly calculated a cache key, our artifact's
         # current state will also change - after all, we can now find
         # a potential existing artifact.
@@ -3040,23 +3032,26 @@ class Element(Plugin):
     # it can check whether an artifact exists for that cache key.
     #
     def __update_artifact_state(self):
+        assert self.__artifact is None
+
         context = self._get_context()
 
-        if not context.get_strict() and not self.__artifact:
-            # We've calculated the weak_key, so instantiate artifact instance member
+        strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key, weak_key=self.__weak_cache_key)
+        if context.get_strict() or strict_artifact.cached():
+            self.__artifact = strict_artifact
+        else:
             self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
-            self.__schedule_assembly_when_necessary()
 
-        if not self.__strict_artifact:
-            self.__strict_artifact = Artifact(
-                self, context, strong_key=self.__strict_cache_key, weak_key=self.__weak_cache_key
-            )
+        if not context.get_strict() and self.__artifact.cached():
+            # In non-strict mode, strong cache key becomes available when
+            # the artifact is cached
+            self.__update_cache_key_non_strict()
 
-            if context.get_strict():
-                self.__artifact = self.__strict_artifact
-                self.__schedule_assembly_when_necessary()
-            else:
-                self.__update_cache_key_non_strict()
+        self.__schedule_assembly_when_necessary()
+
+        if self.__can_query_cache_callback is not None:
+            self.__can_query_cache_callback(self)
+            self.__can_query_cache_callback = None
 
     # __update_cache_key_non_strict()
     #
@@ -3071,9 +3066,6 @@ class Element(Plugin):
     # a remote cache).
     #
     def __update_cache_key_non_strict(self):
-        if not self.__strict_artifact:
-            return
-
         # The final cache key can be None here only in non-strict mode
         if self.__cache_key is None:
             if self._pull_pending():
