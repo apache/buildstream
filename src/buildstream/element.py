@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2018 Codethink Limited
+#  Copyright (C) 2016-2020 Codethink Limited
 #  Copyright (C) 2017-2020 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
@@ -240,6 +240,8 @@ class Element(Plugin):
         # Private instance properties
         #
 
+        # Cache of proxies instantiated, indexed by the proxy owner
+        self.__proxies = {}  # type: Dict[Element, ElementProxy]
         # Direct runtime dependency Elements
         self.__runtime_dependencies = []  # type: List[Element]
         # Direct build dependency Elements
@@ -483,7 +485,7 @@ class Element(Plugin):
             # methods.
             #
             for dep in element._dependencies(scope, recurse=recurse, visited=visited):
-                yield cast("Element", ElementProxy(self, dep))
+                yield cast("Element", dep.__get_proxy(self))
 
     def search(self, name: str) -> Optional["Element"]:
         """Search for a dependency by name
@@ -498,7 +500,7 @@ class Element(Plugin):
         if search is self:
             return self
         elif search:
-            return cast("Element", ElementProxy(self, search))
+            return cast("Element", search.__get_proxy(self))
 
         return None
 
@@ -2318,6 +2320,29 @@ class Element(Plugin):
     #############################################################
     #                   Private Local Methods                   #
     #############################################################
+
+    # __get_proxy()
+    #
+    # Obtain a proxy for this element for the specified `owner`.
+    #
+    # We cache the proxies for plugin convenience, this allows plugins
+    # compare proxies to other proxies returned to them, so they
+    # can run valid statements such as `proxy_a is `proxy_b` or
+    # `proxy_a in list_of_proxies`.
+    #
+    # Args:
+    #    owner (Element): The owning element
+    #
+    # Returns:
+    #    (ElementProxy): An ElementProxy to self, for owner.
+    #
+    def __get_proxy(self, owner: "Element") -> ElementProxy:
+        with suppress(KeyError):
+            return self.__proxies[owner]
+
+        proxy = ElementProxy(owner, self)
+        self.__proxies[owner] = proxy
+        return proxy
 
     # __load_sources()
     #
