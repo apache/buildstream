@@ -218,6 +218,13 @@ class Result:
 
         return list(tracked)
 
+    def get_built_elements(self):
+        built = re.findall(r"\[\s*build:(\S+)\s*\]\s*SUCCESS\s*Caching artifact", self.stderr)
+        if built is None:
+            return []
+
+        return list(built)
+
     def get_pushed_elements(self):
         pushed = re.findall(r"\[\s*push:(\S+)\s*\]\s*INFO\s*Pushed artifact", self.stderr)
         if pushed is None:

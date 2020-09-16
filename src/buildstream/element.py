@@ -250,14 +250,8 @@ class Element(Plugin):
         self.__reverse_build_deps = set()  # type: Set[Element]
         # Direct reverse runtime dependency Elements
         self.__reverse_runtime_deps = set()  # type: Set[Element]
-        self.__build_deps_without_strict_cache_key = None  # Number of build dependencies without a strict key
-        self.__runtime_deps_without_strict_cache_key = None  # Number of runtime dependencies without a strict key
-        self.__build_deps_without_cache_key = None  # Number of build dependencies without a cache key
-        self.__runtime_deps_without_cache_key = None  # Number of runtime dependencies without a cache key
         self.__build_deps_uncached = None  # Build dependencies which are not yet cached
         self.__runtime_deps_uncached = None  # Runtime dependencies which are not yet cached
-        self.__updated_strict_cache_keys_of_rdeps = False  # Whether we've updated strict cache keys of rdeps
-        self.__ready_for_runtime = False  # Whether the element and its runtime dependencies have cache keys
         self.__ready_for_runtime_and_cached = False  # Whether all runtime deps are cached, as well as the element
         self.__cached_remotely = None  # Whether the element is cached remotely
         self.__sources = ElementSources(context, project, self)  # The element sources
@@ -277,7 +271,6 @@ class Element(Plugin):
         self.__build_result = None  # The result of assembling this Element (success, description, detail)
         # Artifact class for direct artifact composite interaction
         self.__artifact = None  # type: Optional[Artifact]
-        self.__strict_artifact = None  # Artifact for strict cache key
 
         self.__batch_prepare_assemble = False  # Whether batching across prepare()/assemble() is configured
         self.__batch_prepare_assemble_flags = 0  # Sandbox flags for batching across prepare()/assemble()
@@ -1002,13 +995,9 @@ class Element(Plugin):
                 element.__strict_dependencies.append(dependency)
 
         no_of_runtime_deps = len(element.__runtime_dependencies)
-        element.__runtime_deps_without_strict_cache_key = no_of_runtime_deps
-        element.__runtime_deps_without_cache_key = no_of_runtime_deps
         element.__runtime_deps_uncached = no_of_runtime_deps
 
         no_of_build_deps = len(element.__build_dependencies)
-        element.__build_deps_without_strict_cache_key = no_of_build_deps
-        element.__build_deps_without_cache_key = no_of_build_deps
         element.__build_deps_uncached = no_of_build_deps
 
         element.__preflight()
@@ -1243,14 +1232,6 @@ class Element(Plugin):
         # elements recursively initialize anything else (because it
         # will become considered outdated after cache keys are
         # updated).
-        #
-        # FIXME: Currently this method may cause recursion through
-        # `self.__update_strict_cache_key_of_rdeps()`, since this may
-        # invoke reverse dependencies' cache key updates
-        # recursively. This is necessary when we update keys after a
-        # pull/build, however should not occur during initialization
-        # (since we will eventualyl visit reverse dependencies during
-        # our initialization anyway).
         self.__update_cache_keys()
 
     # _get_display_key():
@@ -1538,8 +1519,6 @@ class Element(Plugin):
 
         self.__assemble_done = True
 
-        self.__strict_artifact.reset_cached()
-
         if successful:
             # Directly set known cached status as optimization to avoid
             # querying buildbox-casd and the filesystem.
@@ -1753,13 +1732,13 @@ class Element(Plugin):
         # in user context, as to complete a partial artifact
         pull_buildtrees = self._get_context().pull_buildtrees
 
-        if self.__strict_artifact:
-            if self.__strict_artifact.cached() and pull_buildtrees:
+        if self._cached() and self.__artifact._cache_key == self.__strict_cache_key:
+            if pull_buildtrees:
                 # If we've specified a subdir, check if the subdir is cached locally
                 # or if it's possible to get
                 if self._cached_buildtree() or not self._buildtree_exists():
                     return False
-            elif self.__strict_artifact.cached():
+            else:
                 return False
 
         # Pull is pending if artifact remote server available
@@ -1781,7 +1760,6 @@ class Element(Plugin):
 
         # Artifact may become cached after pulling, so let it query the
         # filesystem again to check
-        self.__strict_artifact.reset_cached()
         self.__artifact.reset_cached()
 
         # We may not have actually pulled an artifact - the pull may
@@ -2244,7 +2222,7 @@ class Element(Plugin):
     #
     def _update_ready_for_runtime_and_cached(self):
         if not self.__ready_for_runtime_and_cached:
-            if self.__runtime_deps_uncached == 0 and self._cached_success() and self.__cache_key:
+            if self.__runtime_deps_uncached == 0 and self.__cache_key and self._cached_success():
                 self.__ready_for_runtime_and_cached = True
 
                 # Notify reverse dependencies
@@ -2987,62 +2965,58 @@ class Element(Plugin):
     # dependency has changed.
     #
     def __update_cache_keys(self):
+        if self.__strict_cache_key is not None:
+            # Cache keys already calculated
+            assert self.__weak_cache_key is not None
+            return
+
         if not self._has_all_sources_resolved():
             # Tracking may still be pending
             return
 
         context = self._get_context()
 
-        if self.__weak_cache_key is None:
-            # Calculate weak cache key
-            #
-            # Weak cache key includes names of direct build dependencies
-            # so as to only trigger rebuilds when the shape of the
-            # dependencies change.
-            #
-            # Some conditions cause dependencies to be strict, such
-            # that this element will be rebuilt anyway if the dependency
-            # changes even in non strict mode, for these cases we just
-            # encode the dependency's weak cache key instead of it's name.
-            #
-            dependencies = [
-                [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
-                if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
-                else [e.project_name, e.name]
-                for e in self._dependencies(_Scope.BUILD)
-            ]
-
-            self.__weak_cache_key = self._calculate_cache_key(dependencies)
-
-            if self.__weak_cache_key is None:
-                # Weak cache key could not be calculated yet, therefore
-                # the Strict cache key also can't be calculated yet.
-                return
+        # Calculate the strict cache key
+        dependencies = [[e.project_name, e.name, e.__strict_cache_key] for e in self._dependencies(_Scope.BUILD)]
+        self.__strict_cache_key = self._calculate_cache_key(dependencies)
 
         if self.__strict_cache_key is None:
-            dependencies = [[e.project_name, e.name, e.__strict_cache_key] for e in self._dependencies(_Scope.BUILD)]
-            self.__strict_cache_key = self._calculate_cache_key(dependencies)
+            # Cache keys cannot be calculated yet as a build dependency doesn't
+            # have a cache key yet.
+            return
 
-            if self.__strict_cache_key is not None:
-                # In strict mode, the strong cache key always matches the strict cache key
-                if context.get_strict():
-                    self.__cache_key = self.__strict_cache_key
+        # Calculate weak cache key
+        #
+        # Weak cache key includes names of direct build dependencies
+        # so as to only trigger rebuilds when the shape of the
+        # dependencies change.
+        #
+        # Some conditions cause dependencies to be strict, such
+        # that this element will be rebuilt anyway if the dependency
+        # changes even in non strict mode, for these cases we just
+        # encode the dependency's weak cache key instead of it's name.
+        #
+        dependencies = [
+            [e.project_name, e.name, e._get_cache_key(strength=_KeyStrength.WEAK)]
+            if self.BST_STRICT_REBUILD or e in self.__strict_dependencies
+            else [e.project_name, e.name]
+            for e in self._dependencies(_Scope.BUILD)
+        ]
 
-                    # The Element may have just become ready for runtime now that the
-                    # strong cache key has just been set
-                    self.__update_ready_for_runtime()
-                else:
-                    self.__update_strict_cache_key_of_rdeps()
+        self.__weak_cache_key = self._calculate_cache_key(dependencies)
 
-        if self.__strict_cache_key is not None and self.__can_query_cache_callback is not None:
-            self.__can_query_cache_callback(self)
-            self.__can_query_cache_callback = None
+        # As the strict cache key has already been calculated, it should always
+        # be possible to calculate the weak cache key as well.
+        assert self.__weak_cache_key is not None
+
+        if context.get_strict():
+            # In strict mode, the strong cache key always matches the strict cache key
+            self.__cache_key = self.__strict_cache_key
 
         # If we've newly calculated a cache key, our artifact's
         # current state will also change - after all, we can now find
         # a potential existing artifact.
-        if self.__weak_cache_key is not None or self.__strict_cache_key is not None:
-            self.__update_artifact_state()
+        self.__update_artifact_state()
 
     # __update_artifact_state()
     #
@@ -3058,29 +3032,26 @@ class Element(Plugin):
     # it can check whether an artifact exists for that cache key.
     #
     def __update_artifact_state(self):
+        assert self.__artifact is None
+
         context = self._get_context()
 
-        if not self.__weak_cache_key:
-            return
-
-        if not context.get_strict() and not self.__artifact:
-            # We've calculated the weak_key, so instantiate artifact instance member
+        strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key, weak_key=self.__weak_cache_key)
+        if context.get_strict() or strict_artifact.cached():
+            self.__artifact = strict_artifact
+        else:
             self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
-            self.__schedule_assembly_when_necessary()
 
-        if not self.__strict_cache_key:
-            return
+        if not context.get_strict() and self.__artifact.cached():
+            # In non-strict mode, strong cache key becomes available when
+            # the artifact is cached
+            self.__update_cache_key_non_strict()
 
-        if not self.__strict_artifact:
-            self.__strict_artifact = Artifact(
-                self, context, strong_key=self.__strict_cache_key, weak_key=self.__weak_cache_key
-            )
+        self.__schedule_assembly_when_necessary()
 
-            if context.get_strict():
-                self.__artifact = self.__strict_artifact
-                self.__schedule_assembly_when_necessary()
-            else:
-                self.__update_cache_key_non_strict()
+        if self.__can_query_cache_callback is not None:
+            self.__can_query_cache_callback(self)
+            self.__can_query_cache_callback = None
 
     # __update_cache_key_non_strict()
     #
@@ -3095,9 +3066,6 @@ class Element(Plugin):
     # a remote cache).
     #
     def __update_cache_key_non_strict(self):
-        if not self.__strict_artifact:
-            return
-
         # The final cache key can be None here only in non-strict mode
         if self.__cache_key is None:
             if self._pull_pending():
@@ -3118,99 +3086,10 @@ class Element(Plugin):
 
             # The Element may have just become ready for runtime now that the
             # strong cache key has just been set
-            self.__update_ready_for_runtime()
+            self._update_ready_for_runtime_and_cached()
 
             # Now we have the strong cache key, update the Artifact
             self.__artifact._cache_key = self.__cache_key
-
-    # __update_strict_cache_key_of_rdeps()
-    #
-    # Once an Element is given its strict cache key, immediately inform
-    # its reverse dependencies and see if their strict cache key can be
-    # obtained
-    #
-    def __update_strict_cache_key_of_rdeps(self):
-        if any(
-            (
-                # If we've previously updated these we don't need to do so
-                # again.
-                self.__updated_strict_cache_keys_of_rdeps,
-                # We can't do this until none of *our* rdeps are lacking a
-                # strict cache key.
-                not self.__runtime_deps_without_strict_cache_key == 0,
-                # If we don't have a strict cache key we can't do this either.
-                self.__strict_cache_key is None,
-            )
-        ):
-            return
-
-        self.__updated_strict_cache_keys_of_rdeps = True
-
-        # Notify reverse dependencies
-        for rdep in self.__reverse_runtime_deps:
-            rdep.__runtime_deps_without_strict_cache_key -= 1
-            assert not rdep.__runtime_deps_without_strict_cache_key < 0
-
-            if rdep.__runtime_deps_without_strict_cache_key == 0:
-                rdep.__update_strict_cache_key_of_rdeps()
-
-        for rdep in self.__reverse_build_deps:
-            rdep.__build_deps_without_strict_cache_key -= 1
-            assert not rdep.__build_deps_without_strict_cache_key < 0
-
-            if rdep.__build_deps_without_strict_cache_key == 0:
-                rdep.__update_cache_keys()
-
-    # __update_ready_for_runtime()
-    #
-    # An Element becomes ready for runtime when:
-    #
-    #  1. The Element has a strong cache key
-    #  2. The runtime dependencies of the Element are ready for runtime
-    #
-    # These criteria serve as potential trigger points as to when an Element may have
-    # become ready for runtime.
-    #
-    # Once an Element becomes ready for runtime, we notify the reverse
-    # runtime dependencies and the reverse build dependencies of the Element,
-    # decrementing the appropriate counters.
-    #
-    def __update_ready_for_runtime(self):
-        if any(
-            (
-                # We're already ready for runtime; no update required
-                self.__ready_for_runtime,
-                # If not all our dependencies are ready yet, we can't be ready
-                # either.
-                not self.__runtime_deps_without_cache_key == 0,
-                # If our cache state has not been resolved, we can't be ready.
-                self.__cache_key is None,
-            )
-        ):
-            return
-
-        self.__ready_for_runtime = True
-
-        # Notify reverse dependencies
-        for rdep in self.__reverse_runtime_deps:
-            rdep.__runtime_deps_without_cache_key -= 1
-            assert not rdep.__runtime_deps_without_cache_key < 0
-
-            # If all of our runtimes have cache keys, we can calculate ours
-            if rdep.__runtime_deps_without_cache_key == 0:
-                rdep.__update_ready_for_runtime()
-
-        for rdep in self.__reverse_build_deps:
-            rdep.__build_deps_without_cache_key -= 1
-            assert not rdep.__build_deps_without_cache_key < 0
-
-            if rdep.__build_deps_without_cache_key == 0:
-                rdep.__update_cache_keys()
-
-        # If the element is cached, and has all of its runtime dependencies cached,
-        # now that we have the cache key, we are able to notify reverse dependencies
-        # that the element it ready. This is a likely trigger for workspaced elements.
-        self._update_ready_for_runtime_and_cached()
 
 
 # _OverlapCollector()
