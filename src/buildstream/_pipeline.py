@@ -88,10 +88,7 @@ def get_selection(context: Context, targets: List[Element], mode: str, *, silent
         return elements
 
     def plan() -> List[Element]:
-        # Keep locally cached elements in the plan if remote artifact cache is used
-        # to allow pulling artifact with strict cache key, if available.
-        plan_cached = not context.get_strict() and context.artifactcache.has_fetch_remotes()
-        return _Planner().plan(targets, plan_cached)
+        return _Planner().plan(targets)
 
     # Work around python not having a switch statement; this is
     # much clearer than the if/elif/else block we used to have.
@@ -293,9 +290,8 @@ def assert_sources_cached(context: Context, elements: List[Element]):
 # _Planner()
 #
 # An internal object used for constructing build plan
-# from a given resolved toplevel element, while considering what
-# parts need to be built depending on build only dependencies
-# being cached, and depth sorting for more efficient processing.
+# from a given resolved toplevel element, using depth
+# sorting for more efficient processing.
 #
 class _Planner:
     def __init__(self):
@@ -319,15 +315,13 @@ class _Planner:
         for dep in element._dependencies(_Scope.RUN, recurse=False):
             self.plan_element(dep, depth)
 
-        # Dont try to plan builds of elements that are cached already
-        if not element._cached_success():
-            for dep in element._dependencies(_Scope.BUILD, recurse=False):
-                self.plan_element(dep, depth + 1)
+        for dep in element._dependencies(_Scope.BUILD, recurse=False):
+            self.plan_element(dep, depth + 1)
 
         self.depth_map[element] = depth
         self.visiting_elements.remove(element)
 
-    def plan(self, roots, plan_cached):
+    def plan(self, roots):
         for root in roots:
             self.plan_element(root, 0)
 
@@ -337,4 +331,4 @@ class _Planner:
         for index, item in enumerate(depth_sorted):
             item[0]._set_depth(index)
 
-        return [item[0] for item in depth_sorted if plan_cached or not item[0]._cached_success()]
+        return [item[0] for item in depth_sorted]
