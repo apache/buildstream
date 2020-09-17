@@ -293,7 +293,7 @@ class ElementSources:
         length = min(len(key), context.log_key_length)
         return key[:length]
 
-    # cached():
+    # query_cache():
     #
     # Check if the element sources are cached in CAS, generating the source
     # cache keys if needed.
@@ -301,10 +301,7 @@ class ElementSources:
     # Returns:
     #    (bool): True if the element sources are cached
     #
-    def cached(self):
-        if self._cached is not None:
-            return self._cached
-
+    def query_cache(self):
         cas = self._context.get_cascache()
         elementsourcescache = self._elementsourcescache
 
@@ -320,6 +317,28 @@ class ElementSources:
         self._proto = source_proto
         self._cached = True
         return True
+
+    # can_query_cache():
+    #
+    # Returns whether the cache status is available.
+    #
+    # Returns:
+    #    (bool): True if cache status is available
+    #
+    def can_query_cache(self):
+        return self._cached is not None
+
+    # cached()
+    #
+    # Return whether the element sources are cached in CAS. This must be
+    # called only when all sources are resolved.
+    #
+    # Returns:
+    #    (bool): True if the element sources are cached
+    #
+    def cached(self):
+        assert self._cached is not None
+        return self._cached
 
     # is_resolved():
     #
@@ -367,6 +386,8 @@ class ElementSources:
         # Also generate the cache key for the combined element sources
         unique_key = self.get_unique_key()
         self._cache_key = _cachekey.generate_key(unique_key)
+
+        self.query_cache()
 
     # preflight():
     #

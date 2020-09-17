@@ -1296,6 +1296,16 @@ class Element(Plugin):
         # cache cannot be queried until strict cache key is available
         return self.__artifact is not None
 
+    # _can_query_source_cache():
+    #
+    # Returns whether the source cache status is available.
+    #
+    # Returns:
+    #    (bool): True if source cache can be queried
+    #
+    def _can_query_source_cache(self):
+        return self.__sources.can_query_cache()
+
     # _initialize_state()
     #
     # Compute up the elment's initial state. Element state contains
