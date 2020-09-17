@@ -211,6 +211,12 @@ tests-bb-remote-cache:
 
 tests-no-usedevelop:
   # Ensure that tests also pass without `--develop` flag.
+  #
+  # Our tox.ini file does not set `usedevelop` when running without coverage,
+  # but the `usedevelop` flag is required when collecting coverage information,
+  # this is why we provoke the tests to run with `nocover` in order to provoke
+  # the tests to run in CI without `usedevelop`.
+  #
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${DOCKER_IMAGE_VERSION}
   <<: *tests
   variables:
