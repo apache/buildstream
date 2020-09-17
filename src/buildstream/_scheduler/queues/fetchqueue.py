@@ -50,7 +50,7 @@ class FetchQueue(Queue):
             if not element._can_query_cache():
                 return QueueStatus.PENDING
 
-            if element._cached():
+            if element._cached_success():
                 return QueueStatus.SKIP
 
         # This will automatically skip elements which
