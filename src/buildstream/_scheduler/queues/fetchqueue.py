@@ -32,15 +32,20 @@ class FetchQueue(Queue):
     complete_name = "Sources Fetched"
     resources = [ResourceType.DOWNLOAD]
 
-    def __init__(self, scheduler, skip_cached=False, fetch_original=False):
+    def __init__(self, scheduler, skip_cached=False, check_only=False, fetch_original=False):
         super().__init__(scheduler)
 
+        assert not (fetch_original and check_only)
+
         self._skip_cached = skip_cached
+        self._check_only = check_only
         self._should_fetch_original = fetch_original
 
     def get_process_func(self):
         if self._should_fetch_original:
             return FetchQueue._fetch_original
+        elif self._check_only:
+            return FetchQueue._check
         else:
             return FetchQueue._fetch_not_original
 
@@ -63,10 +68,13 @@ class FetchQueue(Queue):
 
     def done(self, _, element, result, status):
 
-        if status is JobStatus.FAIL:
+        if status is not JobStatus.OK:
             return
 
-        element._fetch_done(self._should_fetch_original)
+        if not self._check_only:
+            assert result
+
+        element._fetch_done(self._should_fetch_original, result)
 
     def register_pending_element(self, element):
         # Set a "can_query_cache" callback for an element not yet ready
@@ -74,9 +82,13 @@ class FetchQueue(Queue):
         element._set_can_query_cache_callback(self._enqueue_element)
 
     @staticmethod
+    def _check(element):
+        return element._fetch(check_only=True)
+
+    @staticmethod
     def _fetch_not_original(element):
-        element._fetch(fetch_original=False)
+        return element._fetch(fetch_original=False)
 
     @staticmethod
     def _fetch_original(element):
-        element._fetch(fetch_original=True)
+        return element._fetch(fetch_original=True)

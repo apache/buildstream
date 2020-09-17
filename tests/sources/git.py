@@ -401,8 +401,12 @@ def test_submodule_track_ignore_inconsistent(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=["source", "fetch", "target.bst"])
     result.assert_success()
 
-    # Track will encounter an inconsistent submodule without any ref
+    # Track to update to the offending commit
     result = cli.run(project=project, args=["source", "track", "target.bst"])
+    result.assert_success()
+
+    # Fetch after track will encounter an inconsistent submodule without any ref
+    result = cli.run(project=project, args=["source", "fetch", "target.bst"])
     result.assert_success()
 
     # Assert that we are just fine without it, and emit a warning to the user.

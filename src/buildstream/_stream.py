@@ -171,8 +171,11 @@ class Stream:
     #    elements (list of Element): The elements to check
     #
     def query_cache(self, elements):
-        # Cache is implicitly queried on demand
-        pass
+        # Artifact cache is implicitly queried on demand
+        self._scheduler.clear_queues()
+        self._add_queue(FetchQueue(self._scheduler, skip_cached=True, check_only=True))
+        self._enqueue_plan(elements)
+        self._run()
 
     # shell()
     #

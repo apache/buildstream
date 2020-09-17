@@ -153,11 +153,13 @@ class ElementSources:
     #
     # Args:
     #   fetched_original (bool): Whether the original sources had been asked (and fetched) or not
+    #   cached (bool): Whether the sources are now cached in CAS
     #
-    def fetch_done(self, fetched_original):
-        self._proto = self._elementsourcescache.load_proto(self)
-        assert self._proto
-        self._cached = True
+    def fetch_done(self, fetched_original, cached):
+        self._cached = cached
+        if cached:
+            self._proto = self._elementsourcescache.load_proto(self)
+            assert self._proto
 
         for source in self._sources:
             source._fetch_done(fetched_original)
@@ -216,7 +218,7 @@ class ElementSources:
 
         # Try to fetch staged sources from remote source cache
         if self._elementsourcescache.has_fetch_remotes() and self._elementsourcescache.pull(self, self._plugin):
-            self.fetch_done(False)
+            self.fetch_done(False, True)
             return
 
         # Otherwise, fetch individual sources
@@ -376,8 +378,6 @@ class ElementSources:
         # Also generate the cache key for the combined element sources
         unique_key = self.get_unique_key()
         self._cache_key = _cachekey.generate_key(unique_key)
-
-        self.query_cache()
 
     # preflight():
     #

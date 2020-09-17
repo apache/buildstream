@@ -248,20 +248,22 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
 def test_track_consistency_error(cli, datafiles):
     project = str(datafiles)
 
-    # Track the element causing a consistency error
+    # Track the element causing a consistency error in `is_cached()`
     result = cli.run(project=project, args=["source", "track", "error.bst"])
-    result.assert_main_error(ErrorDomain.SOURCE, "the-consistency-error")
+
+    # We expect tracking to succeed as `is_cached()` is not required for tracking.
+    result.assert_success()
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, "consistencyerror"))
 def test_track_consistency_bug(cli, datafiles):
     project = str(datafiles)
 
-    # Track the element causing an unhandled exception
+    # Track the element causing an unhandled exception in `is_cached()`
     result = cli.run(project=project, args=["source", "track", "bug.bst"])
 
-    # We expect BuildStream to fail gracefully, with no recorded exception.
-    result.assert_main_error(ErrorDomain.PLUGIN, "source-bug")
+    # We expect tracking to succeed as `is_cached()` is not required for tracking.
+    result.assert_success()
 
 
 @pytest.mark.datafiles(DATA_DIR)

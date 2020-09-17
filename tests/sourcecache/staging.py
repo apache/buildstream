@@ -65,6 +65,7 @@ def test_source_staged(tmpdir, cli, datafiles):
         # seems to be the only way to get the sources?
         element = project.load_elements(["import-bin.bst"])[0]
         element._initialize_state()
+        element._fetch(check_only=True)
         source = list(element.sources())[0]
         assert element._cached_sources()
         assert sourcecache.contains(source)
@@ -100,6 +101,7 @@ def test_source_fetch(tmpdir, cli, datafiles):
 
         element = project.load_elements(["import-dev.bst"])[0]
         element._initialize_state()
+        element._fetch(check_only=True)
         source = list(element.sources())[0]
         assert element._cached_sources()
 
@@ -136,6 +138,7 @@ def test_staged_source_build(tmpdir, datafiles, cli):
         element._initialize_state()
 
         # check consistency of the source
+        element._fetch(check_only=True)
         assert not element._cached_sources()
 
     res = cli.run(project=project_dir, args=["build", "target.bst"])
