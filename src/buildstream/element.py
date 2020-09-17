@@ -1296,6 +1296,16 @@ class Element(Plugin):
         # cache cannot be queried until strict cache key is available
         return self.__artifact is not None
 
+    # _can_query_source_cache():
+    #
+    # Returns whether the source cache status is available.
+    #
+    # Returns:
+    #    (bool): True if source cache can be queried
+    #
+    def _can_query_source_cache(self):
+        return self.__sources._cached is not None
+
     # _initialize_state()
     #
     # Compute up the elment's initial state. Element state contains
@@ -1843,11 +1853,12 @@ class Element(Plugin):
     #
     # Args:
     #   fetched_original (bool): Whether the original sources had been asked (and fetched) or not
+    #   cached (bool): Whether the sources are now cached in CAS
     #
-    def _fetch_done(self, fetched_original):
+    def _fetch_done(self, fetched_original, cached):
         assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
 
-        self.__sources.fetch_done(fetched_original)
+        self.__sources.fetch_done(fetched_original, cached)
 
     # _pull_pending()
     #
@@ -1939,7 +1950,11 @@ class Element(Plugin):
     def _skip_source_push(self):
         if not self.sources() or self._get_workspace():
             return True
-        return not (self.__sourcecache.has_push_remotes(plugin=self) and self._cached_sources())
+        return not (
+            self.__sourcecache.has_push_remotes(plugin=self)
+            and self._can_query_source_cache()
+            and self._cached_sources()
+        )
 
     def _source_push(self):
         return self.__sources.push()
@@ -2190,9 +2205,18 @@ class Element(Plugin):
     # Raises:
     #    SourceError: If one of the element sources has an error
     #
-    def _fetch(self, fetch_original=False):
+    def _fetch(self, check_only=False, fetch_original=False):
+        assert not (check_only and fetch_original)
+
         if fetch_original:
             self.__sources.fetch_sources(fetch_original=True)
+
+        if self.__sources.query_cache():
+            # Already cached
+            return True
+
+        if check_only:
+            return False
 
         self.__sources.fetch()
 
@@ -2204,6 +2228,8 @@ class Element(Plugin):
                 raise ElementError(
                     "Error trying to stage sources for {}: {}".format(self.name, e), reason="stage-sources-fail"
                 )
+
+        return True
 
     # _calculate_cache_key():
     #
@@ -2293,7 +2319,8 @@ class Element(Plugin):
     def _should_fetch(self, fetch_original=False):
         if fetch_original:
             return not self.__sources.cached_original()
-        return not self.__sources.cached()
+        else:
+            return True
 
     # _set_required_callback()
     #

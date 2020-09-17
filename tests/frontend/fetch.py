@@ -62,10 +62,9 @@ def test_fetch_deps(cli, datafiles, deps, expected_states):
 def test_fetch_consistency_error(cli, datafiles):
     project = str(datafiles)
 
-    # When the error occurs outside of the scheduler at load time,
-    # then the SourceError is reported directly as the main error.
     result = cli.run(project=project, args=["source", "fetch", "error.bst"])
-    result.assert_main_error(ErrorDomain.SOURCE, "the-consistency-error")
+    result.assert_main_error(ErrorDomain.STREAM, None)
+    result.assert_task_error(ErrorDomain.SOURCE, "the-consistency-error")
 
 
 @pytest.mark.datafiles(os.path.join(TOP_DIR, "consistencyerror"))
@@ -73,7 +72,8 @@ def test_fetch_consistency_bug(cli, datafiles):
     project = str(datafiles)
 
     result = cli.run(project=project, args=["source", "fetch", "bug.bst"])
-    result.assert_main_error(ErrorDomain.PLUGIN, "source-bug")
+    result.assert_main_error(ErrorDomain.STREAM, None)
+    result.assert_task_error(ErrorDomain.PLUGIN, "source-bug")
 
 
 @pytest.mark.datafiles(DATA_DIR)
