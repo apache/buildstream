@@ -2,6 +2,15 @@
 (unreleased)
 ============
 
+Format
+------
+  o The `script` element no longer has a `layout` configuration directly, and now
+    exposes a new `location` dependency configuration instead.
+
+  o The BuildElement now has a new `location` dependency configuration, allowing
+    BuildElement plugins to also stage dependencies into custom locations in
+    the sandbox.
+
 Core
 ----
 
@@ -10,6 +19,9 @@ Core
     - Element.stage_dependency_artifacts()
     - Element.search()
     Elements now can only ever see dependencies in their build scope.
+
+  * BREAKING CHANGE: Changed ScriptElement.layout_add() API to take Element instances
+                     in place of Element names
 
 ==================
 buildstream 1.93.5

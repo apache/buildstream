@@ -1,8 +1,7 @@
 kind: compose
 
-depends:
-- filename: base.bst
-  type: build
+build-depends:
+- base.bst
 
 public:
   bst:

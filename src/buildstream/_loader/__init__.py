@@ -19,6 +19,6 @@
 
 from .types import Symbol
 from .metasource import MetaSource
-from .loadelement import LoadElement, Dependency
+from .loadelement import LoadElement, Dependency, DependencyType
 from .loadcontext import LoadContext
 from .loader import Loader

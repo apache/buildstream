@@ -1,4 +1,5 @@
 kind: import
+
 sources:
 - kind: local
-  path: project.conf
+  path: files/import-source

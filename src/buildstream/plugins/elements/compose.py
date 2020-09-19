@@ -82,17 +82,15 @@ class ComposeElement(Element):
         pass
 
     def stage(self, sandbox):
-        pass
-
-    def assemble(self, sandbox):
-
-        require_split = self.include or self.exclude or not self.include_orphans
 
         # Stage deps in the sandbox root
         with self.timed_activity("Staging dependencies", silent_nested=True):
             self.stage_dependency_artifacts(sandbox)
 
+    def assemble(self, sandbox):
         manifest = set()
+
+        require_split = self.include or self.exclude or not self.include_orphans
         if require_split:
             with self.timed_activity("Computing split", silent_nested=True):
                 for dep in self.dependencies():

@@ -219,9 +219,6 @@ class FilterElement(Element):
         pass
 
     def stage(self, sandbox):
-        pass
-
-    def assemble(self, sandbox):
         with self.timed_activity("Staging artifact", silent_nested=True):
             for dep in self.dependencies(recurse=False):
                 # Check that all the included/excluded domains exist
@@ -250,6 +247,8 @@ class FilterElement(Element):
                     raise ElementError("Unknown domains declared.", detail=detail)
 
                 dep.stage_artifact(sandbox, include=self.include, exclude=self.exclude, orphans=self.include_orphans)
+
+    def assemble(self, sandbox):
         return ""
 
     def _get_source_element(self):

@@ -30,12 +30,12 @@ if "_BST_COMPLETION" not in os.environ:
 
     from .utils import UtilError, ProgramNotFoundError
     from .sandbox import Sandbox, SandboxFlags, SandboxCommandError
-    from .types import CoreWarnings
+    from .types import CoreWarnings, OverlapAction
     from .node import MappingNode, Node, ProvenanceInformation, ScalarNode, SequenceNode
     from .plugin import Plugin
     from .source import Source, SourceError, SourceFetcher
     from .downloadablefilesource import DownloadableFileSource
-    from .element import Element, ElementError
+    from .element import Element, ElementError, DependencyConfiguration
     from .buildelement import BuildElement
     from .scriptelement import ScriptElement
 

@@ -20,13 +20,10 @@ class DynamicElement(Element):
         pass
 
     def stage(self, sandbox):
-        pass
+        with self.timed_activity("Staging artifact", silent_nested=True):
+            self.stage_dependency_artifacts(sandbox)
 
     def assemble(self, sandbox):
-        with self.timed_activity("Staging artifact", silent_nested=True):
-            for dep in self.dependencies():
-                dep.stage_artifact(sandbox)
-
         bstdata = self.get_public_data("bst")
         bstdata["split-rules"] = self.split_rules
         self.set_public_data("bst", bstdata)

@@ -1,9 +1,8 @@
 kind: script
 description: Script test
 
-depends:
-  - filename: base.bst
-    type: build
+build-depends:
+- base.bst
 
 config:
   commands:

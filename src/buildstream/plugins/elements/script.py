@@ -45,18 +45,24 @@ class ScriptElement(buildstream.ScriptElement):
     BST_MIN_VERSION = "2.0"
 
     def configure(self, node):
-        for n in node.get_sequence("layout", []):
-            dst = n.get_str("destination")
-            elm = n.get_str("element", None)
-            self.layout_add(elm, dst)
-
-        node.validate_keys(["commands", "root-read-only", "layout"])
+        node.validate_keys(["commands", "root-read-only"])
 
         self.add_commands("commands", node.get_str_list("commands"))
-
         self.set_work_dir()
         self.set_install_root()
         self.set_root_read_only(node.get_bool("root-read-only", default=False))
+
+    def configure_dependencies(self, dependencies):
+        for dep in dependencies:
+
+            # Determine the location to stage each element, default is "/"
+            location = "/"
+            if dep.config:
+                dep.config.validate_keys(["location"])
+                location = dep.config.get_str("location", location)
+
+            # Add each element to the layout
+            self.layout_add(dep.element, dep.path, location)
 
 
 # Plugin entry point

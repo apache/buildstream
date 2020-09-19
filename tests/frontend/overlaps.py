@@ -6,75 +6,87 @@ import pytest
 from buildstream.testing.runcli import cli  # pylint: disable=unused-import
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
-from buildstream.plugin import CoreWarnings
+from buildstream import CoreWarnings, OverlapAction
 from tests.testutils import generate_junction
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "overlaps")
 
 
-def gen_project(project_dir, fail_on_overlap, use_fatal_warnings=True, project_name="test"):
+def gen_project(project_dir, fatal_warnings, *, project_name="test", use_plugin=False):
     template = {"name": project_name, "min-version": "2.0"}
-    if use_fatal_warnings:
-        template["fatal-warnings"] = [CoreWarnings.OVERLAPS] if fail_on_overlap else []
-    else:
-        template["fail-on-overlap"] = fail_on_overlap
+    template["fatal-warnings"] = [CoreWarnings.OVERLAPS, CoreWarnings.UNSTAGED_FILES] if fatal_warnings else []
+    if use_plugin:
+        template["plugins"] = [{"origin": "local", "path": "plugins", "elements": ["overlap"]}]
     projectfile = os.path.join(project_dir, "project.conf")
     _yaml.roundtrip_dump(template, projectfile)
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("use_fatal_warnings", [True, False])
-def test_overlaps(cli, datafiles, use_fatal_warnings):
+@pytest.mark.parametrize("error", [False, True], ids=["warning", "error"])
+def test_unstaged_files(cli, datafiles, error):
     project_dir = str(datafiles)
-    gen_project(project_dir, False, use_fatal_warnings)
-    result = cli.run(project=project_dir, silent=True, args=["build", "collect.bst"])
-    result.assert_success()
+    gen_project(project_dir, error)
+    result = cli.run(project=project_dir, silent=True, args=["build", "unstaged.bst"])
+    if error:
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.UNSTAGED_FILES)
+    else:
+        result.assert_success()
+        assert "WARNING [unstaged-files]" in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("use_fatal_warnings", [True, False])
-def test_overlaps_error(cli, datafiles, use_fatal_warnings):
+@pytest.mark.parametrize("error", [False, True], ids=["warning", "error"])
+def test_overlaps(cli, datafiles, error):
     project_dir = str(datafiles)
-    gen_project(project_dir, True, use_fatal_warnings)
+    gen_project(project_dir, error)
     result = cli.run(project=project_dir, silent=True, args=["build", "collect.bst"])
-    result.assert_main_error(ErrorDomain.STREAM, None)
-    result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
+    if error:
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
+    else:
+        result.assert_success()
+        assert "WARNING [overlaps]" in result.stderr
 
 
+#
+# When the overlap is whitelisted, there is no warning or error.
+#
+# Still test this in fatal/nonfatal warning modes
+#
 @pytest.mark.datafiles(DATA_DIR)
-def test_overlaps_whitelist(cli, datafiles):
+@pytest.mark.parametrize("error", [False, True], ids=["warning", "error"])
+def test_overlaps_whitelisted(cli, datafiles, error):
     project_dir = str(datafiles)
-    gen_project(project_dir, True)
+    gen_project(project_dir, error)
     result = cli.run(project=project_dir, silent=True, args=["build", "collect-whitelisted.bst"])
     result.assert_success()
+    assert "WARNING [overlaps]" not in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_overlaps_whitelist_ignored(cli, datafiles):
-    project_dir = str(datafiles)
-    gen_project(project_dir, False)
-    result = cli.run(project=project_dir, silent=True, args=["build", "collect-whitelisted.bst"])
-    result.assert_success()
-
-
-@pytest.mark.datafiles(DATA_DIR)
-def test_overlaps_whitelist_on_overlapper(cli, datafiles):
+@pytest.mark.parametrize("error", [False, True], ids=["warning", "error"])
+def test_overlaps_whitelist_on_overlapper(cli, datafiles, error):
     # Tests that the overlapping element is responsible for whitelisting,
     # i.e. that if A overlaps B overlaps C, and the B->C overlap is permitted,
     # it'll still fail because A doesn't permit overlaps.
     project_dir = str(datafiles)
-    gen_project(project_dir, True)
+    gen_project(project_dir, error)
     result = cli.run(project=project_dir, silent=True, args=["build", "collect-partially-whitelisted.bst"])
-    result.assert_main_error(ErrorDomain.STREAM, None)
-    result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
+    if error:
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
+    else:
+        result.assert_success()
+        assert "WARNING [overlaps]" in result.stderr
 
 
 @pytest.mark.datafiles(DATA_DIR)
 def test_overlaps_whitelist_undefined_variable(cli, datafiles):
     project_dir = str(datafiles)
     gen_project(project_dir, False)
-    result = cli.run(project=project_dir, silent=True, args=["build", "whitelist-undefined.bst"])
+    result = cli.run(project=project_dir, silent=True, args=["show", "whitelist-undefined.bst"])
 
     # Assert that we get the expected undefined variable error,
     # and that it has the provenance we expect from whitelist-undefined.bst
@@ -84,12 +96,11 @@ def test_overlaps_whitelist_undefined_variable(cli, datafiles):
 
 
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("use_fatal_warnings", [True, False])
-def test_overlaps_script(cli, datafiles, use_fatal_warnings):
+def test_overlaps_script(cli, datafiles):
     # Test overlaps with script element to test
     # Element.stage_dependency_artifacts() with Scope.RUN
     project_dir = str(datafiles)
-    gen_project(project_dir, False, use_fatal_warnings)
+    gen_project(project_dir, False)
     result = cli.run(project=project_dir, silent=True, args=["build", "script.bst"])
     result.assert_success()
 
@@ -119,3 +130,68 @@ def test_overlap_subproject(cli, tmpdir, datafiles, project_policy, subproject_p
     else:
         result.assert_success()
         assert "WARNING [overlaps]" in result.stderr
+
+
+# Test unstaged-files warnings when staging to an alternative location than "/"
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("error", [False, True], ids=["warning", "error"])
+def test_unstaged_files_relocated(cli, datafiles, error):
+    project_dir = str(datafiles)
+    gen_project(project_dir, error, use_plugin=True)
+    result = cli.run(project=project_dir, silent=True, args=["build", "relocated-unstaged.bst"])
+    if error:
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.UNSTAGED_FILES)
+    else:
+        result.assert_success()
+        assert "WARNING [unstaged-files]" in result.stderr
+
+
+# Test overlap warnings when staging to an alternative location than "/"
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize("error", [False, True], ids=["warning", "error"])
+def test_overlaps_relocated(cli, datafiles, error):
+    project_dir = str(datafiles)
+    gen_project(project_dir, error, use_plugin=True)
+    result = cli.run(project=project_dir, silent=True, args=["build", "relocated.bst"])
+    if error:
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
+    else:
+        result.assert_success()
+        assert "WARNING [overlaps]" in result.stderr
+
+
+# Test overlap warnings as a result of multiple calls to Element.stage_dependency_artifacts()
+#
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target,action,error",
+    [
+        ("multistage-overlap-ignore.bst", OverlapAction.IGNORE, False),
+        ("multistage-overlap.bst", OverlapAction.WARNING, False),
+        ("multistage-overlap.bst", OverlapAction.WARNING, True),
+        ("multistage-overlap-error.bst", OverlapAction.ERROR, True),
+    ],
+    ids=["ignore", "warn-warning", "warn-error", "error"],
+)
+def test_overlaps_multistage(cli, datafiles, target, action, error):
+    project_dir = str(datafiles)
+    gen_project(project_dir, error, use_plugin=True)
+    result = cli.run(project=project_dir, silent=True, args=["build", target])
+
+    if action == OverlapAction.WARNING:
+        if error:
+            result.assert_main_error(ErrorDomain.STREAM, None)
+            result.assert_task_error(ErrorDomain.PLUGIN, CoreWarnings.OVERLAPS)
+        else:
+            result.assert_success()
+            assert "WARNING [overlaps]" in result.stderr
+    elif action == OverlapAction.IGNORE:
+        result.assert_success()
+        assert "WARNING [overlaps]" not in result.stderr
+    elif action == OverlapAction.ERROR:
+        result.assert_main_error(ErrorDomain.STREAM, None)
+        result.assert_task_error(ErrorDomain.ELEMENT, "overlaps")

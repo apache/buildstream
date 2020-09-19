@@ -22,6 +22,7 @@ depends:
 - sources/zip2.bst
 - elements/build1.bst
 - elements/build2.bst
+- elements/build3.bst
 - elements/compose1.bst
 - elements/compose2.bst
 - elements/compose3.bst

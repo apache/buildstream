@@ -23,7 +23,6 @@ from pyroaring import BitMap, FrozenBitMap  # pylint: disable=no-name-in-module
 
 from .._exceptions import LoadError
 from ..exceptions import LoadErrorReason
-from ..element import Element
 from ..node cimport MappingNode, Node, ProvenanceInformation, ScalarNode, SequenceNode
 from .types import Symbol
 
@@ -35,6 +34,22 @@ cdef int _next_synthetic_counter():
     global _counter
     _counter += 1
     return _counter
+
+
+# DependencyType
+#
+# A bitfield to represent dependency types
+#
+cpdef enum DependencyType:
+
+    # A build dependency
+    BUILD = 0x001
+
+    # A runtime dependency
+    RUNTIME = 0x002
+
+    # Both build and runtime dependencies
+    ALL = 0x003
 
 
 # Dependency():
@@ -50,22 +65,24 @@ cdef int _next_synthetic_counter():
 #
 # Args:
 #    element (LoadElement): a LoadElement on which there is a dependency
-#    dep_type (str): the type of dependency this dependency link is
+#    dep_type (DependencyType): the type of dependency this dependency link is
 #
 cdef class Dependency:
     cdef readonly LoadElement element  # The resolved LoadElement
-    cdef readonly str dep_type  # The dependency type (runtime or build or both)
+    cdef readonly int dep_type  # The dependency type (runtime or build or both)
     cdef readonly str name  # The project local dependency name
     cdef readonly str junction  # The junction path of the dependency name, if any
     cdef readonly bint strict  # Whether this is a strict dependency
     cdef Node _node  # The original node of the dependency
+    cdef readonly list config_nodes  # The custom config nodes for Element.configure_dependencies()
 
-    def __cinit__(self, element=None, dep_type=None):
+    def __cinit__(self, LoadElement element = None, int dep_type = DependencyType.ALL):
         self.element = element
         self.dep_type = dep_type
         self.name = None
         self.junction = None
         self.strict = False
+        self.config_nodes = None
         self._node = None
 
     # provenance
@@ -76,6 +93,17 @@ cdef class Dependency:
     @property
     def provenance(self):
         return self._node.get_provenance()
+
+    # path
+    #
+    # The path of the dependency represented as a single string,
+    # instead of junction and name being separate.
+    #
+    @property
+    def path(self):
+        if self.junction is not None:
+            return "{}:{}".format(self.junction, self.name)
+        return self.name
 
     # set_element()
     #
@@ -98,40 +126,51 @@ cdef class Dependency:
     #
     # Args:
     #    dep (Node): A node to load the dependency from
-    #    default_dep_type (str): The default dependency type
+    #    default_dep_type (DependencyType): The default dependency type
     #
-    cdef load(self, Node dep, str default_dep_type):
-        cdef str dep_type
+    cdef load(self, Node dep, int default_dep_type):
+        cdef str parsed_type
+        cdef MappingNode config_node
 
         self._node = dep
         self.element = None
 
         if type(dep) is ScalarNode:
             self.name = dep.as_str()
-            self.dep_type = default_dep_type
+            self.dep_type = default_dep_type or DependencyType.ALL
             self.junction = None
             self.strict = False
 
         elif type(dep) is MappingNode:
             if default_dep_type:
-                (<MappingNode> dep).validate_keys(['filename', 'junction', 'strict'])
-                dep_type = default_dep_type
+                (<MappingNode> dep).validate_keys([Symbol.FILENAME, Symbol.JUNCTION, Symbol.STRICT, Symbol.CONFIG])
+                self.dep_type = default_dep_type
             else:
-                (<MappingNode> dep).validate_keys(['filename', 'type', 'junction', 'strict'])
+                (<MappingNode> dep).validate_keys([Symbol.FILENAME, Symbol.TYPE, Symbol.JUNCTION, Symbol.STRICT, Symbol.CONFIG])
 
-                # Make type optional, for this we set it to None
-                dep_type = (<MappingNode> dep).get_str(<str> Symbol.TYPE, None)
-                if dep_type is None or dep_type == <str> Symbol.ALL:
-                    dep_type = None
-                elif dep_type not in [Symbol.BUILD, Symbol.RUNTIME]:
+                # Resolve the DependencyType
+                parsed_type = (<MappingNode> dep).get_str(<str> Symbol.TYPE, None)
+                if parsed_type is None or parsed_type == <str> Symbol.ALL:
+                    self.dep_type = DependencyType.ALL
+                elif parsed_type == <str> Symbol.BUILD:
+                    self.dep_type = DependencyType.BUILD
+                elif parsed_type == <str> Symbol.RUNTIME:
+                    self.dep_type = DependencyType.RUNTIME
+                else:
                     provenance = dep.get_scalar(Symbol.TYPE).get_provenance()
                     raise LoadError("{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
-                                    .format(provenance, dep_type), LoadErrorReason.INVALID_DATA)
+                                    .format(provenance, parsed_type), LoadErrorReason.INVALID_DATA)
 
             self.name = (<MappingNode> dep).get_str(<str> Symbol.FILENAME)
-            self.dep_type = dep_type
             self.junction = (<MappingNode> dep).get_str(<str> Symbol.JUNCTION, None)
             self.strict = (<MappingNode> dep).get_bool(<str> Symbol.STRICT, False)
+
+            config_node = (<MappingNode> dep).get_mapping(<str> Symbol.CONFIG, None)
+            if config_node:
+                if self.dep_type == DependencyType.RUNTIME:
+                    raise LoadError("{}: Specifying 'config' for a runtime dependency is not allowed"
+                                    .format(config_node.get_provenance()), LoadErrorReason.INVALID_DATA)
+                self.config_nodes = [config_node]
 
             # Here we disallow explicitly setting 'strict' to False.
             #
@@ -152,7 +191,7 @@ cdef class Dependency:
 
         # Only build dependencies are allowed to be strict
         #
-        if self.strict and self.dep_type == Symbol.RUNTIME:
+        if self.strict and self.dep_type == DependencyType.RUNTIME:
             raise LoadError("{}: Runtime dependency {} specified as `strict`.".format(self.provenance, self.name),
                             LoadErrorReason.INVALID_DATA,
                             detail="Only dependencies required at build time may be declared `strict`.")
@@ -168,6 +207,22 @@ cdef class Dependency:
         # Attempt to split name if no junction was specified explicitly
         if not self.junction and ':' in self.name:
             self.junction, self.name = self.name.rsplit(':', maxsplit=1)
+
+    # merge()
+    #
+    # Merge the attributes of an existing dependency into this dependency
+    #
+    # Args:
+    #    other (Dependency): The dependency to merge into this one
+    #
+    cdef merge(self, Dependency other):
+        self.dep_type = self.dep_type | other.dep_type
+        self.strict = self.strict or other.strict
+
+        if self.config_nodes and other.config_nodes:
+            self.config_nodes.extend(other.config_nodes)
+        else:
+            self.config_nodes = self.config_nodes or other.config_nodes
 
 
 # LoadElement():
@@ -242,6 +297,9 @@ cdef class LoadElement:
         # store the link target and provenance
         #
         if self.kind == 'link':
+            # Avoid cyclic import here
+            from ..element import Element
+
             element = Element._new_from_load_element(self)
             element._initialize_state()
 
@@ -345,9 +403,9 @@ def _dependency_cmp(Dependency dep_a, Dependency dep_b):
     # If there are no inter element dependencies, place
     # runtime only dependencies last
     if dep_a.dep_type != dep_b.dep_type:
-        if dep_a.dep_type == Symbol.RUNTIME:
+        if dep_a.dep_type == DependencyType.RUNTIME:
             return 1
-        elif dep_b.dep_type == Symbol.RUNTIME:
+        elif dep_b.dep_type == DependencyType.RUNTIME:
             return -1
 
     # All things being equal, string comparison.
@@ -424,13 +482,12 @@ def sort_dependencies(LoadElement element, set visited):
 # Args:
 #    node (Node): A YAML loaded dictionary
 #    key (str): the key on the Node corresponding to the dependency type
-#    default_dep_type (str): type to give to the dependency
-#    acc (list): a list in which to add the loaded dependencies
-#    rundeps (dict): a dictionary mapping dependency (junction, name) to dependency for runtime deps
-#    builddeps (dict): a dictionary mapping dependency (junction, name) to dependency for build deps
+#    default_dep_type (DependencyType): type to give to the dependency
+#    acc (dict): a dict in which to add the loaded dependencies
 #
-cdef void _extract_depends_from_node(Node node, str key, str default_dep_type, list acc, dict rundeps, dict builddeps) except *:
+cdef void _extract_depends_from_node(Node node, str key, int default_dep_type, dict acc) except *:
     cdef SequenceNode depends = node.get_sequence(key, [])
+    cdef Dependency existing_dep
     cdef Node dep_node
     cdef tuple deptup
 
@@ -438,21 +495,13 @@ cdef void _extract_depends_from_node(Node node, str key, str default_dep_type, l
         dependency = Dependency()
         dependency.load(dep_node, default_dep_type)
         deptup = (dependency.junction, dependency.name)
-        if dependency.dep_type in [Symbol.BUILD, None]:
-            if deptup in builddeps:
-                raise LoadError("{}: Duplicate build dependency found at {}."
-                                .format(dependency.provenance, builddeps[deptup].provenance),
-                                LoadErrorReason.DUPLICATE_DEPENDENCY)
-            else:
-                builddeps[deptup] = dependency
-        if dependency.dep_type in [Symbol.RUNTIME, None]:
-            if deptup in rundeps:
-                raise LoadError("{}: Duplicate runtime dependency found at {}."
-                                .format(dependency.provenance, rundeps[deptup].provenance),
-                                LoadErrorReason.DUPLICATE_DEPENDENCY)
-            else:
-                rundeps[deptup] = dependency
-        acc.append(dependency)
+
+        # Accumulate dependencies, merging any matching elements along the way
+        existing_dep = <Dependency> acc.get(deptup, None)
+        if existing_dep is not None:
+            existing_dep.merge(dependency)
+        else:
+            acc[deptup] = dependency
 
     # Now delete the field, we dont want it anymore
     node.safe_del(key)
@@ -473,10 +522,8 @@ cdef void _extract_depends_from_node(Node node, str key, str default_dep_type, l
 #    (list): a list of Dependency objects
 #
 def extract_depends_from_node(Node node):
-    cdef list acc = []
-    cdef dict rundeps = {}
-    cdef dict builddeps = {}
-    _extract_depends_from_node(node, <str> Symbol.BUILD_DEPENDS, <str> Symbol.BUILD, acc, rundeps, builddeps)
-    _extract_depends_from_node(node, <str> Symbol.RUNTIME_DEPENDS, <str> Symbol.RUNTIME, acc, rundeps, builddeps)
-    _extract_depends_from_node(node, <str> Symbol.DEPENDS, None, acc, rundeps, builddeps)
-    return acc
+    cdef dict acc = {}
+    _extract_depends_from_node(node, <str> Symbol.BUILD_DEPENDS, <int> DependencyType.BUILD, acc)
+    _extract_depends_from_node(node, <str> Symbol.RUNTIME_DEPENDS, <int> DependencyType.RUNTIME, acc)
+    _extract_depends_from_node(node, <str> Symbol.DEPENDS, <int> 0, acc)
+    return [dep for dep in acc.values()]

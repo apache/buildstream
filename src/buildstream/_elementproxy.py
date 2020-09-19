@@ -18,7 +18,7 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 from typing import TYPE_CHECKING, cast, Optional, Iterator, Dict, List, Sequence
 
-from .types import _Scope
+from .types import _Scope, OverlapAction
 from .utils import FileListResult
 from ._pluginproxy import PluginProxy
 
@@ -96,13 +96,23 @@ class ElementProxy(PluginProxy):
         sandbox: "Sandbox",
         *,
         path: str = None,
+        action: str = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         orphans: bool = True
     ) -> FileListResult:
-        return cast("Element", self._plugin).stage_artifact(
-            sandbox, path=path, include=include, exclude=exclude, orphans=orphans
-        )
+
+        owner = cast("Element", self._owner)
+        element = cast("Element", self._plugin)
+
+        assert owner._overlap_collector is not None, "Attempted to stage artifacts outside of Element.stage()"
+
+        with owner._overlap_collector.session(action, path):
+            result = element._stage_artifact(
+                sandbox, path=path, action=action, include=include, exclude=exclude, orphans=orphans, owner=owner
+            )
+
+        return result
 
     def stage_dependency_artifacts(
         self,
@@ -110,6 +120,7 @@ class ElementProxy(PluginProxy):
         selection: Sequence["Element"] = None,
         *,
         path: str = None,
+        action: str = OverlapAction.WARNING,
         include: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,
         orphans: bool = True
@@ -120,7 +131,7 @@ class ElementProxy(PluginProxy):
         if selection is None:
             selection = [cast("Element", self._plugin)]
         cast("Element", self._owner).stage_dependency_artifacts(
-            sandbox, selection, path=path, include=include, exclude=exclude, orphans=orphans
+            sandbox, selection, path=path, action=action, include=include, exclude=exclude, orphans=orphans
         )
 
     def integrate(self, sandbox: "Sandbox") -> None:
@@ -154,3 +165,20 @@ class ElementProxy(PluginProxy):
 
     def _file_is_whitelisted(self, path):
         return cast("Element", self._plugin)._file_is_whitelisted(path)
+
+    def _stage_artifact(
+        self,
+        sandbox: "Sandbox",
+        *,
+        path: str = None,
+        action: str = OverlapAction.WARNING,
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
+        orphans: bool = True,
+        owner: Optional["Element"] = None
+    ) -> FileListResult:
+        owner = cast("Element", self._owner)
+        element = cast("Element", self._plugin)
+        return element._stage_artifact(
+            sandbox, path=path, action=action, include=include, exclude=exclude, orphans=orphans, owner=owner
+        )

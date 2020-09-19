@@ -45,6 +45,41 @@ If you are targetting Linux, ones known to work are the ones used by the
 `project.conf <https://gitlab.com/freedesktop-sdk/freedesktop-sdk/blob/freedesktop-sdk-18.08.21/project.conf#L74>`_
 
 
+Location for staging dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The BuildElement supports the "location" :term:`dependency configuration <Dependency configuration>`,
+which means you can use this configuration for any BuildElement class.
+
+The "location" configuration defines where the dependency will be staged in the
+build sandbox.
+
+**Example:**
+
+Here is an example of how one might stage some dependencies into
+an alternative location while staging some elements in the sandbox root.
+
+.. code:: yaml
+
+   # Stage these build dependencies in /opt
+   #
+   build-depends:
+   - baseproject.bst:opt-dependencies.bst
+     config:
+       location: /opt
+
+   # Stage these tools in "/" and require them as
+   # runtime dependencies.
+   depends:
+   - baseproject.bst:base-tools.bst
+
+.. note::
+
+    The order of dependencies specified is not significant.
+
+    The staging locations will be sorted so that elements are staged in parent
+    directories before subdirectories.
+
+
 Location for running commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The ``command-subdir`` variable sets where the build commands will be executed,
@@ -140,18 +175,6 @@ from .element import Element
 from .sandbox import SandboxFlags
 
 
-# This list is preserved because of an unfortunate situation, we
-# need to remove these older commands which were secret and never
-# documented, but without breaking the cache keys.
-_legacy_command_steps = [
-    "bootstrap-commands",
-    "configure-commands",
-    "build-commands",
-    "test-commands",
-    "install-commands",
-    "strip-commands",
-]
-
 _command_steps = ["configure-commands", "build-commands", "install-commands", "strip-commands"]
 
 
@@ -171,8 +194,30 @@ class BuildElement(Element):
 
         self._command_subdir = self.get_variable("command-subdir")  # pylint: disable=attribute-defined-outside-init
 
-        for command_name in _legacy_command_steps:
+        for command_name in _command_steps:
             self.__commands[command_name] = node.get_str_list(command_name, [])
+
+    def configure_dependencies(self, dependencies):
+
+        self.__layout = {}  # pylint: disable=attribute-defined-outside-init
+
+        # FIXME: Currently this forcefully validates configurations
+        #        for all BuildElement subclasses so they are unable to
+        #        extend the configuration
+
+        for dep in dependencies:
+            # Determine the location to stage each element, default is "/"
+            location = "/"
+            if dep.config:
+                dep.config.validate_keys(["location"])
+                location = dep.config.get_str("location")
+            try:
+                element_list = self.__layout[location]
+            except KeyError:
+                element_list = []
+                self.__layout[location] = element_list
+
+            element_list.append((dep.element, dep.path))
 
     def preflight(self):
         pass
@@ -193,6 +238,17 @@ class BuildElement(Element):
         if self.get_variable("notparallel"):
             dictionary["notparallel"] = True
 
+        # Specify the layout in the key, if any of the elements are not going to
+        # be staged in "/"
+        #
+        if any(location for location in self.__layout if location != "/"):
+            sorted_locations = sorted(self.__layout)
+            layout_key = {
+                location: [dependency_path for _, dependency_path in self.__layout[location]]
+                for location in sorted_locations
+            }
+            dictionary["layout"] = layout_key
+
         return dictionary
 
     def configure_sandbox(self, sandbox):
@@ -203,6 +259,10 @@ class BuildElement(Element):
         sandbox.mark_directory(build_root)
         sandbox.mark_directory(install_root)
 
+        # Mark the artifact directories in the layout
+        for location in self.__layout:
+            sandbox.mark_directory(location, artifact=True)
+
         # Allow running all commands in a specified subdirectory
         if self._command_subdir:
             command_dir = os.path.join(build_root, self._command_subdir)
@@ -210,23 +270,26 @@ class BuildElement(Element):
             command_dir = build_root
         sandbox.set_work_directory(command_dir)
 
-        # Tell sandbox which directory is preserved in the finished artifact
-        sandbox.set_output_directory(install_root)
-
         # Setup environment
         sandbox.set_environment(self.get_environment())
 
     def stage(self, sandbox):
 
-        # Stage deps in the sandbox root
-        with self.timed_activity("Staging dependencies", silent_nested=True):
-            self.stage_dependency_artifacts(sandbox)
+        # First stage it all
+        #
+        sorted_locations = sorted(self.__layout)
+        for location in sorted_locations:
+            element_list = [element for element, _ in self.__layout[location]]
+            self.stage_dependency_artifacts(sandbox, element_list, path=location)
 
-        # Run any integration commands provided by the dependencies
-        # once they are all staged and ready
-        with sandbox.batch(SandboxFlags.NONE, label="Integrating sandbox"):
-            for dep in self.dependencies():
-                dep.integrate(sandbox)
+        # Now integrate any elements staged in the root
+        #
+        root_list = self.__layout.get("/", None)
+        if root_list:
+            element_list = [element for element, _ in root_list]
+            with sandbox.batch(SandboxFlags.NONE), self.timed_activity("Integrating sandbox", silent_nested=True):
+                for dep in self.dependencies(element_list):
+                    dep.integrate(sandbox)
 
         # Stage sources in the build root
         self.stage_sources(sandbox, self.get_variable("build-root"))

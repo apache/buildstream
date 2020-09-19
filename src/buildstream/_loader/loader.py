@@ -31,7 +31,7 @@ from .._includes import Includes
 from ._loader import valid_chars_name
 from .types import Symbol
 from . import loadelement
-from .loadelement import LoadElement, Dependency, extract_depends_from_node
+from .loadelement import LoadElement, Dependency, DependencyType, extract_depends_from_node
 from ..types import CoreWarnings, _KeyStrength
 from .._message import Message, MessageType
 
@@ -147,7 +147,7 @@ class Loader:
 
         # Pylint is not very happy with Cython and can't understand 'dependencies' is a list
         dummy_target.dependencies.extend(  # pylint: disable=no-member
-            Dependency(element, Symbol.RUNTIME) for element in target_elements
+            Dependency(element, DependencyType.RUNTIME) for element in target_elements
         )
 
         with PROFILER.profile(Topics.CIRCULAR_CHECK, "_".join(targets)):

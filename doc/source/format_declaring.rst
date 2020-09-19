@@ -419,12 +419,6 @@ Attributes:
 
   The :ref:`element name <format_element_names>` to depend on.
 
-* ``type``
-
-  This attribute is used to express the :ref:`dependency type <format_dependencies_types>`.
-  This field is not permitted in :ref:`Build-Depends <format_build_depends>` or
-  :ref:`Runtime-Depends <format_runtime_depends>`.
-
 * ``junction``
 
   This attribute can be used to specify the junction portion of the :ref:`element name <format_element_names>`
@@ -437,6 +431,12 @@ Attributes:
   In the case that a *junction* is specified, the ``filename`` attribute indicates an
   element in the *junctioned project*.
 
+* ``type``
+
+  This attribute is used to express the :ref:`dependency type <format_dependencies_types>`.
+  This field is not permitted in :ref:`Build-Depends <format_build_depends>` or
+  :ref:`Runtime-Depends <format_runtime_depends>`.
+
 * ``strict``
 
   This attribute can be used to specify that this element should
@@ -446,6 +446,42 @@ Attributes:
   This is appropriate whenever a dependency's output is consumed
   verbatim in the output of the depending element, for instance
   when static linking is in use.
+
+* ``config``
+
+  This attribute defines the custom :term:`dependency configuration <Dependency configuration>`,
+  which is supported by select :mod:`Element <buildstream.element>` implementations.
+
+  Elements which support :term:`dependency configuration <Dependency configuration>` do so
+  by implementing the
+  :func:`Element.configure_dependencies() <buildstream.element.Element.configure_dependencies>`
+  abstract method. It is up to each element or abstract element class to
+  document what is supported in their :term:`dependency configuration <Dependency configuration>`.
+
+  .. attention::
+
+     It is illegal to declare :term:`dependency configuration <Dependency configuration>`
+     on runtime dependencies, since runtime dependencies are not visible to the depending
+     element.
+
+
+Redundant dependency declarations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+It is permitted to declare dependencies multiple times on the same element in the same
+element declaration, the result will be an inclusive OR of all configurations you have
+expressed in the redundant dependencies on the same element.
+
+* If a dependency is defined once as a ``build`` dependency and once as a ``runtime``
+  :ref:`dependency type <format_dependencies_types>`, then the resulting dependency
+  type will be ``all``
+
+* If any of the redundantly declared dependencies are specified as ``strict``, then
+  the resulting dependency will be ``strict``.
+
+Declaring redundant dependencies on the same element can be interesting when you
+need to specify multiple :term:`dependency configurations <Dependency configuration>`
+for the same element. For example, one might want to stage the same dependency
+in multiple locations in the build sandbox.
 
 
 Cross-junction dependencies
