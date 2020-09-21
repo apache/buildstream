@@ -3150,20 +3150,22 @@ class Element(Plugin):
     # Note that it does not update *all* cache keys - In non-strict mode, the
     # strong cache key is updated in __update_cache_key_non_strict()
     #
-    # If the element's is not resolved, this is
-    # a no-op (since inconsistent elements cannot have cache keys).
+    # If the element is not resolved, this is a no-op (since inconsistent
+    # elements cannot have cache keys).
     #
     # The weak and strict cache keys will be calculated if not already
     # set.
     #
-    # The weak cache key is a cache key that doesn't change when its
-    # runtime dependencies change, useful for avoiding full rebuilds
-    # when one's dependencies guarantee stability across
-    # versions. Changes in build dependencies still force a rebuild,
-    # since those will change the built artifact directly.
+    # The weak cache key is a cache key that doesn't change when the
+    # content of the build dependency graph changes (e.g., the configurations
+    # or source versions of each dependency in Scope.BUILD), but does
+    # take the shape of the build dependency graph into account, such
+    # that adding or removing a dependency will still cause a rebuild to
+    # occur (except for the strict dependency and BST_STRICT_REBUILD element
+    # cases which are treated specially below).
     #
-    # The strict cache key is a cache key that changes if any
-    # dependency has changed.
+    # The strict cache key is a cache key that changes if any dependencies
+    # in Scope.BUILD has changed in any way.
     #
     def __update_cache_keys(self):
         if self.__strict_cache_key is not None:
