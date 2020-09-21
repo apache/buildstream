@@ -1122,6 +1122,12 @@ class Element(Plugin):
 
                     # Class supports dependency configuration
                     if dep.config_nodes:
+
+                        # Ensure variables are substituted first
+                        #
+                        for config in dep.config_nodes:
+                            element.__variables.expand(config)
+
                         custom_configurations.extend(
                             [DependencyConfiguration(dep_proxy, dep.path, config) for config in dep.config_nodes]
                         )
