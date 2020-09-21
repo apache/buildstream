@@ -138,7 +138,6 @@ class Sandbox:
         self.__stdout = kwargs["stdout"]
         self.__stderr = kwargs["stderr"]
 
-        self._output_directory = None  # type: Optional[str]
         self._build_directory = None
         self._build_directory_always = None
         self._vdir = None  # type: Optional[Directory]
@@ -179,15 +178,6 @@ class Sandbox:
         assert directory.startswith("/"), "The working directory must be an absolute path"
 
         self.__cwd = directory
-
-    def set_output_directory(self, directory: str) -> None:
-        """Sets the output directory - the directory which is preserved
-        as an artifact after assembly.
-
-        Args:
-           directory: An absolute path within the sandbox
-        """
-        self._output_directory = directory
 
     def mark_directory(self, directory: str, *, artifact: bool = False) -> None:
         """Marks a sandbox directory and ensures it will exist
