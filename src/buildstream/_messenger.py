@@ -370,7 +370,12 @@ class Messenger:
         template = "[{timecode: <8}] {type: <7}"
 
         # If this message is associated with an element or source plugin, print the
-        # full element name of the instance.
+        # full element name and key for the instance.
+        element_key = ""
+        if message.element_key:
+            template += " [{element_key}]"
+            element_key = message.element_key.brief
+
         element_name = ""
         if message.element_name:
             template += " {element_name}"
@@ -392,6 +397,7 @@ class Messenger:
 
         text = template.format(
             timecode=timecode,
+            element_key=element_key,
             element_name=element_name,
             type=message.message_type.upper(),
             message=message.message,

@@ -19,6 +19,7 @@
 # pylint: disable=redefined-outer-name
 
 import os
+import re
 import pytest
 
 from buildstream.testing import cli  # pylint: disable=unused-import
@@ -88,9 +89,12 @@ def test_artifact_log_files(cli, datafiles):
     assert os.path.exists(import_bin)
 
     # Ensure the file contains the logs by checking for the LOG line
+    pattern = r"\[..:..:..\] LOG     \[.*\] target.bst"
     with open(target, "r") as f:
         data = f.read()
-        assert "LOG     target.bst" in data
+        assert len(re.findall(pattern, data, re.MULTILINE)) > 0
+
+    pattern = r"\[..:..:..\] LOG     \[.*\] import-bin.bst"
     with open(import_bin, "r") as f:
         data = f.read()
-        assert "LOG     import-bin.bst" in data
+        assert len(re.findall(pattern, data, re.MULTILINE)) > 0

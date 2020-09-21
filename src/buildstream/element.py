@@ -3194,6 +3194,10 @@ class Element(Plugin):
         # a potential existing artifact.
         self.__update_artifact_state()
 
+        # Update the message kwargs in use for this plugin to dispatch messages with
+        #
+        self._message_kwargs["element_key"] = self._get_display_key()
+
     # __update_artifact_state()
     #
     # Updates the data involved in knowing about the artifact corresponding
@@ -3269,6 +3273,9 @@ class Element(Plugin):
 
             # Now we have the strong cache key, update the Artifact
             self.__artifact._cache_key = self.__cache_key
+
+            # Update the message kwargs in use for this plugin to dispatch messages with
+            self._message_kwargs["element_key"] = self._get_display_key()
 
 
 # _get_normal_name():

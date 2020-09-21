@@ -170,7 +170,8 @@ class TypeName(Widget):
 class ElementName(Widget):
     def render(self, message):
         action_name = message.action_name
-        element_name = message.element_name
+        element_name = message.task_element_name or message.element_name
+
         if element_name is not None:
             name = "{: <30}".format(element_name)
         else:
@@ -211,9 +212,10 @@ class CacheKey(Widget):
 
         dim = False
         key = " " * self._key_length
-        if message.element_key:
-            key = message.element_key.brief
-            dim = not message.element_key.strict
+        element_key = message.task_element_key or message.element_key
+        if element_key:
+            key = element_key.brief
+            dim = not element_key.strict
 
         if message.message_type in ERROR_MESSAGES:
             text = self._err_profile.fmt(key)
