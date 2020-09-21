@@ -162,6 +162,18 @@ class Stream:
 
             return target_objects
 
+    # query_cache()
+    #
+    # Query the artifact and source caches to determine the cache status
+    # of the specified elements.
+    #
+    # Args:
+    #    elements (list of Element): The elements to check
+    #
+    def query_cache(self, elements):
+        # Cache is implicitly queried on demand
+        pass
+
     # shell()
     #
     # Run a shell
@@ -613,6 +625,8 @@ class Stream:
             targets, selection=selection, use_artifact_config=True, load_artifacts=True
         )
 
+        self.query_cache(target_objects)
+
         if self._artifacts.has_fetch_remotes():
             self._pipeline.check_remotes(target_objects)
 
@@ -637,6 +651,8 @@ class Stream:
     def artifact_log(self, targets):
         # Return list of Element and/or ArtifactElement objects
         target_objects = self.load_selection(targets, selection=_PipelineSelection.NONE, load_artifacts=True)
+
+        self.query_cache(target_objects)
 
         artifact_logs = {}
         for obj in target_objects:
@@ -665,6 +681,8 @@ class Stream:
     def artifact_list_contents(self, targets):
         # Return list of Element and/or ArtifactElement objects
         target_objects = self.load_selection(targets, selection=_PipelineSelection.NONE, load_artifacts=True)
+
+        self.query_cache(target_objects)
 
         elements_to_files = {}
         for obj in target_objects:

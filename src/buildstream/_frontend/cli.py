@@ -551,6 +551,8 @@ def show(app, elements, deps, except_, order, format_):
 
         dependencies = app.stream.load_selection(elements, selection=deps, except_targets=except_)
 
+        app.stream.query_cache(dependencies)
+
         if order == "alpha":
             dependencies = sorted(dependencies)
 
