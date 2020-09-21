@@ -176,6 +176,8 @@ class Sandbox:
         Args:
            directory: An absolute path within the sandbox
         """
+        assert directory.startswith("/"), "The working directory must be an absolute path"
+
         self.__cwd = directory
 
     def set_output_directory(self, directory: str) -> None:
@@ -199,6 +201,8 @@ class Sandbox:
            Any marked directories will be read-write in the sandboxed
            environment, only the root directory is allowed to be readonly.
         """
+        assert directory.startswith("/"), "The directories marked in the sandbox must be absolute paths"
+
         self.__directories.append({"directory": directory, "artifact": artifact})
 
     def run(
