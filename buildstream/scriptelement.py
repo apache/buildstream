@@ -224,7 +224,8 @@ class ScriptElement(Element):
             for build_dep in self.dependencies(Scope.BUILD, recurse=False):
                 with self.timed_activity("Staging {} at /"
                                          .format(build_dep.name), silent_nested=True):
-                    build_dep.stage_dependency_artifacts(sandbox, Scope.RUN, path="/")
+                    for dep in build_dep.dependencies(Scope.RUN):
+                        dep.stage_artifact(sandbox)
 
             for build_dep in self.dependencies(Scope.BUILD, recurse=False):
                 with self.timed_activity("Integrating {}".format(build_dep.name), silent_nested=True):
@@ -239,18 +240,11 @@ class ScriptElement(Element):
                     continue
 
                 element = self.search(Scope.BUILD, item['element'])
-                if item['destination'] == '/':
-                    with self.timed_activity("Staging {} at /".format(element.name),
-                                             silent_nested=True):
-                        element.stage_dependency_artifacts(sandbox, Scope.RUN)
-                else:
-                    with self.timed_activity("Staging {} at {}"
-                                             .format(element.name, item['destination']),
-                                             silent_nested=True):
-                        real_dstdir = os.path.join(sandbox.get_directory(),
-                                                   item['destination'].lstrip(os.sep))
-                        os.makedirs(os.path.dirname(real_dstdir), exist_ok=True)
-                        element.stage_dependency_artifacts(sandbox, Scope.RUN, path=item['destination'])
+                with self.timed_activity("Staging {} at {}"
+                                         .format(element.name, item['destination']),
+                                         silent_nested=True):
+                    for dep in element.dependencies(Scope.RUN):
+                        dep.stage_artifact(sandbox, path=item['destination'])
 
             for item in self.__layout:
 
