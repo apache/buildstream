@@ -1021,7 +1021,7 @@ class Element(Plugin):
         # Time to use the artifact, check once more that it's there
         self.__assert_cached()
 
-        self.status("Staging {}/{}".format(self.name, self._get_brief_display_key()))
+        self.status("Staging {}/{}".format(self.name, self._get_display_key().brief))
         # Disable type checking since we can't easily tell mypy that
         # `self.__artifact` can't be None at this stage.
         files_vdir = self.__artifact.get_files()  # type: ignore
@@ -1417,18 +1417,6 @@ class Element(Plugin):
 
         length = min(len(cache_key), context.log_key_length)
         return _DisplayKey(cache_key, cache_key[0:length], strict)
-
-    # _get_brief_display_key()
-    #
-    # Returns an abbreviated cache key for display purposes
-    #
-    # Returns:
-    #    (str): An abbreviated hex digest cache key for this Element
-    #
-    # Question marks are returned if information for the cache key is missing.
-    #
-    def _get_brief_display_key(self):
-        return self._get_display_key().brief
 
     # _tracking_done():
     #
@@ -2701,7 +2689,7 @@ class Element(Plugin):
     # Raises an error if the artifact is not cached.
     #
     def __assert_cached(self):
-        assert self._cached(), "{}: Missing artifact {}".format(self, self._get_brief_display_key())
+        assert self._cached(), "{}: Missing artifact {}".format(self, self._get_display_key().brief)
 
     # __get_tainted():
     #
