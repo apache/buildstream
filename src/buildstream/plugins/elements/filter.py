@@ -249,6 +249,23 @@ class FilterElement(Element):
                 dep.stage_artifact(sandbox, include=self.include, exclude=self.exclude, orphans=self.include_orphans)
 
     def assemble(self, sandbox):
+        if self.pass_integration:
+            build_deps = list(self.dependencies(recurse=False))
+            assert len(build_deps) == 1
+            dep = build_deps[0]
+
+            # Integration commands of the build dependency
+            pub_data = dep.get_public_data("bst")
+            integration_commands = pub_data.get_str_list("integration-commands", [])
+
+            # Integration commands of the filter element itself
+            filter_pub_data = self.get_public_data("bst")
+            filter_integration_commands = filter_pub_data.get_str_list("integration-commands", [])
+
+            # Concatenate the command lists
+            filter_pub_data["integration-commands"] = integration_commands + filter_integration_commands
+            self.set_public_data("bst", filter_pub_data)
+
         return ""
 
     def _get_source_element(self):
@@ -258,12 +275,6 @@ class FilterElement(Element):
         assert len(build_deps) == 1
         output_elm = build_deps[0]._get_source_element()
         return output_elm
-
-    def integrate(self, sandbox):
-        if self.pass_integration:
-            for dep in self.dependencies(recurse=False):
-                dep.integrate(sandbox)
-        super().integrate(sandbox)
 
 
 def setup():
