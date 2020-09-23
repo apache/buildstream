@@ -135,9 +135,6 @@ class ArtifactElement(Element):
         # Tell the sandbox to mount the build root and install root
         sandbox.mark_directory(install_root)
 
-        # Tell sandbox which directory is preserved in the finished artifact
-        sandbox.set_output_directory(install_root)
-
     # Override Element._calculate_cache_key
     def _calculate_cache_key(self, dependencies=None):
         return self._key
