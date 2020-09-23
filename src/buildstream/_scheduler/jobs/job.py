@@ -289,7 +289,7 @@ class Job:
     # key for for the issuing message (if an element is related to the Job).
     #
     # Args:
-    #     element_key (tuple): The element_key tuple to be supplied to the Message() constructor
+    #     element_key (_DisplayKey): The element_key tuple to be supplied to the Message() constructor
     #
     def set_message_element_key(self, element_key):
         self._message_element_key = element_key

@@ -208,6 +208,24 @@ class _KeyStrength(FastEnum):
     WEAK = 2
 
 
+# _DisplayKey():
+#
+# The components of a cache key which need to be displayed
+#
+# This is a part of Message() so it needs to be a simple serializable object.
+#
+# Args:
+#    full: A full hex digest cache key for an Element
+#    brief: An abbreviated hex digest cache key for an Element
+#    strict: Whether the key matches the key which would be used in strict mode
+#
+class _DisplayKey:
+    def __init__(self, full: str, brief: str, strict: bool):
+        self.full = full  # type: str
+        self.brief = brief  # type: str
+        self.strict = strict  # type: bool
+
+
 # _SchedulerErrorAction()
 #
 # Actions the scheduler can take on error

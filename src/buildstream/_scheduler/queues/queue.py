@@ -356,9 +356,9 @@ class Queue:
 
     def _element_log_path(self, element):
         project = element._get_project()
-        key = element._get_display_key()[1]
+        key = element._get_display_key()
         action = self.action_name.lower()
-        logfile = "{key}-{action}".format(key=key, action=action)
+        logfile = "{key}-{action}".format(key=key.brief, action=action)
 
         return os.path.join(project.name, element.normal_name, logfile)
 

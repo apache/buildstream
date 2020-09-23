@@ -102,7 +102,7 @@ from .plugin import Plugin
 from .sandbox import SandboxFlags, SandboxCommandError
 from .sandbox._config import SandboxConfig
 from .sandbox._sandboxremote import SandboxRemote
-from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction
+from .types import _Scope, _CacheBuildTrees, _KeyStrength, OverlapAction, _DisplayKey
 from ._artifact import Artifact
 from ._elementproxy import ElementProxy
 from ._elementsources import ElementSources
@@ -1398,15 +1398,13 @@ class Element(Plugin):
     # Returns cache keys for display purposes
     #
     # Returns:
-    #    (str): A full hex digest cache key for this Element
-    #    (str): An abbreviated hex digest cache key for this Element
-    #    (bool): True if key should be shown as dim, False otherwise
+    #    (_DisplayKey): The display key
     #
     # Question marks are returned if information for the cache key is missing.
     #
     def _get_display_key(self):
         context = self._get_context()
-        dim_key = True
+        strict = False
 
         cache_key = self._get_cache_key()
 
@@ -1415,10 +1413,10 @@ class Element(Plugin):
         elif cache_key == self.__strict_cache_key:
             # Strong cache key used in this session matches cache key
             # that would be used in strict build mode
-            dim_key = False
+            strict = True
 
         length = min(len(cache_key), context.log_key_length)
-        return (cache_key, cache_key[0:length], dim_key)
+        return _DisplayKey(cache_key, cache_key[0:length], strict)
 
     # _get_brief_display_key()
     #
@@ -1430,8 +1428,7 @@ class Element(Plugin):
     # Question marks are returned if information for the cache key is missing.
     #
     def _get_brief_display_key(self):
-        _, display_key, _ = self._get_display_key()
-        return display_key
+        return self._get_display_key().brief
 
     # _tracking_done():
     #

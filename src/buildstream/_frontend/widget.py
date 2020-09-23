@@ -209,15 +209,16 @@ class CacheKey(Widget):
         if message.element_name is None:
             return " " * self._key_length
 
-        missing = False
+        dim = False
         key = " " * self._key_length
         if message.element_key:
-            _, key, missing = message.element_key
+            key = message.element_key.brief
+            dim = not message.element_key.strict
 
         if message.message_type in ERROR_MESSAGES:
             text = self._err_profile.fmt(key)
         else:
-            text = self.content_profile.fmt(key, dim=missing)
+            text = self.content_profile.fmt(key, dim=dim)
 
         return text
 
@@ -340,11 +341,12 @@ class LogLine(Widget):
         for element in dependencies:
             line = format_
 
-            full_key, cache_key, dim_keys = element._get_display_key()
+            key = element._get_display_key()
+            dim_keys = not key.strict
 
             line = p.fmt_subst(line, "name", element._get_full_name(), fg="blue", bold=True)
-            line = p.fmt_subst(line, "key", cache_key, fg="yellow", dim=dim_keys)
-            line = p.fmt_subst(line, "full-key", full_key, fg="yellow", dim=dim_keys)
+            line = p.fmt_subst(line, "key", key.brief, fg="yellow", dim=dim_keys)
+            line = p.fmt_subst(line, "full-key", key.full, fg="yellow", dim=dim_keys)
 
             try:
                 if not element._has_all_sources_resolved():
