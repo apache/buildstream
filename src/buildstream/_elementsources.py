@@ -20,6 +20,7 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Iterator
 
 from . import _cachekey, utils
+from ._exceptions import SkipJob
 from ._context import Context
 from ._protos.buildstream.v2 import source_pb2
 from .plugin import Plugin
@@ -108,6 +109,12 @@ class ElementSources:
                     + "To start using the new reference, please close the existing workspace."
                 )
                 source.warn("Updated reference will be ignored as source has open workspace", detail=detail)
+
+        # Sources which do not implement track() will return None, produce
+        # a SKIP message in the UI if all sources produce None
+        #
+        if all(ref is None for _, ref in refs):
+            raise SkipJob("Element sources are not trackable")
 
         return refs
 
