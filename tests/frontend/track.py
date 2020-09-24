@@ -3,6 +3,7 @@
 
 import stat
 import os
+import re
 import pytest
 
 from buildstream.testing import create_repo, generate_project
@@ -419,3 +420,81 @@ def test_track_with_comments(cli, datafiles):
 
     # Assert that the sources are cached
     assert cli.get_element_state(project, target) == "buildable"
+
+
+# Test that elements which contain only sources which do not implement Source.track()
+# produce a SKIP message in the logs instead of a SUCCESS message when tracking the
+# element.
+#
+# Also test the same for an open workspace, which would be trackable if the
+# workspace was not open.
+#
+# Also test that elements which do not have any sources do not produce any messages at all,
+# as these jobs are discarded before ever processing.
+#
+@pytest.mark.datafiles(DATA_DIR)
+def test_track_skip(cli, tmpdir, datafiles):
+    project = str(datafiles)
+    dev_files_path = os.path.join(project, "files", "dev-files")
+    element_path = os.path.join(project, "elements")
+    element_dep_name = "track-test-dep.bst"
+    element_workspace_name = "track-test-workspace.bst"
+    element_target_name = "track-test-target.bst"
+    workspace_dir = os.path.join(str(tmpdir), "workspace")
+
+    # Generate an import element with some local source plugins, these
+    # do not implement track() and thus can be skipped.
+    #
+    element = {
+        "kind": "import",
+        "sources": [
+            {"kind": "local", "path": "files/dev-files", "directory": "/foo"},
+            {"kind": "local", "path": "files/dev-files", "directory": "/bar"},
+        ],
+    }
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_dep_name))
+
+    # Generate a regular import element which will have a workspace open
+    #
+    repo = create_repo("tar", str(tmpdir))
+    repo.create(dev_files_path)
+    generate_element(repo, os.path.join(element_path, element_workspace_name))
+
+    # Generate a stack element which depends on the import of local files
+    #
+    # Stack elements do not have any sources, as such they are also skipped.
+    #
+    element = {
+        "kind": "stack",
+        "depends": [element_dep_name, element_workspace_name],
+    }
+    _yaml.roundtrip_dump(element, os.path.join(element_path, element_target_name))
+
+    # First track and fetch the workspace element
+    result = cli.run(project=project, args=["source", "track", "--deps", "none", element_workspace_name])
+    result.assert_success()
+    result = cli.run(project=project, args=["source", "fetch", "--deps", "none", element_workspace_name])
+    result.assert_success()
+
+    # Open the workspace so it really is a workspace
+    result = cli.run(project=project, args=["workspace", "open", "--directory", workspace_dir, element_workspace_name])
+    result.assert_success()
+
+    # Now run track on the stack and all the deps
+    result = cli.run(project=project, args=["source", "track", "--deps", "all", element_target_name])
+    result.assert_success()
+
+    # Assert we got the expected skip messages
+    pattern = r"\[.*track:track-test-dep\.bst.*\] SKIPPED"
+    assert len(re.findall(pattern, result.stderr, re.MULTILINE)) == 1
+    pattern = r"\[.*track:track-test-workspace\.bst.*\] SKIPPED"
+    assert len(re.findall(pattern, result.stderr, re.MULTILINE)) == 1
+
+    # For now, we expect to not see the job for stack elements
+    #
+    # This may be revisited, need to consider if we should emit
+    # START/SKIPPED message pairs for jobs which were assessed to
+    # be unneeded before ever processing.
+    #
+    pattern = r"\[.*track:track-test-target\.bst.*\]"
+    assert len(re.findall(pattern, result.stderr, re.MULTILINE)) == 0
