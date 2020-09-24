@@ -462,6 +462,7 @@ class Artifact:
     #
     def set_cached(self):
         self._proto = self._load_proto()
+        assert self._proto
         self._cached = True
 
     #  load_proto()
