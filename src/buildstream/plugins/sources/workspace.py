@@ -37,29 +37,20 @@ workspace. The node constructed would be specified as follows:
 
 import os
 
-from buildstream.storage.directory import Directory
-from buildstream import Source, SourceError
+from buildstream import Source, SourceError, Directory, MappingNode
 from buildstream.types import SourceRef
-from buildstream.node import MappingNode
 
 
 class WorkspaceSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
     BST_MIN_VERSION = "2.0"
-
     BST_STAGE_VIRTUAL_DIRECTORY = True
-    BST_KEY_REQUIRES_STAGE = True
 
-    # Cached unique key
-    __unique_key = None
     # the digest of the Directory following the import of the workspace
     __digest = None
     # the cache key of the last workspace build
     __last_build = None
-
-    def track(self) -> SourceRef:  # pylint: disable=arguments-differ
-        return None
 
     def configure(self, node: MappingNode) -> None:
         node.validate_keys(["path", "last_build", "kind"])
@@ -74,6 +65,21 @@ class WorkspaceSource(Source):
 
     def is_resolved(self):
         return os.path.exists(self._get_local_path())
+
+    def get_unique_key(self):
+        #
+        # As a core plugin, we use some private API to optimize file hashing.
+        #
+        # * Use Source._cache_directory() to prepare a Directory
+        # * Do the regular staging activity into the Directory
+        # * Use the hash of the cached digest as the unique key
+        #
+        if not self.__digest:
+            with self._cache_directory() as directory:
+                self.__do_stage(directory)
+                self.__digest = directory._get_digest()
+
+        return self.__digest.hash
 
     def get_ref(self) -> None:
         return None
@@ -93,7 +99,29 @@ class WorkspaceSource(Source):
     def fetch(self) -> None:  # pylint: disable=arguments-differ
         pass  # pragma: nocover
 
-    def stage(self, directory: Directory) -> None:
+    def stage(self, directory):
+        #
+        # We've already prepared the CAS while resolving the cache key which
+        # will happen before staging.
+        #
+        # Now just retrieve the previously cached content to stage.
+        #
+        assert isinstance(directory, Directory)
+        assert self.__digest is not None
+        with self._cache_directory(digest=self.__digest) as cached_directory:
+            directory.import_files(cached_directory)
+
+    # As a core element, we speed up some scenarios when this is used for
+    # a junction, by providing the local path to this content directly.
+    #
+    def _get_local_path(self) -> str:
+        return self.path
+
+    # Staging is implemented internally, we preemptively put it in the CAS
+    # as a side effect of resolving the cache key, at stage time we just
+    # do an internal CAS stage.
+    #
+    def __do_stage(self, directory: Directory) -> None:
         assert isinstance(directory, Directory)
         with self.timed_activity("Staging local files"):
             result = directory.import_files(self.path, properties=["mtime"])
@@ -102,9 +130,6 @@ class WorkspaceSource(Source):
                 raise SourceError(
                     "Failed to stage source: files clash with existing directory", reason="ensure-stage-dir-fail"
                 )
-
-    def _get_local_path(self) -> str:
-        return self.path
 
 
 # Plugin entry point

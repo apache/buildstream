@@ -312,11 +312,6 @@ class Source(Plugin):
     to.
     """
 
-    BST_KEY_REQUIRES_STAGE = False
-    """Whether the source will require staging in order to efficiently generate
-    a unique key.
-    """
-
     def __init__(
         self,
         context: "Context",
@@ -364,7 +359,6 @@ class Source(Plugin):
         self.__mirror_directory = None  # type: Optional[str]
 
         self._configure(self.__config)
-        self.__digest = None
 
         self.__is_cached = None
 
@@ -723,23 +717,6 @@ class Source(Plugin):
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
-    # Stage files at the localpath into the cascache
-    #
-    # Returns:
-    #   the hash of the cas directory
-    def _stage_into_cas(self) -> str:
-        # FIXME: this should not be called for sources with digests already set
-        # since they will already have been staged into the cache. However,
-        # _get_unique_key is sometimes called outside of _generate_key
-        if self.__digest is None:
-            cas_dir = CasBasedDirectory(self._get_context().get_cascache())
-            self.stage(cas_dir)
-            digest = cas_dir._get_digest()
-            self.__digest = digest
-        else:
-            # XXX: an assignment to please mypy
-            digest = self.__digest
-        return digest.hash
 
     # Wrapper around preflight() method
     #
@@ -813,14 +790,8 @@ class Source(Plugin):
     # 'directory' option
     #
     def _stage(self, directory):
-        if self.BST_KEY_REQUIRES_STAGE:
-            # _get_unique_key should be called before _stage
-            assert self.__digest is not None
-            cas_dir = CasBasedDirectory(self._get_context().get_cascache(), digest=self.__digest)
-            directory.import_files(cas_dir)
-        else:
-            self.validate_cache()
-            self.stage(directory)
+        self.validate_cache()
+        self.stage(directory)
 
     # Wrapper for init_workspace()
     def _init_workspace(self, directory):
@@ -835,10 +806,7 @@ class Source(Plugin):
     # Wrapper for get_unique_key() api
     #
     def _get_unique_key(self):
-        if self.BST_KEY_REQUIRES_STAGE:
-            return self._stage_into_cas()
-        else:
-            return self.get_unique_key()
+        return self.get_unique_key()
 
     # _project_refs():
     #
@@ -954,20 +922,6 @@ class Source(Plugin):
         if project is toplevel and not node:
             node = provenance._node
 
-        # Ensure the node is not from a junction
-        if not toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS and provenance._project is not toplevel:
-            if provenance._project is project:
-                self.warn("{}: Not persisting new reference in junctioned project".format(self))
-            elif provenance._project is None:
-                assert provenance._filename == ""
-                assert provenance._shortname == ""
-                raise SourceError("{}: Error saving source reference to synthetic node.".format(self))
-            else:
-                raise SourceError(
-                    "{}: Cannot track source in a fragment from a junction".format(provenance._shortname),
-                    reason="tracking-junction-fragment",
-                )
-
         #
         # Step 2 - Set the ref in memory, and determine changed state
         #
@@ -987,6 +941,21 @@ class Source(Plugin):
             # which might result in desync depending if something changes about
             # tracking in the future.  For now, this is quite safe.
             return False
+
+        # Ensure the node is not from a junction
+        if not toplevel.ref_storage == ProjectRefStorage.PROJECT_REFS and provenance._project is not toplevel:
+            if provenance._project is project:
+                self.warn("{}: Not persisting new reference in junctioned project".format(self))
+            elif provenance._project is None:
+                assert provenance._filename == ""
+                assert provenance._shortname == ""
+
+                raise SourceError("{}: Error saving source reference to synthetic node.".format(self))
+            else:
+                raise SourceError(
+                    "{}: Cannot track source in a fragment from a junction".format(provenance._shortname),
+                    reason="tracking-junction-fragment",
+                )
 
         actions = {}
         for k, v in clean.items():
@@ -1081,11 +1050,6 @@ class Source(Plugin):
     #   previous_sources_dir (str): directory where previous sources are staged
     #
     def _track(self, previous_sources_dir: str = None) -> SourceRef:
-        if self.BST_KEY_REQUIRES_STAGE:
-            # ensure that these sources have a key after tracking
-            self._generate_key()
-            return None
-
         if self.BST_REQUIRES_PREVIOUS_SOURCES_TRACK:
             new_ref = self.__do_track(previous_sources_dir=previous_sources_dir)
         else:
@@ -1106,16 +1070,6 @@ class Source(Plugin):
         self._generate_key()
 
         return new_ref
-
-    # _is_trackable()
-    #
-    # Returns:
-    #   (bool): Whether this source is trackable
-    #
-    def _is_trackable(self) -> bool:
-        """Report whether this source can be tracked."""
-        # sources that require staging to generate keys cannot be tracked
-        return not self.BST_KEY_REQUIRES_STAGE
 
     # _requires_previous_sources()
     #
@@ -1161,6 +1115,36 @@ class Source(Plugin):
     @property
     def _element_name(self):
         return self.__element_name
+
+    # _cache_directory()
+    #
+    # A context manager to cache and retrieve content.
+    #
+    # If the digest is not specified, then a new directory is prepared, the
+    # content of which can later be addressed by accessing it's digest,
+    # using the private API Directory._get_digest().
+    #
+    # The hash of the Digest of the cached directory is suitable for use as a
+    # cache key, and the Digest object can be reused later on to do the
+    # staging operation.
+    #
+    # This context manager was added specifically to optimize cases where
+    # we have project or host local data to stage into CAS, such as local
+    # sources and workspaces.
+    #
+    # Args:
+    #    digest: A Digest of previously cached content.
+    #
+    # Yields:
+    #    (Directory): A handle on the cached content directory
+    #
+    @contextmanager
+    def _cache_directory(self, digest=None):
+        context = self._get_context()
+        cache = context.get_cascache()
+        cas_dir = CasBasedDirectory(cache, digest=digest)
+
+        yield cas_dir
 
     #############################################################
     #                   Local Private Methods                   #
