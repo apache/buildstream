@@ -1,4 +1,10 @@
 =================
+buildstream 1.6.0
+=================
+
+  o Fixed edge case issue when dealing with git remotes (#1372)
+
+=================
 buildstream 1.5.1
 =================
 
