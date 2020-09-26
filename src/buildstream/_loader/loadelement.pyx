@@ -52,6 +52,17 @@ cpdef enum DependencyType:
     ALL = 0x003
 
 
+# Some forward declared lists, avoid creating these lists repeatedly
+#
+cdef list _filename_allowed_types=[ScalarNode, SequenceNode]
+cdef list _valid_dependency_keys = [Symbol.FILENAME, Symbol.TYPE, Symbol.JUNCTION, Symbol.STRICT, Symbol.CONFIG]
+cdef list _valid_typed_dependency_keys = [Symbol.FILENAME, Symbol.JUNCTION, Symbol.STRICT, Symbol.CONFIG]
+cdef list _valid_element_keys = [
+    'kind', 'depends', 'sources', 'sandbox', 'variables', 'environment', 'environment-nocache',
+    'config', 'public', 'description', 'build-depends', 'runtime-depends',
+]
+
+
 # Dependency():
 #
 # Early stage data model for dependencies objects, the LoadElement has
@@ -122,31 +133,33 @@ cdef class Dependency:
 
     # load()
     #
-    # Load the dependency from a Node
+    # Load dependency attributes from a Node, and validate it
     #
     # Args:
     #    dep (Node): A node to load the dependency from
+    #    junction (str): The junction name, or None
+    #    name (str): The element name
     #    default_dep_type (DependencyType): The default dependency type
     #
-    cdef load(self, Node dep, int default_dep_type):
+    cdef load(self, Node dep, str junction, str name, int default_dep_type):
         cdef str parsed_type
         cdef MappingNode config_node
+        cdef ProvenanceInformation provenance
 
-        self._node = dep
+        self.junction = junction
+        self.name = name
         self.element = None
+        self._node = dep
 
         if type(dep) is ScalarNode:
-            self.name = dep.as_str()
             self.dep_type = default_dep_type or DependencyType.ALL
-            self.junction = None
-            self.strict = False
 
         elif type(dep) is MappingNode:
             if default_dep_type:
-                (<MappingNode> dep).validate_keys([Symbol.FILENAME, Symbol.JUNCTION, Symbol.STRICT, Symbol.CONFIG])
+                (<MappingNode> dep).validate_keys(_valid_typed_dependency_keys)
                 self.dep_type = default_dep_type
             else:
-                (<MappingNode> dep).validate_keys([Symbol.FILENAME, Symbol.TYPE, Symbol.JUNCTION, Symbol.STRICT, Symbol.CONFIG])
+                (<MappingNode> dep).validate_keys(_valid_dependency_keys)
 
                 # Resolve the DependencyType
                 parsed_type = (<MappingNode> dep).get_str(<str> Symbol.TYPE, None)
@@ -161,8 +174,6 @@ cdef class Dependency:
                     raise LoadError("{}: Dependency type '{}' is not 'build', 'runtime' or 'all'"
                                     .format(provenance, parsed_type), LoadErrorReason.INVALID_DATA)
 
-            self.name = (<MappingNode> dep).get_str(<str> Symbol.FILENAME)
-            self.junction = (<MappingNode> dep).get_str(<str> Symbol.JUNCTION, None)
             self.strict = (<MappingNode> dep).get_bool(<str> Symbol.STRICT, False)
 
             config_node = (<MappingNode> dep).get_mapping(<str> Symbol.CONFIG, None)
@@ -195,18 +206,6 @@ cdef class Dependency:
             raise LoadError("{}: Runtime dependency {} specified as `strict`.".format(self.provenance, self.name),
                             LoadErrorReason.INVALID_DATA,
                             detail="Only dependencies required at build time may be declared `strict`.")
-
-        # `:` characters are not allowed in filename if a junction was
-        # explicitly specified
-        if self.junction and ':' in self.name:
-            raise LoadError("{}: Dependency {} contains `:` in its name. "
-                            "`:` characters are not allowed in filename when "
-                            "junction attribute is specified.".format(self.provenance, self.name),
-                            LoadErrorReason.INVALID_DATA)
-
-        # Attempt to split name if no junction was specified explicitly
-        if not self.junction and ':' in self.name:
-            self.junction, self.name = self.name.rsplit(':', maxsplit=1)
 
     # merge()
     #
@@ -282,12 +281,7 @@ cdef class LoadElement:
         self.dependencies = []
 
         # Ensure the root node is valid
-        self.node.validate_keys([
-            'kind', 'depends', 'sources', 'sandbox',
-            'variables', 'environment', 'environment-nocache',
-            'config', 'public', 'description',
-            'build-depends', 'runtime-depends',
-        ])
+        self.node.validate_keys(_valid_element_keys)
 
         self.kind = node.get_str(Symbol.KIND, default=None)
         self.first_pass = self.kind in ("junction", "link")
@@ -470,6 +464,96 @@ def sort_dependencies(LoadElement element, set visited):
         element.dependencies.sort(key=cmp_to_key(_dependency_cmp))
 
 
+# _parse_dependency_filename():
+#
+# Parse the filename of a dependency with the already provided parsed junction
+# name, if any.
+#
+# This will validate that the filename node does not contain `:` if
+# the junction is already specified, and otherwise it will appropriately
+# split the filename string and decompose it into a junction and filename.
+#
+# Args:
+#    node (ScalarNode): The ScalarNode of the filename
+#    junction (str): The already parsed junction, or None
+#
+# Returns:
+#    (str): The junction component of the dependency filename
+#    (str): The filename component of the dependency filename
+#
+cdef tuple _parse_dependency_filename(ScalarNode node, str junction):
+    cdef str name = node.as_str()
+
+    if junction is not None:
+        if ':' in name:
+            raise LoadError(
+                "{}: Dependency {} contains `:` in its name. "
+                "`:` characters are not allowed in filename when "
+                "junction attribute is specified.".format(node.get_provenance(), name),
+                LoadErrorReason.INVALID_DATA)
+    elif ':' in name:
+        junction, name = name.rsplit(':', maxsplit=1)
+
+    return junction, name
+
+
+# _list_dependency_node_files():
+#
+# List the filename, junction tuples associated with a dependency node,
+# this supports the `filename` attribute being expressed as a list, so
+# that multiple dependencies can be expressed with the common attributes.
+#
+# Args:
+#    node (Node): A YAML loaded dictionary
+#
+# Returns:
+#    (list): A list of filenames for `node`
+#
+cdef list _list_dependency_node_files(Node node):
+
+    cdef list files = []
+    cdef str junction
+    cdef tuple parsed_filename
+    cdef Node filename_node
+    cdef Node filename_iter
+    cdef object filename_iter_object
+
+    # The node can be a single filename declaration
+    #
+    if type(node) is ScalarNode:
+        parsed_filename = _parse_dependency_filename(node, None)
+        files.append(parsed_filename)
+
+    # Otherwise it is a dictionary
+    #
+    elif type(node) is MappingNode:
+
+        junction = (<MappingNode> node).get_str(<str> Symbol.JUNCTION, None)
+        filename_node = (<MappingNode> node).get_node(<str> Symbol.FILENAME, allowed_types=_filename_allowed_types)
+
+        if type(filename_node) is ScalarNode:
+            parsed_filename = _parse_dependency_filename(filename_node, junction)
+            files.append(parsed_filename)
+        else:
+            # The filename attribute is a list, iterate here
+            for filename_iter_object in (<SequenceNode> filename_node).value:
+                filename_iter = <Node> filename_iter_object
+
+                if type(filename_iter_object) is not ScalarNode:
+                    raise LoadError(
+                        "{}: Expected string while parsing the filename list".format(filename_iter.get_provenance()),
+                        LoadErrorReason.INVALID_DATA
+                    )
+
+                parsed_filename = _parse_dependency_filename(<ScalarNode>filename_iter, junction)
+                files.append(parsed_filename)
+    else:
+        raise LoadError("{}: Dependency is not specified as a string or a dictionary".format(node.get_provenance()),
+                        LoadErrorReason.INVALID_DATA)
+
+    return files
+
+
 # _extract_depends_from_node():
 #
 # Helper for extract_depends_from_node to get dependencies of a particular type
@@ -488,20 +572,30 @@ def sort_dependencies(LoadElement element, set visited):
 cdef void _extract_depends_from_node(Node node, str key, int default_dep_type, dict acc) except *:
     cdef SequenceNode depends = node.get_sequence(key, [])
     cdef Dependency existing_dep
+    cdef object dep_node_object
     cdef Node dep_node
+    cdef object deptup_object
     cdef tuple deptup
+    cdef str junction
+    cdef str filename
 
-    for dep_node in depends:
-        dependency = Dependency()
-        dependency.load(dep_node, default_dep_type)
-        deptup = (dependency.junction, dependency.name)
+    for dep_node_object in depends.value:
+        dep_node = <Node> dep_node_object
 
-        # Accumulate dependencies, merging any matching elements along the way
-        existing_dep = <Dependency> acc.get(deptup, None)
-        if existing_dep is not None:
-            existing_dep.merge(dependency)
-        else:
-            acc[deptup] = dependency
+        for deptup_object in _list_dependency_node_files(dep_node):
+            deptup = <tuple> deptup_object
+            junction = <str> deptup[0]
+            filename = <str> deptup[1]
+
+            dependency = Dependency()
+            dependency.load(dep_node, junction, filename, default_dep_type)
+
+            # Accumulate dependencies, merging any matching elements along the way
+            existing_dep = <Dependency> acc.get(deptup, None)
+            if existing_dep is not None:
+                existing_dep.merge(dependency)
+            else:
+                acc[deptup] = dependency
 
     # Now delete the field, we dont want it anymore
     node.safe_del(key)
