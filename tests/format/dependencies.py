@@ -294,3 +294,14 @@ def test_shorthand(cli, datafiles, target, number):
     result.assert_success()
 
     assert "TEST PLUGIN FOUND {} ENABLED DEPENDENCIES".format(number) in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_filenames(cli, datafiles):
+    project = os.path.join(str(datafiles), "dependencies3")
+
+    result = cli.run(project=project, args=["show", "invalid-filenames.bst"])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+    # Assert expected provenance
+    assert "invalid-filenames.bst [line 9 column 4]" in result.stderr
