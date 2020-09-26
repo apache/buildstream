@@ -417,7 +417,23 @@ Attributes:
 
 * ``filename``
 
-  The :ref:`element name <format_element_names>` to depend on.
+  The :ref:`element name <format_element_names>` to depend on, or a list of mutiple element names.
+
+  Specifying multiple element names in a single dependency will result in multiple dependencies
+  being declared with common properties.
+
+  For example, one can declare multiple build dependencies with the same junction:
+
+  .. code:: yaml
+
+     # Declare three build dependencies from subproject.bst
+     depends:
+     - type: build
+       junction: subproject.bst
+       filename:
+       - element-a.bst
+       - element-b.bst
+       - element-c.bst
 
 * ``junction``
 
