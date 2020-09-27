@@ -232,8 +232,9 @@ class ScriptElement(Element):
             sorted_locations = sorted(self.__layout)
 
             for location in sorted_locations:
-                element_list = [element for element, _ in self.__layout[location]]
-                self.stage_dependency_artifacts(sandbox, element_list, path=location)
+                with self.timed_activity("Staging dependencies at: {}".format(location), silent_nested=True):
+                    element_list = [element for element, _ in self.__layout[location]]
+                    self.stage_dependency_artifacts(sandbox, element_list, path=location)
 
             # Now integrate any elements staged in the root
             #
