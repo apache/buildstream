@@ -281,3 +281,27 @@ def test_config_runtime_error(cli, datafiles):
     #
     result = cli.run(project=project, args=["show", "runtime-error.bst"])
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target,number", [("shorthand-config.bst", 2), ("shorthand-junction.bst", 2),], ids=["config", "junction"],
+)
+def test_shorthand(cli, datafiles, target, number):
+    project = os.path.join(str(datafiles), "dependencies3")
+
+    result = cli.run(project=project, args=["show", target])
+    result.assert_success()
+
+    assert "TEST PLUGIN FOUND {} ENABLED DEPENDENCIES".format(number) in result.stderr
+
+
+@pytest.mark.datafiles(DATA_DIR)
+def test_invalid_filenames(cli, datafiles):
+    project = os.path.join(str(datafiles), "dependencies3")
+
+    result = cli.run(project=project, args=["show", "invalid-filenames.bst"])
+    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
+
+    # Assert expected provenance
+    assert "invalid-filenames.bst [line 9 column 4]" in result.stderr
