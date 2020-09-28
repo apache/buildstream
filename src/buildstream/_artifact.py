@@ -462,7 +462,34 @@ class Artifact:
     #
     def set_cached(self):
         self._proto = self._load_proto()
+        assert self._proto
         self._cached = True
+
+    # pull()
+    #
+    # Pull artifact from remote artifact repository into local artifact cache.
+    #
+    # Args:
+    #     pull_buildtrees (bool): Whether to pull buildtrees or not
+    #
+    # Returns: True if the artifact has been downloaded, False otherwise
+    #
+    def pull(self, *, pull_buildtrees):
+        artifacts = self._context.artifactcache
+
+        pull_key = self.get_extract_key()
+
+        if not artifacts.pull(self._element, pull_key, pull_buildtrees=pull_buildtrees):
+            return False
+
+        self.set_cached()
+
+        # Add reference for the other key (weak key when pulling with strong key,
+        # strong key when pulling with weak key)
+        for key in self.get_metadata_keys():
+            artifacts.link_key(self._element, pull_key, key)
+
+        return True
 
     #  load_proto()
     #

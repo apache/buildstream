@@ -1945,16 +1945,19 @@ class Element(Plugin):
         pull_buildtrees = context.pull_buildtrees
 
         # Attempt to pull artifact without knowing whether it's available
-        pulled = self.__pull_strong(pull_buildtrees=pull_buildtrees)
+        strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key, weak_key=self.__weak_cache_key)
+        if strict_artifact.pull(pull_buildtrees=pull_buildtrees):
+            # Notify successful download
+            return True
 
-        if not pulled and not self._cached() and not context.get_strict():
-            pulled = self.__pull_weak(pull_buildtrees=pull_buildtrees)
-
-        if not pulled:
+        if not context.get_strict() and not self._cached():
+            # In non-strict mode also try pulling weak artifact
+            # if no weak artifact is cached yet.
+            artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
+            return artifact.pull(pull_buildtrees=pull_buildtrees)
+        else:
+            # No artifact has been downloaded
             return False
-
-        # Notify successfull download
-        return True
 
     def _skip_source_push(self):
         if not self.sources() or self._get_workspace():
@@ -3098,56 +3101,6 @@ class Element(Plugin):
         assert self.__build_result is None
 
         self.__build_result = self.__artifact.load_build_result()
-
-    # __pull_strong():
-    #
-    # Attempt pulling given element from configured artifact caches with
-    # the strict cache key
-    #
-    # Args:
-    #     progress (callable): The progress callback, if any
-    #     subdir (str): The optional specific subdir to pull
-    #     excluded_subdirs (list): The optional list of subdirs to not pull
-    #
-    # Returns:
-    #     (bool): Whether or not the pull was successful
-    #
-    def __pull_strong(self, *, pull_buildtrees):
-        weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
-        key = self.__strict_cache_key
-        if not self.__artifacts.pull(self, key, pull_buildtrees=pull_buildtrees):
-            return False
-
-        # update weak ref by pointing it to this newly fetched artifact
-        self.__artifacts.link_key(self, key, weak_key)
-
-        return True
-
-    # __pull_weak():
-    #
-    # Attempt pulling given element from configured artifact caches with
-    # the weak cache key
-    #
-    # Args:
-    #     subdir (str): The optional specific subdir to pull
-    #     excluded_subdirs (list): The optional list of subdirs to not pull
-    #
-    # Returns:
-    #     (bool): Whether or not the pull was successful
-    #
-    def __pull_weak(self, *, pull_buildtrees):
-        weak_key = self._get_cache_key(strength=_KeyStrength.WEAK)
-        if not self.__artifacts.pull(self, weak_key, pull_buildtrees=pull_buildtrees):
-            return False
-
-        # extract strong cache key from this newly fetched artifact
-        self._pull_done()
-
-        # create tag for strong cache key
-        key = self._get_cache_key(strength=_KeyStrength.STRONG)
-        self.__artifacts.link_key(self, weak_key, key)
-
-        return True
 
     # __update_cache_keys()
     #

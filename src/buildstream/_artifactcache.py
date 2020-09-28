@@ -294,8 +294,11 @@ class ArtifactCache(AssetCache):
         oldref = element.get_artifact_name(oldkey)
         newref = element.get_artifact_name(newkey)
 
-        if not os.path.exists(os.path.join(self._basedir, newref)):
-            os.link(os.path.join(self._basedir, oldref), os.path.join(self._basedir, newref))
+        if oldref == newref:
+            # The two refs are identical, nothing to do
+            return
+
+        utils.safe_link(os.path.join(self._basedir, oldref), os.path.join(self._basedir, newref))
 
     # fetch_missing_blobs():
     #
