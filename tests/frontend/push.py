@@ -239,16 +239,8 @@ def test_push_fails_with_on_error_continue(cli, tmpdir, datafiles):
         assert_shared(cli, share, project, "target.bst")
 
         assert_not_shared(cli, share, project, "import-dev.bst")
-        errors = [
-            "import-dev.bst is not cached",
-            (
-                "Error while pushing. The following elements were not pushed as they are not yet cached:\n"
-                "\n"
-                "\timport-dev.bst\n"
-            ),
-        ]
-        for error in errors:
-            assert error in result.stderr
+
+        assert "Push failed: import-dev.bst is not cached" in result.stderr
 
 
 # Tests that `bst artifact push --deps DEPS` pushes selected dependencies of
