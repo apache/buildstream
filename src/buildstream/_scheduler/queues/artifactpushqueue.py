@@ -32,11 +32,16 @@ class ArtifactPushQueue(Queue):
     complete_name = "Artifacts Pushed"
     resources = [ResourceType.UPLOAD]
 
+    def __init__(self, scheduler, *, skip_uncached=True):
+        super().__init__(scheduler)
+
+        self._skip_uncached = skip_uncached
+
     def get_process_func(self):
         return ArtifactPushQueue._push_or_skip
 
     def status(self, element):
-        if element._skip_push():
+        if element._skip_push(skip_uncached=self._skip_uncached):
             return QueueStatus.SKIP
 
         return QueueStatus.READY
