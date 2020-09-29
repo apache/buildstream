@@ -1497,15 +1497,9 @@ class Element(Plugin):
     #
     def _stage_sources_at(self, vdirectory, usebuildtree=False):
 
-        context = self._get_context()
-
         # It's advantageous to have this temporary directory on
         # the same file system as the rest of our cache.
-        with self.timed_activity("Staging sources", silent_nested=True), utils._tempdir(
-            dir=context.tmpdir, prefix="staging-temp"
-        ) as temp_staging_directory:
-
-            import_dir = temp_staging_directory
+        with self.timed_activity("Staging sources", silent_nested=True):
 
             if not isinstance(vdirectory, Directory):
                 vdirectory = FileBasedDirectory(vdirectory)
@@ -1534,8 +1528,7 @@ class Element(Plugin):
                     import_dir = staged_sources
 
             # Set update_mtime to ensure deterministic mtime of sources at build time
-            with utils._deterministic_umask():
-                vdirectory.import_files(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP)
+            vdirectory.import_files(import_dir, update_mtime=BST_ARBITRARY_TIMESTAMP)
 
         # Ensure deterministic owners of sources at build time
         vdirectory.set_deterministic_user()
