@@ -1999,7 +1999,13 @@ class Element(Plugin):
     #           and no updated was required
     #
     def _push(self):
-        self.__assert_cached()
+        if not self._cached():
+            raise ElementError("Push failed: {} is not cached".format(self.name))
+
+        # Do not push elements that are cached with a dangling buildtree ref
+        # unless element type is expected to have an an empty buildtree directory
+        if not self._cached_buildtree() and self._buildtree_exists():
+            raise ElementError("Push failed: buildtree of {} is not cached".format(self.name))
 
         if self.__get_tainted():
             self.warn("Not pushing tainted artifact.")
