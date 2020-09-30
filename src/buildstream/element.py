@@ -1971,22 +1971,24 @@ class Element(Plugin):
     #
     # Determine whether we should create a push job for this element.
     #
+    # Args:
+    #    skip_uncached (bool): Whether to skip elements that aren't cached
+    #
     # Returns:
     #   (bool): True if this element does not need a push job to be created
     #
-    def _skip_push(self):
+    def _skip_push(self, *, skip_uncached):
         if not self.__artifacts.has_push_remotes(plugin=self):
             # No push remotes for this element's project
             return True
 
         # Do not push elements that aren't cached, or that are cached with a dangling buildtree
         # ref unless element type is expected to have an an empty buildtree directory
-        if not self._cached_buildtree() and self._buildtree_exists():
-            return True
-
-        # Do not push tainted artifact
-        if self.__get_tainted():
-            return True
+        if skip_uncached:
+            if not self._cached():
+                return True
+            if not self._cached_buildtree() and self._buildtree_exists():
+                return True
 
         return False
 
@@ -1999,7 +2001,13 @@ class Element(Plugin):
     #           and no updated was required
     #
     def _push(self):
-        self.__assert_cached()
+        if not self._cached():
+            raise ElementError("Push failed: {} is not cached".format(self.name))
+
+        # Do not push elements that are cached with a dangling buildtree ref
+        # unless element type is expected to have an an empty buildtree directory
+        if not self._cached_buildtree() and self._buildtree_exists():
+            raise ElementError("Push failed: buildtree of {} is not cached".format(self.name))
 
         if self.__get_tainted():
             self.warn("Not pushing tainted artifact.")

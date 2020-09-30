@@ -142,7 +142,6 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         assert element_name in result.get_pulled_elements()
         cli2.configure({"artifacts": {"url": share3.repo, "push": True}})
         result = cli2.run(project=project, args=["--pull-buildtrees", "artifact", "push", element_name])
-        assert "Attempting to fetch missing artifact buildtrees" in result.stderr
         assert element_name not in result.get_pulled_elements()
         with cli2.artifact.extract_buildtree(cwd, cwd, artifact_name) as buildtreedir:
             assert not buildtreedir
@@ -155,7 +154,6 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         # without exlipictly requiring a bst artifact pull.
         cli2.configure({"artifacts": [{"url": share1.repo, "push": False}, {"url": share3.repo, "push": True}]})
         result = cli2.run(project=project, args=["--pull-buildtrees", "artifact", "push", element_name])
-        assert "Attempting to fetch missing artifact buildtrees" in result.stderr
         assert element_name in result.get_pulled_elements()
         with cli2.artifact.extract_buildtree(cwd, cwd, artifact_name) as buildtreedir:
             assert os.path.isdir(buildtreedir)
