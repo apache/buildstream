@@ -59,12 +59,9 @@ class LinkElement(Element):
 
         node.validate_keys(["target"])
 
-        # Hold onto the provenance of the specified target,
-        # allowing the loader to raise errors with better context.
+        # Hold onto the node, keep it around for provenance.
         #
-        target_node = node.get_scalar("target")
-        self.target = target_node.as_str()
-        self.target_provenance = target_node.get_provenance()
+        self.target_node = node.get_scalar("target")
 
     def preflight(self):
         pass

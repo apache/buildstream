@@ -87,7 +87,7 @@ class ProjectLoaders:
         for loader in self._collect:
             duplicating, internalizing = self._search_project_relationships(loader)
             yield _ProjectInformation(
-                loader.project, loader.provenance, [str(l) for l in duplicating], [str(l) for l in internalizing]
+                loader.project, loader.provenance_node, [str(l) for l in duplicating], [str(l) for l in internalizing]
             )
 
     # _search_project_relationships()

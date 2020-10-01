@@ -97,7 +97,7 @@ class Project:
         cli_options=None,
         default_mirror=None,
         parent_loader=None,
-        provenance=None,
+        provenance_node=None,
         search_for_project=True,
     ):
 
@@ -159,14 +159,14 @@ class Project:
         self._sandbox = None
         self._splits = None
 
-        # This is a lookup table of dictionaries indexed by project,
-        # the child dictionaries are junction names as keys with their
-        # provenances as values
+        # This is a lookup table of lists indexed by project,
+        # the child dictionaries are lists of ScalarNodes indicating
+        # junction names
         self._junction_duplicates = {}
 
-        # A table of project relative junctions to consider as 'internal'. The values
-        # of the table are simply used to store ProvenanceInformation.
-        self._junction_internal = {}
+        # A list of project relative junctions to consider as 'internal',
+        # stored as ScalarNodes.
+        self._junction_internal = []
 
         self._context.add_project(self)
 
@@ -175,7 +175,7 @@ class Project:
         self._project_includes = None
 
         with PROFILER.profile(Topics.LOAD_PROJECT, self.directory.replace(os.sep, "-")):
-            self._load(parent_loader=parent_loader, provenance=provenance)
+            self._load(parent_loader=parent_loader, provenance_node=provenance_node)
 
         self._partially_loaded = True
 
@@ -570,7 +570,7 @@ class Project:
     #
     def junction_is_duplicated(self, project_name, loader):
 
-        junction_dict = self._junction_duplicates.get(project_name, {})
+        junctions = self._junction_duplicates.get(project_name, {})
 
         # Iterate over all paths specified by this project and see
         # if we find a match for the specified loader.
@@ -580,8 +580,8 @@ class Project:
         # to this project, regardless of any overrides or link elements
         # which might have been used in the project.
         #
-        for dup_path, dup_provenance in junction_dict.items():
-            search = self.loader.get_loader(dup_path, dup_provenance, load_subprojects=False)
+        for dup_path in junctions:
+            search = self.loader.get_loader(dup_path.as_str(), dup_path, load_subprojects=False)
             if loader is search:
                 return True
 
@@ -608,8 +608,8 @@ class Project:
         # to this project, regardless of any overrides or link elements
         # which might have been used in the project.
         #
-        for internal_path, internal_provenance in self._junction_internal.items():
-            search = self.loader.get_loader(internal_path, internal_provenance, load_subprojects=False)
+        for internal_path in self._junction_internal:
+            search = self.loader.get_loader(internal_path.as_str(), internal_path, load_subprojects=False)
             if loader is search:
                 return True
 
@@ -765,7 +765,7 @@ class Project:
     #
     # Raises: LoadError if there was a problem with the project.conf
     #
-    def _load(self, *, parent_loader=None, provenance=None):
+    def _load(self, *, parent_loader=None, provenance_node=None):
 
         # Load builtin default
         projectfile = os.path.join(self.directory, _PROJECT_CONF_FILE)
@@ -819,19 +819,12 @@ class Project:
         # Parse duplicates
         junction_duplicates = junctions_node.get_mapping("duplicates", default={})
         for project_name, junctions in junction_duplicates.items():
-            # For each junction we preserve the provenance and the junction string,
-            # the provenance is used for lookups later on.
-            #
-            self._junction_duplicates[project_name] = junctions_dict = {}
-            for junction_node in junctions:
-                junctions_dict[junction_node.as_str()] = junction_node.get_provenance()
+            self._junction_duplicates[project_name] = junctions
 
         # Parse internal
-        junction_internal = junctions_node.get_sequence("internal", default=[])
-        for junction_node in junction_internal:
-            self._junction_internal[junction_node.as_str()] = junction_node.get_provenance()
+        self._junction_internal = junctions_node.get_sequence("internal", default=[])
 
-        self.loader = Loader(self, parent=parent_loader, provenance=provenance)
+        self.loader = Loader(self, parent=parent_loader, provenance_node=provenance_node)
 
         self._project_includes = Includes(self.loader, copy_tree=False)
 

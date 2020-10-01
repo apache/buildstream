@@ -227,7 +227,7 @@ class Element(Plugin):
         self.__cache_key_dict = None  # Dict for cache key calculation
         self.__cache_key = None  # Our cached cache key
 
-        super().__init__(load_element.name, context, project, load_element.provenance, "element")
+        super().__init__(load_element.name, context, project, load_element.node, "element")
 
         # Ensure the project is fully loaded here rather than later on
         if not load_element.first_pass:

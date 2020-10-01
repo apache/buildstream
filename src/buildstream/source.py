@@ -322,14 +322,13 @@ class Source(Plugin):
         alias_override: Optional[Tuple[str, str]] = None,
         unique_id: Optional[int] = None
     ):
-        provenance = meta.config.get_provenance()
         # Set element_name member before parent init, as needed for debug messaging
         self.__element_name = meta.element_name  # The name of the element owning this source
         super().__init__(
             "{}-{}".format(meta.element_name, meta.element_index),
             context,
             project,
-            provenance,
+            meta.config,
             "source",
             unique_id=unique_id,
         )

@@ -133,18 +133,17 @@ class Includes:
     #                          Can be prefixed with junctio name.
     #    loader (Loader): Loader for the current project.
     def _include_file(self, include, loader):
-        provenance = include.get_provenance()
-        include = include.as_str()
-        shortname = include
-        if ":" in include:
-            junction, include = include.rsplit(":", 1)
-            current_loader = loader.get_loader(junction, provenance)
+        include_str = include.as_str()
+        shortname = include_str
+        if ":" in include_str:
+            junction, include_str = include_str.rsplit(":", 1)
+            current_loader = loader.get_loader(junction, include)
             current_loader.project.ensure_fully_loaded()
         else:
             current_loader = loader
         project = current_loader.project
         directory = project.directory
-        file_path = os.path.join(directory, include)
+        file_path = os.path.join(directory, include_str)
         key = (current_loader, file_path)
         if key not in self._loaded:
             try:
@@ -152,7 +151,7 @@ class Includes:
                     file_path, shortname=shortname, project=project, copy_tree=self._copy_tree
                 )
             except LoadError as e:
-                raise LoadError("{}: {}".format(provenance, e), e.reason, detail=e.detail) from e
+                raise LoadError("{}: {}".format(include.get_provenance(), e), e.reason, detail=e.detail) from e
 
         return self._loaded[key], file_path, current_loader
 

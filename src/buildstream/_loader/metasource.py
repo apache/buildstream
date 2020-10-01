@@ -40,4 +40,3 @@ class MetaSource:
         self.config = config
         self.directory = directory
         self.first_pass = first_pass
-        self.provenance = config.get_provenance()

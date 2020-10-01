@@ -1,6 +1,6 @@
 from typing import List
 
-from ..node import Node, ProvenanceInformation
+from ..node import Node, ScalarNode
 
 def extract_depends_from_node(node: Node) -> List[Dependency]: ...
 
@@ -11,4 +11,5 @@ class LoadElement:
     first_pass: bool
     kind: str
     name: str
-    provenance: ProvenanceInformation
+    node: Node
+    link_target: ScalarNode
