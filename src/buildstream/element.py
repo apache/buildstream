@@ -1850,8 +1850,9 @@ class Element(Plugin):
             except VirtualDirectoryError:
                 pass
 
-        # ensure we have cache keys
-        self.__update_cache_key_non_strict()
+        # We should always have cache keys already set when caching an artifact
+        assert self.__cache_key is not None
+        assert self.__artifact._cache_key is not None
 
         with self.timed_activity("Caching artifact"):
             artifact_size = self.__artifact.cache(sandbox_build_dir, collectvdir, sourcesvdir, buildresult, publicdata)
@@ -2410,6 +2411,7 @@ class Element(Plugin):
                     assert not rdep.__build_deps_uncached < 0
 
                     if rdep.__buildable_callback is not None and rdep._buildable():
+                        rdep.__update_cache_key_non_strict()
                         rdep.__buildable_callback(rdep)
                         rdep.__buildable_callback = None
 
