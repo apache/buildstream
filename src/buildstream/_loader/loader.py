@@ -74,6 +74,7 @@ class Loader:
 
         self._meta_elements = {}  # Dict of resolved meta elements by name
         self._elements = {}  # Dict of elements
+        self._links = {}  # Dict of link target target paths indexed by link element paths
         self._loaders = {}  # Dict of junction loaders
         self._loader_search_provenances = {}  # Dictionary of provenance nodes of ongoing child loader searches
 
@@ -196,7 +197,7 @@ class Loader:
         loader = self
 
         circular_provenance_node = self._loader_search_provenances.get(name, None)
-        if circular_provenance_node:
+        if circular_provenance_node and load_subprojects:
 
             assert provenance_node
 
@@ -209,12 +210,14 @@ class Loader:
                 detail=detail,
             )
 
-        self._loader_search_provenances[name] = provenance_node
+        if load_subprojects:
+            self._loader_search_provenances[name] = provenance_node
 
         for junction_name in junction_path:
             loader = loader._get_loader(junction_name, provenance_node, load_subprojects=load_subprojects)
 
-        del self._loader_search_provenances[name]
+        if load_subprojects:
+            del self._loader_search_provenances[name]
 
         return loader
 
@@ -322,7 +325,72 @@ class Loader:
 
         self._elements[filename] = element
 
+        #
+        # Update link caches in the ancestry
+        #
+        if element.link_target is not None:
+            link_path = filename
+            target_path = element.link_target.as_str()  # pylint: disable=no-member
+
+            # First resolve the link in this loader's cache
+            #
+            self._resolve_link(link_path, target_path)
+
+            # Now resolve the link in parent project loaders
+            #
+            loader = self
+            while loader._parent:
+                junction = loader.project.junction
+                link_path = junction.name + ":" + link_path
+                target_path = junction.name + ":" + target_path
+
+                # Resolve the link
+                loader = loader._parent
+                loader._resolve_link(link_path, target_path)
+
         return element
+
+    # _resolve_link():
+    #
+    # Resolves a link in the loader's link cache.
+    #
+    # This will first insert the new link -> target relationship
+    # into the cache, and will also update any existing targets
+    # which might have pointed to this link, to point to the new
+    # target instead.
+    #
+    # Args:
+    #    link_path (str): The local project relative real path to a link
+    #    target_path (str): The new target for this link
+    #
+    def _resolve_link(self, link_path, target_path):
+        self._links[link_path] = target_path
+
+        for cached_link_path, cached_target_path in self._links.items():
+            if self._expand_link(cached_target_path) == link_path:
+                self._links[cached_link_path] = target_path
+
+    # _expand_link():
+    #
+    # Expands any links in the provided path and returns a real path with
+    # known link elements substituted for their targets.
+    #
+    # Args:
+    #    path (str): A project relative path
+    #
+    # Returns:
+    #    (str): The same path with any links expanded
+    #
+    def _expand_link(self, path):
+
+        # FIXME: This simply returns the first link, maybe
+        #        this needs to be more iterative, or sorted by
+        #        number of path components, or smth
+        for link, target in self._links.items():
+            if path.startswith(link):
+                return target + path[len(link) :]
+
+        return path
 
     # _load_file():
     #
@@ -469,6 +537,37 @@ class Loader:
                 check_elements.remove(this_element)
                 validated.add(this_element)
 
+    # _search_for_local_override():
+    #
+    # Search this project's active override list for an override, while
+    # considering any link elements.
+    #
+    # Args:
+    #    override_path (str): The real relative path to search for
+    #
+    # Returns:
+    #    (ScalarNode): The overridding node from this project's junction, or None
+    #
+    def _search_for_local_override(self, override_path):
+        junction = self.project.junction
+        if junction is None:
+            return None
+
+        # Try the override without any link substitutions first
+        with suppress(KeyError):
+            return junction.overrides[override_path]
+
+        #
+        # If we did not get an exact match here, we might still have
+        # an override where a link was used to specify the override.
+        #
+        for override_key, override_node in junction.overrides.items():
+            resolved_path = self._expand_link(override_key)
+            if resolved_path == override_path:
+                return override_node
+
+        return None
+
     # _search_for_override():
     #
     # Search parent projects for an overridden subproject to replace this junction.
@@ -490,7 +589,7 @@ class Loader:
         overriding_loaders = []
         while loader._parent:
             junction = loader.project.junction
-            override_node = junction.overrides.get(override_path, None)
+            override_node = loader._search_for_local_override(override_path)
             if override_node:
                 overriding_loaders.append((loader._parent, override_node))
 
@@ -681,7 +780,94 @@ class Loader:
         loader = project.loader
         self._loaders[filename] = loader
 
+        # Now we've loaded a junction and it's project, we need to try to shallow
+        # load the overrides of this project and any projects in the ancestry which
+        # have overrides referring to this freshly loaded project.
+        #
+        # This is to ensure that link elements have been resolved as much as possible
+        # before we try to look for an override.
+        #
+        iter_loader = loader
+        while iter_loader._parent:
+            iter_loader._shallow_load_overrides()
+            iter_loader = iter_loader._parent
+
         return loader
+
+    # _shallow_load_overrides():
+    #
+    # Loads any of the override elements on this loader's junction
+    #
+    def _shallow_load_overrides(self):
+        if not self.project.junction:
+            return
+
+        junction = self.project.junction
+
+        # Iterate over the keys, we want to ensure that links are resolved for
+        # override paths specified in junctions, while the targets of these paths
+        # are not consequential.
+        #
+        for override_path, override_target in junction.overrides.items():
+
+            # Ensure that we resolve indirect links, in case that shallow loading
+            # an element results in loading a link, we need to discover if it's
+            # target is also a link.
+            #
+            path = override_path
+            provenance_node = override_target
+            while path is not None:
+                path, provenance_node = self._shallow_load_path(path, provenance_node)
+
+    # _shallow_load_path()
+    #
+    # Perform a shallow load of an element by it's relative path, this is
+    # used to load elements which might be specified by their path and might
+    # not be used in the resulting load, like paths to elements overridden by
+    # junctions.
+    #
+    # It is only important to shallow load these referenced elements in case
+    # they are links which need to be known later on.
+    #
+    # Args:
+    #    path (str): The path to load
+    #    provenance_node (Node): The node to use for provenance
+    #
+    # Returns:
+    #    (str): The target of the loaded link element, if it was a link element
+    #           and it could be loaded presently, otherwise None.
+    #    (ScalarNode): The link target real node, if a link target was returned
+    #
+    def _shallow_load_path(self, path, provenance_node):
+        if ":" in path:
+            junction, element_name = path.rsplit(":", 1)
+            target_loader = self.get_loader(junction, provenance_node, load_subprojects=False)
+
+            # Subproject not loaded, discard this shallow load attempt
+            #
+            if target_loader is None:
+                return None, None
+        else:
+            junction = None
+            element_name = path
+            target_loader = self
+
+        # If the element is already loaded in the target loader, then there
+        # is no need for a shallow load.
+        if element_name in target_loader._elements:
+            element = target_loader._elements[element_name]
+        else:
+            # Shallow load the the element.
+            element = target_loader._load_file_no_deps(element_name, provenance_node)
+
+        if element.link_target:
+            link_target = element.link_target.as_str()
+            if junction:
+                return "{}:{}".format(junction, link_target), element.link_target
+
+            return link_target, element.link_target
+
+        return None, None
 
     # _parse_name():
     #
