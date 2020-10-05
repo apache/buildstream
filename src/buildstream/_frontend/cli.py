@@ -578,8 +578,8 @@ def show(app, elements, deps, except_, order, format_):
     "--use-buildtree",
     "-t",
     "cli_buildtree",
-    type=click.Choice(["ask", "try", "always", "never"]),
-    default="ask",
+    type=click.Choice(["try", "always", "never"]),
+    default="never",
     show_default=True,
     help=(
         "Stage a buildtree. If `always` is set, will always fail to "
@@ -687,31 +687,6 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
                         "Artifact not cached locally. Can be retried with --pull and pull-buildtrees configured"
                     )
                 click.echo("WARNING: buildtree is not cached locally, shell will be loaded without it", err=True)
-        else:
-            # If the value has defaulted to ask and in non interactive mode, don't consider the buildtree, this
-            # being the default behaviour of the command
-            if app.interactive and cli_buildtree == "ask":
-                if buildtree_is_cached and bool(click.confirm("Do you want to use the cached buildtree?")):
-                    use_buildtree = "always"
-                elif can_attempt_pull:
-                    # If buildtree not cached, check if it's worth presenting the user a dialogue
-                    message = None
-                    if artifact_is_cached:
-                        if buildtree_exists:
-                            message = "Buildtree not cached but can be pulled if in available remotes, do you want to use it?"
-                    else:
-                        message = "Element is not cached so buildtree status unknown, do you want to pull and use it?"
-                    if message:
-                        try:
-                            choice = click.prompt(
-                                message, type=click.Choice(["try", "always", "never"]), err=True, show_choices=True,
-                            )
-                        except click.Abort:
-                            click.echo("Aborting", err=True)
-                            sys.exit(-1)
-
-                        if choice != "never":
-                            use_buildtree = choice
 
         # Raise warning if the element is cached in a failed state
         if use_buildtree and element._cached_failure():
