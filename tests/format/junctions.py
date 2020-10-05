@@ -406,6 +406,8 @@ def test_full_path_not_found(cli, tmpdir, datafiles, target, provenance):
         ("target-overridden-subsubsubproject.bst", "surprise.txt"),
         # Test that we can override a subproject junction of a subproject's subproject, which using links to address them
         ("target-overridden-subsubsubproject-link.bst", "surprise.txt"),
+        # Test that we can override a subproject junction of a subproject's subproject, using various levels of links indirection
+        ("target-overridden-subsubsubproject-indirect-link.bst", "surprise.txt"),
         # Test that we can override a subproject junction with a deep subproject path
         ("target-overridden-with-deepsubproject.bst", "deepsurprise.txt"),
     ],
@@ -414,6 +416,7 @@ def test_full_path_not_found(cli, tmpdir, datafiles, target, provenance):
         "override-subproject-link",
         "override-subsubproject",
         "override-subsubproject-link",
+        "override-subsubproject-indirect-link",
         "override-subproject-with-subsubproject",
     ],
 )
