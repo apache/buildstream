@@ -617,6 +617,10 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
     from ..element import _Scope
     from .._project import HostMount
 
+    # Buildtree can only be used with build shells
+    if cli_buildtree != "never":
+        build_ = True
+
     scope = _Scope.BUILD if build_ else _Scope.RUN
 
     # We may need to fetch dependency artifacts if we're pulling the artifact
