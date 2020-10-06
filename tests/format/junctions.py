@@ -400,12 +400,25 @@ def test_full_path_not_found(cli, tmpdir, datafiles, target, provenance):
     [
         # Test that we can override a subproject junction of a subproject
         ("target-overridden-subsubproject.bst", "subsubsub.txt"),
+        # Test that we can override a subproject junction of a subproject, when that junction is a link
+        ("target-overridden-subsubproject-link.bst", "subsubsub.txt"),
         # Test that we can override a subproject junction of a subproject's subproject
         ("target-overridden-subsubsubproject.bst", "surprise.txt"),
+        # Test that we can override a subproject junction of a subproject's subproject, which using links to address them
+        ("target-overridden-subsubsubproject-link.bst", "surprise.txt"),
+        # Test that we can override a subproject junction of a subproject's subproject, using various levels of links indirection
+        ("target-overridden-subsubsubproject-indirect-link.bst", "surprise.txt"),
         # Test that we can override a subproject junction with a deep subproject path
         ("target-overridden-with-deepsubproject.bst", "deepsurprise.txt"),
     ],
-    ids=["override-subproject", "override-subsubproject", "override-subproject-with-subsubproject"],
+    ids=[
+        "override-subproject",
+        "override-subproject-link",
+        "override-subsubproject",
+        "override-subsubproject-link",
+        "override-subsubproject-indirect-link",
+        "override-subproject-with-subsubproject",
+    ],
 )
 def test_overrides(cli, tmpdir, datafiles, target, expected):
     project = os.path.join(str(datafiles), "overrides")
