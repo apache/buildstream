@@ -78,7 +78,6 @@ import re
 import stat
 import copy
 import warnings
-from collections import OrderedDict
 import contextlib
 from contextlib import contextmanager, suppress
 from functools import partial
