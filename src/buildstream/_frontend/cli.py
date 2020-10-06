@@ -640,10 +640,6 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
         element = elements[-1]
         pull_dependencies = elements[:-1] if pull_ else None
 
-        element_name = element._get_full_name()
-        element_key = element._get_display_key()
-
-        prompt = app.shell_prompt(element_name, element_key)
         mounts = [HostMount(path, host_path) for host_path, path in mount]
 
         artifact_is_cached = element._cached()
@@ -700,7 +696,7 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
             exitcode = app.stream.shell(
                 element,
                 scope,
-                prompt,
+                app.shell_prompt,
                 mounts=mounts,
                 isolate=isolate,
                 command=command,

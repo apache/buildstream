@@ -169,7 +169,7 @@ class Stream:
     # Args:
     #    element (Element): An Element object to run the shell for
     #    scope (_Scope): The scope for the shell (_Scope.BUILD or _Scope.RUN)
-    #    prompt (str): The prompt to display in the shell
+    #    prompt (function): A function to return the prompt to display in the shell
     #    mounts (list of HostMount): Additional directories to mount into the sandbox
     #    isolate (bool): Whether to isolate the environment like we do in builds
     #    command (list): An argv to launch in the sandbox, or None
@@ -243,7 +243,7 @@ class Stream:
             self._pipeline.assert_sources_cached([element])
 
         return element._shell(
-            scope, mounts=mounts, isolate=isolate, prompt=prompt, command=command, usebuildtree=buildtree
+            scope, mounts=mounts, isolate=isolate, prompt=prompt(element), command=command, usebuildtree=buildtree
         )
 
     # build()
