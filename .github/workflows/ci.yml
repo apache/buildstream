@@ -31,7 +31,7 @@ jobs:
     env:
       CI_IMAGE_PREFIX: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite
       CI_IMAGE_SUFFIX: master-177137613
-      TOXENV: py36,py6-plugins,py37,py37-plugins,py38,py38-plugins
+      TOXENV: py36,py36-plugins,py37,py37-plugins,py38,py38-plugins
       # FIXME: De-duplicate against tox.ini
       BST_PLUGINS_EXPERIMENTAL_VERSION: 1.93.4
 
