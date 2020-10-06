@@ -19,10 +19,14 @@ import os
 from abc import ABC, abstractmethod
 from typing import Type
 
+from buildstream import _yaml
 from ..repo import Repo
 
 
 class BaseSourceTests(ABC):
+    PACKAGE = None
+    """The package from which the plugin is coming, if not coming from BuildStream core."""
+
     @property
     @classmethod
     @abstractmethod
@@ -34,3 +38,21 @@ class BaseSourceTests(ABC):
     @abstractmethod
     def REPO(cls) -> Type[Repo]:
         """Get the repo implementation for the currently tested source."""
+
+    def add_plugins_conf(self, project):
+        """
+        Add the given plugin to the configuration of the given project.
+
+        Args:
+          project (str): path to the project on which to register the plugin
+          plugin_kind (str): name of the plugin kind to register
+        """
+        project_conf_file = os.path.join(project, "project.conf")
+        project_conf = _yaml.roundtrip_load(project_conf_file)
+
+        if self.PACKAGE is not None:
+            project_conf["plugins"] = [
+                {"origin": "pip", "package-name": self.PACKAGE, "sources": [self.KIND],},
+            ]
+
+        _yaml.roundtrip_dump(project_conf, project_conf_file)

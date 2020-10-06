@@ -21,13 +21,10 @@
 
 import os
 
-import pytest
-
 from buildstream import _yaml
+from .base import BaseSourceTests
 from .._utils import generate_junction
-from .. import create_repo, ALL_REPO_KINDS
 from .. import cli  # pylint: disable=unused-import
-from .utils import add_plugins_conf
 
 
 # Project directory
@@ -41,39 +38,6 @@ def generate_element(repo, element_path, dep_name=None):
         element["depends"] = [dep_name]
 
     _yaml.roundtrip_dump(element, element_path)
-
-
-def generate_import_element(tmpdir, kind, project, name):
-    element_name = "import-{}.bst".format(name)
-    repo_element_path = os.path.join(project, "elements", element_name)
-    files = str(tmpdir.join("imported_files_{}".format(name)))
-    os.makedirs(files)
-
-    with open(os.path.join(files, "{}.txt".format(name)), "w") as f:
-        f.write(name)
-
-    repo = create_repo(kind, str(tmpdir.join("element_{}_repo".format(name))))
-    repo.create(files)
-
-    generate_element(repo, repo_element_path)
-
-    return element_name
-
-
-def generate_project(tmpdir, name, kind, config=None):
-    if config is None:
-        config = {}
-
-    project_name = "project-{}".format(name)
-    subproject_path = os.path.join(str(tmpdir.join(project_name)))
-    os.makedirs(os.path.join(subproject_path, "elements"))
-
-    project_conf = {"name": name, "min-version": "2.0", "element-path": "elements"}
-    project_conf.update(config)
-    _yaml.roundtrip_dump(project_conf, os.path.join(subproject_path, "project.conf"))
-    add_plugins_conf(subproject_path, kind)
-
-    return project_name, subproject_path
 
 
 def generate_simple_stack(project, name, dependencies):
@@ -94,91 +58,120 @@ def generate_cross_element(project, subproject_name, import_name):
     )
 
 
-@pytest.mark.parametrize("kind", ALL_REPO_KINDS.keys())
-def test_cross_junction_multiple_projects(cli, tmpdir, kind):
-    tmpdir = tmpdir.join(kind)
+class TrackCrossJunctionTests(BaseSourceTests):
+    def generate_project(self, tmpdir, name, config=None):
+        if config is None:
+            config = {}
 
-    # Generate 3 projects: main, a, b
-    _, project = generate_project(tmpdir, "main", kind, {"ref-storage": "project.refs"})
-    project_a, project_a_path = generate_project(tmpdir, "a", kind)
-    project_b, project_b_path = generate_project(tmpdir, "b", kind)
+        project_name = "project-{}".format(name)
+        subproject_path = os.path.join(str(tmpdir.join(project_name)))
+        os.makedirs(os.path.join(subproject_path, "elements"))
 
-    # Generate an element with a trackable source for each project
-    element_a = generate_import_element(tmpdir, kind, project_a_path, "a")
-    element_b = generate_import_element(tmpdir, kind, project_b_path, "b")
-    element_c = generate_import_element(tmpdir, kind, project, "c")
+        project_conf = {"name": name, "min-version": "2.0", "element-path": "elements"}
+        project_conf.update(config)
+        _yaml.roundtrip_dump(project_conf, os.path.join(subproject_path, "project.conf"))
+        self.add_plugins_conf(subproject_path)
 
-    # Create some indirections to the elements with dependencies to test --deps
-    stack_a = generate_simple_stack(project_a_path, "stack-a", [element_a])
-    stack_b = generate_simple_stack(project_b_path, "stack-b", [element_b])
+        return project_name, subproject_path
 
-    # Create junctions for projects a and b in main.
-    junction_a = "{}.bst".format(project_a)
-    junction_a_path = os.path.join(project, "elements", junction_a)
-    generate_junction(tmpdir.join("repo_a"), project_a_path, junction_a_path, store_ref=False)
+    def generate_import_element(self, tmpdir, project, name):
+        element_name = "import-{}.bst".format(name)
+        repo_element_path = os.path.join(project, "elements", element_name)
+        files = str(tmpdir.join("imported_files_{}".format(name)))
+        os.makedirs(files)
 
-    junction_b = "{}.bst".format(project_b)
-    junction_b_path = os.path.join(project, "elements", junction_b)
-    generate_junction(tmpdir.join("repo_b"), project_b_path, junction_b_path, store_ref=False)
+        with open(os.path.join(files, "{}.txt".format(name)), "w") as f:
+            f.write(name)
 
-    # Track the junctions.
-    result = cli.run(project=project, args=["source", "track", junction_a, junction_b])
-    result.assert_success()
+        repo = self.REPO(str(tmpdir.join("element_{}_repo".format(name))))
+        repo.create(files)
 
-    # Import elements from a and b in to main.
-    imported_a = generate_cross_element(project, project_a, stack_a)
-    imported_b = generate_cross_element(project, project_b, stack_b)
+        generate_element(repo, repo_element_path)
 
-    # Generate a top level stack depending on everything
-    all_bst = generate_simple_stack(project, "all", [imported_a, imported_b, element_c])
+        return element_name
 
-    # Track without following junctions. But explicitly also track the elements in project a.
-    result = cli.run(
-        project=project, args=["source", "track", "--deps", "all", all_bst, "{}:{}".format(junction_a, stack_a)]
-    )
-    result.assert_success()
+    def test_cross_junction_multiple_projects(self, cli, tmpdir):
+        tmpdir = tmpdir.join(self.KIND)
 
-    # Elements in project b should not be tracked. But elements in project a and main should.
-    expected = [element_c, "{}:{}".format(junction_a, element_a)]
-    assert set(result.get_tracked_elements()) == set(expected)
+        # Generate 3 projects: main, a, b
+        _, project = self.generate_project(tmpdir, "main", {"ref-storage": "project.refs"})
+        project_a, project_a_path = self.generate_project(tmpdir, "a")
+        project_b, project_b_path = self.generate_project(tmpdir, "b",)
 
+        # Generate an element with a trackable source for each project
+        element_a = self.generate_import_element(tmpdir, project_a_path, "a")
+        element_b = self.generate_import_element(tmpdir, project_b_path, "b")
+        element_c = self.generate_import_element(tmpdir, project, "c")
 
-@pytest.mark.parametrize("kind", ALL_REPO_KINDS.keys())
-def test_track_exceptions(cli, tmpdir, kind):
-    tmpdir = tmpdir.join(kind)
+        # Create some indirections to the elements with dependencies to test --deps
+        stack_a = generate_simple_stack(project_a_path, "stack-a", [element_a])
+        stack_b = generate_simple_stack(project_b_path, "stack-b", [element_b])
 
-    _, project = generate_project(tmpdir, "main", kind, {"ref-storage": "project.refs"})
-    project_a, project_a_path = generate_project(tmpdir, "a", kind)
+        # Create junctions for projects a and b in main.
+        junction_a = "{}.bst".format(project_a)
+        junction_a_path = os.path.join(project, "elements", junction_a)
+        generate_junction(tmpdir.join("repo_a"), project_a_path, junction_a_path, store_ref=False)
 
-    element_a = generate_import_element(tmpdir, kind, project_a_path, "a")
-    element_b = generate_import_element(tmpdir, kind, project_a_path, "b")
+        junction_b = "{}.bst".format(project_b)
+        junction_b_path = os.path.join(project, "elements", junction_b)
+        generate_junction(tmpdir.join("repo_b"), project_b_path, junction_b_path, store_ref=False)
 
-    all_bst = generate_simple_stack(project_a_path, "all", [element_a, element_b])
+        # Track the junctions.
+        result = cli.run(project=project, args=["source", "track", junction_a, junction_b])
+        result.assert_success()
 
-    junction_a = "{}.bst".format(project_a)
-    junction_a_path = os.path.join(project, "elements", junction_a)
-    generate_junction(tmpdir.join("repo_a"), project_a_path, junction_a_path, store_ref=False)
+        # Import elements from a and b in to main.
+        imported_a = generate_cross_element(project, project_a, stack_a)
+        imported_b = generate_cross_element(project, project_b, stack_b)
 
-    result = cli.run(project=project, args=["source", "track", junction_a])
-    result.assert_success()
+        # Generate a top level stack depending on everything
+        all_bst = generate_simple_stack(project, "all", [imported_a, imported_b, element_c])
 
-    imported_b = generate_cross_element(project, project_a, element_b)
-    indirection = generate_simple_stack(project, "indirection", [imported_b])
+        # Track without following junctions. But explicitly also track the elements in project a.
+        result = cli.run(
+            project=project, args=["source", "track", "--deps", "all", all_bst, "{}:{}".format(junction_a, stack_a)]
+        )
+        result.assert_success()
 
-    result = cli.run(
-        project=project,
-        args=[
-            "source",
-            "track",
-            "--deps",
-            "all",
-            "--except",
-            indirection,
-            "{}:{}".format(junction_a, all_bst),
-            imported_b,
-        ],
-    )
-    result.assert_success()
+        # Elements in project b should not be tracked. But elements in project a and main should.
+        expected = [element_c, "{}:{}".format(junction_a, element_a)]
+        assert set(result.get_tracked_elements()) == set(expected)
 
-    expected = ["{}:{}".format(junction_a, element_a), "{}:{}".format(junction_a, element_b)]
-    assert set(result.get_tracked_elements()) == set(expected)
+    def test_track_exceptions(self, cli, tmpdir):
+        tmpdir = tmpdir.join(self.KIND)
+
+        _, project = self.generate_project(tmpdir, "main", {"ref-storage": "project.refs"})
+        project_a, project_a_path = self.generate_project(tmpdir, "a")
+
+        element_a = self.generate_import_element(tmpdir, project_a_path, "a")
+        element_b = self.generate_import_element(tmpdir, project_a_path, "b")
+
+        all_bst = generate_simple_stack(project_a_path, "all", [element_a, element_b])
+
+        junction_a = "{}.bst".format(project_a)
+        junction_a_path = os.path.join(project, "elements", junction_a)
+        generate_junction(tmpdir.join("repo_a"), project_a_path, junction_a_path, store_ref=False)
+
+        result = cli.run(project=project, args=["source", "track", junction_a])
+        result.assert_success()
+
+        imported_b = generate_cross_element(project, project_a, element_b)
+        indirection = generate_simple_stack(project, "indirection", [imported_b])
+
+        result = cli.run(
+            project=project,
+            args=[
+                "source",
+                "track",
+                "--deps",
+                "all",
+                "--except",
+                indirection,
+                "{}:{}".format(junction_a, all_bst),
+                imported_b,
+            ],
+        )
+        result.assert_success()
+
+        expected = ["{}:{}".format(junction_a, element_a), "{}:{}".format(junction_a, element_b)]
+        assert set(result.get_tracked_elements()) == set(expected)
