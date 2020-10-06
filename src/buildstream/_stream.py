@@ -198,107 +198,51 @@ class Stream:
         if unique_id and element is None:
             element = Plugin._lookup(unique_id)
         else:
-            # We may need to fetch dependency artifacts if we're pulling the artifact
-            selection = _PipelineSelection.ALL if pull_ else _PipelineSelection.NONE
+            selection = _PipelineSelection.BUILD if scope == _Scope.BUILD else _PipelineSelection.RUN
 
             elements = self.load_selection((element,), selection=selection, use_artifact_config=True)
 
-            # last one will be the element we want to stage, previous ones are
-            # elements to try and pull
-            element = elements[-1]
-            pull_dependencies = elements[:-1] if pull_ else None
+            # Get element to stage from `targets` list.
+            # If scope is BUILD, it will not be in the `elements` list.
+            assert len(self.targets) == 1
+            element = self.targets[0]
+            element._set_required(scope)
 
-            artifact_is_cached = element._cached()
-            buildtree_is_cached = element._cached_buildtree()
-            buildtree_exists = element._buildtree_exists()
-            can_attempt_pull = self._context.pull_buildtrees and pull_
-
-            if usebuildtree:
-                if buildtree_is_cached:
-                    pass
-                # If element is already cached, we can check the proto to see if the buildtree existed
-                elif artifact_is_cached:
-                    if not buildtree_exists:
-                        if usebuildtree == "always":
-                            # Exit early if it won't be possible to even fetch a buildtree with always option
-                            raise StreamError("Artifact was created without buildtree, unable to launch shell with it")
-                        usebuildtree = None
-                        self._message(
-                            MessageType.WARN, "Artifact created without buildtree, shell will be loaded without it"
-                        )
-                    elif can_attempt_pull:
-                        self._message(
-                            MessageType.WARN,
-                            "buildtree is not cached locally but did exist, will attempt to pull from available remotes",
-                        )
-                    else:
-                        if usebuildtree == "always":
-                            # Exit early if it won't be possible to perform a fetch as pull semantics aren't present
-                            raise StreamError(
-                                "Artifact has a buildtree but it isn't cached. Can be retried with --pull and pull-buildtrees configured"
-                            )
-                        usebuildtree = None
-                        self._message(
-                            MessageType.WARN, "buildtree is not cached locally, shell will be loaded without it"
-                        )
-                # If element isn't cached at all, we can't check the proto to see if it existed so can't exit early
-                elif can_attempt_pull:
-                    if usebuildtree == "always":
-                        self._message(
-                            MessageType.WARN,
-                            "Element is not cached so buildtree status unknown, will attempt to pull from available remotes",
-                        )
-                else:
-                    if usebuildtree == "always":
-                        # Exit early as there is no buildtree locally & can_attempt_pull is False
-                        raise StreamError(
-                            "Artifact not cached locally. Can be retried with --pull and pull-buildtrees configured"
-                        )
-                    usebuildtree = None
-                    self._message(MessageType.WARN, "buildtree is not cached locally, shell will be loaded without it")
-
-            # Raise warning if the element is cached in a failed state
-            if usebuildtree and element._cached_failure():
-                self._message(MessageType.WARN, "using a buildtree from a failed build.")
+            if pull_:
+                self._scheduler.clear_queues()
+                self._add_queue(PullQueue(self._scheduler))
+                plan = self._pipeline.add_elements([element], elements)
+                self._enqueue_plan(plan)
+                self._run()
 
         missing_deps = [dep for dep in self._pipeline.dependencies([element], scope) if not dep._cached()]
         if missing_deps:
-            if not pull_dependencies:
-                raise StreamError(
-                    "Elements need to be built or downloaded before staging a shell environment",
-                    detail="\n".join(list(map(lambda x: x._get_full_name(), missing_deps))),
-                )
-            self._message(MessageType.INFO, "Attempting to fetch missing or incomplete artifacts")
-            self._scheduler.clear_queues()
-            self._add_queue(PullQueue(self._scheduler))
-            plan = self._pipeline.add_elements([element], missing_deps)
-            self._enqueue_plan(plan)
-            self._run()
+            raise StreamError(
+                "Elements need to be built or downloaded before staging a shell environment",
+                detail="\n".join(list(map(lambda x: x._get_full_name(), missing_deps))),
+            )
 
         buildtree = False
         # Check if we require a pull queue attempt, with given artifact state and context
         if usebuildtree:
             if not element._cached_buildtree():
-                require_buildtree = self._buildtree_pull_required([element])
-                # Attempt a pull queue for the given element if remote and context allow it
-                if require_buildtree:
-                    self._message(MessageType.INFO, "Attempting to fetch missing artifact buildtree")
-                    self._scheduler.clear_queues()
-                    self._add_queue(PullQueue(self._scheduler))
-                    self._enqueue_plan(require_buildtree)
-                    self._run()
-                    # Now check if the buildtree was successfully fetched
-                    if element._cached_buildtree():
-                        buildtree = True
+                remotes_message = " or in available remotes" if pull_ else ""
+                if not element._cached():
+                    message = "Artifact not cached locally" + remotes_message
+                elif element._buildtree_exists():
+                    message = "Buildtree is not cached locally" + remotes_message
+                else:
+                    message = "Artifact was created without buildtree"
+                if usebuildtree == "always":
+                    raise StreamError(message)
 
-                if not buildtree:
-                    message = "Buildtree is not cached locally or in available remotes"
-                    if usebuildtree == "always":
-                        raise StreamError(message)
-
-                    self._message(MessageType.INFO, message + ", shell will be loaded without it")
+                self._message(MessageType.WARN, message + ", shell will be loaded without it")
             else:
                 buildtree = True
+
+                # Raise warning if the element is cached in a failed state
+                if element._cached_failure():
+                    self._message(MessageType.WARN, "using a buildtree from a failed build.")
 
         # Ensure we have our sources if we are launching a build shell
         if scope == _Scope.BUILD and not buildtree:
