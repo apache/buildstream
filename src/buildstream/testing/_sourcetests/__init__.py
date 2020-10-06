@@ -22,9 +22,10 @@
 from .build_checkout import BuildCheckoutSourceTests
 from .fetch import FetchSourceTests
 from .mirror import MirrorSourceTests
+from .source_determinism import SourceDeterminismTests
 
 __all__ = ["SourceTests"]
 
 
-class SourceTests(BuildCheckoutSourceTests, FetchSourceTests, MirrorSourceTests):
+class SourceTests(BuildCheckoutSourceTests, FetchSourceTests, MirrorSourceTests, SourceDeterminismTests):
     """Definition of standardized tests that each source should pass."""
