@@ -620,12 +620,10 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
     # Buildtree can only be used with build shells
     if cli_buildtree != "never":
         build_ = True
+    else:
+        cli_buildtree = None
 
     scope = _Scope.BUILD if build_ else _Scope.RUN
-
-    # We may need to fetch dependency artifacts if we're pulling the artifact
-    selection = _PipelineSelection.ALL if pull_ else _PipelineSelection.NONE
-    use_buildtree = None
 
     with app.initialized():
         if not element:
@@ -633,64 +631,7 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
             if not element:
                 raise AppError('Missing argument "ELEMENT".')
 
-        elements = app.stream.load_selection((element,), selection=selection, use_artifact_config=True)
-
-        # last one will be the element we want to stage, previous ones are
-        # elements to try and pull
-        element = elements[-1]
-        pull_dependencies = elements[:-1] if pull_ else None
-
         mounts = [HostMount(path, host_path) for host_path, path in mount]
-
-        artifact_is_cached = element._cached()
-        buildtree_is_cached = element._cached_buildtree()
-        buildtree_exists = element._buildtree_exists()
-        can_attempt_pull = app.context.pull_buildtrees and pull_
-
-        if cli_buildtree in ("always", "try"):
-            if buildtree_is_cached:
-                use_buildtree = cli_buildtree
-            # If element is already cached, we can check the proto to see if the buildtree existed
-            elif artifact_is_cached:
-                if not buildtree_exists:
-                    if cli_buildtree == "always":
-                        # Exit early if it won't be possible to even fetch a buildtree with always option
-                        raise AppError("Artifact was created without buildtree, unable to launch shell with it")
-                    click.echo(
-                        "WARNING: Artifact created without buildtree, shell will be loaded without it", err=True
-                    )
-                elif can_attempt_pull:
-                    use_buildtree = cli_buildtree
-                    click.echo(
-                        "WARNING: buildtree is not cached locally but did exist, will attempt to pull from available remotes",
-                        err=True,
-                    )
-                else:
-                    if cli_buildtree == "always":
-                        # Exit early if it won't be possible to perform a fetch as pull semantics aren't present
-                        raise AppError(
-                            "Artifact has a buildtree but it isn't cached. Can be retried with --pull and pull-buildtrees configured"
-                        )
-                    click.echo("WARNING: buildtree is not cached locally, shell will be loaded without it", err=True)
-            # If element isn't cached at all, we can't check the proto to see if it existed so can't exit early
-            elif can_attempt_pull:
-                use_buildtree = cli_buildtree
-                if use_buildtree == "always":
-                    click.echo(
-                        "WARNING: Element is not cached so buildtree status unknown, will attempt to pull from available remotes",
-                        err=True,
-                    )
-            else:
-                if cli_buildtree == "always":
-                    # Exit early as there is no buildtree locally & can_attempt_pull is False
-                    raise AppError(
-                        "Artifact not cached locally. Can be retried with --pull and pull-buildtrees configured"
-                    )
-                click.echo("WARNING: buildtree is not cached locally, shell will be loaded without it", err=True)
-
-        # Raise warning if the element is cached in a failed state
-        if use_buildtree and element._cached_failure():
-            click.echo("WARNING: using a buildtree from a failed build.", err=True)
 
         try:
             exitcode = app.stream.shell(
@@ -700,8 +641,8 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
                 mounts=mounts,
                 isolate=isolate,
                 command=command,
-                usebuildtree=use_buildtree,
-                pull_dependencies=pull_dependencies,
+                usebuildtree=cli_buildtree,
+                pull_=pull_,
             )
         except BstError as e:
             raise AppError("Error launching shell: {}".format(e), detail=e.detail) from e

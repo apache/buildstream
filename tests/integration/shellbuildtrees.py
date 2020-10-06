@@ -131,7 +131,7 @@ def test_buildtree_from_failure(cli_integration, datafiles):
         project=project, args=["shell", "--build", element_name, "--use-buildtree", "always", "--", "cat", "test"]
     )
     res.assert_success()
-    assert "WARNING: using a buildtree from a failed build" in res.stderr
+    assert "WARNING using a buildtree from a failed build" in res.stderr
     assert "Hi" in res.output
 
 
@@ -175,7 +175,7 @@ def test_buildtree_from_failure_option_always(cli_integration, tmpdir, datafiles
         project=project, args=["shell", "--build", element_name, "--use-buildtree", "always", "--", "cat", "test"]
     )
     res.assert_success()
-    assert "WARNING: using a buildtree from a failed build" in res.stderr
+    assert "WARNING using a buildtree from a failed build" in res.stderr
     assert "Hi" in res.output
 
 
@@ -257,7 +257,7 @@ def test_buildtree_options(cli, tmpdir, datafiles):
         )
         assert "Hi" not in res.output
         assert "Attempting to fetch missing artifact buildtrees" not in res.stderr
-        assert "WARNING: buildtree is not cached locally, shell will be loaded without it" in res.stderr
+        assert "WARNING buildtree is not cached locally, shell will be loaded without it" in res.stderr
 
         # Check correctly handling the lack of buildtree, with 'try' attempting and succeeding
         # to pull the buildtree as the user context allow the pulling of buildtrees and it is
