@@ -1557,10 +1557,13 @@ class Element(Plugin):
 
     # _set_required():
     #
-    # Mark this element and its runtime dependencies as required.
+    # Mark this element and its dependencies as required.
     # This unblocks pull/fetch/build.
     #
-    def _set_required(self):
+    # Args:
+    #    scope (_Scope): The scope of dependencies to mark as required
+    #
+    def _set_required(self, scope=_Scope.RUN):
         assert utils._is_main_process(), "This has an impact on all elements and must be run in the main process"
 
         if self.__required:
@@ -1569,9 +1572,9 @@ class Element(Plugin):
 
         self.__required = True
 
-        # Request artifacts of runtime dependencies
-        for dep in self._dependencies(_Scope.RUN, recurse=False):
-            dep._set_required()
+        # Request artifacts of dependencies
+        for dep in self._dependencies(scope, recurse=False):
+            dep._set_required(scope=_Scope.RUN)
 
         # When an element becomes required, it must be assembled for
         # the current pipeline. `__schedule_assembly_when_necessary()`
