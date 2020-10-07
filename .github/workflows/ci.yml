@@ -21,7 +21,7 @@ on: push
 
 env:
   CI_IMAGE: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-master-177137613
-  PYTEST_ARGS: --color=yes --integration -n 4
+  PYTEST_ARGS: --color=yes --integration
 
 jobs:
   tests:
