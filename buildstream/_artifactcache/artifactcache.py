@@ -30,7 +30,7 @@ from .. import _signals
 from .. import utils
 from .. import _yaml
 
-from .cascache import CASCache, CASRemote
+from .cascache import CASCache, CASRemote, BlobNotFound
 
 
 CACHE_SIZE_FILE = "cache_size"
