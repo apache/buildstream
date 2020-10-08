@@ -286,7 +286,6 @@ cdef class LoadElement:
             from ..element import Element
 
             element = Element._new_from_load_element(self)
-            element._initialize_state()
 
             # Custom error for link dependencies, since we don't completely
             # parse their dependencies we cannot rely on the built-in ElementError.

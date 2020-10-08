@@ -1163,6 +1163,8 @@ class Element(Plugin):
 
         element.__preflight()
 
+        element._initialize_state()
+
         if task:
             task.add_current_progress()
 

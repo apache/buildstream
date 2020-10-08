@@ -94,36 +94,6 @@ class Pipeline:
         #      the profiler to Stream?
         return self._project.load_artifacts(targets)
 
-    # resolve_elements()
-    #
-    # Resolve element state and cache keys.
-    #
-    # Args:
-    #    targets (list of Element): The list of toplevel element targets
-    #
-    def resolve_elements(self, targets):
-        with self._context.messenger.simple_task("Resolving cached state", silent_nested=True) as task:
-            # We need to go through the project to access the loader
-            if task:
-                task.set_maximum_progress(self._project.loader.loaded)
-
-            # XXX: Now that Element._update_state() can trigger recursive update_state calls
-            # it is possible that we could get a RecursionError. However, this is unlikely
-            # to happen, even for large projects (tested with the Debian stack). Although,
-            # if it does become a problem we may have to set the recursion limit to a
-            # greater value.
-            for element in self.dependencies(targets, _Scope.ALL):
-                # Determine initial element state.
-                element._initialize_state()
-
-                # We may already have Elements which are cached and have their runtimes
-                # cached, if this is the case, we should immediately notify their reverse
-                # dependencies.
-                element._update_ready_for_runtime_and_cached()
-
-                if task:
-                    task.add_current_progress()
-
     # check_remotes()
     #
     # Check if the target artifact is cached in any of the available remotes
