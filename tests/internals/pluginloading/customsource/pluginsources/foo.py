@@ -14,6 +14,9 @@ class FooSource(Source):
     def get_unique_key(self):
         pass
 
+    def get_ref(self):
+        pass
+
 
 def setup():
     return FooSource
