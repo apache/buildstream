@@ -6,7 +6,6 @@ import os
 import pytest
 
 from buildstream import _yaml
-from buildstream.types import _Scope
 from buildstream._project import Project
 from buildstream._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from buildstream.testing import cli  # pylint: disable=unused-import
@@ -32,12 +31,6 @@ def _push(cli, cache_dir, project_dir, config_file, target):
 
         # Create a local artifact cache handle
         artifactcache = context.artifactcache
-
-        # Ensure the element's artifact memeber is initialised
-        # This is duplicated from Pipeline.resolve_elements()
-        # as this test does not use the cli frontend.
-        for e in element._dependencies(_Scope.ALL):
-            e._initialize_state()
 
         # Initialize remotes
         context.initialize_remotes(True, True, None, None)

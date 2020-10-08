@@ -1135,6 +1135,8 @@ class Element(Plugin):
 
         element.__preflight()
 
+        element._initialize_state()
+
         if task:
             task.add_current_progress()
 
@@ -2891,6 +2893,8 @@ class Element(Plugin):
         self.__cache_key = key
         self.__strict_cache_key = key
         self.__weak_cache_key = key
+
+        self._initialize_state()
 
         # ArtifactElement requires access to the artifact early on to walk
         # dependencies.
