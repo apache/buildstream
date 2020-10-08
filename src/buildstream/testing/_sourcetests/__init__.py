@@ -24,11 +24,17 @@ from .fetch import FetchSourceTests
 from .mirror import MirrorSourceTests
 from .source_determinism import SourceDeterminismTests
 from .track_cross_junction import TrackCrossJunctionTests
+from .track import TrackSourceTests
 
 __all__ = ["SourceTests"]
 
 
 class SourceTests(
-    BuildCheckoutSourceTests, FetchSourceTests, MirrorSourceTests, SourceDeterminismTests, TrackCrossJunctionTests
+    BuildCheckoutSourceTests,
+    FetchSourceTests,
+    MirrorSourceTests,
+    SourceDeterminismTests,
+    TrackCrossJunctionTests,
+    TrackSourceTests,
 ):
     """Definition of standardized tests that each source should pass."""
