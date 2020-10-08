@@ -817,7 +817,6 @@ class Loader:
             )
 
         element = Element._new_from_load_element(load_element)
-        element._initialize_state()
 
         # Handle the case where a subproject has no ref
         #

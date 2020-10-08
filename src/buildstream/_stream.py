@@ -1337,7 +1337,6 @@ class Stream:
 
         # Now move on to loading primary selection.
         #
-        self._pipeline.resolve_elements(self.targets)
         selected = self._pipeline.get_selection(self.targets, selection, silent=False)
         selected = self._pipeline.except_elements(self.targets, selected, except_elements)
 
