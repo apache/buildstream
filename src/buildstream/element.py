@@ -1132,6 +1132,8 @@ class Element(Plugin):
 
         element.__preflight()
 
+        element._initialize_state()
+
         if task:
             task.add_current_progress()
 
@@ -2884,6 +2886,8 @@ class Element(Plugin):
         self.__cache_key = artifact.strong_key
         self.__strict_cache_key = artifact.strict_key
         self.__weak_cache_key = artifact.weak_key
+
+        self._initialize_state()
 
     @classmethod
     def __compose_default_splits(cls, project, defaults, first_pass):

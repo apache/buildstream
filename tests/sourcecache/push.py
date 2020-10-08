@@ -84,7 +84,6 @@ def test_source_push_split(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements(["push.bst"])[0]
-            element._initialize_state()
             element._query_source_cache()
             assert not element._cached_sources()
             source = list(element.sources())[0]
@@ -135,7 +134,6 @@ def test_source_push(cli, tmpdir, datafiles):
             project.ensure_fully_loaded()
 
             element = project.load_elements(["push.bst"])[0]
-            element._initialize_state()
             element._query_source_cache()
             assert not element._cached_sources()
             source = list(element.sources())[0]
