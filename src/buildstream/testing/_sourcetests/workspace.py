@@ -59,11 +59,7 @@ def test_open(cli, tmpdir, datafiles, kind):
 
     # Now open the workspace, this should have the effect of automatically
     # fetching the source from the repo.
-    args = ["workspace", "open"]
-    args.extend(["--directory", workspace_dir])
-
-    args.append(element_name)
-    result = cli.run(cwd=workspace_cmd, project=project_path, args=args)
+    result = cli.run(project=project_path, args=["workspace", "open", "--directory", workspace_dir, element_name])
 
     result.assert_success()
 
