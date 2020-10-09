@@ -1,0 +1,102 @@
+name: PR Checks
+
+# We don't run these jobs on pull requests because:
+# 1. it is often useful to run tests on one's branch without creating a pull
+#    request, and
+# 2. running on both pushes and pull requests results in the classic problem of
+#    having double jobs.
+on: push
+
+env:
+  CI_IMAGE: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-master-132813612
+  PYTEST_ARGS: --color=yes --integration
+
+jobs:
+  tests:
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.allow-failure || false }}
+
+    env:
+      CI_IMAGE_PREFIX: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite
+      CI_IMAGE_SUFFIX: master-132813612
+      TOXENV: py35,py36,py37,py38-nocover
+
+    strategy:
+      fail-fast: false
+      matrix:
+
+        # Main test targets, the name defines the image that will be used as
+        # the base for running tests.
+        test-name:
+          - debian:10
+          - fedora:30
+          - fedora:31
+          - ubuntu:18.04
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+        # BuildStream requires tags to be able to find its version.
+        with:
+          fetch-depth: 0
+
+      - name: Run tox inside a container
+        run: |
+
+          cat << EOF > runtox.sh
+          #!/bin/bash
+
+          # Create user
+          useradd -Um buildstream
+          chown -R buildstream:buildstream .
+
+          # Diagnostics
+          echo "Running diagnostics checks"
+          mount
+          df -h
+          tox --version
+
+          # Run tox as user, ensure we have a login shell
+          echo "Running tests"
+          su buildstream -c '/bin/bash --login -c "tox -vvvvv -- $PYTEST_ARGS"'
+          EOF
+
+          chmod +x runtox.sh
+
+          docker run \
+              --privileged \
+              --device /dev/fuse \
+              --env PYTEST_ARGS \
+              --env TOXENV=${{ matrix.toxenv || env.TOXENV }} \
+              --volume /home/runner/work:/__w \
+              --workdir /__w/buildstream/buildstream \
+              "$CI_IMAGE_PREFIX"-${{ matrix.image-name || matrix.test-name }}-"$CI_IMAGE_SUFFIX" \
+              ./runtox.sh
+
+  docs:
+    runs-on: ubuntu-20.04
+    env:
+      BST_FORCE_SESSION_REBUILD: 1
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+        # BuildStream requires tags to be able to find its version.
+        with:
+          fetch-depth: 0
+      - name: Run tox inside a container
+        run: |
+          docker run \
+              --privileged \
+              --device /dev/fuse \
+              --env BST_FORCE_SESSION_REBUILD \
+              --volume /home/runner/work:/__w \
+              --workdir /__w/buildstream/buildstream \
+              $CI_IMAGE \
+              tox -e docs
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: docs
+          path: doc/build/html
+
