@@ -1,0 +1,40 @@
+name: Upload Release Asset
+
+env:
+  CI_IMAGE: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-master-177137613
+  BST_FORCE_SESSION_REBUILD: 1
+
+on:
+  push:
+    tags:
+    - '*.*.*'
+
+jobs:
+  build:
+    name: Upload Release Asset
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        # BuildStream requires tags to be able to find its version.
+        with:
+          fetch-depth: 0
+
+      - name: Build documentation
+        run: |
+          docker run \
+              --privileged \
+              --device /dev/fuse \
+              --env BST_FORCE_SESSION_REBUILD \
+              --volume /home/runner/work:/__w \
+              --workdir /__w/buildstream/buildstream \
+              $CI_IMAGE \
+              tox -e docs
+          tar -C doc/build/html -zcf docs.tgz .
+
+      - name: Upload release assets
+        run: |
+          tag_name="${GITHUB_REF##*/}"
+          hub release create -a "docs.tgz" -m "$tag_name" "$tag_name"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
