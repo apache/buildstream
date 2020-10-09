@@ -33,7 +33,7 @@ DATA_DIR = os.path.join(TOP_DIR, "project")
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_open(cli, tmpdir, datafiles, kind):
+def test_open(cli, tmpdir_factory, datafiles, kind):
     project_path = str(datafiles)
     bin_files_path = os.path.join(project_path, "files", "bin-files")
 
@@ -42,7 +42,7 @@ def test_open(cli, tmpdir, datafiles, kind):
 
     # Create our repo object of the given source type with
     # the bin files, and then collect the initial ref.
-    repo = create_repo(kind, str(tmpdir))
+    repo = create_repo(kind, str(tmpdir_factory.mktemp("repo-{}".format(kind))))
     ref = repo.create(bin_files_path)
 
     # Write out our test target
@@ -52,10 +52,7 @@ def test_open(cli, tmpdir, datafiles, kind):
     # Assert that there is no reference, a fetch is needed
     assert cli.get_element_state(project_path, element_name) == "fetch needed"
 
-    workspace_cmd = os.path.join(project_path, "workspace_cmd")
-    os.makedirs(workspace_cmd, exist_ok=True)
-    # remove the '.bst' at the end of the element
-    workspace_dir = os.path.join(workspace_cmd, element_name[:-4])
+    workspace_dir = os.path.join(tmpdir_factory.mktemp("opened_workspace"))
 
     # Now open the workspace, this should have the effect of automatically
     # fetching the source from the repo.
