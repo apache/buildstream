@@ -25,6 +25,7 @@ from .mirror import MirrorSourceTests
 from .source_determinism import SourceDeterminismTests
 from .track_cross_junction import TrackCrossJunctionTests
 from .track import TrackSourceTests
+from .workspace import WorkspaceSourceTests
 
 __all__ = ["SourceTests"]
 
@@ -36,5 +37,6 @@ class SourceTests(
     SourceDeterminismTests,
     TrackCrossJunctionTests,
     TrackSourceTests,
+    WorkspaceSourceTests,
 ):
     """Definition of standardized tests that each source should pass."""

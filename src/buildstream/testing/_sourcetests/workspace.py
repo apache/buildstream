@@ -23,46 +23,46 @@ import os
 import pytest
 
 from buildstream import _yaml
-from .. import create_repo
 from .. import cli  # pylint: disable=unused-import
-from .utils import kind  # pylint: disable=unused-import
+from .base import BaseSourceTests
 
 # Project directory
 TOP_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = os.path.join(TOP_DIR, "project")
 
 
-@pytest.mark.datafiles(DATA_DIR)
-def test_open(cli, tmpdir_factory, datafiles, kind):
-    project_path = str(datafiles)
-    bin_files_path = os.path.join(project_path, "files", "bin-files")
+class WorkspaceSourceTests(BaseSourceTests):
+    @pytest.mark.datafiles(DATA_DIR)
+    def test_open(self, cli, tmpdir_factory, datafiles):
+        project_path = str(datafiles)
+        bin_files_path = os.path.join(project_path, "files", "bin-files")
 
-    element_name = "workspace-test-{}.bst".format(kind)
-    element_path = os.path.join(project_path, "elements")
+        element_name = "workspace-test-{}.bst".format(self.KIND)
+        element_path = os.path.join(project_path, "elements")
 
-    # Create our repo object of the given source type with
-    # the bin files, and then collect the initial ref.
-    repo = create_repo(kind, str(tmpdir_factory.mktemp("repo-{}".format(kind))))
-    ref = repo.create(bin_files_path)
+        # Create our repo object of the given source type with
+        # the bin files, and then collect the initial ref.
+        repo = self.REPO(str(tmpdir_factory.mktemp("repo-{}".format(self.KIND))))
+        ref = repo.create(bin_files_path)
 
-    # Write out our test target
-    element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
-    _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
+        # Write out our test target
+        element = {"kind": "import", "sources": [repo.source_config(ref=ref)]}
+        _yaml.roundtrip_dump(element, os.path.join(element_path, element_name))
 
-    # Assert that there is no reference, a fetch is needed
-    assert cli.get_element_state(project_path, element_name) == "fetch needed"
+        # Assert that there is no reference, a fetch is needed
+        assert cli.get_element_state(project_path, element_name) == "fetch needed"
 
-    workspace_dir = os.path.join(tmpdir_factory.mktemp("opened_workspace"))
+        workspace_dir = os.path.join(tmpdir_factory.mktemp("opened_workspace"))
 
-    # Now open the workspace, this should have the effect of automatically
-    # fetching the source from the repo.
-    result = cli.run(project=project_path, args=["workspace", "open", "--directory", workspace_dir, element_name])
+        # Now open the workspace, this should have the effect of automatically
+        # fetching the source from the repo.
+        result = cli.run(project=project_path, args=["workspace", "open", "--directory", workspace_dir, element_name])
 
-    result.assert_success()
+        result.assert_success()
 
-    # Assert that we are now buildable because the source is now cached.
-    assert cli.get_element_state(project_path, element_name) == "buildable"
+        # Assert that we are now buildable because the source is now cached.
+        assert cli.get_element_state(project_path, element_name) == "buildable"
 
-    # Check that the executable hello file is found in each workspace
-    filename = os.path.join(workspace_dir, "usr", "bin", "hello")
-    assert os.path.exists(filename)
+        # Check that the executable hello file is found in each workspace
+        filename = os.path.join(workspace_dir, "usr", "bin", "hello")
+        assert os.path.exists(filename)
