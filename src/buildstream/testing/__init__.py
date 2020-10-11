@@ -21,6 +21,7 @@ This package contains various utilities which make it easier to test plugins.
 
 import os
 from collections import OrderedDict
+from typing import Tuple
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from ._yaml import generate_project, generate_element, load_yaml
 from .repo import Repo
@@ -47,7 +48,7 @@ except ImportError:
 
 
 # Of the form plugin_name -> (repo_class, plugin_package)
-ALL_REPO_KINDS = OrderedDict()  # type: OrderedDict[Repo, str]
+ALL_REPO_KINDS = OrderedDict()  # type: OrderedDict[str, Tuple[Repo, str]]
 
 
 def create_repo(kind, directory, subdir="repo"):
