@@ -5,12 +5,17 @@ import os
 import pytest
 
 from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import generate_element
+from buildstream.testing import generate_element, SourceTests
 from buildstream.testing._utils.site import HAVE_BZR
 
 from tests.testutils.repo.bzr import Bzr
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "bzr")
+
+
+class TestBzrSource(SourceTests):
+    KIND = "bzr"
+    REPO = Bzr
 
 
 @pytest.mark.skipif(HAVE_BZR is False, reason="bzr is not available")

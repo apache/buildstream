@@ -21,22 +21,14 @@
 #
 import os
 
-import pkg_resources
 import pytest
 
-from buildstream.testing import register_repo_kind, sourcetests_collection_hook
 from buildstream.testing._fixtures import (  # pylint: disable=unused-import
     default_thread_number,
     reset_global_node_state,
     thread_check,
 )
 from buildstream.testing.integration import integration_cache  # pylint: disable=unused-import
-
-
-from tests.testutils.repo.git import Git
-from tests.testutils.repo.bzr import Bzr
-from tests.testutils.repo.tar import Tar
-from tests.testutils.repo.zip import Zip
 
 
 #
@@ -127,27 +119,6 @@ def remote_services(request):
         kwargs["source_service"] = os.environ.get("SOURCE_CACHE_SERVICE")
 
     return RemoteServices(**kwargs)
-
-
-#################################################
-# Setup for templated source tests              #
-#################################################
-register_repo_kind("git", Git, None)
-register_repo_kind("bzr", Bzr, None)
-register_repo_kind("tar", Tar, None)
-register_repo_kind("zip", Zip, None)
-
-
-# This hook enables pytest to collect the templated source tests from
-# buildstream.testing
-def pytest_sessionstart(session):
-    if session.config.getvalue("plugins"):
-        # Enable all plugins that implement the 'buildstream.tests.source_plugins' hook
-        for entrypoint in pkg_resources.iter_entry_points("buildstream.tests.source_plugins"):
-            module = entrypoint.load()
-            module.register_sources()
-
-    sourcetests_collection_hook(session)
 
 
 #################################################
