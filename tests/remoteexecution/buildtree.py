@@ -63,8 +63,6 @@ def test_buildtree_remote(cli, tmpdir, datafiles):
         res.assert_success()
 
         # check it works this time
-        res = cli.run(
-            project=project, args=["shell", "--build", element_name, "--use-buildtree", "always", "--", "cat", "test"]
-        )
+        res = cli.run(project=project, args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", "test"])
         res.assert_success()
         assert "Hi" in res.output

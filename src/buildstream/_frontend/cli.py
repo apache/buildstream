@@ -578,12 +578,9 @@ def show(app, elements, deps, except_, order, format_):
     "--use-buildtree",
     "-t",
     "cli_buildtree",
-    type=click.Choice(["try", "always", "never"]),
-    default="never",
-    show_default=True,
+    is_flag=True,
     help=(
-        "Stage a buildtree. If `always` is set, will always fail to "
-        "build if a buildtree is not available."
+        "Stage a buildtree. Will fail if a buildtree is not available."
         " --pull and pull-buildtrees configuration is needed "
         "if trying to query for remotely cached buildtrees."
     ),
@@ -618,10 +615,8 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
     from .._project import HostMount
 
     # Buildtree can only be used with build shells
-    if cli_buildtree != "never":
+    if cli_buildtree:
         build_ = True
-    else:
-        cli_buildtree = None
 
     scope = _Scope.BUILD if build_ else _Scope.RUN
 

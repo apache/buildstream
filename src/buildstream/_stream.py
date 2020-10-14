@@ -173,7 +173,7 @@ class Stream:
     #    mounts (list of HostMount): Additional directories to mount into the sandbox
     #    isolate (bool): Whether to isolate the environment like we do in builds
     #    command (list): An argv to launch in the sandbox, or None
-    #    usebuildtree (str): Whether to use a buildtree as the source, given cli option
+    #    usebuildtree (bool): Whether to use a buildtree as the source, given cli option
     #    pull_ (bool): Whether to attempt to pull missing or incomplete artifacts
     #    unique_id: (str): Whether to use a unique_id to load an Element instance
     #
@@ -189,7 +189,7 @@ class Stream:
         mounts=None,
         isolate=False,
         command=None,
-        usebuildtree=None,
+        usebuildtree=False,
         pull_=False,
         unique_id=None
     ):
@@ -222,7 +222,6 @@ class Stream:
                 detail="\n".join(list(map(lambda x: x._get_full_name(), missing_deps))),
             )
 
-        buildtree = False
         # Check if we require a pull queue attempt, with given artifact state and context
         if usebuildtree:
             if not element._cached_buildtree():
@@ -233,24 +232,19 @@ class Stream:
                     message = "Buildtree is not cached locally" + remotes_message
                 else:
                     message = "Artifact was created without buildtree"
-                if usebuildtree == "always":
-                    raise StreamError(message)
+                raise StreamError(message)
 
-                self._message(MessageType.WARN, message + ", shell will be loaded without it")
-            else:
-                buildtree = True
-
-                # Raise warning if the element is cached in a failed state
-                if element._cached_failure():
-                    self._message(MessageType.WARN, "using a buildtree from a failed build.")
+            # Raise warning if the element is cached in a failed state
+            if element._cached_failure():
+                self._message(MessageType.WARN, "using a buildtree from a failed build.")
 
         # Ensure we have our sources if we are launching a build shell
-        if scope == _Scope.BUILD and not buildtree:
+        if scope == _Scope.BUILD and not usebuildtree:
             self._fetch([element])
             self._pipeline.assert_sources_cached([element])
 
         return element._shell(
-            scope, mounts=mounts, isolate=isolate, prompt=prompt(element), command=command, usebuildtree=buildtree
+            scope, mounts=mounts, isolate=isolate, prompt=prompt(element), command=command, usebuildtree=usebuildtree
         )
 
     # build()
