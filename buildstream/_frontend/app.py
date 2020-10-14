@@ -22,6 +22,7 @@ import sys
 import resource
 import traceback
 import datetime
+import logging
 from textwrap import TextWrapper
 from contextlib import contextmanager
 
@@ -123,6 +124,8 @@ class App():
         if limits[0] != limits[1]:
             # Set soft limit to hard limit
             resource.setrlimit(resource.RLIMIT_NOFILE, (limits[1], limits[1]))
+        if limits[1] < 50000:
+            logging.warning("Open file hard limit is set to %s, consider raising", limits[1])
 
     # create()
     #
