@@ -5,8 +5,10 @@ import os
 import pytest
 
 from buildstream import _yaml
-from buildstream.testing import create_repo
 from buildstream.testing import cli  # pylint: disable=unused-import
+
+from tests.testutils.repo.git import Git
+from tests.testutils.repo.tar import Tar
 
 
 # Project directory
@@ -67,7 +69,7 @@ def test_mirror_fetch_ref_storage(cli, tmpdir, datafiles, ref_storage, mirror):
     element_dir = os.path.join(project_dir, "elements")
 
     # Create repo objects of the upstream and mirror
-    upstream_repo = create_repo("tar", upstream_repodir)
+    upstream_repo = Tar(upstream_repodir)
     upstream_repo.create(bin_files_path)
     mirror_repo = upstream_repo.copy(mirror_repodir)
     upstream_ref = upstream_repo.create(dev_files_path)
@@ -247,15 +249,15 @@ def test_mirror_git_submodule_fetch(cli, tmpdir, datafiles):
     dev_files_path = os.path.join(str(datafiles), "files", "dev-files", "usr")
     mirror_dir = os.path.join(str(datafiles), "mirror")
 
-    defined_subrepo = create_repo("git", str(tmpdir), "defined_subrepo")
+    defined_subrepo = Git(str(tmpdir), "defined_subrepo")
     defined_subrepo.create(bin_files_path)
     defined_subrepo.copy(mirror_dir)
     defined_subrepo.add_file(foo_file)
 
-    found_subrepo = create_repo("git", str(tmpdir), "found_subrepo")
+    found_subrepo = Git(str(tmpdir), "found_subrepo")
     found_subrepo.create(dev_files_path)
 
-    main_repo = create_repo("git", str(tmpdir))
+    main_repo = Git(str(tmpdir))
     main_mirror_ref = main_repo.create(bin_files_path)
     main_repo.add_submodule("defined", "file://" + defined_subrepo.repo)
     main_repo.add_submodule("found", "file://" + found_subrepo.repo)
@@ -320,12 +322,12 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
 
     upstream_bin_repodir = os.path.join(str(tmpdir), "bin-upstream")
     mirror_bin_repodir = os.path.join(str(tmpdir), "bin-mirror")
-    upstream_bin_repo = create_repo("git", upstream_bin_repodir)
+    upstream_bin_repo = Git(upstream_bin_repodir)
     upstream_bin_repo.create(bin_files_path)
     mirror_bin_repo = upstream_bin_repo.copy(mirror_bin_repodir)
 
     dev_repodir = os.path.join(str(tmpdir), "dev-upstream")
-    dev_repo = create_repo("git", dev_repodir)
+    dev_repo = Git(dev_repodir)
     dev_repo.create(dev_files_path)
 
     main_files = os.path.join(str(tmpdir), "main-files")
@@ -333,7 +335,7 @@ def test_mirror_fallback_git_only_submodules(cli, tmpdir, datafiles):
     with open(os.path.join(main_files, "README"), "w") as f:
         f.write("TEST\n")
     main_repodir = os.path.join(str(tmpdir), "main-upstream")
-    main_repo = create_repo("git", main_repodir)
+    main_repo = Git(main_repodir)
     main_repo.create(main_files)
 
     upstream_url = "file://{}".format(upstream_bin_repo.repo)
@@ -399,11 +401,11 @@ def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
     dev_files_path = os.path.join(str(datafiles), "files", "dev-files", "usr")
 
     bin_repodir = os.path.join(str(tmpdir), "bin-repo")
-    bin_repo = create_repo("git", bin_repodir)
+    bin_repo = Git(bin_repodir)
     bin_repo.create(bin_files_path)
 
     dev_repodir = os.path.join(str(tmpdir), "dev-repo")
-    dev_repo = create_repo("git", dev_repodir)
+    dev_repo = Git(dev_repodir)
     dev_repo.create(dev_files_path)
 
     main_files = os.path.join(str(tmpdir), "main-files")
@@ -411,7 +413,7 @@ def test_mirror_fallback_git_with_submodules(cli, tmpdir, datafiles):
     with open(os.path.join(main_files, "README"), "w") as f:
         f.write("TEST\n")
     upstream_main_repodir = os.path.join(str(tmpdir), "main-upstream")
-    upstream_main_repo = create_repo("git", upstream_main_repodir)
+    upstream_main_repo = Git(upstream_main_repodir)
     upstream_main_repo.create(main_files)
 
     upstream_main_repo.add_submodule("bin", url="file://{}".format(bin_repo.repo))

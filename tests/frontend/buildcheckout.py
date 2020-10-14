@@ -9,13 +9,13 @@ import re
 import pytest
 
 from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
 from buildstream.testing._utils.site import IS_WINDOWS, CASD_SEPARATE_USER
 from buildstream import _yaml
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream import utils
 
 from tests.testutils import generate_junction, create_artifact_share
+from tests.testutils.repo.git import Git
 
 from . import configure_project
 
@@ -1069,7 +1069,7 @@ def test_partial_artifact_checkout_fetch(cli, datafiles, tmpdir):
     project = str(datafiles)
     checkout_dir = os.path.join(str(tmpdir), "checkout")
 
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(str(datafiles), "files"))
     element_dir = os.path.join(str(tmpdir), "elements")
     project = str(tmpdir)

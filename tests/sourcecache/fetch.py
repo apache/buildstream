@@ -28,15 +28,15 @@ from buildstream.exceptions import ErrorDomain
 from buildstream._project import Project
 from buildstream import _yaml
 from buildstream.testing import cli  # pylint: disable=unused-import
-from buildstream.testing import create_repo
 
 from tests.testutils import create_artifact_share, dummy_context
+from tests.testutils.repo.git import Git
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
 
 def create_test_element(tmpdir, project_dir):
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(os.path.join(project_dir, "files"))
     element_path = os.path.join(project_dir, "elements")
     element_name = "fetch.bst"

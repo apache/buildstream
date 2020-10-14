@@ -6,10 +6,11 @@ import shutil
 
 import pytest
 
-from buildstream.testing import create_repo
 from buildstream.testing import cli  # pylint: disable=unused-import
 from buildstream.exceptions import ErrorDomain
 from buildstream import _yaml
+
+from tests.testutils.repo.git import Git
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "filter",)
 
@@ -189,7 +190,7 @@ def test_filter_workspace_reset(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "basic"))
 def test_filter_track(datafiles, cli, tmpdir):
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(os.path.join(str(datafiles), "files"))
     elements_dir = os.path.join(str(tmpdir), "elements")
     project = str(tmpdir)
@@ -235,7 +236,7 @@ def test_filter_track(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "basic"))
 def test_filter_track_excepted(datafiles, cli, tmpdir):
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     repo.create(os.path.join(str(datafiles), "files"))
     elements_dir = os.path.join(str(tmpdir), "elements")
     project = str(tmpdir)
@@ -280,7 +281,7 @@ def test_filter_track_excepted(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "basic"))
 def test_filter_track_multi_to_one(datafiles, cli, tmpdir):
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(os.path.join(str(datafiles), "files"))
     elements_dir = os.path.join(str(tmpdir), "elements")
     project = str(tmpdir)
@@ -326,7 +327,7 @@ def test_filter_track_multi_to_one(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "basic"))
 def test_filter_track_multi(datafiles, cli, tmpdir):
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(os.path.join(str(datafiles), "files"))
     elements_dir = os.path.join(str(tmpdir), "elements")
     project = str(tmpdir)
@@ -387,7 +388,7 @@ def test_filter_track_multi(datafiles, cli, tmpdir):
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "basic"))
 def test_filter_track_multi_exclude(datafiles, cli, tmpdir):
-    repo = create_repo("git", str(tmpdir))
+    repo = Git(str(tmpdir))
     ref = repo.create(os.path.join(str(datafiles), "files"))
     elements_dir = os.path.join(str(tmpdir), "elements")
     project = str(tmpdir)
