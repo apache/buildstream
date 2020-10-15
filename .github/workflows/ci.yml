@@ -5,7 +5,11 @@ name: PR Checks
 #    request, and
 # 2. running on both pushes and pull requests results in the classic problem of
 #    having double jobs.
-on: push
+on:
+  push:
+    branches-ignore:
+    - gh-pages
+    - master
 
 # Left to-do:
 # - coverage

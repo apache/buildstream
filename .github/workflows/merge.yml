@@ -1,0 +1,66 @@
+name: Merge actions
+
+env:
+  CI_IMAGE: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-master-132813612
+  BST_FORCE_SESSION_REBUILD: 1
+
+on:
+  push:
+    branches:
+    - master
+
+jobs:
+  build:
+    name: Build documentation
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      # BuildStream requires tags to be able to find its version.
+      with:
+        fetch-depth: 0
+
+    - name: Build documentation
+      run: |
+        docker run \
+            --privileged \
+            --device /dev/fuse \
+            --env BST_FORCE_SESSION_REBUILD \
+            --volume /home/runner/work:/__w \
+            --workdir /__w/buildstream/buildstream \
+            $CI_IMAGE \
+            tox -e docs
+        tar -C doc/build/html -zcf docs.tgz .
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: docs
+        path: doc/build/html
+
+  publish:
+    needs: build
+    runs-on: ubuntu-20.04
+    steps:
+
+    - name: Download artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: docs
+        path: docs
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        ref: gh-pages
+        path: pages
+
+    - name: Update repo
+      run: |
+        cp -a doc/* pages/
+        cd pages/
+        git add .
+        git config --local user.email "me+nightly-ci@pony"
+        git config --local user.name  "Github Actions Nightly Job"
+        git commit -m "Update repo for docs build $GITHUB_RUN_NUMBER"
+        git push "https://$GITHUB_ACTOR:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git" gh-pages
