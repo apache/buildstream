@@ -57,7 +57,14 @@ jobs:
 
     - name: Update repo
       run: |
+
+        # Copy the docs asset over and overwrite the orphan gh-pages branch, ensure
+        # that we disable GitHub's jekyll by creating the .nojekyll file, otherwise
+        # it will interfere with the rendering of the site.
+        #
         cp -a docs/* pages/
+        touch pages/.nojekyll
+
         cd pages/
         git add .
         git config --local user.email "merge-ci@ponyland"
