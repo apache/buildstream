@@ -57,10 +57,10 @@ jobs:
 
     - name: Update repo
       run: |
-        cp -a doc/* pages/
+        cp -a docs/* pages/
         cd pages/
         git add .
-        git config --local user.email "me+nightly-ci@pony"
+        git config --local user.email "merge-ci@ponyland"
         git config --local user.name  "Github Actions Nightly Job"
         git commit -m "Update repo for docs build $GITHUB_RUN_NUMBER"
         git push "https://$GITHUB_ACTOR:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git" gh-pages
