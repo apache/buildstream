@@ -175,6 +175,9 @@ class Context:
         # User specified cache quota, used for display messages
         self.config_cache_quota_string: Optional[str] = None
 
+        # Remote cache server
+        self.remote_cache_spec: Optional[RemoteSpec] = None
+
         # Whether or not to attempt to pull build trees globally
         self.pull_buildtrees: Optional[bool] = None
 
@@ -343,7 +346,7 @@ class Context:
         # We need to find the first existing directory in the path of our
         # casdir - the casdir may not have been created yet.
         cache = defaults.get_mapping("cache")
-        cache.validate_keys(["quota", "pull-buildtrees", "cache-buildtrees"])
+        cache.validate_keys(["quota", "storage-service", "pull-buildtrees", "cache-buildtrees"])
 
         cas_volume = self.casdir
         while not os.path.exists(cas_volume):
@@ -358,6 +361,10 @@ class Context:
                 "\nValid values are, for example: 800M 10G 1T 50%\n".format(str(e)),
                 LoadErrorReason.INVALID_DATA,
             ) from e
+
+        remote_cache = cache.get_mapping("storage-service", default=None)
+        if remote_cache:
+            self.remote_cache_spec = RemoteSpec.new_from_node(remote_cache)
 
         # Load global artifact cache configuration
         cache_config = defaults.get_mapping("artifacts", default={})
@@ -661,6 +668,7 @@ class Context:
                 self.cachedir,
                 casd=self.use_casd,
                 cache_quota=self.config_cache_quota,
+                remote_cache_spec=self.remote_cache_spec,
                 log_level=log_level,
                 log_directory=self.logdir,
             )
