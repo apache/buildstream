@@ -109,7 +109,7 @@ def create_server(repo, *, enable_push, quota, index_only, log_level=LogLevel.Le
     logger.addHandler(handler)
 
     casd_manager = CASDProcessManager(
-        os.path.abspath(repo), os.path.join(os.path.abspath(repo), "logs"), log_level, quota, False
+        os.path.abspath(repo), os.path.join(os.path.abspath(repo), "logs"), log_level, quota, None, False
     )
     casd_channel = casd_manager.create_channel()
 
