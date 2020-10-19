@@ -31,6 +31,7 @@ from ._artifactcache import ArtifactCache
 from ._elementsourcescache import ElementSourcesCache
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASLogLevel
+from ._remote import RemoteSpec
 from .types import _CacheBuildTrees, _PipelineSelection, _SchedulerErrorAction
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .node import Node
@@ -145,6 +146,9 @@ class Context:
 
         # User specified cache quota, used for display messages
         self.config_cache_quota_string = None
+
+        # Remote cache server
+        self.remote_cache_spec = None
 
         # Whether or not to attempt to pull build trees globally
         self.pull_buildtrees = None
@@ -303,7 +307,7 @@ class Context:
         # We need to find the first existing directory in the path of our
         # casdir - the casdir may not have been created yet.
         cache = defaults.get_mapping("cache")
-        cache.validate_keys(["quota", "pull-buildtrees", "cache-buildtrees"])
+        cache.validate_keys(["quota", "remote-cache", "pull-buildtrees", "cache-buildtrees"])
 
         cas_volume = self.casdir
         while not os.path.exists(cas_volume):
@@ -318,6 +322,10 @@ class Context:
                 "\nValid values are, for example: 800M 10G 1T 50%\n".format(str(e)),
                 LoadErrorReason.INVALID_DATA,
             ) from e
+
+        remote_cache = cache.get_mapping("remote-cache", default=None)
+        if remote_cache:
+            self.remote_cache_spec = RemoteSpec.new_from_config_node(remote_cache)
 
         # Load artifact share configuration
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(defaults)
@@ -531,6 +539,7 @@ class Context:
                 self.cachedir,
                 casd=self.use_casd,
                 cache_quota=self.config_cache_quota,
+                remote_cache_spec=self.remote_cache_spec,
                 log_level=log_level,
                 log_directory=self.logdir,
             )
