@@ -334,7 +334,7 @@ class Context:
         self.source_cache_specs = SourceCache.specs_from_config_node(defaults)
 
         # Load remote execution config
-        self.remote_execution_specs = SandboxRemote.specs_from_config_node(defaults)
+        self.remote_execution_specs = SandboxRemote.specs_from_config_node(defaults, remote_cache=bool(remote_cache))
 
         # Load pull build trees configuration
         self.pull_buildtrees = cache.get_bool("pull-buildtrees")

@@ -887,8 +887,11 @@ class Project:
         self.source_cache_specs = SourceCache.specs_from_config_node(config, self.directory)
 
         # Load remote-execution configuration for this project
-        project_specs = SandboxRemote.specs_from_config_node(config, self.directory)
-        override_specs = SandboxRemote.specs_from_config_node(self._context.get_overrides(self.name), self.directory)
+        remote_cache = bool(self._context.remote_cache_spec)
+        project_specs = SandboxRemote.specs_from_config_node(config, self.directory, remote_cache=remote_cache)
+        override_specs = SandboxRemote.specs_from_config_node(
+            self._context.get_overrides(self.name), self.directory, remote_cache=remote_cache
+        )
 
         if override_specs is not None:
             self.remote_execution_specs = override_specs
