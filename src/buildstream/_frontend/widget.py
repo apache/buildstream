@@ -501,7 +501,8 @@ class LogLine(Widget):
             text += self.content_profile.fmt("Remote Execution Configuration\n", bold=True)
             values = OrderedDict()
             values["Execution Service"] = format_spec(specs.exec_spec)
-            values["Storage Service"] = format_spec(specs.storage_spec)
+            re_storage_spec = specs.storage_spec or context.remote_cache_spec
+            values["Storage Service"] = format_spec(re_storage_spec)
             if specs.action_spec:
                 values["Action Cache Service"] = format_spec(specs.action_spec)
             text += self._format_values(values)

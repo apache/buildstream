@@ -454,9 +454,11 @@ class RemoteSpec:
 # communicate with various components of an RE build cluster.
 #
 class RemoteExecutionSpec:
-    def __init__(self, exec_spec: RemoteSpec, storage_spec: RemoteSpec, action_spec: Optional[RemoteSpec]) -> None:
+    def __init__(
+        self, exec_spec: RemoteSpec, storage_spec: Optional[RemoteSpec], action_spec: Optional[RemoteSpec]
+    ) -> None:
         self.exec_spec: RemoteSpec = exec_spec
-        self.storage_spec: RemoteSpec = storage_spec
+        self.storage_spec: Optional[RemoteSpec] = storage_spec
         self.action_spec: Optional[RemoteSpec] = action_spec
 
     # new_from_node():
@@ -474,15 +476,30 @@ class RemoteExecutionSpec:
     #    LoadError: If the node is malformed.
     #
     @classmethod
-    def new_from_node(cls, node: MappingNode, basedir: Optional[str] = None) -> "RemoteExecutionSpec":
+    def new_from_node(
+        cls, node: MappingNode, basedir: Optional[str] = None, *, remote_cache: bool = False
+    ) -> "RemoteExecutionSpec":
         node.validate_keys(["execution-service", "storage-service", "action-cache-service"])
 
         exec_node = node.get_mapping("execution-service")
-        storage_node = node.get_mapping("storage-service")
+        storage_node = node.get_mapping("storage-service", default=None)
+        if not storage_node and not remote_cache:
+            provenance = node.get_provenance()
+            raise LoadError(
+                "{}: Remote execution requires 'storage-service' to be specified in the 'remote-execution' section if not already specified globally in the 'cache' section".format(
+                    provenance
+                ),
+                LoadErrorReason.INVALID_DATA,
+            )
         action_node = node.get_mapping("action-cache-service", default=None)
 
         exec_spec = RemoteSpec.new_from_node(exec_node, basedir, remote_execution=True)
-        storage_spec = RemoteSpec.new_from_node(storage_node, basedir, remote_execution=True)
+
+        storage_spec: Optional[RemoteSpec]
+        if storage_node:
+            storage_spec = RemoteSpec.new_from_node(storage_node, basedir, remote_execution=True)
+        else:
+            storage_spec = None
 
         action_spec: Optional[RemoteSpec]
         if action_node:

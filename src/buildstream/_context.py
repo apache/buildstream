@@ -749,4 +749,4 @@ class Context:
             os.environ["XDG_DATA_HOME"] = os.path.expanduser("~/.local/share")
 
     def _load_remote_execution(self, node: MappingNode) -> Optional[RemoteExecutionSpec]:
-        return RemoteExecutionSpec.new_from_node(node)
+        return RemoteExecutionSpec.new_from_node(node, remote_cache=bool(self.remote_cache_spec))
