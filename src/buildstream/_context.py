@@ -175,9 +175,6 @@ class Context:
         # User specified cache quota, used for display messages
         self.config_cache_quota_string: Optional[str] = None
 
-        # Whether to pull the files of an artifact when doing remote execution
-        self.pull_artifact_files: bool = True
-
         # Whether or not to attempt to pull build trees globally
         self.pull_buildtrees: Optional[bool] = None
 
@@ -376,10 +373,10 @@ class Context:
         cache_config = defaults.get_mapping("source-caches", default={})
         self._global_source_cache_config = _CacheConfig.new_from_node(cache_config)
 
-        # Load the global remote execution config including pull-artifact-files setting
+        # Load the global remote execution config
         remote_execution = defaults.get_mapping("remote-execution", default=None)
         if remote_execution:
-            self.pull_artifact_files, self.remote_execution_specs = self._load_remote_execution(remote_execution)
+            self.remote_execution_specs = self._load_remote_execution(remote_execution)
 
         # Load pull build trees configuration
         self.pull_buildtrees = cache.get_bool("pull-buildtrees")
@@ -549,7 +546,7 @@ class Context:
             override_node = self.get_overrides(project.name)
             remote_execution = override_node.get_mapping("remote-execution", default=None)
             if remote_execution:
-                self.pull_artifact_files, self.remote_execution_specs = self._load_remote_execution(remote_execution)
+                self.remote_execution_specs = self._load_remote_execution(remote_execution)
 
         #
         # Maintain our list of remote specs for artifact and source caches
@@ -758,18 +755,5 @@ class Context:
         if not os.environ.get("XDG_DATA_HOME"):
             os.environ["XDG_DATA_HOME"] = os.path.expanduser("~/.local/share")
 
-    def _load_remote_execution(self, node: MappingNode) -> Tuple[bool, Optional[RemoteExecutionSpec]]:
-        # The pull_artifact_files attribute is special, it is allowed to
-        # be set to False even if there is no remote execution service configured.
-        #
-        pull_artifact_files: bool = node.get_bool("pull-artifact-files", default=True)
-        node.safe_del("pull-artifact-files")
-
-        # Don't pass the remote execution settings if that was the only option
-        remote_execution_specs: Optional[RemoteExecutionSpec]
-        if node.keys():
-            remote_execution_specs = RemoteExecutionSpec.new_from_node(node)
-        else:
-            remote_execution_specs = None
-
-        return pull_artifact_files, remote_execution_specs
+    def _load_remote_execution(self, node: MappingNode) -> Optional[RemoteExecutionSpec]:
+        return RemoteExecutionSpec.new_from_node(node)
