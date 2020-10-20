@@ -165,10 +165,7 @@ Remote execution
 ~~~~~~~~~~~~~~~~
 
 The configuration for :ref:`remote execution <project_remote_execution>`
-in ``project.conf`` can be provided in the user configuation. The global
-configuration also has a ``pull-artifact-files`` option, which specifies when
-remote execution is being performed whether to pull file blobs of artifacts, or
-just the directory trees required to perform remote builds.
+in ``project.conf`` can be provided in the user configuation.
 
 There is only one remote execution configuration used per project.
 
@@ -192,7 +189,6 @@ configuration will be used as fallback.
     action-cache-service:
       url: http://cache.flalback.example.com:50052
       instance-name: main
-    pull-artifact-files: True
 
 2. Project override:
 

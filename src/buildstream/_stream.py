@@ -306,11 +306,9 @@ class Stream:
             # Require artifact files only for target elements and their runtime dependencies.
             self._context.set_artifact_files_optional()
 
-            # fetch blobs of targets if options set
-            if self._context.pull_artifact_files:
-                scope = _Scope.ALL if selection == _PipelineSelection.ALL else _Scope.RUN
-                for element in self.targets:
-                    element._set_artifact_files_required(scope=scope)
+            scope = _Scope.ALL if selection == _PipelineSelection.ALL else _Scope.RUN
+            for element in self.targets:
+                element._set_artifact_files_required(scope=scope)
 
         # Now construct the queues
         #
