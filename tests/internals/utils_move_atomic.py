@@ -10,6 +10,7 @@ from buildstream.utils import (
     _set_file_mtime,
     _parse_timestamp,
 )
+from buildstream.testing._utils.site import have_subsecond_mtime
 
 
 @pytest.fixture
@@ -98,6 +99,12 @@ def test_move_to_existing_non_empty_dir(src, tmp_path):
 
 
 def test_move_to_empty_dir_set_mtime(src, tmp_path):
+
+    # Skip this test if we do not have support for subsecond precision mtimes
+    #
+    if not have_subsecond_mtime(str(tmp_path)):
+        pytest.skip("Filesystem does not support subsecond mtime precision: {}".format(str(tmp_path)))
+
     dst = tmp_path.joinpath("dst")
     move_atomic(src, dst)
     assert dst.joinpath("test").exists()
