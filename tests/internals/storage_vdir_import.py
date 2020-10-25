@@ -24,6 +24,7 @@ from buildstream.storage._filebaseddirectory import FileBasedDirectory
 from buildstream._cas import CASCache
 from buildstream.storage.directory import VirtualDirectoryError
 from buildstream.utils import _set_file_mtime, _parse_timestamp
+from buildstream.testing._utils.site import have_subsecond_mtime
 
 
 # These are comparitive tests that check that FileBasedDirectory and
@@ -185,6 +186,12 @@ def directory_not_empty(path):
 
 
 def _import_test(tmpdir, original, overlay, generator_function, verify_contents=False):
+
+    # Skip this test if we do not have support for subsecond precision mtimes
+    #
+    if not have_subsecond_mtime(str(tmpdir)):
+        pytest.skip("Filesystem does not support subsecond mtime precision: {}".format(str(tmpdir)))
+
     cas_cache = CASCache(tmpdir, log_directory=os.path.join(tmpdir, "logs"))
     try:
         # Create some fake content
