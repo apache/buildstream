@@ -5,6 +5,7 @@ import os
 import stat
 import subprocess
 import sys
+import tempfile
 from typing import Optional  # pylint: disable=unused-import
 
 from buildstream import utils, ProgramNotFoundError
@@ -73,3 +74,34 @@ try:
     HAVE_SANDBOX = "buildbox-run"
 except (ProgramNotFoundError, OSError, subprocess.CalledProcessError):
     pass
+
+
+# Check if we have subsecond mtime support on the
+# filesystem where @directory is located.
+#
+def have_subsecond_mtime(directory):
+
+    try:
+        test_file, test_filename = tempfile.mkstemp(dir=directory)
+        os.close(test_file)
+    except OSError:
+        # If we can't create a temp file, lets just say this is False
+        return False
+
+    try:
+        os.utime(test_filename, times=None, ns=(int(12345), int(12345)))
+    except OSError:
+        # If we can't set the mtime, lets just say this is False
+        os.unlink(test_filename)
+        return False
+
+    try:
+        stat_result = os.stat(test_filename)
+    except OSError:
+        # If we can't stat the file, lets just say this is False
+        os.unlink(test_filename)
+        return False
+
+    os.unlink(test_filename)
+
+    return stat_result.st_mtime_ns == 12345
