@@ -28,6 +28,7 @@ import pytest
 from buildstream._cas import CASCache
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing._utils.site import have_subsecond_mtime
 
 from tests.testutils import create_element_size, wait_for_cache_granularity
 
@@ -57,6 +58,17 @@ def get_cache_usage(directory):
 def test_artifact_expires(cli, datafiles):
     project = str(datafiles)
     element_path = "elements"
+
+    # Skip this test if we do not have support for subsecond precision mtimes
+    #
+    # The artifact expiry logic relies on mtime changes, in real life second precision
+    # should be enough for this to work almost all the time, but test cases happen very
+    # quickly, resulting in all artifacts having the same mtime.
+    #
+    # This test requires subsecond mtime to be reliable.
+    #
+    if not have_subsecond_mtime(project):
+        pytest.skip("Filesystem does not support subsecond mtime precision: {}".format(project))
 
     cli.configure({"cache": {"quota": 10000000,}})
 
@@ -98,6 +110,17 @@ def test_artifact_expires(cli, datafiles):
 def test_artifact_too_large(cli, datafiles, size):
     project = str(datafiles)
     element_path = "elements"
+
+    # Skip this test if we do not have support for subsecond precision mtimes
+    #
+    # The artifact expiry logic relies on mtime changes, in real life second precision
+    # should be enough for this to work almost all the time, but test cases happen very
+    # quickly, resulting in all artifacts having the same mtime.
+    #
+    # This test requires subsecond mtime to be reliable.
+    #
+    if not have_subsecond_mtime(project):
+        pytest.skip("Filesystem does not support subsecond mtime precision: {}".format(project))
 
     cli.configure({"cache": {"quota": 400000}})
 
@@ -169,6 +192,17 @@ def test_keep_dependencies(cli, datafiles):
     project = str(datafiles)
     element_path = "elements"
 
+    # Skip this test if we do not have support for subsecond precision mtimes
+    #
+    # The artifact expiry logic relies on mtime changes, in real life second precision
+    # should be enough for this to work almost all the time, but test cases happen very
+    # quickly, resulting in all artifacts having the same mtime.
+    #
+    # This test requires subsecond mtime to be reliable.
+    #
+    if not have_subsecond_mtime(project):
+        pytest.skip("Filesystem does not support subsecond mtime precision: {}".format(project))
+
     cli.configure({"cache": {"quota": 10000000}})
 
     # Create a pretty big dependency
@@ -209,6 +243,17 @@ def test_keep_dependencies(cli, datafiles):
 def test_never_delete_required(cli, datafiles):
     project = str(datafiles)
     element_path = "elements"
+
+    # Skip this test if we do not have support for subsecond precision mtimes
+    #
+    # The artifact expiry logic relies on mtime changes, in real life second precision
+    # should be enough for this to work almost all the time, but test cases happen very
+    # quickly, resulting in all artifacts having the same mtime.
+    #
+    # This test requires subsecond mtime to be reliable.
+    #
+    if not have_subsecond_mtime(project):
+        pytest.skip("Filesystem does not support subsecond mtime precision: {}".format(project))
 
     cli.configure({"cache": {"quota": 10000000}, "scheduler": {"fetchers": 1, "builders": 1}})
 
