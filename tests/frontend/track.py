@@ -8,6 +8,7 @@ import pytest
 
 from buildstream.testing import create_repo, generate_project
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.testing._utils.site import have_subsecond_mtime
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from buildstream import _yaml
 from tests.testutils import generate_junction
@@ -365,6 +366,11 @@ def test_no_needless_overwrite(cli, tmpdir, datafiles):
     dev_files_path = os.path.join(project, "files", "dev-files")
     element_path = os.path.join(project, "elements")
     target = "track-test-target.bst"
+
+    # Skip this test if we do not have support for subsecond precision mtimes
+    #
+    if not have_subsecond_mtime(project):
+        pytest.skip("Filesystem does not support subsecond mtime precision: {}".format(project))
 
     # Create our repo object of the given source type with
     # the dev files, and then collect the initial ref.
