@@ -238,6 +238,7 @@ cdef class LoadElement:
     # TODO: if/when pyroaring exports symbols, we could type this statically
     cdef object _dep_cache
     cdef readonly list dependencies
+    cdef readonly bint fully_loaded  # This is True if dependencies were also loaded
 
     def __cinit__(self, MappingNode node, str filename, object loader):
 
@@ -250,6 +251,7 @@ cdef class LoadElement:
         self.full_name = None   # The element full name (with associated junction)
         self.node_id = _next_synthetic_counter()
         self.link_target = None  # The target of a link element (ScalarNode)
+        self.fully_loaded = False  # Whether we entered the loop to load dependencies or not
 
         #
         # Private members
@@ -337,6 +339,21 @@ cdef class LoadElement:
     def depends(self, LoadElement other not None):
         self._ensure_depends_cache()
         return other.node_id in self._dep_cache
+
+    # mark_fully_loaded()
+    #
+    # Sets the fully loaded state on this load element
+    #
+    # This state bit is used by the Loader to distinguish
+    # between an element which has only been shallow loaded
+    # and an element which has entered the loop which loads
+    # it's dependencies.
+    #
+    # Args:
+    #    element (LoadElement): The resolved LoadElement
+    #
+    def mark_fully_loaded(self):
+        self.fully_loaded = True
 
     ###########################################
     #            Private Methods              #
