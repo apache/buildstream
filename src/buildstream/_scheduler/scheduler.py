@@ -154,6 +154,9 @@ class Scheduler:
             self.loop.run_forever()
             self.loop.close()
 
+            # Invoke the ticker callback a final time to render pending messages
+            self._ticker_callback()
+
         # Stop watching casd
         _watcher.remove_child_handler(self._casd_process.pid)
         self._casd_process = None
