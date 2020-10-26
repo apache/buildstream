@@ -41,8 +41,6 @@ class SandboxRemote(SandboxREAPI):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._output_files_required = kwargs.get("output_files_required", True)
-
         context = self._get_context()
         specs = context.remote_execution_specs
         if specs is None:
@@ -140,29 +138,16 @@ class SandboxRemote(SandboxREAPI):
 
     def _fetch_missing_blobs(self, vdir):
         context = self._get_context()
-        project = self._get_project()
         cascache = context.get_cascache()
-        artifactcache = context.artifactcache
 
-        # Fetch the file blobs if needed
-        if self._output_files_required or artifactcache.has_push_remotes():
-            dir_digest = vdir._get_digest()
-            required_blobs = cascache.required_blobs_for_directory(dir_digest)
+        # Fetch the file blobs
+        dir_digest = vdir._get_digest()
+        required_blobs = cascache.required_blobs_for_directory(dir_digest)
 
-            local_missing_blobs = cascache.missing_blobs(required_blobs)
-            if local_missing_blobs:
-                if self._output_files_required:
-                    # Fetch all blobs from Remote Execution CAS server
-                    blobs_to_fetch = local_missing_blobs
-                else:
-                    # Output files are not required in the local cache,
-                    # however, artifact push remotes will need them.
-                    # Only fetch blobs that are missing on one or multiple
-                    # artifact servers.
-                    blobs_to_fetch = artifactcache.find_missing_blobs(project, local_missing_blobs)
-
-                with CASRemote(self.storage_spec, cascache) as casremote:
-                    cascache.fetch_blobs(casremote, blobs_to_fetch)
+        local_missing_blobs = cascache.missing_blobs(required_blobs)
+        if local_missing_blobs:
+            with CASRemote(self.storage_spec, cascache) as casremote:
+                cascache.fetch_blobs(casremote, local_missing_blobs)
 
     def _execute_action(self, action, flags):
         stdout, stderr = self._get_output()
