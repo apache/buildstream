@@ -296,7 +296,6 @@ class Element(Plugin):
         self.__whitelist_regex = None  # Resolved regex object to check if file is allowed to overlap
         self.__tainted = None  # Whether the artifact is tainted and should not be shared
         self.__required = False  # Whether the artifact is required in the current session
-        self.__artifact_files_required = False  # Whether artifact files are required in the local cache
         self.__build_result = None  # The result of assembling this Element (success, description, detail)
         # Artifact class for direct artifact composite interaction
         self.__artifact = None  # type: Optional[Artifact]
@@ -1555,31 +1554,6 @@ class Element(Plugin):
     def _is_required(self):
         return self.__required
 
-    # _set_artifact_files_required():
-    #
-    # Mark artifact files for this element and its runtime dependencies as
-    # required in the local cache.
-    #
-    def _set_artifact_files_required(self, scope=_Scope.RUN):
-        assert utils._is_in_main_thread(), "This has an impact on all elements and must be run in the main thread"
-
-        if self.__artifact_files_required:
-            # Already done
-            return
-
-        self.__artifact_files_required = True
-
-        # Request artifact files of runtime dependencies
-        for dep in self._dependencies(scope, recurse=False):
-            dep._set_artifact_files_required(scope=scope)
-
-    # _artifact_files_required():
-    #
-    # Returns whether artifact files for this element have been marked as required.
-    #
-    def _artifact_files_required(self):
-        return self.__artifact_files_required
-
     # __should_schedule()
     #
     # Returns:
@@ -2797,8 +2771,6 @@ class Element(Plugin):
 
             self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
 
-            output_files_required = context.require_artifact_files or self._artifact_files_required()
-
             sandbox = SandboxRemote(
                 context,
                 project,
@@ -2807,7 +2779,6 @@ class Element(Plugin):
                 stdout=stdout,
                 stderr=stderr,
                 config=config,
-                output_files_required=output_files_required,
                 output_node_properties=output_node_properties,
             )
             yield sandbox

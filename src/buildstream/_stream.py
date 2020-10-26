@@ -378,15 +378,6 @@ class Stream:
         # Assert that the elements are consistent
         _pipeline.assert_consistent(self._context, elements)
 
-        if self._context.remote_execution_specs:
-            # Remote execution is configured.
-            # Require artifact files only for target elements and their runtime dependencies.
-            self._context.set_artifact_files_optional()
-
-            scope = _Scope.ALL if selection == _PipelineSelection.ALL else _Scope.RUN
-            for element in self.targets:
-                element._set_artifact_files_required(scope=scope)
-
         source_push_enabled = self._sourcecache.has_push_remotes()
 
         # If source push is enabled, the source cache status of all elements
