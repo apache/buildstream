@@ -152,12 +152,6 @@ class Context:
         # Whether or not to cache build trees on artifact creation
         self.cache_buildtrees = None
 
-        # Whether directory trees are required for all artifacts in the local cache
-        self.require_artifact_directories = True
-
-        # Whether file contents are required for all artifacts in the local cache
-        self.require_artifact_files = True
-
         # Whether elements must be rebuilt when their dependencies have changed
         self._strict_build_plan = None
 
@@ -511,15 +505,6 @@ class Context:
         # Ditto if we've already computed this, then we return the computed
         # value which we cache here too.
         return self._strict_build_plan
-
-    # set_artifact_files_optional()
-    #
-    # This indicates that the current context (command or configuration)
-    # does not require file contents of all artifacts to be available in the
-    # local cache.
-    #
-    def set_artifact_files_optional(self):
-        self.require_artifact_files = False
 
     # Force the resolved XDG variables into the environment,
     # this is so that they can be used directly to specify
