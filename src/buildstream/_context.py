@@ -181,12 +181,6 @@ class Context:
         # Whether or not to cache build trees on artifact creation
         self.cache_buildtrees: Optional[str] = None
 
-        # Whether directory trees are required for all artifacts in the local cache
-        self.require_artifact_directories: bool = True
-
-        # Whether file contents are required for all artifacts in the local cache
-        self.require_artifact_files: bool = True
-
         # Don't shoot the messenger
         self.messenger: Messenger = Messenger()
 
@@ -653,15 +647,6 @@ class Context:
         # Ditto if we've already computed this, then we return the computed
         # value which we cache here too.
         return self._strict_build_plan
-
-    # set_artifact_files_optional()
-    #
-    # This indicates that the current context (command or configuration)
-    # does not require file contents of all artifacts to be available in the
-    # local cache.
-    #
-    def set_artifact_files_optional(self) -> None:
-        self.require_artifact_files = False
 
     def get_cascache(self) -> CASCache:
         if self._cascache is None:
