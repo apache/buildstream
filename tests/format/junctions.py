@@ -388,11 +388,48 @@ def test_full_path_not_found(cli, tmpdir, datafiles, target, provenance):
 
 
 #
-# Test the overrides feature.
+# Test overridding elements
 #
-# Here we reuse the `nested` project since it already has deep
-# nesting, and add to it a couple of additional junctions to
-# test overriding of junctions at various depts
+@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.parametrize(
+    "target,expected",
+    [
+        # Override an element in a subproject, this dependency will depend on
+        # the same element in the subproject as the overridden element did.
+        ("override-subproject-element.bst", ["element.txt", "subelement-override.txt", "subdep.txt"]),
+        # Override an element in a subproject while depending on an element which depends
+        # on the overridden element, in this case we ensure that the reverse dependencies
+        # of the replaced element are built against the replacement.
+        ("override-subproject-dep.bst", ["element.txt", "sub.txt", "subdep-override.txt"]),
+        # Override an element in a subproject with a local link element which points to another
+        # element in the same subproject.
+        ("override-subproject-element-with-link.bst", ["element.txt", "sub-alternative.txt", "subdep.txt"]),
+        # Override a link to an element in a subproject with an alternative element
+        # in the same subproject.
+        ("override-subproject-element-using-link.bst", ["element.txt", "sub-alternative.txt", "subdep.txt"]),
+        # Override an element in a nested subsubproject, where the intermediate project also overrides
+        # the same element
+        ("override-subsubproject.bst", ["element.txt", "subsub.txt", "subdep-override.txt"]),
+    ],
+    ids=["element-with-deps", "dependency-of-element", "with-link", "using-link", "priority",],
+)
+def test_override_element(cli, tmpdir, datafiles, target, expected):
+    project = os.path.join(str(datafiles), "override-element")
+    checkoutdir = os.path.join(str(tmpdir), "checkout")
+
+    # Build, checkout
+    result = cli.run(project=project, args=["build", target])
+    result.assert_success()
+    result = cli.run(project=project, args=["artifact", "checkout", target, "--directory", checkoutdir])
+    result.assert_success()
+
+    # Check that the checkout contains the expected file(s)
+    for expect in expected:
+        assert os.path.exists(os.path.join(checkoutdir, expect))
+
+
+#
+# Test overridding junctions
 #
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize(
@@ -420,7 +457,7 @@ def test_full_path_not_found(cli, tmpdir, datafiles, target, provenance):
         "override-subproject-with-subsubproject",
     ],
 )
-def test_overrides(cli, tmpdir, datafiles, target, expected):
+def test_override_junction(cli, tmpdir, datafiles, target, expected):
     project = os.path.join(str(datafiles), "overrides")
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
