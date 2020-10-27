@@ -423,7 +423,11 @@ class Loader:
             _, filename, loader = self._parse_name(
                 link_target, top_element.link_target, load_subprojects=load_subprojects
             )
-            top_element = loader._load_file(filename, top_element.link_target, load_subprojects=load_subprojects)
+
+            # Early return, redirect the loading of the file and it's dependencies to the
+            # appropriate loader.
+            #
+            return loader._load_file(filename, top_element.link_target, load_subprojects=load_subprojects)
 
         dependencies = extract_depends_from_node(top_element.node)
         # The loader queue is a stack of tuples
