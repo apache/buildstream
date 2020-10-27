@@ -477,7 +477,7 @@ class Loader:
                 # LoadElement on the dependency and append the dependency to the owning
                 # LoadElement dependency list.
                 dep.set_element(dep_element)
-                current_element[0].dependencies.append(dep)
+                current_element[0].dependencies.append(dep)  # pylint: disable=no-member
             else:
                 # We do not have any more dependencies to load for this
                 # element on the queue, report any invalid dep names
