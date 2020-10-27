@@ -854,9 +854,9 @@ class Loader:
 
         # If the element is already loaded in the target loader, then there
         # is no need for a shallow load.
-        if element_name in target_loader._elements:
+        try:
             element = target_loader._elements[element_name]
-        else:
+        except KeyError:
             # Shallow load the the element.
             element = target_loader._load_file_no_deps(element_name, provenance_node)
 
