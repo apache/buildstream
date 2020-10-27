@@ -423,7 +423,11 @@ class Loader:
             _, filename, loader = self._parse_name(
                 link_target, top_element.link_target, load_subprojects=load_subprojects
             )
-            top_element = loader._load_file(filename, top_element.link_target, load_subprojects=load_subprojects)
+
+            # Early return, redirect the loading of the file and it's dependencies to the
+            # appropriate loader.
+            #
+            return loader._load_file(filename, top_element.link_target, load_subprojects=load_subprojects)
 
         dependencies = extract_depends_from_node(top_element.node)
         # The loader queue is a stack of tuples
@@ -473,7 +477,7 @@ class Loader:
                 # LoadElement on the dependency and append the dependency to the owning
                 # LoadElement dependency list.
                 dep.set_element(dep_element)
-                current_element[0].dependencies.append(dep)
+                current_element[0].dependencies.append(dep)  # pylint: disable=no-member
             else:
                 # We do not have any more dependencies to load for this
                 # element on the queue, report any invalid dep names
@@ -854,9 +858,9 @@ class Loader:
 
         # If the element is already loaded in the target loader, then there
         # is no need for a shallow load.
-        if element_name in target_loader._elements:
+        try:
             element = target_loader._elements[element_name]
-        else:
+        except KeyError:
             # Shallow load the the element.
             element = target_loader._load_file_no_deps(element_name, provenance_node)
 
