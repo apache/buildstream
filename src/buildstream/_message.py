@@ -52,6 +52,8 @@ class Message:
         message_type,
         message,
         *,
+        task_element_name=None,
+        task_element_key=None,
         element_name=None,
         element_key=None,
         detail=None,
@@ -63,8 +65,10 @@ class Message:
     ):
         self.message_type = message_type  # Message type
         self.message = message  # The message string
-        self.element_name = element_name  # The instance element name of the issuing plugin
-        self.element_key = element_key  # The display key of the issuing plugin element
+        self.task_element_name = task_element_name  # The name of the issuing task element
+        self.task_element_key = task_element_key  # The DisplayKey of the issuing task element
+        self.element_name = element_name  # The name of the issuing element
+        self.element_key = element_key  # The DisplayKey of the issuing element
         self.detail = detail  # An additional detail string
         self.action_name = action_name  # Name of the task queue (fetch, refresh, build, etc)
         self.elapsed = elapsed  # The elapsed time, in timed messages

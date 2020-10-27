@@ -454,13 +454,13 @@ class App:
     def shell_prompt(self, element):
 
         element_name = element._get_full_name()
-
-        _, key, dim = element._get_display_key()
+        display_key = element._get_display_key()
 
         if self.colors:
+            dim_key = not display_key.strict
             prompt = (
                 self._format_profile.fmt("[")
-                + self._content_profile.fmt(key, dim=dim)
+                + self._content_profile.fmt(display_key.brief, dim=dim_key)
                 + self._format_profile.fmt("@")
                 + self._content_profile.fmt(element_name)
                 + self._format_profile.fmt(":")
@@ -469,7 +469,7 @@ class App:
                 + " "
             )
         else:
-            prompt = "[{}@{}:${{PWD}}]$ ".format(key, element_name)
+            prompt = "[{}@{}:${{PWD}}]$ ".format(display_key.brief, element_name)
 
         return prompt
 

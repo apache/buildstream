@@ -170,7 +170,8 @@ class TypeName(Widget):
 class ElementName(Widget):
     def render(self, message):
         action_name = message.action_name
-        element_name = message.element_name
+        element_name = message.task_element_name or message.element_name
+
         if element_name is not None:
             name = "{: <30}".format(element_name)
         else:
@@ -209,15 +210,17 @@ class CacheKey(Widget):
         if message.element_name is None:
             return " " * self._key_length
 
-        missing = False
+        dim = False
         key = " " * self._key_length
-        if message.element_key:
-            _, key, missing = message.element_key
+        element_key = message.task_element_key or message.element_key
+        if element_key:
+            key = element_key.brief
+            dim = not element_key.strict
 
         if message.message_type in ERROR_MESSAGES:
             text = self._err_profile.fmt(key)
         else:
-            text = self.content_profile.fmt(key, dim=missing)
+            text = self.content_profile.fmt(key, dim=dim)
 
         return text
 
@@ -340,11 +343,12 @@ class LogLine(Widget):
         for element in dependencies:
             line = format_
 
-            full_key, cache_key, dim_keys = element._get_display_key()
+            key = element._get_display_key()
+            dim_keys = not key.strict
 
             line = p.fmt_subst(line, "name", element._get_full_name(), fg="blue", bold=True)
-            line = p.fmt_subst(line, "key", cache_key, fg="yellow", dim=dim_keys)
-            line = p.fmt_subst(line, "full-key", full_key, fg="yellow", dim=dim_keys)
+            line = p.fmt_subst(line, "key", key.brief, fg="yellow", dim=dim_keys)
+            line = p.fmt_subst(line, "full-key", key.full, fg="yellow", dim=dim_keys)
 
             try:
                 if not element._has_all_sources_resolved():

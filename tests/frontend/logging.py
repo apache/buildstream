@@ -13,10 +13,10 @@ from buildstream.exceptions import ErrorDomain
 from buildstream.testing import cli  # pylint: disable=unused-import
 
 # Project directory
-DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+DATA_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
-@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
 def test_default_logging(cli, tmpdir, datafiles):
     project = str(datafiles)
     bin_files_path = os.path.join(project, "files", "bin-files")
@@ -41,7 +41,7 @@ def test_default_logging(cli, tmpdir, datafiles):
     assert m is not None
 
 
-@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
 def test_custom_logging(cli, tmpdir, datafiles):
     project = str(datafiles)
     bin_files_path = os.path.join(project, "files", "bin-files")
@@ -73,7 +73,7 @@ def test_custom_logging(cli, tmpdir, datafiles):
     assert m is not None
 
 
-@pytest.mark.datafiles(DATA_DIR)
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
 def test_failed_build_listing(cli, datafiles):
     project = str(datafiles)
     element_names = []
@@ -106,5 +106,108 @@ def test_failed_build_listing(cli, datafiles):
     # Note that if we mess up the 'element_name' of Messages, they won't be printed
     # with the name of the relevant element, e.g. 'testfail-1.bst'. Check that
     # they have the name as expected.
-    pattern = r"\[..:..:..\] FAILURE testfail-.\.bst: Staged artifacts do not provide command 'sh'"
+    pattern = r"\[..:..:..\] FAILURE \[.*\] testfail-.\.bst: Staged artifacts do not provide command 'sh'"
     assert len(re.findall(pattern, result.stderr, re.MULTILINE)) == 6  # each element should be matched twice.
+
+
+# This test ensures that we get the expected element name and cache key in log lines.
+#
+#   * The master build log should show the element name and cache key
+#     of the task element, i.e. the element currently being built, not
+#     the element issuing the message.
+#
+#   * In the individual task log, we expect to see the name and cache
+#     key of the element issuing messages, since the entire log file
+#     is contextual to the task, it makes more sense to provide the
+#     full context of the element issuing the log in this case.
+#
+# The order and format of log lines are UI and as such might change
+# in which case this test needs to be adapted, the important part of
+# this test is only that we see task elements reported in the aggregated
+# master log file, and that we see message originating elements in
+# a task specific log file.
+#
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "logging"))
+def test_log_line_element_names(cli, datafiles):
+
+    project = str(datafiles)
+
+    # First discover the cache keys, this will give us a dictionary
+    # where we can look up the brief cache key (as displayed in the logs)
+    # by the element name.
+    #
+    keys = {}
+    result = cli.run(project=project, args=["show", "--deps", "all", "--format", "%{name}||%{key}", "logtest.bst"])
+    result.assert_success()
+    lines = result.output.splitlines()
+    for line in lines:
+        split = line.split(sep="||")
+        keys[split[0]] = split[1]
+
+    # Run a build of the import elements, so that we can observe only the build of the logtest.bst element
+    # at the end.
+    #
+    result = cli.run(project=project, args=["build", "foo.bst", "bar.bst"])
+
+    # Now run the build
+    #
+    result = cli.run(project=project, args=["build", "logtest.bst"])
+    result.assert_success()
+    master_log = result.stderr
+
+    # Now run `bst artifact log` to conveniently collect the build log so we can compare it.
+    logfiles = os.path.join(project, "logfiles")
+    logfile = os.path.join(project, "logfiles", "logtest.log")
+    result = cli.run(project=project, args=["artifact", "log", "--out", logfiles, "logtest.bst"])
+    result.assert_success()
+
+    with open(logfile, "r") as f:
+        task_log = f.read()
+
+    #########################################################
+    #              Parse and assert master log              #
+    #########################################################
+
+    # In the master log, we're looking for lines like this:
+    #
+    # [--:--:--][10dc28c5][   build:logtest.bst                   ] STATUS  Staging bar.bst/40ff1c5a
+    # [--:--:--][10dc28c5][   build:logtest.bst                   ] STATUS  Staging foo.bst/e5ab75a1
+
+    # Capture (log key, element name, staged element name, staged element key)
+    pattern = r"\[--:--:--\]\[(\S*)\]\[\s*build:(\S*)\s*] STATUS  Staging\s*(\S*)/(\S*)"
+    lines = re.findall(pattern, master_log, re.MULTILINE)
+
+    # We staged 2 elements
+    assert len(lines) == 2
+
+    # Assert that the logtest.bst element name and it's cache key is used in the master log
+    for line in lines:
+        log_key, log_name, staged_name, staged_key = line
+
+        assert log_name == "logtest.bst"
+        assert log_key == keys["logtest.bst"]
+
+    #########################################################
+    #              Parse and assert artifact log            #
+    #########################################################
+
+    # In the task specific build log, we're looking for lines like this:
+    #
+    # [--:--:--] STATUS  [40ff1c5a] bar.bst: Staging bar.bst/40ff1c5a
+    # [--:--:--] STATUS  [e5ab75a1] foo.bst: Staging foo.bst/e5ab75a1
+
+    # Capture (log key, element name, staged element name, staged element key)
+    pattern = r"\[--:--:--\] STATUS  \[(\S*)\] (\S*): Staging\s*(\S*)/(\S*)"
+    lines = re.findall(pattern, task_log, re.MULTILINE)
+
+    # We staged 2 elements
+    assert len(lines) == 2
+
+    # Assert that the originating element names and cache keys are used in
+    # log lines when recorded to the task specific log file
+    for line in lines:
+        log_key, log_name, staged_name, staged_key = line
+
+        assert log_name == staged_name
+        assert log_key == staged_key
+        assert log_key == keys[log_name]

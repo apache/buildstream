@@ -265,6 +265,9 @@ class Plugin:
         # Get the full_name as project & type_tag are resolved
         self.__full_name = self.__get_full_name()
 
+        # Our message kwargs
+        self._message_kwargs = {"element_name": self._get_full_name()}
+
         # Infer the kind identifier
         modulename = type(self).__module__
         self.__kind = modulename.split(".")[-1]
@@ -498,8 +501,11 @@ class Plugin:
               # This will raise SourceError on its own
               self.call(... command which takes time ...)
         """
+
+        # Get the plugin kwargs and pass them along
+        plugin_kwargs = self._message_kwargs
         with self.__context.messenger.timed_activity(
-            activity_name, element_name=self._get_full_name(), detail=detail, silent_nested=silent_nested
+            activity_name, detail=detail, silent_nested=silent_nested, **plugin_kwargs
         ):
             yield
 
@@ -718,8 +724,24 @@ class Plugin:
 
         return (exit_code, output)
 
+    # __message():
+    #
+    # The plugin level focal point for issuing messages.
+    #
+    # Args:
+    #    message_type (MessageType): The message type
+    #    brief (str): The brief message
+    #    kwargs: The remaining Message attributes
+    #
     def __message(self, message_type, brief, **kwargs):
-        message = Message(message_type, brief, element_name=self._get_full_name(), **kwargs)
+        #
+        # Merge the plugin kwargs with the explicitly passed kwargs, give
+        # precedence to the explicitly passed kwargs.
+        #
+        plugin_kwargs = self._message_kwargs.copy()
+        plugin_kwargs.update(kwargs)
+
+        message = Message(message_type, brief, **plugin_kwargs)
         self.__context.messenger.message(message)
 
     def __note_command(self, output, *popenargs, **kwargs):

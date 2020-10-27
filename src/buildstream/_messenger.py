@@ -154,16 +154,16 @@ class Messenger:
     #
     # Args:
     #    activity_name (str): The name of the activity
-    #    element_name (str): Optionally, the element full name of the plugin related to the message
     #    detail (str): An optional detailed message, can be multiline output
-    #    silent_nested (bool): If True, all but _message.unconditional_messages are silenced
+    #    silent_nested (bool): If True, all nested messages are silenced except for unconditionaly ones
+    #    kwargs: Remaining Message() constructor keyword arguments.
     #
     @contextmanager
-    def timed_activity(self, activity_name, *, element_name=None, detail=None, silent_nested=False):
+    def timed_activity(self, activity_name, *, detail=None, silent_nested=False, **kwargs):
         with self.timed_suspendable() as timedata:
             try:
                 # Push activity depth for status messages
-                message = Message(MessageType.START, activity_name, detail=detail, element_name=element_name)
+                message = Message(MessageType.START, activity_name, detail=detail, **kwargs)
                 self.message(message)
                 with self.silence(actually_silence=silent_nested):
                     yield
@@ -172,12 +172,12 @@ class Messenger:
                 # Note the failure in status messages and reraise, the scheduler
                 # expects an error when there is an error.
                 elapsed = datetime.datetime.now() - timedata.start_time
-                message = Message(MessageType.FAIL, activity_name, elapsed=elapsed, element_name=element_name)
+                message = Message(MessageType.FAIL, activity_name, elapsed=elapsed, **kwargs)
                 self.message(message)
                 raise
 
             elapsed = datetime.datetime.now() - timedata.start_time
-            message = Message(MessageType.SUCCESS, activity_name, elapsed=elapsed, element_name=element_name)
+            message = Message(MessageType.SUCCESS, activity_name, elapsed=elapsed, **kwargs)
             self.message(message)
 
     # simple_task()
@@ -186,30 +186,31 @@ class Messenger:
     #
     # Args:
     #    activity_name (str): The name of the activity
-    #    element_name (str): Optionally, the element full name of the plugin related to the message
-    #    full_name (str): Optionally, the distinguishing name of the activity, e.g. element name
-    #    silent_nested (bool): If True, all but _message.unconditional_messages are silenced
+    #    task_name (str): Optionally, the task name for the frontend during this task
+    #    detail (str): An optional detailed message, can be multiline output
+    #    silent_nested (bool): If True, all nested messages are silenced except for unconditionaly ones
+    #    kwargs: Remaining Message() constructor keyword arguments.
     #
     # Yields:
     #    Task: A Task object that represents this activity, principally used to report progress
     #
     @contextmanager
-    def simple_task(self, activity_name, *, element_name=None, full_name=None, silent_nested=False):
+    def simple_task(self, activity_name, *, task_name=None, detail=None, silent_nested=False, **kwargs):
         # Bypass use of State when none exists (e.g. tests)
         if not self._state:
-            with self.timed_activity(activity_name, element_name=element_name, silent_nested=silent_nested):
+            with self.timed_activity(activity_name, detail=detail, silent_nested=silent_nested, **kwargs):
                 yield
             return
 
-        if not full_name:
-            full_name = activity_name
+        if not task_name:
+            task_name = activity_name
 
         with self.timed_suspendable() as timedata:
             try:
-                message = Message(MessageType.START, activity_name, element_name=element_name)
+                message = Message(MessageType.START, activity_name, detail=detail, **kwargs)
                 self.message(message)
 
-                task = self._state.add_task(full_name, activity_name, full_name)
+                task = self._state.add_task(task_name, activity_name, task_name)
                 task.set_render_cb(self._render_status)
                 self._active_simple_tasks += 1
                 if not self._next_render:
@@ -220,11 +221,11 @@ class Messenger:
 
             except BstError:
                 elapsed = datetime.datetime.now() - timedata.start_time
-                message = Message(MessageType.FAIL, activity_name, elapsed=elapsed, element_name=element_name)
+                message = Message(MessageType.FAIL, activity_name, elapsed=elapsed, **kwargs)
                 self.message(message)
                 raise
             finally:
-                self._state.remove_task(full_name)
+                self._state.remove_task(task_name)
                 self._active_simple_tasks -= 1
                 if self._active_simple_tasks == 0:
                     self._next_render = None
@@ -237,9 +238,7 @@ class Messenger:
                     detail = "{} of {} subtasks processed".format(task.current_progress, task.maximum_progress)
                 else:
                     detail = "{} subtasks processed".format(task.current_progress)
-            message = Message(
-                MessageType.SUCCESS, activity_name, elapsed=elapsed, detail=detail, element_name=element_name
-            )
+            message = Message(MessageType.SUCCESS, activity_name, elapsed=elapsed, detail=detail, **kwargs)
             self.message(message)
 
     # recorded_messages()
@@ -371,7 +370,12 @@ class Messenger:
         template = "[{timecode: <8}] {type: <7}"
 
         # If this message is associated with an element or source plugin, print the
-        # full element name of the instance.
+        # full element name and key for the instance.
+        element_key = ""
+        if message.element_key:
+            template += " [{element_key}]"
+            element_key = message.element_key.brief
+
         element_name = ""
         if message.element_name:
             template += " {element_name}"
@@ -393,6 +397,7 @@ class Messenger:
 
         text = template.format(
             timecode=timecode,
+            element_key=element_key,
             element_name=element_name,
             type=message.message_type.upper(),
             message=message.message,

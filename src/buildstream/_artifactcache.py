@@ -121,7 +121,7 @@ class ArtifactCache(AssetCache):
     #
     def push(self, element, artifact):
         project = element._get_project()
-        display_key = element._get_brief_display_key()
+        display_key = element._get_display_key()
 
         index_remotes = [r for r in self._index_remotes[project] if r.push]
         storage_remotes = [r for r in self._storage_remotes[project] if r.push]
@@ -135,15 +135,13 @@ class ArtifactCache(AssetCache):
         # can perform file checks on their end
         for remote in storage_remotes:
             remote.init()
-            element.status("Pushing data from artifact {} -> {}".format(display_key, remote))
+            element.status("Pushing data from artifact {} -> {}".format(display_key.brief, remote))
 
             if self._push_artifact_blobs(artifact, artifact_digest, remote):
-                element.info("Pushed data from artifact {} -> {}".format(display_key, remote))
+                element.info("Pushed data from artifact {} -> {}".format(display_key.brief, remote))
             else:
                 element.info(
-                    "Remote ({}) already has all data of artifact {} cached".format(
-                        remote, element._get_brief_display_key()
-                    )
+                    "Remote ({}) already has all data of artifact {} cached".format(remote, display_key.brief)
                 )
 
         for remote in index_remotes:
@@ -154,9 +152,7 @@ class ArtifactCache(AssetCache):
                 element.info("Pushed artifact {} -> {}".format(display_key, remote))
                 pushed = True
             else:
-                element.info(
-                    "Remote ({}) already has artifact {} cached".format(remote, element._get_brief_display_key())
-                )
+                element.info("Remote ({}) already has artifact {} cached".format(remote, display_key.brief))
 
         return pushed
 

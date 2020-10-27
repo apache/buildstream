@@ -140,8 +140,8 @@ class Job:
         self._terminated = False  # Whether this job has been explicitly terminated
 
         self._logfile = logfile
-        self._message_element_name = None  # The plugin instance element name for messaging
-        self._message_element_key = None  # The element key for messaging
+        self._message_element_name = None  # The task-wide element name
+        self._message_element_key = None  # The task-wide element cache key
         self._element = None  # The Element() passed to the Job() constructor, if applicable
 
     # set_name()
@@ -289,7 +289,7 @@ class Job:
     # key for for the issuing message (if an element is related to the Job).
     #
     # Args:
-    #     element_key (tuple): The element_key tuple to be supplied to the Message() constructor
+    #     element_key (_DisplayKey): The element_key tuple to be supplied to the Message() constructor
     #
     def set_message_element_key(self, element_key):
         self._message_element_key = element_key
@@ -299,23 +299,21 @@ class Job:
     # Logs a message, this will be logged in the task's logfile and
     # conditionally also be sent to the frontend.
     #
-    # XXX: Note no calls to message() currently override the default
-    #      name & key (previously unique_id), potential to be removed.
-    #
     # Args:
     #    message_type (MessageType): The type of message to send
     #    message (str): The message
     #    kwargs: Remaining Message() constructor arguments, note that you can
     #            override 'element_name' and 'element_key' this way.
     #
-    def message(self, message_type, message, element_name=None, element_key=None, **kwargs):
+    def message(self, message_type, message, **kwargs):
         kwargs["scheduler"] = True
-        # If default name & key values not provided, set as given job attributes
-        if element_name is None:
-            element_name = self._message_element_name
-        if element_key is None:
-            element_key = self._message_element_key
-        message = Message(message_type, message, element_name=element_name, element_key=element_key, **kwargs)
+        message = Message(
+            message_type,
+            message,
+            element_name=self._message_element_name,
+            element_key=self._message_element_key,
+            **kwargs
+        )
         self._messenger.message(message)
 
     # get_element()
@@ -557,9 +555,6 @@ class ChildJob:
     # Logs a message, this will be logged in the task's logfile and
     # conditionally also be sent to the frontend.
     #
-    # XXX: Note no calls to message() currently override the default
-    #      name & key (previously unique_id), potential to be removed.
-    #
     # Args:
     #    message_type (MessageType): The type of message to send
     #    message (str): The message
@@ -568,15 +563,16 @@ class ChildJob:
     #            for front end display if not already set or explicitly
     #            overriden here.
     #
-    def message(self, message_type, message, element_name=None, element_key=None, **kwargs):
+    def message(self, message_type, message, **kwargs):
         kwargs["scheduler"] = True
-        # If default name & key values not provided, set as given job attributes
-        if element_name is None:
-            element_name = self._message_element_name
-        if element_key is None:
-            element_key = self._message_element_key
         self._messenger.message(
-            Message(message_type, message, element_name=element_name, element_key=element_key, **kwargs)
+            Message(
+                message_type,
+                message,
+                element_name=self._message_element_name,
+                element_key=self._message_element_key,
+                **kwargs
+            )
         )
 
     #######################################################
@@ -790,17 +786,14 @@ class ChildJob:
     def _child_message_handler(self, message, is_silenced):
 
         message.action_name = self.action_name
-
-        # If no key has been set at this point, and the element job has
-        # a related key, set it. This is needed for messages going
-        # straight to the message handler from the child process.
-        if message.element_key is None and self._message_element_key:
-            message.element_key = self._message_element_key
+        message.task_element_name = self._message_element_name
+        message.task_element_key = self._message_element_key
 
         # Send to frontend if appropriate
         if is_silenced and (message.message_type not in unconditional_messages):
             return
 
+        # Don't bother propagating these to the frontend
         if message.message_type == MessageType.LOG:
             return
 

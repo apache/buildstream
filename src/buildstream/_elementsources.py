@@ -279,7 +279,7 @@ class ElementSources:
     def get_cache_key(self):
         return self._cache_key
 
-    # _get_brief_display_key()
+    # get_brief_display_key()
     #
     # Returns an abbreviated cache key for display purposes
     #
