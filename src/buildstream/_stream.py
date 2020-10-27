@@ -167,14 +167,14 @@ class Stream:
     # Run a shell
     #
     # Args:
-    #    element (Element): An Element object to run the shell for
+    #    element (str): The name of the element to run the shell for
     #    scope (_Scope): The scope for the shell (_Scope.BUILD or _Scope.RUN)
-    #    prompt (str): The prompt to display in the shell
+    #    prompt (function): A function to return the prompt to display in the shell
     #    mounts (list of HostMount): Additional directories to mount into the sandbox
     #    isolate (bool): Whether to isolate the environment like we do in builds
     #    command (list): An argv to launch in the sandbox, or None
-    #    usebuildtree (str): Whether to use a buildtree as the source, given cli option
-    #    pull_dependencies ([Element]|None): Elements to attempt to pull
+    #    usebuildtree (bool): Whether to use a buildtree as the source, given cli option
+    #    pull_ (bool): Whether to attempt to pull missing or incomplete artifacts
     #    unique_id: (str): Whether to use a unique_id to load an Element instance
     #
     # Returns:
@@ -189,61 +189,62 @@ class Stream:
         mounts=None,
         isolate=False,
         command=None,
-        usebuildtree=None,
-        pull_dependencies=None,
+        usebuildtree=False,
+        pull_=False,
         unique_id=None
     ):
 
         # Load the Element via the unique_id if given
         if unique_id and element is None:
             element = Plugin._lookup(unique_id)
+        else:
+            selection = _PipelineSelection.BUILD if scope == _Scope.BUILD else _PipelineSelection.RUN
+
+            elements = self.load_selection((element,), selection=selection, use_artifact_config=True)
+
+            # Get element to stage from `targets` list.
+            # If scope is BUILD, it will not be in the `elements` list.
+            assert len(self.targets) == 1
+            element = self.targets[0]
+            element._set_required(scope)
+
+            if pull_:
+                self._scheduler.clear_queues()
+                self._add_queue(PullQueue(self._scheduler))
+                plan = self._pipeline.add_elements([element], elements)
+                self._enqueue_plan(plan)
+                self._run()
 
         missing_deps = [dep for dep in self._pipeline.dependencies([element], scope) if not dep._cached()]
         if missing_deps:
-            if not pull_dependencies:
-                raise StreamError(
-                    "Elements need to be built or downloaded before staging a shell environment",
-                    detail="\n".join(list(map(lambda x: x._get_full_name(), missing_deps))),
-                )
-            self._message(MessageType.INFO, "Attempting to fetch missing or incomplete artifacts")
-            self._scheduler.clear_queues()
-            self._add_queue(PullQueue(self._scheduler))
-            plan = self._pipeline.add_elements([element], missing_deps)
-            self._enqueue_plan(plan)
-            self._run()
+            raise StreamError(
+                "Elements need to be built or downloaded before staging a shell environment",
+                detail="\n".join(list(map(lambda x: x._get_full_name(), missing_deps))),
+            )
 
-        buildtree = False
         # Check if we require a pull queue attempt, with given artifact state and context
         if usebuildtree:
             if not element._cached_buildtree():
-                require_buildtree = self._buildtree_pull_required([element])
-                # Attempt a pull queue for the given element if remote and context allow it
-                if require_buildtree:
-                    self._message(MessageType.INFO, "Attempting to fetch missing artifact buildtree")
-                    self._scheduler.clear_queues()
-                    self._add_queue(PullQueue(self._scheduler))
-                    self._enqueue_plan(require_buildtree)
-                    self._run()
-                    # Now check if the buildtree was successfully fetched
-                    if element._cached_buildtree():
-                        buildtree = True
+                remotes_message = " or in available remotes" if pull_ else ""
+                if not element._cached():
+                    message = "Artifact not cached locally" + remotes_message
+                elif element._buildtree_exists():
+                    message = "Buildtree is not cached locally" + remotes_message
+                else:
+                    message = "Artifact was created without buildtree"
+                raise StreamError(message)
 
-                if not buildtree:
-                    message = "Buildtree is not cached locally or in available remotes"
-                    if usebuildtree == "always":
-                        raise StreamError(message)
-
-                    self._message(MessageType.INFO, message + ", shell will be loaded without it")
-            else:
-                buildtree = True
+            # Raise warning if the element is cached in a failed state
+            if element._cached_failure():
+                self._message(MessageType.WARN, "using a buildtree from a failed build.")
 
         # Ensure we have our sources if we are launching a build shell
-        if scope == _Scope.BUILD and not buildtree:
+        if scope == _Scope.BUILD and not usebuildtree:
             self._fetch([element])
             self._pipeline.assert_sources_cached([element])
 
         return element._shell(
-            scope, mounts=mounts, isolate=isolate, prompt=prompt, command=command, usebuildtree=buildtree
+            scope, mounts=mounts, isolate=isolate, prompt=prompt(element), command=command, usebuildtree=usebuildtree
         )
 
     # build()

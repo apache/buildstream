@@ -578,12 +578,9 @@ def show(app, elements, deps, except_, order, format_):
     "--use-buildtree",
     "-t",
     "cli_buildtree",
-    type=click.Choice(["ask", "try", "always", "never"]),
-    default="ask",
-    show_default=True,
+    is_flag=True,
     help=(
-        "Stage a buildtree. If `always` is set, will always fail to "
-        "build if a buildtree is not available."
+        "Stage a buildtree. Will fail if a buildtree is not available."
         " --pull and pull-buildtrees configuration is needed "
         "if trying to query for remotely cached buildtrees."
     ),
@@ -617,11 +614,11 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
     from ..element import _Scope
     from .._project import HostMount
 
-    scope = _Scope.BUILD if build_ else _Scope.RUN
+    # Buildtree can only be used with build shells
+    if cli_buildtree:
+        build_ = True
 
-    # We may need to fetch dependency artifacts if we're pulling the artifact
-    selection = _PipelineSelection.ALL if pull_ else _PipelineSelection.NONE
-    use_buildtree = None
+    scope = _Scope.BUILD if build_ else _Scope.RUN
 
     with app.initialized():
         if not element:
@@ -629,104 +626,18 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
             if not element:
                 raise AppError('Missing argument "ELEMENT".')
 
-        elements = app.stream.load_selection((element,), selection=selection, use_artifact_config=True)
-
-        # last one will be the element we want to stage, previous ones are
-        # elements to try and pull
-        element = elements[-1]
-        pull_dependencies = elements[:-1] if pull_ else None
-
-        element_name = element._get_full_name()
-        element_key = element._get_display_key()
-
-        prompt = app.shell_prompt(element_name, element_key)
         mounts = [HostMount(path, host_path) for host_path, path in mount]
-
-        artifact_is_cached = element._cached()
-        buildtree_is_cached = element._cached_buildtree()
-        buildtree_exists = element._buildtree_exists()
-        can_attempt_pull = app.context.pull_buildtrees and pull_
-
-        if cli_buildtree in ("always", "try"):
-            if buildtree_is_cached:
-                use_buildtree = cli_buildtree
-            # If element is already cached, we can check the proto to see if the buildtree existed
-            elif artifact_is_cached:
-                if not buildtree_exists:
-                    if cli_buildtree == "always":
-                        # Exit early if it won't be possible to even fetch a buildtree with always option
-                        raise AppError("Artifact was created without buildtree, unable to launch shell with it")
-                    click.echo(
-                        "WARNING: Artifact created without buildtree, shell will be loaded without it", err=True
-                    )
-                elif can_attempt_pull:
-                    use_buildtree = cli_buildtree
-                    click.echo(
-                        "WARNING: buildtree is not cached locally but did exist, will attempt to pull from available remotes",
-                        err=True,
-                    )
-                else:
-                    if cli_buildtree == "always":
-                        # Exit early if it won't be possible to perform a fetch as pull semantics aren't present
-                        raise AppError(
-                            "Artifact has a buildtree but it isn't cached. Can be retried with --pull and pull-buildtrees configured"
-                        )
-                    click.echo("WARNING: buildtree is not cached locally, shell will be loaded without it", err=True)
-            # If element isn't cached at all, we can't check the proto to see if it existed so can't exit early
-            elif can_attempt_pull:
-                use_buildtree = cli_buildtree
-                if use_buildtree == "always":
-                    click.echo(
-                        "WARNING: Element is not cached so buildtree status unknown, will attempt to pull from available remotes",
-                        err=True,
-                    )
-            else:
-                if cli_buildtree == "always":
-                    # Exit early as there is no buildtree locally & can_attempt_pull is False
-                    raise AppError(
-                        "Artifact not cached locally. Can be retried with --pull and pull-buildtrees configured"
-                    )
-                click.echo("WARNING: buildtree is not cached locally, shell will be loaded without it", err=True)
-        else:
-            # If the value has defaulted to ask and in non interactive mode, don't consider the buildtree, this
-            # being the default behaviour of the command
-            if app.interactive and cli_buildtree == "ask":
-                if buildtree_is_cached and bool(click.confirm("Do you want to use the cached buildtree?")):
-                    use_buildtree = "always"
-                elif can_attempt_pull:
-                    # If buildtree not cached, check if it's worth presenting the user a dialogue
-                    message = None
-                    if artifact_is_cached:
-                        if buildtree_exists:
-                            message = "Buildtree not cached but can be pulled if in available remotes, do you want to use it?"
-                    else:
-                        message = "Element is not cached so buildtree status unknown, do you want to pull and use it?"
-                    if message:
-                        try:
-                            choice = click.prompt(
-                                message, type=click.Choice(["try", "always", "never"]), err=True, show_choices=True,
-                            )
-                        except click.Abort:
-                            click.echo("Aborting", err=True)
-                            sys.exit(-1)
-
-                        if choice != "never":
-                            use_buildtree = choice
-
-        # Raise warning if the element is cached in a failed state
-        if use_buildtree and element._cached_failure():
-            click.echo("WARNING: using a buildtree from a failed build.", err=True)
 
         try:
             exitcode = app.stream.shell(
                 element,
                 scope,
-                prompt,
+                app.shell_prompt,
                 mounts=mounts,
                 isolate=isolate,
                 command=command,
-                usebuildtree=use_buildtree,
-                pull_dependencies=pull_dependencies,
+                usebuildtree=cli_buildtree,
+                pull_=pull_,
             )
         except BstError as e:
             raise AppError("Error launching shell: {}".format(e), detail=e.detail) from e

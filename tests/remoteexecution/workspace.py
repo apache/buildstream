@@ -115,7 +115,6 @@ def check_buildtree(
             "--build",
             element_name,
             "--use-buildtree",
-            "always",
             "--",
             "find",
             ".",
@@ -176,7 +175,7 @@ def check_buildtree(
 
 def get_timemark(cli, project, element_name, marker):
     result = cli.run(
-        project=project, args=["shell", "--build", element_name, "--use-buildtree", "always", "--", "cat", marker[1:]],
+        project=project, args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", marker[1:]],
     )
     result.assert_success()
     marker_time = int(result.output)
