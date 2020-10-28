@@ -509,8 +509,7 @@ class CASCache:
     #
     # Fetches remote directory and adds it to content addressable store.
     #
-    # This recursively fetches directory objects but doesn't fetch any
-    # files.
+    # This recursively fetches directory objects and files.
     #
     # Args:
     #     remote (Remote): The remote to use.
@@ -535,6 +534,9 @@ class CASCache:
             raise CASCacheError(
                 "Failed to fetch directory tree {}: {}: {}".format(dir_digest.hash, e.code().name, e.details())
             ) from e
+
+        required_blobs = self.required_blobs_for_directory(dir_digest)
+        self.fetch_blobs(remote, required_blobs)
 
     def _fetch_tree(self, remote, digest):
         objpath = self._ensure_blob(remote, digest)

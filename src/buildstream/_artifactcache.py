@@ -502,13 +502,6 @@ class ArtifactCache(AssetCache):
     #    blobs not existing on the server.
     #
     def _pull_artifact_storage(self, element, key, artifact_digest, remote, pull_buildtrees=False):
-        def __pull_digest(digest):
-            self.cas._fetch_directory(remote, digest)
-            required_blobs = self.cas.required_blobs_for_directory(digest)
-            missing_blobs = self.cas.local_missing_blobs(required_blobs)
-            if missing_blobs:
-                self.cas.fetch_blobs(remote, missing_blobs)
-
         artifact_name = element.get_artifact_name(key=key)
 
         try:
@@ -525,10 +518,10 @@ class ArtifactCache(AssetCache):
                 f.write(artifact.SerializeToString())
 
             if str(artifact.files):
-                __pull_digest(artifact.files)
+                self.cas._fetch_directory(remote, artifact.files)
 
             if pull_buildtrees and str(artifact.buildtree):
-                __pull_digest(artifact.buildtree)
+                self.cas._fetch_directory(remote, artifact.buildtree)
 
             digests = []
             if str(artifact.public_data):
