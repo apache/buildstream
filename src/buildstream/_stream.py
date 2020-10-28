@@ -670,7 +670,7 @@ class Stream:
                 self._message(MessageType.WARN, "{} is cached without log files".format(ref))
                 continue
 
-            artifact_logs[obj.name] = obj.get_logs()
+            artifact_logs[obj.name] = obj._get_logs()
 
         return artifact_logs
 
