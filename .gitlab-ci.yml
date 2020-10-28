@@ -25,12 +25,12 @@ variables:
   # Our own variables
   # Version of the docker images we should use for all the images.
   # This is taken from buildstream/buildstream-docker-images
-  DOCKER_IMAGE_VERSION: master-177137613
+  DOCKER_IMAGE_VERSION: master-210859421
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
   PYTEST_ARGS: "--color=yes --integration -n 2"
   TEST_COMMAND: "tox -- ${PYTEST_ARGS}"
-  TOXENV: py36, py37, py38-nocover, py36-plugins, py37-plugins, py38-plugins-nocover
+  TOXENV: py36, py37, py38-nocover, py39-nocover, py36-plugins, py37-plugins, py38-plugins-nocover, py39-plugins-nocover
   COVERAGE_PREFIX: "${CI_JOB_NAME}."
 
 
@@ -74,6 +74,10 @@ tests-fedora-31:
 
 tests-fedora-32:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${DOCKER_IMAGE_VERSION}
+  <<: *tests
+
+tests-fedora-33:
+  image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:33-${DOCKER_IMAGE_VERSION}
   <<: *tests
 
 tests-ubuntu-18.04:
@@ -220,7 +224,7 @@ tests-no-usedevelop:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${DOCKER_IMAGE_VERSION}
   <<: *tests
   variables:
-    TOXENV: py36-nocover,py37-nocover,py38-nocover
+    TOXENV: py36-nocover,py37-nocover,py38-nocover, py39-nocover
 
 
 # Run type checkers
