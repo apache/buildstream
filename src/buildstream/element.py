@@ -839,14 +839,6 @@ class Element(Plugin):
         self.__batch_prepare_assemble_flags = flags
         self.__batch_prepare_assemble_collect = collect
 
-    def get_logs(self) -> List[str]:
-        """Obtain a list of log file paths
-
-        Returns:
-           A list of log file paths
-        """
-        return cast(Artifact, self.__artifact).get_logs()
-
     #############################################################
     #            Private Methods used in BuildStream            #
     #############################################################
@@ -2497,6 +2489,16 @@ class Element(Plugin):
             expression = "^(?:" + "|".join(whitelist_expressions) + ")$"
             self.__whitelist_regex = re.compile(expression)
         return self.__whitelist_regex.match(os.path.join(os.sep, path))
+
+    # _get_logs()
+    #
+    # Obtain a list of log file paths
+    #
+    # Returns:
+    #    A list of log file paths
+    #
+    def _get_logs(self) -> List[str]:
+        return cast(Artifact, self.__artifact).get_logs()
 
     #############################################################
     #                   Private Local Methods                   #
