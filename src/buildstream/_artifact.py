@@ -370,8 +370,9 @@ class Artifact:
 
         # Load the public data from the artifact
         artifact = self._get_proto()
-        meta_file = self._cas.objpath(artifact.public_data)
-        data = _yaml.load(meta_file, shortname="public.yaml")
+        with self._cas.open(artifact.public_data) as meta_file:
+            meta_str = meta_file.read()
+            data = _yaml.load_data(meta_str, file_name="public.yaml")
 
         return data
 

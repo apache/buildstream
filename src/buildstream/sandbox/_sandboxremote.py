@@ -380,13 +380,13 @@ class SandboxRemote(SandboxREAPI):
         # Forward remote stdout and stderr
         if stdout:
             if action_result.stdout_digest.hash:
-                with open(cascache.objpath(action_result.stdout_digest), "r") as f:
+                with cascache.open(action_result.stdout_digest, "r") as f:
                     shutil.copyfileobj(f, stdout)
             elif action_result.stdout_raw:
                 stdout.write(str(action_result.stdout_raw, "utf-8", errors="ignore"))
         if stderr:
             if action_result.stderr_digest.hash:
-                with open(cascache.objpath(action_result.stderr_digest), "r") as f:
+                with cascache.open(action_result.stderr_digest, "r") as f:
                     shutil.copyfileobj(f, stderr)
             elif action_result.stderr_raw:
                 stderr.write(str(action_result.stderr_raw, "utf-8", errors="ignore"))
