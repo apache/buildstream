@@ -209,7 +209,7 @@ class ArtifactShare(BaseArtifactShare):
         reachable = set()
 
         def reachable_dir(digest):
-            self.cas._reachable_refs_dir(reachable, digest, update_mtime=False, check_exists=True)
+            self._reachable_refs_dir(reachable, digest)
 
         try:
             artifact_proto_path = self.cas.objpath(artifact_proto_digest)
@@ -270,6 +270,25 @@ class ArtifactShare(BaseArtifactShare):
         self.cas.release_resources()
 
         shutil.rmtree(self.directory)
+
+    def _reachable_refs_dir(self, reachable, tree):
+        if tree.hash in reachable:
+            return
+
+        reachable.add(tree.hash)
+
+        directory = remote_execution_pb2.Directory()
+
+        with open(self.cas.objpath(tree), "rb") as f:
+            directory.ParseFromString(f.read())
+
+        for filenode in directory.files:
+            if not os.path.exists(self.cas.objpath(filenode.digest)):
+                raise FileNotFoundError
+            reachable.add(filenode.digest.hash)
+
+        for dirnode in directory.directories:
+            self._reachable_refs_dir(reachable, dirnode.digest)
 
 
 # create_artifact_share()

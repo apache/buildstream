@@ -470,38 +470,6 @@ class CASCache:
     #             Local Private Methods            #
     ################################################
 
-    def _reachable_refs_dir(self, reachable, tree, update_mtime=False, check_exists=False):
-        if tree.hash in reachable:
-            return
-        try:
-            if update_mtime:
-                os.utime(self.objpath(tree))
-
-            reachable.add(tree.hash)
-
-            directory = remote_execution_pb2.Directory()
-
-            with open(self.objpath(tree), "rb") as f:
-                directory.ParseFromString(f.read())
-
-        except FileNotFoundError:
-            if check_exists:
-                raise
-
-            # Just exit early if the file doesn't exist
-            return
-
-        for filenode in directory.files:
-            if update_mtime:
-                os.utime(self.objpath(filenode.digest))
-            if check_exists:
-                if not os.path.exists(self.objpath(filenode.digest)):
-                    raise FileNotFoundError
-            reachable.add(filenode.digest.hash)
-
-        for dirnode in directory.directories:
-            self._reachable_refs_dir(reachable, dirnode.digest, update_mtime=update_mtime, check_exists=check_exists)
-
     # _temporary_object():
     #
     # Returns:
