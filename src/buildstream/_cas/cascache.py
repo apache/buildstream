@@ -272,6 +272,24 @@ class CASCache:
     def objpath(self, digest):
         return os.path.join(self.casdir, "objects", digest.hash[:2], digest.hash[2:])
 
+    # open():
+    #
+    # Open file read-only by CAS digest and return a corresponding file object.
+    #
+    # Args:
+    #     digest (Digest): The digest of the object
+    #     mode (str): An optional string that specifies the mode in which the file is opened.
+    #
+    @contextlib.contextmanager
+    def open(self, digest, mode="r"):
+        if mode not in ["r", "rb"]:
+            raise ValueError("Unsupported mode: `{}`".format(mode))
+
+        objpath = self.objpath(digest)
+
+        with open(objpath, mode=mode) as f:
+            yield f
+
     # add_object():
     #
     # Hash and write object to CAS.
