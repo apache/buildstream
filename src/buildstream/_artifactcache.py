@@ -508,7 +508,7 @@ class ArtifactCache(AssetCache):
             # Fetch and parse artifact proto
             self.cas.fetch_blobs(remote, [artifact_digest])
             artifact = artifact_pb2.Artifact()
-            with open(self.cas.objpath(artifact_digest), "rb") as f:
+            with self.cas.open(artifact_digest, "rb") as f:
                 artifact.ParseFromString(f.read())
 
             # Write the artifact proto to cache

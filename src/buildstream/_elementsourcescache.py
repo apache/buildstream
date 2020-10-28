@@ -299,7 +299,7 @@ class ElementSourcesCache(AssetCache):
             # Fetch and parse source proto
             self.cas.fetch_blobs(remote, [source_digest])
             source = source_pb2.Source()
-            with open(self.cas.objpath(source_digest), "rb") as f:
+            with self.cas.open(source_digest, "rb") as f:
                 source.ParseFromString(f.read())
 
             # Write the source proto to cache

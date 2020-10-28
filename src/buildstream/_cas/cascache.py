@@ -545,8 +545,7 @@ class CASCache:
 
         tree = remote_execution_pb2.Tree()
 
-        objpath = self.objpath(digest)
-        with open(objpath, "rb") as f:
+        with self.open(digest, "rb") as f:
             tree.ParseFromString(f.read())
 
         dirbuffers = [tree.root.SerializeToString()]
