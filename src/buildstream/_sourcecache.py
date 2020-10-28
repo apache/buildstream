@@ -146,9 +146,6 @@ class SourceCache(AssetCache):
 
                 # Fetch source blobs
                 self.cas._fetch_directory(remote, source_digest)
-                required_blobs = self.cas.required_blobs_for_directory(source_digest)
-                missing_blobs = self.cas.local_missing_blobs(required_blobs)
-                self.cas.fetch_blobs(remote, missing_blobs)
 
                 source.info("Pulled source {} <- {}".format(display_key, remote))
                 return True

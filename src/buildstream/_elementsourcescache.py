@@ -295,13 +295,6 @@ class ElementSourcesCache(AssetCache):
     #    blobs not existing on the server.
     #
     def _pull_source_storage(self, key, source_digest, remote):
-        def __pull_digest(digest):
-            self.cas._fetch_directory(remote, digest)
-            required_blobs = self.cas.required_blobs_for_directory(digest)
-            missing_blobs = self.cas.local_missing_blobs(required_blobs)
-            if missing_blobs:
-                self.cas.fetch_blobs(remote, missing_blobs)
-
         try:
             # Fetch and parse source proto
             self.cas.fetch_blobs(remote, [source_digest])
@@ -314,7 +307,7 @@ class ElementSourcesCache(AssetCache):
             with utils.save_file_atomic(source_path, mode="wb") as f:
                 f.write(source.SerializeToString())
 
-            __pull_digest(source.files)
+            self.cas._fetch_directory(remote, source.files)
         except grpc.RpcError as e:
             if e.code() != grpc.StatusCode.NOT_FOUND:
                 raise SourceCacheError("Failed to pull source with status {}: {}".format(e.code().name, e.details()))
