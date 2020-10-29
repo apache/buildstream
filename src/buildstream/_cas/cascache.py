@@ -152,13 +152,7 @@ class CASCache:
     # Returns: True if the files are in the cache, False otherwise
     #
     def contains_files(self, digests):
-        cas = self.get_cas()
-
-        request = remote_execution_pb2.FindMissingBlobsRequest()
-        request.blob_digests.extend(digests)
-
-        response = cas.FindMissingBlobs(request)
-        return len(response.missing_blob_digests) == 0
+        return len(self.missing_blobs(digests)) == 0
 
     # contains_directory():
     #
@@ -400,7 +394,7 @@ class CASCache:
 
         return utils._message_digest(root_directory)
 
-    # remote_missing_blobs_for_directory():
+    # missing_blobs_for_directory():
     #
     # Determine which blobs of a directory tree are missing on the remote.
     #
@@ -409,23 +403,27 @@ class CASCache:
     #
     # Returns: List of missing Digest objects
     #
-    def remote_missing_blobs_for_directory(self, remote, digest):
+    def missing_blobs_for_directory(self, digest, *, remote=None):
         required_blobs = self.required_blobs_for_directory(digest)
 
-        return self.remote_missing_blobs(remote, required_blobs)
+        return self.missing_blobs(required_blobs, remote=remote)
 
-    # remote_missing_blobs():
+    # missing_blobs():
     #
-    # Determine which blobs are missing on the remote.
+    # Determine which blobs are missing locally or on the remote.
     #
     # Args:
     #     blobs ([Digest]): List of directory digests to check
     #
     # Returns: List of missing Digest objects
     #
-    def remote_missing_blobs(self, remote, blobs):
+    def missing_blobs(self, blobs, *, remote=None):
         cas = self.get_cas()
-        instance_name = remote.local_cas_instance_name
+
+        if remote:
+            instance_name = remote.local_cas_instance_name
+        else:
+            instance_name = ""
 
         missing_blobs = dict()
         # Limit size of FindMissingBlobs request
@@ -449,23 +447,6 @@ class CASCache:
                 missing_blobs[d.hash] = d
 
         return missing_blobs.values()
-
-    # local_missing_blobs():
-    #
-    # Check local cache for missing blobs.
-    #
-    # Args:
-    #    digests (list): The Digests of blobs to check
-    #
-    # Returns: Missing Digest objects
-    #
-    def local_missing_blobs(self, digests):
-        missing_blobs = []
-        for digest in digests:
-            objpath = self.objpath(digest)
-            if not os.path.exists(objpath):
-                missing_blobs.append(digest)
-        return missing_blobs
 
     # required_blobs_for_directory():
     #
