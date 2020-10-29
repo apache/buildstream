@@ -339,7 +339,7 @@ class ArtifactCache(AssetCache):
         for remote in push_remotes:
             remote.init()
 
-            remote_missing_blobs = self.cas.remote_missing_blobs(remote, missing_blobs)
+            remote_missing_blobs = self.cas.missing_blobs(missing_blobs, remote=remote)
 
             for blob in remote_missing_blobs:
                 if blob not in remote_missing_blobs_list:

@@ -271,7 +271,7 @@ class SandboxRemote(SandboxREAPI):
         dir_digest = vdir._get_digest()
         required_blobs = cascache.required_blobs_for_directory(dir_digest)
 
-        local_missing_blobs = cascache.local_missing_blobs(required_blobs)
+        local_missing_blobs = cascache.missing_blobs(required_blobs)
         if local_missing_blobs:
             with CASRemote(self.storage_remote_spec, cascache) as casremote:
                 cascache.fetch_blobs(casremote, local_missing_blobs)
@@ -304,14 +304,14 @@ class SandboxRemote(SandboxREAPI):
                     # Determine blobs missing on remote
                     try:
                         input_root_digest = action.input_root_digest
-                        missing_blobs = list(cascache.remote_missing_blobs_for_directory(casremote, input_root_digest))
+                        missing_blobs = list(cascache.missing_blobs_for_directory(input_root_digest, remote=casremote))
                     except grpc.RpcError as e:
                         raise SandboxError("Failed to determine missing blobs: {}".format(e)) from e
 
                     # Check if any blobs are also missing locally (partial artifact)
                     # and pull them from the artifact cache.
                     try:
-                        local_missing_blobs = cascache.local_missing_blobs(missing_blobs)
+                        local_missing_blobs = cascache.missing_blobs(missing_blobs)
                         if local_missing_blobs:
                             artifactcache.fetch_missing_blobs(project, local_missing_blobs)
                     except (grpc.RpcError, BstError) as e:
