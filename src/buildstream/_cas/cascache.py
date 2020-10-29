@@ -550,13 +550,14 @@ class CASCache:
         with open(objpath, "rb") as f:
             tree.ParseFromString(f.read())
 
-        tree.children.extend([tree.root])
+        dirbuffers = [tree.root.SerializeToString()]
         for directory in tree.children:
-            dirbuffer = directory.SerializeToString()
-            dirdigest = self.add_object(buffer=dirbuffer)
-            assert dirdigest.size_bytes == len(dirbuffer)
+            dirbuffers.append(directory.SerializeToString())
 
-        return dirdigest
+        dirdigests = self.add_objects(buffers=dirbuffers)
+
+        # The digest of the root directory
+        return dirdigests[0]
 
     # fetch_blobs():
     #
