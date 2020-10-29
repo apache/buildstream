@@ -283,10 +283,8 @@ class CASCache:
     # Hash and write object to CAS.
     #
     # Args:
-    #     digest (Digest): An optional Digest object to populate
     #     path (str): Path to file to add
     #     buffer (bytes): Byte buffer to add
-    #     link_directly (bool): Whether file given by path can be linked
     #     instance_name (str): casd instance_name for remote CAS
     #
     # Returns:
@@ -294,15 +292,11 @@ class CASCache:
     #
     # Either `path` or `buffer` must be passed, but not both.
     #
-    def add_object(self, *, digest=None, path=None, buffer=None, link_directly=False, instance_name=None):
+    def add_object(self, *, path=None, buffer=None, instance_name=None):
         # Exactly one of the two parameters has to be specified
         assert (path is None) != (buffer is None)
 
-        # If we're linking directly, then path must be specified.
-        assert (not link_directly) or (link_directly and path)
-
-        if digest is None:
-            digest = remote_execution_pb2.Digest()
+        digest = remote_execution_pb2.Digest()
 
         with contextlib.ExitStack() as stack:
             if path is None:
