@@ -220,7 +220,7 @@ class CasBasedDirectory(Directory):
         return newdir
 
     def _add_file(self, name, path, modified=False, can_link=False, properties=None):
-        digest = self.cas_cache.add_object(path=path, link_directly=can_link)
+        digest = self.cas_cache.add_object(path=path)
         is_executable = os.access(path, os.X_OK)
         mtime = None
         if properties and "mtime" in properties:
