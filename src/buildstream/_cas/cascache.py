@@ -295,37 +295,69 @@ class CASCache:
     def add_object(self, *, path=None, buffer=None, instance_name=None):
         # Exactly one of the two parameters has to be specified
         assert (path is None) != (buffer is None)
+        if path is None:
+            digests = self.add_objects(buffers=[buffer], instance_name=instance_name)
+        else:
+            digests = self.add_objects(paths=[path], instance_name=instance_name)
+        assert len(digests) == 1
+        return digests[0]
 
-        digest = remote_execution_pb2.Digest()
+    # add_objects():
+    #
+    # Hash and write objects to CAS.
+    #
+    # Args:
+    #     paths (List[str]): Paths to files to add
+    #     buffers (List[bytes]): Byte buffers to add
+    #     instance_name (str): casd instance_name for remote CAS
+    #
+    # Returns:
+    #     (List[Digest]): The digests of the added objects
+    #
+    # Either `paths` or `buffers` must be passed, but not both.
+    #
+    def add_objects(self, *, paths=None, buffers=None, instance_name=None):
+        # Exactly one of the two parameters has to be specified
+        assert (paths is None) != (buffers is None)
+
+        digests = []
 
         with contextlib.ExitStack() as stack:
-            if path is None:
-                tmp = stack.enter_context(self._temporary_object())
-                tmp.write(buffer)
-                tmp.flush()
-                path = tmp.name
+            if paths is None:
+                paths = []
+                for buffer in buffers:
+                    tmp = stack.enter_context(self._temporary_object())
+                    tmp.write(buffer)
+                    tmp.flush()
+                    paths.append(tmp.name)
 
             request = local_cas_pb2.CaptureFilesRequest()
             if instance_name:
                 request.instance_name = instance_name
 
-            request.path.append(path)
+            for path in paths:
+                request.path.append(path)
 
             local_cas = self.get_local_cas()
 
             response = local_cas.CaptureFiles(request)
 
-            if len(response.responses) != 1:
-                raise CASCacheError("Expected 1 response from CaptureFiles, got {}".format(len(response.responses)))
+            if len(response.responses) != len(paths):
+                raise CASCacheError(
+                    "Expected {} responses from CaptureFiles, got {}".format(len(paths), len(response.responses))
+                )
 
-            blob_response = response.responses[0]
-            if blob_response.status.code == code_pb2.RESOURCE_EXHAUSTED:
-                raise CASCacheError("Cache too full", reason="cache-too-full")
-            if blob_response.status.code != code_pb2.OK:
-                raise CASCacheError("Failed to capture blob {}: {}".format(path, blob_response.status.code))
-            digest.CopyFrom(blob_response.digest)
+            for path, blob_response in zip(paths, response.responses):
+                if blob_response.status.code == code_pb2.RESOURCE_EXHAUSTED:
+                    raise CASCacheError("Cache too full", reason="cache-too-full")
+                if blob_response.status.code != code_pb2.OK:
+                    raise CASCacheError("Failed to capture blob {}: {}".format(path, blob_response.status.code))
 
-        return digest
+                digest = remote_execution_pb2.Digest()
+                digest.CopyFrom(blob_response.digest)
+                digests.append(digest)
+
+        return digests
 
     # import_directory():
     #
