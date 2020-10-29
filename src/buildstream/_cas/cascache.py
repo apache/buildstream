@@ -482,29 +482,6 @@ class CASCache:
             os.chmod(f.name, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
             yield f
 
-    # _ensure_blob():
-    #
-    # Fetch and add blob if it's not already local.
-    #
-    # Args:
-    #     remote (Remote): The remote to use.
-    #     digest (Digest): Digest object for the blob to fetch.
-    #
-    # Returns:
-    #     (str): The path of the object
-    #
-    def _ensure_blob(self, remote, digest):
-        objpath = self.objpath(digest)
-        if os.path.exists(objpath):
-            # already in local repository
-            return objpath
-
-        batch = _CASBatchRead(remote)
-        batch.add(digest)
-        batch.send()
-
-        return objpath
-
     # _fetch_directory():
     #
     # Fetches remote directory and adds it to content addressable store.
@@ -539,10 +516,11 @@ class CASCache:
         self.fetch_blobs(remote, required_blobs)
 
     def _fetch_tree(self, remote, digest):
-        objpath = self._ensure_blob(remote, digest)
+        self.fetch_blobs(remote, [digest])
 
         tree = remote_execution_pb2.Tree()
 
+        objpath = self.objpath(digest)
         with open(objpath, "rb") as f:
             tree.ParseFromString(f.read())
 
