@@ -1,4 +1,10 @@
 =================
+buildstream 1.6.1
+=================
+
+  o Fix failure handling with CAS (#1403)
+
+=================
 buildstream 1.6.0
 =================
 

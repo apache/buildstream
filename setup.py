@@ -261,6 +261,8 @@ setup(name='BuildStream',
           'Programming Language :: Python :: 3.5',
           'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7',
+          'Programming Language :: Python :: 3.8',
+          'Programming Language :: Python :: 3.9',
           'Topic :: Software Development :: Build Tools'
       ],
       description='A framework for modelling build pipelines in YAML',
