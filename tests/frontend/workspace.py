@@ -3,7 +3,7 @@ import pytest
 import shutil
 import subprocess
 from ruamel.yaml.comments import CommentedSet
-from tests.testutils import cli, create_repo, ALL_REPO_KINDS
+from tests.testutils import cli, create_repo, ALL_REPO_KINDS, site
 
 from buildstream import _yaml
 from buildstream._exceptions import ErrorDomain, LoadError, LoadErrorReason
@@ -517,6 +517,9 @@ def test_detect_modifications(cli, tmpdir, datafiles, modification, strict):
     elif modification == 'removefile':
         os.remove(os.path.join(workspace, 'usr', 'bin', 'hello'))
     elif modification == 'modifyfile':
+        if not site.have_subsecond_mtime(tmpdir):
+            pytest.skip("Filesystem does not support subsecond mtime precision: {}".format(tmpdir))
+
         with open(os.path.join(workspace, 'usr', 'bin', 'hello'), 'w') as f:
             f.write('cookie')
     else:
