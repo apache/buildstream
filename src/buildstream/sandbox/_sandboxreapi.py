@@ -123,8 +123,10 @@ class SandboxREAPI(Sandbox):
 
         platform_dict = {}
 
-        platform_dict["OSFamily"] = config.build_os
-        platform_dict["ISA"] = config.build_arch
+        if config.build_os:
+            platform_dict["OSFamily"] = config.build_os
+        if config.build_arch:
+            platform_dict["ISA"] = config.build_arch
 
         if flags & SandboxFlags.INHERIT_UID:
             uid = os.geteuid()

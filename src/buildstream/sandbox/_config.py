@@ -29,19 +29,25 @@ class SandboxConfig:
         host_arch = platform.get_host_arch()
         host_os = platform.get_host_os()
 
-        sandbox_config.validate_keys(["build-uid", "build-gid", "build-os", "build-arch"])
+        sandbox_config.validate_keys(["build-uid", "build-gid", "build-os", "build-arch", "disable-defaults"])
+
+        self.disable_defaults = sandbox_config.get_str("disable-defaults", default=None)
 
         build_os = sandbox_config.get_str("build-os", default=None)
         if build_os:
             self.build_os = build_os.lower()
-        else:
+        elif not self.disable_defaults:
             self.build_os = host_os
+        else:
+            self.build_os = None
 
         build_arch = sandbox_config.get_str("build-arch", default=None)
         if build_arch:
             self.build_arch = Platform.canonicalize_arch(build_arch)
-        else:
+        elif not self.disable_defaults:
             self.build_arch = host_arch
+        else:
+            self.build_arch = None
 
         self.build_uid = sandbox_config.get_int("build-uid", None)
         self.build_gid = sandbox_config.get_int("build-gid", None)
@@ -56,7 +62,12 @@ class SandboxConfig:
     #
     def get_unique_key(self):
 
-        unique_key = {"os": self.build_os, "arch": self.build_arch}
+        unique_key = {}
+        if self.build_os is not None:
+            unique_key["os"] = self.build_os
+
+        if self.build_arch is not None:
+            unique_key["arch"] = self.build_arch
 
         if self.build_uid is not None:
             unique_key["build-uid"] = self.build_uid

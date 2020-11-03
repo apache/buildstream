@@ -72,9 +72,9 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
     @classmethod
     def check_sandbox_config(cls, platform, config):
-        if config.build_os not in cls._osfamilies:
+        if config.build_os is not None and config.build_os not in cls._osfamilies:
             raise SandboxError("OS '{}' is not supported by buildbox-run.".format(config.build_os))
-        if config.build_arch not in cls._isas:
+        if config.build_arch is not None and config.build_arch not in cls._isas:
             raise SandboxError("ISA '{}' is not supported by buildbox-run.".format(config.build_arch))
 
         if config.build_uid is not None and "platform:unixUID" not in cls._capabilities:
