@@ -1,5 +1,5 @@
 pexpect
-pylint
+pylint == 2.5.3
 # Pytest 6.0.0 doesn't play well with pylint
 pytest >= 6.0.1
 pytest-datafiles >= 2.0
