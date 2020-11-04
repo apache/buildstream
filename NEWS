@@ -14,6 +14,8 @@ Format
 Core
 ----
 
+  o BuildStream now also supports Python 3.9.
+
   o BREAKING CHANGE: Changed API signatures to remove Scope type from the API
     - Element.dependencies()
     - Element.stage_dependency_artifacts()
