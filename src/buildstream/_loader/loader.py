@@ -392,6 +392,66 @@ class Loader:
 
         return path
 
+    # _load_one_file():
+    #
+    # A helper function to load a single file within the _load_file() process,
+    # this allows us to handle redirections more consistently.
+    #
+    # Args:
+    #    filename (str): The element-path relative bst file
+    #    provenance_node (Node): The location from where the file was referred to, or None
+    #    load_subprojects (bool): Whether to load subprojects
+    #
+    # Returns:
+    #    (LoadElement): A LoadElement, which might be shallow loaded or fully loaded.
+    #
+    def _load_one_file(self, filename, provenance_node, *, load_subprojects=True):
+
+        element = None
+
+        # First check the cache, the cache might contain shallow loaded
+        # elements.
+        #
+        try:
+            element = self._elements[filename]
+
+            # If the cached element has already entered the loop which loads
+            # it's dependencies, it is fully loaded and any further checks in
+            # this function are expected to have already been performed.
+            #
+            if element.fully_loaded:
+                return element
+
+        except KeyError:
+
+            # Shallow load if it's not yet loaded.
+            element = self._load_file_no_deps(filename, provenance_node)
+
+        # Check if there was an override for this element
+        #
+        override = self._search_for_override_element(filename)
+        if override:
+            #
+            # If there was an override for the element, then it was
+            # implicitly fully loaded by _search_for_override_element(),
+            #
+            return override
+
+        # If this element is a link then we need to resolve it, and return
+        # the linked element instead of this one.
+        #
+        if element.link_target is not None:
+            link_target = element.link_target.as_str()  # pylint: disable=no-member
+            _, filename, loader = self._parse_name(link_target, element.link_target, load_subprojects=load_subprojects)
+
+            #
+            # Redirect the loading of the file and it's dependencies to the appropriate loader,
+            # which might or might not be the same loader.
+            #
+            return loader._load_file(filename, element.link_target, load_subprojects=load_subprojects)
+
+        return element
+
     # _load_file():
     #
     # Semi-Iteratively load bst files
@@ -402,32 +462,26 @@ class Loader:
     #
     # Args:
     #    filename (str): The element-path relative bst file
-    #    load_subprojects (bool): Whether to load subprojects
     #    provenance_node (Node): The location from where the file was referred to, or None
+    #    load_subprojects (bool): Whether to load subprojects
     #
     # Returns:
     #    (LoadElement): A loaded LoadElement
     #
     def _load_file(self, filename, provenance_node, *, load_subprojects=True):
 
-        # Silently ignore already loaded files
-        with suppress(KeyError):
-            return self._elements[filename]
+        top_element = self._load_one_file(filename, provenance_node, load_subprojects=load_subprojects)
 
-        top_element = self._load_file_no_deps(filename, provenance_node)
+        # Already loaded dependencies for a fully loaded element, early return.
+        #
+        if top_element.fully_loaded:
+            return top_element
 
-        # If this element is a link then we need to resolve it
-        # and replace the dependency we've processed with this one
-        if top_element.link_target is not None:
-            link_target = top_element.link_target.as_str()  # pylint: disable=no-member
-            _, filename, loader = self._parse_name(
-                link_target, top_element.link_target, load_subprojects=load_subprojects
-            )
-
-            # Early return, redirect the loading of the file and it's dependencies to the
-            # appropriate loader.
-            #
-            return loader._load_file(filename, top_element.link_target, load_subprojects=load_subprojects)
+        #
+        # Mark the top element here as "fully loaded", so that we will avoid trying to
+        # load it's dependencies more than once.
+        #
+        top_element.mark_fully_loaded()
 
         dependencies = extract_depends_from_node(top_element.node)
         # The loader queue is a stack of tuples
@@ -449,14 +503,18 @@ class Loader:
                 if dep.junction:
                     loader = self.get_loader(dep.junction, dep.node)
                     dep_element = loader._load_file(dep.name, dep.node)
-                else:
-                    dep_element = self._elements.get(dep.name)
 
-                    if dep_element is None:
-                        # The loader does not have this available so we need to
-                        # either recursively cause it to be loaded, or else we
-                        # need to push this onto the loader queue in this loader
-                        dep_element = self._load_file_no_deps(dep.name, dep.node)
+                else:
+
+                    dep_element = self._load_one_file(dep.name, dep.node, load_subprojects=load_subprojects)
+
+                    # If the loaded element is not fully loaded, queue up the dependencies to be loaded in this loop.
+                    #
+                    if not dep_element.fully_loaded:
+
+                        # Mark the dep_element as fully_loaded, as we're already queueing it's deps
+                        dep_element.mark_fully_loaded()
+
                         dep_deps = extract_depends_from_node(dep_element.node)
                         loader_queue.append((dep_element, list(reversed(dep_deps)), []))
 
@@ -466,12 +524,6 @@ class Loader:
                                 "{}: Cannot depend on junction".format(dep.node.get_provenance()),
                                 LoadErrorReason.INVALID_DATA,
                             )
-
-                # If this dependency is a link then we need to resolve it
-                # and replace the dependency we've processed with this one
-                if dep_element.link_target:
-                    _, filename, loader = self._parse_name(dep_element.link_target.as_str(), dep_element.link_target)
-                    dep_element = loader._load_file(filename, dep_element.link_target)
 
                 # We've now resolved the element for this dependency, lets set the resolved
                 # LoadElement on the dependency and append the dependency to the owning
@@ -572,19 +624,19 @@ class Loader:
 
         return None
 
-    # _search_for_override():
+    # _search_for_overrides():
     #
-    # Search parent projects for an overridden subproject to replace this junction.
-    #
-    # This function is called once for each direct child while looking up
-    # child loaders, after which point the child loader is cached in the `_loaders`
-    # table. This function also has the side effect of recording alternative parents
-    # of a child loader in the case that the child loader is overridden.
+    # Search for parent loaders which have an override for the specified element,
+    # returning a list of loaders with the highest level overriding loader at the
+    # end of the list, and the closest ancestor being at the beginning of the list.
     #
     # Args:
-    #    filename (str): Junction name
+    #    filename (str): The local element name
     #
-    def _search_for_override(self, filename):
+    # Returns:
+    #    (list): A list of loaders which override this element
+    #
+    def _search_for_overrides(self, filename):
         loader = self
         override_path = filename
 
@@ -599,6 +651,29 @@ class Loader:
 
             override_path = junction.name + ":" + override_path
             loader = loader._parent
+
+        return overriding_loaders
+
+    # _search_for_override_loader():
+    #
+    # Search parent projects an override of the junction specified by @filename,
+    # returning the loader object which should be used in place of the local
+    # junction specified by @filename.
+    #
+    # This function is called once for each direct child while looking up
+    # child loaders, after which point the child loader is cached in the `_loaders`
+    # table. This function also has the side effect of recording alternative parents
+    # of a child loader in the case that the child loader is overridden.
+    #
+    # Args:
+    #    filename (str): Junction name
+    #
+    # Returns:
+    #    (Loader): The loader to use, in case @filename was overridden, otherwise None.
+    #
+    def _search_for_override_loader(self, filename):
+
+        overriding_loaders = self._search_for_overrides(filename)
 
         # If there are any overriding loaders, use the highest one in
         # the ancestry to lookup the loader for this project.
@@ -630,6 +705,34 @@ class Loader:
         #
         return None
 
+    # _search_for_override_element():
+    #
+    # Search parent projects an override of the element specified by @filename,
+    # returning the loader object which should be used in place of the local
+    # element specified by @filename.
+    #
+    # Args:
+    #    filename (str): Junction name
+    #
+    # Returns:
+    #    (Loader): The loader to use, in case @filename was overridden, otherwise None.
+    #
+    def _search_for_override_element(self, filename):
+        element = None
+
+        # If there are any overriding loaders, use the highest one in
+        # the ancestry to lookup the element which should be used in place
+        # of @filename.
+        #
+        overriding_loaders = self._search_for_overrides(filename)
+        if overriding_loaders:
+            overriding_loader, override_node = overriding_loaders[-1]
+
+            _, filename, loader = overriding_loader._parse_name(override_node.as_str(), override_node)
+            element = loader._load_file(filename, override_node)
+
+        return element
+
     # _get_loader():
     #
     # Return loader for specified junction
@@ -660,7 +763,7 @@ class Loader:
         # Search the ancestry for an overridden loader to use in place
         # of using the locally defined junction.
         #
-        override_loader = self._search_for_override(filename)
+        override_loader = self._search_for_override_loader(filename)
         if override_loader:
             self._loaders[filename] = override_loader
             return override_loader

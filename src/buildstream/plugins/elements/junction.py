@@ -48,8 +48,7 @@ Overview
      # Optionally look in a subpath of the source repository for the project
      path: projects/hello
 
-     # Optionally override junction configurations in the subproject
-     # with a junction declaration in this project.
+     # Optionally override elements in subprojects, including junctions.
      #
      overrides:
        subproject-junction.bst: local-junction.bst
@@ -138,6 +137,79 @@ configuration in a subproject which matches the toplevel project's
 configuration.
 
 
+Overriding elements
+-------------------
+It is possible to override elements in subprojects. This can be useful if for
+example, you need to work with a custom variant or fork of some software in the
+subproject. This is a better strategy than overlapping and overwriting shared
+libraries built by the subproject later on, as we can ensure that reverse dependencies
+in the subproject are built against the overridden element.
+
+Overridding elements allows you to build on top of an existing project
+and benefit from updates and releases for the vast majority of the upstream project,
+even when there are some parts of the upstream project which need to be customized
+for your own applications.
+
+Even junction elements in subprojects can be overridden, this is sometimes important
+in order to reconcile conflicts when multiple projects depend on the same subproject,
+as :ref:`discussed below <core_junction_nested_overrides>`.
+
+.. code:: yaml
+
+   kind: junction
+
+   ...
+
+   config:
+
+     # Override elements in a junctioned project
+     #
+     overrides:
+       subproject-element.bst: local-element.bst
+
+It is also possible to override elements in deeply nested subprojects, using
+project relative :ref:`junction paths <format_element_names>`:
+
+.. code:: yaml
+
+   kind: junction
+
+   ...
+
+   config:
+
+     # Override deeply nested elements
+     #
+     overrides:
+       subproject.bst:subsubproject-element.bst: local-element.bst
+
+.. attention::
+
+   Overriding an element causes your project to completely define the
+   element being overridden, which means you will no longer receive updates
+   or security patches to the element in question when updating to newer
+   versions and releases of the upstream project.
+
+   As such, overriding elements is only recommended in cases where the
+   element is very significantly redefined.
+
+   Such cases include cases when you need a newer version of the element than
+   the one maintained by the upstream project you are using as a subproject,
+   or when you have significanly modified the code in your own custom ways.
+
+   If you only need to introduce a security patch, then it is recommended that
+   you create your own downstream branch of the upstream project, not only will
+   this allow you to more easily consume updates with VCS tools like ``git rebase``,
+   but it will also be more convenient for submitting your security patches
+   to the upstream project so that you can drop them in a future update.
+
+   Similarly, if you only need to enable/disable a specific feature of a module,
+   it is also preferrable to use a downstream branch of the upstream project.
+   In such a case, it is also worth trying to convince the upstream project to
+   support a :ref:`project option <project_options>` for your specific element
+   configuration, if it would be of use to other users too.
+
+
 .. _core_junction_nested:
 
 Nested Junctions
@@ -151,6 +223,8 @@ simply use one junction and ignore the others. Due to this, BuildStream requires
 the user to resolve conflicting nested junctions, and will provide an error
 message whenever a conflict is detected.
 
+
+.. _core_junction_nested_overrides:
 
 Overriding subproject junctions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
