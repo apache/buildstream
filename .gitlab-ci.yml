@@ -28,7 +28,7 @@ variables:
   DOCKER_IMAGE_VERSION: master-210859421
   PYTEST_ADDOPTS: "--color=yes"
   INTEGRATION_CACHE: "${CI_PROJECT_DIR}/cache/integration-cache"
-  PYTEST_ARGS: "--color=yes --integration -n 2"
+  PYTEST_ARGS: "--color=yes --integration -n auto"
   TEST_COMMAND: "tox -- ${PYTEST_ARGS}"
   TOXENV: py36, py37, py38-nocover, py39-nocover, py36-plugins, py37-plugins, py38-plugins-nocover, py39-plugins-nocover
   COVERAGE_PREFIX: "${CI_JOB_NAME}."
