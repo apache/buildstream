@@ -2721,8 +2721,8 @@ class Element(Plugin):
 
     # __use_remote_execution():
     #
-    # Returns True if remote execution is configured and the element plugin
-    # supports it.
+    # Returns True if remote execution is configured, defaults to user defined
+    # project-specific overrides, project config, or global user config.
     #
     def __use_remote_execution(self):
         return bool(self.__remote_execution_specs)
