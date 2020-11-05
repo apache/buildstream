@@ -103,6 +103,8 @@ class RemoteServices:
         self.storage_service = kwargs.get("storage_service")
         self.artifact_index_service = kwargs.get("artifact_index_service")
         self.artifact_storage_service = kwargs.get("artifact_storage_service")
+        self.use_defaults = kwargs.get("default_properties")
+        self.custom_properties = kwargs.get("custom_properties")
 
 
 @pytest.fixture(scope="session")
@@ -125,6 +127,12 @@ def remote_services(request):
 
     if "SOURCE_CACHE_SERVICE" in os.environ:
         kwargs["source_service"] = os.environ.get("SOURCE_CACHE_SERVICE")
+
+    if "DEFAULT_PROPERTIES" in os.environ:
+        kwargs["default_properties"] = os.environ.get("DEFAULT_PROPERTIES")
+
+    if "CUSTOM_PROPERTIES" in os.environ:
+        kwargs["custom_properties"] = os.environ.get("CUSTOM_PROPERTIES")
 
     return RemoteServices(**kwargs)
 

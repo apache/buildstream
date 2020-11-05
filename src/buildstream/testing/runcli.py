@@ -805,7 +805,14 @@ def cli_remote_execution(tmpdir, remote_services):
         remote_execution["storage-service"] = {
             "url": remote_services.storage_service,
         }
+    if remote_services.custom_properties:
+        # Expected string with substring pattern "--platform property=value"
+        remote_execution["custom-platform-properties"] = dict(
+            s.split("=") for s in remote_services.custom_properties.replace("--platform", "").split()
+        )
     if remote_execution:
+        if not remote_services.use_defaults:
+            remote_execution["default-platform-properties"] = False
         fixture.configure({"remote-execution": remote_execution})
 
     if remote_services.source_service:

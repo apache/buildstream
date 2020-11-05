@@ -119,30 +119,36 @@ class SandboxREAPI(Sandbox):
         # Request read-write directories as output
         output_directories = [os.path.relpath(dir, start=working_directory) for dir in read_write_directories]
 
-        config = self._get_config()
+        # Get the custom platform properties, if specified. These are not filtered
+        platform_dict = self._get_custom_platform_properties()
 
-        platform_dict = {}
+        # Unless explicitly disabled, generate default platform properties
+        if self._use_default_platform_properties():
+            config = self._get_config()
+            default_dict = {}
+            default_dict["OSFamily"] = config.build_os
+            default_dict["ISA"] = config.build_arch
 
-        platform_dict["OSFamily"] = config.build_os
-        platform_dict["ISA"] = config.build_arch
+            if flags & SandboxFlags.INHERIT_UID:
+                uid = os.geteuid()
+                gid = os.getegid()
+            else:
+                uid = config.build_uid
+                gid = config.build_gid
+            if uid is not None:
+                default_dict["unixUID"] = str(uid)
+            if gid is not None:
+                default_dict["unixGID"] = str(gid)
 
-        if flags & SandboxFlags.INHERIT_UID:
-            uid = os.geteuid()
-            gid = os.getegid()
-        else:
-            uid = config.build_uid
-            gid = config.build_gid
-        if uid is not None:
-            platform_dict["unixUID"] = str(uid)
-        if gid is not None:
-            platform_dict["unixGID"] = str(gid)
+            if flags & SandboxFlags.NETWORK_ENABLED:
+                default_dict["network"] = "on"
+            # Remove unsupported platform properties from the default dict
+            supported_properties = self._supported_platform_properties()
+            default_dict = {key: value for (key, value) in default_dict.items() if key in supported_properties}
 
-        if flags & SandboxFlags.NETWORK_ENABLED:
-            platform_dict["network"] = "on"
-
-        # Remove unsupported platform properties from the dict
-        supported_properties = self._supported_platform_properties()
-        platform_dict = {key: value for (key, value) in platform_dict.items() if key in supported_properties}
+            # Apply the defaults to the platform_dict. Default values take precedence
+            # on key collisions
+            platform_dict = {**platform_dict, **default_dict}
 
         # Create Platform message with properties sorted by name in code point order
         platform = remote_execution_pb2.Platform()
@@ -201,6 +207,12 @@ class SandboxREAPI(Sandbox):
 
     def _supported_platform_properties(self):
         return {"OSFamily", "ISA"}
+
+    def _get_custom_platform_properties(self):
+        return {}
+
+    def _use_default_platform_properties(self):
+        return True
 
 
 # _SandboxREAPIBatch()

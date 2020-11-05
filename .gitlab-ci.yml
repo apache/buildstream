@@ -193,6 +193,32 @@ tests-remote-execution:
     REMOTE_EXECUTION_SERVICE: http://docker:50051
     SOURCE_CACHE_SERVICE: http://docker:50052
     PYTEST_ARGS: "--color=yes --remote-execution"
+    DEFAULT_PROPERTIES: "--platform OSFamily=linux --platform ISA=x86-64" # Default properties, substitued in manifest
+
+tests-remote-execution-custom-property:
+  <<: *tests
+  <<: *remote-test # Spin up server stack
+  variables:
+    <<: *docker-variables
+    COMPOSE_MANIFEST: .gitlab-ci/buildgrid-remote-execution.yml # < *remote-test
+    ARTIFACT_CACHE_SERVICE: http://docker:50052
+    REMOTE_EXECUTION_SERVICE: http://docker:50051
+    SOURCE_CACHE_SERVICE: http://docker:50052
+    PYTEST_ARGS: "--color=yes --remote-execution"
+    DEFAULT_PROPERTIES: "--platform OSFamily=linux --platform ISA=x86-64"
+    CUSTOM_PROPERTIES: "--platform foo=bar" # Custom property, substituted in manifest. This extends defaults
+
+tests-remote-execution-no-default-properties:
+  <<: *tests
+  <<: *remote-test # Spin up server stack
+  variables:
+    <<: *docker-variables
+    COMPOSE_MANIFEST: .gitlab-ci/buildgrid-remote-execution.yml # < *remote-test
+    ARTIFACT_CACHE_SERVICE: http://docker:50052
+    REMOTE_EXECUTION_SERVICE: http://docker:50051
+    SOURCE_CACHE_SERVICE: http://docker:50052
+    PYTEST_ARGS: "--color=yes --remote-execution"
+    CUSTOM_PROPERTIES: "--platform OSFamily=linux --platform foo=bar" # No DEFAULT_PROPERTIES set, so these become the *only* properties (default-platform-properties: False)
 
 tests-remote-cache:
   <<: *tests

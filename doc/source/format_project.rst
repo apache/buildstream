@@ -327,6 +327,10 @@ using the `remote-execution` option:
     action-cache-service:
       url: http://bar.action.com:50052
       instance-name: development-emea-1
+    custom-platform-properties:
+      docker: docker://marketplace.gcr.io/google/rbe-ubuntu16-04
+    default-platform-properties: True
+
 
 storage-service specifies a remote CAS store and the parameters are the
 same as those used to specify an :ref:`artifact server <cache_servers>`.
@@ -346,6 +350,16 @@ the same endpoint (url).  You can supply a different instance name for
 name should be given to you by the service provider of each
 service. Not all remote execution and storage services support
 instance names.
+
+The custom-platform-properties is optional, properties can be be provided as
+key: value pairs and are included with the default properties. Pre-emptive
+compatability filtering isn't applied, and default values take precedence
+unless explicitly disabled.
+
+default-platform-properties is an optional bool & specifies if BuildStream
+should determine the platform properties & values (which can be set in 'sandbox' config)
+to be added to the remote sandbox commands. This behaviour defaults to True if
+not specified in the configuration.
 
 The Remote Execution API can be found via https://github.com/bazelbuild/remote-apis.
 
