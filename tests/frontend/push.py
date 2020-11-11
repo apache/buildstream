@@ -335,9 +335,7 @@ def test_push_artifacts_all_deps_fails(cli, tmpdir, datafiles):
 
         # Now try bst artifact push all the deps
         result = cli.run(project=project, args=["artifact", "push", "--deps", "all", artifact_ref])
-        result.assert_main_error(ErrorDomain.STREAM, None)
-
-        assert "Error: '--deps all' is not supported for artifact refs" in result.stderr
+        result.assert_main_error(ErrorDomain.STREAM, "deps-not-supported")
 
 
 # Tests that `bst build` won't push artifacts to the cache it just pulled from.

@@ -256,6 +256,4 @@ def test_artifact_delete_artifact_with_deps_all_fails(cli, tmpdir, datafiles):
 
     # Try to delete the artifact with all of its dependencies
     result = cli.run(project=project, args=["artifact", "delete", "--deps", "all", artifact])
-    result.assert_main_error(ErrorDomain.STREAM, None)
-
-    assert "Error: '--deps all' is not supported for artifact refs" in result.stderr
+    result.assert_main_error(ErrorDomain.STREAM, "deps-not-supported")

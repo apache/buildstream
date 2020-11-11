@@ -139,6 +139,7 @@ class Stream:
     #    selection (_PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from fetching
     #    use_artifact_config (bool): If artifact remote configs should be loaded
+    #    load_artifacts (bool): Whether to load artifacts with artifact names
     #
     # Returns:
     #    (list of Element): The selected elements
@@ -149,7 +150,7 @@ class Stream:
         selection=_PipelineSelection.NONE,
         except_targets=(),
         use_artifact_config=False,
-        load_refs=False
+        load_artifacts=False
     ):
         with PROFILER.profile(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, "-") for t in targets)):
             target_objects = self._load(
@@ -157,7 +158,7 @@ class Stream:
                 selection=selection,
                 except_targets=except_targets,
                 use_artifact_config=use_artifact_config,
-                load_refs=load_refs,
+                load_artifacts=load_artifacts,
             )
 
             return target_objects
@@ -396,7 +397,7 @@ class Stream:
             selection=selection,
             use_source_config=use_source_config,
             source_remote_url=remote,
-            load_refs=True,
+            load_artifacts=True,
         )
 
         if not self._sourcecache.has_push_remotes():
@@ -436,7 +437,7 @@ class Stream:
             ignore_junction_targets=ignore_junction_targets,
             use_artifact_config=use_config,
             artifact_remote_url=remote,
-            load_refs=True,
+            load_artifacts=True,
         )
 
         if not self._artifacts.has_fetch_remotes():
@@ -477,7 +478,7 @@ class Stream:
             ignore_junction_targets=ignore_junction_targets,
             use_artifact_config=use_config,
             artifact_remote_url=remote,
-            load_refs=True,
+            load_artifacts=True,
         )
 
         if not self._artifacts.has_push_remotes():
@@ -525,7 +526,7 @@ class Stream:
         tar=False
     ):
 
-        elements = self._load((target,), selection=selection, use_artifact_config=True, load_refs=True)
+        elements = self._load((target,), selection=selection, use_artifact_config=True, load_artifacts=True)
 
         # self.targets contains a list of the loaded target objects
         # if we specify --deps build, Stream._load() will return a list
@@ -609,7 +610,9 @@ class Stream:
     #
     def artifact_show(self, targets, *, selection=_PipelineSelection.NONE):
         # Obtain list of Element and/or ArtifactElement objects
-        target_objects = self.load_selection(targets, selection=selection, use_artifact_config=True, load_refs=True)
+        target_objects = self.load_selection(
+            targets, selection=selection, use_artifact_config=True, load_artifacts=True
+        )
 
         if self._artifacts.has_fetch_remotes():
             self._pipeline.check_remotes(target_objects)
@@ -634,7 +637,7 @@ class Stream:
     #
     def artifact_log(self, targets):
         # Return list of Element and/or ArtifactElement objects
-        target_objects = self.load_selection(targets, selection=_PipelineSelection.NONE, load_refs=True)
+        target_objects = self.load_selection(targets, selection=_PipelineSelection.NONE, load_artifacts=True)
 
         artifact_logs = {}
         for obj in target_objects:
@@ -662,7 +665,7 @@ class Stream:
     #
     def artifact_list_contents(self, targets):
         # Return list of Element and/or ArtifactElement objects
-        target_objects = self.load_selection(targets, selection=_PipelineSelection.NONE, load_refs=True)
+        target_objects = self.load_selection(targets, selection=_PipelineSelection.NONE, load_artifacts=True)
 
         elements_to_files = {}
         for obj in target_objects:
@@ -686,7 +689,7 @@ class Stream:
     #
     def artifact_delete(self, targets, *, selection=_PipelineSelection.NONE):
         # Return list of Element and/or ArtifactElement objects
-        target_objects = self.load_selection(targets, selection=selection, load_refs=True)
+        target_objects = self.load_selection(targets, selection=selection, load_artifacts=True)
 
         # Some of the targets may refer to the same key, so first obtain a
         # set of the refs to be removed.
@@ -1094,17 +1097,23 @@ class Stream:
     # the loaded artifact elements.
     #
     # Args:
-    #     targets - The target element names/artifact refs
-    #     except_targets - The names of elements to except
-    #     rewritable - Whether to load the elements in re-writable mode
+    #    targets - The target element names/artifact refs
+    #    except_targets - The names of elements to except
+    #    rewritable - Whether to load the elements in re-writable mode
+    #    valid_artifact_names: Whether artifact names are valid
     #
     # Returns:
-    #     ([elements], [except_elements], [artifact_elements])
+    #    ([elements], [except_elements], [artifact_elements])
     #
     def _load_elements_from_targets(
-        self, targets: List[str], except_targets: List[str], *, rewritable: bool = False
+        self,
+        targets: List[str],
+        except_targets: List[str],
+        *,
+        rewritable: bool = False,
+        valid_artifact_names: bool = False
     ) -> Tuple[List[Element], List[Element], List[Element]]:
-        names, refs = self._classify_artifacts(targets)
+        names, refs = self._expand_and_classify_targets(targets, valid_artifact_names=valid_artifact_names)
         loadable = [names, except_targets]
 
         self._project.load_context.set_rewritable(rewritable)
@@ -1211,6 +1220,8 @@ class Stream:
     #    use_source_config (bool): Whether to initialize remote source caches with the config
     #    artifact_remote_url (str): A remote url for initializing the artifacts
     #    source_remote_url (str): A remote url for initializing source caches
+    #    dynamic_plan (bool): Require artifacts as needed during the build
+    #    load_artifacts (bool): Whether to load artifacts with artifact names
     #
     # Returns:
     #    (list of Element): The primary element selection
@@ -1227,18 +1238,18 @@ class Stream:
         artifact_remote_url=None,
         source_remote_url=None,
         dynamic_plan=False,
-        load_refs=False
+        load_artifacts=False
     ):
         elements, except_elements, artifacts = self._load_elements_from_targets(
-            targets, except_targets, rewritable=False
+            targets, except_targets, rewritable=False, valid_artifact_names=load_artifacts
         )
 
         if artifacts:
-            if not load_refs:
-                detail = "\n".join(artifact.get_artifact_name() for artifact in artifacts)
-                raise ArtifactElementError("Cannot perform this operation with artifact refs:", detail=detail)
             if selection in (_PipelineSelection.ALL, _PipelineSelection.RUN):
-                raise StreamError("Error: '--deps {}' is not supported for artifact refs".format(selection.value))
+                raise StreamError(
+                    "Error: '--deps {}' is not supported for artifact names".format(selection.value),
+                    reason="deps-not-supported",
+                )
 
         if ignore_junction_targets:
             elements = [e for e in elements if e.get_kind() != "junction"]
@@ -1555,57 +1566,103 @@ class Stream:
 
         return required_list
 
-    # _classify_artifacts()
+    # _expand_and_classify_targets()
     #
-    # Split up a list of targets into element names and artifact refs
+    # Takes the user provided targets, expand any glob patterns, and
+    # return a new list of targets.
+    #
+    # If valid_artifact_names is specified, then glob patterns will
+    # also be checked for locally existing artifact names, and the
+    # targets will be classified into separate lists, any targets
+    # which are found to be an artifact name will be returned in
+    # the list of artifact names.
     #
     # Args:
-    #    targets (list): A list of targets
+    #    targets: A list of targets
+    #    valid_artifact_names: Whether artifact names are valid
     #
     # Returns:
     #    (list): element names present in the targets
-    #    (list): artifact refs present in the targets
+    #    (list): artifact names present in the targets
     #
-    def _classify_artifacts(self, targets):
+    def _expand_and_classify_targets(
+        self, targets: List[str], valid_artifact_names: bool = False
+    ) -> Tuple[List[str], List[str]]:
+        initial_targets = []
         element_targets = []
-        artifact_refs = []
-        element_globs = []
-        artifact_globs = []
+        artifact_names = []
+        globs = {}  # Count whether a glob matched elements and artifacts
 
+        # First extract the globs
         for target in targets:
-            if target.endswith(".bst"):
-                if any(c in "*?[" for c in target):
-                    element_globs.append(target)
-                else:
-                    element_targets.append(target)
+            if any(c in "*?[" for c in target):
+                globs[target] = 0
             else:
-                if any(c in "*?[" for c in target):
-                    artifact_globs.append(target)
+                initial_targets.append(target)
+
+        # Filter out any targets which are found to be artifact names
+        if valid_artifact_names:
+            for target in initial_targets:
+                try:
+                    verify_artifact_ref(target)
+                except ArtifactElementError:
+                    element_targets.append(target)
                 else:
-                    try:
-                        verify_artifact_ref(target)
-                    except ArtifactElementError:
-                        element_targets.append(target)
-                        continue
-                    artifact_refs.append(target)
+                    artifact_names.append(target)
+        else:
+            element_targets = initial_targets
 
-        if element_globs:
-            for dirpath, _, filenames in os.walk(self._project.element_path):
-                for filename in filenames:
+        # Expand globs for elements
+        all_elements = []
+        element_path_length = len(self._project.element_path) + 1
+        for dirpath, _, filenames in os.walk(self._project.element_path):
+            for filename in filenames:
+                if filename.endswith(".bst"):
                     element_path = os.path.join(dirpath, filename)
-                    length = len(self._project.element_path) + 1
-                    element_path = element_path[length:]  # Strip out the element_path
+                    element_path = element_path[element_path_length:]  # Strip out the element_path
+                    all_elements.append(element_path)
 
-                    if any(fnmatch(element_path, glob) for glob in element_globs):
-                        element_targets.append(element_path)
+        for glob in globs:
+            matched = False
+            for element_path in all_elements:
+                if fnmatch(element_path, glob):
+                    element_targets.append(element_path)
+                    matched = True
 
-        if artifact_globs:
-            for glob in artifact_globs:
-                artifact_refs.extend(self._artifacts.list_artifacts(glob=glob))
-            if not artifact_refs:
-                self._message(MessageType.WARN, "No artifacts found for globs: {}".format(", ".join(artifact_globs)))
+            if matched:
+                globs[glob] = globs[glob] + 1
 
-        return element_targets, artifact_refs
+        # Expand globs for artifact names
+        if valid_artifact_names:
+            for glob in globs:
+                matches = self._artifacts.list_artifacts(glob=glob)
+                if matches:
+                    artifact_names.extend(matches)
+                    globs[glob] = globs[glob] + 1
+
+        # Issue warnings and errors
+        unmatched = [glob for glob in globs if globs[glob] == 0]
+        doubly_matched = [glob for glob in globs if globs[glob] > 1]
+
+        # Warn the user if any of the provided globs did not match anything
+        if unmatched:
+            if valid_artifact_names:
+                message = "No elements or artifacts matched the following glob expression(s): {}".format(
+                    ", ".join(unmatched)
+                )
+            else:
+                message = "No elements matched the following glob expression(s): {}".format(", ".join(unmatched))
+            self._message(MessageType.WARN, message)
+
+        if doubly_matched:
+            raise StreamError(
+                "The provided glob expression(s) matched both element names and artifact names: {}".format(
+                    ", ".join(doubly_matched)
+                ),
+                reason="glob-elements-and-artifacts",
+            )
+
+        return element_targets, artifact_names
 
 
 # _handle_compression()

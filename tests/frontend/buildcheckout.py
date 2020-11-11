@@ -451,7 +451,7 @@ def test_build_checkout_runtime_deps_using_ref_fails(datafiles, cli):
     checkout_args = ["artifact", "checkout", "--directory", checkout, "--deps", "run", "test/checkout-deps/" + key]
 
     result = cli.run(project=project, args=checkout_args)
-    result.assert_main_error(ErrorDomain.STREAM, None)
+    result.assert_main_error(ErrorDomain.STREAM, "deps-not-supported")
 
 
 @pytest.mark.datafiles(DATA_DIR)
