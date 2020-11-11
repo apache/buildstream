@@ -27,7 +27,6 @@ import shutil
 import tarfile
 import tempfile
 from contextlib import contextmanager, suppress
-from fnmatch import fnmatch
 from collections import deque
 from typing import List, Tuple
 
@@ -1624,11 +1623,9 @@ class Stream:
 
         for glob in globs:
             matched = False
-            for element_path in all_elements:
-                if fnmatch(element_path, glob):
-                    element_targets.append(element_path)
-                    matched = True
-
+            for element_path in utils.glob(all_elements, glob):
+                element_targets.append(element_path)
+                matched = True
             if matched:
                 globs[glob] = globs[glob] + 1
 
