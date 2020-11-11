@@ -17,7 +17,7 @@
 #        Raoul Hidalgo Charman <raoul.hidalgocharman@codethink.co.uk>
 #
 import os
-from fnmatch import fnmatch
+import re
 from itertools import chain
 from typing import TYPE_CHECKING
 import grpc
@@ -630,11 +630,16 @@ class AssetCache:
                 # append the glob to optimise the os.walk()
                 path = os.path.join(base_path, globdir)
 
+        regexer = None
+        if glob_expr:
+            expression = utils._glob2re(glob_expr)
+            regexer = re.compile(expression)
+
         for root, _, files in os.walk(path):
             for filename in files:
                 ref_path = os.path.join(root, filename)
                 relative_path = os.path.relpath(ref_path, base_path)  # Relative to refs head
-                if not glob_expr or fnmatch(relative_path, glob_expr):
+                if regexer is None or regexer.match(relative_path):
                     # Obtain the mtime (the time a file was last modified)
                     yield (os.path.getmtime(ref_path), relative_path)
 
