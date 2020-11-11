@@ -44,12 +44,6 @@ variables:
   # You need to override this with the commands specific for your system
   strip-binaries: ""
 
-  # Generic implementation for reproducible python builds
-  fix-pyc-timestamps: |
-
-    find "%{install-root}" -name '*.pyc' -exec \
-      dd if=/dev/zero of={} bs=1 count=4 seek=4 conv=notrunc ';'
-
 # Base sandbox environment, can be overridden by plugins
 environment:
   PATH: /usr/bin:/bin:/usr/sbin:/sbin
