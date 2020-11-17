@@ -50,6 +50,52 @@ def test_show_fail(cli, datafiles):
     result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.INVALID_DATA)
 
 
+# Test behaviors of user supplied glob patterns
+@pytest.mark.datafiles(os.path.join(DATA_DIR, "simple"))
+@pytest.mark.parametrize(
+    "pattern,expected_elements",
+    [
+        # Use catch all glob. This should report all elements.
+        #
+        ("**", ["import-bin.bst", "import-dev.bst", "compose-all.bst", "target.bst", "subdir/target.bst"]),
+        # Only bst files, same as "**" for `bst show`
+        #
+        ("**.bst", ["import-bin.bst", "import-dev.bst", "compose-all.bst", "target.bst", "subdir/target.bst"]),
+        # Use regular globbing without matching path separators, this should exclude
+        # the target in the subdirectory.
+        #
+        ("*.bst", ["import-bin.bst", "import-dev.bst", "compose-all.bst", "target.bst"]),
+        # Report only targets in the subdirectory
+        #
+        ("subdir/*", ["subdir/target.bst"]),
+        # Report both targets which end in "target.bst"
+        #
+        ("**target.bst", ["target.bst", "subdir/target.bst"]),
+        # All elements starting with the prefix "import"
+        #
+        ("import*", ["import-bin.bst", "import-dev.bst"]),
+        # Glob would match artifact refs, but `bst show` does not accept these as input.
+        #
+        ("test/**", []),
+    ],
+    ids=["**", "**.bst", "*.bst", "subdir/*", "**target.bst", "import*", "test/**"],
+)
+def test_show_glob(cli, tmpdir, datafiles, pattern, expected_elements):
+    project = str(datafiles)
+
+    result = cli.run(project=project, args=["show", "--deps", "none", "--format", "%{name}", pattern])
+    result.assert_success()
+
+    output = result.output.strip().splitlines()
+
+    # Assert that the number of results match the number of expected results
+    assert len(output) == len(expected_elements)
+
+    # Assert that each expected result was found.
+    for expected in expected_elements:
+        assert expected in output, "Expected result {} not found".format(expected)
+
+
 @pytest.mark.datafiles(os.path.join(DATA_DIR, "project"))
 @pytest.mark.parametrize(
     "target,except_,expected",
