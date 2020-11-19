@@ -30,6 +30,7 @@ import pytest
 from buildstream.exceptions import ErrorDomain
 from buildstream.testing import cli, generate_project  # pylint: disable=unused-import
 from buildstream.testing.runcli import Cli
+from buildstream.testing._utils.site import have_subsecond_mtime
 from tests.testutils import (
     create_artifact_share,
     create_element_size,
@@ -488,6 +489,15 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
 def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
     project = str(datafiles)
     element_path = "elements"
+
+    # The artifact expiry logic relies on mtime changes, in real life second precision
+    # should be enough for this to work almost all the time, but test cases happen very
+    # quickly, resulting in all artifacts having the same mtime.
+    #
+    # This test requires subsecond mtime to be reliable.
+    #
+    if not have_subsecond_mtime(project):
+        pytest.skip("Filesystem does not support subsecond mtime precision: {}".format(project))
 
     # Create an artifact share (remote cache) in tmpdir/artifactshare
     # Set a 22 MB quota
