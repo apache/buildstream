@@ -124,7 +124,8 @@ class Stream:
     def set_project(self, project):
         assert self._project is None
         self._project = project
-        self._project.load_context.set_fetch_subprojects(self._fetch_subprojects)
+        if self._project:
+            self._project.load_context.set_fetch_subprojects(self._fetch_subprojects)
 
     # load_selection()
     #
@@ -885,6 +886,8 @@ class Stream:
     #    remove_dir (bool): Whether to remove the associated directory
     #
     def workspace_close(self, element_name, *, remove_dir):
+        self._assert_project("Unable to locate workspaces")
+
         workspaces = self._context.get_workspaces()
         workspace = workspaces.get_workspace(element_name)
 
@@ -913,6 +916,7 @@ class Stream:
     #    soft (bool): Only set the workspace state to not prepared
     #
     def workspace_reset(self, targets, *, soft):
+        self._assert_project("Unable to locate workspaces")
 
         elements = self._load(targets, selection=_PipelineSelection.REDIRECT)
 
@@ -953,6 +957,8 @@ class Stream:
     # True if there are any existing workspaces.
     #
     def workspace_exists(self, element_name=None):
+        self._assert_project("Unable to locate workspaces")
+
         workspaces = self._context.get_workspaces()
         if element_name:
             workspace = workspaces.get_workspace(element_name)
@@ -968,6 +974,8 @@ class Stream:
     # Serializes the workspaces and dumps them in YAML to stdout.
     #
     def workspace_list(self):
+        self._assert_project("Unable to locate workspaces")
+
         workspaces = []
         for element_name, workspace_ in self._context.get_workspaces().list():
             workspace_detail = {
@@ -1106,6 +1114,22 @@ class Stream:
     #                    Private Methods                        #
     #############################################################
 
+    # _assert_project()
+    #
+    # Raises an assertion of a project was not loaded
+    #
+    # Args:
+    #    message: The user facing error message, e.g. "Unable to load elements"
+    #
+    # Raises:
+    #    A StreamError with reason "project-not-loaded" is raised if no project was loaded
+    #
+    def _assert_project(self, message: str) -> None:
+        if not self._project:
+            raise StreamError(
+                message, detail="No project.conf or active workspace was located", reason="project-not-loaded"
+            )
+
     # _fetch_subprojects()
     #
     # Fetch subprojects as part of the project and element loading process.
@@ -1210,7 +1234,12 @@ class Stream:
             targets, valid_artifact_names=valid_artifact_names
         )
 
-        self._project.load_context.set_rewritable(rewritable)
+        # We need a project in order to load elements
+        if element_names:
+            self._assert_project("Unable to load elements: {}".format(", ".join(element_names)))
+
+        if self._project:
+            self._project.load_context.set_rewritable(rewritable)
 
         # Load elements and except elements
         if element_names:
@@ -1493,7 +1522,11 @@ class Stream:
     def _resolve_elements(self, targets):
         with self._context.messenger.simple_task("Resolving cached state", silent_nested=True) as task:
             # We need to go through the project to access the loader
-            if task:
+            #
+            # FIXME: We need to calculate the total elements to resolve differently so that
+            #        it can include artifact elements
+            #
+            if task and self._project:
                 task.set_maximum_progress(self._project.loader.loaded)
 
             # XXX: Now that Element._update_state() can trigger recursive update_state calls
@@ -1845,22 +1878,23 @@ class Stream:
             element_targets = initial_targets
 
         # Expand globs for elements
-        all_elements = []
-        element_path_length = len(self._project.element_path) + 1
-        for dirpath, _, filenames in os.walk(self._project.element_path):
-            for filename in filenames:
-                if filename.endswith(".bst"):
-                    element_path = os.path.join(dirpath, filename)
-                    element_path = element_path[element_path_length:]  # Strip out the element_path
-                    all_elements.append(element_path)
+        if self._project:
+            all_elements = []
+            element_path_length = len(self._project.element_path) + 1
+            for dirpath, _, filenames in os.walk(self._project.element_path):
+                for filename in filenames:
+                    if filename.endswith(".bst"):
+                        element_path = os.path.join(dirpath, filename)
+                        element_path = element_path[element_path_length:]  # Strip out the element_path
+                        all_elements.append(element_path)
 
-        for glob in globs:
-            matched = False
-            for element_path in utils.glob(all_elements, glob):
-                element_targets.append(element_path)
-                matched = True
-            if matched:
-                globs[glob] = globs[glob] + 1
+            for glob in globs:
+                matched = False
+                for element_path in utils.glob(all_elements, glob):
+                    element_targets.append(element_path)
+                    matched = True
+                if matched:
+                    globs[glob] = globs[glob] + 1
 
         # Expand globs for artifact names
         if valid_artifact_names:

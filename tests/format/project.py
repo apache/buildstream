@@ -15,10 +15,11 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
-def test_missing_project_conf(cli, datafiles):
+@pytest.mark.parametrize("args", [["workspace", "list"], ["show", "pony.bst"]], ids=["list-workspace", "show-element"])
+def test_missing_project_conf(cli, datafiles, args):
     project = str(datafiles)
-    result = cli.run(project=project, args=["workspace", "list"])
-    result.assert_main_error(ErrorDomain.LOAD, LoadErrorReason.MISSING_PROJECT_CONF)
+    result = cli.run(project=project, args=args)
+    result.assert_main_error(ErrorDomain.STREAM, "project-not-loaded")
 
 
 @pytest.mark.datafiles(os.path.join(DATA_DIR))
