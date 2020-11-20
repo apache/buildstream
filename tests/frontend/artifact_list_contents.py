@@ -71,7 +71,7 @@ def test_artifact_list_exact_contents_glob(cli, datafiles):
     assert result.exit_code == 0
 
     # List the contents via glob
-    result = cli.run(project=project, args=["artifact", "list-contents", "test/*"])
+    result = cli.run(project=project, args=["artifact", "list-contents", "test/**"])
     assert result.exit_code == 0
 
     # get the cahe keys for each element in the glob

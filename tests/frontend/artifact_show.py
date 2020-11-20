@@ -28,6 +28,7 @@ from tests.testutils import create_artifact_share
 
 # Project directory
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
+SIMPLE_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "simple",)
 
 
 # Test artifact show
@@ -100,6 +101,72 @@ def test_artifact_show_artifact_ref(cli, tmpdir, datafiles):
     result = cli.run(project=project, args=["artifact", "show", artifact_ref])
     result.assert_success()
     assert "cached {}".format(artifact_ref) in result.output
+
+
+# Test artifact show glob behaviors
+@pytest.mark.datafiles(SIMPLE_DIR)
+@pytest.mark.parametrize(
+    "pattern,expected_prefixes",
+    [
+        # List only artifact results in the test/project
+        #
+        ("test/**", ["test/target/", "test/target/", "test/compose-all/", "test/import-bin", "test/import-dev"]),
+        # List only artifact results by their .bst element names
+        #
+        ("**.bst", ["import-bin.bst", "import-dev.bst", "compose-all.bst", "target.bst", "subdir/target.bst"]),
+        # List only the import artifact results
+        #
+        ("import*.bst", ["import-bin.bst", "import-dev.bst"]),
+    ],
+    ids=["test/**", "**.bst", "import*.bst"],
+)
+def test_artifact_show_glob(cli, tmpdir, datafiles, pattern, expected_prefixes):
+    project = str(datafiles)
+
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+
+    result = cli.run(project=project, args=["artifact", "show", pattern])
+    result.assert_success()
+
+    output = result.output.strip().splitlines()
+
+    # Assert that the number of results match the number of expected results
+    assert len(output) == len(expected_prefixes)
+
+    # Assert that each expected result was found.
+    for expected_prefix in expected_prefixes:
+        found = False
+        for result_line in output:
+            result_split = result_line.split()
+            if result_split[-1].startswith(expected_prefix):
+                found = True
+                break
+        assert found, "Expected result {} not found".format(expected_prefix)
+
+
+# Test artifact show glob behaviors
+@pytest.mark.datafiles(SIMPLE_DIR)
+@pytest.mark.parametrize(
+    "pattern",
+    [
+        # Catch all glob will match everything, that is an error since the glob matches
+        # both elements and artifacts
+        #
+        "**",
+        # This glob is more selective but will also match both artifacts and elements
+        #
+        "**import-bin**",
+    ],
+)
+def test_artifact_show_doubly_matched_glob_error(cli, tmpdir, datafiles, pattern):
+    project = str(datafiles)
+
+    result = cli.run(project=project, args=["build", "target.bst"])
+    result.assert_success()
+
+    result = cli.run(project=project, args=["artifact", "show", pattern])
+    result.assert_main_error(ErrorDomain.STREAM, "glob-elements-and-artifacts")
 
 
 # Test artifact show artifact in remote
