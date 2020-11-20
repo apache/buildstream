@@ -2832,9 +2832,9 @@ class Element(Plugin):
         if first_pass:
             splits = element_splits.clone()
         else:
-            assert project._splits is not None
+            assert project.splits is not None
 
-            splits = project._splits.clone()
+            splits = project.splits.clone()
             # Extend project wide split rules with any split rules defined by the element
             element_splits._composite(splits)
 
@@ -2967,7 +2967,7 @@ class Element(Plugin):
         if load_element.first_pass:
             sandbox_config = Node.from_dict({})
         else:
-            sandbox_config = project._sandbox.clone()
+            sandbox_config = project.sandbox.clone()
 
         # The default config is already composited with the project overrides
         sandbox_defaults = cls.__defaults.get_mapping(Symbol.SANDBOX, default={})
