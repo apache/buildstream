@@ -24,9 +24,23 @@ from pathlib import Path
 import re
 import sys
 
+
+###################################
+# Ensure we have a version number #
+###################################
+
 # Add local directory to the path, in order to be able to import versioneer
 sys.path.append(os.path.dirname(__file__))
 import versioneer  # pylint: disable=wrong-import-position
+
+version = versioneer.get_version()
+
+if version.startswith("0+untagged"):
+    print(
+        "Your git repository has no tags - BuildStream can't " "determine its version. Please run `git fetch --tags`.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
 
 ##################################################################
@@ -315,8 +329,7 @@ register_cython_module("buildstream._variables", dependencies=["buildstream.node
 #####################################################
 setup(
     name="BuildStream",
-    # Use versioneer
-    version=versioneer.get_version(),
+    version=version,
     cmdclass=get_cmdclass(),
     author="BuildStream Developers",
     author_email="dev@buildstream.apache.org",
