@@ -264,8 +264,8 @@ class Scheduler:
     # Restart the scheduler
     #
     def resume(self):
-        self._resume_jobs()
         self._connect_signals()
+        self._resume_jobs()
 
     # stop()
     #
