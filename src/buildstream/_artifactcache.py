@@ -146,10 +146,10 @@ class ArtifactCache(AssetCache):
 
         for remote in index_remotes:
             remote.init()
-            element.status("Pushing artifact {} -> {}".format(display_key, remote))
+            element.status("Pushing artifact {} -> {}".format(display_key.brief, remote))
 
             if self._push_artifact_proto(element, artifact, artifact_digest, remote):
-                element.info("Pushed artifact {} -> {}".format(display_key, remote))
+                element.info("Pushed artifact {} -> {}".format(display_key.brief, remote))
                 pushed = True
             else:
                 element.info("Remote ({}) already has artifact {} cached".format(remote, display_key.brief))
