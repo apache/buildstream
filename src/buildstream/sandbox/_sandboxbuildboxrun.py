@@ -70,6 +70,7 @@ class SandboxBuildBoxRun(SandboxREAPI):
             # limit support to native building on the host ISA.
             cls._isas.add(Platform.get_host_arch())
 
+    # Only called when lauching a local sandbox, as we can't pre-empt the remote environment capabilities
     @classmethod
     def check_sandbox_config(cls, platform, config):
         if config.build_os not in cls._osfamilies:

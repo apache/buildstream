@@ -193,9 +193,9 @@ tests-remote-execution:
     REMOTE_EXECUTION_SERVICE: http://docker:50051
     SOURCE_CACHE_SERVICE: http://docker:50052
     PYTEST_ARGS: "--color=yes --remote-execution"
-    DEFAULT_PROPERTIES: "--platform OSFamily=linux --platform ISA=x86-64" # Default properties, substitued in manifest
+    PLATFORM_PROPERTIES: "--platform OSFamily=linux --platform ISA=x86-64" # Default properties, substitued in manifest
 
-tests-remote-execution-custom-property:
+tests-remote-execution-extra-property:
   <<: *tests
   <<: *remote-test # Spin up server stack
   variables:
@@ -205,10 +205,9 @@ tests-remote-execution-custom-property:
     REMOTE_EXECUTION_SERVICE: http://docker:50051
     SOURCE_CACHE_SERVICE: http://docker:50052
     PYTEST_ARGS: "--color=yes --remote-execution"
-    DEFAULT_PROPERTIES: "--platform OSFamily=linux --platform ISA=x86-64"
-    CUSTOM_PROPERTIES: "--platform foo=bar" # Custom property, substituted in manifest. This extends defaults
+    PLATFORM_PROPERTIES: "--platform OSFamily=linux --platform ISA=x86-64 --platform foo=bar" # Custom property 'foo' added
 
-tests-remote-execution-no-default-properties:
+tests-remote-execution-no-default-iso:
   <<: *tests
   <<: *remote-test # Spin up server stack
   variables:
@@ -218,7 +217,7 @@ tests-remote-execution-no-default-properties:
     REMOTE_EXECUTION_SERVICE: http://docker:50051
     SOURCE_CACHE_SERVICE: http://docker:50052
     PYTEST_ARGS: "--color=yes --remote-execution"
-    CUSTOM_PROPERTIES: "--platform OSFamily=linux --platform foo=bar" # No DEFAULT_PROPERTIES set, so these become the *only* properties (default-platform-properties: False)
+    PLATFORM_PROPERTIES: "--platform OSFamily=linux --platform foo=bar" # Default property ISA not set, so BST should disable (via ISA: [] set in test suite)
 
 tests-remote-cache:
   <<: *tests

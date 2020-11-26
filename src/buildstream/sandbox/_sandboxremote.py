@@ -41,7 +41,7 @@ from .._remote import RemoteSpec
 
 
 class RemoteExecutionSpec(
-    namedtuple("RemoteExecutionSpec", "exec_service storage_service action_service custom_properties use_defaults")
+    namedtuple("RemoteExecutionSpec", "exec_service storage_service action_service platform_properties")
 ):
     pass
 
@@ -98,8 +98,7 @@ class SandboxRemote(SandboxREAPI):
             self.action_instance = None
             self.action_credentials = None
 
-        self.custom_properties = config.custom_properties
-        self.use_defaults = config.use_defaults
+        self.platform_properties = config.platform_properties
 
         self.exec_instance = config.exec_service.get("instance-name", None)
         self.storage_instance = config.storage_service.get("instance-name", None)
@@ -136,15 +135,12 @@ class SandboxRemote(SandboxREAPI):
 
         service_keys = ["execution-service", "storage-service", "action-cache-service"]
 
-        remote_config.validate_keys(
-            ["url", "custom-platform-properties", "default-platform-properties", *service_keys]
-        )
+        remote_config.validate_keys(["url", "platform-properties", *service_keys])
 
         exec_config = require_node(remote_config, "execution-service")
         storage_config = require_node(remote_config, "storage-service")
         action_config = remote_config.get_mapping("action-cache-service", default={})
-        custom_properties = remote_config.get_mapping("custom-platform-properties", default={})
-        use_defaults = remote_config.get_bool("default-platform-properties", default=True)
+        platform_properties = remote_config.get_mapping("platform-properties", default={})
 
         tls_keys = ["client-key", "client-cert", "server-cert"]
 
@@ -190,11 +186,11 @@ class SandboxRemote(SandboxREAPI):
                 if tls_key in config:
                     config[tls_key] = resolve_path(config.get_str(tls_key))
 
-        # Add in the custom platform properties config
-        service_configs.append(custom_properties)
+        # Add in the platform properties config
+        service_configs.append(platform_properties)
 
         # TODO: we should probably not be stripping node info and rather load files the safe way
-        return RemoteExecutionSpec(*[conf.strip_node_info() for conf in service_configs], use_defaults)
+        return RemoteExecutionSpec(*[conf.strip_node_info() for conf in service_configs])
 
     def run_remote_command(self, channel, action_digest):
         # Sends an execution request to the remote execution server.
@@ -442,13 +438,9 @@ class SandboxRemote(SandboxREAPI):
                 self.info("Action result found in action cache")
                 return result
 
-    def _get_custom_platform_properties(self):
-        # Dict containing custom platformn properties, if provided in config
-        return self.custom_properties
-
-    def _use_default_platform_properties(self):
-        # Bool, defaults to True unless overriden in RE Spec
-        return self.use_defaults
+    def _get_platform_properties(self):
+        # Dict platformn properties, if provided in config
+        return self.platform_properties
 
     @staticmethod
     def _extract_action_result(operation):

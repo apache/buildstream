@@ -210,10 +210,9 @@ configuration will be used as fallback.
         action-cache-service:
           url: http://cache.some_project.example.com:50052
           instance-name: main
-        custom-platform-properties:
+        platform-properties:
           docker-image: docker://marketplace.gcr.io/google/rbe-ubuntu16-04
-          ISA: arm-a64
-        default-platform-properties: False
+          ISA: []
 
 
 .. _user_config_strict_mode:
