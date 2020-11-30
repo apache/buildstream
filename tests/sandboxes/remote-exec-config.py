@@ -23,6 +23,7 @@ def test_old_and_new_configs(cli, datafiles):
 
     project_conf = {
         "name": "test",
+        "min-version": "2.0",
         "remote-execution": {
             "url": "https://cache.example.com:12345",
             "execution-service": {"url": "http://localhost:8088"},
@@ -49,6 +50,7 @@ def test_missing_certs(cli, datafiles, config_key, config_value):
 
     project_conf = {
         "name": "test",
+        "min-version": "2.0",
         "remote-execution": {
             "execution-service": {"url": "http://localhost:8088"},
             "storage-service": {"url": "http://charactron:11001", config_key: config_value,},
@@ -69,7 +71,7 @@ def test_missing_certs(cli, datafiles, config_key, config_value):
 def test_empty_config(cli, datafiles):
     project = os.path.join(datafiles.dirname, datafiles.basename, "missing-certs")
 
-    project_conf = {"name": "test", "remote-execution": {}}
+    project_conf = {"name": "test", "min-version": "2.0", "remote-execution": {}}
     project_conf_file = os.path.join(project, "project.conf")
     _yaml.roundtrip_dump(project_conf, project_conf_file)
 
