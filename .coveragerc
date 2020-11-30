@@ -1,5 +1,8 @@
 [run]
-concurrency = multiprocessing
+concurrency =
+  threading
+  multiprocessing
+
 plugins = Cython.Coverage
 
 omit =
