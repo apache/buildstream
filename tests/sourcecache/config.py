@@ -42,6 +42,7 @@ def test_missing_certs(cli, datafiles, config_key, config_value):
 
     project_conf = {
         "name": "test",
+        "min-version": "2.0",
         "source-caches": {"url": "https://cache.example.com:12345", "push": "true", config_key: config_value},
     }
     project_conf_file = os.path.join(project, "project.conf")
