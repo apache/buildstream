@@ -347,7 +347,7 @@ class Element(Plugin):
         # Extract Sandbox config
         sandbox_config = self.__extract_sandbox_config(project, load_element)
         self.__variables.expand(sandbox_config)
-        self.__sandbox_config = SandboxConfig(sandbox_config, context.platform)
+        self.__sandbox_config = SandboxConfig.new_from_node(sandbox_config, platform=context.platform)
 
     def __lt__(self, other):
         return self.name < other.name
