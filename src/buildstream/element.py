@@ -1840,7 +1840,16 @@ class Element(Plugin):
         assert self.__artifact._cache_key is not None
 
         with self.timed_activity("Caching artifact"):
-            artifact_size = self.__artifact.cache(sandbox_build_dir, collectvdir, sourcesvdir, buildresult, publicdata)
+            artifact_size = self.__artifact.cache(
+                sandbox_build_dir=sandbox_build_dir,
+                collectvdir=collectvdir,
+                sourcesvdir=sourcesvdir,
+                buildresult=buildresult,
+                publicdata=publicdata,
+                variables=self.__variables,
+                environment=self.__environment,
+                sandboxconfig=self.__sandbox_config,
+            )
 
         if collect is not None and collectvdir is None:
             raise ElementError(
@@ -3208,11 +3217,19 @@ class Element(Plugin):
 
         context = self._get_context()
 
-        strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key, weak_key=self.__weak_cache_key)
+        strict_artifact = Artifact(
+            self,
+            context,
+            strong_key=self.__strict_cache_key,
+            strict_key=self.__strict_cache_key,
+            weak_key=self.__weak_cache_key,
+        )
         if context.get_strict() or strict_artifact.cached():
             self.__artifact = strict_artifact
         else:
-            self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
+            self.__artifact = Artifact(
+                self, context, strict_key=self.__strict_cache_key, weak_key=self.__weak_cache_key
+            )
 
         if not context.get_strict() and self.__artifact.cached():
             # In non-strict mode, strong cache key becomes available when
@@ -3247,7 +3264,7 @@ class Element(Plugin):
                 pass
             elif self._cached():
                 # Load the strong cache key from the artifact
-                strong_key, _ = self.__artifact.get_metadata_keys()
+                strong_key, _, _ = self.__artifact.get_metadata_keys()
                 self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
                 # Artifact will or has been built, not downloaded

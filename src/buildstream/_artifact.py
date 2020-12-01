@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 Codethink Limited
+#  Copyright (C) 2020 Codethink Limited
 #  Copyright (C) 2019 Bloomberg Finance LP
 #
 #  This program is free software; you can redistribute it and/or
@@ -29,13 +29,16 @@ artifact composite interaction away from Element class
 """
 
 import os
+from typing import Dict, Tuple
 
 from ._protos.buildstream.v2.artifact_pb2 import Artifact as ArtifactProto
 from . import _yaml
 from . import utils
+from .node import Node
 from .types import _Scope
 from .storage._casbaseddirectory import CasBasedDirectory
-
+from .sandbox._config import SandboxConfig
+from ._variables import Variables
 
 # An Artifact class to abstract artifact operations
 # from the Element class
@@ -44,23 +47,25 @@ from .storage._casbaseddirectory import CasBasedDirectory
 #     element (Element): The Element object
 #     context (Context): The BuildStream context
 #     strong_key (str): The elements strong cache key, dependent on context
+#     strict_key (str): The elements strict cache key
 #     weak_key (str): The elements weak cache key
 #
 class Artifact:
 
-    version = 0
+    version = 1
 
-    def __init__(self, element, context, *, strong_key=None, weak_key=None):
+    def __init__(self, element, context, *, strong_key=None, strict_key=None, weak_key=None):
         self._element = element
         self._context = context
         self._cache_key = strong_key
+        self._strict_key = strict_key
         self._weak_cache_key = weak_key
         self._artifactdir = context.artifactdir
         self._cas = context.get_cascache()
         self._tmpdir = context.tmpdir
         self._proto = None
 
-        self._metadata_keys = None  # Strong and weak key tuple extracted from the artifact
+        self._metadata_keys = None  # Strong, strict and weak key tuple extracted from the artifact
         self._metadata_dependencies = None  # Dictionary of dependency strong keys from the artifact
         self._metadata_workspaced = None  # Boolean of whether it's a workspaced artifact
         self._metadata_workspaced_dependencies = None  # List of which dependencies are workspaced from the artifact
@@ -137,11 +142,25 @@ class Artifact:
     #    sourcesvdir (Directory): Virtual Directoy object for the staged sources
     #    buildresult (tuple): bool, short desc and detailed desc of result
     #    publicdata (dict): dict of public data to commit to artifact metadata
+    #    variables (Variables): The element's Variables
+    #    environment (dict): dict of the element's environment variables
+    #    sandboxconfig (SandboxConfig): The element's SandboxConfig
     #
     # Returns:
     #    (int): The size of the newly cached artifact
     #
-    def cache(self, sandbox_build_dir, collectvdir, sourcesvdir, buildresult, publicdata):
+    def cache(
+        self,
+        *,
+        sandbox_build_dir,
+        collectvdir,
+        sourcesvdir,
+        buildresult,
+        publicdata,
+        variables,
+        environment,
+        sandboxconfig,
+    ):
 
         context = self._context
         element = self._element
@@ -161,6 +180,7 @@ class Artifact:
 
         # Store keys
         artifact.strong_key = self._cache_key
+        artifact.strict_key = self._strict_key
         artifact.weak_key = self._weak_cache_key
 
         artifact.was_workspaced = bool(element._get_workspace())
@@ -179,6 +199,34 @@ class Artifact:
             public_data_digest = self._cas.add_object(path=tmpname, link_directly=True)
             artifact.public_data.CopyFrom(public_data_digest)
             size += public_data_digest.size_bytes
+
+        # Store low diversity metadata, this metadata must have a high
+        # probability of deduplication, such as environment variables
+        # and SandboxConfig.
+        #
+        with utils._tempnamedfile_name(dir=self._tmpdir) as tmpname:
+            sandbox_dict = sandboxconfig.to_dict()
+            low_diversity_dict = {"environment": environment, "sandbox-config": sandbox_dict}
+            low_diversity_node = Node.from_dict(low_diversity_dict)
+
+            _yaml.roundtrip_dump(low_diversity_node, tmpname)
+            low_diversity_meta_digest = self._cas.add_object(path=tmpname, link_directly=True)
+            artifact.low_diversity_meta.CopyFrom(low_diversity_meta_digest)
+            size += low_diversity_meta_digest.size_bytes
+
+        # Store high diversity metadata, this metadata is expected to diverge
+        # for every element and as such cannot be deduplicated.
+        #
+        with utils._tempnamedfile_name(dir=self._tmpdir) as tmpname:
+            # The Variables object supports being converted directly to a dictionary
+            variables_dict = dict(variables)
+            high_diversity_dict = {"variables": variables_dict}
+            high_diversity_node = Node.from_dict(high_diversity_dict)
+
+            _yaml.roundtrip_dump(high_diversity_node, tmpname)
+            high_diversity_meta_digest = self._cas.add_object(path=tmpname, link_directly=True)
+            artifact.high_diversity_meta.CopyFrom(high_diversity_meta_digest)
+            size += high_diversity_meta_digest.size_bytes
 
         # store build dependencies
         for e in element._dependencies(_Scope.BUILD):
@@ -282,6 +330,64 @@ class Artifact:
 
         return data
 
+    # load_sandbox_config():
+    #
+    # Loads the sandbox configuration from the cached artifact
+    #
+    # Returns:
+    #    The stored SandboxConfig object
+    #
+    def load_sandbox_config(self) -> SandboxConfig:
+
+        # Load the sandbox data from the artifact
+        artifact = self._get_proto()
+        meta_file = self._cas.objpath(artifact.low_diversity_meta)
+        data = _yaml.load(meta_file, shortname="low-diversity-meta.yaml")
+
+        # Extract the sandbox data
+        config = data.get_mapping("sandbox-config")
+
+        # Return a SandboxConfig
+        return SandboxConfig.new_from_node(config)
+
+    # load_environment():
+    #
+    # Loads the environment variables from the cached artifact
+    #
+    # Returns:
+    #    The environment variables
+    #
+    def load_environment(self) -> Dict[str, str]:
+
+        # Load the sandbox data from the artifact
+        artifact = self._get_proto()
+        meta_file = self._cas.objpath(artifact.low_diversity_meta)
+        data = _yaml.load(meta_file, shortname="low-diversity-meta.yaml")
+
+        # Extract the environment
+        config = data.get_mapping("environment")
+
+        # Return the environment
+        return config.strip_node_info()
+
+    # load_variables():
+    #
+    # Loads the element variables from the cached artifact
+    #
+    # Returns:
+    #    The element variables
+    #
+    def load_variables(self) -> Variables:
+
+        # Load the sandbox data from the artifact
+        artifact = self._get_proto()
+        meta_file = self._cas.objpath(artifact.high_diversity_meta)
+        data = _yaml.load(meta_file, shortname="high-diversity-meta.yaml")
+
+        # Extract the variables node and return the new Variables instance
+        variables_node = data.get_mapping("variables")
+        return Variables(variables_node)
+
     # load_build_result():
     #
     # Load the build result from the cached artifact
@@ -303,10 +409,11 @@ class Artifact:
     # Retrieve the strong and weak keys from the given artifact.
     #
     # Returns:
-    #    (str): The strong key
-    #    (str): The weak key
+    #    The strong key
+    #    The strict key
+    #    The weak key
     #
-    def get_metadata_keys(self):
+    def get_metadata_keys(self) -> Tuple[str, str, str]:
 
         if self._metadata_keys is not None:
             return self._metadata_keys
@@ -315,9 +422,10 @@ class Artifact:
         artifact = self._get_proto()
 
         strong_key = artifact.strong_key
+        strict_key = artifact.strict_key
         weak_key = artifact.weak_key
 
-        self._metadata_keys = (strong_key, weak_key)
+        self._metadata_keys = (strong_key, strict_key, weak_key)
 
         return self._metadata_keys
 
