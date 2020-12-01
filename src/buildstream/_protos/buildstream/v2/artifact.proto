@@ -64,4 +64,12 @@ message Artifact {
 
   // digest of a directory
   build.bazel.remote.execution.v2.Digest sources = 13;  // optional
+
+  // The sandbox data is a yaml file which is stored into the CAS
+  //
+  // It contains information required for running a sandbox, such
+  // as SandboxConfig data and environment variables
+  //
+  // Digest is of a directory
+  build.bazel.remote.execution.v2.Digest sandbox_data = 14;
 }
