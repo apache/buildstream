@@ -1849,7 +1849,15 @@ class Element(Plugin):
         assert self.__artifact._cache_key is not None
 
         with self.timed_activity("Caching artifact"):
-            artifact_size = self.__artifact.cache(sandbox_build_dir, collectvdir, sourcesvdir, buildresult, publicdata)
+            artifact_size = self.__artifact.cache(
+                sandbox_build_dir,
+                collectvdir,
+                sourcesvdir,
+                buildresult,
+                publicdata,
+                self.__environment,
+                self.__sandbox_config,
+            )
 
         if collect is not None and collectvdir is None:
             raise ElementError(

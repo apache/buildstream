@@ -29,13 +29,15 @@ artifact composite interaction away from Element class
 """
 
 import os
+from typing import Dict
 
 from ._protos.buildstream.v2.artifact_pb2 import Artifact as ArtifactProto
 from . import _yaml
 from . import utils
+from .node import Node
 from .types import _Scope
 from .storage._casbaseddirectory import CasBasedDirectory
-
+from .sandbox._config import SandboxConfig
 
 # An Artifact class to abstract artifact operations
 # from the Element class
@@ -48,7 +50,7 @@ from .storage._casbaseddirectory import CasBasedDirectory
 #
 class Artifact:
 
-    version = 0
+    version = 1
 
     def __init__(self, element, context, *, strong_key=None, weak_key=None):
         self._element = element
@@ -137,11 +139,13 @@ class Artifact:
     #    sourcesvdir (Directory): Virtual Directoy object for the staged sources
     #    buildresult (tuple): bool, short desc and detailed desc of result
     #    publicdata (dict): dict of public data to commit to artifact metadata
+    #    environment (dict): dict of the element's environment variables
+    #    sandboxconfig (SandboxConfig): The element's SandboxConfig
     #
     # Returns:
     #    (int): The size of the newly cached artifact
     #
-    def cache(self, sandbox_build_dir, collectvdir, sourcesvdir, buildresult, publicdata):
+    def cache(self, sandbox_build_dir, collectvdir, sourcesvdir, buildresult, publicdata, environment, sandboxconfig):
 
         context = self._context
         element = self._element
@@ -179,6 +183,17 @@ class Artifact:
             public_data_digest = self._cas.add_object(path=tmpname, link_directly=True)
             artifact.public_data.CopyFrom(public_data_digest)
             size += public_data_digest.size_bytes
+
+        # Store sandbox data, including SandboxConfig and environment variables
+        with utils._tempnamedfile_name(dir=self._tmpdir) as tmpname:
+            sandbox_config = sandboxconfig.to_dict()
+            sandbox_dict = {"environment": environment, "sandbox-config": sandbox_config}
+            sandboxdata = Node.from_dict(sandbox_dict)
+
+            _yaml.roundtrip_dump(sandboxdata, tmpname)
+            sandbox_data_digest = self._cas.add_object(path=tmpname, link_directly=True)
+            artifact.sandbox_data.CopyFrom(sandbox_data_digest)
+            size += sandbox_data_digest.size_bytes
 
         # store build dependencies
         for e in element._dependencies(_Scope.BUILD):
@@ -281,6 +296,46 @@ class Artifact:
         data = _yaml.load(meta_file, shortname="public.yaml")
 
         return data
+
+    # load_sandbox_config():
+    #
+    # Loads the sandbox configuration from the cached artifact
+    #
+    # Returns:
+    #    The stored SandboxConfig object
+    #
+    def load_sandbox_config(self) -> SandboxConfig:
+
+        # Load the sandbox data from the artifact
+        artifact = self._get_proto()
+        meta_file = self._cas.objpath(artifact.sandbox_data)
+        data = _yaml.load(meta_file, shortname="sandbox.yaml")
+
+        # Extract the sandbox data
+        config = data.get_mapping("sandbox-config")
+
+        # Return a SandboxConfig
+        return SandboxConfig.new_from_node(config)
+
+    # load_environment():
+    #
+    # Loads the environment variables from the cached artifact
+    #
+    # Returns:
+    #    The environment variables
+    #
+    def load_environment(self) -> Dict[str, str]:
+
+        # Load the sandbox data from the artifact
+        artifact = self._get_proto()
+        meta_file = self._cas.objpath(artifact.sandbox_data)
+        data = _yaml.load(meta_file, shortname="sandbox.yaml")
+
+        # Extract the environment
+        config = data.get_mapping("environment")
+
+        # Return the environment
+        return config.strip_node_info()
 
     # load_build_result():
     #

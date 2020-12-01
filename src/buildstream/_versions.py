@@ -24,4 +24,4 @@
 # or if buildstream was changed in a way which can cause
 # the same cache key to produce something that is no longer
 # the same.
-BST_CORE_ARTIFACT_VERSION = 9
+BST_CORE_ARTIFACT_VERSION = 10
