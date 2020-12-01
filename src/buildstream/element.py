@@ -347,7 +347,7 @@ class Element(Plugin):
         # Extract Sandbox config
         sandbox_config = self.__extract_sandbox_config(project, load_element)
         self.__variables.expand(sandbox_config)
-        self.__sandbox_config = SandboxConfig(sandbox_config, context.platform)
+        self.__sandbox_config = SandboxConfig.new_from_node(sandbox_config, platform=context.platform)
 
     def __lt__(self, other):
         return self.name < other.name
@@ -2249,7 +2249,7 @@ class Element(Plugin):
                 "element-plugin-key": self.get_unique_key(),
                 "element-plugin-name": self.get_kind(),
                 "element-plugin-version": self.BST_ARTIFACT_VERSION,
-                "sandbox": self.__sandbox_config.get_unique_key(),
+                "sandbox": self.__sandbox_config.to_dict(),
                 "environment": cache_env,
                 "public": self.__public.strip_node_info(),
             }
