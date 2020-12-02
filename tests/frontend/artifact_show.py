@@ -110,7 +110,7 @@ def test_artifact_show_artifact_ref(cli, tmpdir, datafiles):
     [
         # List only artifact results in the test/project
         #
-        ("test/**", ["test/target/", "test/target/", "test/compose-all/", "test/import-bin", "test/import-dev"]),
+        ("test/**", ["test/target/", "test/compose-all/", "test/import-bin", "test/import-dev"]),
         # List only artifact results by their .bst element names
         #
         ("**.bst", ["import-bin.bst", "import-dev.bst", "compose-all.bst", "target.bst", "subdir/target.bst"]),

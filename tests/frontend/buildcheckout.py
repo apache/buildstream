@@ -469,8 +469,7 @@ def test_build_checkout_invalid_ref(datafiles, cli):
     non_existent_artifact = "test/checkout-deps/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     checkout_args = ["artifact", "checkout", "--deps", "none", "--tar", checkout, non_existent_artifact]
     result = cli.run(project=project, args=checkout_args)
-
-    assert "Error while staging dependencies into a sandbox: 'No artifacts to stage'" in result.stderr
+    result.assert_main_error(ErrorDomain.STREAM, "missing-sandbox-config")
 
 
 @pytest.mark.datafiles(DATA_DIR)
