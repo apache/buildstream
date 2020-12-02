@@ -1086,6 +1086,25 @@ class Stream:
         self.queues = [queue]
         self._run()
 
+    # _load_artifacts()
+    #
+    # Loads artifacts from target artifact refs
+    #
+    # Args:
+    #    artifact_names (list): List of target artifact names to load
+    #
+    # Returns:
+    #    (list): A list of loaded ArtifactElement
+    #
+    def _load_artifacts(self, artifact_names):
+        with self._context.messenger.simple_task("Loading artifacts") as task:
+            artifacts = []
+            for artifact_name in artifact_names:
+                artifacts.append(ArtifactElement._new_from_artifact_name(artifact_name, self._context, task))
+
+        ArtifactElement._clear_artifact_refs_cache()
+        return artifacts
+
     # _load_elements_from_targets
     #
     # Given the usual set of target element names/artifact refs, load
@@ -1125,7 +1144,7 @@ class Stream:
 
         # Load artifacts
         if refs:
-            artifacts = self._pipeline.load_artifacts(refs)
+            artifacts = self._load_artifacts(refs)
         else:
             artifacts = []
 

@@ -27,7 +27,6 @@ from . import utils
 from . import _site
 from . import _yaml
 from .utils import UtilError
-from ._artifactelement import ArtifactElement
 from ._profile import Topics, PROFILER
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
@@ -454,26 +453,6 @@ class Project:
             )
 
         return elements
-
-    # load_artifacts()
-    #
-    # Loads artifacts from target artifact refs
-    #
-    # Args:
-    #    targets (list): Target artifact refs
-    #
-    # Returns:
-    #    (list): A list of loaded ArtifactElement
-    #
-    def load_artifacts(self, targets):
-        with self._context.messenger.simple_task("Loading artifacts") as task:
-            artifacts = []
-            for ref in targets:
-                artifacts.append(ArtifactElement._new_from_artifact_name(ref, self._context, task))
-
-        ArtifactElement._clear_artifact_refs_cache()
-
-        return artifacts
 
     # ensure_fully_loaded()
     #
