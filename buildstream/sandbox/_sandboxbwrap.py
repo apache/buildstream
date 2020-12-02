@@ -53,7 +53,7 @@ class SandboxBwrap(Sandbox):
         super().__init__(*args, **kwargs)
         self.user_ns_available = kwargs['user_ns_available']
         self.die_with_parent_available = kwargs['die_with_parent_available']
-        self.linux32 = False
+        self._linux32 = False
 
         host_os, _, _, _, host_arch = os.uname()
         config = self._get_config()
@@ -104,7 +104,7 @@ class SandboxBwrap(Sandbox):
             cwd = '/'
 
         # start command with linux32 if needed
-        if self.linux32:
+        if self._linux32:
             bwrap_command = [utils.get_host_tool('linux32')]
         else:
             bwrap_command = []
