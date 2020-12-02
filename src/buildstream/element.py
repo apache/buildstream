@@ -1194,8 +1194,7 @@ class Element(Plugin):
 
     # _reset_load_state()
     #
-    # This is called by Pipeline.cleanup() and is used to
-    # reset the loader state between multiple sessions.
+    # This is used to reset the loader state across multiple load sessions.
     #
     @classmethod
     def _reset_load_state(cls):

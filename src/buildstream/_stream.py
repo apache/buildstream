@@ -111,8 +111,8 @@ class Stream:
     # Cleans up application state
     #
     def cleanup(self):
-        if self._project:
-            self._project.cleanup()
+        # Reset the element loader state
+        Element._reset_load_state()
 
     # set_project()
     #

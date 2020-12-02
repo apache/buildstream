@@ -485,14 +485,6 @@ class Project:
 
         self._load_second_pass()
 
-    # cleanup()
-    #
-    # Cleans up resources used loading elements
-    #
-    def cleanup(self):
-        # Reset the element loader state
-        Element._reset_load_state()
-
     # get_default_target()
     #
     # Attempts to interpret which element the user intended to run a command on.
