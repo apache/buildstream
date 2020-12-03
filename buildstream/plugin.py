@@ -729,8 +729,7 @@ class Plugin():
     def _output_file(self):
         log = self.__context.get_log_handle()
         if log is None:
-            with open(os.devnull, "w") as output:
-                yield output
+            yield subprocess.DEVNULL
         else:
             yield log
 
@@ -806,8 +805,9 @@ class Plugin():
         if 'cwd' in kwargs:
             workdir = kwargs['cwd']
         command = " ".join(popenargs[0])
-        output.write('Running host command {}: {}\n'.format(workdir, command))
-        output.flush()
+        if output is not subprocess.DEVNULL:
+            output.write('Running host command {}: {}\n'.format(workdir, command))
+            output.flush()
         self.status('Running host command', detail=command)
 
     def _get_full_name(self):
