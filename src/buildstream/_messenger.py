@@ -19,10 +19,10 @@
 
 import os
 import datetime
+import threading
 from contextlib import contextmanager
 
 from . import _signals
-from . import utils
 from ._exceptions import BstError
 from ._message import Message, MessageType
 
@@ -48,14 +48,16 @@ class _TimeData:
 
 class Messenger:
     def __init__(self):
-        self._message_handler = None
-        self._silence_scope_depth = 0
-        self._log_handle = None
-        self._log_filename = None
         self._state = None
         self._next_render = None  # A Time object
         self._active_simple_tasks = 0
         self._render_status_cb = None
+
+        self._locals = threading.local()
+        self._locals.message_handler = None
+        self._locals.log_handle = None
+        self._locals.log_filename = None
+        self._locals.silence_scope_depth = 0
 
     # set_message_handler()
     #
@@ -70,7 +72,7 @@ class Messenger:
     #   ) -> None
     #
     def set_message_handler(self, handler):
-        self._message_handler = handler
+        self._locals.message_handler = handler
 
     # set_state()
     #
@@ -101,7 +103,7 @@ class Messenger:
     #    (bool): Whether messages are currently being silenced
     #
     def _silent_messages(self):
-        return self._silence_scope_depth > 0
+        return self._locals.silence_scope_depth > 0
 
     # message():
     #
@@ -112,16 +114,15 @@ class Messenger:
     #    message: A Message object
     #
     def message(self, message):
-
         # If we are recording messages, dump a copy into the open log file.
         self._record_message(message)
 
         # Send it off to the log handler (can be the frontend,
         # or it can be the child task which will propagate
         # to the frontend)
-        assert self._message_handler
+        assert self._locals.message_handler
 
-        self._message_handler(message, is_silenced=self._silent_messages())
+        self._locals.message_handler(message, is_silenced=self._silent_messages())
 
     # silence()
     #
@@ -141,12 +142,12 @@ class Messenger:
             yield
             return
 
-        self._silence_scope_depth += 1
+        self._locals.silence_scope_depth += 1
         try:
             yield
         finally:
-            assert self._silence_scope_depth > 0
-            self._silence_scope_depth -= 1
+            assert self._locals.silence_scope_depth > 0
+            self._locals.silence_scope_depth -= 1
 
     # timed_activity()
     #
@@ -264,22 +265,21 @@ class Messenger:
     #
     @contextmanager
     def recorded_messages(self, filename, logdir):
-
         # We dont allow recursing in this context manager, and
         # we also do not allow it in the main process.
-        assert self._log_handle is None
-        assert self._log_filename is None
-        assert not utils._is_main_process()
+        assert not hasattr(self._locals, "log_handle") or self._locals.log_handle is None
+        assert not hasattr(self._locals, "log_filename") or self._locals.log_filename is None
 
         # Create the fully qualified logfile in the log directory,
         # appending the pid and .log extension at the end.
-        self._log_filename = os.path.join(logdir, "{}.{}.log".format(filename, os.getpid()))
+        self._locals.log_filename = os.path.join(logdir, "{}.{}.log".format(filename, os.getpid()))
+        self._locals.silence_scope_depth = 0
 
         # Ensure the directory exists first
-        directory = os.path.dirname(self._log_filename)
+        directory = os.path.dirname(self._locals.log_filename)
         os.makedirs(directory, exist_ok=True)
 
-        with open(self._log_filename, "a") as logfile:
+        with open(self._locals.log_filename, "a") as logfile:
 
             # Write one last line to the log and flush it to disk
             def flush_log():
@@ -294,12 +294,12 @@ class Messenger:
                 except RuntimeError:
                     os.fsync(logfile.fileno())
 
-            self._log_handle = logfile
+            self._locals.log_handle = logfile
             with _signals.terminator(flush_log):
-                yield self._log_filename
+                yield self._locals.log_filename
 
-            self._log_handle = None
-            self._log_filename = None
+            self._locals.log_handle = None
+            self._locals.log_filename = None
 
     # get_log_handle()
     #
@@ -311,7 +311,7 @@ class Messenger:
     #     (file): The active logging file handle, or None
     #
     def get_log_handle(self):
-        return self._log_handle
+        return self._locals.log_handle
 
     # get_log_filename()
     #
@@ -323,7 +323,7 @@ class Messenger:
     #     (str): The active logging filename, or None
     #
     def get_log_filename(self):
-        return self._log_filename
+        return self._locals.log_filename
 
     # timed_suspendable()
     #
@@ -345,8 +345,6 @@ class Messenger:
             stopped_time = datetime.datetime.now()
 
         def resume_time():
-            nonlocal timedata
-            nonlocal stopped_time
             sleep_time = datetime.datetime.now() - stopped_time
             timedata.start_time += sleep_time
 
@@ -362,7 +360,7 @@ class Messenger:
     #
     def _record_message(self, message):
 
-        if self._log_handle is None:
+        if self._locals.log_handle is None:
             return
 
         INDENT = "    "
@@ -405,8 +403,8 @@ class Messenger:
         )
 
         # Write to the open log file
-        self._log_handle.write("{}\n".format(text))
-        self._log_handle.flush()
+        self._locals.log_handle.write("{}\n".format(text))
+        self._locals.log_handle.flush()
 
     # _render_status()
     #

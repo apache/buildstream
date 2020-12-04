@@ -3,6 +3,7 @@ import time
 from unittest.mock import MagicMock
 
 from buildstream._cas.cascache import CASCache
+from buildstream._cas import casdprocessmanager
 from buildstream._message import MessageType
 from buildstream._messenger import Messenger
 
@@ -31,6 +32,10 @@ def test_report_when_cascache_exits_not_cleanly(tmp_path, monkeypatch):
     dummy_buildbox_casd.write_text("#!/usr/bin/env sh\nwhile :\ndo\nsleep 60\ndone")
     dummy_buildbox_casd.chmod(0o777)
     monkeypatch.setenv("PATH", str(tmp_path), prepend=os.pathsep)
+    # FIXME: this is a hack, we should instead have a socket be created nicely
+    #        on the fake casd script. This whole test suite probably would
+    #        need some cleanup
+    monkeypatch.setattr(casdprocessmanager, "_CASD_TIMEOUT", 0.1)
 
     messenger = MagicMock(spec_set=Messenger)
     cache = CASCache(str(tmp_path.joinpath("casd")), casd=True, log_directory=str(tmp_path.joinpath("logs")))
@@ -50,6 +55,10 @@ def test_report_when_cascache_is_forcefully_killed(tmp_path, monkeypatch):
     dummy_buildbox_casd.write_text("#!/usr/bin/env sh\ntrap 'echo hello' TERM\nwhile :\ndo\nsleep 60\ndone")
     dummy_buildbox_casd.chmod(0o777)
     monkeypatch.setenv("PATH", str(tmp_path), prepend=os.pathsep)
+    # FIXME: this is a hack, we should instead have a socket be created nicely
+    #        on the fake casd script. This whole test suite probably would
+    #        need some cleanup
+    monkeypatch.setattr(casdprocessmanager, "_CASD_TIMEOUT", 0.1)
 
     messenger = MagicMock(spec_set=Messenger)
     cache = CASCache(str(tmp_path.joinpath("casd")), casd=True, log_directory=str(tmp_path.joinpath("logs")))

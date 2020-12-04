@@ -17,6 +17,7 @@
 #
 
 import contextlib
+import threading
 import os
 import random
 import shutil
@@ -240,35 +241,48 @@ class CASDChannel:
         self._asset_fetch = None
         self._asset_push = None
         self._casd_pid = casd_pid
+        self._shutdown_requested = False
+
+        self._lock = threading.Lock()
 
     def _establish_connection(self):
-        assert self._casd_channel is None
+        with self._lock:
+            if self._casd_channel is not None:
+                return
 
-        while not os.path.exists(self._socket_path):
-            # casd is not ready yet, try again after a 10ms delay,
-            # but don't wait for more than specified timeout period
-            if time.time() > self._start_time + _CASD_TIMEOUT:
-                raise CASCacheError("Timed out waiting for buildbox-casd to become ready")
+            while not os.path.exists(self._socket_path):
+                # casd is not ready yet, try again after a 10ms delay,
+                # but don't wait for more than specified timeout period
+                if time.time() > self._start_time + _CASD_TIMEOUT:
+                    raise CASCacheError("Timed out waiting for buildbox-casd to become ready")
 
-            # check that process is still alive
-            try:
-                proc = psutil.Process(self._casd_pid)
-                if proc.status() == psutil.STATUS_ZOMBIE:
-                    proc.wait()
+                if self._shutdown_requested:
+                    # Shutdown has been requested, we can exit
+                    return
 
-                if not proc.is_running():
+                # check that process is still alive
+                try:
+                    proc = psutil.Process(self._casd_pid)
+                    if proc.status() == psutil.STATUS_ZOMBIE:
+                        proc.wait()
+
+                    if not proc.is_running():
+                        if self._shutdown_requested:
+                            return
+                        raise CASCacheError("buildbox-casd process died before connection could be established")
+                except psutil.NoSuchProcess:
+                    if self._shutdown_requested:
+                        return
                     raise CASCacheError("buildbox-casd process died before connection could be established")
-            except psutil.NoSuchProcess:
-                raise CASCacheError("buildbox-casd process died before connection could be established")
 
-            time.sleep(0.01)
+                time.sleep(0.01)
 
-        self._casd_channel = grpc.insecure_channel(self._connection_string)
-        self._bytestream = bytestream_pb2_grpc.ByteStreamStub(self._casd_channel)
-        self._casd_cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self._casd_channel)
-        self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
-        self._asset_fetch = remote_asset_pb2_grpc.FetchStub(self._casd_channel)
-        self._asset_push = remote_asset_pb2_grpc.PushStub(self._casd_channel)
+            self._casd_channel = grpc.insecure_channel(self._connection_string)
+            self._bytestream = bytestream_pb2_grpc.ByteStreamStub(self._casd_channel)
+            self._casd_cas = remote_execution_pb2_grpc.ContentAddressableStorageStub(self._casd_channel)
+            self._local_cas = local_cas_pb2_grpc.LocalContentAddressableStorageStub(self._casd_channel)
+            self._asset_fetch = remote_asset_pb2_grpc.FetchStub(self._casd_channel)
+            self._asset_push = remote_asset_pb2_grpc.PushStub(self._casd_channel)
 
     # get_cas():
     #
@@ -284,12 +298,12 @@ class CASDChannel:
     # Return LocalCAS stub for buildbox-casd channel.
     #
     def get_local_cas(self):
-        if self._casd_channel is None:
+        if self._local_cas is None:
             self._establish_connection()
         return self._local_cas
 
     def get_bytestream(self):
-        if self._casd_channel is None:
+        if self._bytestream is None:
             self._establish_connection()
         return self._bytestream
 
@@ -318,17 +332,30 @@ class CASDChannel:
     def is_closed(self):
         return self._casd_channel is None
 
+    # request_shutdown():
+    #
+    # Notify the channel that a shutdown of casd was requested.
+    #
+    # Thus we know that not being able to establish a connection is expected
+    # and no error will be reported in that case.
+    def request_shutdown(self) -> None:
+        self._shutdown_requested = True
+
     # close():
     #
     # Close the casd channel.
     #
     def close(self):
-        if self.is_closed():
-            return
-        self._asset_push = None
-        self._asset_fetch = None
-        self._local_cas = None
-        self._casd_cas = None
-        self._bytestream = None
-        self._casd_channel.close()
-        self._casd_channel = None
+        assert self._shutdown_requested, "Please request shutdown before closing"
+
+        with self._lock:
+            if self.is_closed():
+                return
+
+            self._asset_push = None
+            self._asset_fetch = None
+            self._local_cas = None
+            self._casd_cas = None
+            self._bytestream = None
+            self._casd_channel.close()
+            self._casd_channel = None

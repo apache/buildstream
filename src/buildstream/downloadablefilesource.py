@@ -92,6 +92,33 @@ class _NetrcPasswordManager:
             return login, password
 
 
+def _download_file(opener, url, etag, directory):
+    default_name = os.path.basename(url)
+    request = urllib.request.Request(url)
+    request.add_header("Accept", "*/*")
+    request.add_header("User-Agent", "BuildStream/2")
+
+    if etag is not None:
+        request.add_header("If-None-Match", etag)
+
+    with contextlib.closing(opener.open(request)) as response:
+        info = response.info()
+
+        # some servers don't honor the 'If-None-Match' header
+        if etag and info["ETag"] == etag:
+            return None, None
+
+        etag = info["ETag"]
+
+        filename = info.get_filename(default_name)
+        filename = os.path.basename(filename)
+        local_file = os.path.join(directory, filename)
+        with open(local_file, "wb") as dest:
+            shutil.copyfileobj(response, dest)
+
+    return local_file, etag
+
+
 class DownloadableFileSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
@@ -130,19 +157,18 @@ class DownloadableFileSource(Source):
         # there is no 'track' field in the source to determine what/whether
         # or not to update refs, because tracking a ref is always a conscious
         # decision by the user.
-        with self.timed_activity("Tracking {}".format(self.url), silent_nested=True):
-            new_ref = self._ensure_mirror()
+        new_ref = self._ensure_mirror("Tracking {}".format(self.url))
 
-            if self.ref and self.ref != new_ref:
-                detail = (
-                    "When tracking, new ref differs from current ref:\n"
-                    + "  Tracked URL: {}\n".format(self.url)
-                    + "  Current ref: {}\n".format(self.ref)
-                    + "  New ref: {}\n".format(new_ref)
-                )
-                self.warn("Potential man-in-the-middle attack!", detail=detail)
+        if self.ref and self.ref != new_ref:
+            detail = (
+                "When tracking, new ref differs from current ref:\n"
+                + "  Tracked URL: {}\n".format(self.url)
+                + "  Current ref: {}\n".format(self.ref)
+                + "  New ref: {}\n".format(new_ref)
+            )
+            self.warn("Potential man-in-the-middle attack!", detail=detail)
 
-            return new_ref
+        return new_ref
 
     def fetch(self):  # pylint: disable=arguments-differ
 
@@ -155,12 +181,11 @@ class DownloadableFileSource(Source):
 
         # Download the file, raise hell if the sha256sums don't match,
         # and mirror the file otherwise.
-        with self.timed_activity("Fetching {}".format(self.url), silent_nested=True):
-            sha256 = self._ensure_mirror()
-            if sha256 != self.ref:
-                raise SourceError(
-                    "File downloaded from {} has sha256sum '{}', not '{}'!".format(self.url, sha256, self.ref)
-                )
+        sha256 = self._ensure_mirror("Fetching {}".format(self.url),)
+        if sha256 != self.ref:
+            raise SourceError(
+                "File downloaded from {} has sha256sum '{}', not '{}'!".format(self.url, sha256, self.ref)
+            )
 
     def _warn_deprecated_etag(self, node):
         etag = node.get_str("etag", None)
@@ -181,40 +206,25 @@ class DownloadableFileSource(Source):
         with utils.save_file_atomic(etagfilename) as etagfile:
             etagfile.write(etag)
 
-    def _ensure_mirror(self):
+    def _ensure_mirror(self, activity_name: str):
         # Downloads from the url and caches it according to its sha256sum.
         try:
             with self.tempdir() as td:
-                default_name = os.path.basename(self.url)
-                request = urllib.request.Request(self.url)
-                request.add_header("Accept", "*/*")
-                request.add_header("User-Agent", "BuildStream/2")
-
                 # We do not use etag in case what we have in cache is
                 # not matching ref in order to be able to recover from
                 # corrupted download.
-                if self.ref:
-                    etag = self._get_etag(self.ref)
-
+                if self.ref and not self.is_cached():
                     # Do not re-download the file if the ETag matches.
-                    if etag and self.is_cached():
-                        request.add_header("If-None-Match", etag)
+                    etag = self._get_etag(self.ref)
+                else:
+                    etag = None
 
-                opener = self.__get_urlopener()
-                with contextlib.closing(opener.open(request)) as response:
-                    info = response.info()
+                local_file, new_etag = self.blocking_activity(
+                    _download_file, (self.__get_urlopener(), self.url, etag, td), activity_name
+                )
 
-                    # some servers don't honor the 'If-None-Match' header
-                    if self.ref and etag and info["ETag"] == etag:
-                        return self.ref
-
-                    etag = info["ETag"]
-
-                    filename = info.get_filename(default_name)
-                    filename = os.path.basename(filename)
-                    local_file = os.path.join(td, filename)
-                    with open(local_file, "wb") as dest:
-                        shutil.copyfileobj(response, dest)
+                if local_file is None:
+                    return self.ref
 
                 # Make sure url-specific mirror dir exists.
                 if not os.path.isdir(self._mirror_dir):
@@ -226,8 +236,8 @@ class DownloadableFileSource(Source):
                 # In case the old file was corrupted somehow.
                 os.rename(local_file, self._get_mirror_file(sha256))
 
-                if etag:
-                    self._store_etag(sha256, etag)
+                if new_etag:
+                    self._store_etag(sha256, new_etag)
                 return sha256
 
         except urllib.error.HTTPError as e:
@@ -251,6 +261,11 @@ class DownloadableFileSource(Source):
             self.__default_mirror_file = os.path.join(self._mirror_dir, self.ref)
 
         return self.__default_mirror_file
+
+    @classmethod
+    def _reset_url_opener(cls):
+        # Needed for tests, in order to cleanup the `netrc` configuration.
+        cls.__urlopener = None
 
     def __get_urlopener(self):
         if not DownloadableFileSource.__urlopener:

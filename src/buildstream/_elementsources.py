@@ -100,7 +100,7 @@ class ElementSources:
             else:
                 new_ref = source._track()
 
-            refs.append((source._unique_id, new_ref))
+            refs.append((source._unique_id, new_ref, old_ref != new_ref))
 
             # Complimentary warning that the new ref will be unused.
             if old_ref != new_ref and workspace:
@@ -113,7 +113,7 @@ class ElementSources:
         # Sources which do not implement track() will return None, produce
         # a SKIP message in the UI if all sources produce None
         #
-        if all(ref is None for _, ref in refs):
+        if all(ref is None for _, ref, _ in refs):
             raise SkipJob("Element sources are not trackable")
 
         return refs

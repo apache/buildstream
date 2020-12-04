@@ -564,17 +564,3 @@ class Context:
                 log_directory=self.logdir,
             )
         return self._cascache
-
-    # prepare_fork():
-    #
-    # Prepare this process for fork without exec. This is a safeguard against
-    # fork issues with multiple threads and gRPC connections.
-    #
-    def prepare_fork(self):
-        # gRPC channels must be closed before fork.
-        for cache in [self._cascache, self._artifactcache, self._sourcecache]:
-            if cache:
-                cache.close_grpc_channels()
-
-        # Do not allow fork if there are background threads.
-        return utils._is_single_threaded()

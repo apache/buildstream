@@ -184,17 +184,27 @@ class SandboxBuildBoxRun(SandboxREAPI):
             try:
                 while True:
                     try:
-                        returncode = process.wait()
+                        # Here, we don't use `process.wait()` directly without a timeout
+                        # This is because, if we were to do that, and the process would never
+                        # output anything, the control would never be given back to the python
+                        # process, which might thus not be able to check for request to
+                        # shutdown, or kill the process.
+                        # We therefore loop with a timeout, to ensure the python process
+                        # can act if it needs.
+                        returncode = process.wait(timeout=1)
                         # If the process exits due to a signal, we
                         # brutally murder it to avoid zombies
                         if returncode < 0:
                             utils._kill_process_tree(process.pid)
 
+                    except subprocess.TimeoutExpired:
+                        continue
+
                     # Unlike in the bwrap case, here only the main
                     # process seems to receive the SIGINT. We pass
                     # on the signal to the child and then continue
                     # to wait.
-                    except KeyboardInterrupt:
+                    except _signals.TerminateException:
                         process.send_signal(signal.SIGINT)
                         continue
 

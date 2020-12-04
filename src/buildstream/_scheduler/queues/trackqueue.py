@@ -56,9 +56,10 @@ class TrackQueue(Queue):
         # Set the new refs in the main process one by one as they complete,
         # writing to bst files this time
         if result is not None:
-            for unique_id, new_ref in result:
-                source = Plugin._lookup(unique_id)
-                source._set_ref(new_ref, save=True)
+            for unique_id, new_ref, ref_changed in result:
+                if ref_changed:
+                    source = Plugin._lookup(unique_id)
+                    source._set_ref(new_ref, save=True)
 
         element._tracking_done()
 
