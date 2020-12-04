@@ -71,6 +71,51 @@ class Artifact:
         self._metadata_workspaced_dependencies = None  # List of which dependencies are workspaced from the artifact
         self._cached = None  # Boolean of whether the artifact is cached
 
+    # strong_key():
+    #
+    # A property which evaluates to the strong key, regardless of whether
+    # it was the strong key that the Artifact object was initialized with
+    # or whether it was the strong key loaded from artifact metadata.
+    #
+    @property
+    def strong_key(self) -> str:
+        if self.cached():
+            key, _, _ = self.get_metadata_keys()
+        else:
+            key = self._cache_key
+
+        return key
+
+    # strict_key():
+    #
+    # A property which evaluates to the strict key, regardless of whether
+    # it was the strict key that the Artifact object was initialized with
+    # or whether it was the strict key loaded from artifact metadata.
+    #
+    @property
+    def strict_key(self) -> str:
+        if self.cached():
+            _, key, _ = self.get_metadata_keys()
+        else:
+            key = self._strict_key
+
+        return key
+
+    # weak_key():
+    #
+    # A property which evaluates to the weak key, regardless of whether
+    # it was the weak key that the Artifact object was initialized with
+    # or whether it was the weak key loaded from artifact metadata.
+    #
+    @property
+    def weak_key(self) -> str:
+        if self.cached():
+            _, _, key = self.get_metadata_keys()
+        else:
+            key = self._weak_cache_key
+
+        return key
+
     # get_files():
     #
     # Get a virtual directory for the artifact files content
