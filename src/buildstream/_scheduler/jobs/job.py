@@ -72,7 +72,6 @@ class _Envelope:
 
 class _MessageType(FastEnum):
     LOG_MESSAGE = 1
-    ERROR = 2
 
 
 # Job()
@@ -383,11 +382,6 @@ class Job:
             # Propagate received messages from children
             # back through the context.
             self._messenger.message(envelope.message)
-        elif envelope.message_type is _MessageType.ERROR:
-            # For regression tests only, save the last error domain / reason
-            # reported from a child task in the main process, this global state
-            # is currently managed in _exceptions.py
-            set_last_task_error(envelope.message["domain"], envelope.message["reason"])
         else:
             assert False, "Unhandled message type '{}': {}".format(envelope.message_type, envelope.message)
 
@@ -577,7 +571,7 @@ class ChildJob:
                         )
 
                     # Report the exception to the parent (for internal testing purposes)
-                    self._child_send_error(e)
+                    set_last_task_error(e.domain, e.reason)
 
                     # Set return code based on whether or not the error was temporary.
                     #
@@ -647,23 +641,6 @@ class ChildJob:
     #
     def _send_message(self, message_type, message_data):
         self._pipe_w.send(_Envelope(message_type, message_data))
-
-    # _child_send_error()
-    #
-    # Sends an error to the main process through the message pipe
-    #
-    # Args:
-    #    e (Exception): The error to send
-    #
-    def _child_send_error(self, e):
-        domain = None
-        reason = None
-
-        if isinstance(e, BstError):
-            domain = e.domain
-            reason = e.reason
-
-        self._send_message(_MessageType.ERROR, {"domain": domain, "reason": reason})
 
     # _child_message_handler()
     #
