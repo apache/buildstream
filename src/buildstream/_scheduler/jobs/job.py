@@ -74,7 +74,6 @@ class _MessageType(FastEnum):
     LOG_MESSAGE = 1
     ERROR = 2
     RESULT = 3
-    CHILD_DATA = 4
 
 
 # Job()
@@ -121,7 +120,6 @@ class Job:
         self.id = "{}-{}".format(action_name, next(Job._id_generator))
         self.name = None  # The name of the job, set by the job's subclass
         self.action_name = action_name  # The action name for the Queue
-        self.child_data = None  # Data to be sent to the main process
 
         #
         # Private members
@@ -394,9 +392,6 @@ class Job:
         elif envelope.message_type is _MessageType.RESULT:
             assert self._result is None
             self._result = envelope.message
-        elif envelope.message_type is _MessageType.CHILD_DATA:
-            # If we retry a job, we assign a new value to this
-            self.child_data = envelope.message
         else:
             assert False, "Unhandled message type '{}': {}".format(envelope.message_type, envelope.message)
 
@@ -527,20 +522,6 @@ class ChildJob:
     def child_process(self):
         raise ImplError("ChildJob '{kind}' does not implement child_process()".format(kind=type(self).__name__))
 
-    # child_process_data()
-    #
-    # Abstract method to retrieve additional data that should be
-    # returned to the parent process. Note that the job result is
-    # retrieved independently.
-    #
-    # Values can later be retrieved in Job.child_data.
-    #
-    # Returns:
-    #    (dict) A dict containing values to be reported to the main process
-    #
-    def child_process_data(self):
-        return {}
-
     # child_action()
     #
     # Perform the action in the child process, this calls the action_cb.
@@ -599,8 +580,6 @@ class ChildJob:
                             sandbox=e.sandbox,
                         )
 
-                    self._send_message(_MessageType.CHILD_DATA, self.child_process_data())
-
                     # Report the exception to the parent (for internal testing purposes)
                     self._child_send_error(e)
 
@@ -622,7 +601,6 @@ class ChildJob:
 
                 else:
                     # No exception occurred in the action
-                    self._send_message(_MessageType.CHILD_DATA, self.child_process_data())
                     self._child_send_result(result)
 
                     elapsed = datetime.datetime.now() - timeinfo.start_time
