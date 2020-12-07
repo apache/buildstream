@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2018 Codethink Limited
+#  Copyright (C) 2020 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -16,52 +16,123 @@
 #
 #  Authors:
 #        Jim MacArthur <jim.macarthur@codethink.co.uk>
+#        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
+#
 
+from typing import TYPE_CHECKING, Dict, Optional, Union
 from .._platform import Platform
+
+if TYPE_CHECKING:
+    from ..node import Node, MappingNode
 
 
 # SandboxConfig
 #
-# A container for sandbox configuration data. We want the internals
-# of this to be opaque, hence putting it in its own private file.
+# The Sandbox configuration parameters, this object carries configuration
+# required to instantiate the correct type of sandbox, and assert that
+# the local or remote worker sandbox has the capabilities required.
+#
+# Args:
+#    build_os: The build OS name
+#    build_arch: A canonical machine architecture name, as defined by Platform.canonicalize_arch()
+#    build_uid: The UID for the sandbox process
+#    build_gid: The GID for the sandbox process
+#
+# If the build_uid or build_gid is unspecified, then the underlying sandbox implementation
+# does not guarantee what UID/GID will be used, but generally UID/GID 0 will be used in a
+# sandbox implementation which supports UID/GID control.
+#
+# If the build_uid or build_gid is specified, then the UID/GID is guaranteed to match
+# the specified UID/GID, if the underlying sandbox implementation does not support UID/GID
+# control, then an error will be raised when attempting to configure the sandbox.
+#
 class SandboxConfig:
-    def __init__(self, sandbox_config, platform):
-        host_arch = platform.get_host_arch()
-        host_os = platform.get_host_os()
+    def __init__(
+        self, *, build_os: str, build_arch: str, build_uid: Optional[int] = None, build_gid: Optional[int] = None
+    ):
+        self.build_os = build_os
+        self.build_arch = build_arch
+        self.build_uid = build_uid
+        self.build_gid = build_gid
 
-        sandbox_config.validate_keys(["build-uid", "build-gid", "build-os", "build-arch"])
-
-        build_os = sandbox_config.get_str("build-os", default=None)
-        if build_os:
-            self.build_os = build_os.lower()
-        else:
-            self.build_os = host_os
-
-        build_arch = sandbox_config.get_str("build-arch", default=None)
-        if build_arch:
-            self.build_arch = Platform.canonicalize_arch(build_arch)
-        else:
-            self.build_arch = host_arch
-
-        self.build_uid = sandbox_config.get_int("build-uid", None)
-        self.build_gid = sandbox_config.get_int("build-gid", None)
-
-    # get_unique_key():
+    # to_dict():
     #
-    # This returns the SandboxConfig's contribution
-    # to an element's cache key.
+    # Represent the SandboxConfig as a dictionary.
+    #
+    # This dictionary will be stored in the corresponding artifact
+    # whenever an artifact is cached. When loading an element from
+    # an artifact, then this dict will be loaded as a MappingNode
+    # and interpreted by SandboxConfig.new_from_node().
+    #
+    # This function is also used to contribute to the owning element's cache key.
     #
     # Returns:
-    #    (dict): A dictionary to add to an element's cache key
+    #    A dictionary representation of this SandboxConfig
     #
-    def get_unique_key(self):
+    def to_dict(self) -> Dict[str, Union[str, int]]:
 
-        unique_key = {"os": self.build_os, "arch": self.build_arch}
+        # Assign mandatory portions of the sandbox configuration
+        #
+        # /!\ No additional mandatory members can ever be added to
+        #     the sandbox configuration, as that would result in
+        #     breaking cache key stability.
+        #
+        sandbox_dict: Dict[str, Union[str, int]] = {"build-os": self.build_os, "build-arch": self.build_arch}
 
+        # Assign optional portions of the sandbox configuration
+        #
+        # /!\ In order to preserve cache key stability, these attributes
+        #     are only ever added to the dictionary if they have been
+        #     explicitly set, unset values must not affect the dictionary.
+        #
         if self.build_uid is not None:
-            unique_key["build-uid"] = self.build_uid
-
+            sandbox_dict["build-uid"] = self.build_uid
         if self.build_gid is not None:
-            unique_key["build-gid"] = self.build_gid
+            sandbox_dict["build-gid"] = self.build_gid
 
-        return unique_key
+        return sandbox_dict
+
+    # new_from_node():
+    #
+    # Instantiate a new SandboxConfig from YAML configuration.
+    #
+    # If the Platform is specified, then we expect to be loading
+    # from project definitions, and some defaults will be derived
+    # from the Platform. Otherwise, we expect to be loading from
+    # a cached artifact, and values are expected to exist on the
+    # given node.
+    #
+    # Args:
+    #    config: The YAML configuration node
+    #    platform: The host Platform instance, or None
+    #
+    # Returns:
+    #    A new SandboxConfig instance
+    #
+    @classmethod
+    def new_from_node(cls, config: "MappingNode[Node]", *, platform: Optional[Platform] = None) -> "SandboxConfig":
+        config.validate_keys(["build-uid", "build-gid", "build-os", "build-arch"])
+
+        build_os: str
+        build_arch: str
+
+        if platform:
+            tmp = config.get_str("build-os", None)
+            if tmp:
+                build_os = tmp.lower()
+            else:
+                build_os = platform.get_host_os()
+
+            tmp = config.get_str("build-arch", None)
+            if tmp:
+                build_arch = Platform.canonicalize_arch(tmp)
+            else:
+                build_arch = platform.get_host_arch()
+        else:
+            build_os = config.get_str("build-os")
+            build_arch = config.get_str("build-arch")
+
+        build_uid = config.get_int("build-uid", None)
+        build_gid = config.get_int("build-gid", None)
+
+        return cls(build_os=build_os, build_arch=build_arch, build_uid=build_uid, build_gid=build_gid)

@@ -146,10 +146,10 @@ class ArtifactCache(AssetCache):
 
         for remote in index_remotes:
             remote.init()
-            element.status("Pushing artifact {} -> {}".format(display_key, remote))
+            element.status("Pushing artifact {} -> {}".format(display_key.brief, remote))
 
             if self._push_artifact_proto(element, artifact, artifact_digest, remote):
-                element.info("Pushed artifact {} -> {}".format(display_key, remote))
+                element.info("Pushed artifact {} -> {}".format(display_key.brief, remote))
                 pushed = True
             else:
                 element.info("Remote ({}) already has artifact {} cached".format(remote, display_key.brief))
@@ -404,7 +404,7 @@ class ArtifactCache(AssetCache):
                 except FileNotFoundError:
                     pass
 
-            digests = [artifact_digest]
+            digests = [artifact_digest, artifact_proto.low_diversity_meta, artifact_proto.high_diversity_meta]
 
             if str(artifact_proto.public_data):
                 digests.append(artifact_proto.public_data)
@@ -470,7 +470,9 @@ class ArtifactCache(AssetCache):
         if artifact_proto.sources:
             referenced_directories.append(artifact_proto.sources)
 
-        referenced_blobs = [log_file.digest for log_file in artifact_proto.logs]
+        referenced_blobs = [artifact_proto.low_diversity_meta, artifact_proto.high_diversity_meta] + [
+            log_file.digest for log_file in artifact_proto.logs
+        ]
 
         try:
             remote.push_blob(
@@ -530,7 +532,7 @@ class ArtifactCache(AssetCache):
             if pull_buildtrees and str(artifact.buildtree):
                 __pull_digest(artifact.buildtree)
 
-            digests = []
+            digests = [artifact.low_diversity_meta, artifact.high_diversity_meta]
             if str(artifact.public_data):
                 digests.append(artifact.public_data)
 

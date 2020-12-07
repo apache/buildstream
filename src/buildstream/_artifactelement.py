@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2019 Bloomberg Finance LP
+#  Copyright (C) 2020 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -16,17 +17,22 @@
 #
 #  Authors:
 #        James Ennis <james.ennis@codethink.co.uk>
+#        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Dict
+from contextlib import suppress
 
 from . import Element
 from . import _cachekey
+from ._artifact import Artifact
+from ._artifactproject import ArtifactProject
 from ._exceptions import ArtifactElementError
 from ._loader import LoadElement
 from .node import Node
 
 if TYPE_CHECKING:
-    from typing import Dict
+    from ._context import Context
+    from ._state import _Task
 
 
 # ArtifactElement()
@@ -40,51 +46,70 @@ if TYPE_CHECKING:
 class ArtifactElement(Element):
 
     # A hash of ArtifactElement by ref
-    __instantiated_artifacts = {}  # type: Dict[str, ArtifactElement]
+    __instantiated_artifacts: Dict[str, "ArtifactElement"] = {}
 
     def __init__(self, context, ref):
-        _, element, key = verify_artifact_ref(ref)
+        project_name, element_name, key = verify_artifact_ref(ref)
 
-        self._ref = ref
-        self._key = key
+        # At this point we only know the key which was specified on the command line,
+        # so we will pretend all keys are equal.
+        #
+        # If the artifact is cached, then the real keys will be loaded from the
+        # artifact instead.
+        #
+        artifact = Artifact(self, context, strong_key=key, strict_key=key, weak_key=key)
+        project = ArtifactProject(project_name, context)
+        load_element = LoadElement(Node.from_dict({}), element_name, project.loader)  # NOTE element has no .bst suffix
 
-        project = context.get_toplevel_project()
-        load_element = LoadElement(Node.from_dict({}), element, project.loader)  # NOTE element has no .bst suffix
+        super().__init__(context, project, load_element, None, artifact=artifact)
 
-        super().__init__(context, project, load_element, None)
+    ########################################################
+    #                      Public API                      #
+    ########################################################
 
-    # _new_from_artifact_name():
+    # new_from_artifact_name():
     #
     # Recursively instantiate a new ArtifactElement instance, and its
     # dependencies from an artifact name
     #
     # Args:
-    #    ref (String): The artifact ref
-    #    context (Context): The Context object
-    #    task (Task): A task object to report progress to
+    #    artifact_name: The artifact name
+    #    context: The Context object
+    #    task: A task object to report progress to
     #
     # Returns:
     #    (ArtifactElement): A newly created Element instance
     #
     @classmethod
-    def _new_from_artifact_name(cls, ref, context, task=None):
+    def new_from_artifact_name(cls, artifact_name: str, context: "Context", task: Optional["_Task"] = None):
 
-        if ref in cls.__instantiated_artifacts:
-            return cls.__instantiated_artifacts[ref]
+        # Initial lookup for already loaded artifact.
+        with suppress(KeyError):
+            return cls.__instantiated_artifacts[artifact_name]
 
-        artifact_element = ArtifactElement(context, ref)
-        # XXX: We need to call initialize_state as it is responsible for
-        # initialising an Element/ArtifactElement's Artifact (__artifact)
-        artifact_element._initialize_state()
-        cls.__instantiated_artifacts[ref] = artifact_element
+        # Instantiate the element, this can result in having a different
+        # artifact name, if we loaded the artifact by it's weak key then
+        # we will have the artifact loaded via it's strong key.
+        element = ArtifactElement(context, artifact_name)
+        artifact_name = element.get_artifact_name()
 
-        for dep_ref in artifact_element.get_dependency_artifact_names():
-            dependency = ArtifactElement._new_from_artifact_name(dep_ref, context, task)
-            artifact_element._add_build_dependency(dependency)
+        # Perform a second lookup, avoid loading the same artifact
+        # twice, even if we've loaded it both with weak and strong keys.
+        with suppress(KeyError):
+            return cls.__instantiated_artifacts[artifact_name]
 
-        return artifact_element
+        # Now cache the loaded artifact
+        cls.__instantiated_artifacts[artifact_name] = element
 
-    # _clear_artifact_refs_cache()
+        # Walk the dependencies and load recursively
+        artifact = element._get_artifact()
+        for dep_artifact_name in artifact.get_dependency_artifact_names():
+            dependency = ArtifactElement.new_from_artifact_name(dep_artifact_name, context, task)
+            element._add_build_dependency(dependency)
+
+        return element
+
+    # clear_artifact_name_cache()
     #
     # Clear the internal artifact refs cache
     #
@@ -96,52 +121,23 @@ class ArtifactElement(Element):
     # to save memory.
     #
     @classmethod
-    def _clear_artifact_refs_cache(cls):
+    def clear_artifact_name_cache(cls):
         cls.__instantiated_artifacts = {}
 
-    # Override Element.get_artifact_name()
-    def get_artifact_name(self, key=None):
-        return self._ref
-
-    # Dummy configure method
+    ########################################################
+    #         Implement Element abstract methods           #
+    ########################################################
     def configure(self, node):
         pass
 
-    # Dummy preflight method
     def preflight(self):
         pass
 
-    # get_dependency_artifact_names()
-    #
-    # Retrieve the artifact names of all of the dependencies in _Scope.BUILD
-    #
-    # Returns:
-    #   (list [str]): A list of artifact refs
-    #
-    def get_dependency_artifact_names(self):
-        artifact = self._get_artifact()
-        return artifact.get_dependency_artifact_names()
-
-    # configure_sandbox()
-    #
-    # Configure a sandbox for installing artifacts into
-    #
-    # Args:
-    #    sandbox (Sandbox)
-    #
     def configure_sandbox(self, sandbox):
         install_root = self.get_variable("install-root")
 
         # Tell the sandbox to mount the build root and install root
         sandbox.mark_directory(install_root)
-
-    # Override Element._calculate_cache_key
-    def _calculate_cache_key(self, dependencies=None):
-        return self._key
-
-    # Override Element._get_cache_key()
-    def _get_cache_key(self, strength=None):
-        return self._key
 
 
 # verify_artifact_ref()

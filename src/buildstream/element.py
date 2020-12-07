@@ -220,11 +220,17 @@ class Element(Plugin):
     """
 
     def __init__(
-        self, context: "Context", project: "Project", load_element: "LoadElement", plugin_conf: Dict[str, Any]
+        self,
+        context: "Context",
+        project: "Project",
+        load_element: "LoadElement",
+        plugin_conf: Dict[str, Any],
+        *,
+        artifact: Artifact = None,
     ):
 
         self.__cache_key_dict = None  # Dict for cache key calculation
-        self.__cache_key = None  # Our cached cache key
+        self.__cache_key: Optional[str] = None  # Our cached cache key
 
         super().__init__(load_element.name, context, project, load_element.node, "element")
 
@@ -278,8 +284,8 @@ class Element(Plugin):
         self.__ready_for_runtime_and_cached = False  # Whether all runtime deps are cached, as well as the element
         self.__cached_remotely = None  # Whether the element is cached remotely
         self.__sources = ElementSources(context, project, self)  # The element sources
-        self.__weak_cache_key = None  # Our cached weak cache key
-        self.__strict_cache_key = None  # Our cached cache key for strict builds
+        self.__weak_cache_key: Optional[str] = None  # Our cached weak cache key
+        self.__strict_cache_key: Optional[str] = None  # Our cached cache key for strict builds
         self.__artifacts = context.artifactcache  # Artifact cache
         self.__sourcecache = context.sourcecache  # Source cache
         self.__assemble_scheduled = False  # Element is scheduled to be assembled
@@ -294,6 +300,8 @@ class Element(Plugin):
         self.__build_result = None  # The result of assembling this Element (success, description, detail)
         # Artifact class for direct artifact composite interaction
         self.__artifact = None  # type: Optional[Artifact]
+        self.__dynamic_public = None
+        self.__sandbox_config = None  # type: Optional[SandboxConfig]
 
         self.__batch_prepare_assemble = False  # Whether batching across prepare()/assemble() is configured
         self.__batch_prepare_assemble_flags = 0  # Sandbox flags for batching across prepare()/assemble()
@@ -307,47 +315,10 @@ class Element(Plugin):
 
         self.__resolved_initial_state = False  # Whether the initial state of the Element has been resolved
 
-        # Ensure we have loaded this class's defaults
-        self.__init_defaults(project, plugin_conf, load_element.kind, load_element.first_pass)
-
-        # Collect the composited variables and resolve them
-        variables = self.__extract_variables(project, load_element)
-        variables["element-name"] = self.name
-        self.__variables = Variables(variables)
-        if not load_element.first_pass:
-            self.__variables.check()
-
-        # Collect the composited environment now that we have variables
-        unexpanded_env = self.__extract_environment(project, load_element)
-        self.__variables.expand(unexpanded_env)
-        self.__environment = unexpanded_env.strip_node_info()
-
-        # Collect the environment nocache blacklist list
-        nocache = self.__extract_env_nocache(project, load_element)
-        self.__env_nocache = nocache
-
-        # Grab public domain data declared for this instance
-        self.__public = self.__extract_public(load_element)
-        self.__variables.expand(self.__public)
-        self.__dynamic_public = None
-
-        # Collect the composited element configuration and
-        # ask the element to configure itself.
-        self.__config = self.__extract_config(load_element)
-        self.__variables.expand(self.__config)
-
-        self._configure(self.__config)
-
-        # Extract remote execution URL
-        if load_element.first_pass:
-            self.__remote_execution_specs = None
+        if artifact:
+            self.__initialize_from_artifact(artifact)
         else:
-            self.__remote_execution_specs = project.remote_execution_specs
-
-        # Extract Sandbox config
-        sandbox_config = self.__extract_sandbox_config(project, load_element)
-        self.__variables.expand(sandbox_config)
-        self.__sandbox_config = SandboxConfig(sandbox_config, context.platform)
+            self.__initialize_from_yaml(load_element, plugin_conf)
 
     def __lt__(self, other):
         return self.name < other.name
@@ -1194,8 +1165,7 @@ class Element(Plugin):
 
     # _reset_load_state()
     #
-    # This is called by Pipeline.cleanup() and is used to
-    # reset the loader state between multiple sessions.
+    # This is used to reset the loader state across multiple load sessions.
     #
     @classmethod
     def _reset_load_state(cls):
@@ -1448,6 +1418,15 @@ class Element(Plugin):
     #
     @contextmanager
     def _prepare_sandbox(self, scope, shell=False, integrate=True, usebuildtree=False):
+
+        # Assert first that we have a sandbox configuration
+        if not self.__sandbox_config:
+            raise ElementError(
+                "Error preparing sandbox for element: {}".format(self.name),
+                detail="This is most likely an artifact that is not yet cached, try building or pulling the artifact first",
+                reason="missing-sandbox-config",
+            )
+
         # bst shell and bst artifact checkout require a local sandbox.
         with self.__sandbox(None, config=self.__sandbox_config, allow_remote=False) as sandbox:
             sandbox._usebuildtree = usebuildtree
@@ -1840,7 +1819,16 @@ class Element(Plugin):
         assert self.__artifact._cache_key is not None
 
         with self.timed_activity("Caching artifact"):
-            artifact_size = self.__artifact.cache(sandbox_build_dir, collectvdir, sourcesvdir, buildresult, publicdata)
+            artifact_size = self.__artifact.cache(
+                sandbox_build_dir=sandbox_build_dir,
+                collectvdir=collectvdir,
+                sourcesvdir=sourcesvdir,
+                buildresult=buildresult,
+                publicdata=publicdata,
+                variables=self.__variables,
+                environment=self.__environment,
+                sandboxconfig=self.__sandbox_config,
+            )
 
         if collect is not None and collectvdir is None:
             raise ElementError(
@@ -2249,7 +2237,7 @@ class Element(Plugin):
                 "element-plugin-key": self.get_unique_key(),
                 "element-plugin-name": self.get_kind(),
                 "element-plugin-version": self.BST_ARTIFACT_VERSION,
-                "sandbox": self.__sandbox_config.get_unique_key(),
+                "sandbox": self.__sandbox_config.to_dict(),
                 "environment": cache_env,
                 "public": self.__public.strip_node_info(),
             }
@@ -2408,6 +2396,14 @@ class Element(Plugin):
                         rdep.__buildable_callback(rdep)
                         rdep.__buildable_callback = None
 
+    # _walk_artifact_files()
+    #
+    # A generator which yields all of the files cached in the
+    # element's artifact.
+    #
+    # Yields:
+    #    (str): Filenames in the artifact
+    #
     def _walk_artifact_files(self):
         yield from self.__artifact.get_files().walk()
 
@@ -2806,6 +2802,74 @@ class Element(Plugin):
             ) as sandbox:
                 yield sandbox
 
+    # __initialize_from_yaml()
+    #
+    # Normal element initialization procedure.
+    #
+    def __initialize_from_yaml(self, load_element: "LoadElement", plugin_conf: Dict[str, Any]):
+
+        context = self._get_context()
+        project = self._get_project()
+
+        # Ensure we have loaded this class's defaults
+        self.__init_defaults(project, plugin_conf, load_element.kind, load_element.first_pass)
+
+        # Collect the composited variables and resolve them
+        variables = self.__extract_variables(project, load_element)
+        variables["element-name"] = self.name
+        self.__variables = Variables(variables)
+        if not load_element.first_pass:
+            self.__variables.check()
+
+        # Collect the composited environment now that we have variables
+        unexpanded_env = self.__extract_environment(project, load_element)
+        self.__variables.expand(unexpanded_env)
+        self.__environment = unexpanded_env.strip_node_info()
+
+        # Collect the environment nocache blacklist list
+        nocache = self.__extract_env_nocache(project, load_element)
+        self.__env_nocache = nocache
+
+        # Grab public domain data declared for this instance
+        self.__public = self.__extract_public(load_element)
+        self.__variables.expand(self.__public)
+
+        # Collect the composited element configuration and
+        # ask the element to configure itself.
+        self.__config = self.__extract_config(load_element)
+        self.__variables.expand(self.__config)
+
+        self._configure(self.__config)
+
+        # Extract remote execution URL
+        if load_element.first_pass:
+            self.__remote_execution_specs = None
+        else:
+            self.__remote_execution_specs = project.remote_execution_specs
+
+        # Extract Sandbox config
+        sandbox_config = self.__extract_sandbox_config(project, load_element)
+        self.__variables.expand(sandbox_config)
+        self.__sandbox_config = SandboxConfig.new_from_node(sandbox_config, platform=context.platform)
+
+    # __initialize_from_artifact()
+    #
+    # Initialize the element state from an Artifact object
+    #
+    def __initialize_from_artifact(self, artifact: Artifact):
+        self.__artifact = artifact
+
+        # Load bits which have been stored on the artifact
+        #
+        if artifact.cached():
+            self.__environment = artifact.load_environment()
+            self.__sandbox_config = artifact.load_sandbox_config()
+            self.__variables = artifact.load_variables()
+
+        self.__cache_key = artifact.strong_key
+        self.__strict_cache_key = artifact.strict_key
+        self.__weak_cache_key = artifact.weak_key
+
     @classmethod
     def __compose_default_splits(cls, project, defaults, first_pass):
 
@@ -2816,9 +2880,9 @@ class Element(Plugin):
         if first_pass:
             splits = element_splits.clone()
         else:
-            assert project._splits is not None
+            assert project.splits is not None
 
-            splits = project._splits.clone()
+            splits = project.splits.clone()
             # Extend project wide split rules with any split rules defined by the element
             element_splits._composite(splits)
 
@@ -2951,7 +3015,7 @@ class Element(Plugin):
         if load_element.first_pass:
             sandbox_config = Node.from_dict({})
         else:
-            sandbox_config = project._sandbox.clone()
+            sandbox_config = project.sandbox.clone()
 
         # The default config is already composited with the project overrides
         sandbox_defaults = cls.__defaults.get_mapping(Symbol.SANDBOX, default={})
@@ -3208,11 +3272,19 @@ class Element(Plugin):
 
         context = self._get_context()
 
-        strict_artifact = Artifact(self, context, strong_key=self.__strict_cache_key, weak_key=self.__weak_cache_key)
+        strict_artifact = Artifact(
+            self,
+            context,
+            strong_key=self.__strict_cache_key,
+            strict_key=self.__strict_cache_key,
+            weak_key=self.__weak_cache_key,
+        )
         if context.get_strict() or strict_artifact.cached():
             self.__artifact = strict_artifact
         else:
-            self.__artifact = Artifact(self, context, weak_key=self.__weak_cache_key)
+            self.__artifact = Artifact(
+                self, context, strict_key=self.__strict_cache_key, weak_key=self.__weak_cache_key
+            )
 
         if not context.get_strict() and self.__artifact.cached():
             # In non-strict mode, strong cache key becomes available when
@@ -3247,7 +3319,7 @@ class Element(Plugin):
                 pass
             elif self._cached():
                 # Load the strong cache key from the artifact
-                strong_key, _ = self.__artifact.get_metadata_keys()
+                strong_key, _, _ = self.__artifact.get_metadata_keys()
                 self.__cache_key = strong_key
             elif self.__assemble_scheduled or self.__assemble_done:
                 # Artifact will or has been built, not downloaded

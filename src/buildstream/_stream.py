@@ -31,6 +31,7 @@ from collections import deque
 from typing import List, Tuple
 
 from ._artifactelement import verify_artifact_ref, ArtifactElement
+from ._artifactproject import ArtifactProject
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
 from ._message import Message, MessageType
 from ._scheduler import (
@@ -111,8 +112,8 @@ class Stream:
     # Cleans up application state
     #
     def cleanup(self):
-        if self._project:
-            self._project.cleanup()
+        # Reset the element loader state
+        Element._reset_load_state()
 
     # set_project()
     #
@@ -1086,6 +1087,35 @@ class Stream:
         self.queues = [queue]
         self._run()
 
+    # _load_artifacts()
+    #
+    # Loads artifacts from target artifact refs
+    #
+    # Args:
+    #    artifact_names (list): List of target artifact names to load
+    #
+    # Returns:
+    #    (list): A list of loaded ArtifactElement
+    #
+    def _load_artifacts(self, artifact_names):
+        with self._context.messenger.simple_task("Loading artifacts") as task:
+
+            # Use a set here to avoid duplicates.
+            #
+            # ArtifactElement.new_from_artifact_name() will take care of ensuring
+            # uniqueness of multiple artifact names which refer to the same artifact
+            # (e.g., if both weak and strong names happen to be requested), here we
+            # still need to ensure we generate a list that does not contain duplicates.
+            #
+            artifacts = set()
+            for artifact_name in artifact_names:
+                artifact = ArtifactElement.new_from_artifact_name(artifact_name, self._context, task)
+                artifacts.add(artifact)
+
+        ArtifactElement.clear_artifact_name_cache()
+        ArtifactProject.clear_project_cache()
+        return list(artifacts)
+
     # _load_elements_from_targets
     #
     # Given the usual set of target element names/artifact refs, load
@@ -1125,7 +1155,7 @@ class Stream:
 
         # Load artifacts
         if refs:
-            artifacts = self._pipeline.load_artifacts(refs)
+            artifacts = self._load_artifacts(refs)
         else:
             artifacts = []
 

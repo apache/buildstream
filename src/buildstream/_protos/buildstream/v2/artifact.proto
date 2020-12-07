@@ -64,4 +64,23 @@ message Artifact {
 
   // digest of a directory
   build.bazel.remote.execution.v2.Digest sources = 13;  // optional
+
+  // The low/high diversity meta fields are digests of YAML files
+  // in which we store detatched metadata related to the artifact.
+  //
+  // metadata found in the low diversity file is expected to be
+  // frequently reused in the context of a given BuildStream project,
+  // ergo there is a very high chance that the entire content of the
+  // file can be shared across many artifacts.
+  //
+  // metadata found in the high diversity file is expected to diverge
+  // from one artifact to another. This still consists of metadata
+  // which does not directly affect an artifact's cache key, and as
+  // such cannot be stored directly in the proto itself.
+  //
+  build.bazel.remote.execution.v2.Digest low_diversity_meta = 14;
+  build.bazel.remote.execution.v2.Digest high_diversity_meta = 15;
+
+  // Strict key is a later addition to the core metadata
+  string strict_key = 16;
 }

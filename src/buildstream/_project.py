@@ -18,6 +18,8 @@
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 #        Tiago Gomes <tiago.gomes@codethink.co.uk>
 
+from typing import TYPE_CHECKING, Optional, Dict, Union, List
+
 import os
 import sys
 from collections import OrderedDict
@@ -27,7 +29,6 @@ from . import utils
 from . import _site
 from . import _yaml
 from .utils import UtilError
-from ._artifactelement import ArtifactElement
 from ._profile import Topics, PROFILER
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
@@ -45,6 +46,10 @@ from ._message import Message, MessageType
 from ._includes import Includes
 from ._workspaces import WORKSPACE_PROJECT_FILE
 
+if TYPE_CHECKING:
+    from .node import ProvenanceInformation, MappingNode
+    from ._context import Context
+    from ._remote import RemoteSpec
 
 # Project Configuration file
 _PROJECT_CONF_FILE = "project.conf"
@@ -87,26 +92,95 @@ class ProjectConfig:
 #
 # The Project Configuration
 #
+# Args:
+#    directory: The project directory, or None for dummy ArtifactProjects
+#    context: The invocation context
+#    junction: The junction Element causing this project to be loaded
+#    cli_options: The project options specified on the command line
+#    default_mirror: The default mirror specified on the command line
+#    parent_loader: The parent loader
+#    provenance_node: The YAML provenance causing this project to be loaded
+#    search_for_project: Whether to search for a project directory, e.g. from workspace metadata or parent directories
+#    load_project: Whether to attempt to load a project.conf
+#
 class Project:
     def __init__(
         self,
-        directory,
-        context,
+        directory: Optional[str],
+        context: "Context",
         *,
-        junction=None,
-        cli_options=None,
-        default_mirror=None,
-        parent_loader=None,
-        provenance_node=None,
-        search_for_project=True,
+        junction: Optional[object] = None,
+        cli_options: Optional[Dict[str, str]] = None,
+        default_mirror: Optional[str] = None,
+        parent_loader: Optional[Loader] = None,
+        provenance_node: Optional["ProvenanceInformation"] = None,
+        search_for_project: bool = True,
+        load_project: bool = True,
     ):
+        #
+        # Public members
+        #
+        self.name: Optional[str] = None  # The project name
+        self.directory: Optional[str] = directory  # The project directory
+        self.element_path: Optional[str] = None  # The project relative element path
 
-        # The project name
-        self.name = None
+        self.load_context: LoadContext  # The LoadContext
+        self.loader: Optional[Loader] = None  # The loader associated to this project
+        self.junction: Optional[object] = junction  # The junction Element object, if this is a subproject
 
-        self._context = context  # The invocation Context, a private member
+        self.ref_storage: Optional[ProjectRefStorage] = None  # Where to store source refs
+        self.refs: Optional[ProjectRefs] = None
+        self.junction_refs: Optional[ProjectRefs] = None
 
-        # Create the LoadContext here if we are the toplevel project.
+        self.config: ProjectConfig = ProjectConfig()
+        self.first_pass_config: ProjectConfig = ProjectConfig()
+
+        self.base_environment: Union["MappingNode", Dict[str, str]] = {}  # The base set of environment variables
+        self.base_env_nocache: List[str] = []  # The base nocache mask (list) for the environment
+
+        # Remote specs for communicating with remote services
+        self.artifact_cache_specs: List["RemoteSpec"] = []  # Artifact caches
+        self.source_cache_specs: List["RemoteSpec"] = []  # Source caches
+        self.remote_execution_specs: List["RemoteSpec"] = []  # Remote execution services
+
+        self.element_factory: Optional[ElementFactory] = None  # ElementFactory for loading elements
+        self.source_factory: Optional[SourceFactory] = None  # SourceFactory for loading sources
+
+        self.sandbox: Optional["MappingNode"] = None
+        self.splits: Optional["MappingNode"] = None
+
+        #
+        # Private members
+        #
+        self._context: "Context" = context  # The invocation Context
+        self._invoked_from_workspace_element: Optional[str] = None
+        self._absolute_directory_path: Optional[Path] = None
+
+        self._default_targets: Optional[List[str]] = None  # Default target elements
+        self._default_mirror: Optional[str] = default_mirror  # The name of the preferred mirror.
+        self._cli_options: Optional[Dict[str, str]] = cli_options
+
+        self._fatal_warnings: List[str] = []  # A list of warnings which should trigger an error
+        self._shell_command: List[str] = []  # The default interactive shell command
+        self._shell_environment: Dict[str, str] = {}  # Statically set environment vars
+        self._shell_host_files: List[str] = []  # A list of HostMount objects
+
+        # This is a lookup table of lists indexed by project,
+        # the child dictionaries are lists of ScalarNodes indicating
+        # junction names
+        self._junction_duplicates: Dict[str, List[str]] = {}
+
+        # A list of project relative junctions to consider as 'internal',
+        # stored as ScalarNodes.
+        self._junction_internal: List[str] = []
+
+        self._partially_loaded: bool = False
+        self._fully_loaded: bool = False
+        self._project_includes: Optional[Includes] = None
+
+        #
+        # Initialization body
+        #
         if parent_loader:
             self.load_context = parent_loader.load_context
         else:
@@ -114,68 +188,19 @@ class Project:
 
         if search_for_project:
             self.directory, self._invoked_from_workspace_element = self._find_project_dir(directory)
-        else:
-            self.directory = directory
-            self._invoked_from_workspace_element = None
 
-        self._absolute_directory_path = Path(self.directory).resolve()
-
-        # Absolute path to where elements are loaded from within the project
-        self.element_path = None
-
-        # ProjectRefs for the main refs and also for junctions
-        self.refs = ProjectRefs(self.directory, "project.refs")
-        self.junction_refs = ProjectRefs(self.directory, "junction.refs")
-
-        self.config = ProjectConfig()
-        self.first_pass_config = ProjectConfig()
-
-        self.junction = junction  # The junction Element object, if this is a subproject
-
-        self.ref_storage = None  # ProjectRefStorage setting
-        self.base_environment = {}  # The base set of environment variables
-        self.base_env_nocache = None  # The base nocache mask (list) for the environment
-
-        self.artifact_cache_specs = None
-        self.source_cache_specs = None
-        self.remote_execution_specs = None
-
-        self.element_factory = None  # ElementFactory for loading elements
-        self.source_factory = None  # SourceFactory for loading sources
-
-        #
-        # Private Members
-        #
-        self._default_targets = None  # Default target elements
-        self._default_mirror = default_mirror  # The name of the preferred mirror.
-
-        self._cli_options = cli_options
-
-        self._fatal_warnings = []  # A list of warnings which should trigger an error
-
-        self._shell_command = []  # The default interactive shell command
-        self._shell_environment = {}  # Statically set environment vars
-        self._shell_host_files = []  # A list of HostMount objects
-        self._sandbox = None
-        self._splits = None
-
-        # This is a lookup table of lists indexed by project,
-        # the child dictionaries are lists of ScalarNodes indicating
-        # junction names
-        self._junction_duplicates = {}
-
-        # A list of project relative junctions to consider as 'internal',
-        # stored as ScalarNodes.
-        self._junction_internal = []
+        if self.directory:
+            self._absolute_directory_path = Path(self.directory).resolve()
+            self.refs = ProjectRefs(self.directory, "project.refs")
+            self.junction_refs = ProjectRefs(self.directory, "junction.refs")
 
         self._context.add_project(self)
 
-        self._partially_loaded = False
-        self._fully_loaded = False
-        self._project_includes = None
-
-        with PROFILER.profile(Topics.LOAD_PROJECT, self.directory.replace(os.sep, "-")):
-            self._load(parent_loader=parent_loader, provenance_node=provenance_node)
+        if self.directory and load_project:
+            with PROFILER.profile(Topics.LOAD_PROJECT, self.directory.replace(os.sep, "-")):
+                self._load(parent_loader=parent_loader, provenance_node=provenance_node)
+        else:
+            self._fully_loaded = True
 
         self._partially_loaded = True
 
@@ -455,26 +480,6 @@ class Project:
 
         return elements
 
-    # load_artifacts()
-    #
-    # Loads artifacts from target artifact refs
-    #
-    # Args:
-    #    targets (list): Target artifact refs
-    #
-    # Returns:
-    #    (list): A list of loaded ArtifactElement
-    #
-    def load_artifacts(self, targets):
-        with self._context.messenger.simple_task("Loading artifacts") as task:
-            artifacts = []
-            for ref in targets:
-                artifacts.append(ArtifactElement._new_from_artifact_name(ref, self._context, task))
-
-        ArtifactElement._clear_artifact_refs_cache()
-
-        return artifacts
-
     # ensure_fully_loaded()
     #
     # Ensure project has finished loading. At first initialization, a
@@ -505,14 +510,6 @@ class Project:
             self.junction._get_project().ensure_fully_loaded()
 
         self._load_second_pass()
-
-    # cleanup()
-    #
-    # Cleans up resources used loading elements
-    #
-    def cleanup(self):
-        # Reset the element loader state
-        Element._reset_load_state()
 
     # get_default_target()
     #
@@ -902,10 +899,10 @@ class Project:
         self.base_env_nocache = config.get_str_list("environment-nocache")
 
         # Load sandbox configuration
-        self._sandbox = config.get_mapping("sandbox")
+        self.sandbox = config.get_mapping("sandbox")
 
         # Load project split rules
-        self._splits = config.get_mapping("split-rules")
+        self.splits = config.get_mapping("split-rules")
 
         # Support backwards compatibility for fail-on-overlap
         fail_on_overlap = config.get_scalar("fail-on-overlap", None)

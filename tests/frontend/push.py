@@ -166,11 +166,13 @@ def test_push_artifact_glob(cli, tmpdir, datafiles):
         # Configure artifact share
         cli.configure({"artifacts": {"url": share.repo, "push": True}})
 
-        # Run bst artifact push with a wildcard.
-        # This matches two artifact refs (weak and strong cache keys).
+        # Run bst artifact push with a wildcard, there is only one artifact
+        # matching "test/target/*", even though it can be accessed both by it's
+        # strong and weak key.
+        #
         result = cli.run(project=project, args=["artifact", "push", "test/target/*"])
         result.assert_success()
-        assert len(result.get_pushed_elements()) == 2
+        assert len(result.get_pushed_elements()) == 1
 
 
 # Tests that:
