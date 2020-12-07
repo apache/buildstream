@@ -269,19 +269,18 @@ class Queue:
     #
     # Args:
     #    element (Element): The element which completed
-    #    job (Job): The job which completed
     #
-    def _update_workspaces(self, element, job):
-        workspace_dict = None
-        if job.child_data:
-            workspace_dict = job.child_data.get("workspace", None)
+    def _update_workspaces(self, element):
+        # FIXME: Does this really needs to be done for every job or only some?
+        #        If some, we should only run it for those.
+        workspace = element._get_workspace()
 
         # Handle any workspace modifications now
         #
-        if workspace_dict:
+        if workspace:
             context = element._get_context()
             workspaces = context.get_workspaces()
-            if workspaces.update_workspace(element._get_full_name(), workspace_dict):
+            if workspaces.update_workspace(element._get_full_name(), workspace.to_dict()):
                 try:
                     workspaces.save_config()
                 except BstError as e:
@@ -311,7 +310,7 @@ class Queue:
 
         # Update values that need to be synchronized in the main task
         # before calling any queue implementation
-        self._update_workspaces(element, job)
+        self._update_workspaces(element)
 
         # Give the result of the job to the Queue implementor,
         # and determine if it should be considered as processed

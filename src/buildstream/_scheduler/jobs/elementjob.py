@@ -91,12 +91,3 @@ class ChildElementJob(ChildJob):
 
         # Run the action
         return self._action_cb(self._element)
-
-    def child_process_data(self):
-        data = {}
-
-        workspace = self._element._get_workspace()
-        if workspace is not None:
-            data["workspace"] = workspace.to_dict()
-
-        return data
