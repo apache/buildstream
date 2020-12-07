@@ -118,6 +118,10 @@ disable=#####################################
 
         unused-argument,
 
+        # This is good to get context on exceptions, we should enable that
+        # at some point
+        raise-missing-from,
+
         ##################################################
         # Formatting-related messages, enforced by Black #
         ##################################################

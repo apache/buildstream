@@ -63,7 +63,12 @@ class PluginOriginPip(PluginOrigin):
                 detail=e.report(),
                 reason="package-version-conflict",
             ) from e
-        except pkg_resources.RequirementParseError as e:
+        except (
+            # For setuptools < 49.0.0
+            pkg_resources.RequirementParseError,
+            # For setuptools >= 49.0.0
+            pkg_resources.extern.packaging.requirements.InvalidRequirement,
+        ) as e:
             raise PluginError(
                 "{}: Malformed package-name '{}' encountered: {}".format(
                     self.provenance_node.get_provenance(), self._package_name, e
