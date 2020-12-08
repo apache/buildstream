@@ -11,6 +11,9 @@ Format
     BuildElement plugins to also stage dependencies into custom locations in
     the sandbox.
 
+  o BREAKING CHANGE: Stack element dependencies are now hard required to be
+    both build and runtime dependencies.
+
 Core
 ----
 
