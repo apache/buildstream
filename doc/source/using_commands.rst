@@ -77,6 +77,29 @@ Top-level commands
 Artifact subcommands
 --------------------
 
+
+.. _artifact_names:
+
+Artifact names
+~~~~~~~~~~~~~~
+Various artifact subcommands accept either :ref:`element names <format_element_names>`,
+which will operate on artifacts by deriving the artifact from local project state,
+or :term:`artifact names <Artifact name>` interchangeably as targets. Artifact names allow
+the user to operate directly on cached artifacts, without requiring local project data.
+
+An artifact name is composed of the following identifiers:
+
+* The :ref:`project name <project_format_name>`
+
+* The :ref:`element name <format_element_names>`, without any trailing ``.bst`` extension
+
+* The cache key of the element at the time it was built.
+
+To compose an artifact name, simply join these using a forward slash (``/``) character, like so: ``<project-name>/<element-name>/<cache-key>``.
+
+An artifact name might look like: ``project/target/788da21e7c1b5818b7e7b60f7eb75841057ff7e45d362cc223336c606fe47f27``
+
+
 .. _invoking_artifact_checkout:
 
 .. click:: buildstream._frontend.cli:artifact_checkout

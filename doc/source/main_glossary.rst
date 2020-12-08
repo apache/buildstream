@@ -18,6 +18,10 @@ Glossary
        Artifacts can be built from :term:`Sources <Source>`, or pulled from a
        :term:`Remote Cache <Remote Cache>`, if available.
 
+   Artifact name
+       The :ref:`name of an artifact <artifact_names>`, which can be used
+       in various commands to operate directly on artifacts, without requiring
+       the use of a :term:`Project`.
 
    Cache
        BuildStream leverages various caching techniques in order to avoid
