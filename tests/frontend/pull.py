@@ -338,7 +338,7 @@ def test_pull_missing_local_blob(cli, tmpdir, datafiles):
     _yaml.roundtrip_dump(input_config, input_file)
 
     depends_name = "depends.bst"
-    depends_config = {"kind": "stack", "depends": [{"filename": input_name, "type": "build"}]}
+    depends_config = {"kind": "stack", "depends": [input_name]}
     depends_file = os.path.join(element_dir, depends_name)
     _yaml.roundtrip_dump(depends_config, depends_file)
 

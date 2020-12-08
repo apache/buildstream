@@ -1,5 +1,5 @@
 kind: stack
 
-build-depends:
+depends:
 - filename: base.bst
   strict: true

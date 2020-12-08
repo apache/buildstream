@@ -1,6 +1,6 @@
 kind: stack
 
-runtime-depends:
+depends:
 - base.bst
 
 public:
