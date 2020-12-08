@@ -303,10 +303,9 @@ class Context:
             os.symlink(self.casdir, old_casdir)
 
         # Cleanup old extract directories
-        old_extractdirs = [os.path.join(self.cachedir, "artifacts", "extract"), os.path.join(self.cachedir, "extract")]
-        for old_extractdir in old_extractdirs:
-            if os.path.isdir(old_extractdir):
-                shutil.rmtree(old_extractdir, ignore_errors=True)
+        old_extractdir = os.path.join(self.cachedir, "extract")
+        if os.path.isdir(old_extractdir):
+            shutil.rmtree(old_extractdir, ignore_errors=True)
 
         # Load quota configuration
         # We need to find the first existing directory in the path of our
