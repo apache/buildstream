@@ -69,8 +69,7 @@ def test_buildtree_staged_warn_empty_cached(cli_integration, tmpdir, datafiles):
     res = cli_integration.run(
         project=project, args=["shell", "--build", "--use-buildtree", element_name, "--", "cat", "test"]
     )
-    res.assert_main_error(ErrorDomain.APP, None)
-    assert "Error launching shell: Artifact was created without buildtree" in res.stderr
+    res.assert_main_error(ErrorDomain.APP, "missing-buildtree-artifact-created-without-buildtree")
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -109,8 +108,7 @@ def test_buildtree_from_failure_option_never(cli_integration, tmpdir, datafiles)
     res = cli_integration.run(
         project=project, args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", "test"]
     )
-    res.assert_main_error(ErrorDomain.APP, None)
-    assert "Error launching shell: Artifact was created without buildtree" in res.stderr
+    res.assert_main_error(ErrorDomain.APP, "missing-buildtree-artifact-created-without-buildtree")
 
 
 @pytest.mark.datafiles(DATA_DIR)
@@ -229,9 +227,7 @@ def test_buildtree_options(cli, tmpdir, datafiles):
         result = cli.run(project=project, args=["artifact", "pull", "--deps", "all", element_name])
         result.assert_success()
         res = cli.run(project=project, args=["shell", "--build", element_name, "--use-buildtree", "--", "cat", "test"])
-        res.assert_main_error(ErrorDomain.APP, None)
-        assert "Buildtree is not cached locally" in res.stderr
-        assert "Hi" not in res.output
+        res.assert_main_error(ErrorDomain.APP, "missing-buildtree-artifact-buildtree-not-cached")
 
         # Check that when user context is set to pull buildtrees and a remote has the buildtree,
         # '--use-buildtree' will attempt and succeed at pulling the missing buildtree with --pull set.
@@ -278,8 +274,7 @@ def test_pull_buildtree_pulled(cli, tmpdir, datafiles):
             project=project,
             args=["shell", "--build", element_name, "--pull", "--use-buildtree", "--", "cat", "test",],
         )
-        res.assert_main_error(ErrorDomain.APP, None)
-        assert "Buildtree is not cached locally" in res.stderr
+        res.assert_main_error(ErrorDomain.APP, "missing-buildtree-artifact-buildtree-not-cached")
 
         # Check it's using the cached build tree, because --pull
         # and pull-buildtrees were both set

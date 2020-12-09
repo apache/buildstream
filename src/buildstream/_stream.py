@@ -221,6 +221,7 @@ class Stream:
             raise StreamError(
                 "Elements need to be built or downloaded before staging a shell environment",
                 detail="\n".join(list(map(lambda x: x._get_full_name(), missing_deps))),
+                reason="shell-missing-deps",
             )
 
         # Check if we require a pull queue attempt, with given artifact state and context
@@ -229,11 +230,14 @@ class Stream:
                 remotes_message = " or in available remotes" if pull_ else ""
                 if not element._cached():
                     message = "Artifact not cached locally" + remotes_message
+                    reason = "missing-buildtree-artifact-not-cached"
                 elif element._buildtree_exists():
                     message = "Buildtree is not cached locally" + remotes_message
+                    reason = "missing-buildtree-artifact-buildtree-not-cached"
                 else:
                     message = "Artifact was created without buildtree"
-                raise StreamError(message)
+                    reason = "missing-buildtree-artifact-created-without-buildtree"
+                raise StreamError(message, reason=reason)
 
             # Raise warning if the element is cached in a failed state
             if element._cached_failure():
