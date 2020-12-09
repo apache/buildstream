@@ -83,10 +83,16 @@ tests-fedora-33:
 tests-ubuntu-18.04:
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-${DOCKER_IMAGE_VERSION}
   <<: *tests
+  variables:
+    # Disable parallel testing due to frequent INTERNALERROR with Python 3.6
+    PYTEST_ARGS: "--color=yes --integration"
 
 tests-centos-7.7:
-  <<: *tests
   image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.7.1908-${DOCKER_IMAGE_VERSION}
+  <<: *tests
+  variables:
+    # Disable parallel testing due to frequent INTERNALERROR with Python 3.6
+    PYTEST_ARGS: "--color=yes --integration"
 
 # Test the master version of some external plugins
 tests-plugins-master:
