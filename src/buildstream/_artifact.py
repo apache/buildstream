@@ -241,7 +241,7 @@ class Artifact:
         # Store public data
         with utils._tempnamedfile_name(dir=self._tmpdir) as tmpname:
             _yaml.roundtrip_dump(publicdata, tmpname)
-            public_data_digest = self._cas.add_object(path=tmpname, link_directly=True)
+            public_data_digest = self._cas.add_object(path=tmpname)
             artifact.public_data.CopyFrom(public_data_digest)
             size += public_data_digest.size_bytes
 
@@ -255,7 +255,7 @@ class Artifact:
             low_diversity_node = Node.from_dict(low_diversity_dict)
 
             _yaml.roundtrip_dump(low_diversity_node, tmpname)
-            low_diversity_meta_digest = self._cas.add_object(path=tmpname, link_directly=True)
+            low_diversity_meta_digest = self._cas.add_object(path=tmpname)
             artifact.low_diversity_meta.CopyFrom(low_diversity_meta_digest)
             size += low_diversity_meta_digest.size_bytes
 
@@ -269,7 +269,7 @@ class Artifact:
             high_diversity_node = Node.from_dict(high_diversity_dict)
 
             _yaml.roundtrip_dump(high_diversity_node, tmpname)
-            high_diversity_meta_digest = self._cas.add_object(path=tmpname, link_directly=True)
+            high_diversity_meta_digest = self._cas.add_object(path=tmpname)
             artifact.high_diversity_meta.CopyFrom(high_diversity_meta_digest)
             size += high_diversity_meta_digest.size_bytes
 
@@ -370,8 +370,9 @@ class Artifact:
 
         # Load the public data from the artifact
         artifact = self._get_proto()
-        meta_file = self._cas.objpath(artifact.public_data)
-        data = _yaml.load(meta_file, shortname="public.yaml")
+        with self._cas.open(artifact.public_data) as meta_file:
+            meta_str = meta_file.read()
+            data = _yaml.load_data(meta_str, file_name="public.yaml")
 
         return data
 

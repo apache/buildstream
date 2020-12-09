@@ -339,7 +339,7 @@ class ArtifactCache(AssetCache):
         for remote in push_remotes:
             remote.init()
 
-            remote_missing_blobs = self.cas.remote_missing_blobs(remote, missing_blobs)
+            remote_missing_blobs = self.cas.missing_blobs(missing_blobs, remote=remote)
 
             for blob in remote_missing_blobs:
                 if blob not in remote_missing_blobs_list:
@@ -504,20 +504,13 @@ class ArtifactCache(AssetCache):
     #    blobs not existing on the server.
     #
     def _pull_artifact_storage(self, element, key, artifact_digest, remote, pull_buildtrees=False):
-        def __pull_digest(digest):
-            self.cas._fetch_directory(remote, digest)
-            required_blobs = self.cas.required_blobs_for_directory(digest)
-            missing_blobs = self.cas.local_missing_blobs(required_blobs)
-            if missing_blobs:
-                self.cas.fetch_blobs(remote, missing_blobs)
-
         artifact_name = element.get_artifact_name(key=key)
 
         try:
             # Fetch and parse artifact proto
             self.cas.fetch_blobs(remote, [artifact_digest])
             artifact = artifact_pb2.Artifact()
-            with open(self.cas.objpath(artifact_digest), "rb") as f:
+            with self.cas.open(artifact_digest, "rb") as f:
                 artifact.ParseFromString(f.read())
 
             # Write the artifact proto to cache
@@ -527,10 +520,10 @@ class ArtifactCache(AssetCache):
                 f.write(artifact.SerializeToString())
 
             if str(artifact.files):
-                __pull_digest(artifact.files)
+                self.cas._fetch_directory(remote, artifact.files)
 
             if pull_buildtrees and str(artifact.buildtree):
-                __pull_digest(artifact.buildtree)
+                self.cas._fetch_directory(remote, artifact.buildtree)
 
             digests = [artifact.low_diversity_meta, artifact.high_diversity_meta]
             if str(artifact.public_data):

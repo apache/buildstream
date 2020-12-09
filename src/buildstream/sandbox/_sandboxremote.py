@@ -276,7 +276,7 @@ class SandboxRemote(SandboxREAPI):
             dir_digest = vdir._get_digest()
             required_blobs = cascache.required_blobs_for_directory(dir_digest)
 
-            local_missing_blobs = cascache.local_missing_blobs(required_blobs)
+            local_missing_blobs = cascache.missing_blobs(required_blobs)
             if local_missing_blobs:
                 if self._output_files_required:
                     # Fetch all blobs from Remote Execution CAS server
@@ -319,14 +319,14 @@ class SandboxRemote(SandboxREAPI):
                     # Determine blobs missing on remote
                     try:
                         input_root_digest = action.input_root_digest
-                        missing_blobs = list(cascache.remote_missing_blobs_for_directory(casremote, input_root_digest))
+                        missing_blobs = list(cascache.missing_blobs_for_directory(input_root_digest, remote=casremote))
                     except grpc.RpcError as e:
                         raise SandboxError("Failed to determine missing blobs: {}".format(e)) from e
 
                     # Check if any blobs are also missing locally (partial artifact)
                     # and pull them from the artifact cache.
                     try:
-                        local_missing_blobs = cascache.local_missing_blobs(missing_blobs)
+                        local_missing_blobs = cascache.missing_blobs(missing_blobs)
                         if local_missing_blobs:
                             artifactcache.fetch_missing_blobs(project, local_missing_blobs)
                     except (grpc.RpcError, BstError) as e:
@@ -380,13 +380,13 @@ class SandboxRemote(SandboxREAPI):
         # Forward remote stdout and stderr
         if stdout:
             if action_result.stdout_digest.hash:
-                with open(cascache.objpath(action_result.stdout_digest), "r") as f:
+                with cascache.open(action_result.stdout_digest, "r") as f:
                     shutil.copyfileobj(f, stdout)
             elif action_result.stdout_raw:
                 stdout.write(str(action_result.stdout_raw, "utf-8", errors="ignore"))
         if stderr:
             if action_result.stderr_digest.hash:
-                with open(cascache.objpath(action_result.stderr_digest), "r") as f:
+                with cascache.open(action_result.stderr_digest, "r") as f:
                     shutil.copyfileobj(f, stderr)
             elif action_result.stderr_raw:
                 stderr.write(str(action_result.stderr_raw, "utf-8", errors="ignore"))
