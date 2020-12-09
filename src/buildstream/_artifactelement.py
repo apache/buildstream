@@ -32,7 +32,7 @@ from .node import Node
 
 if TYPE_CHECKING:
     from ._context import Context
-    from ._state import _Task
+    from ._state import Task
 
 
 # ArtifactElement()
@@ -81,7 +81,7 @@ class ArtifactElement(Element):
     #    (ArtifactElement): A newly created Element instance
     #
     @classmethod
-    def new_from_artifact_name(cls, artifact_name: str, context: "Context", task: Optional["_Task"] = None):
+    def new_from_artifact_name(cls, artifact_name: str, context: "Context", task: Optional["Task"] = None):
 
         # Initial lookup for already loaded artifact.
         with suppress(KeyError):

@@ -292,7 +292,7 @@ class State:
         if not elapsed_offset:
             elapsed_offset = self.elapsed_time()
 
-        task = _Task(self, task_id, action_name, full_name, elapsed_offset)
+        task = Task(self, task_id, action_name, full_name, elapsed_offset)
         self.tasks[task_id] = task
 
         for cb in self._task_added_cbs:
@@ -381,7 +381,7 @@ class State:
         self._session_start += offset
 
 
-# _Task
+# Task
 #
 # The state data stored for an individual task
 #
@@ -394,7 +394,7 @@ class State:
 #                     e.g. an element's name.
 #    elapsed_offset (timedelta): The time the task started, relative to
 #                                buildstream's start time.
-class _Task:
+class Task:
     def __init__(self, state, task_id, action_name, full_name, elapsed_offset):
         self._state = state
         self.id = task_id
