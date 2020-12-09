@@ -212,7 +212,7 @@ class Messenger:
                 self.message(message)
 
                 task = self._state.add_task(task_name, activity_name, task_name)
-                task.set_render_cb(self._render_status)
+                task.set_task_changed_callback(self._render_status)
                 self._active_simple_tasks += 1
                 if not self._next_render:
                     self._next_render = datetime.datetime.now() + _RENDER_INTERVAL
