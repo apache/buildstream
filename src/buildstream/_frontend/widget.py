@@ -32,6 +32,7 @@ from .. import __version__ as bst_version
 from .._exceptions import BstError, ImplError
 from .._message import MessageType
 from ..storage.directory import _FileType
+from .._artifactelement import ArtifactElement
 
 # These messages are printed a bit differently
 ERROR_MESSAGES = [MessageType.FAIL, MessageType.ERROR, MessageType.BUG]
@@ -902,8 +903,18 @@ class LogLine(Widget):
         report = ""
         p = Profile()
         for element in targets:
+
+            #
+            # Here we selectively show the element name or artifact name
+            # depending on whether we were asked about an artifact or an element.
+            #
+            if isinstance(element, ArtifactElement):
+                element_name = element.get_artifact_name()
+            else:
+                element_name = element._get_full_name()
+
             line = "%{state: >12} %{name}"
-            line = p.fmt_subst(line, "name", element.name, fg="yellow")
+            line = p.fmt_subst(line, "name", element_name, fg="yellow")
 
             if element._cached_success():
                 line = p.fmt_subst(line, "state", "cached", fg="magenta")

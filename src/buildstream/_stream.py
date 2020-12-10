@@ -617,12 +617,6 @@ class Stream:
         if self._artifacts.has_fetch_remotes():
             self._pipeline.check_remotes(target_objects)
 
-        # XXX: We need to set the name of an ArtifactElement to its ref in order
-        #      to display the expected result in the frontend
-        for obj in target_objects:
-            if isinstance(obj, ArtifactElement):
-                obj.name = obj.get_artifact_name()
-
         return target_objects
 
     # artifact_log()
