@@ -113,7 +113,6 @@ class Scheduler:
         self._interrupt_callback = interrupt_callback
 
         self.resources = Resources(context.sched_builders, context.sched_fetchers, context.sched_pushers)
-        self._state.register_task_retry_callback(self._failure_retry)
 
         # Ensure that the forkserver is started before we start.
         # This is best run before we do any GRPC connections to casd or have
@@ -516,20 +515,6 @@ class Scheduler:
     def _tick(self):
         self._ticker_callback()
         self.loop.call_later(1, self._tick)
-
-    def _failure_retry(self, task_id, unique_id):
-        task = self._state.tasks[task_id]
-
-        queue = None
-        for q in self.queues:
-            if q.action_name == task.action_name:
-                queue = q
-                break
-        # Assert queue found, we should only be retrying a queued job
-        assert queue
-        element = Plugin._lookup(unique_id)
-        queue._task_group.failed_tasks.remove(element._get_full_name())
-        queue.enqueue([element])
 
     def _handle_exception(self, loop, context: dict) -> None:
         e = context.get("exception")

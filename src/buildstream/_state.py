@@ -112,7 +112,6 @@ class State:
         self._task_changed_cbs = []
         self._task_groups_changed_cbs = []
         self._task_failed_cbs = []
-        self._task_retry_cbs = []
 
     #####################################
     # Frontend-facing notification APIs #
@@ -215,20 +214,6 @@ class State:
     #
     def unregister_task_failed_callback(self, callback):
         self._task_failed_cbs.remove(callback)
-
-    # register_task_retry_callback()
-    #
-    # Registers a callback to be notified when a task is to be retried
-    #
-    # Args:
-    #    callback (function): The callback to be notified
-    #
-    # Callback Args:
-    #    task_id (str): The unique identifier of the task
-    #    unique_id: The unique id of the plugin instance to look up
-    #
-    def register_task_retry_callback(self, callback):
-        self._task_retry_cbs.append(callback)
 
     ##############################################
     # Core-facing APIs for driving notifications #
@@ -333,20 +318,6 @@ class State:
     def fail_task(self, task_id, element=None):
         for cb in self._task_failed_cbs:
             cb(task_id, element)
-
-    # retry_task()
-    #
-    # Notify all registered callbacks that a task is to be retried.
-    #
-    # This is a core-facing API and should not be called from the frontend
-    #
-    # Args:
-    #    task_id (str): The unique identifier of the task
-    #    unique_id: The unique id of the plugin instance to look up
-    #
-    def retry_task(self, task_id: str, unique_id: str) -> None:
-        for cb in self._task_retry_cbs:
-            cb(task_id, unique_id)
 
     # elapsed_time()
     #

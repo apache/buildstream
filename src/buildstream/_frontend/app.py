@@ -732,7 +732,7 @@ class App:
                 elif choice == "retry":
                     click.echo("\nRetrying failed job\n", err=True)
                     unique_id = element[0]
-                    self.stream._failure_retry(task.id, unique_id)
+                    self.stream.retry_job(task.action_name, unique_id)
 
     #
     # Print the session heading if we've loaded a pipeline and there
