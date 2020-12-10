@@ -1,5 +1,5 @@
 kind: stack
 
-runtime-depends:
+depends:
 - dummy_1.bst
 - dummy_2.bst

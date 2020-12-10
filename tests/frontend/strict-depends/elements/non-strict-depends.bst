@@ -1,4 +1,4 @@
 kind: stack
 
-build-depends:
+depends:
 - base.bst

@@ -13,27 +13,27 @@ from tests.testutils import create_artifact_share
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "default-target",)
 
 
-###################################
-#      build/show operations      #
-###################################
-
-
+#
+# When no target is default, then expect all targets to be built
+#
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("operation,expected_state", [("show", "buildable"), ("build", "cached")])
-def test_no_default(cli, datafiles, operation, expected_state):
+def test_no_default(cli, datafiles):
     project = str(datafiles)
     all_targets = ["dummy_1.bst", "dummy_2.bst", "dummy_3.bst", "dummy_stack.bst"]
 
-    result = cli.run(project=project, args=[operation])
+    result = cli.run(project=project, args=["build"])
     result.assert_success()
 
     states = cli.get_element_states(project, all_targets)
-    assert all(states[e] == expected_state for e in all_targets)
+    assert all(states[e] == "cached" for e in all_targets)
 
 
+#
+# When the stack is specified as the default target, then
+# expect only it and it's dependencies to be built
+#
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("operation,expected_state", [("show", "buildable"), ("build", "cached")])
-def test_default_target(cli, datafiles, operation, expected_state):
+def test_default_target(cli, datafiles):
     project = str(datafiles)
     project_path = os.path.join(project, "project.conf")
 
@@ -49,19 +49,23 @@ def test_default_target(cli, datafiles, operation, expected_state):
     # dummy_stack only depends on dummy_1 and dummy_2, but not dummy_3
     all_targets = ["dummy_1.bst", "dummy_2.bst", "dummy_stack.bst"]
 
-    result = cli.run(project=project, args=[operation])
+    result = cli.run(project=project, args=["build"])
     result.assert_success()
 
     states = cli.get_element_states(project, all_targets)
-    assert all(states[e] == expected_state for e in all_targets)
+    assert all(states[e] == "cached" for e in all_targets)
 
     # assert that dummy_3 isn't included in the output
     assert "dummy_3.bst" not in states
 
 
+#
+# Even when there is a junction, expect that the elements in the
+# subproject referred to by the toplevel project are built when
+# calling `bst build` and no default is specified.
+#
 @pytest.mark.datafiles(DATA_DIR)
-@pytest.mark.parametrize("operation,expected_state", [("show", "buildable"), ("build", "cached")])
-def test_no_default_with_junction(cli, datafiles, operation, expected_state):
+def test_no_default_with_junction(cli, datafiles):
     project = str(datafiles)
     junction_path = os.path.join(project, "elements", "junction.bst")
     target_path = os.path.join(project, "elements", "junction-target.bst")
@@ -71,16 +75,16 @@ def test_no_default_with_junction(cli, datafiles, operation, expected_state):
     _yaml.roundtrip_dump(junction_config, junction_path)
 
     # Then, create a stack element with dependency on cross junction element
-    target_config = {"kind": "stack", "runtime-depends": ["junction.bst:dummy_subproject.bst"]}
+    target_config = {"kind": "stack", "depends": ["junction.bst:dummy_subproject.bst"]}
     _yaml.roundtrip_dump(target_config, target_path)
 
-    # Now try to perform the specified operation.
+    # Now try to perform a build
     # This should automatically fetch the junction at load time.
-    result = cli.run(project=project, args=[operation])
+    result = cli.run(project=project, args=["build"])
     result.assert_success()
 
-    assert cli.get_element_state(project, "junction.bst:dummy_subproject.bst") == expected_state
-    assert cli.get_element_state(project, "junction-target.bst") == expected_state
+    assert cli.get_element_state(project, "junction.bst:dummy_subproject.bst") == "cached"
+    assert cli.get_element_state(project, "junction-target.bst") == "cached"
 
 
 ###################################

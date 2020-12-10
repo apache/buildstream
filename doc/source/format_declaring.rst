@@ -450,8 +450,8 @@ Attributes:
 * ``type``
 
   This attribute is used to express the :ref:`dependency type <format_dependencies_types>`.
-  This field is not permitted in :ref:`Build-Depends <format_build_depends>` or
-  :ref:`Runtime-Depends <format_runtime_depends>`.
+  This field is not permitted in the :ref:`build-depends <format_build_depends>` or
+  :ref:`runtime-depends <format_runtime_depends>` lists.
 
 * ``strict``
 
@@ -540,11 +540,17 @@ There are three types which one can specify for a dependency:
   which has ``build`` dependencies will not implicitly depend on that element's
   ``build`` dependencies.
 
+  For convenience, these can be specified under the :ref:`build-depends <format_build_depends>`
+  list.
+
 * ``runtime``
 
   A ``runtime`` dependency type states that the given element's product
   must be present for the depending element to function. An element's
   ``runtime`` dependencies are not available to the element at build time.
+
+  For convenience, these can be specified under the :ref:`runtime-depends <format_runtime_depends>`
+  list.
 
 * ``all``
 
