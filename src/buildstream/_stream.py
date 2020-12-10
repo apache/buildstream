@@ -1069,6 +1069,33 @@ class Stream:
         self._suspended = False
         self._scheduler.resume()
 
+    # retry_job()
+    #
+    # Retry the indicated job
+    #
+    # Args:
+    #    action_name: The unique identifier of the task
+    #    unique_id: A unique_id to load an Element instance
+    #
+    def retry_job(self, action_name: str, unique_id: str) -> None:
+        element = Plugin._lookup(unique_id)
+
+        #
+        # Update the state task group, remove the failed element
+        #
+        group = self._state.task_groups[action_name]
+        group.failed_tasks.remove(element._get_full_name())
+
+        #
+        # Find the queue for this action name and requeue the element
+        #
+        queue = None
+        for q in self.queues:
+            if q.action_name == action_name:
+                queue = q
+        assert queue
+        queue.enqueue([element])
+
     #############################################################
     #                    Private Methods                        #
     #############################################################
@@ -1345,19 +1372,6 @@ class Stream:
             queue.enqueue(plan, task)
 
         self.session_elements += plan
-
-    # _failure_retry()
-    #
-    # Enqueues given element via unique_id to the specified queue
-    # matched against provided action_name & removes the related
-    # failed task from the tasks group.
-    #
-    # Args:
-    #    task_id (str): The unique identifier of the task
-    #    unique_id: A unique_id to load an Element instance
-    #
-    def _failure_retry(self, task_id: str, unique_id: str) -> None:
-        self._state.retry_task(task_id, unique_id)
 
     # _run()
     #
