@@ -208,7 +208,7 @@ class Stream:
             element._set_required(scope)
 
             if pull_:
-                self._scheduler.clear_queues()
+                self._reset()
                 self._add_queue(PullQueue(self._scheduler))
 
                 # Pull the toplevel element regardless of whether it is in scope
@@ -298,7 +298,7 @@ class Stream:
 
         # Now construct the queues
         #
-        self._scheduler.clear_queues()
+        self._reset()
 
         if self._artifacts.has_fetch_remotes():
             self._add_queue(PullQueue(self._scheduler))
@@ -369,7 +369,7 @@ class Stream:
         # is tracked, its state must be fully updated in either case,
         # and we anyway don't do anything else with it.
 
-        self._scheduler.clear_queues()
+        self._reset()
         track_queue = TrackQueue(self._scheduler)
         self._add_queue(track_queue, track=True)
         self._enqueue_plan(elements, queue=track_queue)
@@ -450,7 +450,7 @@ class Stream:
             raise StreamError("No artifact caches available for pulling artifacts")
 
         _pipeline.assert_consistent(self._context, elements)
-        self._scheduler.clear_queues()
+        self._reset()
         self._add_queue(PullQueue(self._scheduler))
         self._enqueue_plan(elements)
         self._run(announce_session=True)
@@ -492,7 +492,7 @@ class Stream:
 
         _pipeline.assert_consistent(self._context, elements)
 
-        self._scheduler.clear_queues()
+        self._reset()
         self._add_queue(PullQueue(self._scheduler))
         self._add_queue(ArtifactPushQueue(self._scheduler))
         self._enqueue_plan(elements)
@@ -551,7 +551,7 @@ class Stream:
         uncached_elts = [elt for elt in elements if not elt._cached()]
         if uncached_elts and pull:
             self._context.messenger.info("Attempting to fetch missing or incomplete artifact")
-            self._scheduler.clear_queues()
+            self._reset()
             self._add_queue(PullQueue(self._scheduler))
             self._enqueue_plan(uncached_elts)
             self._run(announce_session=True)
@@ -1114,7 +1114,7 @@ class Stream:
     #    junctions (list of Element): The junctions to fetch
     #
     def _fetch_subprojects(self, junctions):
-        self._scheduler.clear_queues()
+        self._reset()
         queue = FetchQueue(self._scheduler)
         queue.enqueue(junctions)
         self.queues = [queue]
@@ -1439,7 +1439,7 @@ class Stream:
             for element in artifacts:
                 element._set_required(_Scope.NONE)
 
-            self._scheduler.clear_queues()
+            self._reset()
             self._add_queue(PullQueue(self._scheduler))
             self._enqueue_plan(artifacts)
             self._run()
@@ -1512,6 +1512,24 @@ class Stream:
 
                 if task:
                     task.add_current_progress()
+
+    # _reset()
+    #
+    # Resets the internal state related to a given scheduler run.
+    #
+    # Invocations to the scheduler should start with a _reset() and end
+    # with _run() like so:
+    #
+    #  self._reset()
+    #  self._add_queue(...)
+    #  self._add_queue(...)
+    #  self._enqueue_plan(...)
+    #  self._run()
+    #
+    def _reset(self):
+        self._scheduler.clear_queues()
+        self.session_elements = []
+        self.total_elements = []
 
     # _add_queue()
     #
@@ -1587,7 +1605,7 @@ class Stream:
 
         # Construct queues, enqueue and run
         #
-        self._scheduler.clear_queues()
+        self._reset()
         self._add_queue(FetchQueue(self._scheduler, fetch_original=fetch_original))
         self._enqueue_plan(elements)
         self._run(announce_session=announce_session)
