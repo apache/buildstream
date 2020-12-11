@@ -125,6 +125,17 @@ class ArtifactElement(Element):
         cls.__instantiated_artifacts = {}
 
     ########################################################
+    #         Override internal Element methods            #
+    ########################################################
+
+    # Once we've finished pulling an artifact, we assume the
+    # state of the pulled artifact.
+    #
+    def _pull_done(self):
+        super()._pull_done()
+        self._mimic_artifact()
+
+    ########################################################
     #         Implement Element abstract methods           #
     ########################################################
     def configure(self, node):
