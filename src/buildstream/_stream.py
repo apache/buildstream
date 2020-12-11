@@ -148,7 +148,7 @@ class Stream:
         selection=_PipelineSelection.NONE,
         except_targets=(),
         use_artifact_config=False,
-        load_artifacts=False
+        load_artifacts=False,
     ):
         with PROFILER.profile(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, "-") for t in targets)):
             target_objects = self._load(
@@ -190,7 +190,7 @@ class Stream:
         command=None,
         usebuildtree=False,
         pull_=False,
-        unique_id=None
+        unique_id=None,
     ):
 
         # Load the Element via the unique_id if given
@@ -443,6 +443,7 @@ class Stream:
             use_artifact_config=use_config,
             artifact_remote_url=remote,
             load_artifacts=True,
+            attempt_artifact_metadata=True,
         )
 
         if not self._artifacts.has_fetch_remotes():
@@ -528,10 +529,16 @@ class Stream:
         hardlinks=False,
         compression="",
         pull=False,
-        tar=False
+        tar=False,
     ):
 
-        elements = self._load((target,), selection=selection, use_artifact_config=True, load_artifacts=True)
+        elements = self._load(
+            (target,),
+            selection=selection,
+            use_artifact_config=True,
+            load_artifacts=True,
+            attempt_artifact_metadata=True,
+        )
 
         # self.targets contains a list of the loaded target objects
         # if we specify --deps build, Stream._load() will return a list
@@ -736,7 +743,7 @@ class Stream:
         except_targets=(),
         tar=False,
         compression=None,
-        include_build_scripts=False
+        include_build_scripts=False,
     ):
 
         self._check_location_writable(location, force=force, tar=tar)
@@ -1194,7 +1201,7 @@ class Stream:
         except_targets: List[str],
         *,
         rewritable: bool = False,
-        valid_artifact_names: bool = False
+        valid_artifact_names: bool = False,
     ) -> Tuple[List[Element], List[Element], List[Element]]:
 
         # First determine which of the user specified targets are artifact
@@ -1224,20 +1231,32 @@ class Stream:
     # Connect to the source and artifact remotes.
     #
     # Args:
-    #     artifact_url - The url of the artifact server to connect to.
-    #     source_url - The url of the source server to connect to.
-    #     use_artifact_config - Whether to use the artifact config.
-    #     use_source_config - Whether to use the source config.
+    #     artifact_url: The url of the artifact server to connect to.
+    #     source_url: The url of the source server to connect to.
+    #     use_artifact_config: Whether to use the artifact config.
+    #     use_source_config: Whether to use the source config.
+    #     reinitialize: Whether to reinitialize from scratch
     #
-    def _connect_remotes(self, artifact_url: str, source_url: str, use_artifact_config: bool, use_source_config: bool):
+    def _connect_remotes(
+        self,
+        artifact_url: str,
+        source_url: str,
+        use_artifact_config: bool,
+        use_source_config: bool,
+        reinitialize: bool = False,
+    ):
         # ArtifactCache.setup_remotes expects all projects to be fully loaded
         for project in self._context.get_projects():
             project.ensure_fully_loaded()
 
         # Connect to remote caches, this needs to be done before resolving element state
-        self._artifacts.setup_remotes(use_config=use_artifact_config, remote_url=artifact_url)
-        self._elementsourcescache.setup_remotes(use_config=use_source_config, remote_url=source_url)
-        self._sourcecache.setup_remotes(use_config=use_source_config, remote_url=source_url)
+        self._artifacts.setup_remotes(
+            use_config=use_artifact_config, remote_url=artifact_url, reinitialize=reinitialize
+        )
+        self._elementsourcescache.setup_remotes(
+            use_config=use_source_config, remote_url=source_url, reinitialize=reinitialize
+        )
+        self._sourcecache.setup_remotes(use_config=use_source_config, remote_url=source_url, reinitialize=reinitialize)
 
     # _resolve_cached_remotely()
     #
@@ -1369,6 +1388,8 @@ class Stream:
     #    source_remote_url (str): A remote url for initializing source caches
     #    dynamic_plan (bool): Require artifacts as needed during the build
     #    load_artifacts (bool): Whether to load artifacts with artifact names
+    #    attempt_artifact_metadata (bool): Whether to attempt to download artifact metadata in
+    #                                      order to deduce build dependencies and reload.
     #
     # Returns:
     #    (list of Element): The primary element selection
@@ -1385,7 +1406,8 @@ class Stream:
         artifact_remote_url=None,
         source_remote_url=None,
         dynamic_plan=False,
-        load_artifacts=False
+        load_artifacts=False,
+        attempt_artifact_metadata=False,
     ):
         elements, except_elements, artifacts = self._load_elements_from_targets(
             targets, except_targets, rewritable=False, valid_artifact_names=load_artifacts
@@ -1402,10 +1424,46 @@ class Stream:
             elements = [e for e in elements if e.get_kind() != "junction"]
 
         # Hold on to the targets
-        self.targets = elements + artifacts
+        self.targets = elements
 
         # Connect to remote caches, this needs to be done before resolving element state
         self._connect_remotes(artifact_remote_url, source_remote_url, use_artifact_config, use_source_config)
+
+        # In some cases we need to have an actualized artifact, with all of
+        # it's metadata, such that we can derive attributes about the artifact
+        # like it's build dependencies.
+        if artifacts and attempt_artifact_metadata:
+            #
+            # FIXME: We need a semantic here to download only the metadata
+            #
+            for element in artifacts:
+                element._set_required(_Scope.NONE)
+
+            self._scheduler.clear_queues()
+            self._add_queue(PullQueue(self._scheduler))
+            self._enqueue_plan(artifacts)
+            self._run()
+
+            #
+            # After obtaining the metadata for the toplevel specified artifact
+            # targets, we need to reload just the artifacts.
+            #
+            artifact_targets = [e.get_artifact_name() for e in artifacts]
+            _, _, artifacts = self._load_elements_from_targets(
+                artifact_targets, [], rewritable=False, valid_artifact_names=True
+            )
+
+            # FIXME:
+            #
+            #    Sadly, we need to reinitialize just because we re-instantiated new projects due to
+            #    downloading artifacts - this could be fixed by addressing the awkward structure
+            #    of remotes in the asset caches.
+            #
+            self._connect_remotes(
+                artifact_remote_url, source_remote_url, use_artifact_config, use_source_config, reinitialize=True
+            )
+
+        self.targets += artifacts
 
         # Now move on to loading primary selection.
         #
