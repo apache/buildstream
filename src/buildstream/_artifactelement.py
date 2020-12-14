@@ -128,12 +128,13 @@ class ArtifactElement(Element):
     #         Override internal Element methods            #
     ########################################################
 
-    # Once we've finished pulling an artifact, we assume the
-    # state of the pulled artifact.
+    # Once we've finished loading an artifact, we assume the
+    # state of the loaded artifact. This is also used if the
+    # artifact is loaded after pulling.
     #
-    def _pull_done(self):
-        super()._pull_done()
+    def _load_artifact_done(self):
         self._mimic_artifact()
+        super()._load_artifact_done()
 
     ########################################################
     #         Implement Element abstract methods           #

@@ -37,9 +37,6 @@ class PullQueue(Queue):
         return PullQueue._pull_or_skip
 
     def status(self, element):
-        if not element._can_query_cache():
-            return QueueStatus.PENDING
-
         if element._pull_pending():
             return QueueStatus.READY
         else:
@@ -50,15 +47,9 @@ class PullQueue(Queue):
         if status is JobStatus.FAIL:
             return
 
-        element._pull_done()
-
-    def register_pending_element(self, element):
-        # Set a "can_query_cache"_callback for an element which is not
-        # immediately ready to query the artifact cache so that it
-        # may be pulled.
-        element._set_can_query_cache_callback(self._enqueue_element)
+        element._load_artifact_done()
 
     @staticmethod
     def _pull_or_skip(element):
-        if not element._pull():
+        if not element._load_artifact(pull=True):
             raise SkipJob(PullQueue.action_name)

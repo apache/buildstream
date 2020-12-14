@@ -591,9 +591,12 @@ class Artifact:
     # Returns:
     #     (bool): Whether artifact is in local cache
     #
-    def cached(self):
+    def cached(self, *, buildtree=False):
         assert self._cached is not None
-        return self._cached
+        ret = self._cached
+        if buildtree:
+            ret = ret and (self.cached_buildtree() or not self.buildtree_exists())
+        return ret
 
     # cached_logs()
     #
