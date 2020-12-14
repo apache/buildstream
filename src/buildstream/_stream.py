@@ -37,6 +37,7 @@ from ._scheduler import (
     Scheduler,
     SchedStatus,
     TrackQueue,
+    CacheQueryQueue,
     FetchQueue,
     SourcePushQueue,
     BuildQueue,
@@ -162,6 +163,25 @@ class Stream:
 
             return target_objects
 
+    # query_cache()
+    #
+    # Query the artifact and source caches to determine the cache status
+    # of the specified elements.
+    #
+    # Args:
+    #    elements (list of Element): The elements to check
+    #
+    def query_cache(self, elements, *, sources=False):
+        with self._context.messenger.timed_activity("Query cache", silent_nested=True):
+            # Enqueue complete build plan as this is required to determine `buildable` status.
+            plan = list(self._pipeline.dependencies(elements, _Scope.ALL))
+
+            self._scheduler.clear_queues()
+            self._add_queue(CacheQueryQueue(self._scheduler, sources=sources), track=True)
+            self._enqueue_plan(plan)
+            self._run()
+            self._scheduler.clear_queues()
+
     # shell()
     #
     # Run a shell
@@ -208,6 +228,8 @@ class Stream:
             element = self.targets[0]
             element._set_required(scope)
 
+            self.query_cache([element] + elements)
+
             if pull_:
                 self._scheduler.clear_queues()
                 self._add_queue(PullQueue(self._scheduler))
@@ -244,6 +266,7 @@ class Stream:
 
         # Ensure we have our sources if we are launching a build shell
         if scope == _Scope.BUILD and not usebuildtree:
+            self.query_cache([element], sources=True)
             self._fetch([element])
             self._pipeline.assert_sources_cached([element])
 
@@ -294,6 +317,8 @@ class Stream:
                 for element in self.targets:
                     element._set_artifact_files_required(scope=scope)
 
+        self.query_cache(elements)
+
         # Now construct the queues
         #
         self._scheduler.clear_queues()
@@ -338,6 +363,8 @@ class Stream:
             use_source_config=use_source_config,
             source_remote_url=remote,
         )
+
+        self.query_cache(elements, sources=True)
 
         # Delegated to a shared fetch method
         self._fetch(elements, announce_session=True)
@@ -403,6 +430,8 @@ class Stream:
             load_artifacts=True,
         )
 
+        self.query_cache(elements, sources=True)
+
         if not self._sourcecache.has_push_remotes():
             raise StreamError("No source caches available for pushing sources")
 
@@ -447,6 +476,9 @@ class Stream:
             raise StreamError("No artifact caches available for pulling artifacts")
 
         self._pipeline.assert_consistent(elements)
+
+        self.query_cache(elements)
+
         self._scheduler.clear_queues()
         self._add_queue(PullQueue(self._scheduler))
         self._enqueue_plan(elements)
@@ -488,6 +520,8 @@ class Stream:
             raise StreamError("No artifact caches available for pushing artifacts")
 
         self._pipeline.assert_consistent(elements)
+
+        self.query_cache(elements)
 
         self._scheduler.clear_queues()
         self._add_queue(PullQueue(self._scheduler))
@@ -538,6 +572,8 @@ class Stream:
         target = self.targets[0]
 
         self._check_location_writable(location, force=force, tar=tar)
+
+        self.query_cache(elements)
 
         uncached_elts = [elt for elt in elements if not elt._cached()]
         if uncached_elts and pull:
@@ -617,6 +653,8 @@ class Stream:
             targets, selection=selection, use_artifact_config=True, load_artifacts=True
         )
 
+        self.query_cache(target_objects)
+
         if self._artifacts.has_fetch_remotes():
             self._pipeline.check_remotes(target_objects)
 
@@ -635,6 +673,8 @@ class Stream:
     def artifact_log(self, targets):
         # Return list of Element and/or ArtifactElement objects
         target_objects = self.load_selection(targets, selection=_PipelineSelection.NONE, load_artifacts=True)
+
+        self.query_cache(target_objects)
 
         artifact_logs = {}
         for obj in target_objects:
@@ -663,6 +703,8 @@ class Stream:
     def artifact_list_contents(self, targets):
         # Return list of Element and/or ArtifactElement objects
         target_objects = self.load_selection(targets, selection=_PipelineSelection.NONE, load_artifacts=True)
+
+        self.query_cache(target_objects)
 
         elements_to_files = {}
         for obj in target_objects:
@@ -742,6 +784,7 @@ class Stream:
         elements = self._load((target,), selection=deps, except_targets=except_targets)
 
         # Assert all sources are cached in the source dir
+        self.query_cache(elements, sources=True)
         self._fetch(elements)
         self._pipeline.assert_sources_cached(elements)
 
@@ -775,6 +818,7 @@ class Stream:
         # If we're going to checkout, we need at least a fetch,
         #
         if not no_checkout:
+            self.query_cache(elements, sources=True)
             self._fetch(elements, fetch_original=True)
 
         expanded_directories = []

@@ -43,10 +43,6 @@ class PullQueue(Queue):
             return QueueStatus.SKIP
 
     def done(self, _, element, result, status):
-
-        if status is JobStatus.FAIL:
-            return
-
         element._load_artifact_done()
 
     @staticmethod

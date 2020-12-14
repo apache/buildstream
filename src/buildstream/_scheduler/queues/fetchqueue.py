@@ -56,7 +56,7 @@ class FetchQueue(Queue):
         # This will automatically skip elements which
         # have no sources.
 
-        if not element._should_fetch(self._should_fetch_original):
+        if element._can_query_source_cache() and not element._should_fetch(self._should_fetch_original):
             return QueueStatus.SKIP
 
         return QueueStatus.READY

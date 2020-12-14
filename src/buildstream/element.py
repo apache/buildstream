@@ -1945,6 +1945,9 @@ class Element(Plugin):
         self.__artifact = artifact
         return pulled
 
+    def _query_source_cache(self):
+        self.__sources.query_cache()
+
     def _skip_source_push(self):
         if not self.sources() or self._get_workspace():
             return True
@@ -3255,13 +3258,6 @@ class Element(Plugin):
         if context.get_strict():
             # In strict mode, the strong cache key always matches the strict cache key
             self.__cache_key = self.__strict_cache_key
-
-        # If we've newly calculated a cache key, our artifact's
-        # current state will also change - after all, we can now find
-        # a potential existing artifact.
-        self._load_artifact(pull=False)
-        if not self._pull_pending():
-            self._load_artifact_done()
 
         # Update the message kwargs in use for this plugin to dispatch messages with
         #
