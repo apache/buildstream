@@ -22,6 +22,7 @@
 
 # System imports
 import asyncio
+import contextlib
 import datetime
 import itertools
 import multiprocessing
@@ -495,13 +496,19 @@ class ChildJob:
         self._pipe_w = pipe_w
         self._messenger.set_message_handler(self._child_message_handler)
 
+        # FIXME
+        silence = self.action_name == "Cache-query"
+
         # Time, log and and run the action function
         #
-        with self._messenger.timed_suspendable() as timeinfo, self._messenger.recorded_messages(
-            self._logfile, self._logdir
-        ) as filename:
+        if silence:
+            record_cm = contextlib.suppress()
+        else:
+            record_cm = self._messenger.recorded_messages(self._logfile, self._logdir)
+        with self._messenger.timed_suspendable() as timeinfo, record_cm as filename:
             try:
-                self.message(MessageType.START, self.action_name, logfile=filename)
+                if not silence:
+                    self.message(MessageType.START, self.action_name, logfile=filename)
 
                 with self._terminate_lock:
                     self._thread_id = threading.current_thread().ident
@@ -513,7 +520,8 @@ class ChildJob:
                     result = self.child_process()  # pylint: disable=assignment-from-no-return
                 except SkipJob as e:
                     elapsed = datetime.datetime.now() - timeinfo.start_time
-                    self.message(MessageType.SKIPPED, str(e), elapsed=elapsed, logfile=filename)
+                    if not silence:
+                        self.message(MessageType.SKIPPED, str(e), elapsed=elapsed, logfile=filename)
 
                     # Alert parent of skip by return code
                     return _ReturnCode.SKIPPED, None
@@ -560,7 +568,8 @@ class ChildJob:
                 else:
                     # No exception occurred in the action
                     elapsed = datetime.datetime.now() - timeinfo.start_time
-                    self.message(MessageType.SUCCESS, self.action_name, elapsed=elapsed, logfile=filename)
+                    if not silence:
+                        self.message(MessageType.SUCCESS, self.action_name, elapsed=elapsed, logfile=filename)
 
                     # Shutdown needs to stay outside of the above context manager,
                     # make sure we dont try to handle SIGTERM while the process
