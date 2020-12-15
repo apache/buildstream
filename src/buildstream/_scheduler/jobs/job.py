@@ -145,10 +145,15 @@ class Job:
         assert not self._terminated, "Attempted to start process which was already terminated"
 
         # FIXME: remove this, this is not necessary when using asyncio
-        self._pipe_r, pipe_w = multiprocessing.Pipe(duplex=False)
+        silence = self.action_name == "Cache-query"
+        if silence:
+            self._pipe_r = pipe_w = None
+        else:
+            self._pipe_r, pipe_w = multiprocessing.Pipe(duplex=False)
 
         self._tries += 1
-        self._parent_start_listening()
+        if not silence:
+            self._parent_start_listening()
 
         # FIXME: remove the parent/child separation, it's not needed anymore.
         self._child = self.create_child_job(  # pylint: disable=assignment-from-no-return
@@ -350,7 +355,8 @@ class Job:
         self._scheduler.job_completed(self, status)
 
         # Force the deletion of the pipe and process objects to try and clean up FDs
-        self._pipe_r.close()
+        if self._pipe_r:
+            self._pipe_r.close()
         self._pipe_r = self._task = None
 
     # _parent_process_pipe()
@@ -359,6 +365,8 @@ class Job:
     # in the parent process.
     #
     def _parent_process_pipe(self):
+        if not self._pipe_r:
+            return
         while self._pipe_r.poll():
             try:
                 message = self._pipe_r.recv()
@@ -581,7 +589,8 @@ class ChildJob:
                 self._thread_id = None
                 return _ReturnCode.TERMINATED, None
             finally:
-                self._pipe_w.close()
+                if self._pipe_w:
+                    self._pipe_w.close()
 
     # terminate()
     #
@@ -620,6 +629,8 @@ class ChildJob:
     #    is_silenced (bool)   : Whether messages are silenced
     #
     def _child_message_handler(self, message, is_silenced):
+        if self.action_name == "Cache-query":
+            return
 
         message.action_name = self.action_name
         message.task_element_name = self._message_element_name
