@@ -347,8 +347,6 @@ overnight-tests:
       push: true
     EOF
   - make -C freedesktop-sdk
-  tags:
-  - overnight-tests
 
 overnight-tests-no-cache:
   <<: *overnight-tests-template
