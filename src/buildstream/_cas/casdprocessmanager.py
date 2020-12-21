@@ -37,7 +37,6 @@ from .._protos.google.bytestream import bytestream_pb2_grpc
 
 from .. import _signals, utils
 from .._exceptions import CASCacheError
-from .._message import Message, MessageType
 
 _CASD_MAX_LOGFILES = 10
 _CASD_TIMEOUT = 300  # in seconds
@@ -179,13 +178,8 @@ class CASDProcessManager:
             # buildbox-casd is already dead
 
             if messenger:
-                messenger.message(
-                    Message(
-                        MessageType.BUG,
-                        "Buildbox-casd died during the run. Exit code: {}, Logs: {}".format(
-                            return_code, self._logfile
-                        ),
-                    )
+                messenger.bug(
+                    "Buildbox-casd died during the run. Exit code: {}, Logs: {}".format(return_code, self._logfile)
                 )
             return
 
@@ -207,17 +201,12 @@ class CASDProcessManager:
                     self.process.wait(timeout=15)
 
                     if messenger:
-                        messenger.message(
-                            Message(MessageType.WARN, "Buildbox-casd didn't exit in time and has been killed")
-                        )
+                        messenger.warn("Buildbox-casd didn't exit in time and has been killed")
                     return
 
         if return_code != 0 and messenger:
-            messenger.message(
-                Message(
-                    MessageType.BUG,
-                    "Buildbox-casd didn't exit cleanly. Exit code: {}, Logs: {}".format(return_code, self._logfile),
-                )
+            messenger.bug(
+                "Buildbox-casd didn't exit cleanly. Exit code: {}, Logs: {}".format(return_code, self._logfile)
             )
 
     # create_channel():
