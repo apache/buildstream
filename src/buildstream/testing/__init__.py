@@ -24,7 +24,7 @@ from collections import OrderedDict
 from buildstream.exceptions import ErrorDomain, LoadErrorReason
 from ._yaml import generate_project, generate_element, load_yaml
 from .repo import Repo
-from .runcli import cli, cli_integration, cli_remote_execution
+from .runcli import cli, cli_integration, cli_remote_execution, Cli
 from .integration import integration_cache
 from ._cachekeys import check_cache_key_stability
 

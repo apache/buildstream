@@ -640,7 +640,7 @@ def shell(app, element, mount, isolate, build_, cli_buildtree, pull_, command):
                 pull_=pull_,
             )
         except BstError as e:
-            raise AppError("Error launching shell: {}".format(e), detail=e.detail) from e
+            raise AppError("Error launching shell: {}".format(e), detail=e.detail, reason=e.reason) from e
 
     # If there were no errors, we return the shell's exit code here.
     sys.exit(exitcode)
