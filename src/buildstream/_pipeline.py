@@ -27,7 +27,6 @@ from collections import OrderedDict
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
 from ._exceptions import PipelineError
-from ._message import Message, MessageType
 from ._profile import Topics, PROFILER
 from ._project import ProjectRefStorage
 from .types import _PipelineSelection, _Scope
@@ -42,14 +41,9 @@ from .types import _PipelineSelection, _Scope
 #
 class Pipeline:
     def __init__(self, context, project, artifacts):
-
         self._context = context  # The Context
         self._project = project  # The toplevel project
-
-        #
-        # Private members
-        #
-        self._artifacts = artifacts
+        self._artifacts = artifacts  # The artifact cache
 
     # load()
     #
@@ -184,7 +178,7 @@ class Pipeline:
             for t in targets:
                 new_elm = t._get_source_element()
                 if new_elm != t and not silent:
-                    self._message(MessageType.INFO, "Element '{}' redirected to '{}'".format(t.name, new_elm.name))
+                    self._context.messenger.info("Element '{}' redirected to '{}'".format(t.name, new_elm.name))
                 if new_elm not in elements:
                     elements.append(new_elm)
             return elements
@@ -422,14 +416,6 @@ class Pipeline:
                 )
 
                 raise PipelineError("Untrackable sources", detail=detail, reason="untrackable-sources")
-
-    # _message()
-    #
-    # Local message propagator
-    #
-    def _message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        self._context.messenger.message(Message(message_type, message, **args))
 
 
 # _Planner()
