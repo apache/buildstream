@@ -393,7 +393,7 @@ def test_integration_partial_artifact(cli, datafiles, tmpdir, integration_cache)
 
         # check shell doesn't work
         result = cli.run(project=project, args=["shell", element_name, "--", "hello"])
-        result.assert_main_error(ErrorDomain.APP, None)
+        result.assert_main_error(ErrorDomain.APP, "shell-missing-deps")
 
         # check the artifact gets completed with '--pull' specified
         result = cli.run(project=project, args=["shell", "--pull", element_name, "--", "hello"])

@@ -247,6 +247,8 @@ class Cli:
         self.verbose = verbose
         self.artifact = TestArtifact()
 
+        os.makedirs(directory)
+
         if default_options is None:
             default_options = []
 
@@ -734,7 +736,6 @@ class TestArtifact:
 @pytest.fixture()
 def cli(tmpdir):
     directory = os.path.join(str(tmpdir), "cache")
-    os.makedirs(directory)
     return Cli(directory)
 
 
@@ -747,8 +748,6 @@ def cli(tmpdir):
 @pytest.fixture()
 def cli_integration(tmpdir, integration_cache):
     directory = os.path.join(str(tmpdir), "cache")
-    os.makedirs(directory)
-
     fixture = CliIntegration(directory)
 
     # We want to cache sources for integration tests more permanently,
@@ -778,8 +777,6 @@ def cli_integration(tmpdir, integration_cache):
 @pytest.fixture()
 def cli_remote_execution(tmpdir, remote_services):
     directory = os.path.join(str(tmpdir), "cache")
-    os.makedirs(directory)
-
     fixture = CliRemote(directory)
 
     artifacts = []
