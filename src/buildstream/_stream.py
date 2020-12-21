@@ -33,7 +33,6 @@ from typing import List, Tuple
 from ._artifactelement import verify_artifact_ref, ArtifactElement
 from ._artifactproject import ArtifactProject
 from ._exceptions import StreamError, ImplError, BstError, ArtifactElementError, ArtifactError
-from ._message import Message, MessageType
 from ._scheduler import (
     Scheduler,
     SchedStatus,
@@ -241,7 +240,7 @@ class Stream:
 
             # Raise warning if the element is cached in a failed state
             if element._cached_failure():
-                self._message(MessageType.WARN, "using a buildtree from a failed build.")
+                self._context.messenger.warn("using a buildtree from a failed build.")
 
         # Ensure we have our sources if we are launching a build shell
         if scope == _Scope.BUILD and not usebuildtree:
@@ -542,7 +541,7 @@ class Stream:
 
         uncached_elts = [elt for elt in elements if not elt._cached()]
         if uncached_elts and pull:
-            self._message(MessageType.INFO, "Attempting to fetch missing or incomplete artifact")
+            self._context.messenger.info("Attempting to fetch missing or incomplete artifact")
             self._scheduler.clear_queues()
             self._add_queue(PullQueue(self._scheduler))
             self._enqueue_plan(uncached_elts)
@@ -641,10 +640,10 @@ class Stream:
         for obj in target_objects:
             ref = obj.get_artifact_name()
             if not obj._cached():
-                self._message(MessageType.WARN, "{} is not cached".format(ref))
+                self._context.messenger.warn("{} is not cached".format(ref))
                 continue
             if not obj._cached_logs():
-                self._message(MessageType.WARN, "{} is cached without log files".format(ref))
+                self._context.messenger.warn("{} is cached without log files".format(ref))
                 continue
 
             artifact_logs[obj.name] = obj.get_logs()
@@ -669,7 +668,7 @@ class Stream:
         for obj in target_objects:
             ref = obj.get_artifact_name()
             if not obj._cached():
-                self._message(MessageType.WARN, "{} is not cached".format(ref))
+                self._context.messenger.warn("{} is not cached".format(ref))
                 obj.name = {ref: "No artifact cached"}
                 continue
             if isinstance(obj, ArtifactElement):
@@ -702,14 +701,14 @@ class Stream:
             try:
                 self._artifacts.remove(ref)
             except ArtifactError as e:
-                self._message(MessageType.WARN, str(e))
+                self._context.messenger.warn(str(e))
                 continue
 
-            self._message(MessageType.INFO, "Removed: {}".format(ref))
+            self._context.messenger.info("Removed: {}".format(ref))
             ref_removed = True
 
         if not ref_removed:
-            self._message(MessageType.INFO, "No artifacts were removed")
+            self._context.messenger.info("No artifacts were removed")
 
     # source_checkout()
     #
@@ -754,7 +753,7 @@ class Stream:
                 "Error while writing sources" ": '{}'".format(e), detail=e.detail, reason=e.reason
             ) from e
 
-        self._message(MessageType.INFO, "Checked out sources to '{}'".format(location))
+        self._context.messenger.info("Checked out sources to '{}'".format(location))
 
     # workspace_open
     #
@@ -849,7 +848,7 @@ class Stream:
         # Now it does the bits that can not be made atomic.
         targetGenerator = zip(elements, expanded_directories)
         for target, directory in targetGenerator:
-            self._message(MessageType.INFO, "Creating workspace for element {}".format(target.name))
+            self._context.messenger.info("Creating workspace for element {}".format(target.name))
 
             workspace = workspaces.get_workspace(target._get_full_name())
             if workspace and not no_checkout:
@@ -866,7 +865,7 @@ class Stream:
                 raise StreamError("Failed to create workspace directory: {}".format(e) + todo_elements) from e
 
             workspaces.create_workspace(target, directory, checkout=not no_checkout)
-            self._message(MessageType.INFO, "Created a workspace for element: {}".format(target._get_full_name()))
+            self._context.messenger.info("Created a workspace for element: {}".format(target._get_full_name()))
 
     # workspace_close
     #
@@ -893,7 +892,7 @@ class Stream:
         # Delete the workspace and save the configuration
         workspaces.delete_workspace(element_name)
         workspaces.save_config()
-        self._message(MessageType.INFO, "Closed workspace for {}".format(element_name))
+        self._context.messenger.info("Closed workspace for {}".format(element_name))
 
     # workspace_reset
     #
@@ -922,8 +921,8 @@ class Stream:
 
             if soft:
                 workspace.last_build = None
-                self._message(
-                    MessageType.INFO, "Reset workspace state for {} at: {}".format(element.name, workspace_path)
+                self._context.messenger.info(
+                    "Reset workspace state for {} at: {}".format(element.name, workspace_path)
                 )
                 continue
 
@@ -1332,14 +1331,6 @@ class Stream:
 
         return selected
 
-    # _message()
-    #
-    # Local message propagator
-    #
-    def _message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        self._context.messenger.message(Message(message_type, message, **args))
-
     # _add_queue()
     #
     # Adds a queue to the stream
@@ -1691,7 +1682,7 @@ class Stream:
                 )
             else:
                 message = "No elements matched the following glob expression(s): {}".format(", ".join(unmatched))
-            self._message(MessageType.WARN, message)
+            self._context.messenger.warn(message)
 
         if doubly_matched:
             raise StreamError(
