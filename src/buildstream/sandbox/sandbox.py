@@ -36,7 +36,6 @@ from contextlib import contextmanager
 from typing import Dict, Generator, List, Optional, TYPE_CHECKING
 
 from .._exceptions import ImplError, SandboxError
-from .._message import Message, MessageType
 from ..storage.directory import Directory
 from ..storage._casbaseddirectory import CasBasedDirectory
 
@@ -577,13 +576,9 @@ class _SandboxBatch:
     def execute_command(self, command):
         if command.label:
             context = self.sandbox._get_context()
-            message = Message(
-                MessageType.STATUS,
-                "Running command",
-                detail=command.label,
-                element_name=self.sandbox._get_element_name(),
+            context.messenger.status(
+                "Running command", detail=command.label, element_name=self.sandbox._get_element_name(),
             )
-            context.messenger.message(message)
 
         exitcode = self.sandbox._run(command.command, self.flags, cwd=command.cwd, env=command.env)
         if exitcode != 0:
