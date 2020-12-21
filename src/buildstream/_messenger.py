@@ -144,6 +144,71 @@ class Messenger:
 
         self._locals.message_handler(message, is_silenced=self._silent_messages())
 
+    # status():
+    #
+    # A core facing convenience method for issuing STATUS messages
+    #
+    # Args:
+    #    brief: The brief status message
+    #    detail: An optional detailed message
+    #    kwargs: Additional Message constructor keyword arguments
+    #
+    def status(self, brief: str, *, detail: Optional[str] = None, **kwargs) -> None:
+        message = Message(MessageType.STATUS, brief, detail=detail, **kwargs)
+        self.message(message)
+
+    # info():
+    #
+    # A core facing convenience method for issuing INFO messages
+    #
+    # Args:
+    #    brief: The brief info message
+    #    detail: An optional detailed message
+    #    kwargs: Additional Message constructor keyword arguments
+    #
+    def info(self, brief: str, *, detail: Optional[str] = None, **kwargs) -> None:
+        message = Message(MessageType.INFO, brief, detail=detail, **kwargs)
+        self.message(message)
+
+    # warn():
+    #
+    # A core facing convenience method for issuing WARN messages
+    #
+    # Args:
+    #    brief: The brief warning message
+    #    detail: An optional detailed message
+    #    kwargs: Additional Message constructor keyword arguments
+    #
+    def warn(self, brief: str, *, detail: Optional[str] = None, **kwargs) -> None:
+        message = Message(MessageType.WARN, brief, detail=detail, **kwargs)
+        self.message(message)
+
+    # error():
+    #
+    # A core facing convenience method for issuing ERROR messages
+    #
+    # Args:
+    #    brief: The brief error message
+    #    detail: An optional detailed message
+    #    kwargs: Additional Message constructor keyword arguments
+    #
+    def error(self, brief: str, *, detail: Optional[str] = None, **kwargs) -> None:
+        message = Message(MessageType.ERROR, brief, detail=detail, **kwargs)
+        self.message(message)
+
+    # bug():
+    #
+    # A core facing convenience method for issuing BUG messages
+    #
+    # Args:
+    #    brief: The brief bug message
+    #    detail: An optional detailed message
+    #    kwargs: Additional Message constructor keyword arguments
+    #
+    def bug(self, brief: str, *, detail: Optional[str] = None, **kwargs) -> None:
+        message = Message(MessageType.BUG, brief, detail=detail, **kwargs)
+        self.message(message)
+
     # silence()
     #
     # A context manager to silence messages, this behaves in
