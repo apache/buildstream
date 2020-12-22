@@ -176,11 +176,22 @@ class Stream:
             # Enqueue complete build plan as this is required to determine `buildable` status.
             plan = list(self._pipeline.dependencies(elements, _Scope.ALL))
 
-            self._scheduler.clear_queues()
-            self._add_queue(CacheQueryQueue(self._scheduler, sources=sources), track=True)
-            self._enqueue_plan(plan)
-            self._run()
-            self._scheduler.clear_queues()
+            for element in plan:
+                if not sources and element._get_cache_key(strength=_KeyStrength.WEAK):
+                    element._load_artifact(pull=False)
+                    if not element._can_query_cache() or not element._cached_success():
+                        element._query_source_cache()
+                    if not element._pull_pending():
+                        element._load_artifact_done()
+                else:
+                        element._query_source_cache()
+
+            if False:
+                self._scheduler.clear_queues()
+                self._add_queue(CacheQueryQueue(self._scheduler, sources=sources), track=True)
+                self._enqueue_plan(plan)
+                self._run()
+                self._scheduler.clear_queues()
 
     # shell()
     #
