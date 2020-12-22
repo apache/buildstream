@@ -19,7 +19,6 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
-import os
 import itertools
 from operator import itemgetter
 from collections import OrderedDict
@@ -27,7 +26,6 @@ from collections import OrderedDict
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
 from ._exceptions import PipelineError
-from ._profile import Topics, PROFILER
 from ._project import ProjectRefStorage
 from .types import _PipelineSelection, _Scope
 
@@ -44,34 +42,6 @@ class Pipeline:
         self._context = context  # The Context
         self._project = project  # The toplevel project
         self._artifacts = artifacts  # The artifact cache
-
-    # load()
-    #
-    # Loads elements from target names.
-    #
-    # This function is called with a list of lists, such that multiple
-    # target groups may be specified. Element names specified in `targets`
-    # are allowed to be redundant.
-    #
-    # Args:
-    #    target_groups (list of lists): Groups of toplevel targets to load
-    #
-    # Returns:
-    #    (tuple of lists): A tuple of grouped Element objects corresponding to target_groups
-    #
-    def load(self, target_groups):
-
-        # First concatenate all the lists for the loader's sake
-        targets = list(itertools.chain(*target_groups))
-
-        with PROFILER.profile(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, "-") for t in targets)):
-            elements = self._project.load_elements(targets)
-
-            # Now create element groups to match the input target groups
-            elt_iter = iter(elements)
-            element_groups = [[next(elt_iter) for i in range(len(group))] for group in target_groups]
-
-            return tuple(element_groups)
 
     # resolve_elements()
     #
