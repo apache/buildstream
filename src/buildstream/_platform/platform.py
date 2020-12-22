@@ -111,6 +111,8 @@ class Platform:
             "powerpc64le": "power-isa-le",  # Used in GCC/LLVM
             "ppc64": "power-isa-be",
             "ppc64le": "power-isa-le",
+            "riscv32": "riscv32",
+            "riscv64": "riscv64",
             "sparc": "sparc-v9",
             "sparc64": "sparc-v9",
             "sparc-v9": "sparc-v9",
