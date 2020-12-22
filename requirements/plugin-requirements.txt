@@ -1,4 +1,4 @@
 arpy==1.1.1
-PyGObject==3.32.2
+PyGObject==3.36.0
 ## The following requirements were added by pip freeze:
 pycairo==1.18.1
