@@ -33,7 +33,6 @@ from .types import Symbol
 from . import loadelement
 from .loadelement import LoadElement, Dependency, DependencyType, extract_depends_from_node
 from ..types import CoreWarnings, _KeyStrength
-from .._message import Message, MessageType
 
 
 # Loader():
@@ -1016,8 +1015,7 @@ class Loader:
             if self.project._warning_is_fatal(warning_token):
                 raise LoadError(brief, warning_token)
 
-        message = Message(MessageType.WARN, brief)
-        self.load_context.context.messenger.message(message)
+        self.load_context.context.messenger.warn(brief)
 
     # Print warning messages if any of the specified elements have invalid names.
     #

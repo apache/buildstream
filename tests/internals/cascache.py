@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 
 from buildstream._cas.cascache import CASCache
 from buildstream._cas import casdprocessmanager
-from buildstream._message import MessageType
 from buildstream._messenger import Messenger
 
 
@@ -19,12 +18,11 @@ def test_report_when_cascache_dies_before_asked_to(tmp_path, monkeypatch):
     time.sleep(1)
     cache.release_resources(messenger)
 
-    assert messenger.message.call_count == 1
+    assert messenger.bug.call_count == 1
 
-    message = messenger.message.call_args[0][0]
-    assert message.message_type == MessageType.BUG
-    assert "0" in message.message
-    assert "died" in message.message
+    message = messenger.bug.call_args[0][0]
+    assert "0" in message
+    assert "died" in message
 
 
 def test_report_when_cascache_exits_not_cleanly(tmp_path, monkeypatch):
@@ -42,12 +40,11 @@ def test_report_when_cascache_exits_not_cleanly(tmp_path, monkeypatch):
     time.sleep(1)
     cache.release_resources(messenger)
 
-    assert messenger.message.call_count == 1
+    assert messenger.bug.call_count == 1
 
-    message = messenger.message.call_args[0][0]
-    assert message.message_type == MessageType.BUG
-    assert "-15" in message.message
-    assert "cleanly" in message.message
+    message = messenger.bug.call_args[0][0]
+    assert "-15" in message
+    assert "cleanly" in message
 
 
 def test_report_when_cascache_is_forcefully_killed(tmp_path, monkeypatch):
@@ -65,11 +62,10 @@ def test_report_when_cascache_is_forcefully_killed(tmp_path, monkeypatch):
     time.sleep(1)
     cache.release_resources(messenger)
 
-    assert messenger.message.call_count == 1
+    assert messenger.warn.call_count == 1
 
-    message = messenger.message.call_args[0][0]
-    assert message.message_type == MessageType.WARN
-    assert "killed" in message.message
+    message = messenger.warn.call_args[0][0]
+    assert "killed" in message
 
 
 def test_casd_redirects_stderr_to_file_and_rotate(tmp_path, monkeypatch):
