@@ -199,6 +199,31 @@ tests-remote-execution:
     REMOTE_EXECUTION_SERVICE: http://docker:50051
     SOURCE_CACHE_SERVICE: http://docker:50052
     PYTEST_ARGS: "--color=yes --remote-execution"
+    PLATFORM_PROPERTIES: "--platform OSFamily=linux --platform ISA=x86-64" # Default properties, substitued in manifest
+
+tests-remote-execution-extra-property:
+  <<: *tests
+  <<: *remote-test # Spin up server stack
+  variables:
+    <<: *docker-variables
+    COMPOSE_MANIFEST: .gitlab-ci/buildgrid-remote-execution.yml # < *remote-test
+    ARTIFACT_CACHE_SERVICE: http://docker:50052
+    REMOTE_EXECUTION_SERVICE: http://docker:50051
+    SOURCE_CACHE_SERVICE: http://docker:50052
+    PYTEST_ARGS: "--color=yes --remote-execution"
+    PLATFORM_PROPERTIES: "--platform OSFamily=linux --platform ISA=x86-64 --platform foo=bar" # Custom property 'foo' added
+
+tests-remote-execution-no-default-iso:
+  <<: *tests
+  <<: *remote-test # Spin up server stack
+  variables:
+    <<: *docker-variables
+    COMPOSE_MANIFEST: .gitlab-ci/buildgrid-remote-execution.yml # < *remote-test
+    ARTIFACT_CACHE_SERVICE: http://docker:50052
+    REMOTE_EXECUTION_SERVICE: http://docker:50051
+    SOURCE_CACHE_SERVICE: http://docker:50052
+    PYTEST_ARGS: "--color=yes --remote-execution"
+    PLATFORM_PROPERTIES: "--platform OSFamily=linux --platform foo=bar" # Default property ISA not set, so BST should disable (via ISA: [] set in test suite)
 
 tests-remote-cache:
   <<: *tests

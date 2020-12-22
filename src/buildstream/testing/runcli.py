@@ -802,6 +802,23 @@ def cli_remote_execution(tmpdir, remote_services):
         remote_execution["storage-service"] = {
             "url": remote_services.storage_service,
         }
+    if remote_services.platform_properties:
+        default_properties = ["OSFamily", "ISA"]
+        # Strip cli argument, expected string with substring pattern "--platform property=value"
+        parsed_properties = dict(
+            s.split("=") for s in remote_services.platform_properties.replace("--platform", "").split()
+        )
+        # If a default property has been set on the server, do not add it to remote-execution config
+        # as these should configured via sandbox config in bst if required. If a default hasn't been
+        # set on the server (e.g, no ISO) then this maps to it needing to be explicitly disabled in bst.
+        for default_property in default_properties:
+            if default_property in parsed_properties:
+                del parsed_properties[default_property]
+            else:
+                parsed_properties[default_property] = []
+
+        remote_execution["platform-properties"] = parsed_properties
+
     if remote_execution:
         fixture.configure({"remote-execution": remote_execution})
 

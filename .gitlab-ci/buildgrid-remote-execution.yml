@@ -29,7 +29,11 @@ services:
     image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildgrid:nightly
     command: [
       "bgd", "server", "start", "-v",
-      "/etc/buildgrid/default.conf"]
+      "/buildgrid-server.conf"]
+    volumes:
+      - type: bind
+        source: ./buildgrid-server.conf
+        target: /buildgrid-server.conf
     ports:
       - 50051:50051
     networks:
@@ -38,7 +42,7 @@ services:
   bot:
     image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:nightly
     command: [
-      "sh", "-c", "sleep 15 && ( buildbox-casd --cas-remote=http://controller:50051 /var/lib/buildgrid/cache & buildbox-worker --bots-remote=http://controller:50051 --cas-remote=unix:/var/lib/buildgrid/cache/casd.sock --buildbox-run=buildbox-run-bubblewrap --runner-arg=--use-localcas --platform OSFamily=linux --platform ISA=x86-64 --verbose )"]
+      "sh", "-c", "sleep 15 && ( buildbox-casd --cas-remote=http://controller:50051 /var/lib/buildgrid/cache & buildbox-worker --bots-remote=http://controller:50051 --cas-remote=unix:/var/lib/buildgrid/cache/casd.sock --buildbox-run=buildbox-run-bubblewrap --runner-arg=--use-localcas ${PLATFORM_PROPERTIES} --verbose )"]
     privileged: true
     volumes:
       - type: volume

@@ -71,7 +71,8 @@ environment:
 environment-nocache: []
 
 # Configuration for the sandbox other than environment variables
-# should go in 'sandbox'.
+# should go in 'sandbox'. Custom platform properties for Remote
+# Execution services can be set via 'remote-execution' config.
 sandbox: {}
 
 # Defaults for the 'split-rules' public data found on elements

@@ -119,12 +119,11 @@ class SandboxREAPI(Sandbox):
         # Request read-write directories as output
         output_directories = [os.path.relpath(dir, start=working_directory) for dir in read_write_directories]
 
+        # Get the SandoxConfig
         config = self._get_config()
-
-        platform_dict = {}
-
-        platform_dict["OSFamily"] = config.build_os
-        platform_dict["ISA"] = config.build_arch
+        default_dict = {}
+        default_dict["OSFamily"] = config.build_os
+        default_dict["ISA"] = config.build_arch
 
         if flags & SandboxFlags.INHERIT_UID:
             uid = os.geteuid()
@@ -133,16 +132,36 @@ class SandboxREAPI(Sandbox):
             uid = config.build_uid
             gid = config.build_gid
         if uid is not None:
-            platform_dict["unixUID"] = str(uid)
+            default_dict["unixUID"] = str(uid)
         if gid is not None:
-            platform_dict["unixGID"] = str(gid)
+            default_dict["unixGID"] = str(gid)
 
         if flags & SandboxFlags.NETWORK_ENABLED:
-            platform_dict["network"] = "on"
-
-        # Remove unsupported platform properties from the dict
+            default_dict["network"] = "on"
+        # Remove unsupported platform properties from the default dict, this filter is derived from the
+        # local sandbox capabilities
         supported_properties = self._supported_platform_properties()
-        platform_dict = {key: value for (key, value) in platform_dict.items() if key in supported_properties}
+        platform_dict = {key: value for (key, value) in default_dict.items() if key in supported_properties}
+
+        # Get the platform properties dict, if specified. These are not filtered as they are specific
+        # to the remote server
+        platform_properties = self._get_platform_properties()
+
+        # Apply the properties to the default_dict. k:v pairs in the default_dict
+        # can be disabled if given a explicit value of `[]` in platform properties
+        # with a matching key.
+        for platform_property, value in platform_properties.items():
+            if platform_property in platform_dict:
+                if value != []:
+                    raise SandboxError(
+                        "Platform Property {}:{} should be configured in sandbox config, not remote-execution.".format(
+                            platform_property, value
+                        ),
+                        reason="invalid-platform-property",
+                    )
+                del platform_dict[platform_property]
+            else:
+                platform_dict[platform_property] = value
 
         # Create Platform message with properties sorted by name in code point order
         platform = remote_execution_pb2.Platform()
@@ -201,6 +220,9 @@ class SandboxREAPI(Sandbox):
 
     def _supported_platform_properties(self):
         return {"OSFamily", "ISA"}
+
+    def _get_platform_properties(self):
+        return {}
 
 
 # _SandboxREAPIBatch()

@@ -327,6 +327,9 @@ using the `remote-execution` option:
     action-cache-service:
       url: http://bar.action.com:50052
       instance-name: development-emea-1
+    platform-properties:
+      docker: docker://marketplace.gcr.io/google/rbe-ubuntu16-04
+
 
 storage-service specifies a remote CAS store and the parameters are the
 same as those used to specify an :ref:`artifact server <cache_servers>`.
@@ -346,6 +349,13 @@ the same endpoint (url).  You can supply a different instance name for
 name should be given to you by the service provider of each
 service. Not all remote execution and storage services support
 instance names.
+
+platform-properties is optional, additional properties specific to the Remote Execution
+ennvironment can be be provided as key:value pairs and are included with the default
+properties of the sandbox (the values of which are derived from the local sandox enviroment,
+unless set in `sandbox` config). Pre-emptive compatability filtering isn't applied and default
+property values (such as OSFamily, ISA) cannot be overriden here (configurable in `sandbox` config)
+however they can can be explicitly disabled by setting the key value to [].
 
 The Remote Execution API can be found via https://github.com/bazelbuild/remote-apis.
 

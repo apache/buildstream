@@ -58,3 +58,31 @@ def test_build_remote_failure(cli, datafiles):
     # check that the file created before the failure exists
     filename = os.path.join(checkout_path, "foo")
     assert os.path.isfile(filename)
+
+
+# Assert that a SandboxError is given if an invalid Remote Execution platform property
+# is given which should be configured at a sandbox level, e.g. OSFamily
+@pytest.mark.datafiles(DATA_DIR)
+def test_default_platform_property_error(cli, datafiles):
+    project = str(datafiles)
+    element_path = os.path.join(project, "elements", "element.bst")
+
+    # Write out our test target
+    element = {
+        "kind": "script",
+        "depends": [{"filename": "base.bst", "type": "build",},],
+        "config": {"commands": ["touch %{install-root}/foo",],},
+    }
+    _yaml.roundtrip_dump(element, element_path)
+
+    services = cli.ensure_services()
+    assert set(services) == set(["action-cache", "execution", "storage"])
+
+    # Add invalid platform property to remote execution config, this will override any
+    # valid [] keys generated for any other testing config. Default properties in relation
+    # to the local sandbox (e.g, OSFamily & ISO) should only be configured via sandbox config.
+    cli.config["remote-execution"]["platform-properties"]["OSFamily"] = "macos"
+
+    # Try to build it, this should result in a Sanbox error when contructing the platform dict
+    result = cli.run(project=project, args=["build", "element.bst"])
+    result.assert_task_error(ErrorDomain.SANDBOX, "invalid-platform-property")

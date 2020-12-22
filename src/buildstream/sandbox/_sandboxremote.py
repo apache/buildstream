@@ -38,7 +38,9 @@ from .._cas import CASRemote
 from .._remote import RemoteSpec
 
 
-class RemoteExecutionSpec(namedtuple("RemoteExecutionSpec", "exec_service storage_service action_service")):
+class RemoteExecutionSpec(
+    namedtuple("RemoteExecutionSpec", "exec_service storage_service action_service platform_properties")
+):
     pass
 
 
@@ -91,6 +93,8 @@ class SandboxRemote(SandboxREAPI):
             self.action_instance = None
             self.action_credentials = None
 
+        self.platform_properties = config.platform_properties
+
         self.exec_instance = config.exec_service.get("instance-name", None)
         self.storage_instance = config.storage_service.get("instance-name", None)
 
@@ -123,11 +127,12 @@ class SandboxRemote(SandboxREAPI):
 
         service_keys = ["execution-service", "storage-service", "action-cache-service"]
 
-        remote_config.validate_keys(["url", *service_keys])
+        remote_config.validate_keys(["url", "platform-properties", *service_keys])
 
         exec_config = require_node(remote_config, "execution-service")
         storage_config = require_node(remote_config, "storage-service")
         action_config = remote_config.get_mapping("action-cache-service", default={})
+        platform_properties = remote_config.get_mapping("platform-properties", default={})
 
         tls_keys = ["client-key", "client-cert", "server-cert"]
 
@@ -172,6 +177,9 @@ class SandboxRemote(SandboxREAPI):
             for tls_key in tls_keys:
                 if tls_key in config:
                     config[tls_key] = resolve_path(config.get_str(tls_key))
+
+        # Add in the platform properties config
+        service_configs.append(platform_properties)
 
         # TODO: we should probably not be stripping node info and rather load files the safe way
         return RemoteExecutionSpec(*[conf.strip_node_info() for conf in service_configs])
@@ -422,6 +430,10 @@ class SandboxRemote(SandboxREAPI):
                 context = self._get_context()
                 context.messenger.info("Action result found in action cache", element_name=self._get_element_name())
                 return result
+
+    def _get_platform_properties(self):
+        # Dict platformn properties, if provided in config
+        return self.platform_properties
 
     @staticmethod
     def _extract_action_result(operation):
