@@ -103,22 +103,6 @@ class Pipeline:
                 if task:
                     task.add_current_progress()
 
-    # check_remotes()
-    #
-    # Check if the target artifact is cached in any of the available remotes
-    #
-    # Args:
-    #    targets (list [Element]): The list of element targets
-    #
-    def check_remotes(self, targets):
-        with self._context.messenger.simple_task("Querying remotes for cached status", silent_nested=True) as task:
-            task.set_maximum_progress(len(targets))
-
-            for element in targets:
-                element._cached_remotely()
-
-                task.add_current_progress()
-
     # dependencies()
     #
     # Generator function to iterate over elements and optionally
