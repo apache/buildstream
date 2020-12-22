@@ -27,7 +27,6 @@ from functools import partial
 import grpc
 
 from ..node import Node
-from .._message import Message, MessageType
 from ._sandboxreapi import SandboxREAPI
 from .. import _signals
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2, remote_execution_pb2_grpc
@@ -104,9 +103,6 @@ class SandboxRemote(SandboxREAPI):
             instance_name=self.storage_instance,
         )
         self.operation_name = None
-
-    def info(self, msg):
-        self._get_context().messenger.message(Message(MessageType.INFO, msg, element_name=self._get_element_name()))
 
     @staticmethod
     def specs_from_config_node(config_node, basedir=None):
@@ -423,7 +419,8 @@ class SandboxRemote(SandboxREAPI):
                     raise SandboxError("Failed to query action cache: {} ({})".format(e.code(), e.details()))
                 return None
             else:
-                self.info("Action result found in action cache")
+                context = self._get_context()
+                context.messenger.info("Action result found in action cache", element_name=self._get_element_name())
                 return result
 
     @staticmethod

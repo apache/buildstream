@@ -25,7 +25,6 @@ import grpc
 from . import utils
 from . import _yaml
 from ._cas import CASRemote
-from ._message import Message, MessageType
 from ._exceptions import AssetCacheError, LoadError, RemoteError
 from ._remote import BaseRemote, RemoteSpec, RemoteType
 from ._protos.build.bazel.remote.asset.v1 import remote_asset_pb2, remote_asset_pb2_grpc
@@ -573,14 +572,6 @@ class AssetCache:
 
         return (index, storage)
 
-    # _message()
-    #
-    # Local message propagator
-    #
-    def _message(self, message_type, message, **kwargs):
-        args = dict(kwargs)
-        self.context.messenger.message(Message(message_type, message, **args))
-
     # _set_remotes():
     #
     # Set the list of remote caches. If project is None, the global list of
@@ -604,7 +595,7 @@ class AssetCache:
     #
     def _initialize_remotes(self):
         def remote_failed(remote, error):
-            self._message(MessageType.WARN, "Failed to initialize remote {}: {}".format(remote.url, error))
+            self.context.messenger.warn("Failed to initialize remote {}: {}".format(remote.url, error))
 
         with self.context.messenger.timed_activity("Initializing remote caches", silent_nested=True):
             self.initialize_remotes(on_failure=remote_failed)

@@ -42,7 +42,6 @@ from .types import CoreWarnings
 from ._projectrefs import ProjectRefs, ProjectRefStorage
 from ._loader import Loader, LoadContext
 from .element import Element
-from ._message import Message, MessageType
 from ._includes import Includes
 from ._workspaces import WORKSPACE_PROJECT_FILE
 
@@ -474,9 +473,7 @@ class Project:
             detail = "The following inline specified source references will be ignored:\n\n"
             lines = ["{}:{}".format(source._get_provenance(), ref) for source, ref in redundant_refs]
             detail += "\n".join(lines)
-            self._context.messenger.message(
-                Message(MessageType.WARN, "Ignoring redundant source references", detail=detail)
-            )
+            self._context.messenger.warn("Ignoring redundant source references", detail=detail)
 
         return elements
 
@@ -909,12 +906,9 @@ class Project:
 
         # Deprecation check
         if not fail_on_overlap.is_none():
-            self._context.messenger.message(
-                Message(
-                    MessageType.WARN,
-                    "Use of fail-on-overlap within project.conf "
-                    + "is deprecated. Consider using fatal-warnings instead.",
-                )
+            self._context.messenger.warn(
+                "Use of fail-on-overlap within project.conf "
+                + "is deprecated. Consider using fatal-warnings instead.",
             )
 
             if (CoreWarnings.OVERLAPS not in self._fatal_warnings) and fail_on_overlap.as_bool():

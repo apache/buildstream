@@ -30,7 +30,6 @@ from ..node import Node
 from ..utils import UtilError
 from .._exceptions import PluginError
 from .._messenger import Messenger
-from .._message import Message, MessageType
 
 from .pluginorigin import PluginOrigin, PluginType
 
@@ -147,12 +146,10 @@ class PluginFactory:
         # plugin is used.
         #
         if plugin_type.BST_PLUGIN_DEPRECATED and not self._allow_deprecated[kind]:
-            message = Message(
-                MessageType.WARN,
+            messenger.warn(
                 "{}: Using deprecated plugin '{}'".format(provenance_node.get_provenance(), kind),
                 detail=plugin_type.BST_PLUGIN_DEPRECATION_MESSAGE,
             )
-            messenger.message(message)
 
         return plugin_type, defaults
 

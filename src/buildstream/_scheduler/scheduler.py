@@ -35,7 +35,6 @@ from .resources import Resources
 from .jobs import JobStatus
 from ..types import FastEnum
 from .._profile import Topics, PROFILER
-from .._message import Message, MessageType
 from ..plugin import Plugin
 from .. import _signals
 
@@ -319,8 +318,7 @@ class Scheduler:
     #   returncode (int): the return code with which buildbox-casd exited
     #
     def _abort_on_casd_failure(self, pid, returncode):
-        message = Message(MessageType.BUG, "buildbox-casd died while the pipeline was active.")
-        self.context.messenger.message(message)
+        self.context.messenger.bug("buildbox-casd died while the pipeline was active.")
 
         self._casd_process.returncode = returncode
         self.terminate()

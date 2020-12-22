@@ -25,7 +25,6 @@ import psutil
 from .. import utils, _signals
 from . import SandboxFlags
 from .._exceptions import SandboxError
-from .._message import Message, MessageType
 from .._platform import Platform
 from .._protos.build.bazel.remote.execution.v2 import remote_execution_pb2
 from ._sandboxreapi import SandboxREAPI
@@ -115,7 +114,8 @@ class SandboxBuildBoxRun(SandboxREAPI):
                     continue
 
                 if "bind-mount" not in self._capabilities:
-                    self._warn("buildbox-run does not support host-files")
+                    context = self._get_context()
+                    context.messenger.warn("buildbox-run does not support host-files")
                     break
 
                 buildbox_command.append("--bind-mount={}:{}".format(mount_source, mount_point))
@@ -220,6 +220,3 @@ class SandboxBuildBoxRun(SandboxREAPI):
 
     def _supported_platform_properties(self):
         return {"OSFamily", "ISA", "unixUID", "unixGID", "network"}
-
-    def _warn(self, msg):
-        self._get_context().messenger.message(Message(MessageType.WARN, msg))
