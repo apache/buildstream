@@ -19,6 +19,7 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+import itertools
 import os
 import sys
 import stat
@@ -1140,6 +1141,34 @@ class Stream:
         ArtifactProject.clear_project_cache()
         return list(artifacts)
 
+    # _load_elements()
+    #
+    # Loads elements from target names.
+    #
+    # This function is called with a list of lists, such that multiple
+    # target groups may be specified. Element names specified in `targets`
+    # are allowed to be redundant.
+    #
+    # Args:
+    #    target_groups (list of lists): Groups of toplevel targets to load
+    #
+    # Returns:
+    #    (tuple of lists): A tuple of Element object lists, grouped corresponding to target_groups
+    #
+    def _load_elements(self, target_groups):
+
+        # First concatenate all the lists for the loader's sake
+        targets = list(itertools.chain(*target_groups))
+
+        with PROFILER.profile(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, "-") for t in targets)):
+            elements = self._project.load_elements(targets)
+
+            # Now create element groups to match the input target groups
+            elt_iter = iter(elements)
+            element_groups = [[next(elt_iter) for i in range(len(group))] for group in target_groups]
+
+            return tuple(element_groups)
+
     # _load_elements_from_targets
     #
     # Given the usual set of target element names/artifact refs, load
@@ -1166,20 +1195,24 @@ class Stream:
         rewritable: bool = False,
         valid_artifact_names: bool = False
     ) -> Tuple[List[Element], List[Element], List[Element]]:
-        names, refs = self._expand_and_classify_targets(targets, valid_artifact_names=valid_artifact_names)
-        loadable = [names, except_targets]
+
+        # First determine which of the user specified targets are artifact
+        # names and which are element names.
+        element_names, artifact_names = self._expand_and_classify_targets(
+            targets, valid_artifact_names=valid_artifact_names
+        )
 
         self._project.load_context.set_rewritable(rewritable)
 
-        # Load and filter elements
-        if loadable:
-            elements, except_elements = self._pipeline.load(loadable)
+        # Load elements and except elements
+        if element_names:
+            elements, except_elements = self._load_elements([element_names, except_targets])
         else:
             elements, except_elements = [], []
 
         # Load artifacts
-        if refs:
-            artifacts = self._load_artifacts(refs)
+        if artifact_names:
+            artifacts = self._load_artifacts(artifact_names)
         else:
             artifacts = []
 
