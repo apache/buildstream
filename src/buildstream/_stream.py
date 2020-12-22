@@ -618,7 +618,7 @@ class Stream:
         )
 
         if self._artifacts.has_fetch_remotes():
-            self._pipeline.check_remotes(target_objects)
+            self._resolve_cached_remotely(target_objects)
 
         return target_objects
 
@@ -1204,6 +1204,21 @@ class Stream:
         self._artifacts.setup_remotes(use_config=use_artifact_config, remote_url=artifact_url)
         self._elementsourcescache.setup_remotes(use_config=use_source_config, remote_url=source_url)
         self._sourcecache.setup_remotes(use_config=use_source_config, remote_url=source_url)
+
+    # _resolve_cached_remotely()
+    #
+    # Checks whether the listed elements are currently cached in
+    # any of their respectively configured remotes.
+    #
+    # Args:
+    #    targets (list [Element]): The list of element targets
+    #
+    def _resolve_cached_remotely(self, targets):
+        with self._context.messenger.simple_task("Querying remotes for cached status", silent_nested=True) as task:
+            task.set_maximum_progress(len(targets))
+            for element in targets:
+                element._cached_remotely()
+                task.add_current_progress()
 
     # _load_tracking()
     #
