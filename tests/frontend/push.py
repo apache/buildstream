@@ -28,8 +28,7 @@ import shutil
 import pytest
 
 from buildstream.exceptions import ErrorDomain
-from buildstream.testing import cli, generate_project  # pylint: disable=unused-import
-from buildstream.testing.runcli import Cli
+from buildstream.testing import cli, generate_project, Cli  # pylint: disable=unused-import
 from buildstream.testing._utils.site import have_subsecond_mtime
 from tests.testutils import (
     create_artifact_share,
@@ -533,7 +532,6 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
         # Pull the element1 from the remote cache (this should update its mtime).
         # Use a separate local cache for this to ensure the complete element is pulled.
         cli2_path = os.path.join(str(tmpdir), "cli2")
-        os.mkdir(cli2_path)
         cli2 = Cli(cli2_path)
         result = cli2.run(project=project, args=["artifact", "pull", "element1.bst", "--remote", share.repo])
         result.assert_success()
