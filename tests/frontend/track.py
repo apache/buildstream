@@ -222,7 +222,7 @@ def test_track_cross_junction(cli, tmpdir, datafiles, cross_junction, ref_storag
             # Cross junction tracking is not allowed when the toplevel project
             # is using inline ref storage.
             #
-            result.assert_main_error(ErrorDomain.PIPELINE, "untrackable-sources")
+            result.assert_main_error(ErrorDomain.STREAM, "untrackable-sources")
         else:
             #
             # No cross juction tracking was requested
