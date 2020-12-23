@@ -228,7 +228,7 @@ def test_cross_junction(cli, tmpdir, datafiles, ref_storage, kind):
 
     if ref_storage == "inline":
         # This is not allowed to track cross junction without project.refs.
-        result.assert_main_error(ErrorDomain.PIPELINE, "untrackable-sources")
+        result.assert_main_error(ErrorDomain.STREAM, "untrackable-sources")
     else:
         result.assert_success()
 

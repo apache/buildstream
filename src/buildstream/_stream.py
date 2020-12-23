@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2018 Codethink Limited
+#  Copyright (C) 2020 Codethink Limited
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -19,6 +19,7 @@
 #        Jürg Billeter <juerg.billeter@codethink.co.uk>
 #        Tristan Maat <tristan.maat@codethink.co.uk>
 
+import itertools
 import os
 import sys
 import stat
@@ -44,12 +45,12 @@ from ._scheduler import (
     ArtifactPushQueue,
 )
 from .element import Element
-from ._pipeline import Pipeline
 from ._profile import Topics, PROFILER
+from ._project import ProjectRefStorage
 from ._state import State
 from .types import _KeyStrength, _PipelineSelection, _Scope
 from .plugin import Plugin
-from . import utils, _yaml, _site
+from . import utils, _yaml, _site, _pipeline
 
 
 # Stream()
@@ -84,7 +85,6 @@ class Stream:
         self._elementsourcescache = None
         self._sourcecache = None
         self._project = None
-        self._pipeline = None
         self._state = State(session_start)  # Owned by Stream, used by Core to set state
         self._notification_queue = deque()
 
@@ -125,7 +125,6 @@ class Stream:
         assert self._project is None
         self._project = project
         self._project.load_context.set_fetch_subprojects(self._fetch_subprojects)
-        self._pipeline = Pipeline(self._context, project, self._artifacts)
 
     # load_selection()
     #
@@ -211,11 +210,14 @@ class Stream:
             if pull_:
                 self._scheduler.clear_queues()
                 self._add_queue(PullQueue(self._scheduler))
-                plan = self._pipeline.add_elements([element], elements)
+
+                # Pull the toplevel element regardless of whether it is in scope
+                plan = elements if element in elements else [element] + elements
+
                 self._enqueue_plan(plan)
                 self._run()
 
-        missing_deps = [dep for dep in self._pipeline.dependencies([element], scope) if not dep._cached()]
+        missing_deps = [dep for dep in _pipeline.dependencies([element], scope) if not dep._cached()]
         if missing_deps:
             raise StreamError(
                 "Elements need to be built or downloaded before staging a shell environment",
@@ -245,7 +247,7 @@ class Stream:
         # Ensure we have our sources if we are launching a build shell
         if scope == _Scope.BUILD and not usebuildtree:
             self._fetch([element])
-            self._pipeline.assert_sources_cached([element])
+            _pipeline.assert_sources_cached(self._context, [element])
 
         return element._shell(
             scope, mounts=mounts, isolate=isolate, prompt=prompt(element), command=command, usebuildtree=usebuildtree
@@ -281,7 +283,7 @@ class Stream:
         )
 
         # Assert that the elements are consistent
-        self._pipeline.assert_consistent(elements)
+        _pipeline.assert_consistent(self._context, elements)
 
         if all(project.remote_execution_specs for project in self._context.get_projects()):
             # Remote execution is configured for all projects.
@@ -406,7 +408,7 @@ class Stream:
         if not self._sourcecache.has_push_remotes():
             raise StreamError("No source caches available for pushing sources")
 
-        self._pipeline.assert_consistent(elements)
+        _pipeline.assert_consistent(self._context, elements)
 
         self._add_queue(FetchQueue(self._scheduler))
 
@@ -446,7 +448,7 @@ class Stream:
         if not self._artifacts.has_fetch_remotes():
             raise StreamError("No artifact caches available for pulling artifacts")
 
-        self._pipeline.assert_consistent(elements)
+        _pipeline.assert_consistent(self._context, elements)
         self._scheduler.clear_queues()
         self._add_queue(PullQueue(self._scheduler))
         self._enqueue_plan(elements)
@@ -487,7 +489,7 @@ class Stream:
         if not self._artifacts.has_push_remotes():
             raise StreamError("No artifact caches available for pushing artifacts")
 
-        self._pipeline.assert_consistent(elements)
+        _pipeline.assert_consistent(self._context, elements)
 
         self._scheduler.clear_queues()
         self._add_queue(PullQueue(self._scheduler))
@@ -618,7 +620,7 @@ class Stream:
         )
 
         if self._artifacts.has_fetch_remotes():
-            self._pipeline.check_remotes(target_objects)
+            self._resolve_cached_remotely(target_objects)
 
         return target_objects
 
@@ -743,7 +745,7 @@ class Stream:
 
         # Assert all sources are cached in the source dir
         self._fetch(elements)
-        self._pipeline.assert_sources_cached(elements)
+        _pipeline.assert_sources_cached(self._context, elements)
 
         # Stage all sources determined by scope
         try:
@@ -1140,6 +1142,34 @@ class Stream:
         ArtifactProject.clear_project_cache()
         return list(artifacts)
 
+    # _load_elements()
+    #
+    # Loads elements from target names.
+    #
+    # This function is called with a list of lists, such that multiple
+    # target groups may be specified. Element names specified in `targets`
+    # are allowed to be redundant.
+    #
+    # Args:
+    #    target_groups (list of lists): Groups of toplevel targets to load
+    #
+    # Returns:
+    #    (tuple of lists): A tuple of Element object lists, grouped corresponding to target_groups
+    #
+    def _load_elements(self, target_groups):
+
+        # First concatenate all the lists for the loader's sake
+        targets = list(itertools.chain(*target_groups))
+
+        with PROFILER.profile(Topics.LOAD_PIPELINE, "_".join(t.replace(os.sep, "-") for t in targets)):
+            elements = self._project.load_elements(targets)
+
+            # Now create element groups to match the input target groups
+            elt_iter = iter(elements)
+            element_groups = [[next(elt_iter) for i in range(len(group))] for group in target_groups]
+
+            return tuple(element_groups)
+
     # _load_elements_from_targets
     #
     # Given the usual set of target element names/artifact refs, load
@@ -1166,20 +1196,24 @@ class Stream:
         rewritable: bool = False,
         valid_artifact_names: bool = False
     ) -> Tuple[List[Element], List[Element], List[Element]]:
-        names, refs = self._expand_and_classify_targets(targets, valid_artifact_names=valid_artifact_names)
-        loadable = [names, except_targets]
+
+        # First determine which of the user specified targets are artifact
+        # names and which are element names.
+        element_names, artifact_names = self._expand_and_classify_targets(
+            targets, valid_artifact_names=valid_artifact_names
+        )
 
         self._project.load_context.set_rewritable(rewritable)
 
-        # Load and filter elements
-        if loadable:
-            elements, except_elements = self._pipeline.load(loadable)
+        # Load elements and except elements
+        if element_names:
+            elements, except_elements = self._load_elements([element_names, except_targets])
         else:
             elements, except_elements = [], []
 
         # Load artifacts
-        if refs:
-            artifacts = self._load_artifacts(refs)
+        if artifact_names:
+            artifacts = self._load_artifacts(artifact_names)
         else:
             artifacts = []
 
@@ -1204,6 +1238,21 @@ class Stream:
         self._artifacts.setup_remotes(use_config=use_artifact_config, remote_url=artifact_url)
         self._elementsourcescache.setup_remotes(use_config=use_source_config, remote_url=source_url)
         self._sourcecache.setup_remotes(use_config=use_source_config, remote_url=source_url)
+
+    # _resolve_cached_remotely()
+    #
+    # Checks whether the listed elements are currently cached in
+    # any of their respectively configured remotes.
+    #
+    # Args:
+    #    targets (list [Element]): The list of element targets
+    #
+    def _resolve_cached_remotely(self, targets):
+        with self._context.messenger.simple_task("Querying remotes for cached status", silent_nested=True) as task:
+            task.set_maximum_progress(len(targets))
+            for element in targets:
+                element._cached_remotely()
+                task.add_current_progress()
 
     # _load_tracking()
     #
@@ -1251,11 +1300,56 @@ class Stream:
         track_selected = []
 
         for project, project_elements in track_projects.items():
-            selected = self._pipeline.get_selection(project_elements, selection)
-            selected = self._pipeline.track_cross_junction_filter(project, selected, cross_junctions)
+            selected = _pipeline.get_selection(self._context, project_elements, selection)
+            selected = self._track_cross_junction_filter(project, selected, cross_junctions)
             track_selected.extend(selected)
 
-        return self._pipeline.except_elements(elements, track_selected, except_elements)
+        return _pipeline.except_elements(elements, track_selected, except_elements)
+
+    # _track_cross_junction_filter()
+    #
+    # Filters out elements which are across junction boundaries,
+    # otherwise asserts that there are no such elements.
+    #
+    # This is currently assumed to be only relevant for element
+    # lists targetted at tracking.
+    #
+    # Args:
+    #    project (Project): Project used for cross_junction filtering.
+    #                       All elements are expected to belong to that project.
+    #    elements (list of Element): The list of elements to filter
+    #    cross_junction_requested (bool): Whether the user requested
+    #                                     cross junction tracking
+    #
+    # Returns:
+    #    (list of Element): The filtered or asserted result
+    #
+    def _track_cross_junction_filter(self, project, elements, cross_junction_requested):
+
+        # First filter out cross junctioned elements
+        if not cross_junction_requested:
+            elements = [element for element in elements if element._get_project() is project]
+
+        # We can track anything if the toplevel project uses project.refs
+        #
+        if self._project.ref_storage == ProjectRefStorage.PROJECT_REFS:
+            return elements
+
+        # Ideally, we would want to report every cross junction element but not
+        # their dependencies, unless those cross junction elements dependencies
+        # were also explicitly requested on the command line.
+        #
+        # But this is too hard, lets shoot for a simple error.
+        for element in elements:
+            element_project = element._get_project()
+            if element_project is not self._project:
+                detail = (
+                    "Requested to track sources across junction boundaries\n"
+                    + "in a project which does not use project.refs ref-storage."
+                )
+                raise StreamError("Untrackable sources", detail=detail, reason="untrackable-sources")
+
+        return elements
 
     # _load()
     #
@@ -1315,9 +1409,9 @@ class Stream:
 
         # Now move on to loading primary selection.
         #
-        self._pipeline.resolve_elements(self.targets)
-        selected = self._pipeline.get_selection(self.targets, selection, silent=False)
-        selected = self._pipeline.except_elements(self.targets, selected, except_elements)
+        self._resolve_elements(self.targets)
+        selected = _pipeline.get_selection(self._context, self.targets, selection, silent=False)
+        selected = _pipeline.except_elements(self.targets, selected, except_elements)
 
         if selection == _PipelineSelection.PLAN and dynamic_plan:
             # We use a dynamic build plan, only request artifacts of top-level targets,
@@ -1330,6 +1424,36 @@ class Stream:
                 element._set_required()
 
         return selected
+
+    # _resolve_elements()
+    #
+    # Resolve element state and cache keys.
+    #
+    # Args:
+    #    targets (list of Element): The list of toplevel element targets
+    #
+    def _resolve_elements(self, targets):
+        with self._context.messenger.simple_task("Resolving cached state", silent_nested=True) as task:
+            # We need to go through the project to access the loader
+            if task:
+                task.set_maximum_progress(self._project.loader.loaded)
+
+            # XXX: Now that Element._update_state() can trigger recursive update_state calls
+            # it is possible that we could get a RecursionError. However, this is unlikely
+            # to happen, even for large projects (tested with the Debian stack). Although,
+            # if it does become a problem we may have to set the recursion limit to a
+            # greater value.
+            for element in _pipeline.dependencies(targets, _Scope.ALL):
+                # Determine initial element state.
+                element._initialize_state()
+
+                # We may already have Elements which are cached and have their runtimes
+                # cached, if this is the case, we should immediately notify their reverse
+                # dependencies.
+                element._update_ready_for_runtime_and_cached()
+
+                if task:
+                    task.add_current_progress()
 
     # _add_queue()
     #
@@ -1374,7 +1498,7 @@ class Stream:
         # Inform the frontend of the full list of elements
         # and the list of elements which will be processed in this run
         #
-        self.total_elements = list(self._pipeline.dependencies(self.targets, _Scope.ALL))
+        self.total_elements = list(_pipeline.dependencies(self.targets, _Scope.ALL))
 
         if announce_session and self._session_start_callback is not None:
             self._session_start_callback()
@@ -1401,7 +1525,7 @@ class Stream:
     def _fetch(self, elements: List[Element], *, fetch_original: bool = False, announce_session: bool = False):
 
         # Assert consistency for the fetch elements
-        self._pipeline.assert_consistent(elements)
+        _pipeline.assert_consistent(self._context, elements)
 
         # Construct queues, enqueue and run
         #
