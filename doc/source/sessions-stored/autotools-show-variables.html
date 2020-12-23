@@ -30,8 +30,6 @@ build-root: /buildstream/autotools/hello.bst
 conf-root: .
 install-root: /buildstream-install
 strip-binaries: ''
-fix-pyc-timestamps: "find \"/buildstream-install\" -name '*.pyc' -exec \\\n  dd if=/dev/zero\
-  \ of={} bs=1 count=4 seek=4 conv=notrunc ';'"
 project-name: autotools
 max-jobs: '8'
 autogen: "export NOCONFIGURE=1;\n\nif [ -x ./configure ]; then true;\nelif [ -x ./autogen\
