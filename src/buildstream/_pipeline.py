@@ -184,22 +184,6 @@ class Pipeline:
         # in before.
         return [element for element in elements if element in visited]
 
-    # add_elements()
-    #
-    # Add to a list of elements all elements that are not already in it
-    #
-    # Args:
-    #    elements (list of Element): The element list
-    #    add (list of Element): List of elements to add
-    #
-    # Returns:
-    #    (list): The original elements list, with elements in add that weren't
-    #            already in it added.
-    def add_elements(self, elements, add):
-        ret = elements[:]
-        ret.extend(e for e in add if e not in ret)
-        return ret
-
     # assert_consistent()
     #
     # Asserts that the given list of elements are in a consistent state, that
