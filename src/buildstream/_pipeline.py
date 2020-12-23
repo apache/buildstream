@@ -26,7 +26,6 @@ from collections import OrderedDict
 from pyroaring import BitMap  # pylint: disable=no-name-in-module
 
 from ._exceptions import PipelineError
-from ._project import ProjectRefStorage
 from .types import _PipelineSelection, _Scope
 
 
@@ -201,32 +200,6 @@ class Pipeline:
         ret.extend(e for e in add if e not in ret)
         return ret
 
-    # track_cross_junction_filter()
-    #
-    # Filters out elements which are across junction boundaries,
-    # otherwise asserts that there are no such elements.
-    #
-    # This is currently assumed to be only relevant for element
-    # lists targetted at tracking.
-    #
-    # Args:
-    #    project (Project): Project used for cross_junction filtering.
-    #                       All elements are expected to belong to that project.
-    #    elements (list of Element): The list of elements to filter
-    #    cross_junction_requested (bool): Whether the user requested
-    #                                     cross junction tracking
-    #
-    # Returns:
-    #    (list of Element): The filtered or asserted result
-    #
-    def track_cross_junction_filter(self, project, elements, cross_junction_requested):
-        # Filter out cross junctioned elements
-        if not cross_junction_requested:
-            elements = self._filter_cross_junctions(project, elements)
-        self._assert_junction_tracking(elements)
-
-        return elements
-
     # assert_consistent()
     #
     # Asserts that the given list of elements are in a consistent state, that
@@ -291,55 +264,6 @@ class Pipeline:
             )
 
             raise PipelineError("Uncached sources", detail=detail, reason="uncached-sources")
-
-    #############################################################
-    #                     Private Methods                       #
-    #############################################################
-
-    # _filter_cross_junction()
-    #
-    # Filters out cross junction elements from the elements
-    #
-    # Args:
-    #    project (Project): The project on which elements are allowed
-    #    elements (list of Element): The list of elements to be tracked
-    #
-    # Returns:
-    #    (list): A filtered list of `elements` which does
-    #            not contain any cross junction elements.
-    #
-    def _filter_cross_junctions(self, project, elements):
-        return [element for element in elements if element._get_project() is project]
-
-    # _assert_junction_tracking()
-    #
-    # Raises an error if tracking is attempted on junctioned elements and
-    # a project.refs file is not enabled for the toplevel project.
-    #
-    # Args:
-    #    elements (list of Element): The list of elements to be tracked
-    #
-    def _assert_junction_tracking(self, elements):
-
-        # We can track anything if the toplevel project uses project.refs
-        #
-        if self._project.ref_storage == ProjectRefStorage.PROJECT_REFS:
-            return
-
-        # Ideally, we would want to report every cross junction element but not
-        # their dependencies, unless those cross junction elements dependencies
-        # were also explicitly requested on the command line.
-        #
-        # But this is too hard, lets shoot for a simple error.
-        for element in elements:
-            element_project = element._get_project()
-            if element_project is not self._project:
-                detail = (
-                    "Requested to track sources across junction boundaries\n"
-                    + "in a project which does not use project.refs ref-storage."
-                )
-
-                raise PipelineError("Untrackable sources", detail=detail, reason="untrackable-sources")
 
 
 # _Planner()
