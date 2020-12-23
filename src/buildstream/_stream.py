@@ -213,7 +213,10 @@ class Stream:
             if pull_:
                 self._scheduler.clear_queues()
                 self._add_queue(PullQueue(self._scheduler))
-                plan = self._pipeline.add_elements([element], elements)
+
+                # Pull the toplevel element regardless of whether it is in scope
+                plan = elements if element in elements else [element] + elements
+
                 self._enqueue_plan(plan)
                 self._run()
 
