@@ -1,0 +1,38 @@
+
+
+#
+# Configure github
+#
+github:
+
+  # Main features
+  features:
+    # Enable wiki for documentation
+    wiki: true
+    # Enable issue management
+    issues: true
+    # Enable projects for project management boards
+    projects: true
+
+  # Buttons
+  enabled_merge_buttons:
+    # Disable squash button:
+    squash: false
+    # enable merge button:
+    merge: true
+    # disable rebase button:
+    rebase: false
+
+  # Protected branches, this needs to be updated
+  # with every releases.
+  #
+  protected_branches:
+
+    # FIXME: Lets put sane values here after the migration.
+    master:
+      required_status_checks:
+        strict: true
+      required_pull_request_reviews:
+        dismiss_stale_reviews: false
+        require_code_owner_reviews: false
+        required_approving_review_count: 0
