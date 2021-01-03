@@ -76,7 +76,7 @@ class MetaFastEnum(type):
         return "<fastenum '{}'>".format(self.__name__)
 
     def __setattr__(self, key, value):
-        raise ValueError("Adding new values dynamically is not supported")
+        raise AttributeError("Adding new values dynamically is not supported")
 
     def __iter__(self):
         return iter(self._value_to_entry.values())
