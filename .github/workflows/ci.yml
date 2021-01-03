@@ -143,6 +143,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
+        # BuildStream requires tags to be able to find its version.
+        with:
+          fetch-depth: 0
       - name: Run tox inside a container
         run: tox -e mypy
 
@@ -152,6 +155,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
+        # BuildStream requires tags to be able to find its version.
+        with:
+          fetch-depth: 0
       - name: Run tox inside a container
         run: tox -e format-check,lint
 
