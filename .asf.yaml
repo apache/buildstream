@@ -22,3 +22,6 @@ github:
     merge: true
     # disable rebase button:
     rebase: false
+
+  # Enable pages publishing
+  ghp_branch: gh-pages
