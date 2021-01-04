@@ -30,7 +30,11 @@ jobs:
             --workdir /__w/buildstream/buildstream \
             $CI_IMAGE \
             tox -e docs
+
+	# Include a tarball in the published docs, allowing for
+	# easy re-publishing of master docs on docs.buildstream.build
         tar -C doc/build/html -zcf docs.tgz .
+	mv docs.tgz doc/build/html
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
@@ -62,8 +66,9 @@ jobs:
         # that we disable GitHub's jekyll by creating the .nojekyll file, otherwise
         # it will interfere with the rendering of the site.
         #
-        cp -a docs/* pages/
-        touch pages/.nojekyll
+        mkdir -p pages/docs
+        cp -a docs/* pages/docs/
+        touch pages/docs/.nojekyll
 
         cd pages/
         git add .
