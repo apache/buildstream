@@ -6,7 +6,8 @@ env:
 
 on:
   push:
-    branches:
+    branches-ignore:
+    - gh-pages
     - master
 
 jobs:
@@ -62,8 +63,9 @@ jobs:
         # that we disable GitHub's jekyll by creating the .nojekyll file, otherwise
         # it will interfere with the rendering of the site.
         #
-        cp -a docs/* pages/
-        touch pages/.nojekyll
+        mkdir -p pages/docs
+        cp -a docs/* pages/docs/
+        touch pages/docs/.nojekyll
 
         cd pages/
         git add .
