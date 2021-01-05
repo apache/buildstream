@@ -8,8 +8,8 @@ Some tips and guidelines for developers hacking on BuildStream
 Filing issues
 -------------
 If you are experiencing an issue with BuildStream, or would like to submit a patch
-to fix an issue, then you should first search the list of `open issues <https://gitlab.com/BuildStream/buildstream/issues>`_
-to see if the issue is already filed, and `open an issue <https://gitlab.com/BuildStream/buildstream/issues/new>`_
+to fix an issue, then you should first search the list of `open issues <https://github.com/apache/buildstream/issues>`_
+to see if the issue is already filed, and `open an issue <https://github.com/apache/buildstream/issues/new>`_
 if no issue already exists.
 
 
@@ -52,23 +52,17 @@ process, giving us a reasonable timeframe for identifying these.
 
 Submitting patches
 ------------------
-
-
-Ask for developer access
-~~~~~~~~~~~~~~~~~~~~~~~~
-If you want to submit a patch, do ask for developer permissions, either
-by asking us directly on our public IRC channel (irc://irc.gnome.org/#buildstream)
-or by visiting our `project page on GitLab <https://gitlab.com/BuildStream/buildstream>`_
-and using the GitLab UI to ask for permission.
-
-This will make your contribution experience smoother, as you will not
-need to setup any complicated CI settings, and rebasing your branch
-against the upstream master branch will be more painless.
+Submitting patches works in the regular GitHub workflow of submitting
+pull requests.
 
 
 Branch names
 ~~~~~~~~~~~~
-Branch names for merge requests should be prefixed with the submitter's
+If you are an apache member with access to the main repository, and are
+submitting a pull request for a branch within the main repository, then
+please be careful to use an identifiable branch name.
+
+Branch names for pull requests should be prefixed with the submitter's
 name or nickname, followed by a forward slash, and then a descriptive
 name. e.g.::
 
@@ -79,35 +73,25 @@ belongs to whom, especially so that we can effectively cleanup stale
 branches in the upstream repository over time.
 
 
-Merge requests
-~~~~~~~~~~~~~~
+Pull requests
+~~~~~~~~~~~~~
 Once you have created a local branch, you can push it to the upstream
 BuildStream repository using the command line::
 
-  git push origin username/fix-that-bug:username/fix-that-bug
+  git push origin username/fix-that-bug
 
-GitLab will respond to this with a message and a link to allow you to create
-a new merge request. You can also `create a merge request for an existing branch
-<https://gitlab.com/BuildStream/buildstream/merge_requests/new>`_.
+GitHub will respond to this with a message and a link to allow you to create
+a new merge request. You can also `create a pull request using the GitHub UI
+<https://github.com/apache/buildstream/compare>`_.
 
-You may open merge requests for the branches you create before you are ready
+You may open pull requests for the branches you create before you are ready
 to have them reviewed and considered for inclusion if you like. Until your merge
-request is ready for review, the merge request title must be prefixed with the
-``WIP:`` identifier. GitLab `treats this specially
-<https://docs.gitlab.com/ee/user/project/merge_requests/work_in_progress_merge_requests.html>`_,
-which helps reviewers.
+request is ready for review, the pull request title must be prefixed with the
+``WIP:`` identifier.
 
-Consider marking a merge request as WIP again if you are taking a while to
+Consider marking a pull request as WIP again if you are taking a while to
 address a review point. This signals that the next action is on you, and it
 won't appear in a reviewer's search for non-WIP merge requests to review.
-
-As a general rule of thumb, after a month of no activity from the submitter of 
-a non-WIP MR, we'll put it back into WIP with a polite note. Then after another 
-month with no activity we'll close the MR off entirely with another note. 
-In this way we are trying to ensure all of the MRs in our backlog are relevant
-and up to date. We have some `boilerplate text
-<https://gitlab.com/BuildStream/buildstream/blob/master/.gitlab/merge_request_templates/stale_MR_message.md>`_,
-to help us when writing these notes.
 
 
 
@@ -135,9 +119,7 @@ with the same commit, so that every commit passes its own tests.
 
 These principles apply whenever a branch is non-WIP. So for example, don't push
 'fixup!' commits when addressing review comments, instead amend the commits
-directly before pushing. GitLab has `good support
-<https://docs.gitlab.com/ee/user/project/merge_requests/versions.html>`_ for
-diffing between pushes, so 'fixup!' commits are not necessary for reviewers.
+directly before pushing.
 
 
 Commit messages
@@ -198,24 +180,18 @@ separately.
 
 Committer access
 ----------------
-
 Committers in the BuildStream project are those folks to whom the right to
 directly commit changes to our version controlled resources has been granted.
-While every contribution is
-valued regardless of its source, not every person who contributes code to the
-project will earn commit access. The `COMMITTERS`_ file lists all committers.
 
-Whenever someone is granted (or revoked) commit access, an Owner or Maintainer
-should run the the script located at `contrib/update_committers.py` with their
-personal access token, updating the COMMITTERS.rst list and opening an MR
-with their changes.
+While every contribution is valued regardless of its source, not every person
+who contributes code to the project will earn commit access.
+The `COMMITTERS`_ file lists all committers.
 
-.. _COMMITTERS: https://gitlab.com/BuildStream/buildstream/blob/master/COMMITTERS.rst
+.. _COMMITTERS: https://github.com/apache/buildstream/blob/master/COMMITTERS.rst
 
 
 How commit access is granted
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 After someone has successfully contributed a few non-trivial patches, some full
 committer, usually whoever has reviewed and applied the most patches from that
 contributor, proposes them for commit access. This proposal is sent only to the
@@ -244,9 +220,9 @@ project needs a bunch of very trivial patches whose only purpose is to gain comm
 access; knowing what's worth a patch post and what's not is part of showing good
 judgement.)
 
+
 Windows CI
 ----------
-
 The infrastructure for running the CI against Windows is different from the usual
 runners, due to a combination of licensing technicalities and differing
 containerisation support.
@@ -255,6 +231,7 @@ The scripts used to generate a CI runner can be found at
 `https://gitlab.com/BuildStream/windows-startup-script`.
 The `wsl` branch can be used to generate a runner for WSL, and the `win32` branch
 can be used to generate a native-windows runner.
+
 
 Further information
 -------------------
