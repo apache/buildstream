@@ -16,8 +16,7 @@ documentation for instructions on how to run BuildStream as a Docker container.
 
 Generate Docker images
 ----------------------
-The
-`bst-docker-import script <https://gitlab.com/BuildStream/buildstream/blob/master/contrib/bst-docker-import>`_
+The `bst-docker-import script <https://github.com/apache/buildstream/blob/master/contrib/bst-docker-import>`_
 can be used to generate a Docker image from built artifacts.
 
 You can download it and make it executable like this:
@@ -25,7 +24,7 @@ You can download it and make it executable like this:
 .. code:: bash
 
   mkdir -p ~/.local/bin
-  curl --get https://gitlab.com/BuildStream/buildstream/raw/master/contrib/bst-docker-import > ~/.local/bin/bst-docker-import
+  curl --get https://raw.githubusercontent.com/apache/buildstream/master/contrib/bst-docker-import > ~/.local/bin/bst-docker-import
   chmod +x ~/.local/bin/bst-docker-import
 
 Check if ``~/.local/bin`` appears in your PATH environment variable -- if it
@@ -44,7 +43,7 @@ called ``hello.bst`` assuming it is already built:
 This script can also be used if you are running BuildStream inside Docker. In
 this case, you will need to supply the command that you are using to run
 BuildStream using the ``-c`` option.  If you are using the
-`bst-here wrapper script <https://gitlab.com/BuildStream/buildstream/blob/master/contrib/bst-here>`_,
+`bst-here wrapper script <https://github.com/apache/buildstream/blob/master/contrib//bst-here>`_,
 you can achieve the same results as the above example like this:
 
 .. code:: bash
