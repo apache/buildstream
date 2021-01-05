@@ -10,9 +10,9 @@ the BuildStream codebase. Note that this is not a full list of all
 contributors.
 
 +-----------------------------------+-----------------------------------+
-| Full Name                         | GitLab User                       |
+| Full Name                         | GitHub User                       |
 +===================================+===================================+
-| Tristan Van Berkom                | tristanvb                         |
+| Tristan Van Berkom                | gtristan                          |
 +-----------------------------------+-----------------------------------+
 | Jürg Billeter                     | juergbi                           |
 +-----------------------------------+-----------------------------------+
