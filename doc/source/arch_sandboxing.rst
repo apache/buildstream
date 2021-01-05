@@ -88,7 +88,7 @@ can be written and stored.
 
 These restrictions are due to technical limitations. In future we hope to
 support a wider range of filesystem metadata operations. See `issue #38
-<https://gitlab.com/BuildStream/buildstream/issues/38>`_ for more details.
+<https://github.com/apache/buildstream/issues/38>`_ for more details.
 
 User and permissions model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -167,11 +167,11 @@ directory structure for each build job.
 Some of the operations on filesystem metadata listed above are not prohibited
 by the sandbox, but will instead be silently dropped when an artifact is
 created. For more details see `issue #38
-<https://gitlab.com/BuildStream/buildstream/issues/38>`_.
+<https://github.com/apache/buildstream/issues/38>`_.
 
 Some details of the host machine are currently leaked by this platform backend.
 For more details, see `issue #262
-<https://gitlab.com/BuildStream/buildstream/issues/262>`_.
+<https://github.com/apache/buildstream/issues/262>`_.
 
 Other POSIX systems
 ~~~~~~~~~~~~~~~~~~~
