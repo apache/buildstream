@@ -3,7 +3,7 @@ Contributing to the UI
 
 As we wish to cleanly separate BuildStream's core from the frontend, anything
 user facing should be defined within the modules contained within the `_frontend
-<https://gitlab.com/BuildStream/buildstream/tree/master/src/buildstream/_frontend>`_
+<https://github.com/apache/buildstream/tree/master/src/buildstream/_frontend>`_
 directory.
 
 BuildStream's frontend includes:
@@ -19,9 +19,8 @@ BuildStream's frontend includes:
 
 The command line interface
 ''''''''''''''''''''''''''
-
 All of BuildStream's commands are defined within the module `cli.py
-<https://gitlab.com/BuildStream/buildstream/blob/master/src/buildstream/_frontend/cli.py>`_ -,
+<https://github.com/apache/buildstream/tree/master/src/buildstream/_frontend/cli.py>`_ -,
 the main entry point which implements the CLI.
 
 The command line interface is generated with `Click
@@ -64,9 +63,9 @@ To report messages back to the frontend, we use the ``Message()`` object
 which is available from the ``Context``.
 
 Supported message types are defined in `_message.py
-<https://gitlab.com/BuildStream/buildstream/blob/master/src/buildstream/_message.py>`_
+<https://github.com/apache/buildstream/tree/master/src/buildstream/_message.py>`_
 and various uses of the messenger are defined in `_messenger.py
-<https://gitlab.com/BuildStream/buildstream/blob/master/src/buildstream/_messenger.py>`_
+<https://github.com/apache/buildstream/tree/master/src/buildstream/_messenger.py>`_
 
 The ``Messenger`` class defines various methods which allow us to report back to
 the frontend in particular ways. The common methods are:
