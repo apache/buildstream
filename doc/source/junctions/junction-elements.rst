@@ -24,7 +24,7 @@ A simple example
 .. note::
 
     This example is distributed with BuildStream in the
-    `doc/examples/junctions <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/junctions>`_
+    `doc/examples/junctions <https://github.com/apache/buildstream/tree/master/doc/examples/junctions>`_
     subdirectory.
 
 Below is a simple example of bst file for the junction element, which
@@ -34,7 +34,7 @@ we have called ``hello-junction.bst`` in this project:
     :language: yaml
 
 This element imports the autotools example subproject distributed with BuildStream
-in the `doc/examples/junctions/autotools <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/junctions/autotools>`_
+in the `doc/examples/junctions/autotools <https://github.com/apache/buildstream/tree/master/doc/examples/junctions/autotools>`_
 subdirectory.
 
 .. note::

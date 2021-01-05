@@ -16,7 +16,7 @@ in your own project.
 
     This section runs commands on the same example project presented in the
     :ref:`previous section <junction_elements>`, which is distributed with BuildStream in the
-    `doc/examples/junctions <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/junctions>`_
+    `doc/examples/junctions <https://github.com/apache/buildstream/tree/master/doc/examples/junctions>`_
     subdirectory.
 
 

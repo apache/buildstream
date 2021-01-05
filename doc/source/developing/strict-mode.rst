@@ -12,7 +12,7 @@ can help to improve your edit/compile/test cycles.
 
    This example is distributed with BuildStream
    in the `doc/examples/strict-mode
-   <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/strict-mode>`_
+   <https://github.com/apache/buildstream/tree/master/doc/examples/strict-mode>`_
    subdirectory.
 
 

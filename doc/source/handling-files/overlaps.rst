@@ -12,7 +12,7 @@ use to resolve these situations.
 
    This example is distributed with BuildStream
    in the `doc/examples/overlaps
-   <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/overlaps>`_
+   <https://github.com/apache/buildstream/tree/master/doc/examples/overlaps>`_
    subdirectory.
 
 

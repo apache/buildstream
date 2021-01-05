@@ -11,7 +11,7 @@ devloping a BuildStream project.
 
    This example is distributed with BuildStream
    in the `doc/examples/developing
-   <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/developing>`_
+   <https://github.com/apache/buildstream/tree/master/doc/examples/developing>`_
    subdirectory.
 
 We will start with the project used in the :ref:`running commands <tutorial_running_commands>`

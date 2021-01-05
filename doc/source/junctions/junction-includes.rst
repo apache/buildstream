@@ -19,7 +19,7 @@ of your :mod:`junction <elements.junction>`.
 
    This example is distributed with BuildStream
    in the `doc/examples/junction-includes
-   <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/junction-includes>`_
+   <https://github.com/apache/buildstream/tree/master/doc/examples/junction-includes>`_
    subdirectory.
 
 

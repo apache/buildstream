@@ -12,7 +12,7 @@ the :ref:`isolated build sandbox <sandboxing>`.
 
    This example is distributed with BuildStream
    in the `doc/examples/running-commands
-   <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/running-commands>`_
+   <https://github.com/apache/buildstream/tree/master/doc/examples/running-commands>`_
    subdirectory.
 
 

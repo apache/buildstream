@@ -10,7 +10,7 @@ a Flatpak SDK for the base runtime.
 
    This example is distributed with BuildStream
    in the `doc/examples/flatpak-autotools
-   <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/flatpak-autotools>`_
+   <https://github.com/apache/buildstream/tree/master/doc/examples/flatpak-autotools>`_
    subdirectory.
 
 
@@ -123,7 +123,7 @@ just a few things you can try to do with the project.
 
    The following examples assume that you have first changed your working
    directory to the
-   `project root <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/flatpak-autotools>`_.
+   `project root <https://github.com/apache/buildstream/tree/master/doc/examples/flatpak-autotools>`_.
 
 
 Build the hello.bst element

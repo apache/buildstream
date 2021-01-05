@@ -13,7 +13,7 @@ YAML format.
 
    This example is distributed with BuildStream
    in the `doc/examples/directives
-   <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/directives>`_
+   <https://github.com/apache/buildstream/tree/master/doc/examples/directives>`_
    subdirectory.
 
 

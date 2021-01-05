@@ -12,7 +12,7 @@ depend on a subset of the files provided by a filtered element.
 
    This example is distributed with BuildStream
    in the `doc/examples/filtering
-   <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/filtering>`_
+   <https://github.com/apache/buildstream/tree/master/doc/examples/filtering>`_
    subdirectory.
 
 

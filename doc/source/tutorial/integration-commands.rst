@@ -19,7 +19,7 @@ ensure that a runtime is ready to run after all of its components have been *sta
 
    This example is distributed with BuildStream
    in the `doc/examples/integration-commands
-   <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/integration-commands>`_
+   <https://github.com/apache/buildstream/tree/master/doc/examples/integration-commands>`_
    subdirectory.
 
 
@@ -77,7 +77,7 @@ seen in the previous chapter: :ref:`tutorial_running_commands`.
 These produce a library and a hello program which uses the library,
 we will consider these irrelevant to the topic and leave examination
 of `their sources
-<https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/integration-commands/files>`_
+<https://github.com/apache/buildstream/tree/master/doc/examples/integration-commands/files>`_
 as an exercise for the reader.
 
 

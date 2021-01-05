@@ -18,7 +18,7 @@ on the :mod:`manual <elements.manual>` element, and observe how
 
    This example is distributed with BuildStream
    in the `doc/examples/autotools
-   <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/autotools>`_
+   <https://github.com/apache/buildstream/tree/master/doc/examples/autotools>`_
    subdirectory.
 
 

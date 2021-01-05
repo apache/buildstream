@@ -11,7 +11,7 @@ input filesystem trees, using the :mod:`compose <elements.compose>` element.
 
    This example is distributed with BuildStream
    in the `doc/examples/composition
-   <https://gitlab.com/BuildStream/buildstream/tree/master/doc/examples/composition>`_
+   <https://github.com/apache/buildstream/tree/master/doc/examples/composition>`_
    subdirectory.
 
 
