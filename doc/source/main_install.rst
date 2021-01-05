@@ -207,7 +207,7 @@ to the latest dev snapshot like so::
 
 Installing from a git checkout
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-To install directly from the `git repository <https://gitlab.com/BuildStream/buildstream.git>`_
+To install directly from the `git repository <https://github.com/apache/buildstream>`_
 using python's ``pip`` package manager, you will additionally require:
 
 - pip for python3 (only required for setup)
@@ -220,7 +220,7 @@ and determine which version you want to install.
 Run the following commands::
 
 
-    git clone https://gitlab.com/BuildStream/buildstream.git
+    git clone https://github.com/apache/buildstream.git
     cd buildstream
     git checkout <desired release tag>
     pip3 install --user .
@@ -248,6 +248,7 @@ need to cleanly reinstall BuildStream::
     cd /path/to/buildstream
     git pull --rebase
     pip3 install --user .
+
 
 Installing in virtual environments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -317,9 +318,9 @@ A regular way to do this is to add the following line to the end of your ``~/.ba
 
 .. _install-container:
 
+
 Buildstream Inside a Container
 -------------------------------
-
 If your system cannot provide the base requirements, it is possible to run
 BuildStream within a container. This gives you an easy way to get started
 using BuildStream on any Unix-like platform where containers are available,
