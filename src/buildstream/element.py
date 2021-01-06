@@ -2707,7 +2707,6 @@ class Element(Plugin):
 
         elif directory is not None and os.path.exists(directory):
             platform = context.platform
-            platform.check_sandbox_config(config)
 
             sandbox = platform.create_sandbox(
                 context,
