@@ -10,6 +10,8 @@ on:
     branches-ignore:
     - gh-pages
     - master
+  pull_request:
+    types: [assigned, opened, synchronize, reopened]
 
 # Left to-do:
 # - coverage
