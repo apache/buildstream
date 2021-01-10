@@ -25,3 +25,10 @@ github:
 
   # Enable pages publishing
   ghp_branch: gh-pages
+
+  # Testing basic protection of multiple branches,
+  # this needs to be tested on the master branch.
+  # 
+  protected_branches:
+  - tristan/test-protected-branch-1
+  - tristan/test-protected-branch-2
