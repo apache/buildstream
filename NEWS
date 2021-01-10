@@ -35,11 +35,13 @@ Core
   * BREAKING CHANGE: Changed ScriptElement.layout_add() API to take Element instances
                      in place of Element names
 
+
 CLI
 ---
 
   o BREAKING CHANGE: `bst shell --use-buildtree` is now a boolean flag.
     `--use-buildtree=ask` and `--use-buildtree=try` are no longer supported.
+
 
 
 ==================
