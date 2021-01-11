@@ -493,6 +493,7 @@ class ChildJob:
         # Set the global message handler in this child
         # process to forward messages to the parent process
         self._pipe_w = pipe_w
+        self._messenger.setup_new_action_context()
         self._messenger.set_message_handler(self._child_message_handler)
 
         # Time, log and and run the action function

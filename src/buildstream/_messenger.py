@@ -97,6 +97,9 @@ class Messenger:
         # Thread local storage
         self._locals: _MessengerLocal = _MessengerLocal()
 
+    def setup_new_action_context(self) -> None:
+        self._locals.silence_scope_depth = 0
+
     # set_message_handler()
     #
     # Sets the handler for any status messages propagated through
@@ -362,7 +365,6 @@ class Messenger:
         # Create the fully qualified logfile in the log directory,
         # appending the pid and .log extension at the end.
         self._locals.log_filename = os.path.join(logdir, "{}.{}.log".format(filename, os.getpid()))
-        self._locals.silence_scope_depth = 0
 
         # Ensure the directory exists first
         directory = os.path.dirname(self._locals.log_filename)
