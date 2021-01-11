@@ -32,7 +32,7 @@ import traceback
 from ... import utils
 from ..._utils import terminate_thread
 from ..._exceptions import ImplError, BstError, set_last_task_error, SkipJob
-from ..._message import Message, MessageType, unconditional_messages
+from ..._message import Message, MessageType
 from ...types import FastEnum
 from ..._signals import TerminateException
 
@@ -360,12 +360,11 @@ class Job:
     def _parent_process_pipe(self):
         while self._pipe_r.poll():
             try:
-                message = self._pipe_r.recv()
+                self._pipe_r.recv()
+                assert False, "No message should be received anymore"
             except EOFError:
                 self._parent_stop_listening()
                 break
-
-            self._messenger.message(message)
 
     # _parent_recv()
     #
@@ -493,8 +492,9 @@ class ChildJob:
         # Set the global message handler in this child
         # process to forward messages to the parent process
         self._pipe_w = pipe_w
-        self._messenger.setup_new_action_context()
-        self._messenger.set_message_handler(self._child_message_handler)
+        self._messenger.setup_new_action_context(
+            self.action_name, self._message_element_name, self._message_element_key
+        )
 
         # Time, log and and run the action function
         #
@@ -593,36 +593,3 @@ class ChildJob:
                 return
 
         terminate_thread(self._thread_id)
-
-    #######################################################
-    #                  Local Private Methods              #
-    #######################################################
-
-    # _child_message_handler()
-    #
-    # A Context delegate for handling messages, this replaces the
-    # frontend's main message handler in the context of a child task
-    # and performs local logging to the local log file before sending
-    # the message back to the parent process for further propagation.
-    # The related element display key is added to the message for
-    # widget rendering if not already set for an element childjob.
-    #
-    # Args:
-    #    message     (Message): The message to log
-    #    is_silenced (bool)   : Whether messages are silenced
-    #
-    def _child_message_handler(self, message, is_silenced):
-
-        message.action_name = self.action_name
-        message.task_element_name = self._message_element_name
-        message.task_element_key = self._message_element_key
-
-        # Send to frontend if appropriate
-        if is_silenced and (message.message_type not in unconditional_messages):
-            return
-
-        # Don't bother propagating these to the frontend
-        if message.message_type == MessageType.LOG:
-            return
-
-        self._pipe_w.send(message)
