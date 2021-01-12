@@ -25,6 +25,7 @@ github:
 
   # Enable pages publishing
   ghp_branch: gh-pages
+  ghp_path: /docs
 
   # Testing basic protection of multiple branches,
   # this needs to be tested on the master branch.
