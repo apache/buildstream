@@ -1,0 +1,67 @@
+version: '3.4'
+
+x-tests-template: &tests-template
+    command: tox -vvvvv -- --color=yes --integration
+    devices:
+      - /dev/fuse:/dev/fuse
+    environment:
+      BST_PLUGINS_EXPERIMENTAL_VERSION: 1.93.4
+      TOXENV: py36,py37,py38-nocover,py36-plugins,py37-plugins,py38-plugins-nocover
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${CI_IMAGE_VERSION:-latest}
+    privileged: true
+    volumes:
+      - ../..:/home/testuser/buildstream
+    working_dir: /home/testuser/buildstream
+
+
+services:
+
+  fedora-31:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${CI_IMAGE_VERSION:-latest}
+
+  fedora-32:
+    <<: *tests-template
+
+  debian-10:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-${CI_IMAGE_VERSION:-latest}
+
+  ubuntu-18.04:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-ubuntu:18.04-${CI_IMAGE_VERSION:-latest}
+
+  centos-7.7.1908:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-centos:7.7.1908-${CI_IMAGE_VERSION:-latest}
+
+  # Ensure that tests also pass in the absence of a sandboxing tool
+  fedora-missing-deps:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:minimal-${CI_IMAGE_VERSION:-latest}
+
+  # Ensure that tests also pass without `--develop` flag
+  no-usedevelop:
+    <<: *tests-template
+    environment:
+      TOXENV: py36-nocover,py37-nocover,py38-nocover
+
+  # Test the master version of external plugins
+  plugins-master:
+    <<: *tests-template
+    environment:
+      BST_PLUGINS_EXPERIMENTAL_VERSION: master
+
+  docs:
+    <<: *tests-template
+    command: tox -e docs
+    environment:
+      BST_FORCE_SESSION_REBUILD: 1
+
+  lint:
+    <<: *tests-template
+    command: tox -e lint
+
+  mypy:
+    <<: *tests-template
+    command: tox -e mypy
