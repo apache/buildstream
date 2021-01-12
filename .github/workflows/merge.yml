@@ -34,13 +34,14 @@ jobs:
         # Include a tarball in the published docs, allowing for
         # easy re-publishing of master docs on docs.buildstream.build
         tar -C doc/build/html -zcf docs.tgz .
-        mv docs.tgz doc/build/html
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with:
         name: docs
-        path: doc/build/html
+        path: |
+          doc/build/html
+          docs.tgz
 
   publish:
     needs: build
@@ -67,7 +68,8 @@ jobs:
         # it will interfere with the rendering of the site.
         #
         mkdir -p pages/docs
-        cp -a docs/* pages/docs/
+        cp -a docs/doc/build/html/* pages/docs/
+        cp -a docs/docs.tgz pages/docs/
         touch pages/docs/.nojekyll
 
         cd pages/
