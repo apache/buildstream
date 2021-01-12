@@ -31,10 +31,10 @@ jobs:
             $CI_IMAGE \
             tox -e docs
 
-	# Include a tarball in the published docs, allowing for
-	# easy re-publishing of master docs on docs.buildstream.build
+        # Include a tarball in the published docs, allowing for
+        # easy re-publishing of master docs on docs.buildstream.build
         tar -C doc/build/html -zcf docs.tgz .
-	mv docs.tgz doc/build/html
+        mv docs.tgz doc/build/html
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
