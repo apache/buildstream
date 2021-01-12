@@ -67,7 +67,7 @@ BADGE_TEMPLATE = """
 </svg>
 """
 
-URL_FORMAT = 'https://download.gnome.org/sources/BuildStream/{brief_version}/BuildStream-{full_version}.tar.xz'
+URL_FORMAT = 'https://github.com/apache/buildstream/releases/tag/{version}'
 RELEASE_COLOR = '#0040FF'
 SNAPSHOT_COLOR = '#FF8000'
 VERSION_TAG_MATCH = r'([0-9]*)\.([0-9]*)\.([0-9]*)'
@@ -135,11 +135,10 @@ def generate_badges(release):
         badge_name = 'snapshot'
         color = SNAPSHOT_COLOR
 
-    brief_version = '{major}.{minor}'.format(major=major, minor=minor)
-    full_version = '{major}.{minor}.{micro}'.format(major=major, minor=minor, micro=micro)
-    url_target = URL_FORMAT.format(brief_version=brief_version, full_version=full_version)
+    version = '{major}.{minor}.{micro}'.format(major=major, minor=minor, micro=micro)
+    url_target = URL_FORMAT.format(version=version)
     badge = BADGE_TEMPLATE.format(badge_name=badge_name,
-                                  version=full_version,
+                                  version=version,
                                   color=color,
                                   url_target=url_target)
     click.echo(badge, nl=False)
