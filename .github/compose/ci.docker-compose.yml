@@ -1,7 +1,7 @@
 version: '3.4'
 
 x-tests-template: &tests-template
-    command: tox -vvvvv -- --color=yes --integration
+    command: tox -vvvvv -- --color=yes --integration -n 4
     devices:
       - /dev/fuse:/dev/fuse
     environment:
