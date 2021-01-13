@@ -2,10 +2,10 @@ About
 -----
 
 .. image:: https://docs.buildstream.build/master/_static/release.svg
-   :target: https://gitlab.com/BuildStream/buildstream/commits/bst-1
+   :target: https://docs.buildstream.build/master/_static/release.html
 
 .. image:: https://docs.buildstream.build/master/_static/snapshot.svg
-   :target: https://gitlab.com/BuildStream/buildstream/commits/master
+   :target: https://docs.buildstream.build/master/_static/snapshot.html
 
 .. image:: https://gitlab.com/BuildStream/buildstream/badges/master/pipeline.svg
    :target: https://gitlab.com/BuildStream/buildstream/commits/master

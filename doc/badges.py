@@ -67,6 +67,23 @@ BADGE_TEMPLATE = """
 </svg>
 """
 
+# The redirect template is for a static html page hosted in the
+# latest docs which always redirects you to the latest snapshot
+# or release on github.
+#
+REDIRECT_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>Latest {badge_name}</title>
+      <meta http-equiv="refresh" content="0;url={url_target}"/>
+   </head>
+   <body>
+      <p></p>
+   </body>
+</html>
+"""
+
 URL_FORMAT = 'https://github.com/apache/buildstream/releases/tag/{version}'
 RELEASE_COLOR = '#0040FF'
 SNAPSHOT_COLOR = '#FF8000'
@@ -123,7 +140,9 @@ def guess_version(release):
 @click.command(short_help="Generate the version badges")
 @click.option('--release', is_flag=True, default=False,
               help="Whether to generate the badge for the release version")
-def generate_badges(release):
+@click.option('--redirect', is_flag=True, default=False,
+              help="Whether to generate the redirect html file")
+def generate_badges(release, redirect):
     """Generate the version badge svg files
     """
     major, minor, micro = guess_version(release)
@@ -137,11 +156,18 @@ def generate_badges(release):
 
     version = '{major}.{minor}.{micro}'.format(major=major, minor=minor, micro=micro)
     url_target = URL_FORMAT.format(version=version)
-    badge = BADGE_TEMPLATE.format(badge_name=badge_name,
-                                  version=version,
-                                  color=color,
-                                  url_target=url_target)
-    click.echo(badge, nl=False)
+
+    if redirect:
+        template = REDIRECT_TEMPLATE
+    else:
+        template = BADGE_TEMPLATE
+
+    output = template.format(badge_name=badge_name,
+                             version=version,
+                             color=color,
+                             url_target=url_target)
+
+    click.echo(output, nl=False)
     return 0
 
 
