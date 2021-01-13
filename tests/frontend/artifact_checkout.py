@@ -32,7 +32,8 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
     ],
     ids=["none", "build", "run", "all"],
 )
-def test_checkout(cli, tmpdir, datafiles, deps, expect_exist, expect_noexist):
+@pytest.mark.parametrize("with_project", [True, False], ids=["with-project", "without-project"])
+def test_checkout(cli, tmpdir, datafiles, deps, expect_exist, expect_noexist, with_project):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, "checkout")
 
@@ -55,6 +56,10 @@ def test_checkout(cli, tmpdir, datafiles, deps, expect_exist, expect_noexist):
         shutil.rmtree(str(os.path.join(str(tmpdir), "cache", "cas")))
         shutil.rmtree(str(os.path.join(str(tmpdir), "cache", "artifacts")))
         assert cli.get_element_state(project, "target-import.bst") != "cached"
+
+        # Delete the project.conf if we're going to try this without a project
+        if not with_project:
+            os.remove(os.path.join(project, "project.conf"))
 
         # Now checkout the artifact
         result = cli.run(
