@@ -22,6 +22,7 @@ import os
 import pytest
 
 from buildstream.testing import cli  # pylint: disable=unused-import
+from buildstream.exceptions import ErrorDomain
 
 
 # Project directory
@@ -30,7 +31,8 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
 
 @pytest.mark.datafiles(DATA_DIR)
 @pytest.mark.parametrize("target", ["element-name", "artifact-name"])
-def test_artifact_list_exact_contents(cli, datafiles, target):
+@pytest.mark.parametrize("with_project", [True, False], ids=["with-project", "without-project"])
+def test_artifact_list_exact_contents(cli, datafiles, target, with_project):
     project = str(datafiles)
 
     # Get the cache key of our test element
@@ -38,7 +40,7 @@ def test_artifact_list_exact_contents(cli, datafiles, target):
 
     # Ensure we have an artifact to read
     result = cli.run(project=project, args=["build", "import-bin.bst"])
-    assert result.exit_code == 0
+    result.assert_success()
 
     if target == "element-name":
         arg = "import-bin.bst"
@@ -46,14 +48,22 @@ def test_artifact_list_exact_contents(cli, datafiles, target):
         key = cli.get_element_key(project, "import-bin.bst")
         arg = "test/import-bin/" + key
 
+    # Delete the project.conf if we're going to try this without a project
+    if not with_project:
+        os.remove(os.path.join(project, "project.conf"))
+
     # List the contents via the key
     result = cli.run(project=project, args=["artifact", "list-contents", arg])
-    assert result.exit_code == 0
 
-    expected_output_template = "{target}:\n\tusr\n\tusr/bin\n\tusr/bin/hello\n\n"
-    expected_output = expected_output_template.format(target=arg)
+    # Expect to fail if we try to list by element name and there is no project
+    if target == "element-name" and not with_project:
+        result.assert_main_error(ErrorDomain.STREAM, "project-not-loaded")
+    else:
+        result.assert_success()
 
-    assert expected_output in result.output
+        expected_output_template = "{target}:\n\tusr\n\tusr/bin\n\tusr/bin/hello\n\n"
+        expected_output = expected_output_template.format(target=arg)
+        assert expected_output in result.output
 
 
 @pytest.mark.datafiles(DATA_DIR)
