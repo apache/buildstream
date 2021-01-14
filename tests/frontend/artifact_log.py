@@ -30,7 +30,9 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project",)
 
 
 @pytest.mark.datafiles(DATA_DIR)
-def test_artifact_log(cli, datafiles):
+@pytest.mark.parametrize("target", ["artifact", "artifact-glob"])
+@pytest.mark.parametrize("with_project", [True, False], ids=["with-project", "without-project"])
+def test_artifact_log(cli, datafiles, target, with_project):
     project = str(datafiles)
 
     # Get the cache key of our test element
@@ -43,26 +45,28 @@ def test_artifact_log(cli, datafiles):
 
     # Ensure we have an artifact to read
     result = cli.run(project=project, args=["build", "target.bst"])
-    assert result.exit_code == 0
+    result.assert_success()
 
-    # Read the log via the element name
+    # Collect the log by running `bst artifact log` on the element name first
     result = cli.run(project=project, args=["artifact", "log", "target.bst"])
-    assert result.exit_code == 0
+    result.assert_success()
     log = result.output
-
-    # Assert that there actually was a log file
     assert log != ""
 
-    # Read the log via the key
-    result = cli.run(project=project, args=["artifact", "log", "test/target/" + key])
-    assert result.exit_code == 0
-    assert log == result.output
+    # Delete the project.conf if we're going to try this without a project
+    if not with_project:
+        os.remove(os.path.join(project, "project.conf"))
 
-    # Read the log via glob
-    result = cli.run(project=project, args=["artifact", "log", "test/target/*"])
-    assert result.exit_code == 0
-    # The artifact is cached under both a strong key and a weak key
-    assert log == result.output
+    args = ["artifact", "log"]
+    if target == "artifact":
+        args.append("test/target/{}".format(key))
+    elif target == "artifact-glob":
+        args.append("test/target/*")
+
+    # Run bst artifact log
+    result = cli.run(project=project, args=args)
+    result.assert_success()
+    assert result.output == log
 
 
 @pytest.mark.datafiles(DATA_DIR)
