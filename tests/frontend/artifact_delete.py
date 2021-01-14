@@ -50,7 +50,8 @@ def test_artifact_delete_element(cli, tmpdir, datafiles):
 
 # Test that we can delete an artifact by specifying its ref.
 @pytest.mark.datafiles(DATA_DIR)
-def test_artifact_delete_artifact(cli, tmpdir, datafiles):
+@pytest.mark.parametrize("with_project", [True, False], ids=["with-project", "without-project"])
+def test_artifact_delete_artifact(cli, tmpdir, datafiles, with_project):
     project = str(datafiles)
     element = "target.bst"
 
@@ -68,6 +69,10 @@ def test_artifact_delete_artifact(cli, tmpdir, datafiles):
 
     # Explicitly check that the ARTIFACT exists in the cache
     assert os.path.exists(os.path.join(local_cache, "artifacts", "refs", artifact))
+
+    # Delete the project.conf if we're going to try this without a project
+    if not with_project:
+        os.remove(os.path.join(project, "project.conf"))
 
     # Delete the artifact
     result = cli.run(project=project, args=["artifact", "delete", artifact])
