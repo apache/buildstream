@@ -36,48 +36,6 @@ env:
   CI_IMAGE_VERSION: master-241289109
 
 jobs:
-  tests:
-    runs-on: ubuntu-20.04
-    continue-on-error: ${{ matrix.allow-failure || false }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-
-        # The names here should map to a valid service defined in
-        # "../compose/ci.docker-compose.yml"
-        test-name:
-          - debian-10
-          - fedora-31
-          - fedora-32
-          - ubuntu-18.04
-          - centos-7.7.1908
-          - fedora-missing-deps
-          - no-usedevelop
-          - lint
-          - mypy
-
-        include:
-          - test-name: plugins-master
-            allow-failure: true
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v2
-        # BuildStream requires tags to be able to find its version.
-        with:
-          fetch-depth: 0
-
-      - name: Give `testuser` ownership of the source directory
-        run: sudo chown -R 1000:1000 ${GITHUB_WORKSPACE}
-
-      - name: Run tests with Docker Compose
-        run: |
-          docker-compose \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.docker-compose.yml \
-            run \
-            ${{ matrix.test-name }}
-
   docs:
     runs-on: ubuntu-20.04
     steps:
@@ -96,6 +54,13 @@ jobs:
             --file ${GITHUB_WORKSPACE}/.github/compose/ci.docker-compose.yml \
             run \
             docs
+
+          # Restore permissions to the current user
+          sudo chown -R ${USER} ${GITHUB_WORKSPACE}
+
+          # Include a tarball in the published docs, allowing for
+          # easy re-publishing of master docs on docs.buildstream.build
+          tar -C doc/build/html -zcf docs.tgz .
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
