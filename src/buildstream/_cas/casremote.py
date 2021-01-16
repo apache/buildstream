@@ -61,12 +61,12 @@ class CASRemote(BaseRemote):
         cas_endpoint.url = self.spec.url
         if self.spec.instance_name:
             cas_endpoint.instance_name = self.spec.instance_name
-        if self.server_cert:
-            cas_endpoint.server_cert = self.server_cert
-        if self.client_key:
-            cas_endpoint.client_key = self.client_key
-        if self.client_cert:
-            cas_endpoint.client_cert = self.client_cert
+        if self.spec.server_cert:
+            cas_endpoint.server_cert = self.spec.server_cert
+        if self.spec.client_key:
+            cas_endpoint.client_key = self.spec.client_key
+        if self.spec.client_cert:
+            cas_endpoint.client_cert = self.spec.client_cert
         try:
             response = local_cas.GetInstanceNameForRemotes(request)
         except grpc.RpcError as e:

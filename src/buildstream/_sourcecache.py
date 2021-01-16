@@ -177,8 +177,8 @@ class SourceCache(AssetCache):
 
         # find configured push remotes for this source
         if self._has_push_remotes:
-            index_remotes = [r for r in self._index_remotes[project] if r.push]
-            storage_remotes = [r for r in self._storage_remotes[project] if r.push]
+            index_remotes = [r for r in self._index_remotes[project] if r.spec.push]
+            storage_remotes = [r for r in self._storage_remotes[project] if r.spec.push]
 
         pushed_storage = False
         pushed_index = False

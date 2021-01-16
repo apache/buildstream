@@ -26,7 +26,8 @@ from . import utils
 from . import _yaml
 from ._cas import CASRemote
 from ._exceptions import AssetCacheError, LoadError, RemoteError
-from ._remote import BaseRemote, RemoteSpec, RemoteType
+from ._remotespec import RemoteSpec, RemoteType
+from ._remote import BaseRemote
 from ._protos.build.bazel.remote.asset.v1 import remote_asset_pb2, remote_asset_pb2_grpc
 from ._protos.google.rpc import code_pb2
 
@@ -63,8 +64,8 @@ class AssetRemote(BaseRemote):
     #
     def _check(self):
         request = remote_asset_pb2.FetchBlobRequest()
-        if self.instance_name:
-            request.instance_name = self.instance_name
+        if self.spec.instance_name:
+            request.instance_name = self.spec.instance_name
 
         try:
             self.fetch_service.FetchBlob(request)
@@ -82,8 +83,8 @@ class AssetRemote(BaseRemote):
 
         if self.spec.push:
             request = remote_asset_pb2.PushBlobRequest()
-            if self.instance_name:
-                request.instance_name = self.instance_name
+            if self.spec.instance_name:
+                request.instance_name = self.spec.instance_name
 
             try:
                 self.push_service.PushBlob(request)
@@ -120,8 +121,8 @@ class AssetRemote(BaseRemote):
     #
     def fetch_blob(self, uris, *, qualifiers=None):
         request = remote_asset_pb2.FetchBlobRequest()
-        if self.instance_name:
-            request.instance_name = self.instance_name
+        if self.spec.instance_name:
+            request.instance_name = self.spec.instance_name
         request.uris.extend(uris)
         if qualifiers:
             request.qualifiers.extend(qualifiers)
@@ -161,8 +162,8 @@ class AssetRemote(BaseRemote):
     #
     def fetch_directory(self, uris, *, qualifiers=None):
         request = remote_asset_pb2.FetchDirectoryRequest()
-        if self.instance_name:
-            request.instance_name = self.instance_name
+        if self.spec.instance_name:
+            request.instance_name = self.spec.instance_name
         request.uris.extend(uris)
         if qualifiers:
             request.qualifiers.extend(qualifiers)
@@ -202,8 +203,8 @@ class AssetRemote(BaseRemote):
     #
     def push_blob(self, uris, blob_digest, *, qualifiers=None, references_blobs=None, references_directories=None):
         request = remote_asset_pb2.PushBlobRequest()
-        if self.instance_name:
-            request.instance_name = self.instance_name
+        if self.spec.instance_name:
+            request.instance_name = self.spec.instance_name
         request.uris.extend(uris)
         request.blob_digest.CopyFrom(blob_digest)
         if qualifiers:
@@ -239,8 +240,8 @@ class AssetRemote(BaseRemote):
         self, uris, directory_digest, *, qualifiers=None, references_blobs=None, references_directories=None
     ):
         request = remote_asset_pb2.PushDirectoryRequest()
-        if self.instance_name:
-            request.instance_name = self.instance_name
+        if self.spec.instance_name:
+            request.instance_name = self.spec.instance_name
         request.uris.extend(uris)
         request.root_directory_digest.CopyFrom(directory_digest)
         if qualifiers:
@@ -332,31 +333,9 @@ class AssetCache:
                 )
 
         for spec_node in artifacts:
-            cache_specs.append(RemoteSpec.new_from_config_node(spec_node))
+            cache_specs.append(RemoteSpec.new_from_node(spec_node))
 
         return cache_specs
-
-    # _configured_remote_cache_specs():
-    #
-    # Return the list of configured remotes for a given project, in priority
-    # order. This takes into account the user and project configuration.
-    #
-    # Args:
-    #     context (Context): The BuildStream context
-    #     project (Project): The BuildStream project
-    #
-    # Returns:
-    #   A list of RemoteSpec instances describing the remote caches.
-    #
-    @classmethod
-    def _configured_remote_cache_specs(cls, context, project):
-        project_overrides = context.get_overrides(project.name)
-        project_extra_specs = cls.specs_from_config_node(project_overrides)
-
-        project_specs = getattr(project, cls.spec_name)
-        context_specs = getattr(context, cls.spec_name)
-
-        return list(utils._deduplicate(project_extra_specs + project_specs + context_specs))
 
     # setup_remotes():
     #
@@ -388,7 +367,7 @@ class AssetCache:
         # the user config in some cases (for example `bst artifact push --remote=...`).
         has_remote_caches = False
         if remote_url:
-            self._set_remotes([RemoteSpec(remote_url, push=True)])
+            self._set_remotes([RemoteSpec(RemoteType.ALL, remote_url, push=True)])
             has_remote_caches = True
         if use_config:
             for project in self.context.get_projects():
@@ -396,8 +375,13 @@ class AssetCache:
                 if caches:  # caches is a list of RemoteSpec instances
                     self._set_remotes(caches, project=project)
                     has_remote_caches = True
+
+        def remote_failed(remote, error):
+            self.context.messenger.warn("Failed to initialize remote {}: {}".format(remote.url, error))
+
         if has_remote_caches:
-            self._initialize_remotes()
+            with self.context.messenger.timed_activity("Initializing remote caches", silent_nested=True):
+                self.initialize_remotes(on_failure=remote_failed)
 
     # Notify remotes that forking is disabled
     def notify_fork_disabled(self):
@@ -492,6 +476,28 @@ class AssetCache:
     #               Local Private Methods          #
     ################################################
 
+    # _configured_remote_cache_specs():
+    #
+    # Return the list of configured remotes for a given project, in priority
+    # order. This takes into account the user and project configuration.
+    #
+    # Args:
+    #     context (Context): The BuildStream context
+    #     project (Project): The BuildStream project
+    #
+    # Returns:
+    #   A list of RemoteSpec instances describing the remote caches.
+    #
+    @classmethod
+    def _configured_remote_cache_specs(cls, context, project):
+        project_overrides = context.get_overrides(project.name)
+        project_extra_specs = cls.specs_from_config_node(project_overrides)
+
+        project_specs = getattr(project, cls.spec_name)
+        context_specs = getattr(context, cls.spec_name)
+
+        return list(utils._deduplicate(project_extra_specs + project_specs + context_specs))
+
     # _create_remote_instances():
     #
     # Create the global set of Remote instances, including
@@ -570,10 +576,10 @@ class AssetCache:
         # we create two objects here
         index = None
         storage = None
-        if remote_spec.type in [RemoteType.INDEX, RemoteType.ALL]:
+        if remote_spec.remote_type in [RemoteType.INDEX, RemoteType.ALL]:
             index = AssetRemote(remote_spec)  # pylint: disable=not-callable
             index.check()
-        if remote_spec.type in [RemoteType.STORAGE, RemoteType.ALL]:
+        if remote_spec.remote_type in [RemoteType.STORAGE, RemoteType.ALL]:
             storage = CASRemote(remote_spec, self.cas)
             storage.check()
 
@@ -594,18 +600,6 @@ class AssetCache:
             self.global_remote_specs = remote_specs
         else:
             self.project_remote_specs[project] = remote_specs
-
-    # _initialize_remotes()
-    #
-    # An internal wrapper which calls the abstract method and
-    # reports takes care of messaging
-    #
-    def _initialize_remotes(self):
-        def remote_failed(remote, error):
-            self.context.messenger.warn("Failed to initialize remote {}: {}".format(remote.url, error))
-
-        with self.context.messenger.timed_activity("Initializing remote caches", silent_nested=True):
-            self.initialize_remotes(on_failure=remote_failed)
 
     # _list_refs_mtimes()
     #

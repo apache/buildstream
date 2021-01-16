@@ -160,8 +160,8 @@ class ElementSourcesCache(AssetCache):
 
         uri = REMOTE_ASSET_SOURCE_URN_TEMPLATE.format(ref)
 
-        index_remotes = [r for r in self._index_remotes[project] if r.push]
-        storage_remotes = [r for r in self._storage_remotes[project] if r.push]
+        index_remotes = [r for r in self._index_remotes[project] if r.spec.push]
+        storage_remotes = [r for r in self._storage_remotes[project] if r.spec.push]
 
         source_proto = self.load_proto(sources)
         source_digest = self.cas.add_object(buffer=source_proto.SerializeToString())
