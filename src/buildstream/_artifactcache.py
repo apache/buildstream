@@ -123,8 +123,8 @@ class ArtifactCache(AssetCache):
         project = element._get_project()
         display_key = element._get_display_key()
 
-        index_remotes = [r for r in self._index_remotes[project] if r.push]
-        storage_remotes = [r for r in self._storage_remotes[project] if r.push]
+        index_remotes = [r for r in self._index_remotes[project] if r.spec.push]
+        storage_remotes = [r for r in self._storage_remotes[project] if r.spec.push]
 
         artifact_proto = artifact._get_proto()
         artifact_digest = self.cas.add_object(buffer=artifact_proto.SerializeToString())

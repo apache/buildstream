@@ -6,7 +6,7 @@ import os
 
 import pytest
 
-from buildstream._remote import RemoteSpec, RemoteType
+from buildstream._remotespec import RemoteSpec, RemoteType
 from buildstream._artifactcache import ArtifactCache
 from buildstream._project import Project
 from buildstream.utils import _deduplicate
@@ -19,14 +19,14 @@ from tests.testutils import dummy_context
 
 
 DATA_DIR = os.path.dirname(os.path.realpath(__file__))
-cache1 = RemoteSpec(url="https://example.com/cache1", push=True)
-cache2 = RemoteSpec(url="https://example.com/cache2", push=False)
-cache3 = RemoteSpec(url="https://example.com/cache3", push=False)
-cache4 = RemoteSpec(url="https://example.com/cache4", push=False)
-cache5 = RemoteSpec(url="https://example.com/cache5", push=False)
-cache6 = RemoteSpec(url="https://example.com/cache6", push=True, type=RemoteType.ALL)
-cache7 = RemoteSpec(url="https://index.example.com/cache1", push=True, type=RemoteType.INDEX)
-cache8 = RemoteSpec(url="https://storage.example.com/cache1", push=True, type=RemoteType.STORAGE)
+cache1 = RemoteSpec(RemoteType.ALL, url="https://example.com/cache1", push=True)
+cache2 = RemoteSpec(RemoteType.ALL, url="https://example.com/cache2", push=False)
+cache3 = RemoteSpec(RemoteType.ALL, url="https://example.com/cache3", push=False)
+cache4 = RemoteSpec(RemoteType.ALL, url="https://example.com/cache4", push=False)
+cache5 = RemoteSpec(RemoteType.ALL, url="https://example.com/cache5", push=False)
+cache6 = RemoteSpec(RemoteType.ALL, url="https://example.com/cache6", push=True)
+cache7 = RemoteSpec(RemoteType.INDEX, url="https://index.example.com/cache1", push=True)
+cache8 = RemoteSpec(RemoteType.STORAGE, url="https://storage.example.com/cache1", push=True)
 
 
 # Generate cache configuration fragments for the user config and project config files.
@@ -45,11 +45,11 @@ def configure_remote_caches(override_caches, project_caches=None, user_caches=No
         user_config["artifacts"] = {
             "url": user_caches[0].url,
             "push": user_caches[0].push,
-            "type": type_strings[user_caches[0].type],
+            "type": type_strings[user_caches[0].remote_type],
         }
     elif len(user_caches) > 1:
         user_config["artifacts"] = [
-            {"url": cache.url, "push": cache.push, "type": type_strings[cache.type]} for cache in user_caches
+            {"url": cache.url, "push": cache.push, "type": type_strings[cache.remote_type]} for cache in user_caches
         ]
 
     if len(override_caches) == 1:
@@ -58,7 +58,7 @@ def configure_remote_caches(override_caches, project_caches=None, user_caches=No
                 "artifacts": {
                     "url": override_caches[0].url,
                     "push": override_caches[0].push,
-                    "type": type_strings[override_caches[0].type],
+                    "type": type_strings[override_caches[0].remote_type],
                 }
             }
         }
@@ -66,7 +66,7 @@ def configure_remote_caches(override_caches, project_caches=None, user_caches=No
         user_config["projects"] = {
             "test": {
                 "artifacts": [
-                    {"url": cache.url, "push": cache.push, "type": type_strings[cache.type]}
+                    {"url": cache.url, "push": cache.push, "type": type_strings[cache.remote_type]}
                     for cache in override_caches
                 ]
             }
@@ -80,7 +80,7 @@ def configure_remote_caches(override_caches, project_caches=None, user_caches=No
                     "artifacts": {
                         "url": project_caches[0].url,
                         "push": project_caches[0].push,
-                        "type": type_strings[project_caches[0].type],
+                        "type": type_strings[project_caches[0].remote_type],
                     }
                 }
             )
@@ -88,7 +88,7 @@ def configure_remote_caches(override_caches, project_caches=None, user_caches=No
             project_config.update(
                 {
                     "artifacts": [
-                        {"url": cache.url, "push": cache.push, "type": type_strings[cache.type]}
+                        {"url": cache.url, "push": cache.push, "type": type_strings[cache.remote_type]}
                         for cache in project_caches
                     ]
                 }
@@ -256,7 +256,8 @@ def test_paths_for_artifact_config_are_expanded(tmpdir, monkeypatch, artifacts_c
     # Build expected artifact config
     artifacts_config = [
         RemoteSpec(
-            url=config["url"],
+            RemoteType.ALL,
+            config["url"],
             push=False,
             server_cert=os.path.expanduser(config["server-cert"]),
             client_cert=os.path.expanduser(config["client-cert"]),

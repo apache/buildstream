@@ -29,12 +29,12 @@ from ._profile import Topics, PROFILER
 from ._platform import Platform
 from ._artifactcache import ArtifactCache
 from ._elementsourcescache import ElementSourcesCache
+from ._remotespec import RemoteExecutionSpec
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASLogLevel
 from .types import _CacheBuildTrees, _PipelineSelection, _SchedulerErrorAction
 from ._workspaces import Workspaces, WorkspaceProjectCache
 from .node import Node
-from .sandbox import SandboxRemote
 
 
 # Context()
@@ -339,13 +339,13 @@ class Context:
             self.pull_artifact_files = remote_execution.get_bool("pull-artifact-files", default=True)
             # This stops it being used in the remote service set up
             remote_execution.safe_del("pull-artifact-files")
+
             # Don't pass the remote execution settings if that was the only option
-            if remote_execution.keys() == []:
-                del defaults["remote-execution"]
+            if remote_execution.keys():
+                self.remote_execution_specs = RemoteExecutionSpec.new_from_node(remote_execution)
         else:
             self.pull_artifact_files = True
-
-        self.remote_execution_specs = SandboxRemote.specs_from_config_node(defaults)
+            self.remote_execution_specs = None
 
         # Load pull build trees configuration
         self.pull_buildtrees = cache.get_bool("pull-buildtrees")
