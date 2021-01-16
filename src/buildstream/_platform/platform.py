@@ -22,7 +22,7 @@ import platform
 
 import psutil
 
-from .._exceptions import PlatformError, ImplError, SandboxError
+from .._exceptions import PlatformError, SandboxError
 from ..sandbox import SandboxDummy
 from .. import utils
 
@@ -39,11 +39,13 @@ class Platform:
         self._setup_sandbox()
 
     def _setup_sandbox(self):
+        from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun  # pylint: disable=cyclic-import
+
         # Try to setup buildbox-run sandbox, otherwise fallback to the dummy sandbox.
         try:
-            self._setup_buildboxrun_sandbox()
+            self._check_sandbox(SandboxBuildBoxRun)
         except (SandboxError, utils.ProgramNotFoundError):
-            self._setup_dummy_sandbox()
+            pass
 
     def _check_sandbox(self, Sandbox):
         Sandbox._dummy_reasons = []
@@ -159,29 +161,16 @@ class Platform:
     #     (Sandbox) A sandbox
     #
     def create_sandbox(self, *args, **kwargs):  # pylint: disable=method-hidden
-        raise ImplError("Platform {platform} does not implement create_sandbox()".format(platform=type(self).__name__))
-
-    # Buildbox run sandbox methods
-    @staticmethod
-    def _create_buildboxrun_sandbox(*args, **kwargs):
         from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun  # pylint: disable=cyclic-import
 
-        SandboxBuildBoxRun.check_sandbox_config(kwargs['config'])
-        return SandboxBuildBoxRun(*args, **kwargs)
+        if self.dummy_reasons:
+            dummy_reasons = " and ".join(self.dummy_reasons)
+        else:
+            try:
+                SandboxBuildBoxRun.check_sandbox_config(kwargs["config"])
+                return SandboxBuildBoxRun(*args, **kwargs)
+            except SandboxError as e:
+                dummy_reasons = str(e)
 
-    def _setup_buildboxrun_sandbox(self):
-        from ..sandbox._sandboxbuildboxrun import SandboxBuildBoxRun  # pylint: disable=cyclic-import
-
-        self._check_sandbox(SandboxBuildBoxRun)
-        self.create_sandbox = self._create_buildboxrun_sandbox
-        return True
-
-    # Dummy sandbox methods
-    def _create_dummy_sandbox(self, *args, **kwargs):
-        dummy_reasons = " and ".join(self.dummy_reasons)
         kwargs["dummy_reason"] = dummy_reasons
         return SandboxDummy(*args, **kwargs)
-
-    def _setup_dummy_sandbox(self):
-        self.create_sandbox = self._create_dummy_sandbox
-        return True
