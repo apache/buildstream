@@ -43,7 +43,8 @@ class SandboxRemote(SandboxREAPI):
 
         self._output_files_required = kwargs.get("output_files_required", True)
 
-        specs = kwargs["specs"]  # This should be a RemoteExecutionSpec
+        context = self._get_context()
+        specs = context.remote_execution_specs
         if specs is None:
             return
 

@@ -2772,7 +2772,7 @@ class Element(Plugin):
         else:
             output_node_properties = None
 
-        if directory is not None and allow_remote and project.remote_execution_specs:
+        if directory is not None and allow_remote and context.remote_execution_specs:
 
             self.info("Using a remote sandbox for artifact {} with directory '{}'".format(self.name, directory))
 
@@ -2786,7 +2786,6 @@ class Element(Plugin):
                 stdout=stdout,
                 stderr=stderr,
                 config=config,
-                specs=project.remote_execution_specs,
                 output_files_required=output_files_required,
                 output_node_properties=output_node_properties,
             )

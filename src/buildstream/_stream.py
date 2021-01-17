@@ -286,8 +286,8 @@ class Stream:
         # Assert that the elements are consistent
         _pipeline.assert_consistent(self._context, elements)
 
-        if all(project.remote_execution_specs for project in self._context.get_projects()):
-            # Remote execution is configured for all projects.
+        if self._context.remote_execution_specs:
+            # Remote execution is configured.
             # Require artifact files only for target elements and their runtime dependencies.
             self._context.set_artifact_files_optional()
 

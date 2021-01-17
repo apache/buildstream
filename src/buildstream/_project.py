@@ -43,7 +43,7 @@ from ._loader import Loader, LoadContext
 from .element import Element
 from ._includes import Includes
 from ._workspaces import WORKSPACE_PROJECT_FILE
-from ._remotespec import RemoteSpec, RemoteExecutionSpec
+from ._remotespec import RemoteSpec
 
 
 if TYPE_CHECKING:
@@ -141,7 +141,6 @@ class Project:
         # Remote specs for communicating with remote services
         self.artifact_cache_specs: List[RemoteSpec] = []  # Artifact caches
         self.source_cache_specs: List[RemoteSpec] = []  # Source caches
-        self.remote_execution_specs: Optional[RemoteExecutionSpec] = None  # Remote execution services
 
         self.element_factory: Optional[ElementFactory] = None  # ElementFactory for loading elements
         self.source_factory: Optional[SourceFactory] = None  # SourceFactory for loading sources
@@ -880,26 +879,6 @@ class Project:
 
         # Load source caches with pull/push config
         self.source_cache_specs = SourceCache.specs_from_config_node(config, self.directory)
-
-        # Load remote-execution configuration for this project
-        project_re_specs = None
-        project_re_node = config.get_mapping("remote-execution", default=None)
-        if project_re_node:
-            project_re_specs = RemoteExecutionSpec.new_from_node(project_re_node, self.directory)
-
-        override_re_specs = None
-        override_node = self._context.get_overrides(self.name)
-        if override_node:
-            override_re_node = override_node.get_mapping("remote-execution", default=None)
-            if override_re_node:
-                override_re_specs = RemoteExecutionSpec.new_from_node(override_re_node, self.directory)
-
-        if override_re_specs is not None:
-            self.remote_execution_specs = override_re_specs
-        elif project_re_specs is not None:
-            self.remote_execution_specs = project_re_specs
-        else:
-            self.remote_execution_specs = self._context.remote_execution_specs
 
         # Load sandbox environment variables
         self.base_environment = config.get_mapping("environment")

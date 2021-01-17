@@ -150,7 +150,7 @@ class Context:
         self.pull_buildtrees = None
 
         # Whether to pull the files of an artifact when doing remote execution
-        self.pull_artifact_files = None
+        self.pull_artifact_files = True
 
         # Whether or not to cache build trees on artifact creation
         self.cache_buildtrees = None
@@ -333,19 +333,10 @@ class Context:
         # Load source cache config
         self.source_cache_specs = SourceCache.specs_from_config_node(defaults)
 
-        # Load remote execution config getting pull-artifact-files from it
+        # Load the global remote execution config including pull-artifact-files setting
         remote_execution = defaults.get_mapping("remote-execution", default=None)
         if remote_execution:
-            self.pull_artifact_files = remote_execution.get_bool("pull-artifact-files", default=True)
-            # This stops it being used in the remote service set up
-            remote_execution.safe_del("pull-artifact-files")
-
-            # Don't pass the remote execution settings if that was the only option
-            if remote_execution.keys():
-                self.remote_execution_specs = RemoteExecutionSpec.new_from_node(remote_execution)
-        else:
-            self.pull_artifact_files = True
-            self.remote_execution_specs = None
+            self.pull_artifact_files, self.remote_execution_specs = self._load_remote_execution(remote_execution)
 
         # Load pull build trees configuration
         self.pull_buildtrees = cache.get_bool("pull-buildtrees")
@@ -448,6 +439,19 @@ class Context:
     def add_project(self, project):
         if not self._projects:
             self._workspaces = Workspaces(project, self._workspace_project_cache)
+
+            #
+            # While loading the first, toplevel project, we can adjust some
+            # global settings which can be overridden on a per toplevel project basis.
+            #
+            override_node = self.get_overrides(project.name)
+            if override_node:
+                remote_execution = override_node.get_mapping("remote-execution", default=None)
+                if remote_execution:
+                    self.pull_artifact_files, self.remote_execution_specs = self._load_remote_execution(
+                        remote_execution
+                    )
+
         self._projects.append(project)
 
     # get_projects():
@@ -563,3 +567,18 @@ class Context:
                 log_directory=self.logdir,
             )
         return self._cascache
+
+    def _load_remote_execution(self, node):
+        # The pull_artifact_files attribute is special, it is allowed to
+        # be set to False even if there is no remote execution service configured.
+        #
+        pull_artifact_files = node.get_bool("pull-artifact-files", default=True)
+        node.safe_del("pull-artifact-files")
+
+        # Don't pass the remote execution settings if that was the only option
+        if node.keys():
+            remote_execution_specs = RemoteExecutionSpec.new_from_node(node)
+        else:
+            remote_execution_specs = None
+
+        return pull_artifact_files, remote_execution_specs
