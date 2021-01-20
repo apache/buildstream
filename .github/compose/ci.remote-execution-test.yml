@@ -1,0 +1,36 @@
+version: '3.4'
+
+services:
+
+  test:
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${CI_IMAGE_VERSION:-latest}
+    command: tox -vvvvv -- --color=yes --remote-execution
+    environment:
+      TOXENV: ${CI_TOXENV_MAIN}
+      ARTIFACT_CACHE_SERVICE: http://localhost:50052
+      REMOTE_EXECUTION_SERVICE: http://localhost:50051
+      SOURCE_CACHE_SERVICE: http://localhost:50052
+
+    # Some of the remote execution tests still require running a local sandbox
+    # to run `bst shell` on some build results even though they were built
+    # remotely, so we need to enable priviledged mode for this container as well.
+    #
+    privileged: true
+    devices:
+      - /dev/fuse:/dev/fuse
+
+    # Mount the local directory and set the working directory
+    # to run the tests from.
+    #
+    volumes:
+      - ../..:/home/testuser/buildstream
+    working_dir: /home/testuser/buildstream
+
+    # The ci.remote-execution-cluster.yml takes care of bringing up
+    # a remote execution cluster, exposing the ports 50052 and 50051
+    # on the localhost network.
+    #
+    # We need to use host networking mode in order to be able to
+    # properly resolve these services.
+    #
+    network_mode: host

@@ -76,6 +76,43 @@ jobs:
             run \
             ${{ matrix.test-name }}
 
+  remote-execution:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+        # BuildStream requires tags to be able to find its version.
+        with:
+          fetch-depth: 0
+
+      - name: Give `testuser` ownership of the source directory
+        run: sudo chown -R 1000:1000 ${GITHUB_WORKSPACE}
+
+      - name: Bring up the RE cluster
+        run: |
+          docker-compose \
+            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
+            --file ${GITHUB_WORKSPACE}/.github/compose/ci.remote-execution-cluster.yml \
+            up --detach --renew-anon-volumes --remove-orphans
+
+      - name: Run the remote execution tests
+        run: |
+          docker-compose \
+            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
+            --file ${GITHUB_WORKSPACE}/.github/compose/ci.remote-execution-test.yml run test
+
+      - name: Bring down the RE cluster
+        run: |
+          docker-compose \
+            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
+            --file ${GITHUB_WORKSPACE}/.github/compose/ci.remote-execution-cluster.yml stop
+          docker-compose \
+            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
+            --file ${GITHUB_WORKSPACE}/.github/compose/ci.remote-execution-cluster.yml logs
+          docker-compose \
+            --env-file ${GITHUB_WORKSPACE}/.github/common.env \
+            --file ${GITHUB_WORKSPACE}/.github/compose/ci.remote-execution-cluster.yml down
+
   docs:
     runs-on: ubuntu-20.04
     steps:
