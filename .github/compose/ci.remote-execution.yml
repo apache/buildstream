@@ -19,8 +19,8 @@
 #        url: http://localhost:50051
 #
 # Basic usage:
-#  - docker-compose -f buildgrid-compose.yml up
-#  - docker-compose -f buildgrid-compose.yml down
+#  - docker-compose -f ci.remote-execution.yml up
+#  - docker-compose -f ci.remote-execution.yml down
 #
 version: "3.2"
 

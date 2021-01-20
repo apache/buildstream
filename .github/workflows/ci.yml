@@ -76,8 +76,21 @@ jobs:
             run \
             ${{ matrix.test-name }}
 
-  remote-execution:
+  # Matrix of tests which run against remote services which we bring up adjacently
+  service-tests:
     runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+
+        # The names here map to valid services defined in "../compose/ci.docker-compose.yml",
+        # and they also map to corresponding filenames of services which are expected
+        # to be run in the background
+        test-name:
+          - remote-execution
+          - buildstream-remote-cache
+          - buildbarn-remote-cache
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
@@ -92,26 +105,26 @@ jobs:
         run: |
           docker-compose \
             --env-file ${GITHUB_WORKSPACE}/.github/common.env \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.remote-execution-cluster.yml \
+            --file ${GITHUB_WORKSPACE}/.github/compose/ci.${{ matrix.test-name }}.yml \
             up --detach --renew-anon-volumes --remove-orphans
 
       - name: Run the remote execution tests
         run: |
           docker-compose \
             --env-file ${GITHUB_WORKSPACE}/.github/common.env \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.docker-compose.yml run remote-execution
+            --file ${GITHUB_WORKSPACE}/.github/compose/ci.docker-compose.yml run ${{ matrix.test-name }}
 
       - name: Bring down the RE cluster
         run: |
           docker-compose \
             --env-file ${GITHUB_WORKSPACE}/.github/common.env \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.remote-execution-cluster.yml stop
+            --file ${GITHUB_WORKSPACE}/.github/compose/ci.${{ matrix.test-name }}.yml stop
           docker-compose \
             --env-file ${GITHUB_WORKSPACE}/.github/common.env \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.remote-execution-cluster.yml logs
+            --file ${GITHUB_WORKSPACE}/.github/compose/ci.${{ matrix.test-name }}.yml logs
           docker-compose \
             --env-file ${GITHUB_WORKSPACE}/.github/common.env \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.remote-execution-cluster.yml down
+            --file ${GITHUB_WORKSPACE}/.github/compose/ci.${{ matrix.test-name }}.yml down
 
   docs:
     runs-on: ubuntu-20.04
