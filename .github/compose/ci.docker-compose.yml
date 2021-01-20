@@ -58,6 +58,24 @@ services:
     environment:
       BST_PLUGINS_EXPERIMENTAL_VERSION: master
 
+  remote-execution:
+    <<: *tests-template
+    command: tox -vvvvv -- --color=yes --remote-execution
+    environment:
+      TOXENV: ${CI_TOXENV_MAIN}
+      ARTIFACT_CACHE_SERVICE: http://localhost:50052
+      REMOTE_EXECUTION_SERVICE: http://localhost:50051
+      SOURCE_CACHE_SERVICE: http://localhost:50052
+
+    # The ci.remote-execution-cluster.yml takes care of bringing up
+    # a remote execution cluster, exposing the ports 50052 and 50051
+    # on the localhost network.
+    #
+    # We need to use host networking mode in order to be able to
+    # properly resolve these services.
+    #
+    network_mode: host
+
   docs:
     <<: *tests-template
     command: tox -e docs

@@ -99,7 +99,7 @@ jobs:
         run: |
           docker-compose \
             --env-file ${GITHUB_WORKSPACE}/.github/common.env \
-            --file ${GITHUB_WORKSPACE}/.github/compose/ci.remote-execution-test.yml run test
+            --file ${GITHUB_WORKSPACE}/.github/compose/ci.docker-compose.yml run remote-execution
 
       - name: Bring down the RE cluster
         run: |
