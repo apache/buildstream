@@ -1,14 +1,20 @@
 version: '3.4'
 
 x-tests-template: &tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${CI_IMAGE_VERSION:-latest}
     command: tox -vvvvv -- --color=yes --integration -n 4
+    environment:
+      TOXENV: ${CI_TOXENV_ALL}
+
+    # Enable privileges to run the sandbox
+    #
+    privileged: true
     devices:
       - /dev/fuse:/dev/fuse
-    environment:
-      BST_PLUGINS_EXPERIMENTAL_VERSION: 1.93.4
-      TOXENV: py36,py37,py38-nocover,py36-plugins,py37-plugins,py38-plugins-nocover
-    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:32-${CI_IMAGE_VERSION:-latest}
-    privileged: true
+
+    # Mount the local directory and set the working directory
+    # to run the tests from.
+    #
     volumes:
       - ../..:/home/testuser/buildstream
     working_dir: /home/testuser/buildstream
