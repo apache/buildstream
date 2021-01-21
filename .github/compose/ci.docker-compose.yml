@@ -29,6 +29,10 @@ services:
   fedora-32:
     <<: *tests-template
 
+  fedora-33:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:33-${CI_IMAGE_VERSION:-latest}
+
   debian-10:
     <<: *tests-template
     image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-debian:10-${CI_IMAGE_VERSION:-latest}
