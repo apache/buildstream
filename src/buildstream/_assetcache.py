@@ -365,11 +365,18 @@ class AssetCache:
     # Args:
     #    use_config (bool): Whether to use project configuration
     #    remote_url (str): Remote cache URL
+    #    reinitialize (bool): Whether to re-initialize the remotes a second time
     #
     # This requires that all of the projects which are to be processed in the session
     # have already been loaded and are observable in the Context.
     #
-    def setup_remotes(self, *, use_config=False, remote_url=None):
+    def setup_remotes(self, *, use_config=False, remote_url=None, reinitialize=False):
+
+        # In some edge cases we need to reinitialize
+        if reinitialize:
+            self._storage_remotes = {}
+            self._index_remotes = {}
+            self._remotes_setup = False
 
         # Ensure we do not double-initialise since this can be expensive
         if self._remotes_setup:

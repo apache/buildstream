@@ -315,6 +315,9 @@ class Element(Plugin):
 
         self.__resolved_initial_state = False  # Whether the initial state of the Element has been resolved
 
+        self.__environment: Dict[str, str] = {}
+        self.__variables: Optional[Variables] = None
+
         if artifact:
             self.__initialize_from_artifact(artifact)
         else:
@@ -815,8 +818,8 @@ class Element(Plugin):
            The resolved value for *varname*, or None if no
            variable was declared with the given name.
         """
-        # Flat is not recognized correctly by Pylint as being a dictionary
-        return self.__variables.get(varname)  # pylint: disable=no-member
+        assert self.__variables
+        return self.__variables.get(varname)
 
     def batch_prepare_assemble(self, flags: int, *, collect: Optional[str] = None) -> None:
         """ Configure command batching across prepare() and assemble()
@@ -2418,6 +2421,28 @@ class Element(Plugin):
         assert self.__artifact, "{}: has no Artifact object".format(self.name)
         return self.__artifact
 
+    # _mimic_artifact()
+    #
+    # Assume the state dictated by the currently set artifact.
+    #
+    # This is used both when initializing an Element's state
+    # from a loaded artifact, or after pulling the artifact from
+    # a remote.
+    #
+    def _mimic_artifact(self):
+        artifact = self._get_artifact()
+
+        # Load bits which have been stored on the artifact
+        #
+        if artifact.cached():
+            self.__environment = artifact.load_environment()
+            self.__sandbox_config = artifact.load_sandbox_config()
+            self.__variables = artifact.load_variables()
+
+        self.__cache_key = artifact.strong_key
+        self.__strict_cache_key = artifact.strict_key
+        self.__weak_cache_key = artifact.weak_key
+
     # _add_build_dependency()
     #
     # Add a build dependency to the Element
@@ -2858,17 +2883,7 @@ class Element(Plugin):
     #
     def __initialize_from_artifact(self, artifact: Artifact):
         self.__artifact = artifact
-
-        # Load bits which have been stored on the artifact
-        #
-        if artifact.cached():
-            self.__environment = artifact.load_environment()
-            self.__sandbox_config = artifact.load_sandbox_config()
-            self.__variables = artifact.load_variables()
-
-        self.__cache_key = artifact.strong_key
-        self.__strict_cache_key = artifact.strict_key
-        self.__weak_cache_key = artifact.weak_key
+        self._mimic_artifact()
 
     @classmethod
     def __compose_default_splits(cls, project, defaults, first_pass):
