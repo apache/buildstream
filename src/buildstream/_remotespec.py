@@ -17,7 +17,7 @@
 #
 
 import os
-from typing import Optional, cast
+from typing import Optional, Tuple, List, cast
 from urllib.parse import urlparse
 import grpc
 from grpc import ChannelCredentials, Channel
@@ -212,12 +212,14 @@ class RemoteSpec:
     def new_from_node(
         cls, spec_node: MappingNode, basedir: Optional[str] = None, *, remote_execution: bool = False
     ) -> "RemoteSpec":
-        valid_keys = ["url", "server-cert", "client-key", "client-cert", "instance-name"]
+        server_cert: Optional[str] = None
+        client_key: Optional[str] = None
+        client_cert: Optional[str] = None
+        push: bool = False
+        remote_type: str = RemoteType.ENDPOINT
 
-        if remote_execution:
-            remote_type = RemoteType.ENDPOINT
-            push = False
-        else:
+        valid_keys: List[str] = ["url", "instance-name", "auth"]
+        if not remote_execution:
             remote_type = cast(str, spec_node.get_enum("type", RemoteType, default=RemoteType.ALL))
             push = spec_node.get_bool("push", default=False)
             valid_keys += ["push", "type"]
@@ -235,30 +237,9 @@ class RemoteSpec:
 
         instance_name = spec_node.get_str("instance-name", default=None)
 
-        def parse_cert(key):
-            cert = spec_node.get_str(key, default=None)
-            if cert:
-                cert = os.path.expanduser(cert)
-
-                if basedir:
-                    cert = os.path.join(basedir, cert)
-
-            return cert
-
-        cert_keys = ("server-cert", "client-key", "client-cert")
-        server_cert, client_key, client_cert = tuple(parse_cert(key) for key in cert_keys)
-
-        if client_key and not client_cert:
-            provenance = spec_node.get_node("client-key").get_provenance()
-            raise LoadError(
-                "{}: 'client-key' was specified without 'client-cert'".format(provenance), LoadErrorReason.INVALID_DATA
-            )
-
-        if client_cert and not client_key:
-            provenance = spec_node.get_node("client-cert").get_provenance()
-            raise LoadError(
-                "{}: 'client-cert' was specified without 'client-key'".format(provenance), LoadErrorReason.INVALID_DATA
-            )
+        auth_node = spec_node.get_mapping("auth", None)
+        if auth_node:
+            server_cert, client_key, client_cert = cls._parse_auth(auth_node, basedir)
 
         return cls(
             remote_type,
@@ -270,6 +251,53 @@ class RemoteSpec:
             instance_name=instance_name,
             spec_node=spec_node,
         )
+
+    # _parse_auth():
+    #
+    # Parse the "auth" data
+    #
+    # Args:
+    #    auth_node: The auth node
+    #    basedir: The base directory which cert files are relative to, or None
+    #
+    # Returns:
+    #    A 3 tuple containing the filenames for the server-cert,
+    #    the client-key and the client-cert
+    #
+    @classmethod
+    def _parse_auth(
+        cls, auth_node: MappingNode, basedir: Optional[str] = None
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+
+        auth_keys = ["server-cert", "client-key", "client-cert"]
+        auth_values = {}
+        auth_node.validate_keys(auth_keys)
+
+        for key in auth_keys:
+            value = auth_node.get_str(key, None)
+            if value:
+                value = os.path.expanduser(value)
+                if basedir:
+                    value = os.path.join(basedir, value)
+            auth_values[key] = value
+
+        server_cert = auth_values["server-cert"]
+        client_key = auth_values["client-key"]
+        client_cert = auth_values["client-cert"]
+
+        if client_key and not client_cert:
+            provenance = auth_node.get_node("client-key").get_provenance()
+            raise LoadError(
+                "{}: 'client-key' was specified without 'client-cert'".format(provenance), LoadErrorReason.INVALID_DATA
+            )
+
+        if client_cert and not client_key:
+            provenance = auth_node.get_node("client-cert").get_provenance()
+            raise LoadError(
+                "{}: 'client-cert' was specified without 'client-key'".format(provenance), LoadErrorReason.INVALID_DATA
+            )
+
+        return server_cert, client_key, client_cert
 
     # _load_credential_files():
     #

@@ -148,7 +148,7 @@ def test_missing_certs(cli, datafiles, config_key, config_value):
     project_conf = {
         "name": "test",
         "min-version": "2.0",
-        "artifacts": {"url": "https://cache.example.com:12345", "push": "true", config_key: config_value},
+        "artifacts": {"url": "https://cache.example.com:12345", "push": "true", "auth": {config_key: config_value}},
     }
     project_conf_file = os.path.join(project, "project.conf")
     _yaml.roundtrip_dump(project_conf, project_conf_file)
@@ -201,22 +201,20 @@ def test_only_one(cli, datafiles, override_caches, project_caches, user_caches):
     (
         {
             "url": "http://localhost.test",
-            "server-cert": "~/server.crt",
-            "client-cert": "~/client.crt",
-            "client-key": "~/client.key",
+            "auth": {"server-cert": "~/server.crt", "client-cert": "~/client.crt", "client-key": "~/client.key",},
         },
         [
             {
                 "url": "http://localhost.test",
-                "server-cert": "~/server.crt",
-                "client-cert": "~/client.crt",
-                "client-key": "~/client.key",
+                "auth": {"server-cert": "~/server.crt", "client-cert": "~/client.crt", "client-key": "~/client.key",},
             },
             {
                 "url": "http://localhost2.test",
-                "server-cert": "~/server2.crt",
-                "client-cert": "~/client2.crt",
-                "client-key": "~/client2.key",
+                "auth": {
+                    "server-cert": "~/server2.crt",
+                    "client-cert": "~/client2.crt",
+                    "client-key": "~/client2.key",
+                },
             },
         ],
     ),
@@ -259,9 +257,9 @@ def test_paths_for_artifact_config_are_expanded(tmpdir, monkeypatch, artifacts_c
             RemoteType.ALL,
             config["url"],
             push=False,
-            server_cert=os.path.expanduser(config["server-cert"]),
-            client_cert=os.path.expanduser(config["client-cert"]),
-            client_key=os.path.expanduser(config["client-key"]),
+            server_cert=os.path.expanduser(config["auth"]["server-cert"]),
+            client_cert=os.path.expanduser(config["auth"]["client-cert"]),
+            client_key=os.path.expanduser(config["auth"]["client-key"]),
         )
         for config in artifacts_config
     ]
