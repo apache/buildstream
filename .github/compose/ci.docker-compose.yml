@@ -22,12 +22,12 @@ x-tests-template: &tests-template
 
 services:
 
-  fedora-31:
-    <<: *tests-template
-    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:31-${CI_IMAGE_VERSION:-latest}
-
   fedora-32:
     <<: *tests-template
+
+  fedora-33:
+    <<: *tests-template
+    image: registry.gitlab.com/buildstream/buildstream-docker-images/testsuite-fedora:33-${CI_IMAGE_VERSION:-latest}
 
   debian-10:
     <<: *tests-template
