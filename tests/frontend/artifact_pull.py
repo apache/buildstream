@@ -32,12 +32,17 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "project")
     ],
     ids=["none", "build", "run", "all"],
 )
-def test_pull(cli, tmpdir, datafiles, deps, expect_cached):
+@pytest.mark.parametrize("with_project", [True, False], ids=["with-project", "without-project"])
+def test_pull(cli, tmpdir, datafiles, deps, expect_cached, with_project):
     project = str(datafiles)
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-        # Build the element to push it to cache
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+
+        # Build the element to push it to cache, and explicitly configure local cache so we can check it
+        local_cache = os.path.join(str(tmpdir), "cache")
+        cli.configure(
+            {"cachedir": local_cache, "artifacts": {"url": share.repo, "push": True},}
+        )
 
         # Build it
         result = cli.run(project=project, args=["build", "target.bst"])
@@ -50,10 +55,19 @@ def test_pull(cli, tmpdir, datafiles, deps, expect_cached):
         # Obtain the artifact name for pulling purposes
         artifact_name = cli.get_artifact_name(project, "test", "target.bst")
 
+        # Translate the expected element names into artifact names
+        expect_cached_artifacts = [
+            cli.get_artifact_name(project, "test", element_name) for element_name in expect_cached
+        ]
+
         # Discard the local cache
         shutil.rmtree(str(os.path.join(str(tmpdir), "cache", "cas")))
         shutil.rmtree(str(os.path.join(str(tmpdir), "cache", "artifacts")))
         assert cli.get_element_state(project, "target.bst") != "cached"
+
+        # Delete the project.conf if we're going to try this without a project
+        if not with_project:
+            os.remove(os.path.join(project, "project.conf"))
 
         # Now run our pull test
         result = cli.run(project=project, args=["artifact", "pull", "--deps", deps, artifact_name])
@@ -64,6 +78,8 @@ def test_pull(cli, tmpdir, datafiles, deps, expect_cached):
             result.assert_success()
 
         # After pulling, assert that we have the expected elements cached again.
-        states = cli.get_element_states(project, ["target.bst"])
-        for expect in expect_cached:
-            assert states[expect] == "cached"
+        #
+        # Note that we do not use cli.get_element_states() here because the project.conf
+        # might not be present, so we poke at the cache directly for this assertion.
+        for expect in expect_cached_artifacts:
+            assert os.path.exists(os.path.join(local_cache, "artifacts", "refs", expect))

@@ -284,22 +284,23 @@ class App:
                     cli_options=self._main_options["option"],
                     default_mirror=self._main_options.get("default_mirror"),
                 )
-
-                self.stream.set_project(self.project)
             except LoadError as e:
 
-                # Help users that are new to BuildStream by suggesting 'init'.
-                # We don't want to slow down users that just made a mistake, so
-                # don't stop them with an offer to create a project for them.
-                if e.reason == LoadErrorReason.MISSING_PROJECT_CONF:
-                    click.echo("No project found. You can create a new project like so:", err=True)
-                    click.echo("", err=True)
-                    click.echo("    bst init", err=True)
-
-                self._error_exit(e, "Error loading project")
+                # If there was no project.conf at all then there was just no project found.
+                #
+                # Don't error out in this case, as Stream() supports some operations which
+                # do not require a project. If Stream() requires a project and it is missing,
+                # then it will raise an error.
+                #
+                if e.reason != LoadErrorReason.MISSING_PROJECT_CONF:
+                    self._error_exit(e, "Error loading project")
 
             except BstError as e:
                 self._error_exit(e, "Error loading project")
+
+            # Set the project on the Stream, this can be None if there is no project.
+            #
+            self.stream.set_project(self.project)
 
             # Run the body of the session here, once everything is loaded
             try:

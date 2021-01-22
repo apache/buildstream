@@ -444,7 +444,7 @@ class LogLine(Widget):
     # and so on.
     #
     # Args:
-    #    toplevel_project (Project): The toplevel project we were invoked from
+    #    toplevel_project (Project): The toplevel project we were invoked from, or None
     #    stream (Stream): The stream
     #    log_file (file): An optional file handle for additional logging
     #
@@ -460,7 +460,8 @@ class LogLine(Widget):
         text += self.content_profile.fmt("BuildStream Version {}\n".format(bst_version), bold=True)
         values = OrderedDict()
         values["Session Start"] = starttime.strftime("%A, %d-%m-%Y at %H:%M:%S")
-        values["Project"] = "{} ({})".format(toplevel_project.name, toplevel_project.directory)
+        if toplevel_project:
+            values["Project"] = "{} ({})".format(toplevel_project.name, toplevel_project.directory)
         values["Targets"] = ", ".join([t.name for t in stream.targets])
         text += self._format_values(values)
 
@@ -483,7 +484,12 @@ class LogLine(Widget):
 
         # Print information about each loaded project
         #
-        for project_info in toplevel_project.loaded_projects():
+        if toplevel_project:
+            loaded_projects = toplevel_project.loaded_projects()
+        else:
+            loaded_projects = []
+
+        for project_info in loaded_projects:
             project = project_info.project
 
             # Project title line

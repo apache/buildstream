@@ -88,7 +88,8 @@ def test_artifact_show_element_missing_deps(cli, tmpdir, datafiles):
 
 # Test artifact show with artifact ref
 @pytest.mark.datafiles(DATA_DIR)
-def test_artifact_show_artifact_ref(cli, tmpdir, datafiles):
+@pytest.mark.parametrize("with_project", [True, False], ids=["with-project", "without-project"])
+def test_artifact_show_artifact_name(cli, tmpdir, datafiles, with_project):
     project = str(datafiles)
     element = "target.bst"
 
@@ -97,6 +98,10 @@ def test_artifact_show_artifact_ref(cli, tmpdir, datafiles):
 
     cache_key = cli.get_element_key(project, element)
     artifact_ref = "test/target/" + cache_key
+
+    # Delete the project.conf if we're going to try this without a project
+    if not with_project:
+        os.remove(os.path.join(project, "project.conf"))
 
     result = cli.run(project=project, args=["artifact", "show", artifact_ref])
     result.assert_success()

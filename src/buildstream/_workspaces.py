@@ -313,9 +313,15 @@ class Workspace:
 class Workspaces:
     def __init__(self, toplevel_project, workspace_project_cache):
         self._toplevel_project = toplevel_project
-        self._bst_directory = os.path.join(toplevel_project.directory, ".bst")
-        self._workspaces = self._load_config()
         self._workspace_project_cache = workspace_project_cache
+
+        # A project without a directory can happen
+        if toplevel_project.directory:
+            self._bst_directory = os.path.join(toplevel_project.directory, ".bst")
+            self._workspaces = self._load_config()
+        else:
+            self._bst_directory = None
+            self._workspaces = {}
 
     # list()
     #
