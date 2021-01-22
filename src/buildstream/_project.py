@@ -867,16 +867,6 @@ class Project:
         # Load artifacts pull/push configuration for this project
         self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config, self.directory)
 
-        # If there is a junction Element which specifies that we want to remotely cache
-        # its elements, append the junction's remotes to the artifact cache specs list
-        if self.junction:
-            parent = self.junction._get_project()
-            if self.junction.ignore_junction_remotes:
-                self.artifact_cache_specs = []
-
-            if self.junction.cache_junction_elements:
-                self.artifact_cache_specs = parent.artifact_cache_specs + self.artifact_cache_specs
-
         # Load source caches with pull/push config
         self.source_cache_specs = SourceCache.specs_from_config_node(config, self.directory)
 
