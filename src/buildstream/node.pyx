@@ -1255,7 +1255,16 @@ cdef class SequenceNode(Node):
         Returns:
             :class:`list`: the content of the sequence as a list of strings
         """
-        return [node.as_str() for node in self.value]
+        cdef list str_list = []
+        cdef Node node
+        for node in self.value:
+            if type(node) is not ScalarNode:
+                provenance = node.get_provenance()
+                raise LoadError("{}: List item is not of the expected type 'scalar'"
+                                .format(provenance), LoadErrorReason.INVALID_DATA)
+            str_list.append(node.as_str())
+
+        return str_list
 
     cpdef MappingNode mapping_at(self, int index):
         """mapping_at(index)
