@@ -796,7 +796,9 @@ cdef class MappingNode(Node):
             :class:`list`: the value at `key` or the default
         """
         cdef SequenceNode sequence = self.get_sequence(key, default)
-        return sequence.as_str_list()
+        if sequence is not None:
+            return sequence.as_str_list()
+        return None
 
     cpdef object items(self):
         """Get a new view of the mapping items ((key, value) pairs).
