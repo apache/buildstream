@@ -41,7 +41,7 @@ def test_pull(cli, tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "artifacts": {"url": share.repo, "push": True,},
+            "artifacts": [{"url": share.repo, "push": True,}],
             "cachedir": cache_dir,
         }
 
@@ -86,8 +86,8 @@ def test_pull(cli, tmpdir, datafiles):
             # Create a local artifact cache handle
             artifactcache = context.artifactcache
 
-            # Manually setup the CAS remote
-            artifactcache.setup_remotes(use_config=True)
+            # Initialize remotes
+            context.initialize_remotes(True, True, None, None)
 
             assert artifactcache.has_push_remotes(plugin=element), "No remote configured for element target.bst"
             assert artifactcache.pull(element, element_key), "Pull operation failed"
@@ -106,7 +106,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "artifacts": {"url": share.repo, "push": True,},
+            "artifacts": [{"url": share.repo, "push": True,}],
             "cachedir": rootcache_dir,
         }
 
@@ -138,9 +138,10 @@ def test_pull_tree(cli, tmpdir, datafiles):
             # Retrieve the Directory object from the cached artifact
             artifact_digest = cli.artifact.get_digest(rootcache_dir, element, element_key)
 
+            # Initialize remotes
+            context.initialize_remotes(True, True, None, None)
+
             artifactcache = context.artifactcache
-            # Manually setup the CAS remote
-            artifactcache.setup_remotes(use_config=True)
             assert artifactcache.has_push_remotes()
 
             directory = remote_execution_pb2.Directory()
@@ -161,7 +162,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
             cli.remove_artifact_from_cache(project_dir, "target.bst")
 
             # Assert that we are not cached locally anymore
-            artifactcache.close_grpc_channels()
+            artifactcache.release_resources()
             cas._casd_channel.request_shutdown()
             cas.close_grpc_channels()
             assert cli.get_element_state(project_dir, "target.bst") != "cached"

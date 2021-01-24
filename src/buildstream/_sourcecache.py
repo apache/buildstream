@@ -36,10 +36,6 @@ REMOTE_ASSET_SOURCE_URN_TEMPLATE = "urn:fdc:buildstream.build:2020:source:{}"
 #    context (Context): The Buildstream context
 #
 class SourceCache(AssetCache):
-
-    spec_name = "source_cache_specs"
-    config_node_name = "source-caches"
-
     def __init__(self, context):
         super().__init__(context)
 
@@ -117,8 +113,7 @@ class SourceCache(AssetCache):
         project = source._get_project()
         display_key = source._get_brief_display_key()
 
-        index_remotes = self._index_remotes[project]
-        storage_remotes = self._storage_remotes[project]
+        index_remotes, storage_remotes = self.get_remotes(project.name, False)
 
         # First fetch the source directory digest so we know what to pull
         source_digest = None
@@ -172,13 +167,7 @@ class SourceCache(AssetCache):
         ref = source._get_source_name()
         project = source._get_project()
 
-        index_remotes = []
-        storage_remotes = []
-
-        # find configured push remotes for this source
-        if self._has_push_remotes:
-            index_remotes = [r for r in self._index_remotes[project] if r.spec.push]
-            storage_remotes = [r for r in self._storage_remotes[project] if r.spec.push]
+        index_remotes, storage_remotes = self.get_remotes(project.name, True)
 
         pushed_storage = False
         pushed_index = False

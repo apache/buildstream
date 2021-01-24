@@ -359,7 +359,7 @@ def test_integration_partial_artifact(cli, datafiles, tmpdir, integration_cache)
 
     # push to an artifact server so we can pull from it later.
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": [{"url": share.repo, "push": True}]})
         result = cli.run(project=project, args=["build", element_name])
         result.assert_success()
 

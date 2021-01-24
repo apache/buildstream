@@ -47,6 +47,7 @@ from ._scheduler import (
 from .element import Element
 from ._profile import Topics, PROFILER
 from ._project import ProjectRefStorage
+from ._remotespec import RemoteType, RemoteSpec
 from ._state import State
 from .types import _KeyStrength, _PipelineSelection, _Scope
 from .plugin import Plugin
@@ -137,7 +138,7 @@ class Stream:
     #    targets (list of str): Targets to pull
     #    selection (_PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from fetching
-    #    use_artifact_config (bool): If artifact remote configs should be loaded
+    #    connect_artifact_cache (bool): Whether to try to contact remote artifact caches
     #    load_artifacts (bool): Whether to load artifacts with artifact names
     #
     # Returns:
@@ -148,7 +149,7 @@ class Stream:
         *,
         selection=_PipelineSelection.NONE,
         except_targets=(),
-        use_artifact_config=False,
+        connect_artifact_cache=False,
         load_artifacts=False,
     ):
         with PROFILER.profile(Topics.LOAD_SELECTION, "_".join(t.replace(os.sep, "-") for t in targets)):
@@ -156,7 +157,7 @@ class Stream:
                 targets,
                 selection=selection,
                 except_targets=except_targets,
-                use_artifact_config=use_artifact_config,
+                connect_artifact_cache=connect_artifact_cache,
                 load_artifacts=load_artifacts,
             )
 
@@ -200,7 +201,7 @@ class Stream:
         else:
             selection = _PipelineSelection.BUILD if scope == _Scope.BUILD else _PipelineSelection.RUN
 
-            elements = self.load_selection((element,), selection=selection, use_artifact_config=True)
+            elements = self.load_selection((element,), selection=selection, connect_artifact_cache=True)
 
             # Get element to stage from `targets` list.
             # If scope is BUILD, it will not be in the `elements` list.
@@ -269,17 +270,13 @@ class Stream:
     #
     def build(self, targets, *, selection=_PipelineSelection.PLAN, ignore_junction_targets=False, remote=None):
 
-        use_config = True
-        if remote:
-            use_config = False
-
         elements = self._load(
             targets,
             selection=selection,
             ignore_junction_targets=ignore_junction_targets,
-            use_artifact_config=use_config,
+            connect_artifact_cache=True,
             artifact_remote_url=remote,
-            use_source_config=True,
+            connect_source_cache=True,
             dynamic_plan=True,
         )
 
@@ -330,15 +327,11 @@ class Stream:
     #
     def fetch(self, targets, *, selection=_PipelineSelection.PLAN, except_targets=None, remote=None):
 
-        use_source_config = True
-        if remote:
-            use_source_config = False
-
         elements = self._load(
             targets,
             selection=selection,
             except_targets=except_targets,
-            use_source_config=use_source_config,
+            connect_source_cache=True,
             source_remote_url=remote,
         )
 
@@ -394,16 +387,8 @@ class Stream:
     #
     def source_push(self, targets, *, selection=_PipelineSelection.NONE, remote=None):
 
-        use_source_config = True
-        if remote:
-            use_source_config = False
-
         elements = self._load(
-            targets,
-            selection=selection,
-            use_source_config=use_source_config,
-            source_remote_url=remote,
-            load_artifacts=True,
+            targets, selection=selection, connect_source_cache=True, source_remote_url=remote, load_artifacts=True,
         )
 
         if not self._sourcecache.has_push_remotes():
@@ -433,15 +418,11 @@ class Stream:
     #
     def pull(self, targets, *, selection=_PipelineSelection.NONE, ignore_junction_targets=False, remote=None):
 
-        use_config = True
-        if remote:
-            use_config = False
-
         elements = self._load(
             targets,
             selection=selection,
             ignore_junction_targets=ignore_junction_targets,
-            use_artifact_config=use_config,
+            connect_artifact_cache=True,
             artifact_remote_url=remote,
             load_artifacts=True,
             attempt_artifact_metadata=True,
@@ -475,15 +456,11 @@ class Stream:
     #
     def push(self, targets, *, selection=_PipelineSelection.NONE, ignore_junction_targets=False, remote=None):
 
-        use_config = True
-        if remote:
-            use_config = False
-
         elements = self._load(
             targets,
             selection=selection,
             ignore_junction_targets=ignore_junction_targets,
-            use_artifact_config=use_config,
+            connect_artifact_cache=True,
             artifact_remote_url=remote,
             load_artifacts=True,
         )
@@ -536,7 +513,7 @@ class Stream:
         elements = self._load(
             (target,),
             selection=selection,
-            use_artifact_config=True,
+            connect_artifact_cache=True,
             load_artifacts=True,
             attempt_artifact_metadata=True,
         )
@@ -624,7 +601,7 @@ class Stream:
     def artifact_show(self, targets, *, selection=_PipelineSelection.NONE):
         # Obtain list of Element and/or ArtifactElement objects
         target_objects = self.load_selection(
-            targets, selection=selection, use_artifact_config=True, load_artifacts=True
+            targets, selection=selection, connect_artifact_cache=True, load_artifacts=True
         )
 
         if self._artifacts.has_fetch_remotes():
@@ -1255,38 +1232,6 @@ class Stream:
 
         return elements, except_elements, artifacts
 
-    # _connect_remotes()
-    #
-    # Connect to the source and artifact remotes.
-    #
-    # Args:
-    #     artifact_url: The url of the artifact server to connect to.
-    #     source_url: The url of the source server to connect to.
-    #     use_artifact_config: Whether to use the artifact config.
-    #     use_source_config: Whether to use the source config.
-    #     reinitialize: Whether to reinitialize from scratch
-    #
-    def _connect_remotes(
-        self,
-        artifact_url: str,
-        source_url: str,
-        use_artifact_config: bool,
-        use_source_config: bool,
-        reinitialize: bool = False,
-    ):
-        # ArtifactCache.setup_remotes expects all projects to be fully loaded
-        for project in self._context.get_projects():
-            project.ensure_fully_loaded()
-
-        # Connect to remote caches, this needs to be done before resolving element state
-        self._artifacts.setup_remotes(
-            use_config=use_artifact_config, remote_url=artifact_url, reinitialize=reinitialize
-        )
-        self._elementsourcescache.setup_remotes(
-            use_config=use_source_config, remote_url=source_url, reinitialize=reinitialize
-        )
-        self._sourcecache.setup_remotes(use_config=use_source_config, remote_url=source_url, reinitialize=reinitialize)
-
     # _resolve_cached_remotely()
     #
     # Checks whether the listed elements are currently cached in
@@ -1411,8 +1356,8 @@ class Stream:
     #    selection (_PipelineSelection): The selection mode for the specified targets
     #    except_targets (list of str): Specified targets to except from fetching
     #    ignore_junction_targets (bool): Whether junction targets should be filtered out
-    #    use_artifact_config (bool): Whether to initialize artifacts with the config
-    #    use_source_config (bool): Whether to initialize remote source caches with the config
+    #    connect_artifact_cache (bool): Whether to try to contact remote artifact caches
+    #    connect_source_cache (bool): Whether to try to contact remote source caches
     #    artifact_remote_url (str): A remote url for initializing the artifacts
     #    source_remote_url (str): A remote url for initializing source caches
     #    dynamic_plan (bool): Require artifacts as needed during the build
@@ -1430,8 +1375,8 @@ class Stream:
         selection=_PipelineSelection.NONE,
         except_targets=(),
         ignore_junction_targets=False,
-        use_artifact_config=False,
-        use_source_config=False,
+        connect_artifact_cache=False,
+        connect_source_cache=False,
         artifact_remote_url=None,
         source_remote_url=None,
         dynamic_plan=False,
@@ -1455,8 +1400,20 @@ class Stream:
         # Hold on to the targets
         self.targets = elements
 
+        # FIXME: Instead of converting the URL to a RemoteSpec here, the CLI needs to
+        #        be enhanced to parse a fully qualified RemoteSpec (including certs etc)
+        #        from the command line, the CLI should be feeding the RemoteSpec through
+        #        the Stream API directly.
+        #
+        artifact_remote = None
+        if artifact_remote_url:
+            artifact_remote = RemoteSpec(RemoteType.ALL, artifact_remote_url, push=True)
+        source_remote = None
+        if source_remote_url:
+            source_remote = RemoteSpec(RemoteType.ALL, source_remote_url, push=True)
+
         # Connect to remote caches, this needs to be done before resolving element state
-        self._connect_remotes(artifact_remote_url, source_remote_url, use_artifact_config, use_source_config)
+        self._context.initialize_remotes(connect_artifact_cache, connect_source_cache, artifact_remote, source_remote)
 
         # In some cases we need to have an actualized artifact, with all of
         # it's metadata, such that we can derive attributes about the artifact
@@ -1482,14 +1439,12 @@ class Stream:
                 artifact_targets, [], rewritable=False, valid_artifact_names=True
             )
 
-            # FIXME:
+            # It can be that new remotes have been added by way of loading new
+            # projects referenced by the new artifact elements, so we need to
+            # ensure those remotes are also initialized.
             #
-            #    Sadly, we need to reinitialize just because we re-instantiated new projects due to
-            #    downloading artifacts - this could be fixed by addressing the awkward structure
-            #    of remotes in the asset caches.
-            #
-            self._connect_remotes(
-                artifact_remote_url, source_remote_url, use_artifact_config, use_source_config, reinitialize=True
+            self._context.initialize_remotes(
+                connect_artifact_cache, connect_source_cache, artifact_remote, source_remote
             )
 
         self.targets += artifacts

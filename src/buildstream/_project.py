@@ -33,9 +33,7 @@ from ._profile import Topics, PROFILER
 from ._exceptions import LoadError
 from .exceptions import LoadErrorReason
 from ._options import OptionPool
-from ._artifactcache import ArtifactCache
-from ._sourcecache import SourceCache
-from .node import ScalarNode, SequenceNode, _assert_symbol_name
+from .node import ScalarNode, SequenceNode, MappingNode, ProvenanceInformation, _assert_symbol_name
 from ._pluginfactory import ElementFactory, SourceFactory, load_plugin_origin
 from .types import CoreWarnings
 from ._projectrefs import ProjectRefs, ProjectRefStorage
@@ -47,7 +45,6 @@ from ._remotespec import RemoteSpec
 
 
 if TYPE_CHECKING:
-    from .node import ProvenanceInformation, MappingNode
     from ._context import Context
 
 
@@ -113,7 +110,7 @@ class Project:
         cli_options: Optional[Dict[str, str]] = None,
         default_mirror: Optional[str] = None,
         parent_loader: Optional[Loader] = None,
-        provenance_node: Optional["ProvenanceInformation"] = None,
+        provenance_node: Optional[ProvenanceInformation] = None,
         search_for_project: bool = True,
         load_project: bool = True,
     ):
@@ -135,7 +132,7 @@ class Project:
         self.config: ProjectConfig = ProjectConfig()
         self.first_pass_config: ProjectConfig = ProjectConfig()
 
-        self.base_environment: Union["MappingNode", Dict[str, str]] = {}  # The base set of environment variables
+        self.base_environment: Union[MappingNode, Dict[str, str]] = {}  # The base set of environment variables
         self.base_env_nocache: List[str] = []  # The base nocache mask (list) for the environment
 
         # Remote specs for communicating with remote services
@@ -145,8 +142,8 @@ class Project:
         self.element_factory: Optional[ElementFactory] = None  # ElementFactory for loading elements
         self.source_factory: Optional[SourceFactory] = None  # SourceFactory for loading sources
 
-        self.sandbox: Optional["MappingNode"] = None
-        self.splits: Optional["MappingNode"] = None
+        self.sandbox: Optional[MappingNode] = None
+        self.splits: Optional[MappingNode] = None
 
         #
         # Private members
@@ -864,11 +861,17 @@ class Project:
         # the values from our loaded configuration dictionary.
         #
 
-        # Load artifacts pull/push configuration for this project
-        self.artifact_cache_specs = ArtifactCache.specs_from_config_node(config, self.directory)
+        # Load artifact remote specs
+        caches = config.get_sequence("artifacts", default=[], allowed_types=[MappingNode])
+        for node in caches:
+            spec = RemoteSpec.new_from_node(node, self.directory)
+            self.artifact_cache_specs.append(spec)
 
-        # Load source caches with pull/push config
-        self.source_cache_specs = SourceCache.specs_from_config_node(config, self.directory)
+        # Load source cache remote specs
+        caches = config.get_sequence("source-caches", default=[], allowed_types=[MappingNode])
+        for node in caches:
+            spec = RemoteSpec.new_from_node(node, self.directory)
+            self.source_cache_specs.append(spec)
 
         # Load sandbox environment variables
         self.base_environment = config.get_mapping("environment")

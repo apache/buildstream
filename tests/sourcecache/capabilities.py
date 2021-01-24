@@ -25,7 +25,7 @@ def test_artifact_cache_with_missing_capabilities_is_skipped(cli, tmpdir, datafi
         # Configure artifact share
         cache_dir = os.path.join(str(tmpdir), "cache")
         user_config_file = str(tmpdir.join("buildstream.conf"))
-        user_config = {"scheduler": {"pushers": 1}, "source-caches": {"url": share.repo,}, "cachedir": cache_dir}
+        user_config = {"scheduler": {"pushers": 1}, "source-caches": [{"url": share.repo,}], "cachedir": cache_dir}
         _yaml.roundtrip_dump(user_config, file=user_config_file)
 
         with dummy_context(config=user_config_file) as context:
@@ -33,11 +33,11 @@ def test_artifact_cache_with_missing_capabilities_is_skipped(cli, tmpdir, datafi
             project = Project(project_dir, context)
             project.ensure_fully_loaded()
 
+            # Initialize remotes
+            context.initialize_remotes(True, True, None, None)
+
             # Create a local artifact cache handle
             sourcecache = context.sourcecache
-
-            # Manually setup the CAS remote
-            sourcecache.setup_remotes(use_config=True)
 
             assert (
                 not sourcecache.has_fetch_remotes()

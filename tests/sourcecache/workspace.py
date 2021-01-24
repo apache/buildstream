@@ -72,7 +72,11 @@ def test_workspace_open_no_source_push(tmpdir, datafiles, cli):
 
     with create_artifact_share(share_dir) as share:
         cli.configure(
-            {"cachedir": cache_dir, "scheduler": {"pushers": 1}, "source-caches": {"url": share.repo, "push": True,},}
+            {
+                "cachedir": cache_dir,
+                "scheduler": {"pushers": 1},
+                "source-caches": [{"url": share.repo, "push": True,}],
+            }
         )
 
         # Fetch as in previous test and check it pushes the source

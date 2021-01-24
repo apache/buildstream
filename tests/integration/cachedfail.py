@@ -126,7 +126,7 @@ def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
 
     with create_artifact_share(os.path.join(str(tmpdir), "remote")) as share:
         cli.configure(
-            {"artifacts": {"url": share.repo, "push": True},}
+            {"artifacts": [{"url": share.repo, "push": True}],}
         )
 
         # Build the element, continuing to finish active jobs on error.
@@ -169,7 +169,7 @@ def test_push_failed_missing_shell(cli, tmpdir, datafiles, on_error):
 
     with create_artifact_share(os.path.join(str(tmpdir), "remote")) as share:
         cli.configure(
-            {"artifacts": {"url": share.repo, "push": True},}
+            {"artifacts": [{"url": share.repo, "push": True}],}
         )
 
         # Build the element, continuing to finish active jobs on error.

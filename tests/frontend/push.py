@@ -71,9 +71,7 @@ def test_push(cli, tmpdir, datafiles):
 
             # Configure bst to pull but not push from a cache and run `bst artifact push`.
             # This should also fail.
-            cli.configure(
-                {"artifacts": {"url": share1.repo, "push": False},}
-            )
+            cli.configure({"artifacts": [{"url": share1.repo, "push": False},]})
             result = cli.run(project=project, args=["artifact", "push", "target.bst"])
             result.assert_main_error(ErrorDomain.STREAM, None)
 
@@ -127,7 +125,7 @@ def test_push_artifact(cli, tmpdir, datafiles):
                 #        only, but it should probably be fixed.
                 #
                 "scheduler": {"pushers": 1},
-                "artifacts": {"url": share.repo, "push": True,},
+                "artifacts": [{"url": share.repo, "push": True,}],
             }
         )
 
@@ -163,7 +161,7 @@ def test_push_artifact_glob(cli, tmpdir, datafiles):
         assert os.path.exists(os.path.join(local_cache, "artifacts", "refs", artifact_ref))
 
         # Configure artifact share
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": [{"url": share.repo, "push": True}]})
 
         # Run bst artifact push with a wildcard, there is only one artifact
         # matching "test/target/*", even though it can be accessed both by it's
@@ -282,7 +280,7 @@ def test_push_deps(cli, tmpdir, datafiles, deps, expected_states):
                 #        only, but it should probably be fixed.
                 #
                 "scheduler": {"pushers": 1},
-                "artifacts": {"url": share.repo, "push": True,},
+                "artifacts": [{"url": share.repo, "push": True,}],
             }
         )
 
@@ -331,7 +329,7 @@ def test_push_artifacts_all_deps_fails(cli, tmpdir, datafiles):
                 #        only, but it should probably be fixed.
                 #
                 "scheduler": {"pushers": 1},
-                "artifacts": {"url": share.repo, "push": True,},
+                "artifacts": [{"url": share.repo, "push": True,}],
             }
         )
 
@@ -354,9 +352,7 @@ def test_push_after_pull(cli, tmpdir, datafiles):
 
         # Set the scene: share1 has the artifact, share2 does not.
         #
-        cli.configure(
-            {"artifacts": {"url": share1.repo, "push": True},}
-        )
+        cli.configure({"artifacts": [{"url": share1.repo, "push": True},]})
 
         result = cli.run(project=project, args=["build", "target.bst"])
         result.assert_success()
@@ -400,9 +396,7 @@ def test_artifact_expires(cli, datafiles, tmpdir):
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare"), quota=int(22e6)) as share:
 
         # Configure bst to push to the cache
-        cli.configure(
-            {"artifacts": {"url": share.repo, "push": True},}
-        )
+        cli.configure({"artifacts": [{"url": share.repo, "push": True},]})
 
         # Create and build an element of 15 MB
         create_element_size("element1.bst", project, element_path, [], int(15e6))
@@ -453,7 +447,7 @@ def test_artifact_too_large(cli, datafiles, tmpdir):
 
         # Configure bst to push to the remote cache
         cli.configure(
-            {"artifacts": {"url": share.repo, "push": True},}
+            {"artifacts": [{"url": share.repo, "push": True}],}
         )
 
         # Create and push a 3MB element
@@ -506,7 +500,7 @@ def test_recently_pulled_artifact_does_not_expire(cli, datafiles, tmpdir):
 
         # Configure bst to push to the cache
         cli.configure(
-            {"artifacts": {"url": share.repo, "push": True},}
+            {"artifacts": [{"url": share.repo, "push": True}],}
         )
 
         # Create and build 2 elements, one 5 MB and one 15 MB.
@@ -570,7 +564,7 @@ def test_push_cross_junction(cli, tmpdir, datafiles):
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
         cli.configure(
-            {"artifacts": {"url": share.repo, "push": True},}
+            {"artifacts": [{"url": share.repo, "push": True}],}
         )
         cli.run(project=project, args=["artifact", "push", "junction.bst:import-etc.bst"])
 
@@ -585,7 +579,7 @@ def test_push_already_cached(caplog, cli, tmpdir, datafiles):
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
 
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": [{"url": share.repo, "push": True}]})
         result = cli.run(project=project, args=["build", "target.bst"])
 
         result.assert_success()
@@ -610,10 +604,10 @@ def test_build_remote_option(caplog, cli, tmpdir, datafiles):
 
         # Add shareproject repo url to project.conf
         with open(os.path.join(project, "project.conf"), "a") as projconf:
-            projconf.write("artifacts:\n  url: {}\n  push: True".format(shareproject.repo))
+            projconf.write("artifacts:\n- url: {}\n  push: True".format(shareproject.repo))
 
         # Configure shareuser remote in user conf
-        cli.configure({"artifacts": {"url": shareuser.repo, "push": True}})
+        cli.configure({"artifacts": [{"url": shareuser.repo, "push": True}]})
 
         result = cli.run(project=project, args=["build", "--remote", sharecli.repo, "target.bst"])
 
@@ -640,7 +634,7 @@ def test_push_no_strict(caplog, cli, tmpdir, datafiles, buildtrees):
     caplog.set_level(1)
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-        cli.configure({"artifacts": {"url": share.repo, "push": True}, "projects": {"test": {"strict": False}}})
+        cli.configure({"artifacts": [{"url": share.repo, "push": True}], "projects": {"test": {"strict": False}}})
 
         # First get us a build
         result = cli.run(project=project, args=["build", "target.bst"])
@@ -699,7 +693,7 @@ def test_push_after_rebuild(cli, tmpdir, datafiles):
     assert cli.get_element_state(project, "random.bst") != "cached"
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": [{"url": share.repo, "push": True}]})
 
         # Now rebuild the element and push it
         result = cli.run(project=project, args=["build", "random.bst"])
@@ -724,7 +718,7 @@ def test_push_update_after_rebuild(cli, tmpdir, datafiles):
     )
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": [{"url": share.repo, "push": True}]})
 
         # Build the element and push the artifact
         result = cli.run(project=project, args=["build", "random.bst"])
@@ -743,6 +737,6 @@ def test_push_update_after_rebuild(cli, tmpdir, datafiles):
         assert cli.get_element_state(project, "random.bst") == "cached"
 
         # Push the new build
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": [{"url": share.repo, "push": True}]})
         result = cli.run(project=project, args=["artifact", "push", "random.bst"])
         assert result.get_pushed_elements() == ["random.bst"]

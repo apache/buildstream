@@ -177,7 +177,7 @@ def test_default_target_push_pull(cli, tmpdir, datafiles):
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
         # Push the artifacts
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": [{"url": share.repo, "push": True}]})
         result = cli.run(project=project, args=["artifact", "push"])
         result.assert_success()
 

@@ -17,7 +17,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "junctions"
 def project_set_artifacts(project, url):
     project_conf_file = os.path.join(project, "project.conf")
     project_config = _yaml.load(project_conf_file, shortname=None)
-    project_config["artifacts"] = {"url": url, "push": True}
+    project_config["artifacts"] = [{"url": url, "push": True}]
     _yaml.roundtrip_dump(project_config.strip_node_info(), file=project_conf_file)
 
 

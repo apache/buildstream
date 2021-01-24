@@ -70,10 +70,7 @@ def test_build_partial_push(cli, tmpdir, datafiles):
         services = cli.ensure_services()
         assert set(services) == set(["action-cache", "execution", "storage"])
 
-        cli.config["artifacts"] = {
-            "url": share.repo,
-            "push": True,
-        }
+        cli.config["artifacts"] = [{"url": share.repo, "push": True,}]
 
         res = cli.run(project=project, args=["build", element_name])
         res.assert_success()

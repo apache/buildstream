@@ -37,22 +37,12 @@ REMOTE_ASSET_ARTIFACT_URN_TEMPLATE = "urn:fdc:buildstream.build:2020:artifact:{}
 #     context (Context): The BuildStream context
 #
 class ArtifactCache(AssetCache):
-
-    spec_name = "artifact_cache_specs"
-    config_node_name = "artifacts"
-
     def __init__(self, context):
         super().__init__(context)
 
         # create artifact directory
         self._basedir = context.artifactdir
         os.makedirs(self._basedir, exist_ok=True)
-
-    def update_mtime(self, ref):
-        try:
-            os.utime(os.path.join(self._basedir, ref))
-        except FileNotFoundError as e:
-            raise ArtifactError("Couldn't find artifact: {}".format(ref)) from e
 
     # preflight():
     #
@@ -88,7 +78,7 @@ class ArtifactCache(AssetCache):
     #     ([str]) - A list of artifact names as generated in LRU order
     #
     def list_artifacts(self, *, glob=None):
-        return [ref for _, ref in sorted(list(self._list_refs_mtimes(self._basedir, glob_expr=glob)))]
+        return [ref for _, ref in sorted(list(self.list_refs_mtimes(self._basedir, glob_expr=glob)))]
 
     # remove():
     #
@@ -101,7 +91,7 @@ class ArtifactCache(AssetCache):
     #
     def remove(self, ref):
         try:
-            self._remove_ref(ref)
+            self.remove_ref(ref)
         except AssetCacheError as e:
             raise ArtifactError("{}".format(e)) from e
 
@@ -123,9 +113,7 @@ class ArtifactCache(AssetCache):
         project = element._get_project()
         display_key = element._get_display_key()
 
-        index_remotes = [r for r in self._index_remotes[project] if r.spec.push]
-        storage_remotes = [r for r in self._storage_remotes[project] if r.spec.push]
-
+        index_remotes, storage_remotes = self.get_remotes(project.name, True)
         artifact_proto = artifact._get_proto()
         artifact_digest = self.cas.add_object(buffer=artifact_proto.SerializeToString())
 
@@ -176,10 +164,12 @@ class ArtifactCache(AssetCache):
         artifact_name = element.get_artifact_name(key=key)
         uri = REMOTE_ASSET_ARTIFACT_URN_TEMPLATE.format(artifact_name)
 
+        index_remotes, storage_remotes = self.get_remotes(project.name, False)
+
         errors = []
         # Start by pulling our artifact proto, so that we know which
         # blobs to pull
-        for remote in self._index_remotes[project]:
+        for remote in index_remotes:
             remote.init()
             try:
                 element.status("Pulling artifact {} <- {}".format(display_key, remote))
@@ -205,7 +195,7 @@ class ArtifactCache(AssetCache):
 
         errors = []
         # If we do, we can pull it!
-        for remote in self._storage_remotes[project]:
+        for remote in storage_remotes:
             remote.init()
             try:
                 element.status("Pulling data for artifact {} <- {}".format(display_key, remote))
@@ -240,7 +230,8 @@ class ArtifactCache(AssetCache):
     #     digest (Digest): The digest of the tree
     #
     def pull_tree(self, project, digest):
-        for remote in self._storage_remotes[project]:
+        _, storage_remotes = self.get_remotes(project.name, False)
+        for remote in storage_remotes:
             digest = self.cas.pull_tree(remote, digest)
 
             if digest:
@@ -261,12 +252,7 @@ class ArtifactCache(AssetCache):
     #     (ArtifactError): if there was an error
     #
     def push_message(self, project, message):
-
-        if self._has_push_remotes:
-            push_remotes = [r for r in self._storage_remotes[project] if r.spec.push]
-        else:
-            push_remotes = []
-
+        _, push_remotes = self.get_remotes(project.name, True)
         if not push_remotes:
             raise ArtifactError(
                 "push_message was called, but no remote artifact " + "servers are configured as push remotes."
@@ -305,7 +291,9 @@ class ArtifactCache(AssetCache):
     #     missing_blobs (list): The Digests of the blobs to fetch
     #
     def fetch_missing_blobs(self, project, missing_blobs):
-        for remote in self._index_remotes[project]:
+
+        index_remotes, _ = self.get_remotes(project.name, False)
+        for remote in index_remotes:
             if not missing_blobs:
                 break
 
@@ -332,8 +320,7 @@ class ArtifactCache(AssetCache):
         if not missing_blobs:
             return []
 
-        push_remotes = [r for r in self._storage_remotes[project] if r.spec.push]
-
+        _, push_remotes = self.get_remotes(project.name, True)
         remote_missing_blobs_list = []
 
         for remote in push_remotes:
@@ -358,13 +345,15 @@ class ArtifactCache(AssetCache):
     #    (bool): True if the element is available remotely
     #
     def check_remotes_for_element(self, element):
+        project = element._get_project()
+        index_remotes, _ = self.get_remotes(project.name, False)
+
         # If there are no remotes
-        if not self._index_remotes:
+        if not index_remotes:
             return False
 
-        project = element._get_project()
         ref = element.get_artifact_name()
-        for remote in self._index_remotes[project]:
+        for remote in index_remotes:
             remote.init()
 
             if self._query_remote(ref, remote):

@@ -39,9 +39,8 @@ def _push(cli, cache_dir, project_dir, config_file, target):
         for e in element._dependencies(_Scope.ALL):
             e._initialize_state()
 
-        # Manually setup the CAS remotes
-        artifactcache.setup_remotes(use_config=True)
-        artifactcache.initialize_remotes()
+        # Initialize remotes
+        context.initialize_remotes(True, True, None, None)
 
         assert artifactcache.has_push_remotes(plugin=element), "No remote configured for element target.bst"
         assert element._push(), "Push operation failed"
@@ -67,7 +66,7 @@ def test_push(cli, tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "artifacts": {"url": share.repo, "push": True,},
+            "artifacts": [{"url": share.repo, "push": True,}],
             "cachedir": rootcache_dir,
         }
 
@@ -124,7 +123,7 @@ def test_push_message(tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "artifacts": {"url": share.repo, "push": True,},
+            "artifacts": [{"url": share.repo, "push": True,}],
             "cachedir": rootcache_dir,
         }
 
@@ -139,9 +138,8 @@ def test_push_message(tmpdir, datafiles):
             # Create a local artifact cache handle
             artifactcache = context.artifactcache
 
-            # Manually setup the artifact remote
-            artifactcache.setup_remotes(use_config=True)
-            artifactcache.initialize_remotes()
+            # Initialize remotes
+            context.initialize_remotes(True, True, None, None)
             assert artifactcache.has_push_remotes()
 
             command = remote_execution_pb2.Command(

@@ -32,10 +32,6 @@ REMOTE_ASSET_SOURCE_URN_TEMPLATE = "urn:fdc:buildstream.build:2020:source:{}"
 #    context (Context): The Buildstream context
 #
 class ElementSourcesCache(AssetCache):
-
-    spec_name = "source_cache_specs"
-    config_node_name = "source-caches"
-
     def __init__(self, context):
         super().__init__(context)
 
@@ -86,11 +82,13 @@ class ElementSourcesCache(AssetCache):
 
         uri = REMOTE_ASSET_SOURCE_URN_TEMPLATE.format(ref)
 
+        index_remotes, storage_remotes = self.get_remotes(project.name, False)
+
         source_digest = None
         errors = []
         # Start by pulling our source proto, so that we know which
         # blobs to pull
-        for remote in self._index_remotes[project]:
+        for remote in index_remotes:
             remote.init()
             try:
                 plugin.status("Pulling source {} <- {}".format(display_key, remote))
@@ -114,7 +112,7 @@ class ElementSourcesCache(AssetCache):
             return False
 
         errors = []
-        for remote in self._storage_remotes[project]:
+        for remote in storage_remotes:
             remote.init()
             try:
                 plugin.status("Pulling data for source {} <- {}".format(display_key, remote))
@@ -160,8 +158,7 @@ class ElementSourcesCache(AssetCache):
 
         uri = REMOTE_ASSET_SOURCE_URN_TEMPLATE.format(ref)
 
-        index_remotes = [r for r in self._index_remotes[project] if r.spec.push]
-        storage_remotes = [r for r in self._storage_remotes[project] if r.spec.push]
+        index_remotes, storage_remotes = self.get_remotes(project.name, True)
 
         source_proto = self.load_proto(sources)
         source_digest = self.cas.add_object(buffer=source_proto.SerializeToString())

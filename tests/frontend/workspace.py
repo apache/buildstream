@@ -1030,7 +1030,7 @@ def test_external_push_pull(cli, datafiles, tmpdir_factory, guess_element):
         result = cli.run(project=project, args=["-C", workspace, "build", element_name])
         result.assert_success()
 
-        cli.configure({"artifacts": {"url": share.repo, "push": True}})
+        cli.configure({"artifacts": [{"url": share.repo, "push": True}]})
 
         result = cli.run(project=project, args=["-C", workspace, "artifact", "push", *arg_elm])
         result.assert_success()

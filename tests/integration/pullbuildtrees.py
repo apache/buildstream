@@ -26,7 +26,7 @@ def default_state(cli, tmpdir, share):
     shutil.rmtree(os.path.join(str(tmpdir), "cas"))
     cli.configure(
         {
-            "artifacts": {"url": share.repo, "push": False},
+            "artifacts": [{"url": share.repo, "push": False}],
             "cachedir": str(tmpdir),
             "cache": {"pull-buildtrees": False},
         }
@@ -50,7 +50,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
     ) as share2, create_artifact_share(os.path.join(str(tmpdir), "share3")) as share3:
         cli2.configure(
             {
-                "artifacts": {"url": share1.repo, "push": True},
+                "artifacts": [{"url": share1.repo, "push": True}],
                 "cachedir": str(tmpdir),
                 "cache": {"cache-buildtrees": "always"},
             }
@@ -117,7 +117,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         # to share2
         result = cli2.run(project=project, args=["artifact", "pull", element_name])
         assert element_name in result.get_pulled_elements()
-        cli2.configure({"artifacts": {"url": share2.repo, "push": True}})
+        cli2.configure({"artifacts": [{"url": share2.repo, "push": True}]})
         result = cli2.run(project=project, args=["artifact", "push", element_name])
         assert element_name not in result.get_pushed_elements()
         assert not share2.get_artifact(cli2.get_artifact_name(project, "test", element_name))
@@ -125,10 +125,10 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         # Assert that after pulling the missing buildtree the element artifact can be
         # successfully pushed to the remote. This will attempt to pull the buildtree
         # from share1 and then a 'complete' push to share2
-        cli2.configure({"artifacts": {"url": share1.repo, "push": False}})
+        cli2.configure({"artifacts": [{"url": share1.repo, "push": False}]})
         result = cli2.run(project=project, args=["--pull-buildtrees", "artifact", "pull", element_name])
         assert element_name in result.get_pulled_elements()
-        cli2.configure({"artifacts": {"url": share2.repo, "push": True}})
+        cli2.configure({"artifacts": [{"url": share2.repo, "push": True}]})
         result = cli2.run(project=project, args=["artifact", "push", element_name])
         assert element_name in result.get_pushed_elements()
         assert share2.get_artifact(cli2.get_artifact_name(project, "test", element_name))
@@ -140,7 +140,7 @@ def test_pullbuildtrees(cli2, tmpdir, datafiles):
         # artifact cannot be pushed.
         result = cli2.run(project=project, args=["artifact", "pull", element_name])
         assert element_name in result.get_pulled_elements()
-        cli2.configure({"artifacts": {"url": share3.repo, "push": True}})
+        cli2.configure({"artifacts": [{"url": share3.repo, "push": True}]})
         result = cli2.run(project=project, args=["--pull-buildtrees", "artifact", "push", element_name])
         assert element_name not in result.get_pulled_elements()
         with cli2.artifact.extract_buildtree(cwd, cwd, artifact_name) as buildtreedir:

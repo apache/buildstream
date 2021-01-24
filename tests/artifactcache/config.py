@@ -1,13 +1,11 @@
 # Pylint doesn't play well with fixtures and dependency injection from pytest
 # pylint: disable=redefined-outer-name
 
-import itertools
 import os
 
 import pytest
 
 from buildstream._remotespec import RemoteSpec, RemoteType
-from buildstream._artifactcache import ArtifactCache
 from buildstream._project import Project
 from buildstream.utils import _deduplicate
 from buildstream import _yaml
@@ -41,28 +39,12 @@ def configure_remote_caches(override_caches, project_caches=None, user_caches=No
         user_caches = []
 
     user_config = {}
-    if len(user_caches) == 1:
-        user_config["artifacts"] = {
-            "url": user_caches[0].url,
-            "push": user_caches[0].push,
-            "type": type_strings[user_caches[0].remote_type],
-        }
-    elif len(user_caches) > 1:
+    if user_caches:
         user_config["artifacts"] = [
             {"url": cache.url, "push": cache.push, "type": type_strings[cache.remote_type]} for cache in user_caches
         ]
 
-    if len(override_caches) == 1:
-        user_config["projects"] = {
-            "test": {
-                "artifacts": {
-                    "url": override_caches[0].url,
-                    "push": override_caches[0].push,
-                    "type": type_strings[override_caches[0].remote_type],
-                }
-            }
-        }
-    elif len(override_caches) > 1:
+    if override_caches:
         user_config["projects"] = {
             "test": {
                 "artifacts": [
@@ -74,25 +56,14 @@ def configure_remote_caches(override_caches, project_caches=None, user_caches=No
 
     project_config = {}
     if project_caches:
-        if len(project_caches) == 1:
-            project_config.update(
-                {
-                    "artifacts": {
-                        "url": project_caches[0].url,
-                        "push": project_caches[0].push,
-                        "type": type_strings[project_caches[0].remote_type],
-                    }
-                }
-            )
-        elif len(project_caches) > 1:
-            project_config.update(
-                {
-                    "artifacts": [
-                        {"url": cache.url, "push": cache.push, "type": type_strings[cache.remote_type]}
-                        for cache in project_caches
-                    ]
-                }
-            )
+        project_config.update(
+            {
+                "artifacts": [
+                    {"url": cache.url, "push": cache.push, "type": type_strings[cache.remote_type]}
+                    for cache in project_caches
+                ]
+            }
+        )
 
     return user_config, project_config
 
@@ -129,11 +100,13 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
         project = Project(str(project_dir), context)
         project.ensure_fully_loaded()
 
-        # Use the helper from the artifactcache module to parse our configuration.
-        parsed_cache_specs = ArtifactCache._configured_remote_cache_specs(context, project)
+        # Check the specs which the artifact cache thinks are configured
+        context.initialize_remotes(True, True, None, None)
+        artifactcache = context.artifactcache
+        parsed_cache_specs = artifactcache._project_specs[project.name]
 
         # Verify that it was correctly read.
-        expected_cache_specs = list(_deduplicate(itertools.chain(override_caches, project_caches, user_caches)))
+        expected_cache_specs = list(_deduplicate(override_caches or user_caches or project_caches))
         assert parsed_cache_specs == expected_cache_specs
 
 
@@ -199,10 +172,12 @@ def test_only_one(cli, datafiles, override_caches, project_caches, user_caches):
 @pytest.mark.parametrize(
     "artifacts_config",
     (
-        {
-            "url": "http://localhost.test",
-            "auth": {"server-cert": "~/server.crt", "client-cert": "~/client.crt", "client-key": "~/client.key",},
-        },
+        [
+            {
+                "url": "http://localhost.test",
+                "auth": {"server-cert": "~/server.crt", "client-cert": "~/client.crt", "client-key": "~/client.key",},
+            }
+        ],
         [
             {
                 "url": "http://localhost.test",
@@ -245,8 +220,10 @@ def test_paths_for_artifact_config_are_expanded(tmpdir, monkeypatch, artifacts_c
         project = Project(str(project_dir), context)
         project.ensure_fully_loaded()
 
-        # Use the helper from the artifactcache module to parse our configuration.
-        parsed_cache_specs = ArtifactCache._configured_remote_cache_specs(context, project)
+        # Check the specs which the artifact cache thinks are configured
+        context.initialize_remotes(True, True, None, None)
+        artifactcache = context.artifactcache
+        parsed_cache_specs = artifactcache._project_specs[project.name]
 
     if isinstance(artifacts_config, dict):
         artifacts_config = [artifacts_config]

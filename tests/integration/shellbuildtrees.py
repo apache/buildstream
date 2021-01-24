@@ -130,7 +130,7 @@ def create_built_artifact_share(tmpdir, cache_buildtrees, integration_cache):
 
     # Create a Cli instance to build and populate the share
     cli = Cli(os.path.join(tmpdir, "cache"))
-    cli.configure({"artifacts": {"url": share.repo, "push": True}, "sourcedir": integration_cache.sources})
+    cli.configure({"artifacts": [{"url": share.repo, "push": True}], "sourcedir": integration_cache.sources})
 
     # Optionally cache build trees
     args = []
@@ -240,7 +240,7 @@ def test_shell_use_cached_buildtree(share_with_buildtrees, datafiles, cli, pull_
     project = str(datafiles)
     element_name = "build-shell/buildtree.bst"
 
-    cli.configure({"artifacts": {"url": share_with_buildtrees.repo}})
+    cli.configure({"artifacts": [{"url": share_with_buildtrees.repo}]})
 
     # Optionally pull the buildtree along with `bst artifact pull`
     maybe_pull_deps(cli, project, element_name, pull_deps, pull_buildtree)
@@ -280,7 +280,7 @@ def test_shell_pull_cached_buildtree(share_with_buildtrees, datafiles, cli, pull
     project = str(datafiles)
     element_name = "build-shell/buildtree.bst"
 
-    cli.configure({"artifacts": {"url": share_with_buildtrees.repo}})
+    cli.configure({"artifacts": [{"url": share_with_buildtrees.repo}]})
 
     # Optionally pull the buildtree along with `bst artifact pull`
     maybe_pull_deps(cli, project, element_name, pull_deps, pull_buildtree)
@@ -319,7 +319,7 @@ def test_shell_use_uncached_buildtree(share_without_buildtrees, datafiles, cli):
     project = str(datafiles)
     element_name = "build-shell/buildtree.bst"
 
-    cli.configure({"artifacts": {"url": share_without_buildtrees.repo}})
+    cli.configure({"artifacts": [{"url": share_without_buildtrees.repo}]})
 
     # Pull everything we would need
     maybe_pull_deps(cli, project, element_name, "all", True)
@@ -342,7 +342,7 @@ def test_shell_pull_uncached_buildtree(share_without_buildtrees, datafiles, cli)
     project = str(datafiles)
     element_name = "build-shell/buildtree.bst"
 
-    cli.configure({"artifacts": {"url": share_without_buildtrees.repo}})
+    cli.configure({"artifacts": [{"url": share_without_buildtrees.repo}]})
 
     # Run the shell and request that required artifacts and buildtrees should be pulled
     result = cli.run(

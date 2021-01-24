@@ -19,6 +19,9 @@
 
 import os
 import shutil
+
+from typing import List, Dict, Set, Optional
+
 from . import utils
 from . import _site
 from . import _yaml
@@ -29,12 +32,12 @@ from ._profile import Topics, PROFILER
 from ._platform import Platform
 from ._artifactcache import ArtifactCache
 from ._elementsourcescache import ElementSourcesCache
-from ._remotespec import RemoteExecutionSpec
+from ._remotespec import RemoteSpec, RemoteExecutionSpec
 from ._sourcecache import SourceCache
 from ._cas import CASCache, CASLogLevel
 from .types import _CacheBuildTrees, _PipelineSelection, _SchedulerErrorAction
 from ._workspaces import Workspaces, WorkspaceProjectCache
-from .node import Node
+from .node import Node, MappingNode
 
 
 # Context()
@@ -82,12 +85,6 @@ class Context:
 
         # Default root location for workspaces
         self.workspacedir = None
-
-        # specs for source cache remotes
-        self.source_cache_specs = None
-
-        # The locations from which to push and pull prebuilt artifacts
-        self.artifact_cache_specs = None
 
         # The global remote execution configuration
         self.remote_execution_specs = None
@@ -161,15 +158,27 @@ class Context:
         # Whether file contents are required for all artifacts in the local cache
         self.require_artifact_files = True
 
-        # Whether elements must be rebuilt when their dependencies have changed
-        self._strict_build_plan = None
+        # Don't shoot the messenger
+        self.messenger = Messenger()
 
         # Make sure the XDG vars are set in the environment before loading anything
         self._init_xdg()
 
-        self.messenger = Messenger()
-
+        #
         # Private variables
+        #
+
+        # Whether elements must be rebuilt when their dependencies have changed
+        self._strict_build_plan = None
+
+        # Lists of globally configured cache specs
+        self._global_artifact_cache_specs: List[RemoteSpec] = []
+        self._global_source_cache_specs: List[RemoteSpec] = []
+
+        # Set of all actively configured remote specs
+        self._active_artifact_cache_specs: Set[RemoteSpec] = set()
+        self._active_source_cache_specs: Set[RemoteSpec] = set()
+
         self._platform = None
         self._artifactcache = None
         self._elementsourcescache = None
@@ -327,11 +336,13 @@ class Context:
                 LoadErrorReason.INVALID_DATA,
             ) from e
 
-        # Load artifact share configuration
-        self.artifact_cache_specs = ArtifactCache.specs_from_config_node(defaults)
+        # Load artifact remote specs
+        caches = defaults.get_sequence("artifacts", default=[], allowed_types=[MappingNode])
+        self._global_artifact_cache_specs = [RemoteSpec.new_from_node(node) for node in caches]
 
-        # Load source cache config
-        self.source_cache_specs = SourceCache.specs_from_config_node(defaults)
+        # Load source cache remote specs
+        caches = defaults.get_sequence("source-caches", default=[], allowed_types=[MappingNode])
+        self._global_source_cache_specs = [RemoteSpec.new_from_node(node) for node in caches]
 
         # Load the global remote execution config including pull-artifact-files setting
         remote_execution = defaults.get_mapping("remote-execution", default=None)
@@ -439,19 +450,6 @@ class Context:
     def add_project(self, project):
         if not self._projects:
             self._workspaces = Workspaces(project, self._workspace_project_cache)
-
-            #
-            # While loading the first, toplevel project, we can adjust some
-            # global settings which can be overridden on a per toplevel project basis.
-            #
-            override_node = self.get_overrides(project.name)
-            if override_node:
-                remote_execution = override_node.get_mapping("remote-execution", default=None)
-                if remote_execution:
-                    self.pull_artifact_files, self.remote_execution_specs = self._load_remote_execution(
-                        remote_execution
-                    )
-
         self._projects.append(project)
 
     # get_projects():
@@ -470,10 +468,116 @@ class Context:
     # invoked with as opposed to a junctioned subproject.
     #
     # Returns:
-    #    (Project): The Project object
+    #    (Project): The toplevel Project object, or None
     #
     def get_toplevel_project(self):
-        return self._projects[0]
+        try:
+            return self._projects[0]
+        except IndexError:
+            return None
+
+    # initialize_remotes()
+    #
+    # This will resolve what remotes each loaded project will interact
+    # with an initialize the underlying asset cache modules.
+    #
+    # Note that this can be called more than once, in the case that
+    # Stream() has loaded additional projects during the load cycle
+    # and some state needs to be recalculated.
+    #
+    # Args:
+    #    connect_artifact_cache: Whether to try to contact remote artifact caches
+    #    connect_source_cache: Whether to try to contact remote source caches
+    #    artifact_remote: An overriding artifact cache remote, or None
+    #    source_remote: An overriding source cache remote, or None
+    #
+    def initialize_remotes(
+        self,
+        connect_artifact_cache: bool,
+        connect_source_cache: bool,
+        artifact_remote: Optional[RemoteSpec],
+        source_remote: Optional[RemoteSpec],
+    ) -> None:
+
+        # Ensure all projects are fully loaded.
+        for project in self._projects:
+            project.ensure_fully_loaded()
+
+        #
+        # If the global remote execution specs have been overridden by the
+        # toplevel project, then adjust them now that we're all loaded.
+        #
+        project = self.get_toplevel_project()
+        if project:
+            override_node = self.get_overrides(project.name)
+            if override_node:
+                remote_execution = override_node.get_mapping("remote-execution", default=None)
+                if remote_execution:
+                    self.pull_artifact_files, self.remote_execution_specs = self._load_remote_execution(
+                        remote_execution
+                    )
+
+        # Collect a table of which specs apply to each project, these
+        # are calculated here and handed over to the asset caches.
+        #
+        project_artifact_cache_specs: Dict[str, List[RemoteSpec]] = {}
+        project_source_cache_specs: Dict[str, List[RemoteSpec]] = {}
+
+        cli_artifact_remotes = [artifact_remote] if artifact_remote else []
+        cli_source_remotes = [source_remote] if source_remote else []
+
+        #
+        # Maintain our list of remote specs for artifact and source caches
+        #
+        for project in self._projects:
+
+            artifact_specs: List[RemoteSpec] = []
+            source_specs: List[RemoteSpec] = []
+
+            override_node = self.get_overrides(project.name)
+
+            # Resolve which remote specs to use, CLI -> Override -> Global -> Project recommendation
+            if connect_artifact_cache:
+                caches = override_node.get_sequence("artifacts", default=[], allowed_types=[MappingNode])
+                override_artifact_specs: List[RemoteSpec] = [RemoteSpec.new_from_node(node) for node in caches]
+                artifact_specs = (
+                    cli_artifact_remotes
+                    or override_artifact_specs
+                    or self._global_artifact_cache_specs
+                    or project.artifact_cache_specs
+                )
+                artifact_specs = list(utils._deduplicate(artifact_specs))
+
+            if connect_source_cache:
+                caches = override_node.get_sequence("source-caches", default=[], allowed_types=[MappingNode])
+                override_source_specs: List[RemoteSpec] = [RemoteSpec.new_from_node(node) for node in caches]
+                source_specs = (
+                    cli_source_remotes
+                    or override_source_specs
+                    or self._global_source_cache_specs
+                    or project.source_cache_specs
+                )
+                source_specs = list(utils._deduplicate(source_specs))
+
+            # Store them for lookups later on
+            project_artifact_cache_specs[project.name] = artifact_specs
+            project_source_cache_specs[project.name] = source_specs
+
+            #
+            # Now that we know which remote specs are going to be used, maintain
+            # our total set of overall active remote specs, this helps the asset cache
+            # modules to maintain a remote connection for the required remotes.
+            #
+            for spec in artifact_specs:
+                self._active_artifact_cache_specs.add(spec)
+            for spec in source_specs:
+                self._active_source_cache_specs.add(spec)
+
+        # Now initialize the underlying asset caches
+        #
+        self.artifactcache.setup_remotes(self._active_artifact_cache_specs, project_artifact_cache_specs)
+        self.elementsourcescache.setup_remotes(self._active_source_cache_specs, project_source_cache_specs)
+        self.sourcecache.setup_remotes(self._active_source_cache_specs, project_source_cache_specs)
 
     # get_workspaces():
     #

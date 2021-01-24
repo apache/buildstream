@@ -152,7 +152,7 @@ def test_artifact_delete_pulled_artifact_without_buildtree(cli, tmpdir, datafile
     local_cache = os.path.join(str(tmpdir), "artifacts")
     with create_artifact_share(os.path.join(str(tmpdir), "remote")) as remote:
         cli.configure(
-            {"artifacts": {"url": remote.repo, "push": True}, "cachedir": local_cache,}
+            {"artifacts": [{"url": remote.repo, "push": True}], "cachedir": local_cache,}
         )
 
         # Build the element
