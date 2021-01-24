@@ -502,3 +502,14 @@ def test_get_str_list_invalid(datafiles, filename, provenance):
         base.get_str_list("list")
     assert exc.value.reason == LoadErrorReason.INVALID_DATA
     assert provenance in str(exc.value)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_get_str_list_default_none(datafiles):
+    conf_file = os.path.join(datafiles.dirname, datafiles.basename, "list-of-dict.yaml")
+
+    base = _yaml.load(conf_file, shortname=None)
+
+    # There is no "pony" key here, assert that the default return is smooth
+    strings = base.get_str_list("pony", None)
+    assert strings is None
