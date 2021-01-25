@@ -482,3 +482,34 @@ def test_node_find_target_fails(datafiles):
     brand_new = Node.from_dict({})
 
     assert loaded._find(brand_new) is None
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+@pytest.mark.parametrize(
+    "filename, provenance",
+    [
+        ("list-of-dict.yaml", "list-of-dict.yaml [line 2 column 2]"),
+        ("list-of-list.yaml", "list-of-list.yaml [line 2 column 2]"),
+    ],
+    ids=["list-of-dict", "list-of-list"],
+)
+def test_get_str_list_invalid(datafiles, filename, provenance):
+    conf_file = os.path.join(datafiles.dirname, datafiles.basename, filename)
+
+    base = _yaml.load(conf_file, shortname=None)
+
+    with pytest.raises(LoadError) as exc:
+        base.get_str_list("list")
+    assert exc.value.reason == LoadErrorReason.INVALID_DATA
+    assert provenance in str(exc.value)
+
+
+@pytest.mark.datafiles(os.path.join(DATA_DIR))
+def test_get_str_list_default_none(datafiles):
+    conf_file = os.path.join(datafiles.dirname, datafiles.basename, "list-of-dict.yaml")
+
+    base = _yaml.load(conf_file, shortname=None)
+
+    # There is no "pony" key here, assert that the default return is smooth
+    strings = base.get_str_list("pony", None)
+    assert strings is None

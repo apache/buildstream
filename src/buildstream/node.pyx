@@ -683,18 +683,7 @@ cdef class MappingNode(Node):
             raise LoadError("{}: Dictionary did not contain expected key '{}'".format(provenance, key),
                             LoadErrorReason.INVALID_DATA)
 
-        if allowed_types and type(value) not in allowed_types:
-            provenance = self.get_provenance()
-            human_types = []
-            if MappingNode in allowed_types:
-                human_types.append("dict")
-            if SequenceNode in allowed_types:
-                human_types.append('list')
-            if ScalarNode in allowed_types:
-                human_types.append('scalar')
-
-            raise LoadError("{}: Value of '{}' is not one of the following: {}.".format(
-                            provenance, key, ", ".join(human_types)), LoadErrorReason.INVALID_DATA)
+        __validate_node_type(value, allowed_types, key)
 
         return value
 
@@ -728,7 +717,7 @@ cdef class MappingNode(Node):
 
         return value
 
-    cpdef SequenceNode get_sequence(self, str key, object default=_sentinel):
+    cpdef SequenceNode get_sequence(self, str key, object default=_sentinel, list allowed_types = None):
         """get_sequence(key, default=sentinel)
 
         Get the value of the node for `key` as a :class:`.SequenceNode`.
@@ -737,6 +726,7 @@ cdef class MappingNode(Node):
             key (str): key for which to get the value
             default (list): default value to return if `key` is not in the mapping. It will be converted
                             to a :class:`.SequenceNode` before being returned
+            allowed_types (list): list of valid subtypes of :class:`.Node` that are valid for nodes in the sequence.
 
         Raises:
            :class:`buildstream._exceptions.LoadError`: if the value at `key` is not a
@@ -745,14 +735,19 @@ cdef class MappingNode(Node):
         Returns:
             :class:`.SequenceNode`: the value at `key` or the default
         """
-        value = self._get(key, default, SequenceNode)
+        cdef Node value = self._get(key, default, SequenceNode)
+        cdef Node node
 
         if type(value) is not SequenceNode and value is not None:
             provenance = value.get_provenance()
             raise LoadError("{}: Value of '{}' is not of the expected type 'list'"
                             .format(provenance, key), LoadErrorReason.INVALID_DATA)
 
-        return value
+        if allowed_types:
+            for node in value:
+                __validate_node_type(node, allowed_types)
+
+        return <SequenceNode> value
 
     cpdef str get_str(self, str key, object default=_sentinel):
         """get_str(key, default=sentinel)
@@ -796,7 +791,9 @@ cdef class MappingNode(Node):
             :class:`list`: the value at `key` or the default
         """
         cdef SequenceNode sequence = self.get_sequence(key, default)
-        return sequence.as_str_list()
+        if sequence is not None:
+            return sequence.as_str_list()
+        return None
 
     cpdef object items(self):
         """Get a new view of the mapping items ((key, value) pairs).
@@ -1255,7 +1252,16 @@ cdef class SequenceNode(Node):
         Returns:
             :class:`list`: the content of the sequence as a list of strings
         """
-        return [node.as_str() for node in self.value]
+        cdef list str_list = []
+        cdef Node node
+        for node in self.value:
+            if type(node) is not ScalarNode:
+                provenance = node.get_provenance()
+                raise LoadError("{}: List item is not of the expected type 'scalar'"
+                                .format(provenance), LoadErrorReason.INVALID_DATA)
+            str_list.append(node.as_str())
+
+        return str_list
 
     cpdef MappingNode mapping_at(self, int index):
         """mapping_at(index)
@@ -1308,13 +1314,7 @@ cdef class SequenceNode(Node):
             :class:`.Node`: the value at `index`
         """
         cdef value = self.value[index]
-
-        if allowed_types and type(value) not in allowed_types:
-            provenance = self.get_provenance()
-            raise LoadError("{}: Value of '{}' is not one of the following: {}.".format(
-                            provenance, index, ", ".join(allowed_types)),
-                            LoadErrorReason.INVALID_DATA)
-
+        __validate_node_type(value, allowed_types, str(index))
         return value
 
     cpdef ScalarNode scalar_at(self, int index):
@@ -1704,3 +1704,37 @@ cdef Node __new_node_from_list(list inlist, Node ref_node):
         ret.value.append(__create_node_recursive(v, ref_node))
 
     return ret
+
+
+# __validate_node_type(node, allowed_types, key)
+#
+# Validates that this node is of the expected node type,
+# and raises a user facing LoadError if not.
+#
+# Args:
+#   allowed_types (list): list of valid subtypes of Node, or None
+#   key (str): A key, in case the validated node is a value for a key
+#
+# Raises:
+#    (LoadError): If this node is not of the expected type
+#
+cdef void __validate_node_type(Node node, list allowed_types = None, str key = None) except *:
+    cdef ProvenanceInformation provenance
+    cdef list human_types
+    cdef str message
+
+    if allowed_types and type(node) not in allowed_types:
+        provenance = node.get_provenance()
+        human_types = []
+        if MappingNode in allowed_types:
+            human_types.append("dict")
+        if SequenceNode in allowed_types:
+            human_types.append('list')
+        if ScalarNode in allowed_types:
+            human_types.append('scalar')
+
+        message = "{}: Value ".format(provenance)
+        if key:
+            message += "of '{}' ".format(key)
+        message += "is not one of the following: {}.".format(", ".join(human_types))
+        raise LoadError(message, LoadErrorReason.INVALID_DATA)
