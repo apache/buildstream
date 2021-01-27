@@ -17,11 +17,10 @@
 #  Authors:
 #        Tristan Van Berkom <tristan.vanberkom@codethink.co.uk>
 
+from typing import TYPE_CHECKING, List, Dict, Set, Tuple, Optional, Iterable
+
 import os
 import shutil
-
-from typing import List, Dict, Set, Optional
-
 from . import utils
 from . import _site
 from . import _yaml
@@ -40,6 +39,13 @@ from ._workspaces import Workspaces, WorkspaceProjectCache
 from .node import Node, MappingNode
 
 
+if TYPE_CHECKING:
+    # pylint: disable=cyclic-import
+    from ._project import Project
+
+    # pylint: enable=cyclic-import
+
+
 # Context()
 #
 # The Context object holds all of the user preferences
@@ -52,114 +58,120 @@ from .node import Node, MappingNode
 # in which BuildStream was invoked.
 #
 class Context:
-    def __init__(self, *, use_casd=True):
+    def __init__(self, *, use_casd: bool = True) -> None:
 
         # Whether we are running as part of a test suite. This is only relevant
         # for developing BuildStream itself.
-        self.is_running_in_test_suite = "BST_TEST_SUITE" in os.environ
+        self.is_running_in_test_suite: bool = "BST_TEST_SUITE" in os.environ
 
         # Filename indicating which configuration file was used, or None for the defaults
-        self.config_origin = None
+        self.config_origin: Optional[str] = None
 
         # The directory under which other directories are based
-        self.cachedir = None
+        self.cachedir: Optional[str] = None
 
         # The directory where various sources are stored
-        self.sourcedir = None
+        self.sourcedir: Optional[str] = None
 
         # The directory where build sandboxes will be created
-        self.builddir = None
+        self.builddir: Optional[str] = None
 
         # The directory for CAS
-        self.casdir = None
+        self.casdir: Optional[str] = None
 
         # Whether to use casd - meant for interfaces such as
         # completion where casd is not required
-        self.use_casd = use_casd
+        self.use_casd: bool = use_casd
 
         # The directory for artifact protos
-        self.artifactdir = None
+        self.artifactdir: Optional[str] = None
 
         # The directory for temporary files
-        self.tmpdir = None
+        self.tmpdir: Optional[str] = None
 
         # Default root location for workspaces
-        self.workspacedir = None
+        self.workspacedir: Optional[str] = None
 
         # The global remote execution configuration
-        self.remote_execution_specs = None
+        self.remote_execution_specs: Optional[RemoteExecutionSpec] = None
+
+        # The configured artifact cache remote specs for each project
+        self.project_artifact_cache_specs: Dict[str, List[RemoteSpec]] = {}
+
+        # The configured source cache remote specs for each project
+        self.project_source_cache_specs: Dict[str, List[RemoteSpec]] = {}
 
         # The directory to store build logs
-        self.logdir = None
+        self.logdir: Optional[str] = None
 
         # The abbreviated cache key length to display in the UI
-        self.log_key_length = None
+        self.log_key_length: Optional[int] = None
 
         # Whether debug mode is enabled
-        self.log_debug = None
+        self.log_debug: Optional[int] = None
 
         # Whether verbose mode is enabled
-        self.log_verbose = None
+        self.log_verbose: Optional[int] = None
 
         # Maximum number of lines to print from build logs
-        self.log_error_lines = None
+        self.log_error_lines: Optional[int] = None
 
         # Maximum number of lines to print in the master log for a detailed message
-        self.log_message_lines = None
+        self.log_message_lines: Optional[int] = None
 
         # Format string for printing the pipeline at startup time
-        self.log_element_format = None
+        self.log_element_format: Optional[str] = None
 
         # Format string for printing message lines in the master log
-        self.log_message_format = None
+        self.log_message_format: Optional[str] = None
 
         # Wether to rate limit the updating of the bst output where applicable
-        self.log_throttle_updates = None
+        self.log_throttle_updates: Optional[int] = None
 
         # Maximum number of fetch or refresh tasks
-        self.sched_fetchers = None
+        self.sched_fetchers: Optional[int] = None
 
         # Maximum number of build tasks
-        self.sched_builders = None
+        self.sched_builders: Optional[int] = None
 
         # Maximum number of push tasks
-        self.sched_pushers = None
+        self.sched_pushers: Optional[int] = None
 
         # Maximum number of retries for network tasks
-        self.sched_network_retries = None
+        self.sched_network_retries: Optional[int] = None
 
         # What to do when a build fails in non interactive mode
-        self.sched_error_action = None
+        self.sched_error_action: Optional[str] = None
 
         # Maximum jobs per build
-        self.build_max_jobs = None
+        self.build_max_jobs: Optional[int] = None
 
         # Control which dependencies to build
-        self.build_dependencies = None
+        self.build_dependencies: Optional[_PipelineSelection] = None
 
         # Size of the artifact cache in bytes
-        self.config_cache_quota = None
+        self.config_cache_quota: Optional[int] = None
 
         # User specified cache quota, used for display messages
-        self.config_cache_quota_string = None
-
-        # Whether or not to attempt to pull build trees globally
-        self.pull_buildtrees = None
+        self.config_cache_quota_string: Optional[str] = None
 
         # Whether to pull the files of an artifact when doing remote execution
-        self.pull_artifact_files = True
+        self.pull_artifact_files: bool = True
+
+        # Whether or not to attempt to pull build trees globally
+        self.pull_buildtrees: Optional[bool] = None
 
         # Whether or not to cache build trees on artifact creation
-        self.cache_buildtrees = None
+        self.cache_buildtrees: Optional[str] = None
 
         # Whether directory trees are required for all artifacts in the local cache
-        self.require_artifact_directories = True
+        self.require_artifact_directories: bool = True
 
         # Whether file contents are required for all artifacts in the local cache
-        self.require_artifact_files = True
+        self.require_artifact_files: bool = True
 
         # Don't shoot the messenger
-        self.messenger = Messenger()
+        self.messenger: Messenger = Messenger()
 
         # Make sure the XDG vars are set in the environment before loading anything
         self._init_xdg()
@@ -169,38 +181,38 @@ class Context:
         #
 
         # Whether elements must be rebuilt when their dependencies have changed
-        self._strict_build_plan = None
+        self._strict_build_plan: Optional[bool] = None
 
-        # Lists of globally configured cache specs
-        self._global_artifact_cache_specs: List[RemoteSpec] = []
-        self._global_source_cache_specs: List[RemoteSpec] = []
+        # Lists of globally configured cache configurations
+        self._global_artifact_cache_config: _CacheConfig = _CacheConfig(False, [])
+        self._global_source_cache_config: _CacheConfig = _CacheConfig(False, [])
 
         # Set of all actively configured remote specs
         self._active_artifact_cache_specs: Set[RemoteSpec] = set()
         self._active_source_cache_specs: Set[RemoteSpec] = set()
 
-        self._platform = None
-        self._artifactcache = None
-        self._elementsourcescache = None
-        self._sourcecache = None
-        self._projects = []
-        self._project_overrides = Node.from_dict({})
-        self._workspaces = None
-        self._workspace_project_cache = WorkspaceProjectCache()
-        self._cascache = None
+        self._platform: Optional[Platform] = None
+        self._artifactcache: Optional[ArtifactCache] = None
+        self._elementsourcescache: Optional[ElementSourcesCache] = None
+        self._sourcecache: Optional[SourceCache] = None
+        self._projects: List["Project"] = []
+        self._project_overrides: MappingNode = Node.from_dict({})
+        self._workspaces: Optional[Workspaces] = None
+        self._workspace_project_cache: WorkspaceProjectCache = WorkspaceProjectCache()
+        self._cascache: Optional[CASCache] = None
 
     # __enter__()
     #
     # Called when entering the with-statement context.
     #
-    def __enter__(self):
+    def __enter__(self) -> "Context":
         return self
 
     # __exit__()
     #
     # Called when exiting the with-statement context.
     #
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         if self._artifactcache:
             self._artifactcache.release_resources()
 
@@ -218,7 +230,7 @@ class Context:
     # Loads the configuration files
     #
     # Args:
-    #    config (filename): The user specified configuration file, if any
+    #    config: The user specified configuration file, if any
     #
     # Raises:
     #   LoadError
@@ -228,7 +240,7 @@ class Context:
     # by *config*, if any was specified.
     #
     @PROFILER.profile(Topics.LOAD_CONTEXT, "load")
-    def load(self, config=None):
+    def load(self, config: Optional[str] = None) -> None:
         # If a specific config file is not specified, default to trying
         # a $XDG_CONFIG_HOME/buildstream.conf file
         #
@@ -300,6 +312,7 @@ class Context:
                 raise LoadError("{} must be an absolute path".format(directory), LoadErrorReason.INVALID_DATA)
 
         # add directories not set by users
+        assert self.cachedir
         self.tmpdir = os.path.join(self.cachedir, "tmp")
         self.casdir = os.path.join(self.cachedir, "cas")
         self.builddir = os.path.join(self.cachedir, "build")
@@ -336,13 +349,13 @@ class Context:
                 LoadErrorReason.INVALID_DATA,
             ) from e
 
-        # Load artifact remote specs
-        caches = defaults.get_sequence("artifacts", default=[], allowed_types=[MappingNode])
-        self._global_artifact_cache_specs = [RemoteSpec.new_from_node(node) for node in caches]
+        # Load global artifact cache configuration
+        cache_config = defaults.get_mapping("artifacts", default={})
+        self._global_artifact_cache_config = _CacheConfig.new_from_node(cache_config)
 
-        # Load source cache remote specs
-        caches = defaults.get_sequence("source-caches", default=[], allowed_types=[MappingNode])
-        self._global_source_cache_specs = [RemoteSpec.new_from_node(node) for node in caches]
+        # Load global source cache configuration
+        cache_config = defaults.get_mapping("source-caches", default={})
+        self._global_source_cache_config = _CacheConfig.new_from_node(cache_config)
 
         # Load the global remote execution config including pull-artifact-files setting
         remote_execution = defaults.get_mapping("remote-execution", default=None)
@@ -413,28 +426,28 @@ class Context:
             )
 
     @property
-    def platform(self):
+    def platform(self) -> Platform:
         if not self._platform:
             self._platform = Platform.create_instance()
 
         return self._platform
 
     @property
-    def artifactcache(self):
+    def artifactcache(self) -> ArtifactCache:
         if not self._artifactcache:
             self._artifactcache = ArtifactCache(self)
 
         return self._artifactcache
 
     @property
-    def elementsourcescache(self):
+    def elementsourcescache(self) -> ElementSourcesCache:
         if not self._elementsourcescache:
             self._elementsourcescache = ElementSourcesCache(self)
 
         return self._elementsourcescache
 
     @property
-    def sourcecache(self):
+    def sourcecache(self) -> SourceCache:
         if not self._sourcecache:
             self._sourcecache = SourceCache(self)
 
@@ -445,9 +458,9 @@ class Context:
     # Add a project to the context.
     #
     # Args:
-    #    project (Project): The project to add
+    #    project: The project to add
     #
-    def add_project(self, project):
+    def add_project(self, project: "Project") -> None:
         if not self._projects:
             self._workspaces = Workspaces(project, self._workspace_project_cache)
         self._projects.append(project)
@@ -457,9 +470,9 @@ class Context:
     # Return the list of projects in the context.
     #
     # Returns:
-    #    (list): The list of projects
+    #    The list of projects
     #
-    def get_projects(self):
+    def get_projects(self) -> Iterable["Project"]:
         return self._projects
 
     # get_toplevel_project():
@@ -470,11 +483,12 @@ class Context:
     # Returns:
     #    (Project): The toplevel Project object, or None
     #
-    def get_toplevel_project(self):
-        try:
-            return self._projects[0]
-        except IndexError:
-            return None
+    def get_toplevel_project(self) -> "Project":
+        #
+        # It is an error to call this before a toplevel
+        # project is added
+        #
+        return self._projects[0]
 
     # initialize_remotes()
     #
@@ -510,58 +524,58 @@ class Context:
         project = self.get_toplevel_project()
         if project:
             override_node = self.get_overrides(project.name)
-            if override_node:
-                remote_execution = override_node.get_mapping("remote-execution", default=None)
-                if remote_execution:
-                    self.pull_artifact_files, self.remote_execution_specs = self._load_remote_execution(
-                        remote_execution
-                    )
-
-        # Collect a table of which specs apply to each project, these
-        # are calculated here and handed over to the asset caches.
-        #
-        project_artifact_cache_specs: Dict[str, List[RemoteSpec]] = {}
-        project_source_cache_specs: Dict[str, List[RemoteSpec]] = {}
+            remote_execution = override_node.get_mapping("remote-execution", default=None)
+            if remote_execution:
+                self.pull_artifact_files, self.remote_execution_specs = self._load_remote_execution(remote_execution)
 
         cli_artifact_remotes = [artifact_remote] if artifact_remote else []
         cli_source_remotes = [source_remote] if source_remote else []
 
         #
+        # Helper function to resolve which remote specs apply for a given project
+        #
+        def resolve_specs_for_project(
+            project: "Project", global_config: _CacheConfig, override_key: str, project_attribute: str,
+        ) -> List[RemoteSpec]:
+
+            # Obtain the overrides
+            override_node = self.get_overrides(project.name)
+            override_config_node = override_node.get_mapping(override_key, default={})
+            override_config = _CacheConfig.new_from_node(override_config_node)
+            if override_config.override_projects:
+                return override_config.remote_specs
+            elif global_config.override_projects:
+                return global_config.remote_specs
+
+            # If there were no explicit overrides, then take either the project specific
+            # config or fallback to the global config, and tack on the project recommended
+            # remotes at the end.
+            #
+            config_specs = override_config.remote_specs or global_config.remote_specs
+            project_specs = getattr(project, project_attribute)
+            all_specs = config_specs + project_specs
+            return list(utils._deduplicate(all_specs))
+
+        #
         # Maintain our list of remote specs for artifact and source caches
         #
         for project in self._projects:
-
             artifact_specs: List[RemoteSpec] = []
             source_specs: List[RemoteSpec] = []
 
-            override_node = self.get_overrides(project.name)
-
-            # Resolve which remote specs to use, CLI -> Override -> Global -> Project recommendation
             if connect_artifact_cache:
-                caches = override_node.get_sequence("artifacts", default=[], allowed_types=[MappingNode])
-                override_artifact_specs: List[RemoteSpec] = [RemoteSpec.new_from_node(node) for node in caches]
-                artifact_specs = (
-                    cli_artifact_remotes
-                    or override_artifact_specs
-                    or self._global_artifact_cache_specs
-                    or project.artifact_cache_specs
+                artifact_specs = cli_artifact_remotes or resolve_specs_for_project(
+                    project, self._global_artifact_cache_config, "artifacts", "artifact_cache_specs",
                 )
-                artifact_specs = list(utils._deduplicate(artifact_specs))
 
             if connect_source_cache:
-                caches = override_node.get_sequence("source-caches", default=[], allowed_types=[MappingNode])
-                override_source_specs: List[RemoteSpec] = [RemoteSpec.new_from_node(node) for node in caches]
-                source_specs = (
-                    cli_source_remotes
-                    or override_source_specs
-                    or self._global_source_cache_specs
-                    or project.source_cache_specs
+                source_specs = cli_source_remotes or resolve_specs_for_project(
+                    project, self._global_source_cache_config, "source-caches", "source_cache_specs",
                 )
-                source_specs = list(utils._deduplicate(source_specs))
 
-            # Store them for lookups later on
-            project_artifact_cache_specs[project.name] = artifact_specs
-            project_source_cache_specs[project.name] = source_specs
+            # Advertize the per project remote specs publicly for the frontend
+            self.project_artifact_cache_specs[project.name] = artifact_specs
+            self.project_source_cache_specs[project.name] = source_specs
 
             #
             # Now that we know which remote specs are going to be used, maintain
@@ -575,18 +589,23 @@ class Context:
 
         # Now initialize the underlying asset caches
         #
-        self.artifactcache.setup_remotes(self._active_artifact_cache_specs, project_artifact_cache_specs)
-        self.elementsourcescache.setup_remotes(self._active_source_cache_specs, project_source_cache_specs)
-        self.sourcecache.setup_remotes(self._active_source_cache_specs, project_source_cache_specs)
+        self.artifactcache.setup_remotes(self._active_artifact_cache_specs, self.project_artifact_cache_specs)
+        self.elementsourcescache.setup_remotes(self._active_source_cache_specs, self.project_source_cache_specs)
+        self.sourcecache.setup_remotes(self._active_source_cache_specs, self.project_source_cache_specs)
 
     # get_workspaces():
     #
     # Return a Workspaces object containing a list of workspaces.
     #
     # Returns:
-    #    (Workspaces): The Workspaces object
+    #    The Workspaces object
     #
-    def get_workspaces(self):
+    def get_workspaces(self) -> Workspaces:
+        #
+        # It is an error to call this early on before the Workspaces
+        # has been instantiated
+        #
+        assert self._workspaces
         return self._workspaces
 
     # get_workspace_project_cache():
@@ -594,9 +613,9 @@ class Context:
     # Return the WorkspaceProjectCache object used for this BuildStream invocation
     #
     # Returns:
-    #    (WorkspaceProjectCache): The WorkspaceProjectCache object
+    #    The WorkspaceProjectCache object
     #
-    def get_workspace_project_cache(self):
+    def get_workspace_project_cache(self) -> WorkspaceProjectCache:
         return self._workspace_project_cache
 
     # get_overrides():
@@ -605,12 +624,12 @@ class Context:
     # a node loaded from YAML.
     #
     # Args:
-    #    project_name (str): The project name
+    #    project_name: The project name
     #
     # Returns:
-    #    (MappingNode): The overrides dictionary for the specified project
+    #    The overrides dictionary for the specified project
     #
-    def get_overrides(self, project_name):
+    def get_overrides(self, project_name: str) -> MappingNode:
         return self._project_overrides.get_mapping(project_name, default={})
 
     # get_strict():
@@ -618,9 +637,9 @@ class Context:
     # Fetch whether we are strict or not
     #
     # Returns:
-    #    (bool): Whether or not to use strict build plan
+    #    Whether or not to use strict build plan
     #
-    def get_strict(self):
+    def get_strict(self) -> bool:
         if self._strict_build_plan is None:
             # Either we're not overridden or we've never worked it out before
             # so work out if we should be strict, and then cache the result
@@ -639,22 +658,10 @@ class Context:
     # does not require file contents of all artifacts to be available in the
     # local cache.
     #
-    def set_artifact_files_optional(self):
+    def set_artifact_files_optional(self) -> None:
         self.require_artifact_files = False
 
-    # Force the resolved XDG variables into the environment,
-    # this is so that they can be used directly to specify
-    # preferred locations of things from user configuration
-    # files.
-    def _init_xdg(self):
-        if not os.environ.get("XDG_CACHE_HOME"):
-            os.environ["XDG_CACHE_HOME"] = os.path.expanduser("~/.cache")
-        if not os.environ.get("XDG_CONFIG_HOME"):
-            os.environ["XDG_CONFIG_HOME"] = os.path.expanduser("~/.config")
-        if not os.environ.get("XDG_DATA_HOME"):
-            os.environ["XDG_DATA_HOME"] = os.path.expanduser("~/.local/share")
-
-    def get_cascache(self):
+    def get_cascache(self) -> CASCache:
         if self._cascache is None:
             if self.log_debug:
                 log_level = CASLogLevel.TRACE
@@ -672,17 +679,54 @@ class Context:
             )
         return self._cascache
 
-    def _load_remote_execution(self, node):
+    ######################################################
+    #                  Private methods                   #
+    ######################################################
+
+    # Force the resolved XDG variables into the environment,
+    # this is so that they can be used directly to specify
+    # preferred locations of things from user configuration
+    # files.
+    def _init_xdg(self) -> None:
+        if not os.environ.get("XDG_CACHE_HOME"):
+            os.environ["XDG_CACHE_HOME"] = os.path.expanduser("~/.cache")
+        if not os.environ.get("XDG_CONFIG_HOME"):
+            os.environ["XDG_CONFIG_HOME"] = os.path.expanduser("~/.config")
+        if not os.environ.get("XDG_DATA_HOME"):
+            os.environ["XDG_DATA_HOME"] = os.path.expanduser("~/.local/share")
+
+    def _load_remote_execution(self, node: MappingNode) -> Tuple[bool, Optional[RemoteExecutionSpec]]:
         # The pull_artifact_files attribute is special, it is allowed to
         # be set to False even if there is no remote execution service configured.
         #
-        pull_artifact_files = node.get_bool("pull-artifact-files", default=True)
+        pull_artifact_files: bool = node.get_bool("pull-artifact-files", default=True)
         node.safe_del("pull-artifact-files")
 
         # Don't pass the remote execution settings if that was the only option
+        remote_execution_specs: Optional[RemoteExecutionSpec]
         if node.keys():
             remote_execution_specs = RemoteExecutionSpec.new_from_node(node)
         else:
             remote_execution_specs = None
 
         return pull_artifact_files, remote_execution_specs
+
+
+# _CacheConfig
+#
+# A convenience object for parsing artifact/source cache configurations
+#
+class _CacheConfig:
+    def __init__(self, override_projects: bool, remote_specs: List[RemoteSpec]):
+        self.override_projects: bool = override_projects
+        self.remote_specs: List[RemoteSpec] = remote_specs
+
+    @classmethod
+    def new_from_node(cls, node: MappingNode) -> "_CacheConfig":
+        node.validate_keys(["override-project-caches", "servers"])
+        servers = node.get_sequence("servers", default=[], allowed_types=[MappingNode])
+
+        override_projects: bool = node.get_bool("push", default=False)
+        remote_specs: List[RemoteSpec] = [RemoteSpec.new_from_node(node) for node in servers]
+
+        return cls(override_projects, remote_specs)

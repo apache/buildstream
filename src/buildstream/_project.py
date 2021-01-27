@@ -117,7 +117,7 @@ class Project:
         #
         # Public members
         #
-        self.name: Optional[str] = None  # The project name
+        self.name: str = ""  # The project name
         self.directory: Optional[str] = directory  # The project directory
         self.element_path: Optional[str] = None  # The project relative element path
 

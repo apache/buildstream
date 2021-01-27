@@ -66,7 +66,7 @@ def test_push(cli, tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "artifacts": [{"url": share.repo, "push": True,}],
+            "artifacts": {"servers": [{"url": share.repo, "push": True,}]},
             "cachedir": rootcache_dir,
         }
 
@@ -95,10 +95,12 @@ def test_push_split(cli, tmpdir, datafiles):
         rootcache_dir = os.path.join(str(tmpdir), "cache")
         user_config = {
             "scheduler": {"pushers": 1},
-            "artifacts": [
-                {"url": index.repo, "push": True, "type": "index"},
-                {"url": storage.repo, "push": True, "type": "storage"},
-            ],
+            "artifacts": {
+                "servers": [
+                    {"url": index.repo, "push": True, "type": "index"},
+                    {"url": storage.repo, "push": True, "type": "storage"},
+                ],
+            },
             "cachedir": rootcache_dir,
         }
         config_path = str(tmpdir.join("buildstream.conf"))
@@ -123,7 +125,7 @@ def test_push_message(tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "artifacts": [{"url": share.repo, "push": True,}],
+            "artifacts": {"servers": [{"url": share.repo, "push": True,}]},
             "cachedir": rootcache_dir,
         }
 

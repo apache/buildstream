@@ -40,17 +40,22 @@ def configure_remote_caches(override_caches, project_caches=None, user_caches=No
 
     user_config = {}
     if user_caches:
-        user_config["artifacts"] = [
-            {"url": cache.url, "push": cache.push, "type": type_strings[cache.remote_type]} for cache in user_caches
-        ]
+        user_config["artifacts"] = {
+            "servers": [
+                {"url": cache.url, "push": cache.push, "type": type_strings[cache.remote_type]}
+                for cache in user_caches
+            ]
+        }
 
     if override_caches:
         user_config["projects"] = {
             "test": {
-                "artifacts": [
-                    {"url": cache.url, "push": cache.push, "type": type_strings[cache.remote_type]}
-                    for cache in override_caches
-                ]
+                "artifacts": {
+                    "servers": [
+                        {"url": cache.url, "push": cache.push, "type": type_strings[cache.remote_type]}
+                        for cache in override_caches
+                    ]
+                }
             }
         }
 
@@ -106,7 +111,8 @@ def test_artifact_cache_precedence(tmpdir, override_caches, project_caches, user
         parsed_cache_specs = artifactcache._project_specs[project.name]
 
         # Verify that it was correctly read.
-        expected_cache_specs = list(_deduplicate(override_caches or user_caches or project_caches))
+        expected_cache_specs = list(_deduplicate(override_caches or user_caches))
+        expected_cache_specs = list(_deduplicate(expected_cache_specs + project_caches))
         assert parsed_cache_specs == expected_cache_specs
 
 
@@ -205,7 +211,7 @@ def test_paths_for_artifact_config_are_expanded(tmpdir, monkeypatch, artifacts_c
     project_config = {"name": "test", "min-version": "2.0"}
     user_config = {}
     if in_user_config:
-        user_config["artifacts"] = artifacts_config
+        user_config["artifacts"] = {"servers": artifacts_config}
     else:
         project_config["artifacts"] = artifacts_config
 

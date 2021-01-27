@@ -41,7 +41,9 @@ def test_buildtree_remote(cli, tmpdir, datafiles):
     assert set(services) == set(["action-cache", "execution", "storage"])
 
     with create_artifact_share(share_path) as share:
-        cli.configure({"artifacts": [{"url": share.repo, "push": True}], "cache": {"pull-buildtrees": False}})
+        cli.configure(
+            {"artifacts": {"servers": [{"url": share.repo, "push": True}]}, "cache": {"pull-buildtrees": False}}
+        )
 
         res = cli.run(project=project, args=["--cache-buildtrees", "always", "build", element_name])
         res.assert_success()

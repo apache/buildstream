@@ -184,7 +184,7 @@ def test_artifact_show_element_available_remotely(cli, tmpdir, datafiles):
     local_cache = os.path.join(str(tmpdir), "artifacts")
     with create_artifact_share(os.path.join(str(tmpdir), "remote")) as remote:
         cli.configure(
-            {"artifacts": [{"url": remote.repo, "push": True}], "cachedir": local_cache,}
+            {"artifacts": {"servers": [{"url": remote.repo, "push": True}]}, "cachedir": local_cache,}
         )
 
         # Build the element

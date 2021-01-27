@@ -41,7 +41,7 @@ def test_pull(cli, tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "artifacts": [{"url": share.repo, "push": True,}],
+            "artifacts": {"servers": [{"url": share.repo, "push": True,}]},
             "cachedir": cache_dir,
         }
 
@@ -106,7 +106,7 @@ def test_pull_tree(cli, tmpdir, datafiles):
         user_config_file = str(tmpdir.join("buildstream.conf"))
         user_config = {
             "scheduler": {"pushers": 1},
-            "artifacts": [{"url": share.repo, "push": True,}],
+            "artifacts": {"servers": [{"url": share.repo, "push": True,}]},
             "cachedir": rootcache_dir,
         }
 

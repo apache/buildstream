@@ -40,9 +40,7 @@ def test_pull(cli, tmpdir, datafiles, deps, expect_cached, with_project):
 
         # Build the element to push it to cache, and explicitly configure local cache so we can check it
         local_cache = os.path.join(str(tmpdir), "cache")
-        cli.configure(
-            {"cachedir": local_cache, "artifacts": [{"url": share.repo, "push": True}],}
-        )
+        cli.configure({"cachedir": local_cache, "artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
         # Build it
         result = cli.run(project=project, args=["build", "target.bst"])

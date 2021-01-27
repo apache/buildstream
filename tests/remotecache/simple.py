@@ -57,7 +57,7 @@ def test_remote_autotools_build_no_cache(cli, datafiles):
     checkout = os.path.join(cli.directory, "checkout")
     element_name = "autotools/amhello.bst"
 
-    cli.configure({"artifacts": [{"url": "http://fake.url.service", "push": True}]})
+    cli.configure({"artifacts": {"servers": [{"url": "http://fake.url.service", "push": True}]}})
     result = cli.run(project=project, args=["build", element_name])
     result.assert_success()
 

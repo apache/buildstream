@@ -125,9 +125,7 @@ def test_push_cached_fail(cli, tmpdir, datafiles, on_error):
     _yaml.roundtrip_dump(element, element_path)
 
     with create_artifact_share(os.path.join(str(tmpdir), "remote")) as share:
-        cli.configure(
-            {"artifacts": [{"url": share.repo, "push": True}],}
-        )
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
         # Build the element, continuing to finish active jobs on error.
         result = cli.run(project=project, args=["--on-error={}".format(on_error), "build", "element.bst"])
@@ -168,9 +166,7 @@ def test_push_failed_missing_shell(cli, tmpdir, datafiles, on_error):
     _yaml.roundtrip_dump(element, element_path)
 
     with create_artifact_share(os.path.join(str(tmpdir), "remote")) as share:
-        cli.configure(
-            {"artifacts": [{"url": share.repo, "push": True}],}
-        )
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
         # Build the element, continuing to finish active jobs on error.
         result = cli.run(project=project, args=["--on-error={}".format(on_error), "build", "element.bst"])

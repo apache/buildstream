@@ -55,7 +55,7 @@ def test_cache_buildtrees(cli, tmpdir, datafiles):
     with create_artifact_share(os.path.join(str(tmpdir), "share1")) as share1, create_artifact_share(
         os.path.join(str(tmpdir), "share2")
     ) as share2, create_artifact_share(os.path.join(str(tmpdir), "share3")) as share3:
-        cli.configure({"artifacts": [{"url": share1.repo, "push": True}], "cachedir": str(tmpdir)})
+        cli.configure({"artifacts": {"servers": [{"url": share1.repo, "push": True}]}, "cachedir": str(tmpdir)})
 
         # Build autotools element with the default behavior of caching buildtrees
         # only when necessary. The artifact should be successfully pushed to the share1 remote
@@ -98,7 +98,7 @@ def test_cache_buildtrees(cli, tmpdir, datafiles):
 
         # Repeat building the artifacts, this time with cache-buildtrees set to
         # 'always' via the cli, as such the buildtree dir should not be empty
-        cli.configure({"artifacts": [{"url": share2.repo, "push": True}], "cachedir": str(tmpdir)})
+        cli.configure({"artifacts": {"servers": [{"url": share2.repo, "push": True}]}, "cachedir": str(tmpdir)})
         result = cli.run(project=project, args=["--cache-buildtrees", "always", "build", element_name])
         assert result.exit_code == 0
         assert cli.get_element_state(project, element_name) == "cached"
@@ -127,7 +127,7 @@ def test_cache_buildtrees(cli, tmpdir, datafiles):
         # a build
         cli.configure(
             {
-                "artifacts": [{"url": share3.repo, "push": True}],
+                "artifacts": {"servers": [{"url": share3.repo, "push": True}]},
                 "cachedir": str(tmpdir),
                 "cache": {"cache-buildtrees": "always"},
             }

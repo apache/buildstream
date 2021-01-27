@@ -124,7 +124,7 @@ def test_non_strict_pull_build_strict_checkout(datafiles, cli, tmpdir):
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
 
-        cli.configure({"artifacts": [{"url": share.repo}]})
+        cli.configure({"artifacts": {"servers": [{"url": share.repo}]}})
 
         # First build it in non-strict mode with an artifact server configured.
         # With this configuration BuildStream will attempt to pull the build-only
@@ -1089,7 +1089,7 @@ def test_partial_artifact_checkout_fetch(cli, datafiles, tmpdir):
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
 
-        cli.configure({"artifacts": [{"url": share.repo, "push": True}]})
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
         result = cli.run(project=project, args=["source", "track", input_name])
         result.assert_success()
@@ -1124,7 +1124,7 @@ def test_partial_checkout_fail(tmpdir, datafiles, cli):
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
 
-        cli.configure({"artifacts": [{"url": share.repo, "push": True}]})
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
         res = cli.run(project=project, args=["artifact", "checkout", "--pull", build_elt, "--directory", checkout_dir])
         res.assert_main_error(ErrorDomain.STREAM, "uncached-checkout-attempt")

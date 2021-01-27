@@ -51,7 +51,7 @@ def context_with_source_cache(cli, cache, share, tmpdir):
     user_config_file = str(tmpdir.join("buildstream.conf"))
     user_config = {
         "scheduler": {"pushers": 1},
-        "source-caches": [{"url": share.repo,}],
+        "source-caches": {"servers": [{"url": share.repo,}]},
         "cachedir": cache,
     }
     _yaml.roundtrip_dump(user_config, file=user_config_file)

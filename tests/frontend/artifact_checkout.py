@@ -39,7 +39,7 @@ def test_checkout(cli, tmpdir, datafiles, deps, expect_exist, expect_noexist, wi
 
     with create_artifact_share(os.path.join(str(tmpdir), "artifactshare")) as share:
         # Build the element to push it to cache
-        cli.configure({"artifacts": [{"url": share.repo, "push": True}]})
+        cli.configure({"artifacts": {"servers": [{"url": share.repo, "push": True}]}})
 
         # Build it
         result = cli.run(project=project, args=["build", "target-import.bst"])

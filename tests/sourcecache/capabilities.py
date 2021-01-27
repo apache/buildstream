@@ -25,7 +25,11 @@ def test_artifact_cache_with_missing_capabilities_is_skipped(cli, tmpdir, datafi
         # Configure artifact share
         cache_dir = os.path.join(str(tmpdir), "cache")
         user_config_file = str(tmpdir.join("buildstream.conf"))
-        user_config = {"scheduler": {"pushers": 1}, "source-caches": [{"url": share.repo,}], "cachedir": cache_dir}
+        user_config = {
+            "scheduler": {"pushers": 1},
+            "source-caches": {"servers": [{"url": share.repo,}]},
+            "cachedir": cache_dir,
+        }
         _yaml.roundtrip_dump(user_config, file=user_config_file)
 
         with dummy_context(config=user_config_file) as context:
