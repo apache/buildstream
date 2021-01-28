@@ -192,165 +192,71 @@ for more detail.
      build-gid: 1001
 
 
-.. _project_essentials_artifacts:
+.. _project_artifact_cache:
 
 Artifact server
 ~~~~~~~~~~~~~~~
-If you have setup an :ref:`artifact server <cache_servers>` for your
-project then it is convenient to configure the following in your ``project.conf``
-so that users need not have any additional configuration to communicate
-with an artifact share.
+When maintaining a BuildStream project, it can be convenient to downstream users
+of your project to provide access to a :ref:`cache server <cache_servers>` you maintain.
+
+The project can provide *recommended* artifact cache servers through project configuration
+using the same semantics as one normally uses in the ``servers`` list of the
+:ref:`cache server user configuration <config_cache_servers>`:
 
 .. code:: yaml
 
   #
-  # Artifacts
+  # A remote cache from which to download prebuilt artifacts
   #
   artifacts:
-    # A remote cache from which to download prebuilt artifacts
-    - url: https://foo.com:11001
+  - url: https://foo.com:11001
+    auth:
       server-cert: server.crt
-    # A remote cache from which to upload/download built/prebuilt artifacts
-    - url: https://foo.com:11002
-      push: true
-      server-cert: server.crt
-      client-cert: client.crt
-      client-key: client.key
 
-.. note::
+.. attention::
 
-    You can also specify a list of different caches here; earlier entries in the
-    list will have higher priority than later ones.
+   Unlike user configuration, the filenames provided in the :ref:`auth <config_remote_auth>`
+   configuration block are relative to the :ref:`project directory <format_structure>`.
 
-The use of ports are required to distinguish between pull only access and
-push/pull access. For information regarding the server/client certificates
-and keys, please see: :ref:`Key pair for the server <server_authentication>`.
+   It is recommended to include public keys such as the ``server-cert`` along with your
+   project so that downstream users can have automatic read access to your project.
 
-.. note::
-
-   Buildstream artifact servers have changed since 1.2 to use protocol buffers
-   to store artifact information rather than a directory structure, as well as a
-   new server API. As a result newer buildstream clients won't work with older
-   servers.
-
-
-.. _project_essentials_split_artifacts:
-
-Split cache servers
-~~~~~~~~~~~~~~~~~~~
-
-Should you need to configure an artifact cache to work with a CAS
-server that does not support BuildStream's artifact format, you can
-"split" that cache and run an artifacts-only server separately. The
-format for that is as such:
-
-.. code:: yaml
-
-  #
-  # Artifacts
-  #
-  artifacts:
-    # A remote cache from which to download prebuilt artifacts
-    - url: https://storage.foo.com:11001
-      server-cert: server.crt
-      # "storage" remotes store the artifact contents only - this can
-      # be a normal CAS implementation such as those provided by
-      # Buildbarn, BuildGrid, or Bazel Buildfarm
-      type: storage
-    - url: https://index.foo.com:11001
-      server-cert: server.crt
-      # "index" remotes store only artifact metadata. This is
-      # currently only provided by the bst-artifact-server
-      type: index
-    # A remote cache from which to upload/download built/prebuilt artifacts
-    - url: https://foo.com:11002
-      push: true
-      server-cert: server.crt
-      client-cert: client.crt
-      client-key: client.key
-      # Caches that support both can omit the type, or set it to "both" -
-      # currently, also only supported by bst-artifact-server
-      type: both
+   To provide write access to downstream users, it is recommended that the required
+   private keys such as the ``client-key`` be provided to users out of band,
+   and require that users configure write access separately in their own
+   :ref:`user configuration <config_cache_servers>`.
 
 
 .. _project_source_cache:
 
 Source cache server
 ~~~~~~~~~~~~~~~~~~~
-Exactly the same as artifact servers, source cache servers can be specified.
+In the same way as artifact cache servers, the project can provide *recommended* source cache
+servers through project configuration using the same semantics as one normally uses in the
+``servers`` list of the :ref:`cache server user configuration <config_cache_servers>`:
 
 .. code:: yaml
 
   #
-  # Source caches
+  # A remote cache from which to download prestaged sources
   #
   source-caches:
-    # A remote cache from which to download prestaged sources
-    - url: https://foo.com:11001
-      server.cert: server.crt
-    # A remote cache from which to upload/download prestaged sources
-    - url: https://foo.com:11002
-      push: true
+  - url: https://foo.com:11001
+    auth:
       server-cert: server.crt
-      client-cert: client.crt
-      client-key: client.key
 
-.. note::
+.. attention::
 
-   Source caches also support "splitting" like :ref:`artifact servers
-   <project_essentials_split_artifacts>`.
+   Unlike user configuration, the filenames provided in the :ref:`auth <config_remote_auth>`
+   configuration block are relative to the :ref:`project directory <format_structure>`.
 
+   It is recommended to include public keys such as the ``server-cert`` along with your
+   project so that downstream users can have automatic read access to your project.
 
-.. _project_remote_execution:
-
-Remote execution
-~~~~~~~~~~~~~~~~
-BuildStream supports remote execution using the Google Remote Execution API
-(REAPI). A description of how remote execution works is beyond the scope
-of this document, but you can specify a remote server complying with the REAPI
-using the `remote-execution` option:
-
-.. code:: yaml
-
-  remote-execution:
-
-    # A url defining a remote execution server
-    execution-service:
-      url: http://buildserver.example.com:50051
-      instance-name: development-emea-1
-    storage-service:
-      url: https://foo.com:11002/
-      server-cert: server.crt
-      client-cert: client.crt
-      client-key: client.key
-      instance-name: development-emea-1
-    action-cache-service:
-      url: http://bar.action.com:50052
-      instance-name: development-emea-1
-
-storage-service specifies a remote CAS store and the parameters are the
-same as those used to specify an :ref:`artifact server <cache_servers>`.
-
-The action-cache-service specifies where built actions are cached, allowing
-buildstream to check whether an action has already been executed and download it
-if so. This is similar to the artifact cache but REAPI specified, and is
-optional for remote execution to work.
-
-The storage service may be the same endpoint used for artifact
-caching. Remote execution cannot work without push access to the
-storage endpoint though.
-
-Instance name is optional. Instance names separate different shards on
-the same endpoint (url).  You can supply a different instance name for
-`execution-service` and `storage-service`, if needed.  The instance
-name should be given to you by the service provider of each
-service. Not all remote execution and storage services support
-instance names.
-
-The Remote Execution API can be found via https://github.com/bazelbuild/remote-apis.
-
-Remote execution configuration can be also provided in the `user
-configuration <user_config_remote_execution>`.
+   To provide write access to downstream users, it is recommended that the required
+   private keys such as the ``client-key`` be provided to users out of band,
+   and require that users configure write access separately in their own
+   :ref:`user configuration <config_cache_servers>`.
 
 
 .. _project_essentials_mirrors:
