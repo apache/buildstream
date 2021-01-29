@@ -480,10 +480,28 @@ class LogLine(Widget):
         values["Maximum Push Tasks"] = context.sched_pushers
         values["Maximum Network Retries"] = context.sched_network_retries
         text += self._format_values(values)
-        text += "\n"
+
+        if context.remote_execution_specs:
+            specs = context.remote_execution_specs
+
+            def format_spec(spec):
+                if spec.instance_name:
+                    return "{} (instance: {})".format(spec.url, spec.instance_name)
+                return spec.url
+
+            text += "\n"
+            text += self.content_profile.fmt("Remote Execution Configuration\n", bold=True)
+            values = OrderedDict()
+            values["Execution Service"] = format_spec(specs.exec_spec)
+            values["Storage Service"] = format_spec(specs.storage_spec)
+            if specs.action_spec:
+                values["Action Cache Service"] = format_spec(specs.action_spec)
+            values["Pull artifact files"] = context.pull_artifact_files
+            text += self._format_values(values)
 
         # Print information about each loaded project
         #
+        text += "\n"
         if toplevel_project:
             loaded_projects = toplevel_project.loaded_projects()
         else:
@@ -536,6 +554,20 @@ class LogLine(Widget):
                 {p: d for p, _, _, d in project.element_factory.list_plugins()},
                 {p: d for p, _, _, d in project.source_factory.list_plugins()},
             )
+
+            # Artifact cache servers
+            specs = context.project_artifact_cache_specs.get(project.name)
+            if specs:
+                text += self.format_profile.fmt("{}Artifact cache servers\n".format(self._indent))
+                text += self._format_list(specs, indent=2)
+                text += "\n"
+
+            # Source cache servers
+            specs = context.project_source_cache_specs.get(project.name)
+            if specs:
+                text += self.format_profile.fmt("{}Source cache servers\n".format(self._indent))
+                text += self._format_list(specs, indent=2)
+                text += "\n"
 
         # Pipeline state
         text += self.content_profile.fmt("Pipeline\n", bold=True)
@@ -841,6 +873,47 @@ class LogLine(Widget):
                 text += self.content_profile.fmt(str(value))
             else:
                 text += str(value)
+            text += "\n"
+
+        return text
+
+    # _format_list()
+    #
+    # Formats an indented list of values, ensuring the values have bullets.
+    #
+    # Args:
+    #    values (list): A list of values to format as strings (or strings)
+    #    indent (number): Number of initial indentation levels (must be >= 1)
+    #
+    # Returns:
+    #    (str): The formatted values
+    #
+    def _format_list(self, values, *, indent=1):
+        text = ""
+
+        # We need at least 2 leading spaces inside the indentation in order
+        # to print bullets.
+        assert indent >= 1
+
+        # Indent string in case of multiline values
+        indent_string = self._indent * indent
+
+        # Prepare the indented bullet right away
+        indent_bullet = self.format_profile.fmt(indent_string[:-2] + "* ")
+
+        for value in values:
+            value = str(value)
+
+            # In case of newlines, replace each newline in the value with a trailing
+            # indent and strip the result.
+            value = value.replace("\n", "\n" + indent_string)
+            value = value.strip()
+
+            # Append the bullet
+            text += indent_bullet
+
+            # Append the value
+            text += self.content_profile.fmt(value)
             text += "\n"
 
         return text
