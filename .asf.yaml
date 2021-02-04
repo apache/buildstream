@@ -1,14 +1,5 @@
 
 #
-# Avoid diluting the dev mailing list with meta stuff,
-# redirect it all to the commit list.
-#
-notifications:
-  commits: commits@buildstream.apache.org
-  issues: commits@buildstream.apache.org
-  pullrequests: commits@buildstream.apache.org
-
-#
 # Configure github
 #
 github:
