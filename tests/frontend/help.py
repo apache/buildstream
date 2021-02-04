@@ -20,7 +20,7 @@ def test_help_main(cli):
 
 
 @pytest.mark.parametrize(
-    "command", [("artifact"), ("build"), ("checkout"), ("shell"), ("show"), ("source"), ("workspace")]
+    "command", [("artifact"), ("build"), ("shell"), ("show"), ("source"), ("workspace")]
 )
 def test_help(cli, command):
     result = cli.run(args=[command, "--help"])
